@@ -5,7 +5,9 @@ from geminidr.core.parameters_bookkeeping import ParametersBookkeeping
 from geminidr.core.parameters_preprocess import ParametersPreprocess
 from geminidr.core.parameters_standardize import ParametersStandardize
 from geminidr.core.parameters_visualize import ParametersVisualize
+from geminidr.core.parameters_stack import ParametersStack
 
 class ParametersGemini(ParametersBookkeeping, ParametersPreprocess,
-                       ParametersStandardize, ParametersVisualize):
+                       ParametersStandardize, ParametersVisualize,
+                       ParametersStack):
     pass

@@ -4,15 +4,15 @@ from gempy.gemini import gemini_tools as gt
 
 import numpy as np
 from astropy.wcs import WCS
-from astropy.table import Table, Column
+from astropy.table import vstack, Table, Column
 from copy import deepcopy
 
 from geminidr.core import CCD
 from geminidr.gemini.primitives_gemini import Gemini
 from .parameters_gmos import ParametersGMOS
-from gemini_instruments.gmos.lookup import gmosArrayGaps
+from .lookups.array_gaps import gmosArrayGaps
 
-from gempy.gemini.gmoss_fix_headers import correct_headers
+from gempy.scripts.gmoss_fix_headers import correct_headers
 
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 from gempy.gemini import eti
@@ -152,12 +152,14 @@ class GMOS(Gemini, CCD):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         pars = getattr(self.parameters, self.myself())
-        
+
+        adoutputs = []
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by "
                             "standardizeInstrumentHeaders".format(ad.filename))
+                adoutputs.append(ad)
                 continue
             
             # Standardize the headers of the input AstroData object. Update the
@@ -168,12 +170,15 @@ class GMOS(Gemini, CCD):
             ##M Hamamatsu data. This is temporary fix until GMOS-S DC is fixed
             if ad.detector_name(pretty=True) == "Hamamatsu":
                 log.status("Fixing headers for Hamamatsu data")
+                #TODO: Check that this works!
                 # Image extension headers appear to be correct - MS 2014-10-01
                 #     correct_image_extensions=Flase
                 # As does the DATE-OBS but as this seemed to break even after
                 # apparently being fixed, still perform this check. - MS
-                correct_headers(ad.to_hdulist(), logger=log,
+                hdulist = ad.to_hdulist()
+                correct_headers(hdulist, logger=log,
                                 correct_image_extensions=False)
+                ad = astrodata.open(hdulist)
 
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
@@ -182,10 +187,14 @@ class GMOS(Gemini, CCD):
             if 'SPECT' in ad.tags:
                 descriptors.append('dispersion_axis')
             for desc in descriptors:
-                keyword = ad._keyword_for[desc]
+                keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]
-                for ext, value in zip(ad, getattr(ad, desc)()):
-                    ext.hdr.set(keyword, value, comment)
+                dv = getattr(ad, desc)()
+                if isinstance(dv, list):
+                    for ext, value in zip(ad, dv):
+                        ext.hdr.set(keyword, value, comment)
+                else:
+                    ad.hdr.set(keyword, dv, comment)
 
             # And the bias level too!
             bias_level = get_bias_level(adinput=ad,
@@ -197,7 +206,8 @@ class GMOS(Gemini, CCD):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
                                               strip=True)
-        return adinputs
+            adoutputs.append(ad)
+        return adoutputs
     
     def standardizeStructure(self, adinputs=None, stream='main', **params):
         """
@@ -294,11 +304,11 @@ class GMOS(Gemini, CCD):
 
             # Make a list of the output extensions where each array ends up
             num_ccd = 1
-            ccds = [num_ccd]
+            ccd_map = [num_ccd]
             for i in range(1, len(ccdx1)):
-                if ccds and ccdx1[i]<=ccdx1[i-1]:
+                if ccdx1[i]<=ccdx1[i-1]:
                     num_ccd += 1
-                ccds.append(num_ccd)
+                ccd_map.append(num_ccd)
             if num_ccd==len(ad) and in_order and not tile_all:
                 log.fullinfo("Only one amplifier per array; no tiling done "
                              "for {}".format(ad.filename))
@@ -317,9 +327,9 @@ class GMOS(Gemini, CCD):
                 elif num_ccd != len(ad):
                     log.fullinfo("Tiling data into one extension per array")
 
-                ccds = np.array(ccds)
+                ccd_map = np.array(ccd_map)
                 for ccd in range(1, num_ccd+1):
-                    amps_on_ccd = ampsorder[ccds==ccd]
+                    amps_on_ccd = ampsorder[ccd_map==ccd]
                     extns = [ad[i] for i in amps_on_ccd]
                     # Use the centre-left amplifier's HDU as basis for new HDU
                     ref_ext = amps_on_ccd[int(len(amps_on_ccd)/2-1)]
@@ -348,14 +358,14 @@ class GMOS(Gemini, CCD):
                             xshift += all_data.shape[1] + chip_gap.shape[1]
 
                         # Add a gap and this CCD to the existing tiled data
-                        all_data = np.hstack(all_data, chip_gap, data)
+                        all_data = np.hstack([all_data, chip_gap, data])
                         if all_mask is not None and mask is not None:
-                            all_mask = np.hstack(all_mask,
-                                        chip_gap.astype(np.int16)+16, mask)
+                            all_mask = np.hstack([all_mask,
+                                        chip_gap.astype(np.int16)+16, mask])
                         else:
                             all_mask = None
                         if all_var is not None and var is not None:
-                            all_var = np.hstack(all_var, chip_gap, var)
+                            all_var = np.hstack([all_var, chip_gap, var])
                         else:
                             all_var = None
                     else:
@@ -390,7 +400,7 @@ class GMOS(Gemini, CCD):
                         ext_to_add.hdr.set('CCDSEC', new_ccdsec,
                                            self.keyword_comments['CCDSEC'])
 
-                        crpix1 = ext_to_add.hdr.get('CRPIX1')
+                        crpix1 = ext_to_add.hdr.get('CRPIX1')[0]
                         if crpix1:
                             crpix1 += xshift
                             ext_to_add.hdr.set('CRPIX1', crpix1,
@@ -398,15 +408,20 @@ class GMOS(Gemini, CCD):
 
                         out_hdulist.extend(ext_to_add.to_hdulist()[1:])
 
-                # Create new AD object
+                # Create new AD object, reset the EXTVERs
                 adoutput = astrodata.open(out_hdulist)
                 adoutput.filename = ad.filename
+                for extver, ext in enumerate(adoutput, start=1):
+                    ext.hdr.EXTVER = extver
 
                 # Update and attach OBJCAT if needed
-                if ad["OBJCAT"] is not None:
-                    adoutput = _tile_objcat(adinput=ad, adoutput=adoutput, 
-                                            ext_mapping=ccds,
-                                            sx_dict=self.sx_default_dict)
+                if any(hasattr(ext, 'OBJCAT') for ext in ad):
+                    # Create new mapping as all input extensions => output 1
+                    if tile_all:
+                        ccd_map = np.full_like(ccd_map, 1)
+                    adoutput = gt.tile_objcat(adinput=ad, adoutput=adoutput,
+                                              ext_mapping=ccd_map,
+                                              sx_dict=self.sx_default_dict)
                     
                 # Attach MDF if it exists
                 if hasattr(ad, 'MDF'):
@@ -497,72 +512,4 @@ def _obtain_arraygap(adinput=None):
     # Obtain the array gap value and fix for any binning
     arraygap = int(gmosArrayGaps[det_type] / adinput.detector_x_bin())
     return arraygap
-
-def _tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
-    """
-    This function tiles together separate OBJCAT extensions, converting
-    the pixel coordinates to the new WCS.
-
-    Parameters
-    ----------
-    adinput: AstroData
-        input AD object with all the OBJCATs
-    adoutput: AstroData
-        output AD object to which we want to append the new tiled OBJCATs
-    ext_mapping: array
-        contains the output extension onto which each input has been placed
-    sx_dict: dict
-        SExtractor dictionary
-    """
-    for outext in adoutput:
-        out_extver = outext.extver()
-        output_wcs = WCS(outext.header)
-
-        col_names = None
-        col_fmts = None
-        col_data = {}
-        indices = [i for i in range(len(ext_mapping)) if ext_mapping[i]==outext]
-        for i in indices:
-            inp_objcat = adinput[i].OBJCAT
-
-            # Make sure there is data in the OBJCAT
-            if inp_objcat is None:
-                continue
-            if inp_objcat.data is None:
-                continue
-            if len(inp_objcat.data)==0:
-                continue
-
-            # Get column names, formats from first OBJCAT
-            if col_names is None:
-                col_names = inp_objcat.data.names
-                col_fmts = inp_objcat.data.formats
-                for name in col_names:
-                    col_data[name] = inp_objcat.data.field(name).tolist()
-            else:
-                # Stack all OBJCAT data together
-                for name in col_names:
-                    col_data[name].extend(inp_objcat.data.field(name))
-
-        # Get new pixel coordinates for the objects from RA/Dec
-        # and the output WCS
-        ra = col_data["X_WORLD"]
-        dec = col_data["Y_WORLD"]
-        newx,newy = output_wcs.wcs_sky2pix(ra,dec,1)
-        col_data["X_IMAGE"] = newx
-        col_data["Y_IMAGE"] = newy
-
-        columns = {}
-        for name,format in zip(col_names,col_fmts):
-            # Let add_objcat auto-number sources
-            if name=="NUMBER":
-                continue
-
-            # Define pyfits column to pass to add_objcat
-            columns[name] = Column(name=name,format=format,
-                                      array=col_data[name])
-
-        adout = gt.add_objcat(adinput=adout, extver=out_extver,
-                    columns=columns, sxdict=sx_dict)[0]
-
 

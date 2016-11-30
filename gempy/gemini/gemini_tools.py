@@ -16,9 +16,11 @@ import json
 import urllib2
 import numbers
 
-import numpy  as np
-
-from astropy.table import Table, Column
+import numpy as np
+from astropy.wcs import WCS
+from astropy import stats
+from astropy.table import vstack, Table, Column
+from astropy.modeling import models, fitting
 
 from copy import deepcopy
 from datetime import datetime
@@ -27,9 +29,6 @@ from importlib import import_module
 from functools import wraps
 
 from ..library import astrotools as at
-
-from astropy.modeling import models, fitting
-from astropy import stats
 
 from ..utils import logutils
 
@@ -51,7 +50,7 @@ def accept_single_adinput(fn):
     return wrapper
 # ------------------------------------------------------------------------------
 @accept_single_adinput
-def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None):
+def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
 
@@ -64,29 +63,15 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None)
         Extension number for the table (should match the science extension)
 
     replace: bool
+        replace (overwrite) with new OBJCAT? If False, the new table must
+        have the same length as the existing OBJCAT
 
-
-
-    sxdict: dict
-        contains dicts with the locations of the SExtractor conv, nnw, param,
-        and sex config files for various situations
-
-    :param replace: Flag to determine if an existing OBJCAT should be
-                    replaced or updated in place. If replace=False, the
-                    length of all lists provided must match the number
-                    of entries currently in OBJCAT.
-    :type replace: boolean
-    
-    :param columns: Columns to add to table.  Columns named 'X_IMAGE',
-                    'Y_IMAGE','X_WORLD','Y_WORLD' are required if making
-                    new table.
-    :type columns: dictionary of Pyfits Column objects with column names
-                   as keys
+    table: Table
+        new OBJCAT Table or new columns. For a new table, X_IMAGE, Y_IMAGE,
+        X_WORLD, and Y_WORLD are required columns
     """
-    
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
+
 
     # ensure caller passes the sextractor default dictionary of parameters.
     try:
@@ -107,34 +92,34 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None)
     for ad in adinput:
         ext = ad.extver(extver)
         # Check if OBJCAT already exists and just update if desired
-        objcat = ext.OBJCAT if hasattr(ext, 'OBJCAT') else None
+        objcat = getattr(ext, 'OBJCAT', None)
         if objcat and not replace:
             log.fullinfo("Table already exists; updating values.")
-            for name in columns.keys():
-                objcat[name].data = columns[name].array
+            for name in table.columns:
+                objcat[name].data[:] = table[name].data
         else:
             # Append columns in order of definition in SExtractor params
             new_objcat = Table()
-            nrows = len(columns['X_IMAGE'])
+            nrows = len(table)
             for name in expected_columns:
+                # Define Column properties with sensible placeholder data
                 if name in ["NUMBER"]:
                     default = range(1, nrows+1)
-                    format = "J"
+                    dtype = np.int32
                 elif name in ["FLAGS", "IMAFLAGS_ISO", "REF_NUMBER"]:
                     default = [-999] * nrows
-                    format = "J"
+                    dtype = np.int32
                 else:
                     default = [-999] * nrows
-                    format = "E"
-                # Get column from input if present, otherwise
-                # define a new Pyfits column with sensible placeholders
-                new_objcat.add_column(columns.get(name,
-                                Column(data=default, name=name, format=format)))
+                    dtype = np.float32
+                # Use input table column if given, otherwise the placeholder
+                new_objcat.add_column(table[name] if name in table.columns else
+                                Column(data=default, name=name, dtype=dtype))
 
             # Replace old version or append new table to AD object
             if objcat:
-                log.fullinfo("Replacing existing OBJCAT in %s" %
-                             ad.filename)
+                log.fullinfo("Replacing existing OBJCAT in {}".
+                             format(ad.filename))
             ext.OBJCAT = new_objcat
         adoutput.append(ad)
 
@@ -1850,8 +1835,8 @@ def parse_sextractor_param(default_dict):
         names of all the columns in the SExtractor output catalog
     """
     #TODO hardcoded... need to think about this
-    param_file = '../../geminidr/gemini/lookups/source_detection/{}'.format(
-        default_dict["dq"]["param"])
+    param_file = '{}/../../geminidr/gemini/lookups/source_detection/{}'.format(
+            os.path.dirname(__file__), default_dict["dq"]["param"])
     if param_file.endswith(".py"):
         param_file = param_file[:-3]
     
@@ -1923,6 +1908,48 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         ad.append(table_ad)
     return ad
 
+
+def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
+    """
+    This function tiles together separate OBJCAT extensions, converting
+    the pixel coordinates to the new WCS.
+
+    Parameters
+    ----------
+    adinput: AstroData
+        input AD object with all the OBJCATs
+    adoutput: AstroData
+        output AD object to which we want to append the new tiled OBJCATs
+    ext_mapping: array
+        contains the output extension onto which each input has been placed
+    sx_dict: dict
+        SExtractor dictionary
+    """
+    for ext, header in zip(adoutput, adoutput.header[1:]):
+        outextver = ext.hdr.EXTVER
+        output_wcs = WCS(header)
+        indices = [i for i in range(len(ext_mapping))
+                   if ext_mapping[i] == outextver]
+        inp_objcats = [adinput[i].OBJCAT for i in indices if
+                       hasattr(adinput[i], 'OBJCAT')]
+
+        if inp_objcats:
+            out_objcat = vstack(inp_objcats, metadata_conflicts='silent')
+
+            # Get new pixel coords for objects from RA/Dec and the output WCS
+            ra = out_objcat["X_WORLD"]
+            dec = out_objcat["Y_WORLD"]
+            newx, newy = output_wcs.all_world2pix(ra, dec, 1)
+            out_objcat["X_IMAGE"] = newx
+            out_objcat["Y_IMAGE"] = newy
+
+            # Remove the NUMBER column so add_objcat renumbers
+            out_objcat.remove_column('NUMBER')
+
+            adoutput = add_objcat(adinput=adoutput, extver=outextver,
+                                     table=out_objcat, sxdict=sx_dict)
+    return adoutput
+
 @accept_single_adinput
 def trim_to_data_section(adinput=None, keyword_comments=None):
     """
@@ -1954,19 +1981,16 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
  
     for ad in adinput:
         for ext in ad:
-
-            # as a string for printing
+            # Get data section as string and as a tuple
             datasecStr = ext.data_section(pretty=True)
-
-            # as namedtuple, 0-based and non-inclusive
             dsl = ext.data_section()
 
             # Get the keyword associated with the data_section descriptor
             ds_kw = ext._keyword_for('data_section')
 
-            # Check whether data needs to be trimmed
+            # Check whether data need to be trimmed
             sci_shape = ext.data.shape
-            if (sci_shape[1]==dsl.y2 and sci_shape[0]==dsl.x2 and
+            if (sci_shape[0]==dsl.y2 and sci_shape[1]==dsl.x2 and
                 dsl.x1==0 and dsl.y1==0):
                 log.fullinfo('No changes will be made to {}[*,{}], since '
                              'the data section matches the data shape'.format(
@@ -1974,8 +1998,8 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 continue
 
             # Update logger with the section being kept
-            log.fullinfo('For {} extension {}, keeping the data from the section {}'.
-                         format(ad.filename, ext.hdr.EXTVER, datasecStr), "science")
+            log.fullinfo('For {}:{}, keeping the data from the section {}'.
+                         format(ad.filename, ext.hdr.EXTVER, datasecStr))
 
             # Trim SCI, VAR, DQ to new section
             ext.reset(ext.nddata[dsl.y1:dsl.y2,dsl.x1:dsl.x2])
@@ -2053,7 +2077,6 @@ class ExposureGroup:
     # that's not even well defined within AstroPy yet.
 
     def __init__(self, adinput, pkg=None, frac_FOV=1.0):
-
         """
         :param adinputs: an exposure list from which to initialize the group
             (currently may not be empty)
@@ -2067,7 +2090,6 @@ class ExposureGroup:
             positions right at the edge of the field).
         :type frac_FOV: float
         """
-
         if not isinstance(adinput, list):
             adinput = [adinput]
         # Make sure the field scaling is valid:
@@ -2133,11 +2155,9 @@ class ExposureGroup:
         :returns: Exposure list
         :rtype: list of AstroData instances
         """
-
         return self.members.keys()
 
     def add_members(self, adinput):
-
         """
         Add one or more new points to the group.
 
@@ -2145,7 +2165,6 @@ class ExposureGroup:
             membership. 
         :type adinputs: AstroData, list of AstroData instances
         """
-
         if not isinstance(adinput, list):
             adinput = [adinput]
         # How many points were there previously and will there be now?
@@ -2171,7 +2190,6 @@ class ExposureGroup:
         newsum = [sum(axvals) for axvals in zip(*new_vals)]
         self.group_cen = [(cval * ngroups + nval) / ntot \
           for cval, nval in zip(self.group_cen, newsum)]
-
 
 def group_exposures(adinput, pkg=None, frac_FOV=1.0):
 
@@ -2238,7 +2256,6 @@ def group_exposures(adinput, pkg=None, frac_FOV=1.0):
     # if debug: print 'Groups are', groups
 
     return tuple(groups)
-
 
 def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
 
@@ -2338,7 +2355,6 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     return _FOV_pointing_in_field(pos, pointing, frac_FOV=frac_FOV,
                                   frac_slit=frac_slit)
 
-
 # Since the following function will go away after redefining RA & Dec
 # descriptors appropriately, I've put it here instead of in
 # gemini_metadata_utils to avoid creating an import that's circular WRT
@@ -2374,4 +2390,3 @@ def get_offset_dict(adinput=None):
         offsets[name] = (poff, qoff)
 
     return offsets
-

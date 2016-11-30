@@ -21,12 +21,14 @@ class CCD(PrimitivesBASE):
         self.parameters = ParametersCCD
 
     def biasCorrect(self, adinputs=None, stream='main', **params):
-        self.getProcessedBias()
-        self.subtractBias()
+        adinputs = self.getProcessedBias(adinputs)
+        adinputs = self.subtractBias(adinputs)
+        return adinputs
 
     def overscanCorrect(self, adinputs=None, stream='main', **params):
-        self.subtractOverscan()
-        self.trimOverscan()
+        adinputs = self.subtractOverscan(adinputs)
+        adinputs = self.trimOverscan(adinputs)
+        return adinputs
 
     def subtractBias(self, adinputs=None, stream='main', **params):
         """
@@ -113,13 +115,23 @@ class CCD(PrimitivesBASE):
                 log.warning('No changes will be made to {}, since it has '
                             'already been processed by subtractOverscan'.
                             format(ad.filename))
+                adoutputs.append(ad)
                 continue
 
             gireduce_task = gireduceeti.GireduceETI([],
                                         self.parameters.subtractOverscan, ad)
-            ad = gireduce_task.run()
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            adoutputs.append(ad)
+            adout = gireduce_task.run()
+            # Need to reattach DQ, VAR, and other bits'n'bobs
+            for extout, extin in zip(adout, ad):
+                extout.reset(extout.data, extin.mask, extin.variance)
+                if hasattr(extin, 'OBJCAT'):
+                    extout.OBJCAT = extin.OBJCAT
+                if hasattr(extin, 'OBJMASK'):
+                    extout.OBJMASK = extin.OBJMASK
+            if hasattr(ad, 'REFCAT'):
+                adout.REFCAT = ad.REFCAT
+            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
+            adoutputs.append(adout)
 
         # Reset inputs to the ETI outputs
         adinputs = adoutputs
