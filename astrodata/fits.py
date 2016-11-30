@@ -809,7 +809,7 @@ class FitsProvider(DataProvider):
 
         return obj
 
-    def _process_pixel_plane(self, pixim, name=None, top_level=False):
+    def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=False):
         if not isinstance(pixim, NDDataObject):
             # Assume that we get an ImageHDU or something that can be
             # turned into one
@@ -822,9 +822,13 @@ class FitsProvider(DataProvider):
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
         else:
+            print "It's an nddata object"
             nd = pixim
-            currname = nd.meta['header'].get('EXTNAME')
-            ver = nd.meta['ver'].get('EXTVER', -1)
+            header = nd.meta['header']
+            currname = header.get('EXTNAME')
+            ver = header.get('EXTVER', -1)
+
+        print currname, ver
 
         if name and (currname is None):
             header['EXTNAME'] = (name if name is not None else 'SCI')
@@ -833,7 +837,7 @@ class FitsProvider(DataProvider):
             if 'other' not in nd.meta:
                 nd.meta['other'] = []
 
-            if ver == -1:
+            if reset_ver or ver == -1:
                 try:
                     ver = max(_nd.meta['ver'] for _nd in self._nddata) + 1
                 except ValueError:
@@ -1064,7 +1068,7 @@ class FitsProvider(DataProvider):
     def crop(self, x1, y1, x2, y2):
         self._crop_impl(x1, y1, x2, y2)
 
-    def _append(self, ext, name=None, add_to=None):
+    def _append(self, ext, name=None, add_to=None, reset_ver=False):
         self._lazy_populate_object()
         top = add_to is None
         if isinstance(ext, (Table, _TableBaseHDU)):
@@ -1082,8 +1086,10 @@ class FitsProvider(DataProvider):
                 add_to.meta['other'].append(hname)
             return tb
         elif isinstance(ext, NDDataObject):
+            ext = deepcopy(ext)
             self._header.append(ext.meta['header'])
-            self._nddata.append(deepcopy(ext))
+            self._nddata.append(self._process_pixel_plane(ext, top_level=True, reset_ver=reset_ver))
+            return ext
         else: # Assume that this is a pixel plane
 
             # Special cases for Gemini
@@ -1117,13 +1123,13 @@ class FitsProvider(DataProvider):
 
                 return nd
 
-    def append(self, ext, name=None):
+    def append(self, ext, name=None, reset_ver=False):
         if isinstance(ext, PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed")
 
         self._lazy_populate_object()
 
-        return self._append(ext, name=name, add_to=None)
+        return self._append(ext, name=name, add_to=None, reset_ver=reset_ver)
 
     def _extver_impl(self, nds=None):
         if nds is None:

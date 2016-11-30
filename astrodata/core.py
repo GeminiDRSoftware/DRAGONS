@@ -288,8 +288,8 @@ class AstroData(object):
     multiply = __imul__
     divide = __idiv__
 
-    def append(self, extension):
-        self._dataprov.append(extension)
+    def append(self, extension, *args, **kw):
+        self._dataprov.append(extension, *args, **kw)
 
     def operate(self, operator, *args, **kwargs):
         # Ensure we can iterate, even on a single slice
