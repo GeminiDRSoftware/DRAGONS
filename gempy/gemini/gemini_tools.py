@@ -1786,16 +1786,16 @@ def obsmode_add(ad):
             mark_history(adinput=ad, keyword="GSREDUCE",
                 comment="Temporary key for GSFLAT")
 
+        # Reproducing inexplicable behaviour of the old system
         try:
             typeStr, = {'IMAGE', 'IFU', 'MOS', 'LS'} & tags
         except:
-            raise KeyError("Input {} has no IMAGE or IFU or MOS or LS tag".
-                            format(ad.filename))
-        else:
-            if typeStr == 'LS':
-                typeStr = 'LONGSLIT'
-            ad.phu.set('OBSMODE', typeStr,
-                       'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
+            typeStr = 'LS'
+
+        if typeStr == 'LS':
+            typeStr = 'LONGSLIT'
+        ad.phu.set('OBSMODE', typeStr,
+                   'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
     return ad
 
 def obsmode_del(ad):
