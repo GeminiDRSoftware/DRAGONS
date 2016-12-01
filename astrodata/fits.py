@@ -842,6 +842,14 @@ class FitsProvider(DataProvider):
                     # Got an empty sequence. This is the first extension!
                     ver = 1
                 header['EXTVER'] = ver
+                oheaders = nd.meta['other_header']
+                for extname in nd.meta['other']:
+                    try:
+                        oheaders[extname]['EXTVER'] = ver
+                    except KeyError:
+                        # This must be a table. Assume that it has meta
+                        getattr(nd, extname).meta['header']['EXTVER'] = ver
+
             nd.meta['ver'] = ver
 
         return nd
