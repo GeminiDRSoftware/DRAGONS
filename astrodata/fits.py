@@ -4,7 +4,7 @@ from copy import deepcopy
 from collections import defaultdict, namedtuple
 import os
 from functools import partial, wraps
-from itertools import izip_longest
+from itertools import izip_longest, ifilterfalse
 
 from .core import *
 
@@ -385,7 +385,7 @@ class FitsProviderProxy(DataProvider):
 
     @property
     def exposed(self):
-        return self._provider._exposed.copy() | set(self._mapped_nddata(0).meta['other'])
+        return self._provider._exposed.copy() | self._mapped_nddata(0).meta['other']
 
     def __getitem__(self, slc):
         if self.is_single:
@@ -538,6 +538,40 @@ def force_load(fn):
         self._lazy_populate_object()
         return fn(self, *args, **kw)
     return wrapper
+
+class OrderedSet(set):
+    def __init__(self, iterable=None):
+        super(OrderedSet, self).__init__()
+        self.__list = []
+        if iterable is not None:
+            self._mass_add(iterable)
+
+    def __iter__(self):
+        return iter(self.__list)
+
+    def _mass_add(self, iterable):
+        for element in ifilterfalse(self.__contains__, iterable):
+            self.add(element)
+
+    def add(self, element):
+        if element not in self:
+            self.__list.append(element)
+        super(OrderedSet, self).add(element)
+
+    def remove(self, element):
+        super(OrderedSet, self).remove(element)
+        self.__list.remove(element)
+
+    def discard(self, element):
+        try:
+            self.remove(element)
+        except KeyError:
+            pass
+
+    def update(self, *ulist):
+        if ulist:
+            for iterable in ulist:
+                self._mass_add(iterable)
 
 class FitsProvider(DataProvider):
     def __init__(self):
@@ -836,7 +870,7 @@ class FitsProvider(DataProvider):
 
         if top_level:
             if 'other' not in nd.meta:
-                nd.meta['other'] = []
+                nd.meta['other'] = OrderedSet()
                 nd.meta['other_header'] = {}
 
             if reset_ver or ver == -1:
@@ -1095,7 +1129,7 @@ class FitsProvider(DataProvider):
                 self._exposed.add(hname)
             else:
                 setattr(add_to, hname, tb)
-                add_to.meta['other'].append(hname)
+                add_to.meta['other'].add(hname)
             return tb
         elif isinstance(ext, NDDataObject):
             ext = deepcopy(ext)
@@ -1132,9 +1166,7 @@ class FitsProvider(DataProvider):
                     header['EXTVER'] = add_to.meta.get('ver', -1)
                     setattr(add_to, name, nd.data)
                     add_to.meta['other_header'][name] = header
-                    other = add_to.meta['other']
-                    if name not in other:
-                        other.append(name)
+                    add_to.meta['other'].add(name)
 
                 return nd
 
