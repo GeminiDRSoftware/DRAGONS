@@ -89,7 +89,7 @@ def calibration_search(rq, return_xml=False):
     CALMGR = _CALMGR
     source = rq.source
     rqurl = join(CALMGR, CALTYPEDICT[rq.caltype])
-    log.stdinfo("CENTRAL CAL SEARCH: {}".format(rqurl))
+    log.stdinfo("CENTRAL CALIBRATION SEARCH: {}".format(rqurl))
     rqurl = rqurl + "/{}".format(rq.filename)
     # encode and send request
     sequence = [("descriptors", rq.descriptors), ("types", rq.tags)]
