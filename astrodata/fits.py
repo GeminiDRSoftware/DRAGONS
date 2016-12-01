@@ -833,6 +833,7 @@ class FitsProvider(DataProvider):
         if top_level:
             if 'other' not in nd.meta:
                 nd.meta['other'] = []
+                nd.meta['other_header'] = {}
 
             if reset_ver or ver == -1:
                 try:
@@ -984,6 +985,8 @@ class FitsProvider(DataProvider):
                 other = getattr(ext, name)
                 if isinstance(other, Table):
                     hlst.append(table_to_bintablehdu(other))
+                elif isinstance(other, np.ndarray):
+                    hlst.append(new_imagehdu(other, ext.meta['other_header'].get(name)))
                 elif isinstance(other, NDDataObject):
                     hlst.append(new_imagehdu(other.data, other.meta['header']))
                 else:
@@ -1108,15 +1111,16 @@ class FitsProvider(DataProvider):
                 return ext
             else:
                 nd = self._process_pixel_plane(ext, name=name, top_level=top)
-
                 if top:
                     self._nddata.append(nd)
                 else:
                     if name is None:
                         raise TypeError("Can't append pixel planes to other objects without a name")
-                    nd.meta['header']['EXTVER'] = nd.meta.get('ver', -1)
-                    setattr(add_to, name, nd)
+                    header = nd.meta['header']
+                    header['EXTVER'] = add_to.meta.get('ver', -1)
+                    setattr(add_to, name, nd.data)
                     add_to.meta['other'].append(name)
+                    add_to.meta['other_header'][name] = header
 
                 return nd
 
