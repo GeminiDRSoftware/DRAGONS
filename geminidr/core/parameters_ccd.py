@@ -4,6 +4,9 @@
 from geminidr import ParametersBASE
 
 class ParametersCCD(ParametersBASE):
+    biasCorrect = {
+        "bias"              : None,
+    }
     subtractBias = {
         "suffix"            : "_biasCorrected",
         "bias"              : None,
