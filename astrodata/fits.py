@@ -1127,8 +1127,10 @@ class FitsProvider(DataProvider):
                     header = nd.meta['header']
                     header['EXTVER'] = add_to.meta.get('ver', -1)
                     setattr(add_to, name, nd.data)
-                    add_to.meta['other'].append(name)
                     add_to.meta['other_header'][name] = header
+                    other = add_to.meta['other']
+                    if name not in other:
+                        other.append(name)
 
                 return nd
 
