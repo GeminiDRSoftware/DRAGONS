@@ -540,6 +540,9 @@ def force_load(fn):
     return wrapper
 
 class OrderedSet(set):
+    """This class is NOT a fully implemented set. Things will break if you try
+       to use it as such. It's here only to provide the NDData's with a way to
+       record in which order were their associated extensions attached"""
     def __init__(self, iterable=None):
         super(OrderedSet, self).__init__()
         self.__list = []
@@ -548,6 +551,12 @@ class OrderedSet(set):
 
     def __iter__(self):
         return iter(self.__list)
+
+    def copy(self):
+        cp = OrderedSet()
+        super(OrderedSet, cp).__init__(self)
+        cp.__list = self.__list[:]
+        return cp
 
     def _mass_add(self, iterable):
         for element in ifilterfalse(self.__contains__, iterable):
