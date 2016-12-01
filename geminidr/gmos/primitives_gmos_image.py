@@ -81,6 +81,12 @@ class GMOSImage(GMOS, Image):
         """
         This primitive performs the bookkeeping related to the construction of
         a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame
+
+        Parameters
+        ----------
+        subtract_median_image: bool/None
+            subtract a median image before finding fringes?
+            None => yes if any images are from Gemini-South
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -187,6 +193,11 @@ class GMOSImage(GMOS, Image):
         CCD2 is used because of the dome-like shape of the GMOS detector
         response: CCDs 1 and 3 have lower average illumination than CCD2, 
         and that needs to be corrected for by the flat.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -250,6 +261,11 @@ class GMOSImage(GMOS, Image):
         This primitive scales input images to the mean value of the first
         image. It is intended to be used to scale flats to the same
         level before stacking.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -316,9 +332,12 @@ class GMOSImage(GMOS, Image):
         2. If stats_scale=False, then scale will be calculated using:
         exposure time of science / exposure time of fringe
 
-        :param stats_scale: Use statistics to calculate the scale values,
-                            rather than exposure time
-        :type stats_scale: Python boolean (True/False)
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        stats_scale: bool
+            use statistics rather than exposure time to calculate scaling?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -466,6 +485,17 @@ class GMOSImage(GMOS, Image):
         """
         This primitive will combine the input flats with rejection
         parameters set appropriately for GMOS imaging twilight flats.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mask: bool
+            apply mask to data before combining? (passed to stackFrames)
+        operation: str
+            type of combine operation (passed to stackFrames)
+        reject_method: str
+            rejection method (passed to stackFrames)
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
