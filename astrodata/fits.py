@@ -1126,58 +1126,65 @@ class FitsProvider(DataProvider):
     def _append(self, ext, name=None, add_to=None, reset_ver=False):
         self._lazy_populate_object()
         top = add_to is None
-        if isinstance(ext, (Table, _TableBaseHDU)):
-            tb = self._process_table(ext, name)
-            hname = tb.meta['header'].get('EXTNAME')
-            if hname is None:
-                raise ValueError("Cannot add a table that has no EXTNAME")
-            if top:
-                # Don't use setattr, which is overloaded and may case problems
-                self.__dict__[hname] = tb
-                self._tables[hname] = tb
-                self._exposed.add(hname)
-            else:
-                setattr(add_to, hname, tb)
-                add_to.meta['other'].add(hname)
-            return tb
-        elif isinstance(ext, NDDataObject):
+        if isinstance(ext, NDDataObject):
             ext = deepcopy(ext)
             self._header.append(ext.meta['header'])
             self._nddata.append(self._process_pixel_plane(ext, top_level=True, reset_ver=reset_ver))
             return ext
-        else: # Assume that this is a pixel plane
-
-            # Special cases for Gemini
-            if name in {'DQ', 'VAR'}:
-                if add_to is None:
-                    raise ValueError("'{}' need to be associated to a 'SCI' one".format(name))
-                if name == 'DQ':
-                    add_to.mask = ext.data
-                    return ext.data
-                elif name == 'VAR':
-                    std_un = StdDevUncertainty(np.sqrt(ext.data))
-                    std_un.parent_nddata = add_to
-                    add_to.uncertainty = std_un
-                    return std_un
-            elif top and name != 'SCI':
-                # Don't use setattr, which is overloaded and may case problems
-                self.__dict__[name] = ext
-                self._exposed.add(name)
-                return ext
-            else:
-                nd = self._process_pixel_plane(ext, name=name, top_level=top)
+        else:
+            add_to_other = False
+            if isinstance(ext, (Table, _TableBaseHDU)):
+                tb = self._process_table(ext, name)
+                hname = tb.meta['header'].get('EXTNAME') if name is None else name
+                if hname is None:
+                    raise ValueError("Cannot add a table that has no EXTNAME")
                 if top:
-                    self._nddata.append(nd)
+                    # Don't use setattr, which is overloaded and may case problems
+                    self.__dict__[hname] = tb
+                    self._tables[hname] = tb
+                    self._exposed.add(hname)
                 else:
-                    if name is None:
-                        raise TypeError("Can't append pixel planes to other objects without a name")
-                    header = nd.meta['header']
-                    header['EXTVER'] = add_to.meta.get('ver', -1)
-                    setattr(add_to, name, nd.data)
-                    add_to.meta['other_header'][name] = header
-                    add_to.meta['other'].add(name)
+                    setattr(add_to, hname, tb)
+                    add_to_other = True
+                    add_to.meta['other'].add(hname)
+                ret = tb
+            else: # Assume that this is a pixel plane
+                # Special cases for Gemini
+                if name in {'DQ', 'VAR'}:
+                    if add_to is None:
+                        raise ValueError("'{}' need to be associated to a 'SCI' one".format(name))
+                    if name == 'DQ':
+                        add_to.mask = ext.data
+                        ret = ext.data
+                    elif name == 'VAR':
+                        std_un = StdDevUncertainty(np.sqrt(ext.data))
+                        std_un.parent_nddata = add_to
+                        add_to.uncertainty = std_un
+                        ret = std_un
+                elif top and name != 'SCI':
+                    # Don't use setattr, which is overloaded and may case problems
+                    self.__dict__[name] = ext
+                    self._exposed.add(name)
+                    ret = ext
+                else:
+                    nd = self._process_pixel_plane(ext, name=name, top_level=top)
+                    if top:
+                        self._nddata.append(nd)
+                    else:
+                        header = nd.meta['header']
+                        hname = header.get('EXTNAME') if name is None else name
+                        if hname is None:
+                            raise TypeError("Can't append pixel planes to other objects without a name")
+                        setattr(add_to, hname, nd.data)
+                        add_to_other = True
+                        add_to.meta['other_header'][hname] = nd.meta['header']
 
-                return nd
+                    ret = nd
+            if add_to_other:
+                add_to.meta['other'].add(hname)
+                header = ret.meta['header']
+                header['EXTVER'] = add_to.meta.get('ver', -1)
+            return ret
 
     def append(self, ext, name=None, reset_ver=False):
         if isinstance(ext, PrimaryHDU):
