@@ -2,6 +2,7 @@
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
 import os
+import hashlib
 from datetime import datetime
 
 # Handle 2.x and 3.x. Module urlparse is urllib.parse in 3.x
@@ -24,9 +25,7 @@ import gemini_instruments
 from gempy.utils import logutils
 from gempy.utils import netutil
 
-from ..stacks import IDFactory
 from .caches  import set_caches
-
 from recipe_system.cal_service import cal_search_factory
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
@@ -44,6 +43,12 @@ descriptor_list = ['amp_read_area','camera','central_wavelength','coadds',
                    'read_speed_setting', 'ut_datetime','read_mode',
                    'well_depth_setting']
 # ------------------------------------------------------------------------------
+def generate_md5_digest(filename):
+    md5 = hashlib.md5()
+    fdata = open(filename).read()
+    md5.update(fdata)
+    return md5.hexdigest()
+
 class CalibrationRequest(object):
     """
     Request objects are passed to a calibration_search() function
@@ -60,14 +65,16 @@ class CalibrationRequest(object):
 
     def as_dict(self):
         retd = {}
-        retd.update({'filename'   : self.filename,
-                     'caltype'    : self.caltype,
-                     'datalabel'  : self.datalabel,
-                     "descriptors": self.descriptors,
-                     'source'     : self.source,
-                     "tags"       : self.tags,
-                 }
-                )
+        retd.update(
+            {'filename'   : self.filename,
+             'caltype'    : self.caltype,
+             'datalabel'  : self.datalabel,
+             "descriptors": self.descriptors,
+             'source'     : self.source,
+             "tags"       : self.tags,
+         }
+        )
+
         return retd
 
     def __str__(self):
@@ -177,7 +184,7 @@ def process_cal_requests(cal_requests):
             os.mkdir(caldname)
 
         if os.path.exists(calfname) and caldname:
-            ondiskmd5 = IDFactory.generate_md5_file(calfname)
+            ondiskmd5 = generate_md5_digest(calfname)
             calbname = os.path.basename(calfname)
             print
             print "MD5 hashes: "
@@ -185,7 +192,7 @@ def process_cal_requests(cal_requests):
             print
             if calmd5 == ondiskmd5:
                 log.stdinfo("Cached calibration {} matched.".format(calbname))
-                print "CALIBRATION for {}".format(rq.ad)
+                print "CALIBRATION for {}:".format(rq.filename)
                 print calfname
                 print "=========+"
                 #ad = AstroData(calfname)

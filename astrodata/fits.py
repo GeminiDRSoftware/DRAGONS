@@ -383,6 +383,10 @@ class FitsProviderProxy(DataProvider):
         self.nddata.__delattr__(attribute)
         self.nddata.meta['other'].remove(attribute)
 
+    @property
+    def exposed(self):
+        return self._provider._exposed.copy() | set(self._mapped_nddata(0).meta['other'])
+
     def __getitem__(self, slc):
         if self.is_single:
             raise TypeError("Can't slice a single slice!")

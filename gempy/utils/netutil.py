@@ -10,8 +10,9 @@ import urlparse
 from tempfile import NamedTemporaryFile
 
 from . import logutils
-
-CHUNK = 65536
+# ------------------------------------------------------------------------------
+CHUNK = 1 << 18
+# ------------------------------------------------------------------------------
 def urlfetch(url, store=None, clobber=False):
     """
     Get and write data from a url.
