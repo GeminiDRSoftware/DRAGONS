@@ -1947,7 +1947,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             out_objcat.remove_column('NUMBER')
 
             adoutput = add_objcat(adinput=adoutput, extver=outextver,
-                                     table=out_objcat, sxdict=sx_dict)
+                            replace=True, table=out_objcat, sxdict=sx_dict)
     return adoutput
 
 @accept_single_adinput
