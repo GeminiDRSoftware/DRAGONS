@@ -9,7 +9,7 @@ import scipy.ndimage as ndimage
 from copy import deepcopy
 
 from .primitives_gmos import GMOS
-from geminidr.core import Image
+from geminidr.core import Image, Photometry
 from .parameters_gmos_image import ParametersGMOSImage
 
 from gempy.gemini import eti
@@ -18,7 +18,7 @@ from gempy.utils import logutils
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class GMOSImage(GMOS, Image):
+class GMOSImage(GMOS, Image, Photometry):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSImage level of the type hierarchy tree. It inherits all
