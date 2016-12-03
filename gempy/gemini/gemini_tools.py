@@ -2003,6 +2003,10 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
             # Trim SCI, VAR, DQ to new section
             ext.reset(ext.nddata[dsl.y1:dsl.y2,dsl.x1:dsl.x2])
+            # And OBJMASK (if it exists)
+            # TODO: should check more generally for any image extensions
+            if hasattr(ext, 'OBJMASK'):
+                ext.OBJMASK = ext.OBJMASK[dsl.y1:dsl.y2,dsl.x1:dsl.x2]
 
             # Update header keys to match new dimensions
             newDataSecStr = '[1:{},1:{}]'.format(dsl.x2-dsl.x1, dsl.y2-dsl.y1)
