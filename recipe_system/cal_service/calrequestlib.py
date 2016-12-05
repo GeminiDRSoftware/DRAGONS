@@ -1,10 +1,11 @@
 #
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
-import os
-import hashlib
+from os import mkdir
+from os.path import dirname, basename, exists, join
 from datetime import datetime
 
+import hashlib
 # Handle 2.x and 3.x. Module urlparse is urllib.parse in 3.x
 try:
     from urlparse import urlparse
@@ -13,12 +14,6 @@ except ImportError:
 
 from urllib2  import HTTPError
 
-# Legacy AstroData can recieve a url and will implicitly request 
-# and open the file as an AstroData instance. See end of process_requests()
-#
-# ad = AstroData(calurl, store=caldname)
-# 
-# @TODO handle urls !!!
 import astrodata
 import gemini_instruments
 
@@ -49,18 +44,31 @@ def generate_md5_digest(filename):
     md5.update(fdata)
     return md5.hexdigest()
 
+def _check_cache(cname, ctype):
+    cachedir = _makecachedir(ctype)
+    cachename = join(cachedir, cname)
+    if exists(cachename):
+        return cachename, cachedir
+    return None, cachedir
+
+def _makecachedir(caltype):
+    cache = set_caches()
+    cachedir = join(cache["calibrations"], caltype)
+    if not exists(cachedir):
+        mkdir(cachedir)
+    return cachedir
+
 class CalibrationRequest(object):
     """
     Request objects are passed to a calibration_search() function
     
     """
-    def __init__(self, ad, caltype=None, source='all'):
+    def __init__(self, ad, caltype=None):
         self.ad = ad
         self.caltype  = caltype
         self.datalabel = ad.data_label()
         self.descriptors = None
         self.filename = ad.filename
-        self.source = source
         self.tags = ad.tags
 
     def as_dict(self):
@@ -70,7 +78,6 @@ class CalibrationRequest(object):
              'caltype'    : self.caltype,
              'datalabel'  : self.datalabel,
              "descriptors": self.descriptors,
-             'source'     : self.source,
              "tags"       : self.tags,
          }
         )
@@ -103,8 +110,7 @@ def get_cal_requests(inputs, caltype):
     def _handle_sections(dv):
         if isinstance(dv, list) and isinstance(dv[0], Section):
                 return [ [el.x1, el.x2, el.y1, el.y2] for el in dv ]
-        else:
-            return dv
+        return dv
 
     rqEvents = []
     for ad in inputs:
@@ -135,15 +141,35 @@ def process_cal_requests(cal_requests):
     requests. This passes the requests to the calibration_search() function,
     and then examines the search results to see if a matching file, if any,
     is cached. If not, then the calibration file is retrieved from the
-    calibration manager, either local or fitsstore.
+    archive.
+
+    If a calibration match is found by the calibration manager, a URL is
+    returned. This function will perform a cache inspection to see if the
+    matched calibraiton file is already present. If not, the calibration
+    will be downloaded and written to the cache. It is this path that is 
+    returned in the dictionary structure. A path of 'None' indicates that no
+    calibration match was found.
 
     :parameter cal_requests: list of CalibrationRequest objects
     :type cal_requests: <list>
 
-    :returns: @@@TODO
-    :rtype: @@@TODO
+    :returns: A set of science frames and matching calibrations.
+    :rtype:   <dict>
+
+    E.g., The returned dictionary has the form, 
+
+    { (input datalabel, caltype): (<filename>, <path_to_calibration>, caltype),
+      ...
+    }
 
     """
+    calibration_records = {}
+    def _add_cal_record(rq, calfile):
+        rqkey = (rq.datalabel, rq.caltype)
+        calrec = (rq.filename, calfile, rq.caltype)
+        calibration_records.update({rqkey: calrec})
+        return
+
     cache = set_caches()
     for rq in cal_requests:
         calname = None
@@ -157,56 +183,36 @@ def process_cal_requests(cal_requests):
             log.error("END CALIBRATION SERVICE REPORT\n")
             warn = "No {} calibration file found for {}"
             log.warning(warn.format(rq.caltype, rq.filename))
+            _add_cal_record(rq, calname)
             continue
 
         log.info("found calibration (url): {}".format(calurl))
         components = urlparse(calurl)
-        # This logic needs fixing. It appears to work, but it is inscrutable
-        # and much of it probably unnecessary.
-        if components.scheme == 'file':
-            calfile = components.path
-            calurl = calfile
-        else:
-            calfile = None
-
-        if calfile:
-            calfname = os.path.basename(calfile)
-            caldname = os.path.dirname(calfile)
-        elif os.path.exists(calurl):
-            calfname = calurl
-            caldname = None
-        else:
-            calfname = os.path.join(cache["calibrations"], rq.caltype,
-                                    os.path.basename(calurl))
-            caldname = os.path.dirname(calfname)
-
-        if caldname and not os.path.exists(caldname):
-            os.mkdir(caldname)
-
-        if os.path.exists(calfname) and caldname:
-            ondiskmd5 = generate_md5_digest(calfname)
-            calbname = os.path.basename(calfname)
-            print
-            print "MD5 hashes: "
-            print " calmd5: {}, ondiskmd5: {}".format(calmd5, ondiskmd5)
-            print
-            if calmd5 == ondiskmd5:
-                log.stdinfo("Cached calibration {} matched.".format(calbname))
-                print "CALIBRATION for {}:".format(rq.filename)
-                print calfname
-                print "=========+"
-                #ad = AstroData(calfname)
+        calname = basename(components.path)
+        cachename, cachedir = _check_cache(calname, rq.caltype)
+        if cachename:
+            cached_md5 = generate_md5_digest(cachename)
+            if cached_md5 == calmd5:
+                log.stdinfo("Cached calibration {} matched.".format(cachename))
+                _add_cal_record(rq, cachename)
+                continue
             else:
                 log.stdinfo("File {} is cached but".format(calbname))
                 log.stdinfo("md5 checksums DO NOT MATCH")
                 log.stdinfo("Making request on calibration service")
+                log.stdinfo("Requesting URL {}".format(calurl))
                 try:
-                    print
-                    print "Requesting URL {}".format(calurl)
-                    print
-                    #ad = AstroData(calurl, store=caldname)
+                    calname = netutil.urlfetch(calurl, store=cachedir)
+                    _add_cal_record(rq, cachename)
+                    continue
                 except HTTPError, error:
                     errstr = "Could not retrieve {}".format(calurl)
                     log.error(errstr)
 
-    return calurl, calfname
+        try:
+            calname = netutil.urlfetch(calurl, store=cachedir)
+            _add_cal_record(rq, calname)
+        except HTTPError as err:
+            log.error(str(err))
+
+    return calibration_records

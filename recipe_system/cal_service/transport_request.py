@@ -87,7 +87,6 @@ def calibration_search(rq, return_xml=False):
     rqurl = None
     calserv_msg = None
     CALMGR = _CALMGR
-    source = rq.source
     rqurl = join(CALMGR, CALTYPEDICT[rq.caltype])
     log.stdinfo("CENTRAL CALIBRATION SEARCH: {}".format(rqurl))
     rqurl = rqurl + "/{}".format(rq.filename)

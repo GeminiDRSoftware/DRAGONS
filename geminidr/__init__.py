@@ -59,6 +59,7 @@ class PrimitivesBASE(object):
 
         self.streams          = {}
         self.cachedict        = caches.set_caches()
+        self.calibrations     = None
         self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.

@@ -1,181 +1,93 @@
+#
+#                                                                  gemini_python
+#
+#                                                          primitives_calibdb.py
+# ------------------------------------------------------------------------------
 import os
 import re
 
-from astrodata import AstroData
-from astrodata.utils import Errors
-from astrodata.utils import logutils
+import astrodata
+import gemini_instruments
+
+from gempy.utils  import logutils
 from gempy.gemini import gemini_tools as gt
 
-from recipe_system.reduction import IDFactory
-from recipe_system.cal_service.prsproxyutil import upload_calibration
+from recipe_system.stacks import IDFactory
 
-from primitives_GENERAL import GENERALPrimitives
+from recipe_system.cal_service.calrequestlib import get_cal_requests
+from recipe_system.cal_service.calrequestlib import process_cal_requests
+from recipe_system.cal_service.transport_request import upload_calibration
+
+from geminidr import PrimitivesBASE
+
+# ------------------------------------------------------------------------------
+class Calibration(PrimitivesBASE):
+    """
+    There are no parameters associated with any calibration primitives.
+
+    """
+    tagset = None
+
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Calibration, self).__init__(adinputs, context, ucals=ucals,
+                                          uparms=uparms)
+        self.parameters = None
+        self._not_found = "Calibration not found for {}"
+
+    def getCalibration(self, adinputs=None, stream='main', **params):
+        log = self.log
+        caltype = params.get('caltype')
+        if caltype is None:
+            log.error("getCalibration: Received no caltype")
+            raise TypeError("getCalibration: Received no caltype.")
+
+        cal_requests = get_cal_request(adinputs, caltype)
+        calurl, calfname = process_cal_requests(cal_requests)
+        
+        return adinputs
 
 
-class CalibrationPrimitives(GENERALPrimitives):
-    astrotype = "GEMINI"
-    
-    def init(self, rc):
-        GENERALPrimitives.init(self, rc)
-        return rc
-    init.pt_hide = True
-    
-    def failCalibration(self,rc):
-        # Mark a given calibration "fail" and upload it 
-        # to the system. This is intended to be used to mark a 
-        # calibration file that has already been uploaded, so that
-        # it will not be returned as a valid match for future data.
-        
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Initialize the list of output AstroData objects 
-        adoutput_list = []
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Change the two keywords -- BAD and NO = Fail
-            ad.phu_set_key_value("RAWGEMQA","BAD",
-                                 comment=self.keyword_comments["RAWGEMQA"])
-            ad.phu_set_key_value("RAWPIREQ","NO",
-                                 comment=self.keyword_comments["RAWPIREQ"])
-            log.fullinfo("%s has been marked %s" % (ad.filename,ad.qa_state()))
-            
-            # Append the output AstroData object to the list
-            # of output AstroData objects
-            adoutput_list.append(ad)
-        
-        # Report the list of output AstroData objects to the 
-        # reduction context
-        rc.report_output(adoutput_list)
-        
-        # Run the storeCalibration primitive, so that the 
-        # failed file gets re-uploaded
-        rc.run("storeCalibration")
-        
-        yield rc
-    
-    def getCalibration(self, rc):
-        
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Retrieve type of calibration requested
-        caltype = rc["caltype"]
-        if caltype == None:
-            log.error("getCalibration: caltype not set")
-            raise Errors.PrimitiveError("getCalibration: caltype not set")
-        
-        # Retrieve source of calibration
-        source = rc["source"]
-        if source == None:
-            source = "all"
-            
-        # Check whether calibrations are already available
-        calibrationless_adlist = []
-        adinput = rc.get_inputs_as_astrodata()
-        
-        
-        #print "70: WRITE ALL CALIBRATION SOURCES\n"*10
-        #for ad in adinput:
-        #    ad.write(clobber=True)
-
-        #for ad in adinput:
-        #    ad.mode = "update"
-        #    calurl = rc.get_cal(ad,caltype)
-        #    if not calurl:
-        #        calibrationless_adlist.append(ad)
-        calibrationless_adlist = adinput
-        # Request any needed calibrations
-        if len(calibrationless_adlist) ==0:
-            # print "pG603: calibrations for all files already present"
-            pass
-        else:
-            rc.rq_cal(caltype, calibrationless_adlist, source=source)
-        
-        yield rc
-    
-    def getProcessedArc(self, rc):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
+    def getProcessedArc(self, adinputs=None, stream='main', **params):
         caltype = "processed_arc"
-        source = rc["source"]
-        if source == None:
-            rc.run("getCalibration(caltype=%s)" % caltype)
-        else:
-            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
-        
-        # List calibrations found
-        first = True
-        for ad in rc.get_inputs_as_astrodata():
-            calurl = rc.get_cal(ad, caltype) #get from cache
-            if calurl:
-                cal = AstroData(calurl)
-                if cal.filename is None:
-                    if "qa" not in rc.context:
-                        raise Errors.InputError("Calibration not found for " \
-                                                "%s" % ad.filename)
-                else:
-                    if first:
-                        log.stdinfo("getCalibration: Results")
-                        first = False
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,
-                                                         ad.filename))
-            else: 
-                if "qa" not in rc.context:
-                    raise Errors.InputError("Calibration not found for %s" % 
-                                            ad.filename)
-        
-        yield rc
-    
-    def getProcessedBias(self, rc):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        caltype = "processed_bias"
-        source = rc["source"]
-        if source == None:
-            rc.run("getCalibration(caltype=%s)" % caltype)
-        else:
-            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
-        
-        # List calibrations found
-        first = True
-        for ad in rc.get_inputs_as_astrodata():
-            calurl = rc.get_cal(ad, caltype) #get from cache
-            if calurl:
-                cal = AstroData(calurl)
-                if cal.filename is None:
-                    if "qa" not in rc.context:
-                        raise Errors.InputError("Calibration not found for " \
-                                                "%s" % ad.filename)
-                else:
-                    if first:
-                        log.stdinfo("getCalibration: Results")
-                        first = False
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,
-                                                         ad.filename))
-            else: 
-                if "qa" not in rc.context:
-                    raise Errors.InputError("Calibration not found for %s" % 
-                                            ad.filename)
-        
-        yield rc
 
-    def getProcessedDark(self, rc):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
+        log = self.log
+        self.getCalibration(adinputs, caltype=caltype)
+
+        first = True
+        for ad in adinputs:
+            calurl = self.get_cal(ad, caltype)                   #get from cache
+            if calurl:
+                cal = astrodata.open(calurl)
+                if cal.filename is None and "qa" not in self.context:
+                    raise IOError(self._not_found.format(ad.filename))
+                else:
+                    if first:
+                        log.stdinfo("getCalibration: Results")
+                        first = False
+                    log.stdinfo("  {}\n  for {}".format(cal.filename, ad.filename))
+            else:
+                if "qa" not in self.context:
+                    raise IOError(self._not_found.format(ad.filename))
+        return adinputs
+
+
+    def getProcessedBias(self, adinputs=None, stream='main', **params):
+        caltype = "processed_bias"
+
+        log = self.log
+        self.getCalibration(adinputs, caltype="{}".format(caltype))
+        for ad in adinputs:
+            calurl = self.get_cal(ad, caltype)                   #get from cache
+            if calurl and "qa" not in self.context:
+                raise IOError(self._not_found.format(ad.filename))
+        return
+
+    def getProcessedDark(self, adinputs=None, stream='main', **params):
         caltype = "processed_dark"
-        source = rc["source"]
-        if source == None:
-            rc.run("getCalibration(caltype=%s)" % caltype)
-        else:
-            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
-            
-        # List calibrations found
+
+        log = self.log
+        self.getCalibration(caltype=caltype)
+
         first = True
         for ad in rc.get_inputs_as_astrodata():
             calurl = rc.get_cal(ad, caltype) #get from cache
@@ -183,7 +95,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                 cal = AstroData(calurl)
                 if cal.filename is None:
                     if "qa" not in rc.context:
-                        raise Errors.InputError("Calibration not found for " \
+                        raise IOError("Calibration not found for " \
                                                 "%s" % ad.filename)
                 else:
                     if first:
@@ -193,12 +105,12 @@ class CalibrationPrimitives(GENERALPrimitives):
                                                          ad.filename))
             else: 
                 if "qa" not in rc.context:
-                    raise Errors.InputError("Calibration not found for %s" % 
+                    raise IOError("Calibration not found for %s" % 
                                             ad.filename)
         
-        yield rc
+        return
     
-    def getProcessedFlat(self, rc):
+    def getProcessedFlat(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -217,7 +129,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                 cal = AstroData(calurl)
                 if cal.filename is None:
                     if "qa" not in rc.context:
-                        raise Errors.InputError("Calibration not found for " \
+                        raise IOError("Calibration not found for " \
                                                 "%s" % ad.filename)
                 else:
                     if first:
@@ -227,12 +139,12 @@ class CalibrationPrimitives(GENERALPrimitives):
                                                          ad.filename))
             else: 
                 if "qa" not in rc.context:
-                    raise Errors.InputError("Calibration not found for %s" % 
+                    raise IOError("Calibration not found for %s" % 
                                             ad.filename)
         
-        yield rc
+        return
     
-    def getProcessedFringe(self, rc):
+    def getProcessedFringe(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -258,36 +170,9 @@ class CalibrationPrimitives(GENERALPrimitives):
                     log.stdinfo("   %s\n      for %s" % (cal.filename,
                                                      ad.filename))
         
-        yield rc
-
-    def showCals(self, rc):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        if str(rc["showcals"]).lower() == "all":
-            num = 0
-            # print "pG256: showcals=all", repr (rc.calibrations)
-            for calkey in rc.calibrations:
-                num += 1
-                log.stdinfo(rc.calibrations[calkey], category="calibrations")
-            if (num == 0):
-                log.stdinfo("There are no calibrations in the cache.")
-        else:
-            for adr in rc.inputs:
-                sid = IDFactory.generate_astro_data_id(adr.ad)
-                num = 0
-                for calkey in rc.calibrations:
-                    if sid in calkey :
-                        num += 1
-                        log.stdinfo(rc.calibrations[calkey], 
-                                     category="calibrations")
-            if (num == 0):
-                log.stdinfo("There are no calibrations in the cache.")
-        
-        yield rc
-    ptusage_showCals="Used to show calibrations currently in cache for inputs."
+        return
     
-    def storeCalibration(self, rc):
+    def storeCalibration(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -321,7 +206,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def storeProcessedArc(self, rc):
+    def storeProcessedArc(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -352,7 +237,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def storeProcessedBias(self, rc):
+    def storeProcessedBias(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -383,7 +268,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         
         yield rc
 
-    def storeBPM(self, rc):
+    def storeBPM(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
 
@@ -409,7 +294,7 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         yield rc
 
-    def storeProcessedDark(self, rc):
+    def storeProcessedDark(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -440,7 +325,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def storeProcessedFlat(self, rc):
+    def storeProcessedFlat(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -471,7 +356,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def storeProcessedFringe(self, rc):
+    def storeProcessedFringe(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -512,7 +397,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         
         yield rc
 
-    def separateLampOff(self, rc):
+    def separateLampOff(self, adinputs=None, stream='main', **params):
         """
         This primitive is intended to run on gcal imaging flats. 
         It goes through the input list and figures gout which ones are lamp-on
@@ -551,7 +436,7 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         yield rc
 
-    def separateFlatsDarks(self, rc):
+    def separateFlatsDarks(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
 
@@ -586,7 +471,7 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         yield rc
 
-    def stackDarks(self, rc):
+    def stackDarks(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
 
@@ -599,7 +484,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         for ad in dark_list[1:]:
             file_exp = ad[0].exposure_time().as_pytype()
             if first_exp != file_exp:
-                raise Errors.InputError("DARKS ARE NOT OF EQUAL EXPTIME")
+                raise IOError("DARKS ARE NOT OF EQUAL EXPTIME")
 
         # stack the darks stream
         rc.run("showInputs(stream=darks)")
@@ -607,7 +492,7 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         yield rc
 
-    def stackLampOnLampOff(self, rc):
+    def stackLampOnLampOff(self, adinputs=None, stream='main', **params):
         """
         This primitive stacks the Lamp On flats and the LampOff flats, then subtracts the two stacks
         """
@@ -630,7 +515,7 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         yield rc
 
-    def subtractLampOnLampOff(self, rc):
+    def subtractLampOnLampOff(self, adinputs=None, stream='main', **params):
         """
         This primitive subtracts the lamp off stack from the lampon stack. It expects there to be only
         one file (the stack) on each stream - call stackLampOnLampOff to do the stacking before calling this
@@ -673,9 +558,10 @@ class CalibrationPrimitives(GENERALPrimitives):
         rc.report_output(adoutput_list)
         yield rc
 
-    def makeBPM(self, rc):
+    def makeBPM(self, adinputs=None, stream='main', **params):
         """
-        To be run from recipe makeProcessedBPM.NIRI
+        To be run from recipe makeProcessedBPM.NIRI.
+
         Input is a stacked short darks and flats On/Off (1 filter)
         The flats are stacked and subtracted(ON - OFF)
         The Dark is stack of short darks
@@ -703,14 +589,14 @@ class CalibrationPrimitives(GENERALPrimitives):
         flat_stack = rc.get_stream(stream="lampOn", style="AD")
 
         if not flat_stack:
-            raise Errors.InputError("A SET OF FLATS IS REQUIRED INPUT")
+            raise IOError("A SET OF FLATS IS REQUIRED INPUT")
         else:
             flat = flat_stack[0]
 
         # Get the stacked dark on the dark stream
         dark_stack = rc.get_stream(stream="darks", style="AD")
         if not dark_stack:
-            raise Errors.InputError("A SET OF DARKS IS REQUIRED INPUT")
+            raise IOError("A SET OF DARKS IS REQUIRED INPUT")
         else:
             dark = dark_stack[0]
 
