@@ -1,3 +1,6 @@
+class ContextError(Exception):
+      pass
+
 class RecipeNotFound(Exception):
       pass
 
