@@ -72,7 +72,6 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
     """
     log = logutils.get_logger(__name__)
 
-
     # ensure caller passes the sextractor default dictionary of parameters.
     try:
         assert isinstance(sxdict, dict) and sxdict.has_key('dq')

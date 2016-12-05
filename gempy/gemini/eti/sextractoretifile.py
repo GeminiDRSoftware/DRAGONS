@@ -30,13 +30,14 @@ class SExtractorETIFile(ETIFile):
             return s[:-5] if s.endswith('.fits') else s
         super(SExtractorETIFile, self).__init__(
             name=strip_fits(input.filename)+'_{}'.format(input.hdr.EXTVER))
-        self.data = input.data
+        # Replace bad pixels with median value of good data, so need to
+        # copy the data plane in case we edit it
+        self.data = input.data.copy()
         self.mask = input.mask
-        # Replace bad pixels with median value of good data
-        if mask_dq_bits:
+        self.header = input.header[1]
+        if mask_dq_bits and self.mask is not None:
             self.data[self.mask & mask_dq_bits>0] = np.median(
                 self.data[self.mask & mask_dq_bits==0])
-        self.header = input.header[1]
         self._disk_file = None
         self._catalog_file = None
 
@@ -49,15 +50,16 @@ class SExtractorETIFile(ETIFile):
         hdulist.append(fits.ImageHDU(self.data,
                                      header=self.header, name='SCI'))
         self._sci_image = filename+'[0]'
-        # TODO: Only use certain DQ bits; apply OBJMASK here
         if self.mask is not None:
-            hdulist.append(fits.ImageHDU(self.mask,
+            hdulist.append(fits.ImageHDU(np.array(self.mask, dtype=np.int16),
                                          header=self.header, name='DQ'))
+            self._dq_image = filename+'[1]'
+        else:
+            self._dq_image = None
         #else:
         #    # Need a dummy DQ array because .param file needs a FLAG_IMAGE
         #    hdulist.append(fits.ImageHDU(np.zeros_like(self.data, dtype=np.int16),
         #                                 header=self.header, name='DQ'))
-        self._dq_image = filename+'[1]'
         hdulist.writeto(filename, clobber=True)
         self._disk_file = filename
 

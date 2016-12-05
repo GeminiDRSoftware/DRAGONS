@@ -2,6 +2,7 @@ import re
 import subprocess
 from astropy.io import fits
 from collections import deque
+from copy import deepcopy
 
 import numpy as np
 
