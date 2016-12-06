@@ -1326,7 +1326,7 @@ def fit_continuum(ad):
     return good_sources
 
 
-def fitsstore_report(ad, rc, metric, info_list, calurl_dict):
+def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     """
 
     Parameters
@@ -1364,8 +1364,7 @@ def fitsstore_report(ad, rc, metric, info_list, calurl_dict):
     # set generating this metric
     qareport["software"] = "QAP"
     qareport["software_version"] = ad_version
-    #TODO: What to do with rc here?
-    qareport["context"] = rc.context
+    qareport["context"] = context
     
     qametric_list = []
 
@@ -1428,12 +1427,7 @@ def fitsstore_report(ad, rc, metric, info_list, calurl_dict):
     # Add qametric dictionary into qareport
     qareport["qametric"] = qametric_list
 
-    #TODO: What to do with rc here?
-    # rc returns a string, not a boolean when adcc makes the call to reduce
-    # as triggered by the url /runreduce call.
-    # I suspect that rc will return a boolean when reduce is called from the 
-    # command line.
-    if rc["upload_metrics"] == 'True' or rc["upload_metrics"] == True:
+    if upload:
         send_fitsstore_report(qareport, calurl_dict)
     return qareport
 
@@ -1876,23 +1870,13 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
 
     for ext in ad:
         extver = ext.hdr.EXTVER
-
         record_name = '{}_{:0.3d}'.format(basename, extver)
         db = at.SpectralDatabase(database_name,record_name)
-
         out_record_name = '{}_{:0.3d}'.format(out_basename, extver)
         table = db.as_binary_table(record_name=out_record_name)
 
         ext.WAVECAL = table
-
-        table_ad = AstroData(table)
-        table_ad.rename_ext("WAVECAL",extver)
-
-        if ad["WAVECAL",extver] is not None:
-            ad.remove(("WAVECAL",extver))
-        ad.append(table_ad)
     return ad
-
 
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """
