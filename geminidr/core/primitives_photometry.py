@@ -108,7 +108,7 @@ class Photometry(PrimitivesBASE):
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
-                if ad.count_exts("OBJCAT")>0:
+                if any(hasattr(ext, 'OBJCAT') for ext in ad):
                     ad = _match_objcat_refcat(ad)
                 else:
                     log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
@@ -282,7 +282,7 @@ def _match_objcat_refcat(ad):
     log = logutils.get_logger(__name__)
     debug = False
 
-    filter_name = ad.filter_name(pretty=True).as_pytype()
+    filter_name = ad.filter_name(pretty=True)
     colterm_dict = ColorCorrections.colorTerms
     if filter_name in colterm_dict:
         formulae = colterm_dict[filter_name]
@@ -304,7 +304,6 @@ def _match_objcat_refcat(ad):
 
     # Plotting for debugging purposes
     if debug:
-        num_ext = len(ad['OBJCAT'])
         if 'GSAOI' in ad.tags:
             plotcols = 2
             plotrows = 2
@@ -313,8 +312,8 @@ def _match_objcat_refcat(ad):
             plotrows = 1
         fig, axarr = plt.subplots(plotrows, plotcols, sharex=True,
                     sharey=True, figsize=(10,10), squeeze=False)
-        axarr[0,0].set_xlim(0,ad['SCI',1].data.shape[1])
-        axarr[0,0].set_ylim(0,ad['SCI',1].data.shape[0])
+        axarr[0,0].set_xlim(0,ad[0].data.shape[1])
+        axarr[0,0].set_ylim(0,ad[0].data.shape[0])
 
     # Try to be clever here, and work on the extension with the highest
     # number of matches first, as this will give the most reliable offsets.
@@ -373,7 +372,7 @@ def _match_objcat_refcat(ad):
 
         (oi, ri) = at.match_cxy(xx[sorted_indices],sx,
                     yy[sorted_indices],sy,
-                    firstPass=initial, delta=final, log=log)
+                    first_pass=initial, delta=final, log=log)
         log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
                     format(len(oi), extver))
         # If this is a "good" match, save it
@@ -385,7 +384,7 @@ def _match_objcat_refcat(ad):
         # and the refmag, if we can
         for i in range(len(oi)):
             real_index = sorted_indices[oi[i]]
-            objcat.data['REF_NUMBER'][real_index] = refcat['Id'][ri[i]]
+            objcat['REF_NUMBER'][real_index] = refcat['Id'][ri[i]]
             # CJS: I'm not 100% sure about assigning the wcs.sky2pix
             # values here, in case the WCS is poor
             tempx, tempy = wcs.all_world2pix(refcat['RAJ2000'][ri[i]],
@@ -396,8 +395,8 @@ def _match_objcat_refcat(ad):
             # Assign the magnitude
             if formulae:
                 mag, mag_err = _calculate_magnitude(formulae, refcat, ri[i])
-                objcat.data['REF_MAG'][real_index] = mag
-                objcat.data['REF_MAG_ERR'][real_index] = mag_err
+                objcat['REF_MAG'][real_index] = mag
+                objcat['REF_MAG_ERR'][real_index] = mag_err
 
         if debug:
             # Show the fit
@@ -444,9 +443,9 @@ def _calculate_magnitude(formulae, refcat, indx):
         for term in formula:
             # single filter
             if type(term) is str:
-                if term+'mag' in refcat.data.columns.names:
-                    mag += refcat.data[term+'mag'][indx]
-                    mag_err_sq += refcat.data[term+'mag_err'][indx]**2
+                if term+'mag' in refcat.columns:
+                    mag += refcat[term+'mag'][indx]
+                    mag_err_sq += refcat[term+'mag_err'][indx]**2
                 else:
                     # Will ensure this magnitude is not used
                     mag = np.nan
@@ -457,12 +456,13 @@ def _calculate_magnitude(formulae, refcat, indx):
             # color term (factor, uncertainty, color)
             elif len(term) == 3:
                 filters = term[2].split('-')
-                if len(filters)==2 and np.all([f+'mag' in refcat.data.columns.names for f in filters]):
-                    col = refcat.data[filters[0]+'mag'][indx] - \
-                        refcat.data[filters[1]+'mag'][indx]
+                if len(filters)==2 and np.all([f+'mag' in refcat.columns
+                                               for f in filters]):
+                    col = refcat[filters[0]+'mag'][indx] - \
+                        refcat[filters[1]+'mag'][indx]
                     mag += float(term[0])*col
-                    dmagsq = refcat.data[filters[0]+'mag_err'][indx]**2 + \
-                        refcat.data[filters[1]+'mag_err'][indx]**2
+                    dmagsq = refcat[filters[0]+'mag_err'][indx]**2 + \
+                        refcat[filters[1]+'mag_err'][indx]**2
                     # When adding a (H-K) color term, often H is a 95% upper limit
                     # If so, we can only return an upper limit, but we need to
                     # account for the uncertainty in K-band 
@@ -482,19 +482,6 @@ def _calculate_magnitude(formulae, refcat, indx):
         return mags[lowest], mag_errs[lowest]
     else:
         return -999, -999
-
-
-def _estimate_sigma(scidata):
-    fim = np.copy(scidata)
-    stars = np.where(fim > (scidata.mean() + scidata.std()))
-    fim[stars] = scidata.mean()
-        
-    outside = np.where(fim < (scidata.mean() - scidata.std()))
-    fim[outside] = scidata.mean()
-
-    sigma = fim.std()
-
-    return sigma
 
 def _estimate_seeing(objcat):
     """
