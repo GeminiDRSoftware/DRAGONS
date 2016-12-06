@@ -74,6 +74,7 @@ class Reduce(object):
         self.ucals   = args.user_cal
         self.context = args.context if args.context else 'QA'
         self.urecipe = args.recipename if args.recipename else 'default'
+        self.upload_metrics = args.upmetrics
 
 
     def runr(self):
@@ -123,8 +124,9 @@ class Reduce(object):
         rm = RecipeMapper(self.adinputs, recipename=self.urecipe, 
                           context=self.context)
 
-        pm = PrimitiveMapper(self.adinputs, context=self.context,
-                             usercals=self.ucals, uparms=self.uparms)
+        pm = PrimitiveMapper(self.adinputs, context=self.context, 
+                             usercals=self.ucals, uparms=self.uparms, 
+                             upload_metrics=self.upload_metrics)
 
         try:
             recipe = rm.get_applicable_recipe()

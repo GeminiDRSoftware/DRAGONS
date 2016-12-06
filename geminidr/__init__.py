@@ -39,17 +39,29 @@ class PrimitivesBASE(object):
     """
     This is the base class for all of primitives classes for the geminidr 
     primitive sets. __init__.py provides, or should provide, all attributes
-    needed by subclasses. 
+    needed by subclasses.
+
+    Three parameters are required on the initializer:
+
+    adinputs: a list of astrodata objects
+        <list>
+
+    context: the context for recipe selection, etc.
+        <str>
+
+    upmetrics: upload the QA metrics produced by the QAP.
+        <bool>
 
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
         self.adinputs         = adinputs
         self.adoutputs        = None
         self.context          = context
         self.parameters       = ParametersBASE
         self.log              = logutils.get_logger(__name__)
+        self.upload_metrics   = upmetrics
         self.user_params      = uparms if uparms else {}
         self.usercals         = ucals if ucals else {}
         self.calurl_dict      = calurl_dict.calurl_dict
@@ -59,7 +71,17 @@ class PrimitivesBASE(object):
 
         self.streams          = {}
         self.cachedict        = caches.set_caches()
+        self.calibrations     = None
         self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]
+
+
+    def _add_cal(crecords):
+        self.calibrations.update(crecords)
+        return
+
+    def _get_cal(self, ad, caltype):
+        key = (ad.data_label(), caltype)
+        return self.calibrations.get(key)[1]
