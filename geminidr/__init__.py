@@ -55,7 +55,7 @@ class PrimitivesBASE(object):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics, ucals=None, uparms=None):
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
         self.adinputs         = adinputs
         self.adoutputs        = None
         self.context          = context
