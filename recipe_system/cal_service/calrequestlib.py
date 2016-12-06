@@ -186,7 +186,7 @@ def process_cal_requests(cal_requests):
             _add_cal_record(rq, calname)
             continue
 
-        log.info("found calibration (url): {}".format(calurl))
+        log.info("Found calibration (url): {}".format(calurl))
         components = urlparse(calurl)
         calname = basename(components.path)
         cachename, cachedir = _check_cache(calname, rq.caltype)

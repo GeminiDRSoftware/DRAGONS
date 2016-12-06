@@ -34,57 +34,50 @@ class Calibration(PrimitivesBASE):
         self.parameters = None
         self._not_found = "Calibration not found for {}"
 
+
     def getCalibration(self, adinputs=None, stream='main', **params):
-        log = self.log
         caltype = params.get('caltype')
+        log = self.log
         if caltype is None:
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
         cal_requests = get_cal_request(adinputs, caltype)
-        calurl, calfname = process_cal_requests(cal_requests)
-        
+        calibration_records = process_cal_requests(cal_requests)
+        self._add_cal(calibration_records)
+
         return adinputs
 
 
     def getProcessedArc(self, adinputs=None, stream='main', **params):
         caltype = "processed_arc"
-
         log = self.log
-        self.getCalibration(adinputs, caltype=caltype)
 
+        self.getCalibration(adinputs, caltype=caltype)
         first = True
         for ad in adinputs:
             calurl = self.get_cal(ad, caltype)                   #get from cache
-            if calurl:
-                cal = astrodata.open(calurl)
-                if cal.filename is None and "qa" not in self.context:
+            if not calurl and "qa" not in self.context:
                     raise IOError(self._not_found.format(ad.filename))
-                else:
-                    if first:
-                        log.stdinfo("getCalibration: Results")
-                        first = False
-                    log.stdinfo("  {}\n  for {}".format(cal.filename, ad.filename))
-            else:
-                if "qa" not in self.context:
-                    raise IOError(self._not_found.format(ad.filename))
+
         return adinputs
 
 
     def getProcessedBias(self, adinputs=None, stream='main', **params):
         caltype = "processed_bias"
-
         log = self.log
+
         self.getCalibration(adinputs, caltype="{}".format(caltype))
         for ad in adinputs:
             calurl = self.get_cal(ad, caltype)                   #get from cache
-            if calurl and "qa" not in self.context:
+            if not calurl and "qa" not in self.context:
                 raise IOError(self._not_found.format(ad.filename))
-        return
+
+        return adinputs
+
 
     def getProcessedDark(self, adinputs=None, stream='main', **params):
         caltype = "processed_dark"
-
         log = self.log
         self.getCalibration(caltype=caltype)
 
