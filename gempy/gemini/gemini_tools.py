@@ -72,7 +72,6 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
     """
     log = logutils.get_logger(__name__)
 
-
     # ensure caller passes the sextractor default dictionary of parameters.
     try:
         assert isinstance(sxdict, dict) and sxdict.has_key('dq')
@@ -479,7 +478,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux_hdulist = this_aux.to_hdulist()[:1]
+        new_aux = astrodata.create(this_aux.header[0])
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -600,15 +599,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 if return_dtype is not None:
                     ext_to_clip.operate(np.ndarray.astype, return_dtype)
 
-                # Set the section keywords as appropriate
-                for keyword in [datasec_keyword, detsec_keyword, arraysec_keyword]:
-                    if ext.hdr.get(keyword):
-                        ext_to_clip.hdr.set(keyword, ext.hdr.get(keyword),
-                                            keyword_comments[keyword])
-
-                # Rename the auxext to the science extver
-                ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux_hdulist.extend(ext_to_clip.to_hdulist()[1:])
+                # Append the data to the AD object
+                new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
 
             if not found:
                 raise IOError(
@@ -618,7 +610,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
         log.stdinfo("Clipping {} to match science data.".
                     format(os.path.basename(this_aux.filename)))
-        aux_output_list.append(astrodata.open(new_aux_hdulist))
+        aux_output_list.append(new_aux)
 
     return aux_output_list
 
@@ -671,7 +663,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux_hdulist = this_aux.to_hdulist()[:1]
+        new_aux = astrodata.create(this_aux.header[0])
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -782,15 +774,8 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                 if return_dtype is not None:
                     ext_to_clip.operate(np.ndarray.astype, return_dtype)
 
-                # Set the section keywords as appropriate
-                for keyword in [datasec_keyword, detsec_keyword, arraysec_keyword]:
-                    if ext.hdr.get(keyword):
-                        ext_to_clip.hdr.set(keyword, ext.hdr.get(keyword),
-                                            keyword_comments[keyword])
-
-                # Rename the auxext to the science extver
-                ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux_hdulist.extend(ext_to_clip.to_hdulist()[1:])
+                # Append the data to the AD object
+                new_aux.append(ext_to_clip[0].nddate, reset_ver=True)
 
             if not found:
                 raise IOError(
@@ -800,7 +785,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
         log.stdinfo("Clipping {} to match science data.".
                     format(os.path.basename(this_aux.filename)))
-        aux_output_list.append(astrodata.open(new_aux_hdulist))
+        aux_output_list.append(new_aux)
 
     return aux_output_list
 
@@ -1786,16 +1771,16 @@ def obsmode_add(ad):
             mark_history(adinput=ad, keyword="GSREDUCE",
                 comment="Temporary key for GSFLAT")
 
+        # Reproducing inexplicable behaviour of the old system
         try:
             typeStr, = {'IMAGE', 'IFU', 'MOS', 'LS'} & tags
         except:
-            raise KeyError("Input {} has no IMAGE or IFU or MOS or LS tag".
-                            format(ad.filename))
-        else:
-            if typeStr == 'LS':
-                typeStr = 'LONGSLIT'
-            ad.phu.set('OBSMODE', typeStr,
-                       'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
+            typeStr = 'LS'
+
+        if typeStr == 'LS':
+            typeStr = 'LONGSLIT'
+        ad.phu.set('OBSMODE', typeStr,
+                   'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
     return ad
 
 def obsmode_del(ad):
@@ -1947,7 +1932,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             out_objcat.remove_column('NUMBER')
 
             adoutput = add_objcat(adinput=adoutput, extver=outextver,
-                                     table=out_objcat, sxdict=sx_dict)
+                            replace=True, table=out_objcat, sxdict=sx_dict)
     return adoutput
 
 @accept_single_adinput
@@ -2003,6 +1988,10 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
             # Trim SCI, VAR, DQ to new section
             ext.reset(ext.nddata[dsl.y1:dsl.y2,dsl.x1:dsl.x2])
+            # And OBJMASK (if it exists)
+            # TODO: should check more generally for any image extensions
+            if hasattr(ext, 'OBJMASK'):
+                ext.OBJMASK = ext.OBJMASK[dsl.y1:dsl.y2,dsl.x1:dsl.x2]
 
             # Update header keys to match new dimensions
             newDataSecStr = '[1:{},1:{}]'.format(dsl.x2-dsl.x1, dsl.y2-dsl.y1)

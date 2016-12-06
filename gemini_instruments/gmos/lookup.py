@@ -1160,7 +1160,7 @@ gmosRoiSettings = {
         # EEV and e2vDD CCDs
         (2923, 3222, 2155, 2454),
         # GMOS-S Hamamatsu CCDs
-        (2923, 3222, 1987, 1286)
+        (2923, 3222, 1987, 2286)
     ]
 }
 

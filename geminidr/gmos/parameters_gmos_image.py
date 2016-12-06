@@ -3,8 +3,9 @@
 
 from .parameters_gmos import ParametersGMOS
 from geminidr.core.parameters_image import ParametersImage
+from geminidr.core.parameters_photometry import ParametersPhotometry
 
-class ParametersGMOSImage(ParametersGMOS, ParametersImage):
+class ParametersGMOSImage(ParametersGMOS, ParametersImage, ParametersPhotometry):
     stackFlats = {
         "suffix"                : "_stack",
         "mask"                  : True,

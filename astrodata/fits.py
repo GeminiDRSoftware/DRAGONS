@@ -161,9 +161,12 @@ class FitsKeywordManipulator(object):
             return key in self._headers[0]
 
 def new_imagehdu(data, header, name=None):
-    i = ImageHDU(data=DELAYED, header=header.copy(), name=name)
-    i.data = data
-    return i
+# Assigning data in a delayed way, won't reset BZERO/BSCALE in the header,
+# for some reason. Need to investigated. Maybe astropy.io.fits bug. Figure
+# out WHY were we delaying in the first place.
+#    i = ImageHDU(data=DELAYED, header=header.copy(), name=name)
+#    i.data = data
+    return ImageHDU(data=data, header=header.copy(), name=name)
 
 def table_to_bintablehdu(table):
     array = table.as_array()

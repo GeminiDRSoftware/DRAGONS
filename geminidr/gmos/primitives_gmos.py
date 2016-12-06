@@ -3,8 +3,6 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 import numpy as np
-from astropy.wcs import WCS
-from astropy.table import vstack, Table, Column
 from copy import deepcopy
 
 from geminidr.core import CCD
@@ -268,7 +266,8 @@ class GMOS(Gemini, CCD):
         adoutputs = []
         for ad in adinputs:
             # Start building output AD object with the input PHU
-            out_hdulist = ad.to_hdulist()[:1]
+            adoutput = astrodata.create(ad.header[0])
+#            out_hdulist = ad.to_hdulist()[:1]
 
             # Do nothing if there is only one science extension
             if len(ad) == 1:
@@ -339,6 +338,10 @@ class GMOS(Gemini, CCD):
                         else np.hstack([ext.mask for ext in extns])
                     var = None if any(ext.variance is None for ext in extns) \
                         else np.hstack([ext.variance for ext in extns])
+                    try:
+                        objmask = np.hstack([ext.OBJMASK for ext in extns])
+                    except AttributeError:
+                        objmask = None
 
                     # Store this information from the leftmost extension
                     if ccd==1 or not tile_all:
@@ -368,15 +371,23 @@ class GMOS(Gemini, CCD):
                             all_var = np.hstack([all_var, chip_gap, var])
                         else:
                             all_var = None
+                        if all_objmask is not None and objmask is not None:
+                            all_objmask = np.hstack([all_objmask, chip_gap,
+                                                     objmask])
+                        else:
+                            all_objmask = None
                     else:
                         all_data = data
                         all_mask = mask
                         all_var = var
+                        all_objmask = objmask
 
                     if ccd==num_ccd or not tile_all:
                         # Append what we've got. Base it on the reference extn
                         ext_to_add = deepcopy(ad[ref_ext])
                         ext_to_add[0].reset(all_data, all_mask, all_var)
+                        if all_objmask is not None:
+                            ext_to_add[0].OBJMASK = all_objmask
 
                         # Update keywords in the header
                         ext_to_add.hdr.set('CCDNAME', ad.detector_name(),
@@ -405,14 +416,14 @@ class GMOS(Gemini, CCD):
                             crpix1 += xshift
                             ext_to_add.hdr.set('CRPIX1', crpix1,
                                            self.keyword_comments['CRPIX1'])
-
-                        out_hdulist.extend(ext_to_add.to_hdulist()[1:])
+                        adoutput.append(ext_to_add[0].nddata, reset_ver=True)
+                        #out_hdulist.extend(ext_to_add.to_hdulist()[1:])
 
                 # Create new AD object, reset the EXTVERs
-                adoutput = astrodata.open(out_hdulist)
+                #adoutput = astrodata.open(out_hdulist)
                 adoutput.filename = ad.filename
-                for extver, ext in enumerate(adoutput, start=1):
-                    ext.hdr.EXTVER = extver
+                #for extver, ext in enumerate(adoutput, start=1):
+                #    ext.hdr.EXTVER = extver
 
                 # Update and attach OBJCAT if needed
                 if any(hasattr(ext, 'OBJCAT') for ext in ad):
