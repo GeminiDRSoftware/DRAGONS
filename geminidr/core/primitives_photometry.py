@@ -236,6 +236,7 @@ class Photometry(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         pars = getattr(self.parameters, self.myself())
 
+        adoutputs = []
         for ad in adinputs:
             if any(hasattr(ext, 'OBJCAT') for ext in ad):
                 ad = self.addReferenceCatalog([ad])[0]
@@ -247,12 +248,15 @@ class Photometry(PrimitivesBASE):
             if hasattr(ad, 'REFCAT'):
                 ad = self.measureCC([ad])[0]
                 ad = self.determineAstrometricSolution([ad])[0]
-                if pars["correct_wcs"]:
-                    ad = self.updateWCS([ad])[0]
             else:
                 log.stdinfo("No reference sources found; no comparison "
                             "will be performed")
-        return adinputs
+
+            if pars["correct_wcs"]:
+                ad = self.updateWCS([ad])[0]
+            adoutputs.append(ad)
+
+        return adoutputs
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
