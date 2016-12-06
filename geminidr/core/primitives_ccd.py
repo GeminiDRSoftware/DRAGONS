@@ -21,8 +21,10 @@ class CCD(PrimitivesBASE):
         self.parameters = ParametersCCD
 
     def biasCorrect(self, adinputs=None, stream='main', **params):
-        adinputs = self.getProcessedBias(adinputs)
-        adinputs = self.subtractBias(adinputs)
+        bias = self.parameters.biasCorrect["bias"]
+        if bias is None:
+            adinputs = self.getProcessedBias(adinputs)
+        adinputs = self.subtractBias(adinputs, bias=bias)
         return adinputs
 
     def overscanCorrect(self, adinputs=None, stream='main', **params):
