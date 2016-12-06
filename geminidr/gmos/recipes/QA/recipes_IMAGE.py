@@ -4,10 +4,6 @@ Default is "reduce_nostack".
 """
 recipe_tags = set(['GMOS', 'IMAGE'])
 
-# we have to use the nostack version for qap because stacking is too slow.
-# KL: is this still true with gemini_python 2.0?
-default = reduce_nostack
-
 def reduce(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -82,6 +78,11 @@ def reduce_nostack(p):
     p.measureCCAndAstrometry()
     p.addToList(purpose='forStack')
     return
+
+# we have to use the nostack version for qap because stacking is too slow.
+# KL: is this still true with gemini_python 2.0?
+# KRA: unknown yet. 
+default = reduce_nostack
 
 def stack(p):
     """

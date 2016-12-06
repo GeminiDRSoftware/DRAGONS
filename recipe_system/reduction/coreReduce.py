@@ -72,7 +72,7 @@ class Reduce(object):
         self.files   = args.files
         self.uparms  = set_btypes(args.userparam)
         self.ucals   = args.user_cal
-        self.context = args.context if args.context else 'QA'
+        self.context = args.context.lower() if args.context else 'qa'
         self.urecipe = args.recipename if args.recipename else 'default'
         self.upload_metrics = args.upmetrics
 

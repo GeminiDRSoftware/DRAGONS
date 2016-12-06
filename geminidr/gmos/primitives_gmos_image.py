@@ -8,9 +8,9 @@ from astropy.table import vstack, Table, Column
 import scipy.ndimage as ndimage
 from copy import deepcopy
 
-from .primitives_gmos import GMOS
+from primitives_gmos import GMOS
 from geminidr.core import Image, Photometry
-from .parameters_gmos_image import ParametersGMOSImage
+from parameters_gmos_image import ParametersGMOSImage
 
 from gempy.gemini import eti
 from gempy.utils import logutils

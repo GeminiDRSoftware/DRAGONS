@@ -9,7 +9,7 @@ from .baseMapper import Mapper
 from ..utils.errors import RecipeNotFound
 from ..utils.mapper_utils import find_user_recipe
 from ..utils.mapper_utils import RECIPEMARKER
-
+from ..utils.mapper_utils import DRMARKER
 # ------------------------------------------------------------------------------
 class RecipeMapper(Mapper):
     """
@@ -24,6 +24,7 @@ class RecipeMapper(Mapper):
 
     """
     def get_applicable_recipe(self):
+        self._package_loader(DRMARKER)
         recipefn = find_user_recipe(self.recipename)
         if recipefn is None:
             tag_match, recipefn = self._retrieve_recipe()
@@ -42,7 +43,7 @@ class RecipeMapper(Mapper):
         :returns: tuple including the best tag set match and the primitive class
                   that provided the match.
         :rtype: <tuple>, (set, class)
-        
+
         """
         matched_set = (set([]), None)
         for rlib in self._get_tagged_recipes():

@@ -7,8 +7,6 @@ import sys
 from ..utils.mapper_utils import dictify
 
 # ------------------------------------------------------------------------------
-GMOS_INSTR    = ['GMOS-S', 'GMOS-N']
-# ------------------------------------------------------------------------------
 class Mapper(object):
     """
     This is the base class for classes 
@@ -56,7 +54,7 @@ class Mapper(object):
         """
         self.adinputs   = adinputs
         self.context    = context
-        self.pkg        = adinputs[0].instrument_name
+        self.pkg        = adinputs[0].instrument_name.lower()
         self.recipename = recipename
         self.tags       = adinputs[0].tags
         self.usercals   = usercals if usercals else {}

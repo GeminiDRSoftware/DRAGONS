@@ -118,8 +118,9 @@ def buildParser(version):
                         "recipe functions can be defined in a single file." )
 
     parser.add_argument("--upload_metrics", dest='upmetrics', default=False,
-                        action=BooleanAction, help="Send QA metrics to fitsstore."
-                        "Eg., --upload_metrics True")
+                        action=BooleanAction, nargs="*",
+                        help="Send QA metrics to fitsstore. Default is False."
+                        "Eg., --upload_metrics")
 
     parser.add_argument("--user_cal", dest='user_cal', default=None,
                         nargs="*", action=UnitaryArgumentAction,
