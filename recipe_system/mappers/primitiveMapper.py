@@ -28,7 +28,7 @@ class PrimitiveMapper(Mapper):
             raise PrimitivesNotFound("No qualified primitive set could be found")
 
         return primitive_actual(self.adinputs, self.context, uparms=self.userparams,
-                                ucals=self.usercals, upload_metrics=self.upmetrics)
+                                ucals=self.usercals, upmetrics=self.upload_metrics)
 
     # --------------------------------------------------------------------------
     # Primtive search cascade

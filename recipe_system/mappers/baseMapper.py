@@ -23,7 +23,7 @@ class Mapper(object):
 
     """
     def __init__(self, adinputs, recipename='default', context='QA', 
-                 usercals=None, uparms=None):
+                 usercals=None, uparms=None, upload_metrics=False):
         """
         :parameter adinputs: list of AstroData objects.
         :type adinputs: <list>
@@ -50,6 +50,9 @@ class Mapper(object):
                              specified primitive.
                              E.g., [('foo','bar'), ('tileArrays:par1','val1')]
 
+        :parameter upload_metrics: Send Qa metrics to fitsstore.
+        :type upload_metrics: <bool>
+
         """
         self.adinputs   = adinputs
         self.context    = context
@@ -58,6 +61,7 @@ class Mapper(object):
         self.tags       = adinputs[0].tags
         self.usercals   = usercals if usercals else {}
         self.userparams = dictify(uparms)
+        self.upload_metrics = upload_metrics
 
 
     def _package_loader(self, pkgname):
