@@ -41,6 +41,9 @@ class PrimitiveMapper(Mapper):
         """
         matched_set = (set([]), None)
         for pclass in self._get_tagged_primitives():
+            if pclass.tagset is None:
+                continue
+
             if self.tags.issuperset(pclass.tagset):
                 isect = pclass.tagset
                 matched_set = (isect, pclass) if isect > matched_set[0] else matched_set

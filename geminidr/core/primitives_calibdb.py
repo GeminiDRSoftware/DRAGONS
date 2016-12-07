@@ -20,19 +20,21 @@ from recipe_system.cal_service.transport_request import upload_calibration
 
 from recipe_system.utils.decorators import parameter_override
 
+from parameters_calibdb import ParametersCalibration
+
 from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
 @parameter_override
 class Calibration(PrimitivesBASE):
     """
-    There are no parameters associated with any calibration primitives.
+    Only 'storeProcessedXXX' calibration primitives have associated parameters.
 
     """
     tagset = None
 
     def __init__(self, adinputs, context, upmeterics=False, ucals=None, uparms=None):
         super(Calibration, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
-        self.parameters = None
+        self.parameters = ParametersCalibration
         self._not_found = "Calibration not found for {}"
 
     def _assert_calibrations(self, adinputs, caltype):
@@ -56,34 +58,31 @@ class Calibration(PrimitivesBASE):
 
     def getProcessedArc(self, adinputs=None, stream='main', **params):
         caltype = "processed_arc"
-        log = self.log
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedBias(self, adinputs=None, stream='main', **params):
         caltype = "processed_bias"
-        log = self.log
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedDark(self, adinputs=None, stream='main', **params):
         caltype = "processed_dark"
-        log = self.log
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)  
         return adinputs
     
     def getProcessedFlat(self, adinputs=None, stream='main', **params):
         caltype = "processed_flat"
-        log = self.log
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)        
         return adinputs
     
     def getProcessedFringe(self, adinputs=None, stream='main', **params):
         caltype = "processed_fringe"
+        log = self.log
         self.getCalibration(adinputs, caltype=caltype)
         # Fringe correction is always optional; do not raise errors if fringe
         # not found
@@ -101,28 +100,18 @@ class Calibration(PrimitivesBASE):
 
 # =========================== STORE PRIMITIVES ================================
     def storeCalibration(self, adinputs=None, stream='main', **params):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "storeCalibration", "starting"))
-        
-        # Determine the path where the calibration will be stored
-        storedcals = rc["cachedict"]["storedcals"]
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Construct the filename of the calibration, including the path
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        storedcals = self.cachedict["calibrations"]
+        for ad in adinputs:
             fname = os.path.join(storedcals, os.path.basename(ad.filename))
-            
-            # Write the calibration to disk. Use rename=False so that
+
             # ad.filename does not change (i.e., does not include the
             # calibration path)
             ad.write(filename=fname, rename=False, clobber=True)
             log.stdinfo("Calibration stored as %s" % fname)
             
-            if "upload" in rc.context:
+            if self.upload_calibrations:
                 try:
                     upload_calibration(fname)
                 except:

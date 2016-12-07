@@ -105,6 +105,8 @@ class Reduce(object):
 
         """
         xstat = 0
+        recipe = None
+
         try:
             ffiles = self._check_files(self.files)
         except IOError, err:
@@ -121,19 +123,15 @@ class Reduce(object):
             log.error(str(err))
             return xstat
 
-        rm = RecipeMapper(self.adinputs, recipename=self.urecipe, 
-                          context=self.context)
+        rm = RecipeMapper(self.adinputs, recipename=self.urecipe, context=self.context)
 
-        pm = PrimitiveMapper(self.adinputs, context=self.context, 
-                             usercals=self.ucals, uparms=self.uparms, 
-                             upload_metrics=self.upload_metrics)
+        pm = PrimitiveMapper(self.adinputs, context=self.context, usercals=self.ucals,
+                             uparms=self.uparms, upload_metrics=self.upload_metrics)
 
         try:
             recipe = rm.get_applicable_recipe()
         except RecipeNotFound as err:
-            xstat = signal.SIGIO
-            log.error(str(err))
-            return xstat
+            pass
 
         try:
             p = pm.get_applicable_primitives()
@@ -142,8 +140,24 @@ class Reduce(object):
             log.error(str(err))
             return xstat
 
-        self._logheader(recipe)
-        recipe(p)
+        # If the RecipeMapper was unable to find a specified user recipe,
+        # it is possible that the recipe passed was a primitive name.
+        # Here we examine the primitive set to see if this recipe is actually
+        # a primitive name.
+        if recipe is None:
+            try:
+                primitive_as_recipe = getattr(p, self.urecipe)
+                log.info("Found {} as a primitive.")
+                self._logheader(primitive_as_recipe.__name__)
+                primitive_as_recipe()
+            except AttributeError:
+                err = "Recipe {} Not Found".format(self.urecipe)
+                xstat = signal.SIGIO
+                log.error(str(err))
+                return xstat
+        else:
+            self._logheader(recipe)
+            recipe(p)
 
         return xstat
 
