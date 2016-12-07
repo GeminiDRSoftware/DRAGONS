@@ -18,9 +18,11 @@ from recipe_system.cal_service.calrequestlib import get_cal_requests
 from recipe_system.cal_service.calrequestlib import process_cal_requests
 from recipe_system.cal_service.transport_request import upload_calibration
 
-from geminidr import PrimitivesBASE
+from recipe_system.utils.decorators import parameter_override
 
+from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
+@parameter_override
 class Calibration(PrimitivesBASE):
     """
     There are no parameters associated with any calibration primitives.
@@ -35,7 +37,7 @@ class Calibration(PrimitivesBASE):
 
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
-            calurl = self.get_cal(ad, caltype)                   #get from cache
+            calurl = self._get_cal(ad, caltype)                 # from cache
             if not calurl and "qa" not in self.context:
                     raise IOError(self._not_found.format(ad.filename))
         return adinputs
@@ -47,7 +49,7 @@ class Calibration(PrimitivesBASE):
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
-        cal_requests = get_cal_request(adinputs, caltype)
+        cal_requests = get_cal_requests(adinputs, caltype)
         calibration_records = process_cal_requests(cal_requests)
         self._add_cal(calibration_records)
         return adinputs

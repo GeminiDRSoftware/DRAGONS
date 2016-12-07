@@ -71,14 +71,14 @@ class PrimitivesBASE(object):
 
         self.streams          = {}
         self.cachedict        = caches.set_caches()
-        self.calibrations     = None
+        self.calibrations     = {}
         self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]
 
 
-    def _add_cal(crecords):
+    def _add_cal(self, crecords):
         self.calibrations.update(crecords)
         return
 
