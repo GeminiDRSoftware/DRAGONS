@@ -3,12 +3,13 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Standardize, Bookkeeping, Preprocess, Visualize, Stack
+from primitives_qa import QA
 from .parameters_gemini import ParametersGemini
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack):
+class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA):
     """
     This is the class containing the generic Gemini primitives.
     """
