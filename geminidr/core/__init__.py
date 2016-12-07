@@ -1,15 +1,12 @@
-from __future__ import absolute_import
+# __init__.py for geminidr.core, making everything importable without
+# needing to explicitly give the module it's in
 
-from . import (primitives_bookkeeping, primitives_ccd,
-               primitives_image, primitives_photometry,
-               primitives_preprocess, primitives_stack,
-               primitives_standardize, primitives_visualize)
-
-Bookkeeping = primitives_bookkeeping.Bookkeeping
-CCD = primitives_ccd.CCD
-Image = primitives_image.Image
-Photometry = primitives_photometry.Photometry
-Preprocess = primitives_preprocess.Preprocess
-Stack = primitives_stack.Stack
-Standardize = primitives_standardize.Standardize
-Visualize = primitives_visualize.Visualize
+from .primitives_bookkeeping import Bookkeeping
+from .primitives_calibdb import Calibration
+from .primitives_ccd import CCD
+from .primitives_image import Image
+from .primitives_photometry import Photometry
+from .primitives_preprocess import Preprocess
+from .primitives_stack import Stack
+from .primitives_standardize import Standardize
+from .primitives_visualize import Visualize

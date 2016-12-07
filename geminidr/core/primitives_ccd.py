@@ -3,7 +3,7 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.eti import gireduceeti
 
-from geminidr import PrimitivesBASE
+from .. import PrimitivesBASE
 from .parameters_ccd import ParametersCCD
 
 from recipe_system.utils.decorators import parameter_override
@@ -21,10 +21,8 @@ class CCD(PrimitivesBASE):
         self.parameters = ParametersCCD
 
     def biasCorrect(self, adinputs=None, stream='main', **params):
-        bias = self.parameters.biasCorrect["bias"]
-        if bias is None:
-            adinputs = self.getProcessedBias(adinputs)
-        adinputs = self.subtractBias(adinputs, bias=bias)
+        self.getProcessedBias(adinputs)
+        adinputs = self.subtractBias(adinputs)
         return adinputs
 
     def overscanCorrect(self, adinputs=None, stream='main', **params):

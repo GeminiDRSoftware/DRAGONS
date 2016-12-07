@@ -1,12 +1,12 @@
 import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
+from gempy.gemini.eti import gemcombineeti
 
 import numpy as np
 from copy import deepcopy
 
-from geminidr import PrimitivesBASE
-from gempy.gemini.eti import gemcombineeti
+from .. import PrimitivesBASE
 from .parameters_stack import ParametersStack
 
 from recipe_system.utils.decorators import parameter_override

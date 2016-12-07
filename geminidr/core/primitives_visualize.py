@@ -9,7 +9,7 @@ except ImportError:
 
 import numpy as np
 
-from geminidr import PrimitivesBASE
+from .. import PrimitivesBASE
 from .parameters_visualize import ParametersVisualize
 
 from recipe_system.utils.decorators import parameter_override

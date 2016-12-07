@@ -11,7 +11,7 @@ import numpy as np
 from astropy.stats import sigma_clip
 from astropy.wcs import WCS
 
-from geminidr import PrimitivesBASE, __file__ as drroot
+from .. import PrimitivesBASE, __file__ as drroot
 from geminidr.gemini.lookups import ColorCorrections
 from .parameters_photometry import ParametersPhotometry
 

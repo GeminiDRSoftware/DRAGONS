@@ -10,7 +10,7 @@ import numpy as np
 
 from copy import deepcopy
 
-from geminidr import PrimitivesBASE
+from .. import PrimitivesBASE
 from .parameters_preprocess import ParametersPreprocess
 
 from recipe_system.utils.decorators import parameter_override
