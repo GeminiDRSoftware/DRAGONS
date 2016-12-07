@@ -8,6 +8,7 @@ class ParametersVisualize(ParametersBASE):
         "extname"           : "SCI",
         "frame"             : 1,
         "ignore"            : False,
+        "overlay"           : None,
         "remove_bias"       : False,
         "threshold"         : "auto",
         "tile"              : False,
