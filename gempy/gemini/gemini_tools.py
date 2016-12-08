@@ -1336,7 +1336,7 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     metric: str
         type of metric being reported (IQ, ZP, SB, PE)
     info_list: list
-        the QA info, one item per extension
+        the QA info, one dict item per extension
     calurl_dict: dict
         information about the FITSStore (needed if report gets sent)
 
@@ -1367,70 +1367,36 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     qareport["context"] = context
     
     qametric_list = []
-
     for ext, info in zip(ad, info_list):
-        key = ('SCI', ext.EXTVER)
+        # No report is given for an extension without information
+        if info:
+            qametric = {"filename": ad.filename}
+            try:
+                qametric["datalabel"] = ad.data_label()
+            except:
+                qametric["datalabel"] = None
+            try:
+                qametric["detector"] = ext.array_name()
+            except:
+                qametric["detector"] = None
 
-        # Empty qametric dictionary to build into
-        qametric = {}
-
-        # Metadata for qametric
-        qametric["filename"] = ad.filename
-        try:
-            qametric["datalabel"] = ad.data_label()
-        except:
-            qametric["datalabel"] = None
-        try:
-            qametric["detector"] = ext.array_name()
-        except:
-            qametric["detector"] = None
-
-        if metric=="iq":
-            # Check to see if there are any data for this extension
-            if info:
-                qametric["iq"] = info
-                qametric_list.append(qametric)
-
-        elif metric=="zp":
-            # Check to see if there is any data for this extension
-            if info:
-                # Check the measureCC primitive to see if the values
-                # compiled here are the right ones for fitsstore
-                zp = info
-
-                # Add catalog information
-                # This is hard coded for now, as there does not seem
-                # to be a way to look it up easily
-                zp["photref"] = "SDSS8"
-                qametric["zp"] = zp
-                qametric_list.append(qametric)
-
-        elif metric=="sb":
-            # Check to see if there is any data for this extension
-            if info:
-                qametric["sb"] = info
-                qametric_list.append(qametric)
-
-        elif metric=="pe":
-            # Check to see if there is any data for this extension
-            if info:
-                pe = info
-
-                # Add catalog information
-                # This is hard coded for now, as there does not seem
-                # to be a way to look it up easily
-                pe["astref"] = "SDSS8"
-                qametric["pe"] = pe
-                qametric_list.append(qametric)
-
+            # This is hard coded for now, as there does not seem
+            # to be a way to look it up easily
+            if metric == 'zp':
+                info.update({"photref": "SDSS8"})
+            elif metric == 'pe':
+                info.update({"astref": "SDSS8"})
+            qametric.update({metric: info})
+            qametric_list.append(qametric)
 
     # Add qametric dictionary into qareport
     qareport["qametric"] = qametric_list
 
+    print qareport
+
     if upload:
         send_fitsstore_report(qareport, calurl_dict)
     return qareport
-
 
 def send_fitsstore_report(qareport, calurl_dict):
     """
