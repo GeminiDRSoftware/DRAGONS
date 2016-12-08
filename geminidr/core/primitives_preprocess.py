@@ -403,7 +403,7 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def darkCorrect(self, adinputs=None, stream='main', **params):
-        adinputs = self.getProcessedDark(adinputs)
+        self.getProcessedDark(adinputs)
         adinputs = self.subtractDark(adinputs)
         return adinputs
 
@@ -480,14 +480,14 @@ class Preprocess(PrimitivesBASE):
 
     def flatCorrect(self, adinputs=None, stream='main', **params):
         self.getProcessedFlat(adinputs)
-        self.divideByFlat(adinputs)
+        adinputs = self.divideByFlat(adinputs)
         return adinputs
 
     def makeSky(self, adinputs=None, stream='main', **params):
         pars = self.parameters.makeSky
-        self.separateSky(adinputs, **pars)
-        self.associateSky(adinputs, **pars)
-        self.stackSkyFrames(adinputs, **pars)
+        adinputs = self.separateSky(adinputs, **pars)
+        adinputs = self.associateSky(adinputs, **pars)
+        adinputs = self.stackSkyFrames(adinputs, **pars)
         #self.makeMaskedSky()
         return adinputs
 
