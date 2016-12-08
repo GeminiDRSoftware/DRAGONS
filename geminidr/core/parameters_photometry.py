@@ -12,7 +12,6 @@ class ParametersPhotometry(ParametersBASE):
     detectSources = {
         "suffix"                : "_sourcesDetected",
         "mask"                  : False,
-        "max_sources"           : 50,
         "replace_flags"         : 249,
         "set_saturation"        : False,
     }

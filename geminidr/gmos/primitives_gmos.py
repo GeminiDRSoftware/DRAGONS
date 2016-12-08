@@ -7,8 +7,8 @@ from copy import deepcopy
 
 from geminidr.core import CCD
 from geminidr.gemini.primitives_gemini import Gemini
-from parameters_gmos import ParametersGMOS
-from lookups.array_gaps import gmosArrayGaps
+from .parameters_gmos import ParametersGMOS
+from .lookups.array_gaps import gmosArrayGaps
 
 from gempy.scripts.gmoss_fix_headers import correct_headers
 
@@ -376,11 +376,13 @@ class GMOS(Gemini, CCD):
                                                      objmask])
                         else:
                             all_objmask = None
+                        ampslist.extend(ad[i].array_name() for i in amps_on_ccd)
                     else:
                         all_data = data
                         all_mask = mask
                         all_var = var
                         all_objmask = objmask
+                        ampslist = [ad[i].array_name() for i in amps_on_ccd]
 
                     if ccd==num_ccd or not tile_all:
                         # Append what we've got. Base it on the reference extn
@@ -392,6 +394,8 @@ class GMOS(Gemini, CCD):
                         # Update keywords in the header
                         ext_to_add.hdr.set('CCDNAME', ad.detector_name(),
                                            self.keyword_comments['CCDNAME'])
+                        ext_to_add.hdr.set('AMPNAME', ','.join(ampslist),
+                                           self.keyword_comments['AMPNAME'])
 
                         data_shape = ext_to_add[0].data.shape
                         new_datasec = '[1:{1},1:{0}]'.format(*data_shape)

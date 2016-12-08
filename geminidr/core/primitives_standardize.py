@@ -7,7 +7,7 @@ from ..gemini.lookups import BPMDict
 from ..gemini.lookups import MDFDict
 from ..gemini.lookups import DQ_definitions as DQ
 
-from geminidr import PrimitivesBASE
+from .. import PrimitivesBASE
 from .parameters_standardize import ParametersStandardize
 
 from recipe_system.utils.decorators import parameter_override

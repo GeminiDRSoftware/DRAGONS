@@ -1326,7 +1326,7 @@ def fit_continuum(ad):
     return good_sources
 
 
-def fitsstore_report(ad, rc, metric, info_list, calurl_dict):
+def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     """
 
     Parameters
@@ -1336,7 +1336,7 @@ def fitsstore_report(ad, rc, metric, info_list, calurl_dict):
     metric: str
         type of metric being reported (IQ, ZP, SB, PE)
     info_list: list
-        the QA info, one item per extension
+        the QA info, one dict item per extension
     calurl_dict: dict
         information about the FITSStore (needed if report gets sent)
 
@@ -1364,79 +1364,39 @@ def fitsstore_report(ad, rc, metric, info_list, calurl_dict):
     # set generating this metric
     qareport["software"] = "QAP"
     qareport["software_version"] = ad_version
-    #TODO: What to do with rc here?
-    qareport["context"] = rc.context
+    qareport["context"] = context
     
     qametric_list = []
-
     for ext, info in zip(ad, info_list):
-        key = ('SCI', ext.EXTVER)
+        # No report is given for an extension without information
+        if info:
+            qametric = {"filename": ad.filename}
+            try:
+                qametric["datalabel"] = ad.data_label()
+            except:
+                qametric["datalabel"] = None
+            try:
+                qametric["detector"] = ext.array_name()
+            except:
+                qametric["detector"] = None
 
-        # Empty qametric dictionary to build into
-        qametric = {}
-
-        # Metadata for qametric
-        qametric["filename"] = ad.filename
-        try:
-            qametric["datalabel"] = ad.data_label()
-        except:
-            qametric["datalabel"] = None
-        try:
-            qametric["detector"] = ext.array_name()
-        except:
-            qametric["detector"] = None
-
-        if metric=="iq":
-            # Check to see if there are any data for this extension
-            if info:
-                qametric["iq"] = info
-                qametric_list.append(qametric)
-
-        elif metric=="zp":
-            # Check to see if there is any data for this extension
-            if info:
-                # Check the measureCC primitive to see if the values
-                # compiled here are the right ones for fitsstore
-                zp = info
-
-                # Add catalog information
-                # This is hard coded for now, as there does not seem
-                # to be a way to look it up easily
-                zp["photref"] = "SDSS8"
-                qametric["zp"] = zp
-                qametric_list.append(qametric)
-
-        elif metric=="sb":
-            # Check to see if there is any data for this extension
-            if info:
-                qametric["sb"] = info
-                qametric_list.append(qametric)
-
-        elif metric=="pe":
-            # Check to see if there is any data for this extension
-            if info:
-                pe = info
-
-                # Add catalog information
-                # This is hard coded for now, as there does not seem
-                # to be a way to look it up easily
-                pe["astref"] = "SDSS8"
-                qametric["pe"] = pe
-                qametric_list.append(qametric)
-
+            # This is hard coded for now, as there does not seem
+            # to be a way to look it up easily
+            if metric == 'zp':
+                info.update({"photref": "SDSS8"})
+            elif metric == 'pe':
+                info.update({"astref": "SDSS8"})
+            qametric.update({metric: info})
+            qametric_list.append(qametric)
 
     # Add qametric dictionary into qareport
     qareport["qametric"] = qametric_list
 
-    #TODO: What to do with rc here?
-    # rc returns a string, not a boolean when adcc makes the call to reduce
-    # as triggered by the url /runreduce call.
-    # I suspect that rc will return a boolean when reduce is called from the 
-    # command line.
-    if rc["upload_metrics"] == 'True' or rc["upload_metrics"] == True:
+    print qareport
+
+    if upload:
         send_fitsstore_report(qareport, calurl_dict)
     return qareport
-
 
 def send_fitsstore_report(qareport, calurl_dict):
     """
@@ -1546,19 +1506,22 @@ def make_lists(key_list=None, value_list=None, force_ad=False):
     2-tuple of lists
         the lists made from the keys and values
     """
-    # Check the inputs have matching filters, binning and SCI shapes.
     if not isinstance(key_list, list):
         key_list = [key_list]
     if not isinstance(value_list, list):
         value_list = [value_list]
-    if force_ad:
-        key_list = [astrodata.open(x) if isinstance(x, str) else x
-                    for x in key_list]
-        value_list = [astrodata.open(x) if isinstance(x, str) else x
-                    for x in value_list]
     # We allow only one value that can be assigned to multiple keys
     if len(value_list) == 1:
         value_list *= len(key_list)
+    if force_ad:
+        key_list = [astrodata.open(x) if isinstance(x, str) else x
+                    for x in key_list]
+        # We only want to open as many AD objects as there are unique entries
+        # in value_list, so collapse to set and multiple keys with the same
+        # value will be assigned references to the same open AD object
+        ad_map_dict = {x: astrodata.open(x) if isinstance(x, str) else x
+                       for x in set(value_list)}
+        value_list = [ad_map_dict[x] for x in value_list]
 
     return key_list, value_list
 
@@ -1876,23 +1839,13 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
 
     for ext in ad:
         extver = ext.hdr.EXTVER
-
         record_name = '{}_{:0.3d}'.format(basename, extver)
         db = at.SpectralDatabase(database_name,record_name)
-
         out_record_name = '{}_{:0.3d}'.format(out_basename, extver)
         table = db.as_binary_table(record_name=out_record_name)
 
         ext.WAVECAL = table
-
-        table_ad = AstroData(table)
-        table_ad.rename_ext("WAVECAL",extver)
-
-        if ad["WAVECAL",extver] is not None:
-            ad.remove(("WAVECAL",extver))
-        ad.append(table_ad)
     return ad
-
 
 def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     """

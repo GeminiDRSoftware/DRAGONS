@@ -1,36 +1,36 @@
+import astrodata
+import gemini_instruments
 import math
 import sys
 from copy import deepcopy
 
 import numpy as np
-from astrodata.utils import Errors
-from astrodata.utils import logutils
-from astrodata_Gemini.ADCONFIG_Gemini.lookups import BGConstraints
-from astrodata_Gemini.ADCONFIG_Gemini.lookups import CCConstraints
-from astrodata_Gemini.ADCONFIG_Gemini.lookups import IQConstraints
+from .lookups import qaConstraints as qa
 from astropy.stats import sigma_clip
 from scipy.special import j1
 
-from gemini_instruments.gmos import pixel_functions as gdc
+from gemini_instruments.gmos.pixel_functions import get_bias_level
 from gempy.gemini import gemini_tools as gt
-from primitives_GENERAL import GENERALPrimitives
+from gempy.utils import logutils
+from geminidr import PrimitivesBASE
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from .parameters_qa import ParametersQA
 
-
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
-class QAPrimitives(GENERALPrimitives):
+@parameter_override
+class QA(PrimitivesBASE):
     """
-    This is the class containing all of the primitives for the GEMINI level of
-    the type hierarchy tree. It inherits all the primitives from the level
-    above, 'GENERALPrimitives'.
+    This is the class containing the QA primitives.
     """
-    astrotype = "GEMINI"
-    
-    def init(self, rc):
-        GENERALPrimitives.init(self, rc)
-        return rc
-    init.pt_hide = True
-    
-    def measureBG(self, rc):
+    tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(QA, self).__init__(adinputs, context, ucals=ucals,
+                                         uparms=uparms)
+        self.parameters = ParametersQA
+
+    def measureBG(self, adinputs=None, stream='main', **params):
         """
         This primitive measures the sky background level for an image by
         averaging (clipped mean) the sky background level for each object 
@@ -41,51 +41,38 @@ class QAPrimitives(GENERALPrimitives):
         (*not* measured) Zeropoint values - the point being you want to measure
         the actual background level, not the flux incident on the top of the 
         cloud layer necessary to produce that flux level.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        remove_bias: bool
+            remove the bias level (if present) before measuring background?
+        separate_ext: bool
+            report one value per extension, instead of a global value?
         """
-
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "measureBG", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["measureBG"]
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        # Get the BG band definitions from a lookup table
-        bgConstraints = BGConstraints.bgConstraints
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        pars = getattr(self.parameters, self.myself())
+        separate_ext = pars['separate_ext']
+        remove_bias = pars['remove_bias']
 
         # Define a few useful numbers for formatting output
         llen = 23
         rlen = 24
         dlen = llen + rlen
 
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            # Get the necessary parameters from the RC
-            separate_ext = rc["separate_ext"]
-
-            # If bias is still present, it should be subtracted
-            # out of the sky level number, unless user specifies not to
-            remove_bias = rc["remove_bias"]
+        for ad in adinputs:
+            # First check if the bias level has already been subtracted
             if remove_bias:
-                
-                # Check whether data has been bias- or dark-subtracted
-                biasim = ad.phu_get_key_value("BIASIM")
-                darkim = ad.phu_get_key_value("DARKIM")
-
-                # Check whether data has been overscan-subtracted
-                overscan = np.array([ext.get_key_value("OVERSCAN") 
-                                     for ext in ad["SCI"]])
-                if np.any(overscan) or biasim or darkim:
+                if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
+                any(v is not None for v in ad.hdr.get('OVERSCAN'))):
                     bias_level = None
                 else:
                     try:
                         # Get the bias level
-                        bias_level = gdc.get_bias_level(adinput=ad,
+                        bias_level = get_bias_level(adinput=ad,
                                                         estimate=False)
                     except NotImplementedError:
                         # This except is here until there is a type or somesuch
@@ -98,117 +85,107 @@ class QAPrimitives(GENERALPrimitives):
                         bias_level = None
 
                     if bias_level is None:
-                        log.warning("Bias level not found for %s; " \
-                                    "approximate bias will not be removed " \
-                                    "from the sky level" % ad.filename)
+                        log.warning("Bias level not found for {}; "
+                                    "approximate bias will not be removed "
+                                    "from the sky level".format(ad.filename))
             else:
                 bias_level = None
 
             # Get the filter name and the corresponding BG band definition
             # and the requested band
-            filter = str(ad.filter_name(pretty=True))
+            filter = ad.filter_name(pretty=True)
             if filter in ['k(short)', 'kshort', 'K(short)', 'Kshort']:
                 filter = 'Ks'
-            if filter in bgConstraints:
-                bg_band_limits = bgConstraints[filter]
-            else:
+            try:
+                bg_band_limits = qa.bgBands[filter]
+            except KeyError:
                 bg_band_limits = None
 
-            req_bg_dv = ad.requested_bg()
-            if not req_bg_dv.is_none():
-                req_bg = int(req_bg_dv)
-            else:
-                req_bg = None
+            req_bg = ad.requested_bg()
+            pixscale = ad.pixel_scale()
 
             # Our preferred method is to get BG values from the OBJCAT
-            bg_dict = gt.measure_bg_from_objcat(ad)
+            bg_list = gt.measure_bg_from_objcat(ad)
             all_bg_am = []
             all_std_am = []
-            bunit = None
-            info_dict = {}
-            for sciext in ad["SCI"]:
-                extver = sciext.extver()
+            info_list = []
+            for index, ext in enumerate(ad):
+                extver = ext.hdr.EXTVER
+                ext_info = {}
+                bunit = ext.hdr.get('BUNIT', 'adu')
 
-                bunit = sciext.get_key_value("BUNIT")
-                if bunit is None:
-                    bunit = "adu"
-
-                if not extver in bg_dict or bg_dict[extver][0] is None:
-                    log.fullinfo("No good background values in "
-                        "%s[OBJCAT,%d], taking median of data instead." %
-                                         (ad.filename,extver))
+                if bg_list[index][0] is None:
+                    log.fullinfo("No good background values in {}[OBJCAT,{}],"
+                        " taking median of data instead.".format(ad.filename,
+                                                                 extver))
                     bg, bg_std = gt.measure_bg_from_image(ad, extver)
-                    bg_dict[extver] = (bg, bg_std, None)
+                    bg_list[index] = (bg, bg_std, None)
 
-                sci_bg, sci_std, nsamples = bg_dict[extver]                    
-                log.fullinfo("Raw BG level = %f" % sci_bg)
+                sci_bg, sci_std, nsamples = bg_list[index]
+                log.fullinfo("Raw BG level = {:.3f}".format(sci_bg))
 
                 # Subtract bias level from BG number
                 if bias_level is not None:
-                    sci_bg -= bias_level[sciext.extver()]
-                    log.fullinfo("Bias-subtracted BG level = %f" % sci_bg)
-                    bg_dict[extver] = (sci_bg, sci_std, nsamples)
+                    sci_bg -= bias_level[index]
+                    log.fullinfo("Bias-subtracted BG level = {:.3f}".
+                                 format(sci_bg))
+                    bg_list[index] = (sci_bg, sci_std, nsamples)
 
                 # Write sky background to science header
-                sciext.set_key_value(
-                    "SKYLEVEL", sci_bg, comment="%s [%s]" % 
-                    (self.keyword_comments["SKYLEVEL"],bunit))
+                ext.hdr.set("SKYLEVEL", sci_bg, comment="{} [{}]".
+                            format(self.keyword_comments["SKYLEVEL"], bunit))
 
                 # Get zeropoint (it's in ADU or electrons according to sciext)
-                npz = sciext.nominal_photometric_zeropoint().as_pytype()
+                npz = ext.nominal_photometric_zeropoint()
                 if npz is not None:
                     # Make sure we have a number in electrons
                     if bunit == "adu":
-                        gain = float(sciext.gain())
+                        gain = ext.gain()
                         bg_e = sci_bg * gain
                         std_e = sci_std * gain
                         npz = npz + 2.5*math.log10(gain)
                     else:
                         bg_e = sci_bg
                         std_e = sci_std
-                    log.fullinfo("BG electrons = %f" % bg_e)
+                    log.fullinfo("BG electrons = {:.3f}".format(bg_e))
 
                     # Now divide it by the exposure time
-                    bg_e /= float(sciext.exposure_time())
-                    std_e /= float(sciext.exposure_time())
-                    log.fullinfo("BG electrons/s = %f" % bg_e)
+                    bg_e /= ext.exposure_time()
+                    std_e /= ext.exposure_time()
+                    log.fullinfo("BG electrons/s = {:.3f}".format(bg_e))
 
                     # Now, it's in pixels, divide it by the area of a pixel
                     # to get arcsec^2
-                    pixscale = float(sciext.pixel_scale())
-                    bg_e /= (pixscale*pixscale)
-                    std_e /= (pixscale*pixscale)
-                    log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
+                    bg_e /= pixscale*pixscale
+                    std_e /= pixscale*pixscale
+                    log.fullinfo("BG electrons/s/as^2 = {:.3f}".format(bg_e))
 
                     # Now get that in (instrumental) magnitudes...
                     if bg_e<=0:
                         log.warning(
-                            "Background in electrons is "
-                            "less than or equal to 0 for "
-                            "%s[SCI,%d]" % (ad.filename,extver))
+                            "Background in electrons is less than or equal "
+                            "to 0 for {}:{}".format(ad.filename,extver))
                         bg_am = None
                     else:
                         bg_im = -2.5 * math.log10(bg_e)
-                        log.fullinfo("BG inst mag = %f" % bg_im)
+                        log.fullinfo("BG inst mag = {:.3f}".format(bg_im))
 
                         # And convert to apparent magnitude using the
                         # nominal zeropoint
                         bg_am = bg_im + npz
-                        log.fullinfo("BG mag = %f" % bg_am)
+                        log.fullinfo("BG mag = {:.3f}".format(bg_am))
 
                         # Error in magnitude
                         # dm = df * (2.5/ln(10)) / f 
                         std_am = std_e * (2.5/math.log(10)) / bg_e;
 
-                        info_dict[("SCI",extver)] = {"mag": bg_am,
-                                                     "mag_std": std_am,
-                                                     "electrons":bg_e,
-                                                     "electrons_std":std_e,
-                                                     "nsamples":nsamples}
+                        ext_info.update({"mag": bg_am, "mag_std": std_am,
+                                    "electrons":bg_e, "electrons_std":std_e,
+                                    "nsamples":nsamples})
                 else:
-                    log.stdinfo("No nominal photometric zeropoint "
-                                 "available for %s[SCI,%d], filter %s" %
-                                 (ad.filename,sciext.extver(),ad.filter_name(pretty=True)))
+                    log.stdinfo("No nominal photometric zeropoint avaliable "
+                                 "for {}:{}, filter {}".format(ad.filename,
+                                        extver, ad.filter_name(pretty=True)))
                     bg_am = None
                     std_am = None
 
@@ -220,7 +197,6 @@ class QAPrimitives(GENERALPrimitives):
                 bg_num = None
                 bg_str = "(BG band could not be determined)"
                 if bg_am is not None:
-
                     # Get percentile corresponding to this number
                     if separate_ext:
                         use_bg = bg_am
@@ -231,20 +207,22 @@ class QAPrimitives(GENERALPrimitives):
                         bg20 = bg_band_limits[20]
                         bg50 = bg_band_limits[50]
                         bg80 = bg_band_limits[80]
-                        if(use_bg > bg20):
+                        if (use_bg > bg20):
                             bg_num = 20
-                            bg_str += ("BG20 (>%.2f)" % bg20).rjust(rlen)
-                        elif(use_bg > bg50):
+                            bg_str += ("BG20 (>{:.2f})".
+                                       format(bg20)).rjust(rlen)
+                        elif (use_bg > bg50):
                             bg_num = 50
-                            bg_str += ("BG50 (%.2f-%.2f)" % 
-                                       (bg50,bg20)).rjust(rlen)
-                        elif(use_bg > bg80):
+                            bg_str += ("BG50 ({:.2f}-{:.2f})".
+                                       format(bg50,bg20)).rjust(rlen)
+                        elif (use_bg > bg80):
                             bg_num = 80
-                            bg_str += ("BG80 (%.2f-%.2f)" % 
-                                       (bg80,bg50)).rjust(rlen)
+                            bg_str += ("BG80 ({:.2f}-{:.2f})".
+                                       format(bg80,bg50)).rjust(rlen)
                         else:
                             bg_num = 100
-                            bg_str += ("BGAny (<%.2f)" % bg80).rjust(rlen)
+                            bg_str += ("BGAny (<{:.2f})".
+                                       format(bg80)).rjust(rlen)
 
                 # Get requested BG band
                 bg_warn = ""
@@ -254,7 +232,7 @@ class QAPrimitives(GENERALPrimitives):
                                   "BGAny".rjust(rlen)
                     else:
                         req_str = "Requested BG:".ljust(llen) + \
-                                  ("BG%d" % req_bg).rjust(rlen)
+                                  ("BG{}".format(req_bg)).rjust(rlen)
                     if bg_num is not None:
                         if req_bg<bg_num:
                             bg_warn = "\n    "+\
@@ -264,40 +242,39 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Log the calculated values for this extension if desired    
                 if separate_ext:
-                    ind = " " * rc["logindent"]
+                    ind = " "*logutils.SW
                     log.stdinfo(" ")
-                    log.stdinfo(ind + "Filename: %s[SCI,%d]" % 
-                                (ad.filename,extver))
+                    log.stdinfo(ind + "Filename: {}:{}".format(ad.filename,
+                                                               extver))
                     log.stdinfo(ind + "-"*dlen)
                     log.stdinfo(ind + "Sky level measurement:".ljust(llen) +
-                                ("%.0f +/- %.0f %s" % 
-                                 (sci_bg,sci_std,bunit)).rjust(rlen))
+                                ("{:.0f} +/- {:.0f} {}".format(sci_bg,
+                                                sci_std,bunit)).rjust(rlen))
                     if bg_am is not None:
-                        log.stdinfo(ind + ("Mag / sq arcsec in %s:" % 
-                                     ad.filter_name(pretty=True)).ljust(llen) + 
-                                    ("%.2f +/- %.2f" % 
-                                     (bg_am,std_am)).rjust(rlen))
+                        log.stdinfo(ind + ("Mag / sq arcsec in {}:".format(
+                                    ad.filter_name(pretty=True)).ljust(llen) +
+                                    ("{:.2f} +/- {:.2f}".format(bg_am,
+                                                    std_am)).rjust(rlen)))
                     log.stdinfo(ind + bg_str)
                     log.stdinfo(ind + req_str+bg_warn)
                     log.stdinfo(ind + "-"*dlen)
                     log.stdinfo(" ")
                     
                 # Record the band and comment in the fitsstore infodict
-                if info_dict.has_key(("SCI",extver)):
-                    info_dict[("SCI",extver)]["percentile_band"] = bg_num
-                    if bg_warn!="":
-                        bg_comment = ["BG requirement not met"]
-                    else:
-                        bg_comment = []
-                    info_dict[("SCI",extver)]["comment"] = bg_comment
+                if ext_info:
+                    bg_comment = ["BG requirement not met"] if bg_warn else []
+                    ext_info.update({"percentile_band": bg_num,
+                                     "comment": bg_comment})
+                info_list.append(ext_info)
 
             # Collapse extension-by-extension numbers
-            if bg_dict:
-                all_bg = [v[0] for v in bg_dict.itervalues() if v[0] is not None]
-                if len(bg_dict)>1:
+            if bg_list:
+                all_bg = [v[0] for v in bg_list if v[0] is not None]
+                if len(all_bg)>1:
                     all_std = np.std(all_bg)
                 else:
-                    all_std = bg_dict.values()[0][1]
+                    all_std = [v[1] for v in bg_list
+                               if v[1] is not None][0]
                 all_bg = np.mean(all_bg)
             else:
                 all_bg = None
@@ -313,28 +290,24 @@ class QAPrimitives(GENERALPrimitives):
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
-            if (ad.count_exts("SCI")==1 or not separate_ext) \
-                    and all_bg is not None:
-                ad.phu_set_key_value("SKYLEVEL", all_bg, comment="%s [%s]" % \
-                                     (self.keyword_comments["SKYLEVEL"], bunit))
+            if (len(ad)==1 or not separate_ext) and all_bg is not None:
+                ad.phu.set("SKYLEVEL", all_bg, comment="{} [{}]".
+                            format(self.keyword_comments["SKYLEVEL"], bunit))
 
                 # Log overall values if desired
                 if not separate_ext:
-                    if "logindent" in rc:
-                        ind = " " * rc["logindent"]
-                    else:
-                        ind = ""
+                    ind = " "*logutils.SW
                     log.stdinfo(" ")
                     log.stdinfo(ind + "Filename: %s" % ad.filename)
                     log.stdinfo(ind + "-"*dlen)
                     log.stdinfo(ind + "Sky level measurement:".ljust(llen) +
-                                ("%.0f +/- %.0f %s" % 
-                                 (all_bg,all_std,bunit)).rjust(rlen))
+                                ("{:.0f} +/- {:.0f} {}".format(all_bg,
+                                 all_std,bunit)).rjust(rlen))
                     if all_bg_am is not None:
-                        log.stdinfo(ind + ("Mag / sq arcsec in %s:"% 
-                                     ad.filter_name(pretty=True)).ljust(llen) + 
-                                    ("%.2f +/- %.2f" % 
-                                     (all_bg_am, all_std_am)).rjust(rlen))
+                        log.stdinfo(ind + ("Mag / sq arcsec in {}:".format(
+                                     ad.filter_name(pretty=True))).ljust(llen) +
+                                    ("{:.2f} +/- {:.2f}".format(all_bg_am,
+                                                    all_std_am)).rjust(rlen))
                     log.stdinfo(ind + bg_str)
                     log.stdinfo(ind + req_str+bg_warn)
                     log.stdinfo(ind + "-"*dlen)
@@ -352,40 +325,29 @@ class QAPrimitives(GENERALPrimitives):
                             "requested": req_bg,
                             "comment": bg_comment,
                             }
-                    rc.report_qametric(ad, "bg", qad)
+                    #self.report_qametric(ad, "bg", qad)
 
             # Report measurement to fitsstore
-            fitsdict = gt.fitsstore_report(ad, rc, "sb", info_dict, 
-                                           self.calurl_dict)
+            fitsdict = gt.fitsstore_report(ad, "sb", info_list,
+                        calurl_dict=self.calurl_dict, context=self.context,
+                                           upload=self.upload_metrics)
 
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
                                               strip=True)
+        return adinputs
 
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
-
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-
-        yield rc
-
-    def measureCC(self, rc):
+    def measureCC(self, adinputs=None, stream='main', **params):
         """
-        This primitive will determine the zeropoint by looking at
-        sources in the OBJCAT for which a reference catalog magnitude
-        has been determined.
+        This primitive will determine the zeropoint by looking at sources in
+        the OBJCAT for which a reference catalog magnitude has been determined
 
         It will also compare the measured zeropoint against the nominal
         zeropoint for the instrument and the nominal atmospheric extinction
         as a function of airmass, to compute the estimated cloud attenuation.
 
-        This function is for use with sextractor-style source-detection.
+        This function is for use with SExtractor-style source-detection.
         It relies on having already added a reference catalog and done the
         cross match to populate the refmag column of the objcat
 
@@ -393,7 +355,7 @@ class QAPrimitives(GENERALPrimitives):
         catalog. The measured magnitudes (mags) are straight from the object
         detection catalog.
 
-        We correct for astromepheric extinction at the point where we
+        We correct for atmospheric extinction at the point where we
         calculate the zeropoint, ie we define:
         actual_mag = zeropoint + instrumental_mag + extinction_correction
 
@@ -406,22 +368,16 @@ class QAPrimitives(GENERALPrimitives):
         Then we can treat zeropoint as: 
         zeropoint = nominal_photometric_zeropoint - cloud_extinction
         to estimate the cloud extinction.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
         """
-
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "measureCC", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["measureCC"]
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        # Get the CC band definitions from a lookup table
-        ccConstraints = CCConstraints.ccConstraints
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        pars = getattr(self.parameters, self.myself())
 
         # Define a few useful numbers for formatting output
         llen = 32
@@ -429,78 +385,73 @@ class QAPrimitives(GENERALPrimitives):
         dlen = llen + rlen
 
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
+        for ad in adinputs:
             found_mag = True
             detzp_means=[]
             detzp_clouds=[]
             detzp_sigmas=[]
             total_sources=0
             qad = {}
-            # Loop over OBJCATs extensions
-            objcats = ad["OBJCAT"]
-            if objcats is None:
-                log.warning("No OBJCAT found in %s" % ad.filename)
-                adoutput_list.append(ad)
+            if not np.any(hasattr(ext, 'OBJCAT') for ext in ad):
+                log.warning("No OBJCAT found in {}".format(ad.filename))
                 continue
-                #raise Errors.ScienceError("No OBJCAT found in %s" % ad.filename)
+
             # We really want to check for the presence of reference mags
             # in the objcats at this point, but we can more easily do a
             # quick check for the presence of reference catalogs, which are
             # a pre-requisite for this and not bother with
             # any of this if there are no reference catalogs
-            if ad["REFCAT"] is None:
-                log.warning("No Reference Catalogs Present - not attempting"
-                            " to measure photometric Zeropoints")
-                # This is a bit of a hack, but it circumvents the big for loop
-                objcats = []
+            if not hasattr(ad, 'REFCAT'):
+                log.warning("No REFCAT present - not attempting"
+                            " to measure photometric zeropoints")
+                continue
 
             # all_ accumulate measurements through all the OBJCAT extensions
             all_cloud = []
             all_clouderr = []
+            info_list = []
 
-            # To pass to fitsstore report function
-            info_dict = {}
-
-            # Need to get the nominal atmospheric extinction AS PYTYPE!
-            nom_at_ext = ad.nominal_atmospheric_extinction().as_pytype()
+            nom_at_ext = ad.nominal_atmospheric_extinction()
             if nom_at_ext is None:
                 log.warning("Cannot get atmospheric extinction. Assuming zero.")
                 nom_at_ext = 0.0
 
             # Need to correct the mags for the exposure time
-            et = ad.exposure_time().as_pytype()
+            exptime = ad.exposure_time()
 
             # If it's a funky nod-and-shuffle imaging acquistion,
             # then need to scale exposure time
-            if "GMOS_NODANDSHUFFLE" in ad.types:
+            if "NODANDSHUFFLE" in ad.tags:
                 log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
                 # AFAIK the number of nod_cycles isn't actually relevant -
                 # there's always 2 nod positions, thus the exposure
                 # time for any given star is half the total
-                et /= 2.0
+                exptime /= 2.0
                 
-            for objcat in objcats:
-                extver = objcat.extver()
-                mags = objcat.data["MAG_AUTO"]
-                mag_errs = objcat.data["MAGERR_AUTO"]
-                flags = objcat.data["FLAGS"]
-                iflags = objcat.data["IMAFLAGS_ISO"]
-                niflags = objcat.data["NIMAFLAGS_ISO"]
-                isoarea = objcat.data["ISOAREA_IMAGE"]
-                ids = objcat.data["REF_NUMBER"]
+            for ext in ad:
+                extver = ext.hdr.EXTVER
+                ext_info = {}
+                objcat = ext.OBJCAT
+                mags = objcat["MAG_AUTO"]
+                mag_errs = objcat["MAGERR_AUTO"]
+                flags = objcat["FLAGS"]
+                iflags = objcat["IMAFLAGS_ISO"]
+                niflags = objcat["NIMAFLAGS_ISO"]
+                isoarea = objcat["ISOAREA_IMAGE"]
+                ids = objcat["REF_NUMBER"]
                 if np.all(mags==-999):
-                    log.warning("No magnitudes found in %s[OBJCAT,%d]"%
-                                (ad.filename,extver))
+                    log.warning("No magnitudes found in {}[OBJCAT,{}]".format(
+                                ad.filename,extver))
                     continue
 
-                magcor = 2.5*math.log10(et)
-                mags = np.where(mags==-999,mags,mags+magcor)
+                magcor = 2.5*math.log10(exptime)
+                mags = np.where(mags==-999, mags, mags+magcor)
 
-                refmags = objcat.data["REF_MAG"]
-                refmag_errs = objcat.data["REF_MAG_ERR"]
+                refmags = objcat["REF_MAG"]
+                refmag_errs = objcat["REF_MAG_ERR"]
                 if np.all(refmags==-999):
-                    log.warning("No reference magnitudes found in %s[OBJCAT,%d]"%
-                                (ad.filename,extver))
+                    log.warning("No reference magnitudes found in {}[OBJCAT,{}]".
+                                format(ad.filename,extver))
                     continue
 
                 zps_type = type(refmags[0]) 
@@ -522,7 +473,8 @@ class QAPrimitives(GENERALPrimitives):
                 if not np.all(iflags == -999):
                     # Keep objects if pristine or <2% bad/non-linear pixels
                     ok2 = np.logical_or(iflags==0,
-                        np.logical_and((iflags & 4)==0, niflags<0.02*isoarea))
+                        np.logical_and((iflags & DQ.saturated)==0,
+                                       niflags<0.02*isoarea))
                     ok = np.logical_and(ok, ok2)
                 # Get rid of NaNs
                 ok = np.logical_and(ok, np.logical_not(
@@ -546,8 +498,8 @@ class QAPrimitives(GENERALPrimitives):
                 # OK, at this point, zps and zperrs are arrays of all
                 # the zeropoints and their errors from this OBJCAT
                 if len(zps)==0:
-                    log.warning("No good reference sources found in %s[OBJCAT,%d]"%
-                                (ad.filename,extver))
+                    log.warning("No good reference sources found in {}[OBJCAT,{}]".
+                                format(ad.filename,extver))
                     continue
                 elif len(zps)>2:
                     # 1-sigma clip
@@ -576,13 +528,11 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Now, in addition, we have the weighted mean zeropoint
                 # and its error, from this OBJCAT in zp and zpe
-                nominal_zeropoint = (
-                  ad["SCI", extver].nominal_photometric_zeropoint())
-                if nominal_zeropoint.is_none():
-                    log.warning("No nominal photometric zeropoint "\
-                                "available for %s[SCI,%d], filter %s" %
-                                (ad.filename,extver,
-                                 ad.filter_name(pretty=True)))
+                nominal_zeropoint = ext.nominal_photometric_zeropoint()
+                if nominal_zeropoint is None:
+                    log.warning("No nominal photometric zeropoint available "
+                                "for {}:{}, filter {}".format(ad.filename,
+                                 extver, ad.filter_name(pretty=True)))
                     continue
 
                 cloud = nominal_zeropoint - zp
@@ -597,22 +547,19 @@ class QAPrimitives(GENERALPrimitives):
                 total_sources += len(zps)
                 
                 # Write the zeropoint to the SCI extension header
-                ad["SCI", extver].set_key_value(
-                    "MEANZP", zp, comment=self.keyword_comments["MEANZP"])
+                ext.hdr.set("MEANZP", zp, self.keyword_comments["MEANZP"])
 
-                ind = " " * rc["logindent"]
-                log.fullinfo("\n"+ind+"Filename: %s [\"OBJCAT\", %d]" % 
-                            (ad.filename, extver))
-                log.fullinfo(ind+"%d sources used to measure zeropoint" % 
-                             len(zps))
+                ind = " "*logutils.SW
+                log.fullinfo("\n"+ind+"Filename: {}:{}".format(ad.filename,
+                                                               extver))
+                log.fullinfo(ind+"{} sources used to measure zeropoint".
+                             format(len(zps)))
                 log.fullinfo(ind+"-"*dlen)
-                log.fullinfo(ind+
-                             ("Zeropoint measurement (%s band):" % 
-                              ad.filter_name(pretty=True)).ljust(llen) +
-                             ("%.2f +/- %.2f" % (zp, zpe)).rjust(rlen))
-                log.fullinfo(ind+
-                             ("Nominal zeropoint:").ljust(llen) +
-                             ("%.2f" % nominal_zeropoint).rjust(rlen))
+                log.fullinfo(ind+"Zeropoint measurement ({} band):".format(
+                             ad.filter_name(pretty=True)).ljust(llen) +
+                             "{:.2f} +/- {:.2f}".format(zp, zpe).rjust(rlen))
+                log.fullinfo(ind+"Nominal zeropoint:".ljust(llen) +
+                             "{:.2f}".format(nominal_zeropoint).rjust(rlen))
                 log.fullinfo(ind+
                              "Estimated cloud extinction:".ljust(llen) +
                              ("%.2f +/- %.2f magnitudes" % 
@@ -625,35 +572,33 @@ class QAPrimitives(GENERALPrimitives):
                 cloud = float(cloud)
                 if not qad.has_key("zeropoint"):
                     qad["zeropoint"] = {}
-                ampname = ad["SCI", extver].get_key_value("AMPNAME")
+                ampname = ext.hdr.get("AMPNAME")
                 if ampname:
                     qad["zeropoint"][ampname] = {"value":zp,"error":zpe}
                 else:
                     # If no ampname available, just use amp{extver}
                     # (ie. amp1, amp2...)
-                    qad["zeropoint"]["amp%d" % extver] = {"value":zp,
-                                                          "error":zpe}
+                    qad["zeropoint"]["amp{}".format(extver)] = {"value":zp,
+                                                                "error":zpe}
 
                 # Compose a dictionary in the format the fitsstore record wants
                 # Note that mag should actually be uncorrected, and I'm not
                 # sure that zpe is the right error to report here. It is a
                 # little difficult to separate out the right information
                 # as this primitive is currently organized
-                info_dict[("SCI",extver)] = {"mag":zp,
-                                             "mag_std":zpe,
-                                             "cloud":cloud,
-                                             "cloud_std":zpe,
-                                             "nsamples":len(zps),}
+                ext_info.update({"mag":zp, "mag_std":zpe,
+                                "cloud":cloud, "cloud_std":zpe,
+                                "nsamples":len(zps)})
+                info_list.append(ext_info)
             
-            if(len(detzp_means)):
+            if (len(detzp_means)):
                 for i in range(len(detzp_means)):
                     if i==0:
-                        zp_str = ("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i])).rjust(rlen)
+                        zp_str = "{:.2f} +/- {:.2f}".format(detzp_means[i],
+                                                            detzp_sigmas[i]).rjust(rlen)
                     else:
-                        zp_str += "\n    "
-                        zp_str += ("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
+                        zp_str += "\n    {:.2f} +/- {:.2f}".format(detzp_means[i],
+                                                            detzp_sigmas[i]).rjust(rlen)
 
                 # It does not make sense to take the standard deviation
                 # of a single value
@@ -690,31 +635,31 @@ class QAPrimitives(GENERALPrimitives):
                 # Evaluate the test statistic for each CC band boundary,
                 # with one sided tests in both directions
                 cc_canbe={50: True, 70: True, 80: True, 100: True}
-                H0_MSG1 = "95%% confidence test indicates worse than CC%s " \
-                          "(normalized test statistic %.3f > 1.645)"
-                H0_MSG2 = "95%% confidence test indicates CC%d or better " \
-                          "(normalised test statistic %.3f < -1.645)"
-                H0_MSG3 = "95%% confidence test indicates borderline CC%d or one band worse " \
-                          "(normalised test statistic -1.645 < %.3f < 1.645)"
+                H0_MSG1 = "95%% confidence test indicates worse than CC{} " \
+                          "(normalized test statistic {:.3f} > 1.645)"
+                H0_MSG2 = "95%% confidence test indicates CC{} or better " \
+                          "(normalised test statistic {:.3f} < -1.645)"
+                H0_MSG3 = "95%% confidence test indicates borderline CC{} or one band worse " \
+                          "(normalised test statistic -1.645 < {:.3f} < 1.645)"
                 for cc in [50, 70, 80]:
-                  ce = ccConstraints[str(cc)]
+                  ce = qa.ccBands[str(cc)]
                   ts =(cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
                   if(ts>1.645):
                       #H0 fails - cc is worse than the worst end of this cc band
-                      log.fullinfo(H0_MSG1 % (cc, ts))
+                      log.fullinfo(H0_MSG1.format(cc, ts))
                       for c in cc_canbe.keys():
                           if(c <= cc):
                               cc_canbe[c]=False
                   if(ts<-1.645):
                       #H0 fails - cc is better than the worst end of the CC band
-                      log.fullinfo(H0_MSG2 % (cc, ts))
+                      log.fullinfo(H0_MSG2.format(cc, ts))
                       for c in cc_canbe.keys():
                           if(c > cc):
                               cc_canbe[c]=False
 
                   if((ts<1.645) and (ts>-1.645)):
                       #H0 passes - it's consistent with the boundary
-                      log.fullinfo(H0_MSG3 % (cc, ts))
+                      log.fullinfo(H0_MSG3.format(cc, ts))
 
                 # For QA dictionary
                 qad["band"] = []
@@ -728,13 +673,13 @@ class QAPrimitives(GENERALPrimitives):
                         qad["band"].append(c)
                         if(c==100):
                             c="Any"
-                        ccband.append("CC%s" % c)
+                        ccband.append("CC{}".format(c))
                         # print "CC%d : %s" % (c, cc_canbe[c])
                 ccband = ", ".join(ccband)
 
                 # Get requested CC band
                 cc_warn = None
-                req_cc = ad.requested_cc().as_pytype()
+                req_cc = ad.requested_cc()
                 qad["requested"] = req_cc
 
                 if req_cc is not None:
@@ -742,36 +687,30 @@ class QAPrimitives(GENERALPrimitives):
                     # Can't test for CCany, always applies
                     if(req_cc != 100):
                         try:
-                            ce = ccConstraints[str(req_cc)]
+                            ce = qa.ccBands[str(req_cc)]
                             ts = (cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
                             if(ts>1.645):
                                 #H0 fails - cc is worse than the worst end of this cc band
                                 cc_warn = "WARNING: CC requirement not met at the 95% confidence level"
                                 qad["comment"].append(cc_warn)
                         except KeyError:
-                            log.warning("Requested CC value of '%s-percentile' NOT VALID" % \
-                                        req_cc)
-                            qad['comment'].append("Requested CC: '%s-percentile' NOT VALID" % \
-                                                  req_cc)
+                            log.warning("Requested CC value of '{}-percentile'"
+                                        " NOT VALID".format(req_cc))
+                            qad['comment'].append("Requested CC: '{}-percentile'"
+                                        " NOT VALID".format(req_cc))
 
-                    if req_cc==100:
-                        req_cc = "CCAny"
-                    else:
-                        req_cc = "CC%d" % req_cc
+                    req_cc = "CCAny" if req_cc==100 else "CC{}".format(req_cc)
                 
-                ind = " " * rc["logindent"]
-                log.stdinfo("\n"+ind+"Filename: %s" % ad.filename)
-                log.stdinfo(ind+"%d sources used to measure zeropoint" % 
-                             total_sources)
+                ind = " " * logutils.SW
+                log.stdinfo("\n"+ind+"Filename: {}".format(ad.filename))
+                log.stdinfo(ind+"{} sources used to measure zeropoint".format(
+                             total_sources))
                 log.stdinfo(ind+"-"*dlen)
-                log.stdinfo(ind+
-                            ("Zeropoints by detector (%s band):"%
-                             ad.filter_name(pretty=True)).ljust(llen)+
-                            zp_str)
-                log.stdinfo(ind+
-                             "Estimated cloud extinction:".ljust(llen) +
-                            ("%.2f +/- %.2f magnitudes" % 
-                             (cloud, clouderr)).rjust(rlen))
+                log.stdinfo(ind+"Zeropoints by detector ({} band):".format(
+                             ad.filter_name(pretty=True)).ljust(llen)+zp_str)
+                log.stdinfo(ind+"Estimated cloud extinction:".ljust(llen) +
+                            ("{:.2f} +/- {:.2f} magnitudes".format(cloud,
+                                                        clouderr)).rjust(rlen))
                 log.stdinfo(ind + "CC bands consistent with this:".ljust(llen) + 
                             ccband.rjust(rlen))
                 if req_cc is not None:
@@ -787,145 +726,58 @@ class QAPrimitives(GENERALPrimitives):
                 # Report measurement to the adcc
                 qad["extinction"] = float(cloud)
                 qad["extinction_error"] = float(clouderr)
-                rc.report_qametric(ad, "cc", qad)
+                #self.report_qametric(ad, "cc", qad)
 
-                # Add band and comment to the info_dict
-                for key in info_dict:
-                    info_dict[key]["percentile_band"] = qad["band"]
-                    info_dict[key]["comment"] = qad["comment"]
+                # Add band and comment to the info_list
+                [info.update({"percentile_band": qad["band"],
+                              "comment": qad["comment"]}) for info in info_list]
 
                 # Also report to fitsstore
-                fitsdict = gt.fitsstore_report(ad, rc, "zp", info_dict, 
-                                               self.calurl_dict)
-
+                fitsdict = gt.fitsstore_report(ad, "zp", info_list,
+                            calurl_dict=self.calurl_dict, context=self.context,
+                                               upload=self.upload_metrics)
             else:
-                ind = " " * rc["logindent"]
-                log.stdinfo(ind+"Filename: %s" % ad.filename)
+                ind = "    "
+                log.stdinfo(ind+"Filename: {}".format(ad.filename))
                 log.stdinfo(ind+"Could not measure zeropoint - no catalog sources associated")
 
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
                                               strip=True)
+        return adinputs
 
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
-
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-
-        yield rc
-
-    def measureIQ(self, rc):
+    def measureIQ(self, adinputs=None, stream='main', **params):
         """
         This primitive is for use with sextractor-style source-detection.
         FWHM (from _profile_sources()) and CLASS_STAR (from SExtractor)
         are already in OBJCAT; this function does the clipping and reporting
         only. Measured FWHM is converted to zenith using airmass^(-0.6).
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        remove_bias: bool
+            remove the bias level (if present) before measuring background?
+        separate_ext: bool
+            report one value per extension, instead of a global value?
         """
-        
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "measureIQ", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["measureIQ"]
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        pars = getattr(self.parameters, self.myself())
+        display = pars["display"]
+        separate_ext = pars["separate_ext"]
+        remove_bias = pars["remove_bias"]
 
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Check whether display is desired
-        display = rc["display"]
-
-        # Check whether inputs need to be tiled, ie. separate_ext=False
-        # and at least one input has more than one science extension
-        separate_ext = rc["separate_ext"]
-        remove_bias = rc["remove_bias"]
-        adinput = rc.get_inputs_as_astrodata()
-        orig_input = adinput
-        if not separate_ext:
-            next = np.array([ad.count_exts("SCI") for ad in adinput])
-            if np.any(next>1):
-                # Keep a deep copy of the original, untiled input to
-                # report back to RC
-                orig_input = [deepcopy(ad) for ad in adinput]
-
-                # If necessary, remove an approximate bias before tiling
-                if remove_bias and display:
-
-                    # Set the remove_bias parameter to False
-                    # so it doesn't get removed again when
-                    # display is run; leave it at default if no
-                    # tiling is being done at this point, so the
-                    # display will handle it later
-                    remove_bias = False
-
-                    new_adinput = []
-                    for ad in adinput:
-                        # Check whether data has been bias- or dark-subtracted
-                        biasim = ad.phu_get_key_value("BIASIM")
-                        darkim = ad.phu_get_key_value("DARKIM")
-
-                        # Check whether data has been overscan-subtracted
-                        overscan = np.array([ext.get_key_value("OVERSCAN") 
-                                             for ext in ad["SCI"]])
-                        if np.any(overscan) or biasim or darkim:
-                            log.fullinfo("Bias level has already been removed "\
-                                         "from data; no approximate "\
-                                         "correction will be performed")
-                        else:
-                            try:
-                                # Get the bias level
-                                bias_level = gdc.get_bias_level(adinput=ad,
-                                                                estimate=False)
-                            except NotImplementedError:
-                                # This except is here until there is a type or
-                                # somesuch to test whether it is a appropriate
-                                # to call the function in the try clause.
-                                # Possibly replace these checks with a function
-                                # that can be a bit more observing band or
-                                # instrument specific MS - 2014-05-18
-                                log.fullinfo(sys.exc_info()[1])
-                                bias_level = None
-                            
-                            if bias_level is None:
-                                log.warning("Bias level not found for %s; " \
-                                            "approximate bias will not be "\
-                                            "removed from displayed image" % 
-                                            ad.filename)
-                            else:
-                                # Subtract the bias level from each
-                                # science extension
-                                log.stdinfo("Subtracting approximate bias "\
-                                            "level from %s for display" \
-                                            % ad.filename)
-                                log.stdinfo(" ")
-                                log.fullinfo("Bias levels used: %s" %
-                                             str(bias_level))
-                                ad = ad.sub(bias_level)
-
-                        new_adinput.append(ad)
-                    adinput = new_adinput
-
-                log.fullinfo("Tiling extensions together in order to compile "\
-                             "IQ data from all extensions")
-                rc.run("tileArrays(tile_all=True)")
-            
-        # Loop over each input AstroData object in the input list
         overlays_exist = False
         iq_overlays = []
         mean_fwhms = []
         mean_ellips = []
-        for ad in rc.get_inputs_as_astrodata():
-
+        for ad in adinputs:
             # Check that the data is not an image with non-square binning
-            if 'IMAGE' in ad.type():
+            if 'IMAGE' in ad.tags:
                 xbin = ad.detector_x_bin()
                 ybin = ad.detector_y_bin()
                 if xbin != ybin:
@@ -937,27 +789,90 @@ class QAPrimitives(GENERALPrimitives):
                     mean_ellips.append(None)
                     continue
 
+            # We may need to tile the image (and OBJCATs) so make an
+            # adiq object for such purposes
+            if not separate_ext and len(ad) > 1:
+                adiq = deepcopy(ad)
+                if remove_bias and display:
+                    # Set the remove_bias parameter to False so it doesn't
+                    # get removed again when display is run; leave it at
+                    # default if no tiling is being done at this point,
+                    # so the display will handle it later
+                    remove_bias = False
+
+                    if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
+                        any(v is not None for v in ad.hdr.get('OVERSCAN'))):
+                        log.fullinfo("Bias level has already been "
+                                     "removed from data; no approximate "
+                                     "correction will be performed")
+                    else:
+                        try:
+                            # Get the bias level
+                            bias_level = get_bias_level(adinput=ad,
+                                                        estimate=False)
+                        except NotImplementedError:
+                            # This except is here until there is a type or somesuch
+                            # to test whether it is a appropriate to call the
+                            # function in the try clause. Possibly replace these
+                            # checks with a function that can be a bit more
+                            # observing band or instrument specific
+                            # MS - 2014-05-18
+                            log.fullinfo(sys.exc_info()[1])
+                            bias_level = None
+
+                        if bias_level is None:
+                            log.warning("Bias level not found for {}; "
+                                        "approximate bias will not be removed "
+                                        "from the sky level".format(ad.filename))
+                        else:
+                            # Subtract the bias level from each extension
+                            log.stdinfo("Subtracting approximate bias level "
+                                        "from {} for display".
+                                        format(ad.filename))
+                            log.stdinfo(" ")
+                            log.fullinfo("Bias levels used: {}".
+                                         format(bias_level))
+                            for ext, bias in zip(adiq, bias_level):
+                                ext.subtract(bias)
+
+                log.fullinfo("Tiling extensions together in order to compile "
+                             "IQ data from all extensions")
+                adiq = self.tileArrays([adiq], tile_all=True)[0]
+            else:
+                # No further manipulation, so can use a reference to the
+                # original AD object instead of making a copy
+                adiq = ad
+
+            # Descriptors and other things will be the same for ad and adiq
             airmass = ad.airmass()
             wvband = ad.wavelength_band()
 
             # Format output for printing or logging
             llen = 32
             rlen = 24
-            dlen = llen+rlen
-            pm = "+/-"
-            fnStr = "Filename: %s" % ad.filename
+            dlen = llen + rlen
+            fnStr = "Filename: {}".format(ad.filename)
 
-            if "IMAGE" in ad.types:
+            if "IMAGE" in ad.tags:
                 # Clip sources from the OBJCAT
-                good_source = gt.clip_sources(ad)
-                is_image=True
-            elif "SPECT" in ad.types:
+                good_source = gt.clip_sources(adiq)
+                is_image = True
+            elif "SPECT" in ad.tags:
                 # Fit Gaussians to the brightest continuum
-                good_source = gt.fit_continuum(ad)
-                is_image=False
+                good_source = gt.fit_continuum(adiq)
+                is_image = False
             else:
-                log.warning("%s is not IMAGE or SPECT; no IQ "\
-                            "measurement will be performed" % ad.filename)
+                log.warning("{} is not IMAGE or SPECT; no IQ measurement "
+                            "will be performed".format(ad.filename))
+                mean_fwhms.append(None)
+                mean_ellips.append(None)
+                continue
+
+            # Check for no sources found: good_source is a list of Tables
+            if all(len(t)==0 for t in good_source):
+                log.warning("No good sources found in {}".format(ad.filename))
+                if display:
+                    iq_overlays.append(None)
                 mean_fwhms.append(None)
                 mean_ellips.append(None)
                 continue
@@ -966,10 +881,10 @@ class QAPrimitives(GENERALPrimitives):
             # is also calculated from the image if possible)
             # measure Strehl if it is a NIRI or GNIRS Image
             strehl = None
-            is_ao = ad.is_ao().as_pytype()
+            is_ao = ad.is_ao()
             if is_ao:
                 wvband = "AO"
-                ao_seeing = ad.ao_seeing().as_pytype()
+                ao_seeing = ad.ao_seeing()
                 if not ao_seeing:
                     log.warning("No AO-estimated seeing found for this AO "
                                 "observation")
@@ -977,40 +892,17 @@ class QAPrimitives(GENERALPrimitives):
                     log.warning("This is an AO observation, the AO-estimated "
                                 "seeing will be used for the IQ band "
                                 "calculation")
-
-                ao_insts = {'GSAOI_IMAGE', 'NIRI_IMAGE', 'GNIRS_IMAGE'}
-                if any(typ in ao_insts for typ in ad.types):
+                if is_image and ad.instrument() in ('GSAOI', 'NIRI', 'GNIRS'):
                     if len(good_source) > 0:
-                        #strehl, strehl_std = _lucas_strehl(ad, good_source)
                         strehl, strehl_std = _strehl(ad, good_source)
             else:
                 ao_seeing = None
 
-            keys = good_source.keys()
-
-            # Check for no sources found
-            if len(keys)==0:
-                log.warning("No good sources found in %s" % ad.filename)
-                if display:
-                    iq_overlays.append(None)
-                mean_fwhms.append(None)
-                mean_ellips.append(None)
-                continue
-
-            # Go through all extensions
-            keys.sort()
-            info_dict = {}
-            for key in keys:
-                src = good_source[key]
-
-                if len(src)==0:
-                    if separate_ext:
-                        log.warning("No good sources found in %s, "\
-                                    "extension %s" %
-                                    (ad.filename,key))
-                    else:
-                        log.warning("No good sources found in %s" %
-                                    (ad.filename))
+            info_list = []
+            for src, extver in zip(good_source, adiq.hdr.EXTVER):
+                if len(src) == 0:
+                    log.warning("No good sources found in {}:{}".
+                                format(ad.filename, extver))
 
                     if display:
                         iq_overlays.append(None)
@@ -1019,6 +911,7 @@ class QAPrimitives(GENERALPrimitives):
                     # If there is an AO-estimated seeing value, this can be 
                     # delivered as a metric
                     if not (is_ao and ao_seeing):
+                        info_list.append({})
                         continue
                     else:
                         ell_warn = ""
@@ -1026,17 +919,17 @@ class QAPrimitives(GENERALPrimitives):
                 else:
                 # Mean of clipped FWHM and ellipticity
                     # Use weights if they exist
-                    if "weight" in src.dtype.names:
+                    if "weight" in src.columns:
                         mean_fwhm = np.average(src["fwhm_arcsec"],
                                                   weights=src["weight"])
                         std_fwhm = np.sqrt(np.average((src["fwhm_arcsec"] -
                                     mean_fwhm)**2, weights=src["weight"]))
                     else:
-                        mean_fwhm = src["fwhm_arcsec"].mean()
-                        std_fwhm = src["fwhm_arcsec"].std()
+                        mean_fwhm = np.mean(src["fwhm_arcsec"])
+                        std_fwhm = np.std(src["fwhm_arcsec"])
                     if is_image:
-                        mean_ellip = src["ellipticity"].mean()
-                        std_ellip = src["ellipticity"].std()
+                        mean_ellip = np.mean(src["ellipticity"])
+                        std_ellip = np.std(src["ellipticity"])
                     else:
                         mean_ellip = None
                         std_ellip = None
@@ -1045,8 +938,8 @@ class QAPrimitives(GENERALPrimitives):
                     if len(src)==1:
                         log.warning("Only one source found. IQ numbers may "
                                     "not be accurate.")
-                        single_warn = "\n    " + \
-                        "WARNING: single source IQ measurement - no error available".rjust(dlen)
+                        single_warn = "\n    WARNING: single source IQ " + \
+                        "measurement - no error available".rjust(dlen)
                     else:
                         single_warn = ""                    
 
@@ -1055,7 +948,7 @@ class QAPrimitives(GENERALPrimitives):
                         ell_warn = "\n    " + \
                         "WARNING: high ellipticity".rjust(dlen)
                         # Note if it is non-sidereal
-                        if('NON_SIDEREAL' in ad.types):
+                        if 'NON_SIDEREAL' in ad.tags:
                             ell_warn += ("\n     - this is likely due to "
                             "non-sidereal tracking")
                     else:
@@ -1069,8 +962,9 @@ class QAPrimitives(GENERALPrimitives):
                     uncorr_iq = float(mean_fwhm)
                     uncorr_iq_std = float(std_fwhm)
                 else:
-                    if "GSAOI_IMAGE" in ad.types:
+                    if {'GSAOI', 'IMAGE'}.issubset(ad.tags):
                         if len(src) == 0:
+                            info_list.append({})
                             continue
                         wavelength = ad.central_wavelength(asMicrometers=True)
                         magic_number = np.log10(strehl *  mean_fwhm**1.5 /
@@ -1090,7 +984,7 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         uncorr_iq = ao_seeing
                     uncorr_iq_std = None
-                if airmass.is_none():
+                if airmass is None:
                     log.warning("Airmass not found, not correcting to zenith")
                     corr_iq = None
                     corr_iq_std = None
@@ -1116,39 +1010,38 @@ class QAPrimitives(GENERALPrimitives):
                 if separate_ext:
                     fnStr += "[%s,%s]" % key
                 if len(src)!=0:
-                    fmStr = ("FWHM Mean %s Sigma:" % pm).ljust(llen) + \
-                            ("%.3f %s %.3f arcsec" % (mean_fwhm, pm,
-                            std_fwhm)).rjust(rlen)
+                    fmStr = ("FWHM Mean +/- Sigma:").ljust(llen) + \
+                            "{:.3f} +/- {:.3f} arcsec".format(mean_fwhm,
+                                                        std_fwhm).rjust(rlen)
                     if is_image:
-                        srcStr = "%d sources used to measure IQ." % len(src)
-                        if('NON_SIDEREAL' in ad.types):
+                        srcStr = "{} sources used to measure IQ.".format(len(src))
+                        if('NON_SIDEREAL' in ad.tags):
                             srcStr += "\n WARNING - NON SIDEREAL tracking. IQ "
                             "measurements will be unreliable"
-                        emStr = ("Ellipticity Mean %s Sigma:" % pm
-                                 ).ljust(llen) + ("%.3f %s %.3f" % (
-                                mean_ellip, pm, std_ellip)).rjust(rlen)
+                        emStr = ("Ellipticity Mean +/- Sigma:").ljust(llen) + \
+                                "{:.3f} +/- {:.3f}".format(mean_ellip,
+                                                        std_ellip).rjust(rlen)
                     else:
-                        srcStr = "IQ measured from spectra centered at rows " \
-                                 + str(np.unique(src["y"]))
+                        srcStr = "IQ measured from spectra centered at rows {}".\
+                            format(np.unique(src["y"]))
                 if corr_iq is not None:
                     if corr_iq_std is not None:
-                        csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
-                                 ).ljust(llen) + ("%.3f %s %.3f arcsec" % (
-                                corr_iq, pm, corr_iq_std)).rjust(rlen)
+                        csStr = "Zenith-corrected FWHM (AM {:.2f}):".format(
+                            airmass).ljust(llen) + ("{:.3f} +/- {:.3f} arcsec".
+                            format(corr_iq, corr_iq_std)).rjust(rlen)
                     else:
-                        csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
-                                 ).ljust(llen) + ("(AO) %.3f arcsec" % corr_iq
-                                ).rjust(rlen)
-                        
+                        csStr = "Zenith-corrected FWHM (AM {:.2f}):".format(
+                            airmass).ljust(llen) + ("(AO) arcsec".format(
+                            corr_iq)).rjust(rlen)
                 else:
                     csStr = "(Zenith FWHM could not be determined)"
                 if is_ao:
-                    aoStr = ("AO-estimated seeing:").ljust(llen) + \
-                            ("%.3f arcsec" % ao_seeing).rjust(rlen)
+                    aoStr = "AO-estimated seeing:".ljust(llen) + \
+                            "{:.3f} arcsec".format(ao_seeing).rjust(rlen)
                     if strehl:
-                        strehlStr = (("Strehl Mean %s Sigma:" % pm
-                                      ).ljust(llen) + ("%.3f +/- %.3f" % (
-                                    strehl, strehl_std)).rjust(rlen))
+                        strehlStr = "Strehl Mean +/- Sigma:".ljust(llen) + \
+                                    "{:.3f} +/- {:.3f}".format(strehl,
+                                                    strehl_std).rjust(rlen)
                     else:
                         strehlStr = ("(Strehl could not be determined)")
 
@@ -1156,25 +1049,21 @@ class QAPrimitives(GENERALPrimitives):
                 if iq_band is not None:                    
                     # iq_band is (percentile, lower bound, upper bound)
                     if iq_band[0]==20:
-                        iq = "IQ20 (<%.2f arcsec)" % iq_band[2]
+                        iq = "IQ20 (<{:.2f} arcsec)".format(iq_band[2])
                     elif iq_band[0]==100:
-                        iq = "IQAny (>%.2f arcsec)" % iq_band[1]
+                        iq = "IQAny (>{:.2f} arcsec)".format(iq_band[1])
                     else:
-                        iq = "IQ%d (%.2f-%.2f arcsec)" % iq_band
-                    iqStr = ("IQ range for %s-band:" % wvband).ljust(llen) + \
-                    iq.rjust(rlen)
+                        iq = "IQ{} ({:.2f}-{:.2f} arcsec)".format(*iq_band)
+                    iqStr = "IQ range for {}-band:".format(wvband).ljust(
+                        llen) + iq.rjust(rlen)
                 else:
                     iqStr = "(IQ band could not be determined)"
                 
                 # Get requested IQ band
                 req_iq = ad.requested_iq()
-                if not req_iq.is_none():
-                    if req_iq == 100:                            
-                        reqStr = "Requested IQ:".ljust(llen) + \
-                                 "IQAny".rjust(rlen)
-                    else:
-                        reqStr = "Requested IQ:".ljust(llen) + \
-                                 ("IQ%d" % req_iq).rjust(rlen)
+                if req_iq is not None:
+                    reqStr = "Requested IQ:".ljust(llen) + "IQ{}".format(
+                        'Any' if req_iq==100 else req_iq).rjust(rlen)
                     if iq_band is not None:
                         if req_iq < iq_band[0]:
                             iq_warn = "\n    " + \
@@ -1183,10 +1072,7 @@ class QAPrimitives(GENERALPrimitives):
                     reqStr = "(Requested IQ could not be determined)"
                 
                 # Log final string
-                logindent = rc["logindent"]
-                if logindent == None:
-                    logindent = 0
-                ind = " " * logindent
+                ind = " " * logutils.SW
                 log.stdinfo(" ")
                 log.stdinfo(ind + fnStr)
                 if len(src)!=0:
@@ -1222,7 +1108,7 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         mean_ellip = float(mean_ellip)
                         std_ellip = float(std_ellip)
-                    if 'NON_SIDEREAL' in ad.types:
+                    if 'NON_SIDEREAL' in ad.tags:
                         comment.append("Observation is NON SIDEREAL, IQ "
                                        "measurements will be unreliable")
                 else:
@@ -1250,12 +1136,13 @@ class QAPrimitives(GENERALPrimitives):
                        "is_ao": is_ao,
                        "ao_seeing": ao_seeing,
                        "strehl": strehl,
-                       "requested": req_iq.as_pytype(),
+                       "requested": req_iq,
                        "comment": comment,}
-                rc.report_qametric(ad, "iq", qad)
+                #self.report_qametric(adiq, "iq", qad)
                 
                 # These exist for all data (ellip=None for spectra)
-                info_dict[key] = {"fwhm": mean_fwhm,
+                key = ('SCI', extver)
+                ext_info = {"fwhm": mean_fwhm,
                                   "fwhm_std": std_fwhm,
                                   "elip": mean_ellip,
                                   "elip_std": std_ellip,
@@ -1265,15 +1152,14 @@ class QAPrimitives(GENERALPrimitives):
                                   "comment": comment}
                 # These only exist for images
                 if is_image and len(src)>0:
-                    info_dict[key]["isofwhm"] = float(src["isofwhm_arcsec"].mean())
-                    info_dict[key]["isofwhm_std"] = float(src["isofwhm_arcsec"].std())
-                    info_dict[key]["ee50d"] = float(src["ee50d_arcsec"].mean())
-                    info_dict[key]["ee50d_std"] = float(src["ee50d_arcsec"].std())
-                    info_dict[key]["pa"] = float(src["pa"].mean())
-                    info_dict[key]["pa_std"] = float(src["pa"].std())
+                    ext_info.update({"isofwhm": np.mean(src["isofwhm_arcsec"]),
+                                     "isofwhm_std": np.std(src["isofwhm_arcsec"]),
+                                     "ee50d": np.mean(src["ee50d_arcsec"]),
+                                     "ee50d_std": np.std(src["ee50d_arcsec"]),
+                                     "pa": np.mean(src["pa"]),
+                                     "pa_std": np.std(src["pa"])})
                 if is_ao:
-                    info_dict[key]["ao_seeing"] = ao_seeing
-                    info_dict[key]["strehl"] = strehl
+                    ext_info.update({"ao_seeing": ao_seeing, "strehl": strehl})
                 
                 # Store average FWHM and ellipticity, for writing
                 # to output header
@@ -1282,84 +1168,63 @@ class QAPrimitives(GENERALPrimitives):
 
                 # If displaying, make a mask to display along with image
                 # that marks which stars were used
-                if len(src)!=0:
+                if len(src) > 0:
                     if display:
                         if is_image:
-                            data_shape=ad[key].data.shape
-                            iqmask = _iq_overlay(src,data_shape)
+                            data_shape = adiq.extver(extver).data.shape
+                            iqmask = _iq_overlay(src, data_shape)
                             iq_overlays.append(iqmask)
                             overlays_exist = True
                         else:
-                            data_shape=ad[key].data.shape
-                            iqmask = _iq_overlay(src,data_shape)
+                            data_shape = adiq.extver(extver).data.shape
+                            iqmask = _iq_overlay(src, data_shape)
                             iq_overlays.append(iqmask)
                             overlays_exist = True
+                info_list.append(ext_info)
 
             # Build a report to send to fitsstore
-            if info_dict:
-                fitsdict = gt.fitsstore_report(ad, rc, "iq", info_dict, 
-                                               self.calurl_dict)
+            if info_list:
+                fitsdict = gt.fitsstore_report(adiq, "iq", info_list,
+                        calurl_dict=self.calurl_dict, context=self.context,
+                                               upload=self.upload_metrics)
 
-        # Display image with stars used circled
-        if display:
-            # If separate_ext is True, we want the tile parameter
-            # for the display primitive to be False
-            tile = str(not separate_ext)
+            # Display image with stars used for IQ circled
+            if display:
+                if overlays_exist:
+                    log.stdinfo("Sources used to measure IQ are marked " +
+                                "with blue circles.")
+                    log.stdinfo("")
 
-            # Stuff overlays into RC; display primitive will look for
-            # them there
-            rc["overlay"] = iq_overlays
-            if overlays_exist:
-                log.stdinfo("Sources used to measure IQ are marked " +
-                            "with blue circles.")
-                log.stdinfo("")
-            rc.run("display(tile=%s,remove_bias=%s)" % (tile,str(remove_bias)))
+                # If separate_ext is True, we want the tile parameter
+                # for the display primitive to be False
+                self.display([adiq], tile=not separate_ext, remove_bias=remove_bias,
+                             overlay=iq_overlays)
 
-        # Update headers and filename for original input to report
-        # back to RC
-        for ad in orig_input:
-
-            # Write FWHM and ellipticity to header
+            # Update the headers. Do this to the original AD object (ad)
             if separate_ext:
-                count = 0
-                if len(mean_fwhms)==ad.count_exts("SCI"):
-                    for sciext in ad["SCI"]:
-                        mean_fwhm = mean_fwhms[count]
-                        mean_ellip = mean_ellips[count]
-                        if mean_fwhm is not None:
-                            sciext.set_key_value("MEANFWHM", mean_fwhm,
-                            comment=self.keyword_comments["MEANFWHM"])
-                        if mean_ellip is not None:
-                            sciext.set_key_value("MEANELLP", mean_ellip,
-                            comment=self.keyword_comments["MEANELLP"])
-                        count+=1
-            if ad.count_exts("SCI")==1 or not separate_ext:
-                mean_fwhm = mean_fwhms[0]
-                mean_ellip = mean_ellips[0]
-                if mean_fwhm is not None:
-                    ad.phu_set_key_value("MEANFWHM", mean_fwhm,
-                    comment=self.keyword_comments["MEANFWHM"])
-                if mean_ellip is not None:
-                    ad.phu_set_key_value("MEANELLP", mean_ellip,
-                    comment=self.keyword_comments["MEANELLP"])
+                for ext, fwhm, ellip in zip(ad, mean_fwhms, mean_ellips):
+                    if fwhm is not None:
+                        ext.hdr.set("MEANFWHM", fwhm,
+                                comment=self.keyword_comments["MEANFWHM"])
+                    if ellip is not None:
+                        ext.hdr.set("MEANELLP", ellip,
+                                comment=self.keyword_comments["MEANELLP"])
 
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
+            if len(ad)==1 or not separate_ext:
+                fwhm = mean_fwhms[0]
+                ellip = mean_ellips[0]
+                if fwhm is not None:
+                    ad.phu.set("MEANFWHM", fwhm,
+                               comment=self.keyword_comments["MEANFWHM"])
+                if ellip is not None:
+                    ad.phu.set("MEANELLP", ellip,
+                               comment=self.keyword_comments["MEANELLP"])
 
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
                                               strip=True)
-                
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
-
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
-
+        return adinputs
 
     def testReportQAMetric(self, rc):
         """
@@ -1404,17 +1269,17 @@ class QAPrimitives(GENERALPrimitives):
         def mock_metadata(ad, numcall = 0):
             mtd = {"metadata":
                     { "raw_filename": ad.filename,
-                      "datalabel": ad.data_label().as_pytype(),
-                      "local_time": ad.local_time().as_pytype().strftime("%H:%M:%S.%f"),
-                      "ut_time": ad.ut_datetime().as_pytype().strftime("%Y-%m-%d %H:%M:%S.%f"),
-                      "wavelength": ad.central_wavelength(asMicrometers=True).as_pytype(),
-                      "filter": ad.filter_name(pretty=True).as_pytype(),
-                      "waveband": ad.wavelength_band().as_pytype(),
-                      "airmass": ad.airmass().as_pytype(),
-                      "instrument": ad.instrument().as_pytype(),
-                      "object": ad.object().as_pytype(),
-                      "wfs": ad.wavefront_sensor().as_pytype(),
-                      "types": ad.types,
+                      "datalabel": ad.data_label(),
+                      "local_time": ad.local_time().strftime("%H:%M:%S.%f"),
+                      "ut_time": ad.ut_datetime().strftime("%Y-%m-%d %H:%M:%S.%f"),
+                      "wavelength": ad.central_wavelength(asMicrometers=True),
+                      "filter": ad.filter_name(pretty=True),
+                      "waveband": ad.wavelength_band(),
+                      "airmass": ad.airmass(),
+                      "instrument": ad.instrument(),
+                      "object": ad.object(),
+                      "wfs": ad.wavefront_sensor(),
+                      "types": ad.tags,
                     }
                   }
             import random
@@ -1521,99 +1386,58 @@ def _iq_band(adinput=None,fwhm=None):
     an AstroData instance and use it to convert a seeing FWHM into
     an IQ constraint band.
 
-    :param adinput: Input images for which the FWHM has been measured
-    :type adinput: Astrodata objects, either a single or a list of objects
+    Parameters
+    ----------
+    adinput: AD/list
+        input images with measured FWHM
+    fwhm: float/list
+        measured FWHM (in arcseconds)
 
-    :param fwhm: Measured FWHM of stars in image, in arcsec
-    :type fwhm: float, either a single or a list that matches the length
-                of the adinput list
+    Returns
+    -------
+    list: 3-tuples of (percentile, lower bound, upper bound), one per AD
     """
-
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
-    log = logutils.get_logger(__name__)
-
-    # The validate_input function ensures that the input is not None and
-    # returns a list containing one or more inputs
-    adinput_list = gt.validate_input(input=adinput)
-    fwhm_list = gt.validate_input(input=fwhm)
-
-    # Initialize the list of output IQ band tuples
-    list_output = []
-
-    try:
-
-        # get the IQ band definitions from a lookup table
-        iqConstraints = IQConstraints.iqConstraints
-
-        # if there is only one FWHM listed for all adinput, copy
-        # that entry into a list that matches the length of the
-        # adinput list
-        if len(fwhm_list)==1:
-            fwhm_list = [fwhm_list[0] for ad in adinput_list]
+    iq_bands = []
+    for ad, f in zip(*gt.make_lists(adinput, fwhm)):
+        # The IQ bands used to depend on the WFS, but no more.
+        # Now it's only the waveband that matters.  The lookup
+        # table reflects this change.  Note that the lookup table
+        # should be checked against the webpage from time to time
+        # to ensure that they match.  ('cause they don't tell us
+        # when they change it...)
+        #
+        # However, if AO and using AOSEEING, the WFS matters.
+        if ad.is_ao():
+            waveband = 'AO'
         else:
-            # otherwise check that length of fwhm list matches 
-            # the length of the adinput list
-            if len(adinput_list)!=len(fwhm_list):
-                raise Errors.InputError("fwhm list must match length of " +
-                                        "adinput list")
-        
-        # Loop over each input AstroData object in the input list
-        count=0
-        for ad in adinput_list:
+            waveband = ad.wavelength_band()
 
-            # The IQ bands used to depend on the WFS, but no more.
-            # Now it's only the waveband that matters.  The lookup
-            # table reflects this change.  Note that the lookup table
-            # should be checked against the webpage from time to time
-            # to ensure that they match.  ('cause they don't tell us
-            # when they change it...)
-            #
-            # However, if AO and using AOSEEING, the WFS matters.
-            if ad.is_ao().as_pytype():
-                waveband = 'AO'
+        # check that ad has valid waveband
+        if waveband in qa.iqBands.keys():
+            # get limits for this observation
+            iq20 = qa.iqBands[waveband]["20"]
+            iq70 = qa.iqBands[waveband]["70"]
+            iq85 = qa.iqBands[waveband]["85"]
+
+            # get iq band
+            if f<iq20:
+                iq = (20,None,iq20)
+            elif f<iq70:
+                iq = (70,iq20,iq70)
+            elif f<iq85:
+                iq = (85,iq70,iq85)
             else:
-                waveband = ad.wavelength_band().as_pytype()
-
-            # default value for iq band
+                iq = (100,iq85,None)
+        else:
             iq = None
 
-            # check that ad has valid waveband
-            if waveband is not None and waveband in iqConstraints.keys():
+        # Append the iq band tuple to the output
+        # Return value is (percentile, lower bound, upper bound)
+        iq_bands.append(iq)
 
-                # get limits for this observation
-                iq20 = iqConstraints[waveband]["20"]
-                iq70 = iqConstraints[waveband]["70"]
-                iq85 = iqConstraints[waveband]["85"]
+    return iq_bands
 
-                # get iq band
-                if fwhm_list[count]<iq20:
-                    iq = (20,None,iq20)
-                    #iq="IQ20 (<%.2f arcsec)" % iq20
-                elif fwhm_list[count]<iq70:
-                    iq = (70,iq20,iq70)
-                    #iq="IQ70 (%.2f-%.2f arcsec)" % (iq20,iq70)
-                elif fwhm_list[count]<iq85:
-                    iq = (85,iq70,iq85)
-                    #iq="IQ85 (%.2f-%.2f arcsec)" % (iq70,iq85)
-                else:
-                    iq = (100,iq85,None)
-                    #iq="IQAny (>%.2f arcsec)" % iq85
-            
-            # Append the iq band tuple to the output
-            # Return value is (percentile, lower bound, upper bound)
-            list_output.append(iq)
-            count+=1
-
-        # Return the list of output AstroData objects
-        return list_output
-
-    except:
-        # Log the message from the exception
-        log.critical(repr(sys.exc_info()[1]))
-        raise
-
-def _iq_overlay(stars,data_shape):
+def _iq_overlay(stars, data_shape):
     """
     Generates a tuple of numpy arrays that can be used to mask a display with
     circles centered on the stars' positions and radii that reflect the
@@ -1622,15 +1446,23 @@ def _iq_overlay(stars,data_shape):
 
     The circle definition is based on numdisplay.overlay.circle, but circles
     are two pixels wide to make them easier to see.
-    """
 
+    Parameters
+    ----------
+    stars: Table
+        information (from OBJCAT) of the sources used for IQ measurement
+    data_shape: 2-tuple
+        shape of the data being displayed
+
+    Returns
+    -------
+    tuple: arrays of x and y coordinates for overlay
+    """
     xind = []
     yind = []
     width = data_shape[1]
     height = data_shape[0]
-    for star in stars:
-        x0 = star["x"]
-        y0 = star["y"]
+    for x0, y0 in zip(stars['x'], stars['y']):
         #radius = star["fwhm"]
         radius = 16
         r2 = radius*radius
@@ -1678,11 +1510,15 @@ def _strehl(ad, sources):
     underestimates the total flux for fainter sources (this is due to
     its extrapolation of the source profile; the apparent profile varies
     depending on how much of the uncorrected psf is detected).
+
+    Parameters
+    ----------
+    ad: AstroData
+        image for which we're measuring the Strehl ratio
+    sources: list of Tables (one per extension)
+        sources appropriate for measuring the Strehl ratio
     """
-    
-    # Instantiate the log
     log = logutils.get_logger(__name__)
-    
     wavelength = ad.effective_wavelength()
     # Leave if there's no wavelength information
     if wavelength == 0.0 or wavelength is None:
@@ -1690,15 +1526,16 @@ def _strehl(ad, sources):
     strehl_list = []
     strehl_weights = []
     
-    for ext in sources:
-        pixel_scale = ad[ext].pixel_scale().as_pytype()
-        for source in sources[ext]:
-            psf = _quick_psf(source.x, source.y, pixel_scale, wavelength, 8.1, 0.2)
-            strehl = float(((source.flux_max) / source.flux) / psf)
+    for ext, src in zip(ad, sources):
+        pixel_scale = ext.pixel_scale()
+        for star in src:
+            psf = _quick_psf(star['x'], star['y'], pixel_scale, wavelength,
+                             8.1, 0.2)
+            strehl = float(star['flux_max'] / star['flux'] / psf)
             #print source.x, source.y, source.flux_max, source.flux, psf, strehl
             if strehl < 0.6:
                 strehl_list.append(strehl)
-                strehl_weights.append(source.flux)
+                strehl_weights.append(star['flux'])
 
     # Compute statistics with sigma-clipping and weights
     if len(strehl_list) > 0:
@@ -1741,244 +1578,3 @@ def _quick_psf(xc,yc, pixscale, wavelength, diameter, obsc_diam=0.0):
     sum = np.sum(np.where(x==0, 1.0, 2*(j1(x)-obsc*j1(obsc*x))/x)**2)
     sum *= (pixscale/(206264.8*subdiv) * (1-obsc*obsc))**2
     return sum / (4*(wavelength/diameter)**2/np.pi)
-
-# Everything below here is Lucas's Strehl code, and is not used elsewhere
-
-def _lucas_strehl(ad, sources):
-    """
-    Measure the Strehl Ratio (r0) on an input image.
-
-    :param ad: astrodata image object
-    :param sources: filtered sources from clip_sources
-    """
-
-    # reasonable upper strehl limit,  number of sources to use
-    STREHL_LIMIT = 0.6
-    RADIAN_ARCSEC = 206265
-    PUPIL_FILE = '.strehl_pupil.npz'
-
-    # number of sources to use
-    allow_nsources = 16
-    # len(sources) here is basically the number of extensions
-    allow_nsources /= len(sources)
-
-    all_strehl = []
-    pupil = np.array([])
-
-    # Instantiate the log
-    log = logutils.get_logger(__name__)
-
-    # read required header values (wavelength in microns)
-    n_pixels = ad.array_section().get_value()[1]
-    effective_wavelength = ad.phu_get_key_value('WAVELENG') / 10000.
-    inst = ad.instrument().as_pytype()
-    filt = ad.filter_name(pretty=True).as_pytype()
-
-    # for speed - reduce the array size for strehl by 'binning' pixels
-    div_n = n_pixels / 256.0
-
-    n_pixels /= int(div_n)
-
-    # phase parameters
-    vv_array = np.arange(0, n_pixels, 1, dtype=float).reshape((1, n_pixels))
-    uu_array = np.arange(0, n_pixels, 1, dtype=float).reshape((n_pixels, 1))
-
-    phase_param = {'vv': _rebin(vv_array, n_pixels, n_pixels),
-                   'uu': _rebin(uu_array, n_pixels, n_pixels)}
-
-    # key for saved pupil
-    pupil_key = inst + '_' + filt + '_' + str(n_pixels)
-
-    try:
-        pupil = np.load(PUPIL_FILE)[pupil_key]
-    except (KeyError, IOError):
-        pass
-
-    for ext in sources:
-        pixel_scale = ad[ext].pixel_scale().as_pytype()
-        pixel_radians = pixel_scale / RADIAN_ARCSEC
-
-        meter_pixel = ((effective_wavelength * 1e-6) /
-                       (n_pixels * pixel_radians))
-
-        # use only brightest nsources in field
-        if sources[ext].size > allow_nsources:
-            sources[ext].sort(order='flux_max')
-            sources[ext] = sources[ext][-allow_nsources:]
-
-        if pupil.size == 0:
-            pupil = _pupil(n_pixels, meter_pixel, inst, pupil_key, PUPIL_FILE)
-            
-        for source in sources[ext]:
-
-            # for binned pixels,  keep location in the pixel
-            x_decimal = source.x - np.fix(source.x)
-            y_decimal = source.y - np.fix(source.y)
-
-            x_binned = int(source.x / div_n) + x_decimal
-            y_binned = int(source.y / div_n) + y_decimal
-
-            # position calculated from the center
-            source_pos = {'x': x_binned - n_pixels / 2.,
-                          'y': y_binned - n_pixels / 2.}
-
-            # compute perfect PSF at position of source
-            psf = _perfect_psf(n_pixels, source_pos, phase_param, pupil)
-            strehl = (source.flux_max / source.flux) / np.amax(psf)
-
-            #print source.x, source.y, source.flux_max, source.flux, source.flux_max/source.flux, psf, strehl
-            if strehl <= STREHL_LIMIT:
-                all_strehl.append(strehl)
-                
-            #print source.x, source.y, source.flux_max, source.flux, strehl, psf
-
-    if len(all_strehl) != 0:
-        strehl = np.average(all_strehl).item()
-        strehl_std = np.std(all_strehl)
-        #log.stdinfo("Strehl (average) for %s: %s +/- %s" % (ad.filename, strehl,
-        #                                                    strehl_std))
-    else:
-        strehl = None
-        strehl_std = None
-
-    return strehl, strehl_std
-
-def _perfect_psf(n_pixels, center, phase_param, pupil):
-    """
-    Create an ideal psf for the Gemini telescope, to be used
-    in the calculation of the Strehl Ratio r0
-
-    :param n_pixels: number of pixels of the array
-    :param center: pixel coordinate of source wrt to center
-                      a psf centered on the array would be (0,0)
-    :param phase_param: dictionary of phase parameters
-    :param pupil: ndarray representing instrument pupil
-    :param inst: instrument
-    :return: the ideal psf
-    """
-
-    phase = 2. * np.pi * (phase_param['uu'] * center['x'] +
-                          phase_param['vv'] * center['y']) / n_pixels
-
-    wavefront = pupil * np.exp(1j * phase)
-
-    # python fft requires a normalization factor of 1/N to match idl fft
-    fft_2d = abs(1. / (np.size(wavefront)) * np.fft.fft2(wavefront)) ** 2
-
-    # "shift" the array at the middle of both axes
-    psf = np.roll(np.roll(fft_2d, int(n_pixels / 2), axis=1),
-                  int(n_pixels / 2), axis=0)
-
-    psf = psf / np.sum(map(np.sum, psf))
-
-    return psf
-
-
-def _pupil(n_pixels, meter_pixel, inst, pupil_key, PUPIL_FILE):
-    """
-    Calculates the diffraction-limited monochromatic point
-    spread function (PSF) from NIRI's pupil stop, and pupil angle.
-    Based on idl routines niripsf and nircs2psf
-
-    :param n_pixels: integer 1-dimensional number of pixels
-    :param meter_pixel: pixels per meter
-    :param inst: string of instrument name
-    :param pupil_key: dictionary key string inst+filt+npixels
-    :param PUPIL_FILE: filename of file containing the saved pupils
-    :return: pupil: numpy array representing pupil with psf
-    """
-
-    # Define pupil dimensions
-    if inst == "GSAOI":
-        PUPIL_DIMENSION = [0.2, 8.1]
-    else:
-        PUPIL_DIMENSION = [1.223, 7.695]
-
-    pupil = np.zeros((n_pixels, n_pixels))
-    center_point = n_pixels / 2.0 - 0.5
-    center = {'x': center_point, 'y': center_point}
-
-    radial_array = _dist_circle(n_pixels, center, int(n_pixels / 2))
-
-    adjusted_array = radial_array * meter_pixel
-    w = np.where((adjusted_array > PUPIL_DIMENSION[0] / 2) &
-                 (adjusted_array < PUPIL_DIMENSION[1] / 2))
-
-    if np.size(w) != 0:
-        pupil[w] = 1
-
-    _save_pupil(pupil, pupil_key, PUPIL_FILE)
-
-    return pupil
-
-
-def _rebin(a, x_new, y_new):
-    """
-    A python version of idl's REBIN
-
-    :param a: input array
-    :param new_shape: new square array size
-    :return: reshaped array
-    """
-
-    x_orig, y_orig = a.shape
-
-    if x_new < x_orig:
-        return a.reshape((x_new, x_orig / x_new,
-                          y_new, y_orig / y_new)).mean(3).mean(1)
-    else:
-        return np.repeat(np.repeat(a, x_new / x_orig, axis=0),
-                         y_new / y_orig, axis=1)
-
-
-def _dist_circle(array_size, center, radius):
-    """
-    Form a square array where each value is its distance to a given center.
-
-    :param array_size: size of square ndarray to return
-    :param center: dict of x,y coordinate of center
-    :return: square ndarray of values equal to element's distance to center.
-    """
-
-    squared = {}
-    start = {}
-    end = {}
-
-    output_array = np.zeros([array_size, array_size], dtype=float)
-
-    for c in ['x', 'y']:
-        squared[c] = (np.arange(array_size, dtype=float) - center[c]) ** 2
-        start[c] = int(center[c] - radius)
-        end[c] = int(center[c] + radius)
-        if end[c] >= array_size:
-            end[c] = array_size
-        if start[c] < 0:
-            start[c] = 0
-
-    for x in range(start['x'], end['x']):
-        for y in range(start['y'], end['y']):
-            output_array[x, y] = np.sqrt(squared['x'][x] + squared['y'][y])
-
-    return output_array
-
-
-def _save_pupil(pupil, pupil_key, PUPIL_FILE):
-    """
-    Save the calculated pupil to avoid redundant calculations
-
-    :param pupil_key: a combination of instrument, filter, and number of pixels
-    :param pupil: an nd array of pupil to save
-    :param PUPIL_FILE: Pupil file name to save
-    """
-
-    vals_to_save = {}
-    try:
-        file_data = np.load(PUPIL_FILE)
-        for val in file_data.files:
-            vals_to_save[val] = file_data[val]
-    except IOError:
-        pass
-
-    vals_to_save[pupil_key] = pupil
-
-    np.savez(PUPIL_FILE, **vals_to_save)

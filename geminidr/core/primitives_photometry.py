@@ -11,7 +11,7 @@ import numpy as np
 from astropy.stats import sigma_clip
 from astropy.wcs import WCS
 
-from geminidr import PrimitivesBASE, __file__ as drroot
+from .. import PrimitivesBASE, __file__ as drroot
 from geminidr.gemini.lookups import ColorCorrections
 from .parameters_photometry import ParametersPhotometry
 
@@ -132,8 +132,6 @@ class Photometry(PrimitivesBASE):
             suffix to be added to output files
         mask: bool
             apply DQ plane as a mask before detection?
-        max_sources: int
-            maximum number of sources to analyse for seeing estimate
         set_saturation: bool
             set the saturation level of the data for SExtractor?
         """
@@ -141,7 +139,6 @@ class Photometry(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         pars = getattr(self.parameters, self.myself())
-        max_sources = pars["max_sources"]
         mask_bits = pars["replace_flags"]
         set_saturation = pars["set_saturation"]
 
