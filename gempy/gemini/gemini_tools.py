@@ -1392,8 +1392,6 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     # Add qametric dictionary into qareport
     qareport["qametric"] = qametric_list
 
-    print qareport
-
     if upload:
         send_fitsstore_report(qareport, calurl_dict)
     return qareport
@@ -1964,9 +1962,6 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 crpix2 = 1
             ext.hdr.set('CRPIX1', crpix1, comment=keyword_comments["CRPIX1"])
             ext.hdr.set('CRPIX2', crpix2, comment=keyword_comments["CRPIX2"])
-
-            #TODO: Trim any other image extensions
-
         adoutput_list.append(ad)
 
     return adoutput_list
