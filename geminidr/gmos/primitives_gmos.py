@@ -7,8 +7,8 @@ from copy import deepcopy
 
 from geminidr.core import CCD
 from geminidr.gemini.primitives_gemini import Gemini
-from parameters_gmos import ParametersGMOS
-from lookups.array_gaps import gmosArrayGaps
+from .parameters_gmos import ParametersGMOS
+from .lookups.array_gaps import gmosArrayGaps
 
 from gempy.scripts.gmoss_fix_headers import correct_headers
 

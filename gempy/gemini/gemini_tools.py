@@ -1506,19 +1506,22 @@ def make_lists(key_list=None, value_list=None, force_ad=False):
     2-tuple of lists
         the lists made from the keys and values
     """
-    # Check the inputs have matching filters, binning and SCI shapes.
     if not isinstance(key_list, list):
         key_list = [key_list]
     if not isinstance(value_list, list):
         value_list = [value_list]
-    if force_ad:
-        key_list = [astrodata.open(x) if isinstance(x, str) else x
-                    for x in key_list]
-        value_list = [astrodata.open(x) if isinstance(x, str) else x
-                    for x in value_list]
     # We allow only one value that can be assigned to multiple keys
     if len(value_list) == 1:
         value_list *= len(key_list)
+    if force_ad:
+        key_list = [astrodata.open(x) if isinstance(x, str) else x
+                    for x in key_list]
+        # We only want to open as many AD objects as there are unique entries
+        # in value_list, so collapse to set and multiple keys with the same
+        # value will be assigned references to the same open AD object
+        ad_map_dict = {x: astrodata.open(x) if isinstance(x, str) else x
+                       for x in set(value_list)}
+        value_list = [ad_map_dict[x] for x in value_list]
 
     return key_list, value_list
 

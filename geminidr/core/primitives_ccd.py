@@ -47,11 +47,13 @@ class CCD(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = self.parameters.subtractBias["suffix"]
+        pars = getattr(self.parameters, self.myself())
+
+        bias_list = pars["bias"] if pars["bias"] else [
+            self._get_cal(ad, 'processed_bias') for ad in adinputs]
 
         # Provide a bias AD object for every science frame
-        for ad, bias in zip(*gt.make_lists(adinputs,
-                        self.parameters.subtractBias["bias"], force_ad=True)):
+        for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractBias".
@@ -82,7 +84,8 @@ class CCD(PrimitivesBASE):
             # Record bias used, timestamp, and update filename
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+                                              strip=True)
         return adinputs
 
     def subtractOverscan(self, adinputs=None, stream='main', **params):
