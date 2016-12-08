@@ -18,22 +18,31 @@ from recipe_system.cal_service.calrequestlib import get_cal_requests
 from recipe_system.cal_service.calrequestlib import process_cal_requests
 from recipe_system.cal_service.transport_request import upload_calibration
 
-from geminidr import PrimitivesBASE
+from recipe_system.utils.decorators import parameter_override
 
+from parameters_calibdb import ParametersCalibration
+
+from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
+@parameter_override
 class Calibration(PrimitivesBASE):
     """
-    There are no parameters associated with any calibration primitives.
+    Only 'storeProcessedXXX' calibration primitives have associated parameters.
 
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Calibration, self).__init__(adinputs, context, ucals=ucals,
-                                          uparms=uparms)
-        self.parameters = None
+    def __init__(self, adinputs, context, upmeterics=False, ucals=None, uparms=None):
+        super(Calibration, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
+        self.parameters = ParametersCalibration
         self._not_found = "Calibration not found for {}"
 
+    def _assert_calibrations(self, adinputs, caltype):
+        for ad in adinputs:
+            calurl = self._get_cal(ad, caltype)                 # from cache
+            if not calurl and "qa" not in self.context:
+                    raise IOError(self._not_found.format(ad.filename))
+        return adinputs
 
     def getCalibration(self, adinputs=None, stream='main', **params):
         caltype = params.get('caltype')
@@ -42,152 +51,67 @@ class Calibration(PrimitivesBASE):
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
-        cal_requests = get_cal_request(adinputs, caltype)
+        cal_requests = get_cal_requests(adinputs, caltype)
         calibration_records = process_cal_requests(cal_requests)
         self._add_cal(calibration_records)
-
         return adinputs
-
 
     def getProcessedArc(self, adinputs=None, stream='main', **params):
         caltype = "processed_arc"
-        log = self.log
-
         self.getCalibration(adinputs, caltype=caltype)
-        first = True
-        for ad in adinputs:
-            calurl = self.get_cal(ad, caltype)                   #get from cache
-            if not calurl and "qa" not in self.context:
-                    raise IOError(self._not_found.format(ad.filename))
-
+        self._assert_calibrations(adinputs, caltype)
         return adinputs
-
 
     def getProcessedBias(self, adinputs=None, stream='main', **params):
         caltype = "processed_bias"
-        log = self.log
-
-        self.getCalibration(adinputs, caltype="{}".format(caltype))
-        for ad in adinputs:
-            calurl = self.get_cal(ad, caltype)                   #get from cache
-            if not calurl and "qa" not in self.context:
-                raise IOError(self._not_found.format(ad.filename))
-
+        self.getCalibration(adinputs, caltype=caltype)
+        self._assert_calibrations(adinputs, caltype)
         return adinputs
-
 
     def getProcessedDark(self, adinputs=None, stream='main', **params):
         caltype = "processed_dark"
-        log = self.log
-        self.getCalibration(caltype=caltype)
-
-        first = True
-        for ad in rc.get_inputs_as_astrodata():
-            calurl = rc.get_cal(ad, caltype) #get from cache
-            if calurl:
-                cal = AstroData(calurl)
-                if cal.filename is None:
-                    if "qa" not in rc.context:
-                        raise IOError("Calibration not found for " \
-                                                "%s" % ad.filename)
-                else:
-                    if first:
-                        log.stdinfo("getCalibration: Results")
-                        first = False
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,
-                                                         ad.filename))
-            else: 
-                if "qa" not in rc.context:
-                    raise IOError("Calibration not found for %s" % 
-                                            ad.filename)
-        
-        return
+        self.getCalibration(adinputs, caltype=caltype)
+        self._assert_calibrations(adinputs, caltype)  
+        return adinputs
     
     def getProcessedFlat(self, adinputs=None, stream='main', **params):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
         caltype = "processed_flat"
-        source = rc["source"]
-        if source == None:
-            rc.run("getCalibration(caltype=%s)" % caltype)
-        else:
-            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
-        
-        # List calibrations found
-        first = True
-        for ad in rc.get_inputs_as_astrodata():
-            calurl = rc.get_cal(ad, caltype) #get from cache
-            if calurl:
-                cal = AstroData(calurl)
-                if cal.filename is None:
-                    if "qa" not in rc.context:
-                        raise IOError("Calibration not found for " \
-                                                "%s" % ad.filename)
-                else:
-                    if first:
-                        log.stdinfo("getCalibration: Results")
-                        first = False
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,
-                                                         ad.filename))
-            else: 
-                if "qa" not in rc.context:
-                    raise IOError("Calibration not found for %s" % 
-                                            ad.filename)
-        
-        return
+        self.getCalibration(adinputs, caltype=caltype)
+        self._assert_calibrations(adinputs, caltype)        
+        return adinputs
     
     def getProcessedFringe(self, adinputs=None, stream='main', **params):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
         caltype = "processed_fringe"
-        source = rc["source"]
-        if source == None:
-            rc.run("getCalibration(caltype=%s)" % caltype)
-        else:
-            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
-            
-        # List calibrations found
-        # Fringe correction is always optional, so don't raise errors if fringe
+        log = self.log
+        self.getCalibration(adinputs, caltype=caltype)
+        # Fringe correction is always optional; do not raise errors if fringe
         # not found
-        first = True
-        for ad in rc.get_inputs_as_astrodata():
-            calurl = rc.get_cal(ad, caltype) #get from cache
-            if calurl:
-                cal = AstroData(calurl)
-                if cal.filename is not None:
-                    if first:
-                        log.stdinfo("getCalibration: Results")
-                        first = False
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,
-                                                     ad.filename))
-        
-        return
-    
+        try:
+            self._assert_calibrations(adinputs, caltype)
+        except IOError:
+            wstr = "Warning: one or more processed fringe frames could not"
+            wstr += " be found. "
+            log.warn(wstr)
+        return adinputs
+
+
+
+
+
+# =========================== STORE PRIMITIVES ================================
     def storeCalibration(self, adinputs=None, stream='main', **params):
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "storeCalibration", "starting"))
-        
-        # Determine the path where the calibration will be stored
-        storedcals = rc["cachedict"]["storedcals"]
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Construct the filename of the calibration, including the path
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        storedcals = self.cachedict["calibrations"]
+        for ad in adinputs:
             fname = os.path.join(storedcals, os.path.basename(ad.filename))
-            
-            # Write the calibration to disk. Use rename=False so that
+
             # ad.filename does not change (i.e., does not include the
             # calibration path)
             ad.write(filename=fname, rename=False, clobber=True)
             log.stdinfo("Calibration stored as %s" % fname)
             
-            if "upload" in rc.context:
+            if self.upload_calibrations:
                 try:
                     upload_calibration(fname)
                 except:

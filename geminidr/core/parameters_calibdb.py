@@ -1,11 +1,10 @@
 # This parameter file contains the parameters related to the primitives located
-# in the primitives_GEMINI.py file, in alphabetical order.
+# in primitives_calibdb.py, in alphabetical order.
 
-from parameters_CORE import ParametersCORE
+from geminidr import ParametersBASE
 
-class ParametersCalibration(ParametersCORE):
+class ParametersCalibration(ParametersBASE):
     getCalibration    = {
-        "source"            : "all",
         "caltype"           : None,
     }
     storeProcessedArc = {

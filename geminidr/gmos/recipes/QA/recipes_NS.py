@@ -4,8 +4,6 @@ Default is "reduce".
 """
 recipe_tags = set(['GMOS', 'NODANDSHUFFLE'])
 
-default = reduce
-
 def reduce(p):
     """
     This recipe does a quick reduction of GMOS nod and shuffle data.
@@ -28,3 +26,5 @@ def reduce(p):
     p.skyCorrectNodShuffle()
     p.measureIQ(display=True)
     return
+
+default = reduce

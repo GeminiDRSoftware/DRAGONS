@@ -137,6 +137,7 @@ def dotpath(*args):
 # libraries.
 # ------------------------------------------------------------------------------
 RECIPEMARKER = 'recipes'
+DRMARKER = 'geminidr'
 # ------------------------------------------------------------------------------
 def _package_loader(pkgname):
     pfile, pkgpath, descr = imp.find_module(pkgname)

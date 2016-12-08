@@ -56,6 +56,7 @@ class CCD(PrimitivesBASE):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractBias".
                             format(ad.filename))
+                continue
 
             if bias is None:
                 if 'qa' in self.context:
