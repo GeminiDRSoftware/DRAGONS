@@ -76,16 +76,3 @@ class PrimitivesBASE(object):
 
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]
-
-
-    def _add_cal(self, crecords):
-        self.calibrations.update(crecords)
-        caches.save_cache(self.calibrations, caches.calindfile)
-        return
-
-    def _get_cal(self, ad, caltype):
-        key = (ad.data_label(), caltype)
-        try:
-            return self.calibrations[key][1]
-        except KeyError:
-            return None
