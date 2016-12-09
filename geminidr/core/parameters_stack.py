@@ -7,6 +7,14 @@ class ParametersStack(ParametersBASE):
     alignAndStack = {
         "check_if_stack"    : False,
     }
+    stackFlats = {
+        "suffix"            : "_stack",
+        "mask"              : True,
+        "nhigh"             : 1,
+        "nlow"              : 1,
+        "operation"         : "median",
+        "reject_method"     : "minmax",
+    }
     stackFrames = {
         "suffix"            : "_stack",
         "mask"              : True,
