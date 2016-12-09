@@ -10,7 +10,7 @@ import numpy as np
 
 from copy import deepcopy
 
-from geminidr import PrimitivesBASE
+from .. import PrimitivesBASE
 from .parameters_preprocess import ParametersPreprocess
 
 from recipe_system.utils.decorators import parameter_override
@@ -403,7 +403,7 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def darkCorrect(self, adinputs=None, stream='main', **params):
-        adinputs = self.getProcessedDark(adinputs)
+        self.getProcessedDark(adinputs)
         adinputs = self.subtractDark(adinputs)
         return adinputs
 
@@ -423,11 +423,13 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = self.parameters.divideByFlat["suffix"]
+        pars = getattr(self.parameters, self.myself())
+
+        flat_list = pars["flat"] if pars["flat"] else [
+            self._get_cal(ad, 'processed_flat') for ad in adinputs]
 
         # Provide a flatfield AD object for every science frame
-        for ad, flat in zip(*gt.make_lists(adinputs,
-                        self.parameters.divideByFlat["flat"], force_ad=True)):
+        for ad, flat in zip(*gt.make_lists(adinputs, flat_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by divideByFlat".
@@ -471,21 +473,21 @@ class Preprocess(PrimitivesBASE):
             # Update the header and filename
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
+            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
                                               strip=True)
 
         return adinputs
 
     def flatCorrect(self, adinputs=None, stream='main', **params):
         self.getProcessedFlat(adinputs)
-        self.divideByFlat(adinputs)
+        adinputs = self.divideByFlat(adinputs)
         return adinputs
 
     def makeSky(self, adinputs=None, stream='main', **params):
         pars = self.parameters.makeSky
-        self.separateSky(adinputs, **pars)
-        self.associateSky(adinputs, **pars)
-        self.stackSkyFrames(adinputs, **pars)
+        adinputs = self.separateSky(adinputs, **pars)
+        adinputs = self.associateSky(adinputs, **pars)
+        adinputs = self.stackSkyFrames(adinputs, **pars)
         #self.makeMaskedSky()
         return adinputs
 

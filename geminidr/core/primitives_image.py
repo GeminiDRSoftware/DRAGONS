@@ -1,6 +1,6 @@
 from gempy.gemini import gemini_tools as gt
 
-from geminidr import PrimitivesBASE
+from .. import PrimitivesBASE
 from .parameters_image import ParametersImage
 
 from recipe_system.utils.decorators import parameter_override
@@ -48,12 +48,13 @@ class Image(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        fringe_param = self.parameters.subtractFringe["fringe"]
-        sfx = self.parameters.subtractFringe["suffix"]
+        pars = getattr(self.parameters, self.myself())
+
+        fringe_list = pars["fringe"] if pars["fringe"] else [
+            self._get_cal(ad, 'processed_fringe') for ad in adinputs]
 
         # Get a fringe AD object for every science frame
-        for ad, fringe in zip(*gt.make_lists(adinputs, fringe_param,
-                                             force_ad=True)):
+        for ad, fringe in zip(*gt.make_lists(adinputs, fringe_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractFringe".
@@ -73,6 +74,6 @@ class Image(PrimitivesBASE):
             # Update the header and filename
             ad.phu.set("FLATIM", fringe.filename, self.keyword_comments["FRINGEIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
+            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
                                               strip=True)
         return adinputs

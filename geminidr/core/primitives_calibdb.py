@@ -51,7 +51,8 @@ class Calibration(PrimitivesBASE):
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
-        cal_requests = get_cal_requests(adinputs, caltype)
+        cal_requests = get_cal_requests([ad for ad in adinputs if
+                        self._get_cal(ad, caltype) is None], caltype)
         calibration_records = process_cal_requests(cal_requests)
         self._add_cal(calibration_records)
         return adinputs

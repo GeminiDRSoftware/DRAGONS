@@ -7,8 +7,8 @@ from copy import deepcopy
 
 from geminidr.core import CCD
 from geminidr.gemini.primitives_gemini import Gemini
-from parameters_gmos import ParametersGMOS
-from lookups.array_gaps import gmosArrayGaps
+from .parameters_gmos import ParametersGMOS
+from .lookups.array_gaps import gmosArrayGaps
 
 from gempy.scripts.gmoss_fix_headers import correct_headers
 
@@ -358,7 +358,8 @@ class GMOS(Gemini, CCD):
                         # Calculate total horizontal shift if the reference
                         # array is on this CCD
                         if ref_ext in amps_on_ccd:
-                            xshift += all_data.shape[1] + chip_gap.shape[1]
+                            full_xshift = xshift + all_data.shape[1] + \
+                                          chip_gap.shape[1]
 
                         # Add a gap and this CCD to the existing tiled data
                         all_data = np.hstack([all_data, chip_gap, data])
@@ -376,11 +377,13 @@ class GMOS(Gemini, CCD):
                                                      objmask])
                         else:
                             all_objmask = None
+                        ampslist.extend(ad[i].array_name() for i in amps_on_ccd)
                     else:
                         all_data = data
                         all_mask = mask
                         all_var = var
                         all_objmask = objmask
+                        ampslist = [ad[i].array_name() for i in amps_on_ccd]
 
                     if ccd==num_ccd or not tile_all:
                         # Append what we've got. Base it on the reference extn
@@ -392,6 +395,8 @@ class GMOS(Gemini, CCD):
                         # Update keywords in the header
                         ext_to_add.hdr.set('CCDNAME', ad.detector_name(),
                                            self.keyword_comments['CCDNAME'])
+                        ext_to_add.hdr.set('AMPNAME', ','.join(ampslist),
+                                           self.keyword_comments['AMPNAME'])
 
                         data_shape = ext_to_add[0].data.shape
                         new_datasec = '[1:{1},1:{0}]'.format(*data_shape)
@@ -413,7 +418,9 @@ class GMOS(Gemini, CCD):
 
                         crpix1 = ext_to_add.hdr.get('CRPIX1')[0]
                         if crpix1:
-                            crpix1 += xshift
+                            # xshift is the shift due to other arrays on CCD
+                            # full_xshift is total shift when tile_all=True
+                            crpix1 += full_xshift if tile_all else xshift
                             ext_to_add.hdr.set('CRPIX1', crpix1,
                                            self.keyword_comments['CRPIX1'])
                         adoutput.append(ext_to_add[0].nddata, reset_ver=True)

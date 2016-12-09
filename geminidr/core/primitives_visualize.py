@@ -9,7 +9,7 @@ except ImportError:
 
 import numpy as np
 
-from geminidr import PrimitivesBASE
+from .. import PrimitivesBASE
 from .parameters_visualize import ParametersVisualize
 
 from recipe_system.utils.decorators import parameter_override
@@ -124,16 +124,10 @@ class Visualize(PrimitivesBASE):
         else:
             p.adinputs = [ext for ad in p.adinputs for ext in ad]
 
-        # Get overlays from RC if available (eg. IQ overlays made by measureIQ)
-        # then clear them out so they don't persist to the next display call
-        # TODO: May need to come back to this
-        overlay_lists = gt.make_lists(p.adinputs, getattr(self, 'overlay', None))
-        self.overlay = None
-
         frame = pars['frame'] if pars['frame'] else 1
         lnd = _localNumDisplay()
 
-        for ad, overlay in zip(*overlay_lists):
+        for ad, overlay in zip(*gt.make_lists(p.adinputs, pars['overlay'])):
             if frame > 16:
                 log.warning("Too many images; only the first 16 are displayed")
                 break
