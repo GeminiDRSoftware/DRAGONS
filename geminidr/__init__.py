@@ -80,8 +80,12 @@ class PrimitivesBASE(object):
 
     def _add_cal(self, crecords):
         self.calibrations.update(crecords)
+        caches.save_cache(self.calibrations, caches.calindfile)
         return
 
     def _get_cal(self, ad, caltype):
         key = (ad.data_label(), caltype)
-        return self.calibrations.get(key)[1]
+        try:
+            return self.calibrations[key][1]
+        except KeyError:
+            return None

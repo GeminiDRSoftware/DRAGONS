@@ -6,12 +6,6 @@ from geminidr.core.parameters_image import ParametersImage
 from geminidr.core.parameters_photometry import ParametersPhotometry
 
 class ParametersGMOSImage(ParametersGMOS, ParametersImage, ParametersPhotometry):
-    stackFlats = {
-        "suffix"                : "_stack",
-        "mask"                  : True,
-        "operation"             : "median",
-        "reject_method"         : "minmax",
-    }
     # Override attach_mdf=True
     standardizeStructure = {
         "suffix"                : "_structureStandardized",

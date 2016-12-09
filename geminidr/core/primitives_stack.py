@@ -57,6 +57,10 @@ class Stack(PrimitivesBASE):
                 self.stackFrames(adinputs)
         return adinputs
 
+    def stackFlats(self, adinputs=None, stream='main', **params):
+        """Default behaviour is just to stack images as normal"""
+        return self.stackFrames(adinputs, **params)
+
     def stackFrames(self, adinputs=None, stream='main', **params):
         """
         This primitive will stack each science extension in the input dataset.
