@@ -114,6 +114,8 @@ class Calibration(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         storedcals = self.cachedict["calibrations"]
+
+        # Need a check here to make sure path calibrations/<cal_type> exists.
         for ad in adinputs:
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
             ad.write(filename=fname, clobber=True)
