@@ -868,9 +868,9 @@ def clip_sources(ad):
         table['fwhm_arcsec'] *= pixscale
         table['ee50d_arcsec'] *= pixscale
 
-        # Clip outliers in FWHM - single 1-sigma clip if more than 3 sources.
+        # Clip outliers in FWHM - single 2-sigma clip if more than 3 sources.
         if len(table) >= 3:
-            table = table[~stats.sigma_clip(table['fwhm_arcsec'], sigma=1, iters=1).mask]
+            table = table[~stats.sigma_clip(table['fwhm_arcsec'], sigma=2, iters=1).mask]
 
         good_sources.append(table)
 
@@ -1690,7 +1690,7 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
                 bg_data = bg_data[flags==0]
                 # Sigma-clip, and only give results if enough objects are left
                 if len(bg_data) > min_ok:
-                    clipped_data = stats.sigma_clip(bg_data, sigma=3.0)
+                    clipped_data = stats.sigma_clip(bg_data, sigma=3.0, iters=1)
                     if np.sum(~clipped_data.mask) > min_ok:
                         bg = np.mean(clipped_data)
                         bg_std = np.std(clipped_data)
