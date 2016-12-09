@@ -95,9 +95,6 @@ class Calibration(PrimitivesBASE):
         return adinputs
 
 
-
-
-
 # =========================== STORE PRIMITIVES ================================
     def storeCalibration(self, adinputs=None, stream='main', **params):
         log = self.log
@@ -108,10 +105,10 @@ class Calibration(PrimitivesBASE):
 
             # ad.filename does not change (i.e., does not include the
             # calibration path)
-            ad.write(filename=fname, rename=False, clobber=True)
-            log.stdinfo("Calibration stored as %s" % fname)
-            
-            if self.upload_calibrations:
+            ad.write(filename=fname, clobber=True)
+            log.stdinfo("Calibration stored as {}".format(fname))
+
+            if self.upload_calibrations:           # !!! This does not exist!!!
                 try:
                     upload_calibration(fname)
                 except:
@@ -122,7 +119,7 @@ class Calibration(PrimitivesBASE):
             yield rc
         
         yield rc
-    
+
     def storeProcessedArc(self, adinputs=None, stream='main', **params):
         # Instantiate the log
         log = logutils.get_logger(__name__)
