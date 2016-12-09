@@ -597,8 +597,8 @@ class QA(PrimitivesBASE):
                         zp_str = "{:.2f} +/- {:.2f}".format(detzp_means[i],
                                                             detzp_sigmas[i]).rjust(rlen)
                     else:
-                        zp_str += "\n    {:.2f} +/- {:.2f}".format(detzp_means[i],
-                                                            detzp_sigmas[i]).rjust(rlen)
+                        zp_str += "\n   "+"{:.2f} +/- {:.2f}".format(detzp_means[i],
+                                                            detzp_sigmas[i]).rjust(dlen)
 
                 # It does not make sense to take the standard deviation
                 # of a single value
@@ -635,11 +635,11 @@ class QA(PrimitivesBASE):
                 # Evaluate the test statistic for each CC band boundary,
                 # with one sided tests in both directions
                 cc_canbe={50: True, 70: True, 80: True, 100: True}
-                H0_MSG1 = "95%% confidence test indicates worse than CC{} " \
+                H0_MSG1 = "95% confidence test indicates worse than CC{} " \
                           "(normalized test statistic {:.3f} > 1.645)"
-                H0_MSG2 = "95%% confidence test indicates CC{} or better " \
+                H0_MSG2 = "95% confidence test indicates CC{} or better " \
                           "(normalised test statistic {:.3f} < -1.645)"
-                H0_MSG3 = "95%% confidence test indicates borderline CC{} or one band worse " \
+                H0_MSG3 = "95% confidence test indicates borderline CC{} or one band worse " \
                           "(normalised test statistic -1.645 < {:.3f} < 1.645)"
                 for cc in [50, 70, 80]:
                   ce = qa.ccBands[str(cc)]
@@ -877,6 +877,7 @@ class QA(PrimitivesBASE):
                 mean_ellips.append(None)
                 continue
 
+            print good_source
             # For AO observations, the AO-estimated seeing is used (the IQ
             # is also calculated from the image if possible)
             # measure Strehl if it is a NIRI or GNIRS Image
@@ -1226,159 +1227,9 @@ class QA(PrimitivesBASE):
                                               strip=True)
         return adinputs
 
-    def testReportQAMetric(self, rc):
-        """
-        This is an engineering primitive that generates test data
-        for the QAP nighttime metrics GUI.
-        """
-        import random
-        import datetime
-        import time
-        bigreport = {"msgtype": "qametric",
-         "timestamp": time.time(),
-         "iq": {"band": 85,
-                "delivered": 0.983,
-                "delivered_error": 0.1,
-                "zenith": 0.7 + random.uniform(-.5,.5),#0.947,
-                "zenith_error": 0.1,
-                "ellipticity": 0.118,
-                "ellip_error": 0.067,
-                "requested": 85,
-                "comment": ["High ellipticity"],
-                },
-         "cc": {"band": 70,
-                "zeropoint": {"e2v 10031-23-05, right":{"value":26.80,
-                                                        "error":0.05},
-                              "e2v 10031-01-03, right":{"value":26.86,
-                                                        "error":0.03},
-                              "e2v 10031-01-03, left":{"value":26.88,
-                                                       "error":0.06}},
-                "extinction": .5 + random.uniform(-.5,.5),#0.02,
-                "extinction_error": 0.5,
-                "requested": 50,
-                "comment": ["Requested CC not met"],
-                },
-         "bg": {"band": 100,
-                "brightness": 20 + random.uniform(-.8,.8),#19.17,
-                "brightness_error": 0.5,
-                "requested": 100,
-                "comment": []
-                },
-         }
-
-        def mock_metadata(ad, numcall = 0):
-            mtd = {"metadata":
-                    { "raw_filename": ad.filename,
-                      "datalabel": ad.data_label(),
-                      "local_time": ad.local_time().strftime("%H:%M:%S.%f"),
-                      "ut_time": ad.ut_datetime().strftime("%Y-%m-%d %H:%M:%S.%f"),
-                      "wavelength": ad.central_wavelength(asMicrometers=True),
-                      "filter": ad.filter_name(pretty=True),
-                      "waveband": ad.wavelength_band(),
-                      "airmass": ad.airmass(),
-                      "instrument": ad.instrument(),
-                      "object": ad.object(),
-                      "wfs": ad.wavefront_sensor(),
-                      "types": ad.tags,
-                    }
-                  }
-            import random
-            now = datetime.datetime.utcnow()
-            import time
-            if time.timezone / 3600 ==10:
-                tonight = now.replace(hour =5, minute=0)
-            else:
-                if now.hour>=18:
-                    now += datetime.timedelta(days=1)
-                    tonight = now.replace(hour =5, minute=0)
-            if (not hasattr(self, "datacounter")):
-                self.datacounter = 1
-            nexttime = datetime.timedelta(minutes = self.datacounter*15 + random.randint(-60,0))
-            self.datacounter += 1
-            now_ut = tonight + nexttime
-
-            filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
-                                            random.randint(1,999))
-            dl = "GN-2012B-Q-%i-1-001" % random.randint(1,20)
-
-            wlen = ["g","V","r","R","i","I","z","I"]
-            #wlen = ["u","U","b","B","g","V","r","R","i","I","z","I","Y","Y"]
-            #wlen = ["g","V"]
-            wlen_ind = 2*random.randint(0,len(wlen)/2-1)
-            
-            mtd["metadata"].update({"ut_time": now_ut.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                                    "datalabel": dl,
-                                    "raw_filename": filename,
-                                    "filter": wlen[wlen_ind],
-                                    "wavelength": wlen[wlen_ind],
-                                    "waveband": wlen[wlen_ind+1]})
-            delt = (now_ut - now.replace(hour=0,minute=0) )
-            nowsec = float(delt.days*86400 + delt.seconds)
-                
-            return (mtd, nowsec)
-        from time import sleep
-        from math import sin
-        if "test_num" in rc:
-                test_num = int(rc["test_num"])
-        else:
-                test_num = 1
-        if "test_burst" in rc:
-            test_burst = int(rc["test_burst"])
-        else:
-                test_burst = 1
-        if "test_sleep" in rc:
-            test_sleep = float(rc["test_sleep"])
-        else:
-            test_sleep = 1.0
-        for i in range(0,test_num):    
-            for inp in rc.get_inputs_as_astrodata():
-                mtd,nowsec = mock_metadata(inp)
-                num =  sin(nowsec/60/60)*.2
-                ch = random.choice(["iq", "cc", "bg"])
-                if ch == "iq":
-                    qad = {"band": 85,
-                        "delivered": 0.983,
-                        "delivered_error": 0.1,
-                        "zenith": 0.7 + num*.4 ,#0.947,
-                        "zenith_error": 0.1,
-                        "ellipticity": 0.118,
-                        "ellip_error": 0.067,
-                        "requested": 85,
-                        "comment": ["High ellipticity"],
-                        }
-                elif ch == "cc":
-                    qad = {"band": 70,
-                            "zeropoint": {"e2v 10031-23-05, right":{"value":26.80,
-                                                                    "error":0.05},
-                                          "e2v 10031-01-03, right":{"value":26.86,
-                                                                    "error":0.03},
-                                          "e2v 10031-01-03, left":{"value":26.88,
-                                                                   "error":0.06}},
-                            "extinction": .5 + num *.5,#0.02,
-                            "extinction_error": 0.5,
-                            "requested": 50,
-                            "comment": ["Requested CC not met"],
-                            }
-                elif ch == "bg":
-                    qad =  {"band": 100,
-                            "brightness": 20 + num *.8,#19.17,
-                            "brightness_error": 0.5,
-                            "requested": 100,
-                            "comment": []
-                            }
-                #print "pG108:"+pprint.pformat(qad)
-
-                rc.report_qametric(inp, ch, qad, metadata = mtd)
-            if i%test_burst == 0:
-                yield rc
-                sleep (test_sleep)
-            yield rc
-
-
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-
 
 def _iq_band(adinput=None,fwhm=None):
     """
