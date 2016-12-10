@@ -149,15 +149,9 @@ class QA(PrimitivesBASE):
                         std_e = sci_std
                     log.fullinfo("BG electrons = {:.3f}".format(bg_e))
 
-                    # Now divide it by the exposure time
-                    bg_e /= ext.exposure_time()
-                    std_e /= ext.exposure_time()
-                    log.fullinfo("BG electrons/s = {:.3f}".format(bg_e))
-
-                    # Now, it's in pixels, divide it by the area of a pixel
-                    # to get arcsec^2
-                    bg_e /= pixscale*pixscale
-                    std_e /= pixscale*pixscale
+                    # Now divide it by the exposure time and pixel area
+                    bg_e /= ext.exposure_time()*pixscale*pixscale
+                    std_e /= ext.exposure_time()*pixscale*pixscale
                     log.fullinfo("BG electrons/s/as^2 = {:.3f}".format(bg_e))
 
                     # Now get that in (instrumental) magnitudes...
@@ -877,7 +871,6 @@ class QA(PrimitivesBASE):
                 mean_ellips.append(None)
                 continue
 
-            print good_source
             # For AO observations, the AO-estimated seeing is used (the IQ
             # is also calculated from the image if possible)
             # measure Strehl if it is a NIRI or GNIRS Image
