@@ -158,7 +158,7 @@ def process_cal_requests(cal_requests):
 
     E.g., The returned dictionary has the form, 
 
-    { (input datalabel, caltype): (<filename>, <path_to_calibration>, caltype),
+    { (input datalabel, caltype): <filename_of_calibration_including_path>,
       ...
     }
 
@@ -166,7 +166,7 @@ def process_cal_requests(cal_requests):
     calibration_records = {}
     def _add_cal_record(rq, calfile):
         rqkey = (rq.datalabel, rq.caltype)
-        calrec = (rq.filename, calfile, rq.caltype)
+        calrec = calfile
         calibration_records.update({rqkey: calrec})
         return
 

@@ -16,6 +16,7 @@ from recipe_system.cal_service.calrequestlib import process_cal_requests
 from recipe_system.cal_service.transport_request import upload_calibration
 
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.cal_service import caches
 
 from parameters_calibdb import ParametersCalibration
 
@@ -42,9 +43,17 @@ class Calibration(PrimitivesBASE):
     def _get_cal(self, ad, caltype):
         key = (ad.data_label(), caltype)
         try:
-            return self.calibrations[key][1]    # check file is
+            calfile = self.calibrations[key]
         except KeyError:
             return None
+        else:
+            # If the file isn't on disk, delete it from the dict
+            if os.path.isfile(calfile):
+                return calfile
+            else:
+                del self.calibrations[key]
+                caches.save_cache(self.calibrations, caches.calindfile)
+                return None
 
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
