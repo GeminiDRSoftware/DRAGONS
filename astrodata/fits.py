@@ -383,12 +383,17 @@ class FitsProviderProxy(DataProvider):
             raise TypeError("Can't delete attributes on non-single slices")
         elif not attribute.isupper():
             raise ValueError("Can't delete non-capitalized attributes from slices")
-        self.nddata.__delattr__(attribute)
-        self.nddata.meta['other'].remove(attribute)
+        other, otherh = self.nddata.meta['other'], self.nddata.meta['other_header']
+        if attribute in other:
+            del other['attribute']
+            if attribute in otherh:
+                del otherh['attribute']
+        else:
+            raise AttributeError("'{}' does not exist in this extension".format(attribute))
 
     @property
     def exposed(self):
-        return self._provider._exposed.copy() | self._mapped_nddata(0).meta['other']
+        return self._provider._exposed.copy() | set(self._mapped_nddata(0).meta['other'])
 
     def __getitem__(self, slc):
         if self.is_single:
@@ -586,8 +591,8 @@ class FitsProvider(DataProvider):
 
     @force_load
     def _getattr_impl(self, attribute, nds):
-        # Exposed objects are part of the normal object interface. We may not
-        # have loaded them yet, and that's why we get here...
+        # Exposed objects are part of the normal object interface. We may have
+        # just lazy-loaded them, and that's why we get here...
         if attribute in self._exposed:
             return getattr(self, attribute)
 
@@ -708,8 +713,8 @@ class FitsProvider(DataProvider):
         for idx, obj in enumerate(self._nddata):
             header = obj.meta['header']
             other_objects = []
-            for name in ['uncertainty', 'mask'] + sorted(obj.meta['other']):
-                other = getattr(obj, name)
+            fixed = (('uncertainty', obj.uncertainty), ('mask', obj.mask))
+            for name, other in fixed + tuple(sorted(obj.meta['other'].items())):
                 if other is not None:
                     if isinstance(other, Table):
                         other_objects.append(dict(
@@ -851,12 +856,12 @@ class FitsProvider(DataProvider):
                     ver = 1
                 header['EXTVER'] = ver
                 oheaders = nd.meta['other_header']
-                for extname in nd.meta['other']:
+                for extname, ext in nd.meta['other'].items():
                     try:
                         oheaders[extname]['EXTVER'] = ver
                     except KeyError:
                         # This must be a table. Assume that it has meta
-                        getattr(nd, extname).meta['header']['EXTVER'] = ver
+                        ext.meta['header']['EXTVER'] = ver
 
             nd.meta['ver'] = ver
 
@@ -1075,10 +1080,13 @@ class FitsProvider(DataProvider):
         for nd in nds:
             dim = nd.data.shape
             self._crop_nd(nd, x1, y1, x2, y2)
-            for o in nd.meta['other']:
-                if isinstance(o, NDData):
+            for o in nd.meta['other'].items():
+                try:
                     if o.shape == dim:
                         self._crop_nd(o)
+                except AttributeError:
+                    # No 'shape' attribute in the object. It's probably not array-like
+                    pass
 
     def crop(self, x1, y1, x2, y2):
         self._crop_impl(x1, y1, x2, y2)
