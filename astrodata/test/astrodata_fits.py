@@ -1,4 +1,5 @@
 import pytest
+import tempfile
 import os
 
 import numpy as np
@@ -37,3 +38,11 @@ def test_raise_attribute_error_when_accessing_missing_extenions():
     ad = from_chara('N20131215S0202_refcatAdded.fits')
     with pytest.raises(AttributeError) as excinfo:
         ad.ABC
+
+# Some times, internal changes break the writing capability. Make sure that
+# this is the case, always
+def test_write_without_exceptions():
+    # Use an image that we know contains complex structure
+    ad = from_chara('N20131215S0202_refcatAdded.fits')
+    with tempfile.TemporaryFile() as tf:
+        ad.write(tf)
