@@ -997,8 +997,7 @@ class FitsProvider(DataProvider):
             if ext.mask is not None:
                 hlst.append(new_imagehdu(ext.mask, header, 'DQ'))
 
-            for name in ext.meta.get('other', ()):
-                other = getattr(ext, name)
+            for name, other in ext.meta.get('other', {}).items():
                 if isinstance(other, Table):
                     hlst.append(table_to_bintablehdu(other))
                 elif isinstance(other, np.ndarray):
@@ -1332,12 +1331,12 @@ class AstroDataFits(AstroData):
     def info(self):
         self._dataprov.info(self.tags)
 
-    def write(self, filename=None, clobber=False):
-        if filename is None:
+    def write(self, fileobj=None, clobber=False):
+        if fileobj is None:
             if self.path is None:
                 raise ValueError("A file name needs to be specified")
-            filename = self.path
-        self._dataprov.to_hdulist().writeto(filename, clobber=clobber)
+            fileobj = self.path
+        self._dataprov.to_hdulist().writeto(fileobj, clobber=clobber)
 
 
     @astro_data_descriptor
