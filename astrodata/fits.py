@@ -598,6 +598,7 @@ class FitsProvider(DataProvider):
 
         raise AttributeError("Not found")
 
+    @force_load
     def __getattr__(self, attribute):
         try:
             return self._getattr_impl(attribute, self._nddata)
