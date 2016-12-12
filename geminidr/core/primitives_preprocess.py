@@ -41,11 +41,10 @@ class Preprocess(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.addObjectMaskToDQ["suffix"]
         for ad in adinputs:
             for ext in ad:
-                if getattr(ext, 'OBJMASK', None):
+                if hasattr(ext, 'OBJMASK'):
                     if ext.mask is None:
                         ext.mask = deepcopy(ext.OBJMASK)
                     else:
