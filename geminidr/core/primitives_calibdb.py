@@ -129,8 +129,7 @@ class Calibration(PrimitivesBASE):
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
             ad.write(filename=fname, clobber=True)
             log.stdinfo("Calibration stored as {}".format(fname))
-            if self.upload_calibrations:       # !!! This does not exist!!!
-                                               # OR  if 'uplaod' in self.context ??
+            if 'upload' in self.context:
                 try:
                     upload_calibration(fname)
                 except:
