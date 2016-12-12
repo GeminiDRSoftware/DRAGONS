@@ -1,7 +1,7 @@
 from types import StringTypes
 from abc import abstractmethod
 from copy import deepcopy
-from collections import defaultdict, namedtuple
+from collections import namedtuple, OrderedDict
 import os
 from functools import partial, wraps
 from itertools import izip_longest, ifilterfalse
@@ -350,8 +350,8 @@ class FitsProviderProxy(DataProvider):
         if self.is_single:
             if attribute.isupper():
                 try:
-                    return getattr(self._mapped_nddata(0), attribute)
-                except AttributeError:
+                    return self._mapped_nddata(0).meta['other'][attribute]
+                except KeyError:
                     # Not found. Will raise an exception...
                     pass
         raise AttributeError("{} not found in this object".format(attribute))
@@ -541,49 +541,6 @@ def force_load(fn):
         self._lazy_populate_object()
         return fn(self, *args, **kw)
     return wrapper
-
-class OrderedSet(set):
-    """This class is NOT a fully implemented set. Things will break if you try
-       to use it as such. It's here only to provide the NDData's with a way to
-       record in which order were their associated extensions attached"""
-    def __init__(self, iterable=None):
-        super(OrderedSet, self).__init__()
-        self.__list = []
-        if iterable is not None:
-            self._mass_add(iterable)
-
-    def __iter__(self):
-        return iter(self.__list)
-
-    def copy(self):
-        cp = OrderedSet()
-        super(OrderedSet, cp).__init__(self)
-        cp.__list = self.__list[:]
-        return cp
-
-    def _mass_add(self, iterable):
-        for element in ifilterfalse(self.__contains__, iterable):
-            self.add(element)
-
-    def add(self, element):
-        if element not in self:
-            self.__list.append(element)
-        super(OrderedSet, self).add(element)
-
-    def remove(self, element):
-        super(OrderedSet, self).remove(element)
-        self.__list.remove(element)
-
-    def discard(self, element):
-        try:
-            self.remove(element)
-        except KeyError:
-            pass
-
-    def update(self, *ulist):
-        if ulist:
-            for iterable in ulist:
-                self._mass_add(iterable)
 
 class FitsProvider(DataProvider):
     def __init__(self):
@@ -882,7 +839,7 @@ class FitsProvider(DataProvider):
 
         if top_level:
             if 'other' not in nd.meta:
-                nd.meta['other'] = OrderedSet()
+                nd.meta['other'] = OrderedDict()
                 nd.meta['other_header'] = {}
 
             if reset_ver or ver == -1:
@@ -1135,7 +1092,7 @@ class FitsProvider(DataProvider):
             self._nddata.append(self._process_pixel_plane(ext, top_level=True, reset_ver=reset_ver))
             return ext
         else:
-            add_to_other = False
+            add_to_other = None
             if isinstance(ext, (Table, _TableBaseHDU)):
                 tb = self._process_table(ext, name)
                 hname = tb.meta['header'].get('EXTNAME') if name is None else name
@@ -1148,8 +1105,8 @@ class FitsProvider(DataProvider):
                     self._exposed.add(hname)
                 else:
                     setattr(add_to, hname, tb)
-                    add_to_other = True
-                    add_to.meta['other'].add(hname)
+                    add_to_other = (hname, tb, tb.meta['header'])
+                    add_to.meta['other'][hname] = tb
                 ret = tb
             else: # Assume that this is a pixel plane
                 # Special cases for Gemini
@@ -1178,15 +1135,18 @@ class FitsProvider(DataProvider):
                         hname = header.get('EXTNAME') if name is None else name
                         if hname is None:
                             raise TypeError("Can't append pixel planes to other objects without a name")
-                        setattr(add_to, hname, nd.data)
-                        add_to_other = True
-                        add_to.meta['other_header'][hname] = nd.meta['header']
+                        add_to_other = (hname, nd.data, header)
 
                     ret = nd
-            if add_to_other:
-                add_to.meta['other'].add(hname)
-                header = ret.meta['header']
+            try:
+                oname, data, header = add_to_other
                 header['EXTVER'] = add_to.meta.get('ver', -1)
+                meta = add_to.meta
+                meta['other'][oname] = data
+                meta['other_header'][oname] = header
+            except TypeError:
+                pass
+
             return ret
 
     def append(self, ext, name=None, reset_ver=False):

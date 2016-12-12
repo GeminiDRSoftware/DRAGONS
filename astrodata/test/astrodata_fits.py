@@ -1,11 +1,12 @@
 import pytest
-import astrodata
-import gemini_instruments
 import os
 
-THIS_DIR = os.path.dirname(__file__)
+import numpy as np
 
-from lut_descriptors import fixture_data as descriptors_fixture_data
+import astrodata
+import gemini_instruments
+
+THIS_DIR = os.path.dirname(__file__)
 
 # Tests to perform:
 
@@ -14,13 +15,10 @@ from lut_descriptors import fixture_data as descriptors_fixture_data
 # Slicing
 # Slicing to single
 
+# Regression:
 
-class FixtureIterator(object):
-    def __init__(self, data_dict):
-        self._data = data_dict
-
-    def __iter__(self):
-        for (instr, filename) in sorted(self._data.keys()):
-            ad = astrodata.open(os.path.join(THIS_DIR, 'test_data/{}/{}').format(instr, filename))
-            for desc, value in self._data[(instr, filename)]:
-                yield filename, ad, desc, value
+def test_do_arith_and_retain_features():
+    ad = astrodata.open(os.path.join(THIS_DIR, 'test_data/NIFS/N20160727S0077.fits'))
+    ad[0].NEW_FEATURE = np.array([1, 2, 3, 4, 5])
+    ad2 = ad * 5
+    ad[0].NEW_FEATURE == ad2[0].NEW_FEATURE
