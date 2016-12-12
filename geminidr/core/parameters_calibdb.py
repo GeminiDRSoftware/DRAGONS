@@ -19,3 +19,6 @@ class ParametersCalibration(ParametersBASE):
     storeProcessedFlat = {
         "suffix"            : "_flat",
     }
+    storeProcessedFringe = {
+        "suffix"            : "_fringe",
+    }
