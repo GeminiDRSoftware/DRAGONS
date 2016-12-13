@@ -26,7 +26,6 @@ from geminidr import PrimitivesBASE
 class Calibration(PrimitivesBASE):
     """
     Only 'storeProcessedXXX' calibration primitives have associated parameters.
-
     """
     tagset = None
 
@@ -118,14 +117,16 @@ class Calibration(PrimitivesBASE):
     def storeCalibration(self, adinputs=None, stream='main', **params):
         """
         Will write calibrations in calibrations/<cal_type>/
-
         """ 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         storedcals = self.cachedict["calibrations"]
         caltype = params["caltype"]
 
-        # Need a check here to make sure path calibrations/<cal_type> exists.
+        # Create storage directory if it doesn't exist
+        if not os.path.exists(os.path.join(storedcals, caltype)):
+            os.mkdir(os.path.join(storedcals, caltype))
+
         for ad in adinputs:
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
             ad.write(fname, clobber=True)
@@ -138,7 +139,6 @@ class Calibration(PrimitivesBASE):
                 else:
                     msg = "File {} uploaded to fitsstore."
                     log.stdinfo(msg.format(os.path.basename(ad.filename)))
-
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, stream='main', **params):
@@ -237,5 +237,4 @@ def _update_datalab(ad, suffix, keyword_comments_lut):
     gt.update_key(adinput=ad, keyword="DATALAB", value=new_datalab,
                   comment=None, extname="PHU", 
                   keyword_comments=keyword_comments_lut)
-
     return
