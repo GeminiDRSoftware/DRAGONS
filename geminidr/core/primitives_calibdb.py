@@ -26,12 +26,12 @@ from geminidr import PrimitivesBASE
 class Calibration(PrimitivesBASE):
     """
     Only 'storeProcessedXXX' calibration primitives have associated parameters.
-
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmeterics=False, ucals=None, uparms=None):
-        super(Calibration, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Calibration, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                          ucals=ucals, uparms=uparms)
         self.parameters = ParametersCalibration
         self._not_found = "Calibration not found for {}"
 
@@ -117,17 +117,19 @@ class Calibration(PrimitivesBASE):
     def storeCalibration(self, adinputs=None, stream='main', **params):
         """
         Will write calibrations in calibrations/<cal_type>/
-
         """ 
-        caltype = params.get('caltype')
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         storedcals = self.cachedict["calibrations"]
+        caltype = params["caltype"]
 
-        # Need a check here to make sure path calibrations/<cal_type> exists.
+        # Create storage directory if it doesn't exist
+        if not os.path.exists(os.path.join(storedcals, caltype)):
+            os.mkdir(os.path.join(storedcals, caltype))
+
         for ad in adinputs:
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
-            ad.write(filename=fname, clobber=True)
+            ad.write(fname, clobber=True)
             log.stdinfo("Calibration stored as {}".format(fname))
             if 'upload' in self.context:
                 try:
@@ -137,14 +139,13 @@ class Calibration(PrimitivesBASE):
                 else:
                     msg = "File {} uploaded to fitsstore."
                     log.stdinfo(msg.format(os.path.basename(ad.filename)))
-
         return adinputs
 
     def storeProcessedArc(self, adinputs=None, stream='main', **params):
         caltype = 'processed_arc'
         log = self.log
-        parset = getattr(self.parameters, self.myself())
-        sfx = getattr(parset, 'suffix')
+        pars = getattr(self.parameters, self.myself())
+        sfx = pars["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -157,8 +158,8 @@ class Calibration(PrimitivesBASE):
     def storeProcessedBias(self, adinputs=None, stream='main', **params):
         caltype = 'processed_bias'
         log = self.log
-        parset = getattr(self.parameters, self.myself())
-        sfx = getattr(parset, 'suffix')
+        pars = getattr(self.parameters, self.myself())
+        sfx = pars["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -171,8 +172,8 @@ class Calibration(PrimitivesBASE):
     def storeBPM(self, adinputs=None, stream='main', **params):
         caltype = 'bpm'
         log = self.log
-        sfx = "_bpm"
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        sfx = '_bpm'
+        log.debug(gt.uog_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="BPM")
@@ -183,8 +184,8 @@ class Calibration(PrimitivesBASE):
     def storeProcessedDark(self, adinputs=None, stream='main', **params):
         caltype = 'processed_dark'
         log = self.log
-        parset = getattr(self.parameters, self.myself())
-        sfx = getattr(parset, 'suffix')
+        pars = getattr(self.parameters, self.myself())
+        sfx = pars["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -197,8 +198,8 @@ class Calibration(PrimitivesBASE):
     def storeProcessedFlat(self, adinputs=None, stream='main', **params):
         caltype = 'processed_flat'
         log = self.log
-        parset = getattr(self.parameters, self.myself())
-        sfx = getattr(parset, 'suffix')
+        pars = getattr(self.parameters, self.myself())
+        sfx = pars["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -211,17 +212,16 @@ class Calibration(PrimitivesBASE):
     def storeProcessedFringe(self, adinputs=None, stream='main', **params):
         caltype = 'processed_fringe'
         log = self.log
-        parset = getattr(self.parameters, self.myself())
-        sfx = getattr(parset, 'suffix')
+        pars = getattr(self.parameters, self.myself())
+        sfx = pars["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe", 
-                                          keyword_comments=self.keyword_comments)[0]
-
+                                          keyword_comments=self.keyword_comments)
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFRNG")
         
-        self.storeCalibration(adinputs, caltype)
+        self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
 ##################
@@ -237,5 +237,4 @@ def _update_datalab(ad, suffix, keyword_comments_lut):
     gt.update_key(adinput=ad, keyword="DATALAB", value=new_datalab,
                   comment=None, extname="PHU", 
                   keyword_comments=keyword_comments_lut)
-
     return

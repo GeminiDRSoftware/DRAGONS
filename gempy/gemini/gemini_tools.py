@@ -908,9 +908,6 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         log.error("TypeError: keyword comments dict was not received.")
         raise TypeError("keyword comments dict required")
     
-    # Initialize the list of output AstroData objects
-    adoutput = []
-
     if caltype is None:
         raise ValueError("Caltype should not be None")
 
@@ -1004,10 +1001,7 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
                 elif "flat" in caltype:
                     ext.hdr.set("OBJECT", "Flat Frame",
                                       keyword_comments["OBJECT"])
-
-        adoutput.append(ad)
-
-    return adoutput
+    return adinput
 
 
 def filename_updater(adinput=None, infilename='', suffix='', prefix='',
