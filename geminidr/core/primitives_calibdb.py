@@ -30,8 +30,9 @@ class Calibration(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmeterics=False, ucals=None, uparms=None):
-        super(Calibration, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Calibration, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                          ucals=ucals, uparms=uparms)
         self.parameters = ParametersCalibration
         self._not_found = "Calibration not found for {}"
 
