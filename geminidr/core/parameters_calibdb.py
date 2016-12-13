@@ -3,7 +3,7 @@
 
 from geminidr import ParametersBASE
 
-class ParametersCalibration(ParametersBASE):
+class ParametersCalibDB(ParametersBASE):
     getCalibration    = {
         "caltype"           : None,
     }

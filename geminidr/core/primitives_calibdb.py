@@ -18,21 +18,21 @@ from recipe_system.cal_service.transport_request import upload_calibration
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.cal_service import caches
 
-from parameters_calibdb import ParametersCalibration
+from parameters_calibdb import ParametersCalibDB
 
 from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
 @parameter_override
-class Calibration(PrimitivesBASE):
+class CalibDB(PrimitivesBASE):
     """
     Only 'storeProcessedXXX' calibration primitives have associated parameters.
     """
     tagset = None
 
     def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Calibration, self).__init__(adinputs, context, upmetrics=upmetrics,
+        super(CalibDB, self).__init__(adinputs, context, upmetrics=upmetrics,
                                           ucals=ucals, uparms=uparms)
-        self.parameters = ParametersCalibration
+        self.parameters = ParametersCalibDB
         self._not_found = "Calibration not found for {}"
 
     def _add_cal(self, crecords):

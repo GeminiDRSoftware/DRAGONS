@@ -1,5 +1,6 @@
 from ..config import globalConf
 from . import transport_request
+from . import caches
 
 try:
     from . import localmanager
@@ -49,3 +50,37 @@ def cal_search_factory():
         pass
 
     return ret
+
+class Calibrations(dict):
+    def __init__(self,*args,**kwargs):
+        dict.__init__(self,*args,**kwargs)
+        caches.set_caches()
+        self.update(caches.load_cache(caches.calindfile))
+
+    def __getitem__(self, key):
+        return self._get_cal(*key)
+
+    def __setitem__(self, key, val):
+        self._add_cal(key, val)
+        return
+
+    def _add_cal(self, key, val):
+        # Munge the key from (ad, caltype) to (ad.data_label, caltype)
+        key = (key[0].data_label(), key[1])
+        self.update({key: val})
+        caches.save_cache(self, caches.calindfile)
+        return
+
+    def _get_cal(self, ad, caltype):
+        key = (ad.data_label(), caltype)
+        calfile = self.get(key)
+        if calfile is None:
+            return None
+        else:
+            # If the file isn't on disk, delete it from the dict
+            if os.path.isfile(calfile):
+                return calfile
+            else:
+                del self[key]
+                caches.save_cache(self, caches.calindfile)
+                return None

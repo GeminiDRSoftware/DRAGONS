@@ -31,8 +31,10 @@ from gemini.lookups import keyword_comments
 from gemini.lookups import timestamp_keywords
 from gemini.lookups.source_detection import sextractor_default_dict
 
-from recipe_system.utils.decorators import parameter_override
 from recipe_system.cal_service import caches
+from recipe_system.cal_service import Calibrations
+
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesBASE(object):
@@ -71,7 +73,7 @@ class PrimitivesBASE(object):
 
         self.streams          = {}
         self.cachedict        = caches.set_caches()
-        self.calibrations     = caches.load_cache(caches.calindfile)
+        self.calibrations     = Calibrations()
         self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.

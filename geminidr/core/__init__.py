@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from .primitives_bookkeeping import Bookkeeping
-from .primitives_calibdb import Calibration
+from .primitives_calibdb import CalibDB
 from .primitives_ccd import CCD
 from .primitives_image import Image
 from .primitives_photometry import Photometry
