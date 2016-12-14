@@ -41,19 +41,17 @@ class CalibDB(PrimitivesBASE):
         return
 
     def _get_cal(self, ad, caltype):
-        key = (ad.data_label(), caltype)
-        try:
-            calfile = self.calibrations[key]
-        except KeyError:
+        key = (ad, caltype)
+        calfile = self.calibrations[key]
+        if not calfile:
             return None
+        # If the file isn't on disk, delete it from the dict
+        if os.path.isfile(calfile):
+            return calfile
         else:
-            # If the file isn't on disk, delete it from the dict
-            if os.path.isfile(calfile):
-                return calfile
-            else:
-                del self.calibrations[key]
-                caches.save_cache(self.calibrations, caches.calindfile)
-                return None
+            del self.calibrations[key]
+            caches.save_cache(self.calibrations, caches.calindfile)
+            return None
 
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
@@ -72,6 +70,7 @@ class CalibDB(PrimitivesBASE):
         rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
         cal_requests = get_cal_requests(rqs_actual, caltype)
         calibration_records = process_cal_requests(cal_requests)
+        log.stdinfo(str(calibration_records))
         self._add_cal(calibration_records)
         return adinputs
 

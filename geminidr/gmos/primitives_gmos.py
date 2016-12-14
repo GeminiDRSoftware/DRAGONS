@@ -10,8 +10,8 @@ from gempy.scripts.gmoss_fix_headers import correct_headers
 
 from geminidr.core import CCD
 from geminidr.gemini.primitives_gemini import Gemini
-from geminidr.gemini.parameters_gmos import ParametersGMOS
-from geminidr.gemini.lookups.array_gaps import gmosArrayGaps
+from geminidr.gmos.parameters_gmos import ParametersGMOS
+from geminidr.gmos.lookups.array_gaps import gmosArrayGaps
 
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
