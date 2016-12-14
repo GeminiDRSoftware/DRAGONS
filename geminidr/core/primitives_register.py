@@ -152,7 +152,8 @@ class Register(PrimitivesBASE):
         # use indirect alignment for all images at once
         if method == "header":
             log.stdinfo("Using WCS specified in header for alignment")
-            reg_ad = _header_align(ref_image, adinputs[1:])
+            reg_ad = _header_align(ref_image, adinputs[1:],
+                                   self.keyword_comments)
             # Not sure this is needed as everything has been done in-place
             adoutputs.extend(reg_ad)
 
@@ -166,7 +167,8 @@ class Register(PrimitivesBASE):
                     if fallback == 'header':
                         log.warning("Only attempting indirect WCS alignment, "
                                     "via {} mapping".format(fallback))
-                        adoutput = _header_align(ref_image, [ad])
+                        adoutput = _header_align(ref_image, [ad],
+                                                 self.keyword_comments)
                     else:
                         log.warning("WCS can only be corrected indirectly "
                             "and fallback=None. Not attempting WCS correction "
@@ -205,7 +207,8 @@ class Register(PrimitivesBASE):
                         if fallback=='header':
                             log.warning("Only attempting indirect WCS "
                                 "alignment, via {} mapping".format(fallback))
-                            adoutput = _header_align(ref_image, ad)
+                            adoutput = _header_align(ref_image, ad,
+                                                     self.keyword_comments)
                         else:
                             log.warning("WCS can only be corrected indirectly "
                                 "and fallback=None. Not attempting WCS "
@@ -235,7 +238,8 @@ class Register(PrimitivesBASE):
                         log.fullinfo("")
 
                         adoutput = _align_wcs(ref_image, ad, [obj_list],
-                                              rotate=rotate, scale=scale)
+                                        rotate=rotate, scale=scale,
+                                        keyword_comemnts=self.keyword_comments)
                 adoutputs.extend(adoutput)
 
         # Timestamp and update filenames
@@ -509,12 +513,9 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, min_sources=1,
     ind1,ind2 = at.match_cxy(x1,conv_x2, y1,conv_y2,
                              first_pass=firstPass, delta=delta, log=log)
 
-    if len(ind1)<1 or len(ind2)<1:
-        return [[],[]]
-    else:
-        obj_list = [zip(x1[ind1], y1[ind1]),
-                    zip(x2[ind2], y2[ind2])]
-        return obj_list
+    obj_list = [[],[]] if len(ind1)<1 else [zip(x1[ind1], y1[ind1]),
+                                            zip(x2[ind2], y2[ind2])]
+    return obj_list
 
 def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1, cull_sources=False):
     """
@@ -568,70 +569,54 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
     # Shift the catalog of image to be aligned using the header offsets.
     # The instrument alignment angle should be used to check how to 
     # use the offsets.
-    poffset1 = ad1.phu_get_key_value("POFFSET")
-    qoffset1 = ad1.phu_get_key_value("QOFFSET")
-    poffset2 = ad2.phu_get_key_value("POFFSET")
-    qoffset2 = ad2.phu_get_key_value("QOFFSET")
+    poffset1 = ad1.phu.POFFSET
+    qoffset1 = ad1.phu.QOFFSET
+    poffset2 = ad2.phu.POFFSET
+    qoffset2 = ad2.phu.QOFFSET
     pixscale = ad1.pixel_scale()
     xdiff = -1.0 * (qoffset1 - qoffset2) / pixscale
     ydiff = (poffset1 - poffset2) / pixscale
     
-    pa1 = ad1.phu_get_key_value("PA")
-    pa2 = ad2.phu_get_key_value("PA")
-    if (abs(pa1 - pa2) < 1.0):
+    pa1 = ad1.phu.PA
+    pa2 = ad2.phu.PA
+    # Can only deal with rotations for GNIRS at the moment. This code
+    # will need to be totally rewritten to generalize it, so I'm going
+    # to do a quick and ugly refactor.
+    if abs(pa1 - pa2)<1.0 or ad1.instrument()!='GNIRS':
         conv_x2 = [(item - xdiff) for item in x2]
         conv_y2 = [(item - ydiff) for item in y2]
-        log.fullinfo("Less than 1 degree of rotation between the frames, "
-                    "no rotation applied.")
-        log.fullinfo("dx = {} px, dy = {} px applied from the headers"
-                    "".format(xdiff, ydiff, pa1 - pa2))
+        if abs(pa1 - pa2)<1.0:
+            log.fullinfo("Less than 1 degree of rotation between the frames, "
+                         "no rotation applied.")
+        else:
+            log.fullinfo("No frame center found for {}, no rotation can "
+                        "be applied.".format(ad2.filename))
+        log.fullinfo("dx = {} px, dy = {} px applied from the headers".
+                    format(xdiff, ydiff))
     else:
         theta = math.radians(pa1 - pa2)
-    
-        # Fetch the center of the frame
-        inst = ad1.instrument()
-        instlow = ad1.instrument().as_pytype().lower()
-        lookup_name = instlow + "CenterDict"
-        lookup_path = "astrodata_{0}.ADCONFIG_{0}.lookups.{1}.{1}CenterDict"
-        centerdict_mod = lookup_path.format(pkgname, inst)
-        CenterDict = import_module(centerdict_mod)
-        center_dict = eval("CenterDict.{}".format(lookup_name))
-        key = "IMAGE"
-        if key in center_dict:
-            centerx, centery = center_dict[key]
-            x2temp = [(item - xdiff - centerx) for item in x2]
-            y2temp = [(item - ydiff - centery) for item in y2]
-            x2trans = [((xt * math.cos(theta)) - (yt * math.sin(theta))) 
-                       for xt, yt in zip(x2temp, y2temp)]
-            y2trans = [((xt * math.sin(theta)) + (yt * math.cos(theta))) 
-                       for xt, yt in zip(x2temp, y2temp)]
-            conv_x2 = [(xt + centerx) for xt in x2trans]
-            conv_y2 = [(yt + centery) for yt in y2trans]
-            log.fullinfo("dx = {} px, dy = {} px, rotation = {} degrees "
-                        "applied from the headers".format(xdiff, ydiff, pa1 - pa2))
-        else:
-            log.warning("No frame center found for {}, no rotation can "
-                        "be applied.".format(ad2.filename))
-            conv_x2 = [(item - xdiff) for item in x2]
-            conv_y2 = [(item - ydiff) for item in y2]
-            log.fullinfo("dx = {} px, dy = {} px applied from the headers"
-                        "".format(xdiff, ydiff, pa1 - pa2))
-   
+        centerx, centery = 630.0, 520.0 # grabbed from gnirsCenterDict
+        x2temp = [(item - xdiff - centerx) for item in x2]
+        y2temp = [(item - ydiff - centery) for item in y2]
+        x2trans = [((xt * math.cos(theta)) - (yt * math.sin(theta)))
+                   for xt, yt in zip(x2temp, y2temp)]
+        y2trans = [((xt * math.sin(theta)) + (yt * math.cos(theta)))
+                   for xt, yt in zip(x2temp, y2temp)]
+        conv_x2 = [(xt + centerx) for xt in x2trans]
+        conv_y2 = [(yt + centery) for yt in y2trans]
+        log.fullinfo("dx = {} px, dy = {} px, rotation = {} degrees "
+                    "applied from the headers".format(xdiff, ydiff, pa1 - pa2))
+
     # find matches
     ind1,ind2 = at.match_cxy(x1,conv_x2,y1,conv_y2,
-                             delta=delta, firstPass=firstPass, log=log)
+                             delta=delta, first_pass=firstPass, log=log)
 
-    if len(ind1)!=len(ind2):
-        raise Errors.ScienceError("Mismatched arrays returned from match_cxy")
-    
-    if len(ind1)<1 or len(ind2)<1:
-        return [[],[]]
-    else:
-        obj_list = [zip(x1[ind1], y1[ind1]),
-                    zip(x2[ind2], y2[ind2])]
-        return obj_list
+    obj_list = [[],[]] if len(ind1)<1 else [zip(x1[ind1], y1[ind1]),
+                                            zip(x2[ind2], y2[ind2])]
+    return obj_list
 
-def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False):
+def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
+               keyword_comments=keyword_comments):
     """
     This function fits an input image's WCS to a reference image's WCS
     by minimizing the difference in the input image frame between
@@ -672,6 +657,7 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False):
         # convert the reference coordinates to RA/Dec
         ref_radec = ref_wcs.all_pix2world(ref_xy,1)
 
+        #TODO: redo this with astropy.modeling
         # instantiate the alignment object used to fit input
         # WCS to reference WCS
         wcstweak = at.WCSTweak(inp_wcs, inp_xy, ref_radec, 
@@ -680,7 +666,6 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False):
         # find optimum WCS shift and rotation with
         # starting parameters: dRA, dDec = 0
         # (and dTheta=0 if rotate=True, dMag=1 if scale=True)
-        
         update = False
         if rotate and scale:
             pars = [0,0,0,1]
@@ -691,36 +676,26 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False):
         else:
             pars = [0,0]
         
-        try:
-            # for scipy versions < 0.9
-            new_pars,success = scipy.optimize.leastsq(wcstweak.calc_diff, pars,
-                                                      warning=False, 
-                                                      maxfev=1000)
-        except:
-            # for scipy versions >= 0.9
-            import warnings
-            warnings.simplefilter("ignore")
-            new_pars,success = scipy.optimize.leastsq(wcstweak.calc_diff, pars,
-                                                      maxfev=1000)
+        import warnings
+        warnings.simplefilter("ignore")
+        plsq = scipy.optimize.leastsq(wcstweak.calc_diff, pars, maxfev=1000)
+        new_pars = plsq[0]
+        success = plsq[4]
         
         if success<4:
             update = True
             if rotate and scale:
-                (dRA, dDec, dTheta, dMag) = new_pars
-                log.fullinfo("Best fit dRA, dDec, dTheta, dMag: " +
-                             "%.5f %.5f %.5f %.5f" %
-                             (dRA, dDec, dTheta, dMag))
+                log.fullinfo("Best fit dRA, dDec, dTheta, dMag: {:.5f} {:5.f}"
+                             " {:.5f} {:.5f}".format(*new_pars))
             elif rotate:
-                (dRA, dDec, dTheta) = new_pars
-                log.fullinfo("Best fit dRA, dDec, dTheta: %.5f %.5f %.5f" %
-                             (dRA, dDec, dTheta))
+                log.fullinfo("Best fit dRA, dDec, dTheta: {:.5f} {:.5f} "
+                             "{:.5f}".format(*new_pars))
             elif scale:
-                (dRA, dDec, dMag) = new_pars
-                log.fullinfo("Best fit dRA, dDec, dMag: %.5f %.5f %.5f" %
-                             (dRA, dDec, dMag))
+                log.fullinfo("Best fit dRA, dDec, dMag: {:.5f} {:.5f} "
+                             "{:.5f}".format(*new_pars))
             else:
-                (dRA, dDec) = new_pars
-                log.fullinfo("Best fit dRA, dDec: %.5f %.5f" % (dRA, dDec))
+                log.fullinfo("Best fit dRA, dDec: {:.5f} {:.5f}".format(
+                    *new_pars))
         else:
             log.warning("WCS alignment did not converge. Not updating WCS.")
         
@@ -735,7 +710,7 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False):
                                comment=keyword_comments["CD{}_{}".format(ax, ax2)])
     return adinput
 
-def _header_align(ref_ad, adinput):
+def _header_align(ref_ad, adinput, keyword_comments):
     """
     This function uses the POFFSET, QOFFSET and PA header keywords 
     to get reference points to use in correcting an input WCS to
@@ -788,5 +763,5 @@ def _header_align(ref_ad, adinput):
         objIns.append(np.array([[ref_coord],[[img_x,img_y]]]))
 
     adoutput_list = _align_wcs(ref_ad, adinput, objIns,
-                               rotate=False, scale=False)
+                rotate=False, scale=False, keyword_comments=keyword_comments)
     return adoutput_list
