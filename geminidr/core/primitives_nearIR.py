@@ -13,7 +13,7 @@ from gempy.gemini import gemini_tools as gt
 
 from recipe_system.utils.decorators import parameter_override
 
-from .parameters_NIR import ParametersNIR
+from geminidr.core.parameters_NIR import ParametersNIR
 
 from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
@@ -38,8 +38,9 @@ from geminidr import PrimitivesBASE
 class NIR(PrimitivesBASE):
     tagset = None
 
-    def __init__(self, adinputs, context, upmeterics=False, ucals=None, uparms=None):
-        super(NIR, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None,uparms=None):
+        super(NIR, self).__init__(adinputs, context, upmetrics=upmetrics, 
+                                  ucals=ucals, uparms=uparms)
         self.parameters = ParametersNIR
 
     def makeBPM(self, adinputs=None, stream='main', **params):

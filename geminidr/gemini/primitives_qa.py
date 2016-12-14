@@ -1,20 +1,22 @@
-import astrodata
-import gemini_instruments
 import math
 import sys
 from copy import deepcopy
 
 import numpy as np
-from .lookups import qaConstraints as qa
 from astropy.stats import sigma_clip
 from scipy.special import j1
 
+import astrodata
+import gemini_instruments
 from gemini_instruments.gmos.pixel_functions import get_bias_level
+
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
+
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from .parameters_qa import ParametersQA
+from geminidr.gemini.lookups import qaConstraints as qa
+from geminidr.gemini.parameters_qa import ParametersQA
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -25,9 +27,9 @@ class QA(PrimitivesBASE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(QA, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False,ucals=None,uparms=None):
+        super(QA, self).__init__(adinputs, context, upmetrics=upmetrics, 
+                                 ucals=ucals, uparms=uparms)
         self.parameters = ParametersQA
 
     def measureBG(self, adinputs=None, stream='main', **params):

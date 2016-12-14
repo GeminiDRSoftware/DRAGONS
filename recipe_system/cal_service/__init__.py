@@ -1,3 +1,4 @@
+import os
 from ..config import globalConf
 from . import transport_request
 from . import caches
@@ -52,8 +53,8 @@ def cal_search_factory():
     return ret
 
 class Calibrations(dict):
-    def __init__(self,*args,**kwargs):
-        dict.__init__(self,*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
         caches.set_caches()
         self.update(caches.load_cache(caches.calindfile))
 

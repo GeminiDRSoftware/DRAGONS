@@ -11,9 +11,9 @@ import numpy as np
 from astropy.stats import sigma_clip
 from astropy.wcs import WCS
 
-from .. import PrimitivesBASE, __file__ as drroot
+from geminidr import PrimitivesBASE, __file__ as drroot
 from geminidr.gemini.lookups import ColorCorrections
-from .parameters_photometry import ParametersPhotometry
+from geminidr.core.parameters_photometry import ParametersPhotometry
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -24,9 +24,9 @@ class Photometry(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Photometry, self).__init__(adinputs, context, ucals=ucals,
-                                          uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False,ucals=None, uparms=None):
+        super(Photometry, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                         ucals=ucals, uparms=uparms)
         self.parameters = ParametersPhotometry
 
     def addReferenceCatalog(self, adinputs=None, stream='main', **params):

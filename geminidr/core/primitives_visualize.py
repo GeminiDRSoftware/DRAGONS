@@ -1,16 +1,18 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from geminidr.gemini.lookups import DQ_definitions as DQ
+import numpy as np
+
 try:
     from stsci import numdisplay as nd
 except ImportError:
     import numdisplay as nd
 
-import numpy as np
+import astrodata
+import gemini_instruments
 
-from .. import PrimitivesBASE
-from .parameters_visualize import ParametersVisualize
+from gempy.gemini import gemini_tools as gt
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
+from geminidr import PrimitivesBASE
+from geminidr.core.parameters_visualize import ParametersVisualize
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -21,9 +23,9 @@ class Visualize(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Visualize, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Visualize, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                        ucals=ucals, uparms=uparms)
         self.parameters = ParametersVisualize
 
     def display(self, adinputs=None, stream='main', **params):

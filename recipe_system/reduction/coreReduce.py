@@ -123,7 +123,7 @@ class Reduce(object):
             log.error(str(err))
             return xstat
 
-        rm = RecipeMapper(self.adinputs, recipename=self.urecipe, context=self.context)
+        rm = RecipeMapper(self.adinputs,recipename=self.urecipe,context=self.context)
 
         pm = PrimitiveMapper(self.adinputs, context=self.context, usercals=self.ucals,
                              uparms=self.uparms, upload_metrics=self.upload_metrics)
@@ -147,7 +147,8 @@ class Reduce(object):
         if recipe is None:
             try:
                 primitive_as_recipe = getattr(p, self.urecipe)
-                log.info("Found {} as a primitive.")
+                pname = primitive_as_recipe.__name__
+                log.info("Found {} as a primitive.".format(pname))
                 self._logheader(primitive_as_recipe.__name__)
                 primitive_as_recipe()
             except AttributeError:

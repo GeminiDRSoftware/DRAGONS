@@ -1,19 +1,19 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-
 import numpy as np
 from copy import deepcopy
 
-from geminidr.core import CCD
-from geminidr.gemini.primitives_gemini import Gemini
-from .parameters_gmos import ParametersGMOS
-from .lookups.array_gaps import gmosArrayGaps
+import astrodata
+import gemini_instruments
 
+from gempy.gemini import eti
+from gempy.gemini import gemini_tools as gt
 from gempy.scripts.gmoss_fix_headers import correct_headers
 
+from geminidr.core import CCD
+from geminidr.gemini.primitives_gemini import Gemini
+from geminidr.gmos.parameters_gmos import ParametersGMOS
+from geminidr.gmos.lookups.array_gaps import gmosArrayGaps
+
 from gemini_instruments.gmos.pixel_functions import get_bias_level
-from gempy.gemini import eti
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -26,9 +26,10 @@ class GMOS(Gemini, CCD):
     """
     tagset = set(["GEMINI", "GMOS"])
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(GMOS, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(GMOS, self).__init__(adinputs, context, upmetrics=upmetrics, 
+                                   ucals=ucals, uparms=uparms)
+
         self.parameters = ParametersGMOS
 
     def mosaicDetectors(self, adinputs=None, stream='main', **params):

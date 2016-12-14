@@ -1,10 +1,13 @@
 import astrodata
 import gemini_instruments
+
 from gempy.gemini import gemini_tools as gt
 
-from geminidr.core import Standardize, Bookkeeping, Preprocess, Visualize, Stack, CalibDB
-from primitives_qa import QA
-from .parameters_gemini import ParametersGemini
+from geminidr.core import Bookkeeping, CalibDB, Preprocess
+from geminidr.core import Visualize, Standardize, Stack
+
+from geminidr.gemini.primitives_qa import QA
+from geminidr.gemini.parameters_gemini import ParametersGemini
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -13,12 +16,14 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
              CalibDB):
     """
     This is the class containing the generic Gemini primitives.
+
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Gemini, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Gemini, self).__init__(adinputs, context, upmetrics=upmetrics, 
+                                     ucals=ucals, uparms=uparms)
+
         self.parameters = ParametersGemini
 
     def standardizeObservatoryHeaders(self, adinputs=None, stream='main',

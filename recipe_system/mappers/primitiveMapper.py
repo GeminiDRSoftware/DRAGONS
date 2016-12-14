@@ -2,7 +2,9 @@
 #                                                     mappers.primitiveMapper.py
 # ------------------------------------------------------------------------------
 import imp
+import sys
 import pkgutil
+import importlib
 
 from inspect import isclass
 
@@ -27,8 +29,8 @@ class PrimitiveMapper(Mapper):
         if primitive_actual is None:
             raise PrimitivesNotFound("No qualified primitive set could be found")
 
-        return primitive_actual(self.adinputs, self.context, uparms=self.userparams,
-                                ucals=self.usercals, upmetrics=self.upload_metrics)
+        return primitive_actual(self.adinputs, self.context, ucals=self.usercals,
+                            uparms=self.userparams, upmetrics=self.upload_metrics)
 
     # --------------------------------------------------------------------------
     # Primtive search cascade
@@ -56,7 +58,9 @@ class PrimitiveMapper(Mapper):
         loaded_pkg = self._package_loader(self.pkg)
         for pkgpath, pkg in self._generate_primitive_modules(loaded_pkg.__path__[0]):
             fd, path, descr = imp.find_module(pkg, [pkgpath])
-            mod = imp.load_module(pkg, fd, path, descr)
+            sys.path.insert(0, path)
+            mod = importlib.import_module(pkg)
+            #mod = imp.load_module(pkg, fd, path, descr)
             for atrname in dir(mod):
                 if atrname.startswith('_'):        # no prive, no magic
                     continue

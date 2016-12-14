@@ -11,6 +11,5 @@ from .parameters_qa import ParametersQA
 
 class ParametersGemini(ParametersBookkeeping, ParametersPreprocess,
                        ParametersStandardize, ParametersVisualize,
-                       ParametersStack, ParametersCalibDB,
-                       ParametersQA):
+                       ParametersStack, ParametersCalibDB, ParametersQA):
     pass

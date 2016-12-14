@@ -1,7 +1,7 @@
 from gempy.gemini import gemini_tools as gt
 
-from .. import PrimitivesBASE
-from .parameters_image import ParametersImage
+from geminidr import PrimitivesBASE
+from geminidr.core.parameters_image import ParametersImage
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -12,9 +12,9 @@ class Image(PrimitivesBASE):
     """
     tagset = set(["IMAGE"])
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Image, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Image, self).__init__(adinputs, context, upmetrics=upmetrics, 
+                                    ucals=ucals, uparms=uparms)
         self.parameters = ParametersImage
 
     def fringeCorrect(self, adinputs=None, stream='main', **params):
