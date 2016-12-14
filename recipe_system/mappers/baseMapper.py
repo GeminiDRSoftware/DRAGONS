@@ -3,6 +3,7 @@
 # ------------------------------------------------------------------------------
 import imp
 import sys
+import importlib
 
 from ..utils.mapper_utils import dictify
 
@@ -53,7 +54,7 @@ class Mapper(object):
 
         """
         self.adinputs   = adinputs
-        self.context    = context
+        self.context    = context.lower()
         self.pkg        = adinputs[0].instrument_name.lower()
         self.recipename = recipename
         self.tags       = adinputs[0].tags
@@ -63,7 +64,13 @@ class Mapper(object):
 
 
     def _package_loader(self, pkgname):
+        print "package loader called on package, {}".format(pkgname)
         pfile, pkgpath, descr = imp.find_module(pkgname)
-        loaded_pkg = imp.load_module(pkgname, pfile, pkgpath, descr)
-        sys.path.extend(loaded_pkg.__path__)
-        return loaded_pkg
+        print "Inserting sys.path[0] with {}".format(pkgpath)
+        sys.path.insert(0, pkgpath)
+        print "loading ...{}, {}, {}".format(pfile, pkgpath, descr)
+        loaded = importlib.import_module(pkgname)
+        #loaded_pkg = imp.load_module(pkgname, pfile, pkgpath, descr)
+        #print "Extending sys.path with {}".format(loaded.__path__[0])
+        #sys.path.extend(loaded_pkg.__path__)
+        return loaded

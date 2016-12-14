@@ -10,8 +10,8 @@ import numpy as np
 
 from copy import deepcopy
 
-from .. import PrimitivesBASE
-from .parameters_preprocess import ParametersPreprocess
+from geminidr import PrimitivesBASE
+from geminidr.core.parameters_preprocess import ParametersPreprocess
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -24,9 +24,9 @@ class Preprocess(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Preprocess, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False,ucals=None,uparms=None):
+        super(Preprocess, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                         ucals=ucals, uparms=uparms)
         self.parameters = ParametersPreprocess
 
     def addObjectMaskToDQ(self, adinputs=None, stream='main', **params):

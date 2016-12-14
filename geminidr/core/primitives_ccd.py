@@ -3,8 +3,8 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.eti import gireduceeti
 
-from .. import PrimitivesBASE
-from .parameters_ccd import ParametersCCD
+from geminidr import PrimitivesBASE
+from geminidr.core.parameters_ccd import ParametersCCD
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -16,8 +16,9 @@ class CCD(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(CCD, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(CCD, self).__init__(adinputs, context, upmetrics=upmetrics, 
+                                  ucals=ucals, uparms=uparms)
         self.parameters = ParametersCCD
 
     def biasCorrect(self, adinputs=None, stream='main', **params):

@@ -1,19 +1,22 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-
+#
+#                                                        primtives_gmos_image.py
+# ------------------------------------------------------------------------------
 import numpy as np
-from astropy.wcs import WCS
-from astropy.table import vstack, Table, Column
-import scipy.ndimage as ndimage
 from copy import deepcopy
 
-from geminidr.core import Image, Photometry
-from .primitives_gmos import GMOS
-from .parameters_gmos_image import ParametersGMOSImage
+import scipy.ndimage as ndimage
 
-from gempy.gemini import eti
-from gempy.utils import logutils
+from astropy.wcs import WCS
+from astropy.table import vstack, Table, Column
+
+import astrodata
+import gemini_instruments
+
+from geminidr.core import Image, Photometry
+from geminidr.gmos.primitives_gmos import GMOS
+from geminidr.gmos.parameters_gmos_image import ParametersGMOSImage
+
+from gempy.gemini import gemini_tools as gt
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -26,9 +29,9 @@ class GMOSImage(GMOS, Image, Photometry):
     """
     tagset = set(["GEMINI", "GMOS", "IMAGE"])
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(GMOSImage, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(GMOSImage, self).__init__(adinputs, context, upmetrics=upmetrics, 
+                                        ucals=ucals, uparms=uparms)
         self.parameters = ParametersGMOSImage
 
     def fringeCorrect(self, adinputs=None, stream='main', **params):

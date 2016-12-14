@@ -1,21 +1,23 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from gempy.gemini import irafcompat
-
-from ..gemini.lookups import BPMDict
-from ..gemini.lookups import MDFDict
-from ..gemini.lookups import DQ_definitions as DQ
-
-from .. import PrimitivesBASE
-from .parameters_standardize import ParametersStandardize
-
-from recipe_system.utils.decorators import parameter_override
-
 import os
 import shutil
 import numpy as np
+
 from scipy.ndimage import measurements
+
+import astrodata
+import gemini_instruments
+
+from gempy.gemini import gemini_tools as gt
+from gempy.gemini import irafcompat
+
+from geminidr.gemini.lookups import BPMDict
+from geminidr.gemini.lookups import MDFDict
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
+from geminidr import PrimitivesBASE
+from geminidr.core.parameters_standardize import ParametersStandardize
+
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Standardize(PrimitivesBASE):
@@ -26,8 +28,9 @@ class Standardize(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Standardize, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Standardize, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                          ucals=ucals, uparms=uparms)
         self.parameters = ParametersStandardize
 
 

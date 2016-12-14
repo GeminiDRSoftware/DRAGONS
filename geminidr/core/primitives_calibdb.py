@@ -18,7 +18,7 @@ from recipe_system.cal_service.transport_request import upload_calibration
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.cal_service import caches
 
-from parameters_calibdb import ParametersCalibDB
+from geminidr.core.parameters_calibdb import ParametersCalibDB
 
 from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------

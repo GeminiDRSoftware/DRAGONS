@@ -1,13 +1,14 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from gempy.gemini.eti import gemcombineeti
-
 import numpy as np
 from copy import deepcopy
 
-from .. import PrimitivesBASE
-from .parameters_stack import ParametersStack
+import astrodata
+import gemini_instruments
+
+from gempy.gemini import gemini_tools as gt
+from gempy.gemini.eti import gemcombineeti
+
+from geminidr import PrimitivesBASE
+from geminidr.core.parameters_stack import ParametersStack
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -18,9 +19,9 @@ class Stack(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Stack, self).__init__(adinputs, context, ucals=ucals,
-                                          uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Stack, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                    ucals=ucals, uparms=uparms)
         self.parameters = ParametersStack
     
     def alignAndStack(self, adinputs=None, stream='main', **params):

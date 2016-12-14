@@ -3,7 +3,7 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
-from .parameters_bookkeeping import ParametersBookkeeping
+from geminidr.core.parameters_bookkeeping import ParametersBookkeeping
 
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.cal_service import caches
@@ -17,9 +17,9 @@ class Bookkeeping(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Bookkeeping, self).__init__(adinputs, context, ucals=ucals,
-                                         uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Bookkeeping, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                          ucals=ucals, uparms=uparms)
         self.parameters = ParametersBookkeeping
     
     def addToList(self, adinputs=None, stream='main', **params):

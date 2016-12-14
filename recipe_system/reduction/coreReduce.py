@@ -123,7 +123,7 @@ class Reduce(object):
             log.error(str(err))
             return xstat
 
-        rm = RecipeMapper(self.adinputs, recipename=self.urecipe, context=self.context)
+        rm = RecipeMapper(self.adinputs,recipename=self.urecipe,context=self.context)
 
         pm = PrimitiveMapper(self.adinputs, context=self.context, usercals=self.ucals,
                              uparms=self.uparms, upload_metrics=self.upload_metrics)
