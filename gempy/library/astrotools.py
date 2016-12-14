@@ -303,7 +303,7 @@ class WCSTweak:
 
         self.wcs.wcs.crval = self.crval + np.array([d_ra, d_dec])/3600.0
 
-        new_ref = self.wcs.wcs_sky2pix(self.ref, 1)
+        new_ref = self.wcs.all_world2pix(self.ref, 1)
         return new_ref.flatten()
 
     # calculate residual (called by scipy.optimize.leastsq)

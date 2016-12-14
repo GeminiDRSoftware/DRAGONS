@@ -60,7 +60,7 @@ class GMOSImage(GMOS, Image, Photometry):
                     assert len(fringes) == 1
                 except (KeyError, AssertionError):
                     self.getProcessedFringe([ad])
-                    fringe = get_cal(ad, "processed_fringe")
+                    fringe = self._get_cal(ad, "processed_fringe")
                     if fringe is None:
                         log.warning("Could not find an appropriate fringe for {}".
                                      format(ad.filename))
@@ -113,7 +113,9 @@ class GMOSImage(GMOS, Image, Photometry):
         # Detect sources in order to get an OBJMASK. Doing it now will aid
         # efficiency by putting the OBJMASK-added images in the list
         # NB. We don't want to edit adinputs at this stage
-        fringe_adinputs = adinputs if sub_med else self.detectSources(adinputs)
+        fringe_adinputs = adinputs if sub_med else [ad if
+                        all(hasattr(ext, 'OBJMASK') for ext in ad)
+                        else self.detectSources([ad])[0] for ad in adinputs]
 
         # Add this frame to the list and get the full list
         self.addToList(fringe_adinputs, purpose='forFringe')
