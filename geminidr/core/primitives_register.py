@@ -11,7 +11,7 @@ from astropy.wcs import WCS
 from astropy import table
 
 from .. import PrimitivesBASE
-from .parameters_register import ParametersRegister
+from geminidr.core.parameters_register import ParametersRegister
 
 from gempy.utils import logutils
 
@@ -154,6 +154,7 @@ class Register(PrimitivesBASE):
             log.stdinfo("Using WCS specified in header for alignment")
             reg_ad = _header_align(ref_image, adinputs[1:],
                                    self.keyword_comments)
+
             # Not sure this is needed as everything has been done in-place
             adoutputs.extend(reg_ad)
 
@@ -681,7 +682,7 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
         plsq = scipy.optimize.leastsq(wcstweak.calc_diff, pars, maxfev=1000)
         new_pars = plsq[0]
         success = plsq[4]
-        
+
         if success<4:
             update = True
             if rotate and scale:
