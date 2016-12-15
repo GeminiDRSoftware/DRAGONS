@@ -25,9 +25,9 @@ class Register(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, ucals=None, uparms=None):
-        super(Register, self).__init__(adinputs, context, ucals=ucals,
-                                          uparms=uparms)
+    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+        super(Register, self).__init__(adinputs, context, upmetrics=upmetrics,
+                                       ucals=ucals, uparms=uparms)
         self.parameters = ParametersRegister
 
     def correctWCSToReferenceFrame(self, adinputs, context, ucals=None, uparms=None):
@@ -616,7 +616,7 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
     return obj_list
 
 def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
-               keyword_comments=keyword_comments):
+               keyword_comments=None):
     """
     This function fits an input image's WCS to a reference image's WCS
     by minimizing the difference in the input image frame between

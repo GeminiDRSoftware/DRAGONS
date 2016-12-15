@@ -6,8 +6,10 @@ from .primitives_ccd import CCD
 from .primitives_image import Image
 from .primitives_photometry import Photometry
 from .primitives_preprocess import Preprocess
-from .primitives_register import Register
-from .primitives_resample import Resample
 from .primitives_stack import Stack
 from .primitives_standardize import Standardize
 from .primitives_visualize import Visualize
+
+# These are currently inherited by Image
+#from .primitives_register import Register
+#from .primitives_resample import Resample

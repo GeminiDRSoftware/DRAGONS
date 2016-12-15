@@ -1,6 +1,7 @@
 from gempy.gemini import gemini_tools as gt
 
-from geminidr.core import Register, Resample
+from geminidr.core.primitives_register import Register
+from geminidr.core.primitives_resample import Resample
 from geminidr.core.parameters_image import ParametersImage
 
 from recipe_system.utils.decorators import parameter_override
