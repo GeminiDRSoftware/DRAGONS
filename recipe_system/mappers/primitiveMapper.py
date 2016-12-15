@@ -38,7 +38,7 @@ class PrimitiveMapper(Mapper):
         """
         :returns: tuple including the best tag set match and the primitive class
                   that provided the match.
-        :rtype: <tuple>, (set, class)
+        :rtype:   <tuple>, (set, class)
 
         """
         matched_set = (set([]), None)
@@ -60,7 +60,6 @@ class PrimitiveMapper(Mapper):
             fd, path, descr = imp.find_module(pkg, [pkgpath])
             sys.path.insert(0, path)
             mod = importlib.import_module(pkg)
-            #mod = imp.load_module(pkg, fd, path, descr)
             for atrname in dir(mod):
                 if atrname.startswith('_'):        # no prive, no magic
                     continue
