@@ -83,10 +83,10 @@ def make_class_wrapper(parameter_override):
     @wraps(parameter_override)
     def class_wrapper(cls):
         for attr_name in dir(cls):
-            attr_value = getattr(cls, attr_name)
             if attr_name.startswith("_"):        # no privates, no magic
                 continue
-            elif callable(attr_value):           # function
+            attr_value = getattr(cls, attr_name)
+            if callable(attr_value):             # function
                 setattr(cls, attr_name, parameter_override(attr_value))
         return cls
     return class_wrapper
@@ -114,6 +114,7 @@ def parameter_override(fn):
             pobj.adinputs = ret_value
         else:
             ret_value = fn(*args, **kwargs)
+
         LOGINDENT -= 1
         logutils.update_indent(LOGINDENT)
         return ret_value
