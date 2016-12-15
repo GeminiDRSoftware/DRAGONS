@@ -1,9 +1,10 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_image.py file, in alphabetical order.
 
-from geminidr import ParametersBASE
+from geminidr.core.parameters_register import ParametersRegister
+from geminidr.core.parameters_resample import ParametersResample
 
-class ParametersImage(ParametersBASE):
+class ParametersImage(ParametersRegister, ParametersResample):
     fringeCorrect = {
     }
     makeFringe = {

@@ -1,12 +1,12 @@
 from gempy.gemini import gemini_tools as gt
 
-from geminidr import PrimitivesBASE
+from geminidr.core import Register, Resample
 from geminidr.core.parameters_image import ParametersImage
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class Image(PrimitivesBASE):
+class Image(Register, Resample):
     """
     This is the class containing the generic imaging primitives.
     """
