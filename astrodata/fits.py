@@ -385,9 +385,9 @@ class FitsProviderProxy(DataProvider):
             raise ValueError("Can't delete non-capitalized attributes from slices")
         other, otherh = self.nddata.meta['other'], self.nddata.meta['other_header']
         if attribute in other:
-            del other['attribute']
+            del other[attribute]
             if attribute in otherh:
-                del otherh['attribute']
+                del otherh[attribute]
         else:
             raise AttributeError("'{}' does not exist in this extension".format(attribute))
 
