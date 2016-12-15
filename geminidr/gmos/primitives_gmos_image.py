@@ -6,9 +6,6 @@ from copy import deepcopy
 
 import scipy.ndimage as ndimage
 
-from astropy.wcs import WCS
-from astropy.table import vstack, Table, Column
-
 import astrodata
 import gemini_instruments
 
@@ -17,6 +14,7 @@ from geminidr.gmos.primitives_gmos import GMOS
 from geminidr.gmos.parameters_gmos_image import ParametersGMOSImage
 
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -571,7 +569,7 @@ def _needs_fringe_correction(ad, context=None):
             # may not be helpful.
             log.warning("{} uses filter {} with GMOS-N. Fringe correction is "
                         "not recommended.".format(ad.filename, filter))
-    if exposure < 59.0:
+    if exposure < 60.0:
         log.stdinfo("No fringe correction necessary for {} with "
                     "exposure time {:.1f}s".format(ad.filename, exposure))
         return False
