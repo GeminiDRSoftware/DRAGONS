@@ -826,17 +826,19 @@ class FitsProvider(DataProvider):
         if not isinstance(pixim, NDDataObject):
             # Assume that we get an ImageHDU or something that can be
             # turned into one
-            if not isinstance(pixim, ImageHDU):
-                pixim = ImageHDU(pixim)
+            if isinstance(pixim, ImageHDU):
+                header = pixim.header
+                nd = NDDataObject(pixim.data, meta={'header': header})
+            else:
+                header = {}
+                nd = NDDataObject(pixim, meta={})
 
-            header = pixim.header
-            nd = NDDataObject(pixim.data, meta={'header': header})
 
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
         else:
+            header = pixim.meta['header']
             nd = pixim
-            header = nd.meta['header']
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
 
@@ -860,6 +862,7 @@ class FitsProvider(DataProvider):
                     try:
                         oheaders[extname]['EXTVER'] = ver
                     except KeyError:
+                        # TODO: Check this. Tables are handled by a different method!
                         # This must be a table. Assume that it has meta
                         ext.meta['header']['EXTVER'] = ver
 
@@ -994,7 +997,8 @@ class FitsProvider(DataProvider):
         hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
 
         for ext in self._nddata:
-            header, ver = ext.meta['header'], ext.meta['ver']
+            meta = ext.meta
+            header, ver = meta['header'], meta['ver']
 
             hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
@@ -1002,13 +1006,13 @@ class FitsProvider(DataProvider):
             if ext.mask is not None:
                 hlst.append(new_imagehdu(ext.mask, header, 'DQ'))
 
-            for name, other in ext.meta.get('other', {}).items():
+            for name, other in meta.get('other', {}).items():
                 if isinstance(other, Table):
                     hlst.append(table_to_bintablehdu(other))
                 elif isinstance(other, np.ndarray):
-                    hlst.append(new_imagehdu(other, ext.meta['other_header'].get(name)))
+                    hlst.append(new_imagehdu(other, meta['other_header'].get(name, meta['header']), name=name))
                 elif isinstance(other, NDDataObject):
-                    hlst.append(new_imagehdu(other.data, other.meta['header']))
+                    hlst.append(new_imagehdu(other.data, meta['header']))
                 else:
                     raise ValueError("I don't know how to write back an object of type {}".format(type(other)))
 
@@ -1139,19 +1143,23 @@ class FitsProvider(DataProvider):
                     if top:
                         self._nddata.append(nd)
                     else:
-                        header = nd.meta['header']
-                        hname = header.get('EXTNAME') if name is None else name
-                        if hname is None:
-                            raise TypeError("Can't append pixel planes to other objects without a name")
+                        header = nd.meta.get('header')
+                        try:
+                            hname = header['EXTNAME']
+                        except (KeyError, TypeError):
+                            if name is None:
+                                raise TypeError("Can't append pixel planes to other objects without a name")
+                            hname = name
                         add_to_other = (hname, nd.data, header)
 
                     ret = nd
             try:
                 oname, data, header = add_to_other
-                header['EXTVER'] = add_to.meta.get('ver', -1)
                 meta = add_to.meta
                 meta['other'][oname] = data
-                meta['other_header'][oname] = header
+                if header:
+                    header['EXTVER'] = meta.get('ver', -1)
+                    meta['other_header'][oname] = header
             except TypeError:
                 pass
 
