@@ -30,7 +30,7 @@ class Register(PrimitivesBASE):
                                        ucals=ucals, uparms=uparms)
         self.parameters = ParametersRegister
 
-    def correctWCSToReferenceFrame(self, adinputs, context, ucals=None, uparms=None):
+    def correctWCSToReferenceFrame(self, adinputs=None, stream='main', **params):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
@@ -250,7 +250,7 @@ class Register(PrimitivesBASE):
                                             strip=True)
         return adoutputs
     
-    def determineAstrometricSolution(self, adinputs, context, ucals=None, uparms=None):
+    def determineAstrometricSolution(self, adinputs=None, stream='main', **params):
         """
         This primitive calculates the average astrometric offset between
         the positions of sources in the reference catalog, and their
@@ -373,7 +373,7 @@ class Register(PrimitivesBASE):
         self.wcs = wcs_dict
         return adinputs
 
-    def updateWCS(self, adinputs, context, ucals=None, uparms=None):
+    def updateWCS(self, adinputs=None, stream='main', **params):
         """
         This primitive applies a previously calculated WCS correction.
         The solution should be stored as an attribute of the primitives
