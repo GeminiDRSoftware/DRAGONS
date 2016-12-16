@@ -12,8 +12,9 @@ __version_date__ = '$Date$'[7:-2]
 # The gemini_data_calculations module contains functions that calculate values
 # from Gemini data, only get_bias_level() needs to be called
 
+import numpy as np
 from datetime import date
-from . import lookup
+from gemini_instruments.gmos import lookup
 # ------------------------------------------------------------------------------
 def get_bias_level(adinput=None, estimate=True):
     # Temporarily only do this for GMOS data. It would be better if we could do
@@ -72,21 +73,21 @@ def _get_bias_level(adinput=None):
         # adinput is always iterable (even if _single); make sure overscans is
         for ext, overscan_section in zip(adinput, overscans
             if isinstance(overscans, list) else [overscans]):
-            
+
+            # Turn tuple into list to make mutable
+            osec = list(overscan_section)
             # Don't include columns at edges
-            if overscan_section[0] == 0:
+            if osec[0] == 0:
                 # Overscan region is on the left
-                overscan_section[1] -= nbiascontam
-                overscan_section[0] += 1
+                osec[1] -= nbiascontam
+                osec[0] += 1
             else:
                 # Overscan region is on the right
-                overscan_section[0] += nbiascontam
-                overscan_section[1] -= 1
+                osec[0] += nbiascontam
+                osec[1] -= 1
             
             # Extract overscan data. In numpy arrays, y indices come first.
-            overscan_data = ext.data[
-                overscan_section[2]:overscan_section[3],
-                overscan_section[0]:overscan_section[1]]
+            overscan_data = ext.data[osec[2]:osec[3], osec[0]:osec[1]]
             bias_level.append(np.median(overscan_data))
 
         #unique_values = set(ret_bias_level.values())
