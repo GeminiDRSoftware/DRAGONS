@@ -6,9 +6,6 @@ from copy import deepcopy
 
 import scipy.ndimage as ndimage
 
-from astropy.wcs import WCS
-from astropy.table import vstack, Table, Column
-
 import astrodata
 import gemini_instruments
 
@@ -17,6 +14,7 @@ from geminidr.gmos.primitives_gmos import GMOS
 from geminidr.gmos.parameters_gmos_image import ParametersGMOSImage
 
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -113,6 +111,8 @@ class GMOSImage(GMOS, Image, Photometry):
         # Detect sources in order to get an OBJMASK. Doing it now will aid
         # efficiency by putting the OBJMASK-added images in the list
         # NB. We don't want to edit adinputs at this stage
+        #TODO: Only detectSources if there's no OBJMASK. Is this right?
+        # Old code ran regardless but it's slow...
         fringe_adinputs = adinputs if sub_med else [ad if
                         all(hasattr(ext, 'OBJMASK') for ext in ad)
                         else self.detectSources([ad])[0] for ad in adinputs]
@@ -142,7 +142,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         # We have the required inputs to make a fringe frame
         fringe = self.makeFringeFrame(fringe_adinputs,
-                                      subtract_median_image=sub_med)[0]
+                                      subtract_median_image=sub_med)
         self.storeProcessedFringe(fringe)
 
         # We now return *all* the input images that required fringe correction
@@ -571,7 +571,7 @@ def _needs_fringe_correction(ad, context=None):
             # may not be helpful.
             log.warning("{} uses filter {} with GMOS-N. Fringe correction is "
                         "not recommended.".format(ad.filename, filter))
-    if exposure < 59.0:
+    if exposure < 60.0:
         log.stdinfo("No fringe correction necessary for {} with "
                     "exposure time {:.1f}s".format(ad.filename, exposure))
         return False
