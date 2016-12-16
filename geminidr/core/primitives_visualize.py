@@ -129,7 +129,10 @@ class Visualize(PrimitivesBASE):
         frame = pars['frame'] if pars['frame'] else 1
         lnd = _localNumDisplay()
 
-        for ad, overlay in zip(*gt.make_lists(p.adinputs, pars['overlay'])):
+        # Each extension is an individual display item (if the data have been
+        # tiled, then there'll only be one extension per AD, of course)
+        for ad, overlay in zip(*gt.make_lists([ext for ad in p.adinputs
+                                               for ext in ad], pars['overlay'])):
             if frame > 16:
                 log.warning("Too many images; only the first 16 are displayed")
                 break
