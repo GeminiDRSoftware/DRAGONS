@@ -6,7 +6,10 @@ import pkgutil
 from importlib import import_module
 
 from .baseMapper import Mapper
+
 from ..utils.errors import RecipeNotFound
+
+from ..utils.mapper_utils import dotpath
 from ..utils.mapper_utils import find_user_recipe
 from ..utils.mapper_utils import RECIPEMARKER
 from ..utils.mapper_utils import DRMARKER
@@ -24,7 +27,6 @@ class RecipeMapper(Mapper):
 
     """
     def get_applicable_recipe(self):
-        self._package_loader(DRMARKER)
         recipefn = find_user_recipe(self.recipename)
         if recipefn is None:
             tag_match, recipefn = self._retrieve_recipe()
@@ -64,39 +66,44 @@ class RecipeMapper(Mapper):
         return isection, recipe_actual
 
     def _get_tagged_recipes(self):
-        loaded_pkg = self._package_loader(self.pkg)
-        for rmod, ispkg in self._generate_recipe_modules(loaded_pkg.__path__[0]):
+        loaded_pkg = import_module(self.dotpackage)
+        for rmod, ispkg in self._generate_recipe_modules(loaded_pkg):
             if not ispkg:
-                yield import_module(rmod)
+                importmod = dotpath(self.dotpackage, rmod)
+                print "Searching {} for recipe {}".format(importmod, self.recipename)
+                yield import_module(importmod)
             else:
                 continue
 
     def _generate_recipe_modules(self, pkg, recipedir=RECIPEMARKER):
-        pkg_importer = pkgutil.ImpImporter(pkg)
+        ppath = pkg.__path__[0]
+        pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
             if ispkg and pkgname == recipedir:
                 break 
             else:
                 continue
 
-        loaded_pkg = self._package_loader(pkgname)
-        for context_pkg, ispkg in self._generate_context_pkg(loaded_pkg.__path__[0]):
-            yield context_pkg, ispkg
+        loaded_pkg = import_module(dotpath(self.dotpackage, pkgname))
+        for context_pkg, ispkg in self._generate_context_pkg(loaded_pkg):
+            yield dotpath(pkgname, context_pkg), ispkg
 
     def _generate_context_pkg(self, pkg):
-        pkg_importer = pkgutil.ImpImporter(pkg)
+        ppath = pkg.__path__[0]
+        pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
             if ispkg and pkgname == self.context:
                 break
             else:
                 continue
 
-        loaded_pkg = self._package_loader(pkgname)
-        for mod, ispkg in self._generate_context_libs(loaded_pkg.__path__[0]):
-            yield mod, ispkg
+        loaded_pkg = import_module(dotpath(pkg.__name__, pkgname))
+        for mod, ispkg in self._generate_context_libs(loaded_pkg):
+            yield dotpath(pkgname, mod), ispkg
 
     def _generate_context_libs(self, pkg):
-        pkg_importer = pkgutil.ImpImporter(pkg)
+        ppath = pkg.__path__[0]
+        pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
             if not ispkg:
                 yield pkgname, ispkg

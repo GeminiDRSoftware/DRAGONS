@@ -1,14 +1,15 @@
 #
 #                                                     mappers.primitiveMapper.py
 # ------------------------------------------------------------------------------
-import imp
 import sys
 import pkgutil
-import importlib
 
-from inspect import isclass
+from importlib import import_module
+from inspect   import isclass
 
 from .baseMapper import Mapper
+
+from ..utils.mapper_utils import dotpath
 from ..utils.errors import PrimitivesNotFound
 # ------------------------------------------------------------------------------
 class PrimitiveMapper(Mapper):
@@ -55,21 +56,20 @@ class PrimitiveMapper(Mapper):
         return matched_set
 
     def _get_tagged_primitives(self):
-        loaded_pkg = self._package_loader(self.pkg)
-        for pkgpath, pkg in self._generate_primitive_modules(loaded_pkg.__path__[0]):
-            fd, path, descr = imp.find_module(pkg, [pkgpath])
-            sys.path.insert(0, path)
-            mod = importlib.import_module(pkg)
-            for atrname in dir(mod):
+        loaded_pkg = import_module(self.dotpackage)
+        for pkgpath, pkg in self._generate_primitive_modules(loaded_pkg):
+            lmod = import_module(dotpath(self.dotpackage, pkg))
+            for atrname in dir(lmod):
                 if atrname.startswith('_'):        # no prive, no magic
                     continue
                 
-                atr = getattr(mod, atrname)
+                atr = getattr(lmod, atrname)
                 if isclass(atr) and hasattr(atr, 'tagset'):
                     yield atr
 
     def _generate_primitive_modules(self, pkg):
-        pkg_importer = pkgutil.ImpImporter(pkg)
+        ppath = pkg.__path__[0]
+        pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
             if ispkg:
                 continue

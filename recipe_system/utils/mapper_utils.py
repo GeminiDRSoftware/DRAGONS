@@ -112,18 +112,14 @@ def dotpath(*args):
     """
     Build an import path from args.
 
-    :parameter args: a list of arguments of arbitrary length
-    :type args: <list>, implied by *
+    :parameter args: a set of arguments of arbitrary length
+    :type args:      <list>, implied by *
 
-    :returns: a path to an importable module
+    :returns: a dot path to an importable module
     :rtype: <str>
 
     """
-    ppath = ''
-    for pkg in args:
-        ppath += os.extsep + pkg if ppath else pkg
-    ppath.rstrip(os.extsep)
-    return ppath
+    return os.extsep.join(args)
 
 
 

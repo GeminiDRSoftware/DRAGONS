@@ -1,12 +1,12 @@
 #
 #                                                          mappers.baseMapper.py
 # ------------------------------------------------------------------------------
-import imp
 import sys
 import importlib
 
 from ..utils.mapper_utils import dictify
-
+from ..utils.mapper_utils import dotpath
+from ..utils.mapper_utils import DRMARKER
 # ------------------------------------------------------------------------------
 class Mapper(object):
     """
@@ -56,15 +56,9 @@ class Mapper(object):
         self.adinputs   = adinputs
         self.context    = context.lower()
         self.pkg        = adinputs[0].instrument_name.lower()
+        self.dotpackage = dotpath(DRMARKER, self.pkg)
         self.recipename = recipename
         self.tags       = adinputs[0].tags
         self.usercals   = usercals if usercals else {}
         self.userparams = dictify(uparms)
         self.upload_metrics = upload_metrics
-
-
-    def _package_loader(self, pkgname):
-        pfile, pkgpath, descr = imp.find_module(pkgname)
-        sys.path.insert(0, pkgpath)
-        loaded = importlib.import_module(pkgname)
-        return loaded
