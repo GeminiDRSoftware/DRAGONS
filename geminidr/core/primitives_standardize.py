@@ -55,7 +55,7 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["addDQ"]
         sfx = self.parameters.addDQ["suffix"]
-        dq_dtype = np.uint8
+        dq_dtype = np.uint16
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -480,7 +480,7 @@ class Standardize(PrimitivesBASE):
                              'the variance in {}'.format(bunit))
                 var_array += np.where(poisson_array > 0, poisson_array, 0)
 
-            if ext.mask is not None:
+            if ext.variance is not None:
                 if add_read_noise and add_poisson_noise:
                     raise ValueError("Cannot add read noise and Poisson noise"
                                      " components to variance as variance "

@@ -355,7 +355,7 @@ class Register(PrimitivesBASE):
 
                 log.stdinfo("Mean Astrometric Offset for {}:".
                             format(ad.filename))
-                log.stdinfo("     RA: {.2f} +/- {:.2f}    Dec: {:.2f} +/- "
+                log.stdinfo("     RA: {:.2f} +/- {:.2f}    Dec: {:.2f} +/- "
                     "{:.2f}   arcsec".format(ra_mean, ra_sigma,
                                              dec_mean, dec_sigma))
             else:

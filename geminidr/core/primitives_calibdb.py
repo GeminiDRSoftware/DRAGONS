@@ -70,7 +70,6 @@ class CalibDB(PrimitivesBASE):
         rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
         cal_requests = get_cal_requests(rqs_actual, caltype)
         calibration_records = process_cal_requests(cal_requests)
-        log.stdinfo(str(calibration_records))
         self._add_cal(calibration_records)
         return adinputs
 
