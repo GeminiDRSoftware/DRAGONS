@@ -862,9 +862,12 @@ class FitsProvider(DataProvider):
                     try:
                         oheaders[extname]['EXTVER'] = ver
                     except KeyError:
-                        # TODO: Check this. Tables are handled by a different method!
-                        # This must be a table. Assume that it has meta
-                        ext.meta['header']['EXTVER'] = ver
+                        try:
+                            # The object may keep the header on its own structure
+                            ext.meta['header']['EXTVER'] = ver
+                        except AttributeError:
+                            # No header. We don't need to set anything
+                            pass
 
             nd.meta['ver'] = ver
 
