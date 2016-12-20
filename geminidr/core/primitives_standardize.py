@@ -55,7 +55,7 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["addDQ"]
         sfx = self.parameters.addDQ["suffix"]
-        dq_dtype = np.uint16
+        dq_dtype = np.int16
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -290,6 +290,7 @@ class Standardize(PrimitivesBASE):
 
         read_noise = self.parameters.addVAR['read_noise']
         poisson_noise = self.parameters.addVAR['poisson_noise']
+        print read_noise,poisson_noise
         if read_noise:
             if poisson_noise:
                 log.stdinfo('Adding the read noise component and the Poisson '

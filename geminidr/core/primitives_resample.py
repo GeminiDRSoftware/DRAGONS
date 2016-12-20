@@ -12,7 +12,9 @@ from geminidr import PrimitivesBASE
 from geminidr.core.parameters_resample import ParametersResample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
+from gempy.utils import logutils
 from recipe_system.utils.decorators import parameter_override
+log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 interpolators = {"nearest": 0,
                  "linear": 1,
@@ -132,14 +134,16 @@ class Resample(PrimitivesBASE):
         # --------------------   BEGIN transform data ...  -------------------------
         for ad, corners in zip(adinputs[1:], xy_img_corners):
             if interpolator:
-                trans_parameters = _composite_transformation_matrix(ad, out_wcs)
+                trans_parameters = _composite_transformation_matrix(ad,
+                                        out_wcs, self.keyword_comments)
                 matrix, matrix_det, img_wcs, offset = trans_parameters
             else:
-                shift = _composite_from_ref_wcs(ad, out_wcs)
+                shift = _composite_from_ref_wcs(ad, out_wcs,
+                                                self.keyword_comments)
                 matrix_det = 1.0
 
             # transform corners to find new location of original data
-            data_corners = out_wcs.wcs_sky2pix(
+            data_corners = out_wcs.all_world2pix(
                 img_wcs.all_pix2world(corners, 0), 1)
             area_keys = _build_area_keys(data_corners)
 
@@ -152,6 +156,8 @@ class Resample(PrimitivesBASE):
                         affine_transform(ad[0].variance, cval=0.0, **kwargs)
                     new_mask = None if ad[0].mask is None else \
                         _transform_mask(ad[0].mask, **kwargs)
+                    if hasattr(ad[0], 'OBJMASK'):
+                        ad[0].OBJMASK = _transform_mask(ad[0].OBJMASK, **kwargs)
                     ad[0].reset(affine_transform(ad[0].data, cval=0.0, **kwargs),
                                 new_mask, new_var)
                 else:
@@ -190,7 +196,7 @@ def _transform_corners(ads, all_corners, ref_wcs, interpolator):
             # find shift by transforming center position of field
             # (so that center matches best)
             x1y1 = np.array([img_shape[1]/2.0, img_shape[0]/2.0])
-            x2y2 = img_wcs.wcs_sky2pix(ref_wcs.wcs_pix2sky([x1y1],1), 1)[0]
+            x2y2 = img_wcs.all_world2pix(ref_wcs.all_pix2world([x1y1],1), 1)[0]
 
             # round shift to nearest integer and flip x and y
             offset = np.roll(np.rint(x2y2-x1y1),1)
@@ -309,7 +315,7 @@ def _composite_from_ref_wcs(ad, out_wcs, keyword_comments):
 
     # recalculate shift from new reference wcs
     x1y1 = np.array([img_shape[1] / 2.0, img_shape[0]/2.0])
-    x2y2 = img_wcs.wcs_sky2pix(out_wcs.all_pix2world([x1y1], 1), 1)[0]
+    x2y2 = img_wcs.all_world2pix(out_wcs.all_pix2world([x1y1], 1), 1)[0]
     shift = np.roll(np.rint(x2y2 - x1y1), 1)
     if np.any(shift > 0):
         log.warning("Shift was calculated to be > 0; interpolator=None "
@@ -330,12 +336,16 @@ def _pad_image(ad, padding):
     ad.operate(np.pad, padding, 'constant', constant_values=0)
     # We want the mask padding to be DQ.no_data, so have to fix
     # that up by hand...
-    ad[0].mask[:padding[0][0]] = DQ.no_data
-    if padding[0][1] > 0:
-        ad[0].mask[-padding[0][1]:] = DQ.no_data
-    ad[0].mask[:,:padding[1][0]] = DQ.no_data
-    if padding[1][1] > 0:
-        ad[0].mask[:,-padding[1][1]] = DQ.no_data
+    if ad[0].mask is not None:
+        ad[0].mask[:padding[0][0]] = DQ.no_data
+        if padding[0][1] > 0:
+            ad[0].mask[-padding[0][1]:] = DQ.no_data
+        ad[0].mask[:,:padding[1][0]] = DQ.no_data
+        if padding[1][1] > 0:
+            ad[0].mask[:,-padding[1][1]] = DQ.no_data
+    if hasattr(ad[0], 'OBJMASK'):
+        ad[0].OBJMASK = np.pad(ad[0].OBJMASK, padding, 'constant',
+                             constant_values=0)
 
 def _transform_mask(mask, **kwargs):
     """

@@ -167,7 +167,6 @@ class GMOSImage(GMOS, Image, Photometry):
         if len(adinputs) < 3:
             log.stdinfo('Fewer than 3 frames provided as input. '
                         'Not making fringe frame.')
-            return adinputs
         else:
             adinputs = self.correctBackgroundToReferenceImage(adinputs,
                 remove_zero_level=True)
@@ -446,8 +445,8 @@ class GMOSImage(GMOS, Image, Photometry):
                 # Width of the box is filter dependent, determined by
                 # experimentation, but results aren't too heavily affected
                 size = 20 if ad.filter_name(pretty=True)=="i" else 40
-                size /= ad.detector_x_bin().as_pytype()
-                
+                size /= ad.detector_x_bin()
+
                 # Use ndimage maximum_filter and minimum_filter to
                 # get the local maxima and minima
                 sci_max = ndimage.filters.maximum_filter(scidata, size)
