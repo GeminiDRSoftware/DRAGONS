@@ -767,10 +767,9 @@ class QA(PrimitivesBASE):
         separate_ext = pars["separate_ext"]
         remove_bias = pars["remove_bias"]
 
-        overlays_exist = False
-        iq_overlays = []
         mean_fwhms = []
         mean_ellips = []
+        frame = 1
         for ad in adinputs:
             # Check that the data is not an image with non-square binning
             if 'IMAGE' in ad.tags:
@@ -779,8 +778,6 @@ class QA(PrimitivesBASE):
                 if xbin != ybin:
                     log.warning("No IQ measurement possible, image {} is {} x "
                                 "{} binned data".format(ad.filename, xbin, ybin))
-                    if display:
-                        iq_overlays.append(None)
                     mean_fwhms.append(None)
                     mean_ellips.append(None)
                     continue
@@ -895,16 +892,16 @@ class QA(PrimitivesBASE):
                 ao_seeing = None
 
             info_list = []
+            iq_overlays = []
+            overlays_exist = False
             for src, extver in zip(good_source, adiq.hdr.EXTVER):
                 if len(src) == 0:
                     log.warning("No good sources found in {}:{}".
                                 format(ad.filename, extver))
-
-                    if display:
-                        iq_overlays.append(None)
                     mean_fwhms.append(None)
                     mean_ellips.append(None)
-                    # If there is an AO-estimated seeing value, this can be 
+                    iq_overlays.append(None)
+                    # If there is an AO-estimated seeing value, this can be
                     # delivered as a metric
                     if not (is_ao and ao_seeing):
                         info_list.append({})
@@ -1194,7 +1191,8 @@ class QA(PrimitivesBASE):
                 # If separate_ext is True, we want the tile parameter
                 # for the display primitive to be False
                 self.display([adiq], tile=not separate_ext, remove_bias=remove_bias,
-                             overlay=iq_overlays)
+                             overlay=iq_overlays, frame=frame)
+                frame += len(adiq)
 
             # Update the headers. Do this to the original AD object (ad)
             if separate_ext:
