@@ -143,7 +143,9 @@ class GMOSImage(GMOS, Image, Photometry):
         # We have the required inputs to make a fringe frame
         fringe = self.makeFringeFrame(fringe_adinputs,
                                       subtract_median_image=sub_med)
+        # Store the result and put the output in the "fringe" stream
         self.storeProcessedFringe(fringe)
+        self.streams.update({'fringe': fringe})
 
         # We now return *all* the input images that required fringe correction
         # so they can all be fringe corrected
@@ -168,27 +170,27 @@ class GMOSImage(GMOS, Image, Photometry):
             log.stdinfo('Fewer than 3 frames provided as input. '
                         'Not making fringe frame.')
         else:
-            adinputs = self.correctBackgroundToReferenceImage(adinputs,
-                remove_zero_level=True)
+            frinputs = self.correctBackgroundToReferenceImage([deepcopy(ad)
+                            for ad in adinputs], remove_zero_level=True)
 
             # If needed, do a rough median on all frames, subtract,
             # and then redetect to help distinguish sources from fringes
             if pars["subtract_median_image"]:
                 # TODO: When stackFrames stops using gemcombine, we can
                 # maybe use that
-                median_ad = deepcopy(adinputs[0])
+                median_ad = deepcopy(frinputs[0])
                 for slice, ext in enumerate(median_ad):
                     ext.reset(np.median(np.dstack([ad[slice].data for
-                                    ad in adinputs]), axis=2), None, None)
+                                    ad in frinputs]), axis=2), None, None)
                 # Subtract median, detect sources, add median back
-                adinputs = [ad.subtract(median_ad) for ad in adinputs]
-                adinputs = self.detectSources(adinputs)
-                adinputs = [ad.add(median_ad) for ad in adinputs]
+                frinputs = [ad.subtract(median_ad) for ad in frinputs]
+                frinputs = self.detectSources(frinputs)
+                frinputs = [ad.add(median_ad) for ad in frinputs]
 
             # Add object mask to DQ plane and stack with masking
-            adinputs = self.addObjectMaskToDQ(adinputs)
-            adinputs = self.stackFrames(adinputs, operation=pars["operation"])
-        return adinputs
+            frinputs = self.addObjectMaskToDQ(frinputs)
+            frinputs = self.stackFrames(frinputs, operation=pars["operation"])
+        return frinputs
 
     def normalizeFlat(self, adinputs=None, stream='main', **params):
         """
