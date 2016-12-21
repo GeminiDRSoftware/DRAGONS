@@ -147,23 +147,22 @@ class Resample(PrimitivesBASE):
                 img_wcs.all_pix2world(corners, 0), 1)
             area_keys = _build_area_keys(data_corners)
 
-            if __name__ == '__main__':
-                if interpolator:
-                    kwargs = {'matrix': matrix, 'offset': offset,
-                              'order': interpolators[interpolator],
-                              'output_shape': out_shape}
-                    new_var = None if ad[0].variance is None else \
-                        affine_transform(ad[0].variance, cval=0.0, **kwargs)
-                    new_mask = None if ad[0].mask is None else \
-                        _transform_mask(ad[0].mask, **kwargs)
-                    if hasattr(ad[0], 'OBJMASK'):
-                        ad[0].OBJMASK = _transform_mask(ad[0].OBJMASK, **kwargs)
-                    ad[0].reset(affine_transform(ad[0].data, cval=0.0, **kwargs),
-                                new_mask, new_var)
-                else:
-                    padding = tuple((int(-s), out-int(img-s)) for s, out, img in
-                                    zip(shift, out_shape, ad[0].data.shape))
-                    _pad_image(ad, padding)
+            if interpolator:
+                kwargs = {'matrix': matrix, 'offset': offset,
+                          'order': interpolators[interpolator],
+                          'output_shape': out_shape}
+                new_var = None if ad[0].variance is None else \
+                    affine_transform(ad[0].variance, cval=0.0, **kwargs)
+                new_mask = None if ad[0].mask is None else \
+                    _transform_mask(ad[0].mask, **kwargs)
+                if hasattr(ad[0], 'OBJMASK'):
+                    ad[0].OBJMASK = _transform_mask(ad[0].OBJMASK, **kwargs)
+                ad[0].reset(affine_transform(ad[0].data, cval=0.0, **kwargs),
+                            new_mask, new_var)
+            else:
+                padding = tuple((int(-s), out-int(img-s)) for s, out, img in
+                                zip(shift, out_shape, ad[0].data.shape))
+                _pad_image(ad, padding)
 
             if abs(1.0 - matrix_det) > 1e-6:
                     log.fullinfo("Multiplying by {} to conserve flux".format(matrix_det))
@@ -352,7 +351,7 @@ def _transform_mask(mask, **kwargs):
     Transform the DQ plane, bit by bit. Since np.unpackbits() only works
     on uint8 data, we have to do this by hand
     """
-    trans_mask = np.zeros_like(mask)
+    trans_mask = np.zeros(kwargs['output_shape'], dtype=np.uint16)
     for j in range(0, 16):
         bit = 2**j
         # Only transform bits that have a pixel set. But we always want
@@ -361,6 +360,6 @@ def _transform_mask(mask, **kwargs):
             temp_mask = affine_transform((mask & 2**j).astype(np.float32),
                                          cval=DQ.no_data if bit==DQ.no_data
                                          else 0, **kwargs)
-            trans_mask += np.where(np.abs(temp_mask>0.01*bit, bit,
-                                          0)).astype(np.unit16)
+            trans_mask += np.where(np.abs(temp_mask>0.01*bit), bit,
+                                          0).astype(np.uint16)
     return trans_mask

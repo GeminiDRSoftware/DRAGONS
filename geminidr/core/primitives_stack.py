@@ -52,10 +52,10 @@ class Stack(PrimitivesBASE):
                 if any(all(getattr(ext, 'OBJCAT', None) is None for ext in ad)
                        for ad in adinputs):
                     self.detectSources(adinputs)
-                self.correctWCSToReferenceFrame(adinputs)
-                self.alignToReferenceFrame(adinputs)
-                self.correctBackgroundToReferenceImage(adinputs)
-                self.stackFrames(adinputs)
+                adinputs = self.correctWCSToReferenceFrame(adinputs)
+                adinputs = self.alignToReferenceFrame(adinputs)
+                adinputs = self.correctBackgroundToReferenceImage(adinputs)
+                adinputs = self.stackFrames(adinputs)
         return adinputs
 
     def stackFlats(self, adinputs=None, stream='main', **params):
