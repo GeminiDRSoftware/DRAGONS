@@ -21,6 +21,8 @@ from astropy.wcs import WCS
 from astropy import stats
 from astropy.table import vstack, Table, Column
 from astropy.modeling import models, fitting
+from scipy.stats import norm
+from scipy.optimize import curve_fit
 
 from copy import deepcopy
 from datetime import datetime
@@ -321,7 +323,7 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True):
     check_filter: bool
         if True, also check the filter name of each pair
     """
-    log = logutils.get_logger(__name__) 
+    log = logutils.get_logger(__name__)
 
     # Turn inputs into lists for ease of manipulaiton later
     if not isinstance(adinput1, list):
@@ -1506,13 +1508,13 @@ def make_lists(key_list=None, value_list=None, force_ad=False):
     if len(value_list) == 1:
         value_list *= len(key_list)
     if force_ad:
-        key_list = [astrodata.open(x) if isinstance(x, str) else x
-                    for x in key_list]
+        key_list = [x if isinstance(x, astrodata.AstroData) else
+                    astrodata.open(x) for x in key_list]
         # We only want to open as many AD objects as there are unique entries
         # in value_list, so collapse to set and multiple keys with the same
         # value will be assigned references to the same open AD object
-        ad_map_dict = {x: astrodata.open(x) if isinstance(x, str) else x
-                       for x in set(value_list)}
+        ad_map_dict = {x: x if isinstance(x, astrodata.AstroData) else
+                        astrodata.open(x) for x in set(value_list)}
         value_list = [ad_map_dict[x] for x in value_list]
 
     return key_list, value_list
@@ -1600,28 +1602,33 @@ def measure_bg_from_image(ad, extver=None, sampling=10, value_only=False,
 
     output_list = []
     for ext in input_list:
-        # Use DQ and OBJMASK; don't create flags array if not needed
-        # TODO: OBJMASK. What are we doing with that?
-        bg_data = ext.data[ext.mask==0] if ext.mask is not None else ext.data
+        # Use DQ and OBJMASK to flag pixels
+        flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
+            else getattr(ext, 'OBJMASK', None)
+        bg_data = ext.data[flags==0] if flags is not None else ext.data
 
         bg_data = bg_data.flatten()[::sampling]
         if gaussfit:
             bg = np.median(bg_data)
             bg_std = np.std(bg_data)
-            binsize = bg_std * 0.1
+            # An ogive fit is more robust than a histogram fit
+            bg_data = np.sort(bg_data)
+            [bg, bg_std], _ = curve_fit(norm.cdf, bg_data,
+                        np.linspace(0,1,len(bg_data)+1)[1:], p0=[bg,bg_std])
+            #binsize = bg_std * 0.1
             # Fit from -5 to +1 sigma
-            bins = np.arange(bg - 5 * bg_std, bg + bg_std, binsize)
-            histdata, _ = np.histogram(bg_data, bins)
+            #bins = np.arange(bg - 5 * bg_std, bg + bg_std, binsize)
+            #histdata, _ = np.histogram(bg_data, bins)
             # bin centers
-            x = bins[:-1] + 0.5 * (bins[1] - bins[0])
+            #x = bins[:-1] + 0.5 * (bins[1] - bins[0])
             # Eliminate bins with no data (e.g., if data are quantized)
-            x = x[histdata > 0]
-            histdata = histdata[histdata > 0]
-            g_init = models.Gaussian1D(amplitude=np.max(histdata),
-                                       mean=bg, stddev=bg_std)
-            fit_g = fitting.LevMarLSQFitter()
-            g = fit_g(g_init, x, histdata)
-            bg, bg_std = g.mean.value, abs(g.stddev.value)
+            #x = x[histdata > 0]
+            #histdata = histdata[histdata > 0]
+            #g_init = models.Gaussian1D(amplitude=np.max(histdata),
+            #                           mean=bg, stddev=bg_std)
+            #fit_g = fitting.LevMarLSQFitter()
+            #g = fit_g(g_init, x, histdata)
+            #bg, bg_std = g.mean.value, abs(g.stddev.value)
         else:
             # Sigma-clipping will screw up the stats of course!
             clipped_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)

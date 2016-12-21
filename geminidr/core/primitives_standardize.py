@@ -55,7 +55,7 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["addDQ"]
         sfx = self.parameters.addDQ["suffix"]
-        dq_dtype = np.uint8
+        dq_dtype = np.int16
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -290,6 +290,7 @@ class Standardize(PrimitivesBASE):
 
         read_noise = self.parameters.addVAR['read_noise']
         poisson_noise = self.parameters.addVAR['poisson_noise']
+        print read_noise,poisson_noise
         if read_noise:
             if poisson_noise:
                 log.stdinfo('Adding the read noise component and the Poisson '
@@ -310,7 +311,7 @@ class Standardize(PrimitivesBASE):
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
             if (poisson_noise and 'GMOS' in ad.tags and
-                ad.phu.get(self.timestamp_keys['subtractBias']) is not None):
+                ad.phu.get(self.timestamp_keys['subtractBias']) is None):
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
                             "still contains a bias level")
@@ -480,6 +481,19 @@ class Standardize(PrimitivesBASE):
                              'the variance in {}'.format(bunit))
                 var_array += np.where(poisson_array > 0, poisson_array, 0)
 
+            if ext.variance is not None:
+                if add_read_noise and add_poisson_noise:
+                    raise ValueError("Cannot add read noise and Poisson noise"
+                                     " components to variance as variance "
+                                     "already exists")
+                else:
+                    log.fullinfo("Combining the newly calculated variance "
+                                 "with the current variance extension {}:{}".
+                                 format(ext.filename, extver))
+                    var_array += ext.variance
+            else:
+                log.fullinfo("Adding variance to {}:{}".format(ext.filename,
+                                                               extver))
             # Attach to the extension
             ext.variance = var_array.astype(var_dtype)
 

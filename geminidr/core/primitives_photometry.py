@@ -248,11 +248,10 @@ class Photometry(PrimitivesBASE):
             else:
                 log.stdinfo("No reference sources found; no comparison "
                             "will be performed")
-
-            if pars["correct_wcs"]:
-                ad = self.updateWCS([ad])[0]
             adoutputs.append(ad)
 
+        if pars["correct_wcs"]:
+            adoutputs = self.updateWCS(adoutputs)
         return adoutputs
 
 ##############################################################################

@@ -12,7 +12,7 @@ from recipe_system.cal_service import caches
 class Bookkeeping(PrimitivesBASE):
     """
     This is the class containing all of the preprocessing primitives
-    for the GEMINI level of the type hierarchy tree. It inherits all
+    for the Bookkeeping level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
     tagset = None
@@ -48,6 +48,7 @@ class Bookkeeping(PrimitivesBASE):
             try:
                 self.stacks[_stackid(purpose, ad)].add(ad.filename)
             except KeyError:
+                # Stack doesn't exist yet, so start it off...
                 self.stacks[_stackid(purpose, ad)] = set([ad.filename])
 
         caches.save_cache(self.stacks, caches.stkindfile)

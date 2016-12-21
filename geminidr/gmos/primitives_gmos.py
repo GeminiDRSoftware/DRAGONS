@@ -114,8 +114,7 @@ class GMOS(Gemini, CCD):
 
             # Restore keywords to extension header
             if bunit:
-                ad_out.hdr.set('BUNIT', bunit.pop(),
-                               self.keyword_comments["BUNIT"])
+                ad_out.hdr.set('BUNIT', bunit, self.keyword_comments["BUNIT"])
             if avg_overscan:
                 ad_out.hdr.set('OVERSCAN', avg_overscan,
                                comment=self.keyword_comments["OVERSCAN"])

@@ -30,7 +30,7 @@ class Register(PrimitivesBASE):
                                        ucals=ucals, uparms=uparms)
         self.parameters = ParametersRegister
 
-    def correctWCSToReferenceFrame(self, adinputs, context, ucals=None, uparms=None):
+    def correctWCSToReferenceFrame(self, adinputs=None, stream='main', **params):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
@@ -238,9 +238,9 @@ class Register(PrimitivesBASE):
                                           format(ref[0], ref[1], *img))
                         log.fullinfo("")
 
-                        adoutput = _align_wcs(ref_image, ad, [obj_list],
+                        adoutput = _align_wcs(ref_image, [ad], [obj_list],
                                         rotate=rotate, scale=scale,
-                                        keyword_comemnts=self.keyword_comments)
+                                        keyword_comments=self.keyword_comments)
                 adoutputs.extend(adoutput)
 
         # Timestamp and update filenames
@@ -250,7 +250,7 @@ class Register(PrimitivesBASE):
                                             strip=True)
         return adoutputs
     
-    def determineAstrometricSolution(self, adinputs, context, ucals=None, uparms=None):
+    def determineAstrometricSolution(self, adinputs=None, stream='main', **params):
         """
         This primitive calculates the average astrometric offset between
         the positions of sources in the reference catalog, and their
@@ -301,7 +301,8 @@ class Register(PrimitivesBASE):
                     info_list.append({})
                     continue
 
-                merged = table.join(objcat, refcat, keys='REF_NUMBER')[
+                merged = table.join(objcat, refcat, keys='REF_NUMBER',
+                                    metadata_conflicts='silent')[
                     'X_WORLD', 'Y_WORLD', 'RAJ2000', 'DEJ2000']
                 if len(merged) > 0:
                     delta_ra = 3600 * (merged['RAJ2000'] -
@@ -355,7 +356,7 @@ class Register(PrimitivesBASE):
 
                 log.stdinfo("Mean Astrometric Offset for {}:".
                             format(ad.filename))
-                log.stdinfo("     RA: {.2f} +/- {:.2f}    Dec: {:.2f} +/- "
+                log.stdinfo("     RA: {:.2f} +/- {:.2f}    Dec: {:.2f} +/- "
                     "{:.2f}   arcsec".format(ra_mean, ra_sigma,
                                              dec_mean, dec_sigma))
             else:
@@ -373,7 +374,7 @@ class Register(PrimitivesBASE):
         self.wcs = wcs_dict
         return adinputs
 
-    def updateWCS(self, adinputs, context, ucals=None, uparms=None):
+    def updateWCS(self, adinputs=None, stream='main', **params):
         """
         This primitive applies a previously calculated WCS correction.
         The solution should be stored as an attribute of the primitives
@@ -649,10 +650,10 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
                       "elements as adinput")
 
     ref_wcs = WCS(ref_ad.header[1])
-    for ad, ref_xy, inp_xy in zip(adinput, *objIns):
+    for ad, objIn in zip(adinput, objIns):
         log.fullinfo("Adjusting WCS for {}".format(ad.filename))
-        ref_xy = np.array(ref_xy)
-        inp_xy = np.array(inp_xy)
+        ref_xy = np.array(objIn[0])
+        inp_xy = np.array(objIn[1])
         inp_wcs = WCS(ad.header[1])
         
         # convert the reference coordinates to RA/Dec
@@ -679,11 +680,10 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
         
         import warnings
         warnings.simplefilter("ignore")
-        plsq = scipy.optimize.leastsq(wcstweak.calc_diff, pars, maxfev=1000)
-        new_pars = plsq[0]
-        success = plsq[4]
+        new_pars, success = scipy.optimize.leastsq(wcstweak.calc_diff, pars,
+                                                   maxfev=1000)
 
-        if success<4:
+        if success <= 4:
             update = True
             if rotate and scale:
                 log.fullinfo("Best fit dRA, dDec, dTheta, dMag: {:.5f} {:5.f}"
