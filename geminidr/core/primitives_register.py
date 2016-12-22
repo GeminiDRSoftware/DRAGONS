@@ -410,7 +410,7 @@ class Register(PrimitivesBASE):
                 continue
 
             for ext in ad:
-                extver = ext.extver()
+                extver = ext.hdr.EXTVER
                 ext_wcs = ad_wcs if isinstance(wcs, WCS) else ad_wcs.get(extver)
 
                 if ext_wcs is None:
