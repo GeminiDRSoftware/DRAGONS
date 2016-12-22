@@ -197,12 +197,13 @@ def process_cal_requests(cal_requests):
                 _add_cal_record(rq, cachename)
                 continue
             else:
-                log.stdinfo("File {} is cached but".format(calbname))
+                log.stdinfo("File {} is cached but".format(calname))
                 log.stdinfo("md5 checksums DO NOT MATCH")
                 log.stdinfo("Making request on calibration service")
                 log.stdinfo("Requesting URL {}".format(calurl))
                 try:
-                    calname = netutil.urlfetch(calurl, store=cachedir)
+                    calname = netutil.urlfetch(calurl, store=cachedir,
+                                               clobber=True)
                     _add_cal_record(rq, cachename)
                     continue
                 except HTTPError, error:
