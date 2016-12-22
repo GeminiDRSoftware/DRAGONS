@@ -70,7 +70,6 @@ class RecipeMapper(Mapper):
         for rmod, ispkg in self._generate_recipe_modules(loaded_pkg):
             if not ispkg:
                 importmod = dotpath(self.dotpackage, rmod)
-                print "Searching {} for recipe {}".format(importmod, self.recipename)
                 yield import_module(importmod)
             else:
                 continue
