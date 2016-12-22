@@ -44,6 +44,7 @@ the decorated class.
             [ … ]
 
 """
+from copy import deepcopy
 from functools import wraps
 from gempy.utils import logutils
 
@@ -79,15 +80,19 @@ def userpar_override(pname, parset, upars):
     return parset
 
 # -------------------------------- decorators ----------------------------------
-def make_class_wrapper(parameter_override):
-    @wraps(parameter_override)
+def make_class_wrapper(wrapped):
+    @wraps(wrapped)
     def class_wrapper(cls):
         for attr_name in dir(cls):
-            if attr_name.startswith("_"):        # no privates, no magic
+            if attr_name.startswith("_"):        # no prive, no magic
                 continue
-            attr_value = getattr(cls, attr_name)
-            if callable(attr_value):             # function
-                setattr(cls, attr_name, parameter_override(attr_value))
+
+            attr_fn = getattr(cls, attr_name)
+            if callable(attr_fn):
+                if attr_name not in attr_fn.im_class.__dict__:
+                    continue
+                else:
+                    setattr(cls, attr_name, wrapped(attr_fn))
         return cls
     return class_wrapper
 
@@ -100,15 +105,17 @@ def parameter_override(fn):
         logutils.update_indent(LOGINDENT)
         pobj = args[0]
         pname = fn.__name__
-        try:
-            parset = getattr(pobj.parameters, pname)
-            parset.update(kwargs)
-            new_parset = userpar_override(pname, parset, pobj.user_params)
+        ppars = pobj.parameters
+        if hasattr(ppars, pname):
+            parset = getattr(ppars, pname)
+            sdict = deepcopy(parset)
+            sdict.update(kwargs)
+            new_parset = userpar_override(pname, sdict, pobj.user_params)
             pobj.primitive_parset = new_parset
-        except AttributeError:
+        else:
             pass
 
-        if len(args)==1 and 'adinputs' not in kwargs:
+        if len(args) == 1 and 'adinputs' not in kwargs:
             kwargs.update({'adinputs': pobj.adinputs})
             ret_value = fn(*args, **kwargs)
             pobj.adinputs = ret_value

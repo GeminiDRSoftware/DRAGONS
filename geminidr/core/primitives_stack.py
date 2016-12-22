@@ -19,9 +19,8 @@ class Stack(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Stack, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                    ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Stack, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersStack
     
     def alignAndStack(self, adinputs=None, stream='main', **params):

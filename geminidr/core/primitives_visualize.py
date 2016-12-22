@@ -23,9 +23,8 @@ class Visualize(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Visualize, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                        ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Visualize, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersVisualize
 
     def display(self, adinputs=None, stream='main', **params):
@@ -68,7 +67,7 @@ class Visualize(PrimitivesBASE):
 
         # We may be manipulating the data significantly, so the best option
         # is to create a new PrimitivesClass instance and work with that
-        p = self.__class__(adinputs, self.context)
+        p = self.__class__(adinputs, context=self.context)
 
         # Threshold and bias make sense only for SCI extension
         if extname != 'SCI':

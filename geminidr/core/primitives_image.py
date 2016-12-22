@@ -13,9 +13,8 @@ class Image(Register, Resample):
     """
     tagset = set(["IMAGE"])
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Image, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                    ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Image, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersImage
 
     def fringeCorrect(self, adinputs=None, stream='main', **params):

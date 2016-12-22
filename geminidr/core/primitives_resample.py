@@ -31,9 +31,8 @@ class Resample(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Resample, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                       ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Resample, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersResample
 
     def alignToReferenceFrame(self, adinputs=None, stream='main', **params):

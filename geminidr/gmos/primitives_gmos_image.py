@@ -27,9 +27,8 @@ class GMOSImage(GMOS, Image, Photometry):
     """
     tagset = set(["GEMINI", "GMOS", "IMAGE"])
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(GMOSImage, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                        ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(GMOSImage, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersGMOSImage
 
     def fringeCorrect(self, adinputs=None, stream='main', **params):

@@ -17,9 +17,8 @@ class Bookkeeping(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Bookkeeping, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                          ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Bookkeeping, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersBookkeeping
     
     def addToList(self, adinputs=None, stream='main', **params):

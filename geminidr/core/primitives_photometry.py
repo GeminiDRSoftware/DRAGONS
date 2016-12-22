@@ -24,9 +24,8 @@ class Photometry(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False,ucals=None, uparms=None):
-        super(Photometry, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                         ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Photometry, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersPhotometry
 
     def addReferenceCatalog(self, adinputs=None, stream='main', **params):

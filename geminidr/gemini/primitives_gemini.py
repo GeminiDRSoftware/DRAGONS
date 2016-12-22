@@ -20,9 +20,8 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Gemini, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                     ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Gemini, self).__init__(adinputs, **kwargs)
 
         self.parameters = ParametersGemini
 

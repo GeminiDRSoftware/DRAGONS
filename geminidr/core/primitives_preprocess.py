@@ -24,9 +24,8 @@ class Preprocess(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False,ucals=None,uparms=None):
-        super(Preprocess, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                         ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Preprocess, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersPreprocess
 
     def addObjectMaskToDQ(self, adinputs=None, stream='main', **params):

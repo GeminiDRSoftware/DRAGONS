@@ -57,13 +57,14 @@ class PrimitivesBASE(object):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
+    def __init__(self, adinputs, context='qa', upmetrics=False, upcalibs=False,
+                 ucals=None, uparms=None):
         self.adinputs         = adinputs
-        self.adoutputs        = None
-        self.context          = context
+        self.context          = context.lower()
         self.parameters       = ParametersBASE
         self.log              = logutils.get_logger(__name__)
         self.upload_metrics   = upmetrics
+        self.upload_calibs    = upcalibs
         self.user_params      = uparms if uparms else {}
         self.usercals         = ucals if ucals else {}
         self.calurl_dict      = calurl_dict.calurl_dict

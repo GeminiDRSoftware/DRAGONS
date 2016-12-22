@@ -26,9 +26,8 @@ class GMOS(Gemini, CCD):
     """
     tagset = set(["GEMINI", "GMOS"])
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(GMOS, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                   ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(GMOS, self).__init__(adinputs, **kwargs)
 
         self.parameters = ParametersGMOS
 

@@ -25,9 +25,8 @@ class Register(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Register, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                       ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Register, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersRegister
 
     def correctWCSToReferenceFrame(self, adinputs=None, stream='main', **params):

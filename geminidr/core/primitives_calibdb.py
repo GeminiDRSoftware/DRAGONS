@@ -29,9 +29,8 @@ class CalibDB(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(CalibDB, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                          ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(CalibDB, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersCalibDB
         self._not_found = "Calibration not found for {}"
 

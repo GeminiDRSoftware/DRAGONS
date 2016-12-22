@@ -28,9 +28,8 @@ class Standardize(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Standardize, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                          ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Standardize, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersStandardize
 
 
@@ -242,7 +241,7 @@ class Standardize(PrimitivesBASE):
 
         return adinputs
 
-    def addVAR(self, adinputs=None, stream='main', **params):
+    def addVAR(self, adinputs=None, suffix='_varAdded', read_noise=False, poisson_noise=False, **params):
         """
         This primitive calculates the variance of each science extension in the
         input AstroData object and adds the variance as an additional
@@ -290,8 +289,8 @@ class Standardize(PrimitivesBASE):
         sfx = pars["suffix"]
         read_noise = pars['read_noise']
         poisson_noise = pars['poisson_noise']
+        print '---', pars
 
-        print pars
         if read_noise:
             if poisson_noise:
                 log.stdinfo('Adding the read noise component and the Poisson '
