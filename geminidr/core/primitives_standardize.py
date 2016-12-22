@@ -286,11 +286,12 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", "addVAR", "starting"))
         timestamp_key = self.timestamp_keys["addVAR"]
-        sfx = self.parameters.addVAR["suffix"]
+        pars = getattr(self.parameters, self.myself())
+        sfx = pars["suffix"]
+        read_noise = pars['read_noise']
+        poisson_noise = pars['poisson_noise']
 
-        read_noise = self.parameters.addVAR['read_noise']
-        poisson_noise = self.parameters.addVAR['poisson_noise']
-        print read_noise,poisson_noise
+        print pars
         if read_noise:
             if poisson_noise:
                 log.stdinfo('Adding the read noise component and the Poisson '
@@ -303,14 +304,14 @@ class Standardize(PrimitivesBASE):
             else:
                 log.warning('Cannot add a variance extension since no variance '
                             'component has been selected')
-                return
+                return adinputs
 
         for ad in adinputs:
             tags = ad.tags
-            if poisson_noise and 'BIAS' in ad.tags:
+            if poisson_noise and 'BIAS' in tags:
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
-            if (poisson_noise and 'GMOS' in ad.tags and
+            if (poisson_noise and 'GMOS' in tags and
                 ad.phu.get(self.timestamp_keys['subtractBias']) is None):
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
