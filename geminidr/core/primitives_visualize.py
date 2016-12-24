@@ -8,6 +8,7 @@ except ImportError:
 import astrodata
 import gemini_instruments
 
+from gemini_instruments.gmos.pixel_functions import get_bias_level
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -27,7 +28,7 @@ class Visualize(PrimitivesBASE):
         super(Visualize, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersVisualize
 
-    def display(self, adinputs=None, stream='main', **params):
+    def display(self, adinputs=None, **params):
         """
         Displays an image on the ds9 display, using multiple frames if
         there are multiple extensions. Saturated pixels can be displayed
@@ -49,21 +50,22 @@ class Visualize(PrimitivesBASE):
             attempt to tile arrays before displaying?
         zscale: bool
             use zscale algorithm?
+        overlay: list
+            list of overlays for the display
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        pars = self.parameters.display
 
         # No-op if ignore=True
-        if pars["ignore"]:
+        if params["ignore"]:
             log.warning("display turned off per user request")
             return
 
-        threshold = pars['threshold']
-        remove_bias = pars['remove_bias']
-        extname = pars['extname']
-        tile = pars['tile']
-        zscale = pars['zscale']
+        threshold = params['threshold']
+        remove_bias = params['remove_bias']
+        extname = params['extname']
+        tile = params['tile']
+        zscale = params['zscale']
 
         # We may be manipulating the data significantly, so the best option
         # is to create a new PrimitivesClass instance and work with that
@@ -101,7 +103,7 @@ class Visualize(PrimitivesBASE):
                                  "performed")
                 else:
                     try:
-                        bias_level = gemini_instruments.gmos.pixel_functions.get_bias_level(ad)
+                        bias_level = get_bias_level(ad)
                     except NotImplementedError:
                         # For non-GMOS instruments
                         bias_level = None
@@ -125,13 +127,13 @@ class Visualize(PrimitivesBASE):
         else:
             p.adinputs = [ext for ad in p.adinputs for ext in ad]
 
-        frame = pars['frame'] if pars['frame'] else 1
+        frame = params['frame'] if params['frame'] else 1
         lnd = _localNumDisplay()
 
         # Each extension is an individual display item (if the data have been
         # tiled, then there'll only be one extension per AD, of course)
         for ad, overlay in zip(*gt.make_lists([ext for ad in p.adinputs
-                                               for ext in ad], pars['overlay'])):
+                                               for ext in ad], params['overlay'])):
             if frame > 16:
                 log.warning("Too many images; only the first 16 are displayed")
                 break
@@ -206,12 +208,11 @@ class Visualize(PrimitivesBASE):
                 log.stdinfo("    Median value: {:.0f}".format(median))
         return
 
-    def mosaicDetectors(self, adinputs=None, stream='main', **params):
-        pass
+    def mosaicDetectors(self, adinputs=None, **params):
+        return adinputs
 
-
-    def tileArrays(self, adinputs=None, stream='main', **params):
-        pass
+    def tileArrays(self, adinputs=None, **params):
+        return adinputs
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #

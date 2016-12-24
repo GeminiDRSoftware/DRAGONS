@@ -6,6 +6,6 @@ from geminidr import ParametersBASE
 class ParametersResample(ParametersBASE):
     alignToReferenceFrame = {
         "suffix"                : "_align",
-        "interpolator"          : "linear",
+        "interpolator"          : "nearest",
         "trim_data"             : False,
     }

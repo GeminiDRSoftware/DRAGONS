@@ -59,7 +59,7 @@ class CalibDB(PrimitivesBASE):
                     raise IOError(self._not_found.format(ad.filename))
         return adinputs
 
-    def getCalibration(self, adinputs=None, stream='main', **params):
+    def getCalibration(self, adinputs=None, **params):
         caltype = params.get('caltype')
         log = self.log
         if caltype is None:
@@ -72,31 +72,31 @@ class CalibDB(PrimitivesBASE):
         self._add_cal(calibration_records)
         return adinputs
 
-    def getProcessedArc(self, adinputs=None, stream='main', **params):
+    def getProcessedArc(self, adinputs=None, **params):
         caltype = "processed_arc"
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
-    def getProcessedBias(self, adinputs=None, stream='main', **params):
+    def getProcessedBias(self, adinputs=None, **params):
         caltype = "processed_bias"
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
-    def getProcessedDark(self, adinputs=None, stream='main', **params):
+    def getProcessedDark(self, adinputs=None, **params):
         caltype = "processed_dark"
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)  
         return adinputs
     
-    def getProcessedFlat(self, adinputs=None, stream='main', **params):
+    def getProcessedFlat(self, adinputs=None, **params):
         caltype = "processed_flat"
         self.getCalibration(adinputs, caltype=caltype)
         self._assert_calibrations(adinputs, caltype)        
         return adinputs
     
-    def getProcessedFringe(self, adinputs=None, stream='main', **params):
+    def getProcessedFringe(self, adinputs=None, **params):
         caltype = "processed_fringe"
         log = self.log
         self.getCalibration(adinputs, caltype=caltype)
@@ -111,7 +111,7 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
 # =========================== STORE PRIMITIVES =================================
-    def storeCalibration(self, adinputs=None, stream='main', **params):
+    def storeCalibration(self, adinputs=None, **params):
         """
         Will write calibrations in calibrations/<cal_type>/
         """ 
@@ -138,11 +138,10 @@ class CalibDB(PrimitivesBASE):
                     log.stdinfo(msg.format(os.path.basename(ad.filename)))
         return adinputs
 
-    def storeProcessedArc(self, adinputs=None, stream='main', **params):
+    def storeProcessedArc(self, adinputs=None, **params):
         caltype = 'processed_arc'
         log = self.log
-        pars = getattr(self.parameters, self.myself())
-        sfx = pars["suffix"]
+        sfx = params["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -152,11 +151,10 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedBias(self, adinputs=None, stream='main', **params):
+    def storeProcessedBias(self, adinputs=None, **params):
         caltype = 'processed_bias'
         log = self.log
-        pars = getattr(self.parameters, self.myself())
-        sfx = pars["suffix"]
+        sfx = params["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -166,7 +164,7 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeBPM(self, adinputs=None, stream='main', **params):
+    def storeBPM(self, adinputs=None, **params):
         caltype = 'bpm'
         log = self.log
         sfx = '_bpm'
@@ -178,11 +176,10 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype)
         return adinputs
 
-    def storeProcessedDark(self, adinputs=None, stream='main', **params):
+    def storeProcessedDark(self, adinputs=None, **params):
         caltype = 'processed_dark'
         log = self.log
-        pars = getattr(self.parameters, self.myself())
-        sfx = pars["suffix"]
+        sfx = params["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -192,11 +189,10 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
     
-    def storeProcessedFlat(self, adinputs=None, stream='main', **params):
+    def storeProcessedFlat(self, adinputs=None, **params):
         caltype = 'processed_flat'
         log = self.log
-        pars = getattr(self.parameters, self.myself())
-        sfx = pars["suffix"]
+        sfx = params["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -206,11 +202,10 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs       
     
-    def storeProcessedFringe(self, adinputs=None, stream='main', **params):
+    def storeProcessedFringe(self, adinputs=None, **params):
         caltype = 'processed_fringe'
         log = self.log
-        pars = getattr(self.parameters, self.myself())
-        sfx = pars["suffix"]
+        sfx = params["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)

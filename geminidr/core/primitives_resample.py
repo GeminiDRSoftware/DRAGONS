@@ -35,7 +35,7 @@ class Resample(PrimitivesBASE):
         super(Resample, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersResample
 
-    def alignToReferenceFrame(self, adinputs=None, stream='main', **params):
+    def alignToReferenceFrame(self, adinputs=None, **params):
         """
         This primitive applies the transformation encoded in the input images
         WCSs to align them with a reference image, in reference image pixel
@@ -82,10 +82,9 @@ class Resample(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackSkyFrames"]
-        pars = getattr(self.parameters, self.myself())
-        interpolator = pars["interpolator"]
-        trim_data = pars["trim_data"]
-        sfx = pars["suffix"]
+        interpolator = params["interpolator"]
+        trim_data = params["trim_data"]
+        sfx = params["suffix"]
 
         if len(adinputs) < 2:
             log.warning("No alignment will be performed, since at least two "

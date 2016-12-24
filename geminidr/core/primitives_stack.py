@@ -9,8 +9,10 @@ from gempy.gemini.eti import gemcombineeti
 
 from geminidr import PrimitivesBASE
 from geminidr.core.parameters_stack import ParametersStack
+from gempy.utils import logutils
 
 from recipe_system.utils.decorators import parameter_override
+log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 @parameter_override
 class Stack(PrimitivesBASE):
@@ -23,7 +25,7 @@ class Stack(PrimitivesBASE):
         super(Stack, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersStack
     
-    def alignAndStack(self, adinputs=None, stream='main', **params):
+    def alignAndStack(self, adinputs=None, **params):
         """
         This primitive calls a set of primitives to perform the steps
         needed for alignment of frames to a reference image and stacking.
@@ -31,9 +33,8 @@ class Stack(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # Add the input frame to the forStack list and
+        # Add the input frames to the forStack list and
         # get other available frames from the same list
-        single_ad = adinputs
         self.addToList(purpose='forStack')
         self.getList(purpose='forStack')
 
@@ -43,25 +44,25 @@ class Stack(PrimitivesBASE):
                         "for alignAndStack")
         else:
             if (self.parameters.alignAndStack['check_if_stack'] and
-                    not self._can_stack(adinputs)):
-                adinputs = single_ad
+                    not _can_stack(adinputs)):
+                return adinputs
             else:
                 #TODO: Must be an easier way than this to determine whether
                 # an AD object has no OBJCATs
                 if any(all(getattr(ext, 'OBJCAT', None) is None for ext in ad)
                        for ad in adinputs):
-                    self.detectSources(adinputs)
+                    adinputs = self.detectSources(adinputs, **params)
                 adinputs = self.correctWCSToReferenceFrame(adinputs, **params)
                 adinputs = self.alignToReferenceFrame(adinputs, **params)
                 adinputs = self.correctBackgroundToReferenceImage(adinputs, **params)
                 adinputs = self.stackFrames(adinputs, **params)
         return adinputs
 
-    def stackFlats(self, adinputs=None, stream='main', **params):
+    def stackFlats(self, adinputs=None, **params):
         """Default behaviour is just to stack images as normal"""
         return self.stackFrames(adinputs, **params)
 
-    def stackFrames(self, adinputs=None, stream='main', **params):
+    def stackFrames(self, adinputs=None, **params):
         """
         This primitive will stack each science extension in the input dataset.
         New variance extensions are created from the stacked science extensions
@@ -86,7 +87,7 @@ class Stack(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackFrames"]
-        sfx = self.parameters.stackFrames["suffix"]
+        sfx = params["suffix"]
 
         # Ensure that each input AstroData object has been prepared
         for ad in adinputs:
@@ -138,8 +139,7 @@ class Stack(PrimitivesBASE):
             #        dq_dtype = np.dtype(np.uint16)
             
             # Instantiate ETI and then run the task 
-            gemcombine_task = gemcombineeti.GemcombineETI(adinputs,
-                                        self.parameters.stackFrames)
+            gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
             ad = gemcombine_task.run()
 
             # Gemcombine sets the GAIN keyword to the sum of the gains;
@@ -164,7 +164,7 @@ class Stack(PrimitivesBASE):
 
         return adinputs
     
-    def stackSkyFrames(self, adinputs=None, stream='main', **params):
+    def stackSkyFrames(self, adinputs=None, **params):
         """
         This primitive stacks the sky frames for each science frame (as
         determined from the self.sky_dict attribute previously set) by
@@ -189,7 +189,6 @@ class Stack(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackSkyFrames"]
-        pars = self.parameters.stackSkyFrames
 
         # Initialize the list of output science and stacked sky AstroData
         # objects
@@ -259,7 +258,8 @@ class Stack(PrimitivesBASE):
                     #ad_stacked_sky_list = p.adinputs
                     # Stack the skies by calling the primitive function directly
                     self.showInputs(ad_sky_to_stack_list)
-                    ad_stacked_sky_list = self.stackFrames(ad_sky_to_stack_list, **pars)
+                    ad_stacked_sky_list = self.stackFrames(ad_sky_to_stack_list,
+                                                           **params)
                     self.showInputs(ad_stacked_sky_list)
 
                     # Add the sky to be used to correct this science AstroData
@@ -283,7 +283,7 @@ class Stack(PrimitivesBASE):
         # Add the appropriate time stamp to the PHU and update the filename of
         # the science AstroData objects
         adinputs = gt.finalise_adinput(adinputs, timestamp_key=timestamp_key,
-                                        suffix=pars["suffix"])
+                                        suffix=params["suffix"])
 
         # Add the association dictionary to the reduction context
         self.stacked_sky_dict = stacked_sky_dict
@@ -296,23 +296,22 @@ class Stack(PrimitivesBASE):
         # rc.run("showInputs(stream='forSkyCorrection')")
         return adinputs
 
-    ##############################################################################
-    # Below are the helper functions for the user level functions in this module #
-    ##############################################################################
-    def _can_stack(self, adinputs):
-        """
-        This function checks for a set of AstroData input frames whether there is
-        more than 1 degree of rotation between the first frame and successive
-        frames. If so, stacking will not be performed.
+##############################################################################
+# Below are the helper functions for the user level functions in this module #
+##############################################################################
+def _can_stack(adinputs):
+    """
+    This function checks for a set of AstroData input frames whether there is
+    more than 1 degree of rotation between the first frame and successive
+    frames. If so, stacking will not be performed.
 
-        :param adinput: List of AstroData instances
-        :type adinput: List of AstroData instances
-        """
-        log = self.log
-        ref_pa = adinputs[0].phu.PA
-        for ad in adinputs:
-            if abs(ad.phu.PA - ref_pa) >= 1.0:
-                log.warning("No stacking will be performed, since a frame varies "
-                            "from the reference image by more than 1 degree")
-                return False
-        return True
+    :param adinput: List of AstroData instances
+    :type adinput: List of AstroData instances
+    """
+    ref_pa = adinputs[0].phu.PA
+    for ad in adinputs:
+        if abs(ad.phu.PA - ref_pa) >= 1.0:
+            log.warning("No stacking will be performed, since a frame varies "
+                        "from the reference image by more than 1 degree")
+            return False
+    return True

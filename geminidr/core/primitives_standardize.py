@@ -241,7 +241,7 @@ class Standardize(PrimitivesBASE):
 
         return adinputs
 
-    def addVAR(self, adinputs=None, suffix='_varAdded', read_noise=False, poisson_noise=False, **params):
+    def addVAR(self, adinputs=None, **params):
         """
         This primitive calculates the variance of each science extension in the
         input AstroData object and adds the variance as an additional
@@ -285,11 +285,9 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", "addVAR", "starting"))
         timestamp_key = self.timestamp_keys["addVAR"]
-        pars = getattr(self.parameters, self.myself())
-        sfx = pars["suffix"]
-        read_noise = pars['read_noise']
-        poisson_noise = pars['poisson_noise']
-        print '---', pars
+        read_noise = params['read_noise']
+        poisson_noise = params['poisson_noise']
+        suffix = params['suffix']
 
         if read_noise:
             if poisson_noise:
@@ -318,7 +316,7 @@ class Standardize(PrimitivesBASE):
 
             self._calculate_var(ad, read_noise, poisson_noise)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix, strip=True)
 
         return adinputs
 
@@ -365,26 +363,24 @@ class Standardize(PrimitivesBASE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
         return adinputs
 
-    def standardizeHeaders(self, adinputs=None, stream='main', **params):
+    def standardizeHeaders(self, adinputs=None, **kwargs):
         log = self.log
         log.debug(gt.log_message("primitive", "standardizeHeaders",
                                  "starting"))
-        self.standardizeObservatoryHeaders(adinputs)
-        self.standardizeInstrumentHeaders(adinputs)
+        adinputs = self.standardizeObservatoryHeaders(adinputs, **kwargs)
+        adinputs = self.standardizeInstrumentHeaders(adinputs, **kwargs)
         return adinputs
 
-    def standardizeInstrumentHeaders(self, adinputs=None, stream='main',
-                                     **params):
+    def standardizeInstrumentHeaders(self, adinputs=None, **kwargs):
         return adinputs
 
-    def standardizeObservatoryHeaders(self, adinputs=None, stream='main',
-                                      **params):
+    def standardizeObservatoryHeaders(self, adinputs=None, **kwargs):
         return adinputs
 
-    def standardizeStructure(self, adinputs=None, stream='main', **params):
+    def standardizeStructure(self, adinputs=None, **kwargs):
         return adinputs
 
-    def validateData(self, adinputs=None, stream='main', **params):
+    def validateData(self, adinputs=None, **kwargs):
         return adinputs
 
     ##########################################################################

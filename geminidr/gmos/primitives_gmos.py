@@ -28,10 +28,9 @@ class GMOS(Gemini, CCD):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOS, self).__init__(adinputs, **kwargs)
-
         self.parameters = ParametersGMOS
 
-    def mosaicDetectors(self, adinputs=None, stream='main', **params):
+    def mosaicDetectors(self, adinputs=None, **params):
         """
         This primitive will mosaic the frames of the input images. It uses
         the the ETI and pyraf to call gmosaic from the gemini IRAF package.
@@ -51,7 +50,6 @@ class GMOS(Gemini, CCD):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         adoutputs = []
         for ad in adinputs:
@@ -87,7 +85,7 @@ class GMOS(Gemini, CCD):
             old_detsec = min(ad.detector_section(), key=lambda x: x.x1)
 
             # Instantiate ETI and then run the task
-            gmosaic_task = eti.gmosaiceti.GmosaicETI([], pars, ad)
+            gmosaic_task = eti.gmosaiceti.GmosaicETI([], params, ad)
             ad_out = gmosaic_task.run()
 
             # Get new DATASEC keyword, using the full shape
@@ -135,7 +133,7 @@ class GMOS(Gemini, CCD):
             adoutputs.append(ad_out)
         return adoutputs
 
-    def standardizeInstrumentHeaders(self, adinputs=None, stream='main', **params):
+    def standardizeInstrumentHeaders(self, adinputs=None, **params):
         """
         This primitive is used to make the changes and additions to the
         keywords in the headers of GMOS data, specifically.
@@ -148,7 +146,6 @@ class GMOS(Gemini, CCD):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         adoutputs = []
         for ad in adinputs:
@@ -201,12 +198,12 @@ class GMOS(Gemini, CCD):
             
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
             adoutputs.append(ad)
         return adoutputs
     
-    def standardizeStructure(self, adinputs=None, stream='main', **params):
+    def standardizeStructure(self, adinputs=None, **params):
         """
         This primitive is used to standardize the structure of GMOS data,
         specifically.
@@ -223,7 +220,6 @@ class GMOS(Gemini, CCD):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         adoutputs = []
         for ad in adinputs:
@@ -235,17 +231,17 @@ class GMOS(Gemini, CCD):
                 continue
             
             # Attach an MDF to each input AstroData object
-            if pars["attach_mdf"]:
-                ad = self.addMDF(ad, mdf=pars["mdf"])
+            if params["attach_mdf"]:
+                ad = self.addMDF(ad, mdf=params["mdf"])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
             adoutputs.append(ad)
         return adoutputs
 
-    def tileArrays(self, adinputs=None, stream='main', **params):
+    def tileArrays(self, adinputs=None, **params):
         """
         This tiles the GMOS detectors together
 
@@ -259,8 +255,7 @@ class GMOS(Gemini, CCD):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-        tile_all = pars["tile_all"]
+        tile_all = params["tile_all"]
 
         adoutputs = []
         for ad in adinputs:
@@ -448,12 +443,12 @@ class GMOS(Gemini, CCD):
             gt.mark_history(adoutput, primname=self.myself(),
                             keyword=timestamp_key)
             adoutput.filename = gt.filename_updater(adoutput,
-                                    suffix=pars["suffix"], strip=True)
+                                    suffix=params["suffix"], strip=True)
             adoutputs.append(adoutput)
         
         return adoutputs
 
-    def validateData(self, adinputs=None, stream='main', **params):
+    def validateData(self, adinputs=None, **params):
         """
         This primitive is used to validate GMOS data, specifically. The input
         AstroData object(s) are validated by ensuring that 1, 2, 3, 4, 6 or 12
@@ -469,8 +464,7 @@ class GMOS(Gemini, CCD):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-        
+
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -486,7 +480,7 @@ class GMOS(Gemini, CCD):
                     log.warning("Image {} is {} x {} binned data".
                                 format(ad.filename, xbin, ybin))
 
-            repair = pars["repair"]
+            repair = params["repair"]
             if repair:
                 # Set repair to False, since it doesn't work at the moment
                 log.warning("Setting repair=False, since this functionality "
@@ -511,7 +505,7 @@ class GMOS(Gemini, CCD):
             
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 

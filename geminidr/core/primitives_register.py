@@ -29,7 +29,7 @@ class Register(PrimitivesBASE):
         super(Register, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersRegister
 
-    def correctWCSToReferenceFrame(self, adinputs=None, stream='main', **params):
+    def correctWCSToReferenceFrame(self, adinputs=None, **params):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
@@ -104,7 +104,6 @@ class Register(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least "
@@ -115,14 +114,14 @@ class Register(PrimitivesBASE):
         if not all(len(ad)==1 for ad in adinputs):
             raise IOError("All input images must have only one extension.")
 
-        method = pars["method"]
-        fallback = pars["fallback"]
-        use_wcs = pars["use_wcs"]
-        first_pass = pars["first_pass"]
-        min_sources = pars["min_sources"]
-        cull_sources = pars["cull_sources"]
-        rotate = pars["rotate"]
-        scale = pars["scale"]
+        method = params["method"]
+        fallback = params["fallback"]
+        use_wcs = params["use_wcs"]
+        first_pass = params["first_pass"]
+        min_sources = params["min_sources"]
+        cull_sources = params["cull_sources"]
+        rotate = params["rotate"]
+        scale = params["scale"]
 
         assert method=='header' or method=='sources', \
             "Invalid method specified: {}".format(method)
@@ -245,11 +244,11 @@ class Register(PrimitivesBASE):
         # Timestamp and update filenames
         for ad in adoutputs:
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                             strip=True)
         return adoutputs
     
-    def determineAstrometricSolution(self, adinputs=None, stream='main', **params):
+    def determineAstrometricSolution(self, adinputs=None, **params):
         """
         This primitive calculates the average astrometric offset between
         the positions of sources in the reference catalog, and their
@@ -262,8 +261,7 @@ class Register(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
+        None
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -373,7 +371,7 @@ class Register(PrimitivesBASE):
         self.wcs = wcs_dict
         return adinputs
 
-    def updateWCS(self, adinputs=None, stream='main', **params):
+    def updateWCS(self, adinputs=None, **params):
         """
         This primitive applies a previously calculated WCS correction.
         The solution should be stored as an attribute of the primitives
@@ -388,9 +386,6 @@ class Register(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-
-        adoutput_list = []
 
         # Get the necessary parameters from the RC
         try:
@@ -450,7 +445,7 @@ class Register(PrimitivesBASE):
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 

@@ -28,7 +28,7 @@ class Photometry(PrimitivesBASE):
         super(Photometry, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersPhotometry
 
-    def addReferenceCatalog(self, adinputs=None, stream='main', **params):
+    def addReferenceCatalog(self, adinputs=None, **params):
         """
         This primitive calls the gemini_catalog_client module to query a
         catalog server and construct a fits table containing the catalog data
@@ -71,9 +71,8 @@ class Photometry(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-        source = pars["source"]
-        radius = pars["radius"]
+        source = params["source"]
+        radius = params["radius"]
 
         for ad in adinputs:
             try:
@@ -114,11 +113,11 @@ class Photometry(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 
-    def detectSources(self, adinputs=None, stream='main', **params):
+    def detectSources(self, adinputs=None, **params):
         """
         Find x,y positions of all the objects in the input image. Append 
         a FITS table extension with position information plus columns for
@@ -137,9 +136,8 @@ class Photometry(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-        mask_bits = pars["replace_flags"]
-        set_saturation = pars["set_saturation"]
+        mask_bits = params["replace_flags"]
+        set_saturation = params["set_saturation"]
 
         # Will raise an Exception if SExtractor is too old or missing
         SExtractorETI().check_version()
@@ -160,7 +158,7 @@ class Photometry(PrimitivesBASE):
             # sx_dict is set in the PrimitivesClass constructor
             path = os.path.join(os.path.dirname(drroot), 'gemini', 'lookups',
                                 'source_detection')
-            params = {'config': os.path.join(path,dd['sex']),
+            sexpars = {'config': os.path.join(path,dd['sex']),
                       'PARAMETERS_NAME': os.path.join(path,dd['param']),
                       'FILTER_NAME': os.path.join(path,dd['conv']),
                       'STARNNW_NAME': os.path.join(path,dd['nnw'])}
@@ -172,11 +170,11 @@ class Photometry(PrimitivesBASE):
                     sat_level = ext.saturation_level()
                     if ext.hdr.get('BUNIT', 'adu').lower() != 'adu':
                         sat_level *= ext.gain()
-                    params.update({'SATUR_LEVEL': sat_level})
+                    sexpars.update({'SATUR_LEVEL': sat_level})
 
                 # If we don't have a seeing estimate, try to get one
                 if seeing_estimate is None:
-                    sex_task = SExtractorETI([ext], params,
+                    sex_task = SExtractorETI([ext], sexpars,
                                     mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
                     seeing_estimate = _estimate_seeing(ext.OBJCAT)
@@ -186,8 +184,8 @@ class Photometry(PrimitivesBASE):
                 if seeing_estimate is not None:
                     log.debug("Running SExtractor with seeing estimate "
                               "{:.3f}".format(seeing_estimate))
-                    params.update({'SEEING_FWHM': '{:.3f}'.format(seeing_estimate)})
-                    sex_task = SExtractorETI([ext], params,
+                    sexpars.update({'SEEING_FWHM': '{:.3f}'.format(seeing_estimate)})
+                    sex_task = SExtractorETI([ext], sexpars,
                                     mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
                     seeing_estimate = _estimate_seeing(ext.OBJCAT)
@@ -211,12 +209,12 @@ class Photometry(PrimitivesBASE):
 
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
             adoutputs.append(ad)
         return adoutputs
 
-    def measureCCAndAstrometry(self, adinputs=None, stream='main', **params):
+    def measureCCAndAstrometry(self, adinputs=None, **params):
         """
         This primitive does several things. For every input image with an
         OBJCAT, it will try to add a REFCAT. If successful, it will then
@@ -230,7 +228,6 @@ class Photometry(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        pars = getattr(self.parameters, self.myself())
 
         adoutputs = []
         for ad in adinputs:
@@ -249,7 +246,7 @@ class Photometry(PrimitivesBASE):
                             "will be performed")
             adoutputs.append(ad)
 
-        if pars["correct_wcs"]:
+        if params["correct_wcs"]:
             adoutputs = self.updateWCS(adoutputs)
         return adoutputs
 

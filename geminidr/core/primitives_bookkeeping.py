@@ -21,7 +21,7 @@ class Bookkeeping(PrimitivesBASE):
         super(Bookkeeping, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersBookkeeping
     
-    def addToList(self, adinputs=None, stream='main', **params):
+    def addToList(self, adinputs=None, purpose=None):
         """
         This primitive will update the lists of files to be stacked
         that have the same observationID with the current inputs.
@@ -30,11 +30,10 @@ class Bookkeeping(PrimitivesBASE):
         
         Parameters
         ----------
-        purpose: str
+        purpose: str (None => "list")
             purpose/name of this list, used as suffix for files
         """
         log = self.log
-        purpose = self.parameters.addToList['purpose']
         suffix = '_{}'.format(purpose) if purpose else '_list'
         
         # Update file names and write the files to disk to ensure the right
@@ -53,7 +52,7 @@ class Bookkeeping(PrimitivesBASE):
         caches.save_cache(self.stacks, caches.stkindfile)
         return adinputs
 
-    def getList(self, adinputs=None, stream='main', **params):
+    def getList(self, adinputs=None, **params):
         """
         This primitive will check the files in the stack lists are on disk,
         and then update the inputs list to include all members of the stack 
@@ -69,10 +68,9 @@ class Bookkeeping(PrimitivesBASE):
             name of stream to which this list will be reported
         """
         log = self.log
-        pars = self.parameters.getList
-        purpose = pars.get('purpose', '')
-        max_frames = pars['max_frames']
-        stream = pars.get('to_stream', 'main')
+        purpose = params.get('purpose', '')
+        max_frames = params['max_frames']
+        stream = params.get('to_stream', 'main')
         stream_list = self.streams[stream] if stream!='main' else adinputs
 
         # Get ID for all inputs; use a set to avoid duplication
@@ -93,7 +91,7 @@ class Bookkeeping(PrimitivesBASE):
                 log.stdinfo("   {}".format(f))
         return adinputs
 
-    def showInputs(self, adinputs=None, stream='main', **params):
+    def showInputs(self, adinputs=None, stream='main'):
         """
         A simple primitive to show the filenames for the current inputs to 
         this primitive.
@@ -108,7 +106,7 @@ class Bookkeeping(PrimitivesBASE):
 
     showFiles = showInputs
     
-    def showList(self, adinputs=None, stream='main', **params):
+    def showList(self, adinputs=None, purpose=None):
         """
         This primitive will log the list of files in the stacking list matching
         the current inputs and 'purpose' value.
@@ -120,10 +118,11 @@ class Bookkeeping(PrimitivesBASE):
         """
         log = self.log
         sidset = set()
-        purpose = self.parameters.showList.get('purpose', '')
         if purpose == 'all':
             [sidset.add(sid) for sid in self.stacks.keys()]
         else:
+            if purpose is None:
+                purpose = ''
             [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
         for sid in sidset:
             stacklist = self.stacks(sid)
@@ -135,7 +134,7 @@ class Bookkeeping(PrimitivesBASE):
                 log.status("No datasets in list")
         return adinputs
 
-    def writeOutputs(self, adinputs=None, stream='main', **params):
+    def writeOutputs(self, adinputs=None, **params):
         """
         A primitive that may be called by a recipe at any stage to
         write the outputs to disk.
@@ -160,17 +159,16 @@ class Bookkeeping(PrimitivesBASE):
             new filename (applicable only if there's one file to be written)
         """
         log = self.log
-        pars = self.parameters.writeOutputs
-        sfx = pars['suffix']
-        pfx = pars['prefix']
-        outfilename = pars['outfilename']
+        sfx = params['suffix']
+        pfx = params['prefix']
+        outfilename = params['outfilename']
         log.fullinfo("suffix = {}".format(sfx))
         log.fullinfo("prefix = {}".format(pfx))
         
         for ad in adinputs:
             if sfx or pfx:
                 ad.filename = gt.filename_updater(adinput=ad,
-                                prefix=pfx, suffix=sfx, strip=pars["strip"])
+                                prefix=pfx, suffix=sfx, strip=params["strip"])
                 log.fullinfo("File name updated to {}".format(ad.filename))
                 outfilename = ad.filename
             elif outfilename:
@@ -190,7 +188,7 @@ class Bookkeeping(PrimitivesBASE):
             
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
-            ad.write(filename=outfilename, clobber=pars["clobber"])
+            ad.write(filename=outfilename, clobber=params["clobber"])
         return adinputs
 
 # Helper function to make a stackid, without the IDFactory nonsense
