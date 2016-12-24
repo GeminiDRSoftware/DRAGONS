@@ -11,7 +11,7 @@ import numpy as np
 from astropy.stats import sigma_clip
 from astropy.wcs import WCS
 
-from geminidr import PrimitivesBASE, __file__ as drroot
+from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import ColorCorrections
 from geminidr.core.parameters_photometry import ParametersPhotometry
 
@@ -156,7 +156,7 @@ class Photometry(PrimitivesBASE):
                 dd = self.sx_default_dict[dqtype]
             # TODO: This path determination should probably done when the
             # sx_dict is set in the PrimitivesClass constructor
-            path = os.path.join(os.path.dirname(drroot), 'gemini', 'lookups',
+            path = os.path.join(self.dr_root, 'gemini', 'lookups',
                                 'source_detection')
             sexpars = {'config': os.path.join(path,dd['sex']),
                       'PARAMETERS_NAME': os.path.join(path,dd['param']),

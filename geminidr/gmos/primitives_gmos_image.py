@@ -512,7 +512,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # to be used with minmax rejection. Note: if reject_method
             # parameter is overridden, these parameters will just be
             # ignored
-            reject_method = para,s["reject_method"]
+            reject_method = params["reject_method"]
             nlow, nhigh = 0, 0
             if nframes <= 2:
                 reject_method = None
