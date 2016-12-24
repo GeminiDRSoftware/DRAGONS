@@ -28,9 +28,8 @@ class Standardize(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Standardize, self).__init__(adinputs, context, upmetrics=upmetrics,
-                                          ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Standardize, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersStandardize
 
 
@@ -242,7 +241,7 @@ class Standardize(PrimitivesBASE):
 
         return adinputs
 
-    def addVAR(self, adinputs=None, stream='main', **params):
+    def addVAR(self, adinputs=None, **params):
         """
         This primitive calculates the variance of each science extension in the
         input AstroData object and adds the variance as an additional
@@ -286,11 +285,10 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", "addVAR", "starting"))
         timestamp_key = self.timestamp_keys["addVAR"]
-        sfx = self.parameters.addVAR["suffix"]
+        read_noise = params['read_noise']
+        poisson_noise = params['poisson_noise']
+        suffix = params['suffix']
 
-        read_noise = self.parameters.addVAR['read_noise']
-        poisson_noise = self.parameters.addVAR['poisson_noise']
-        print read_noise,poisson_noise
         if read_noise:
             if poisson_noise:
                 log.stdinfo('Adding the read noise component and the Poisson '
@@ -303,14 +301,14 @@ class Standardize(PrimitivesBASE):
             else:
                 log.warning('Cannot add a variance extension since no variance '
                             'component has been selected')
-                return
+                return adinputs
 
         for ad in adinputs:
             tags = ad.tags
-            if poisson_noise and 'BIAS' in ad.tags:
+            if poisson_noise and 'BIAS' in tags:
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
-            if (poisson_noise and 'GMOS' in ad.tags and
+            if (poisson_noise and 'GMOS' in tags and
                 ad.phu.get(self.timestamp_keys['subtractBias']) is None):
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
@@ -318,7 +316,7 @@ class Standardize(PrimitivesBASE):
 
             self._calculate_var(ad, read_noise, poisson_noise)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix, strip=True)
 
         return adinputs
 
@@ -365,26 +363,24 @@ class Standardize(PrimitivesBASE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
         return adinputs
 
-    def standardizeHeaders(self, adinputs=None, stream='main', **params):
+    def standardizeHeaders(self, adinputs=None, **kwargs):
         log = self.log
         log.debug(gt.log_message("primitive", "standardizeHeaders",
                                  "starting"))
-        self.standardizeObservatoryHeaders(adinputs)
-        self.standardizeInstrumentHeaders(adinputs)
+        adinputs = self.standardizeObservatoryHeaders(adinputs, **kwargs)
+        adinputs = self.standardizeInstrumentHeaders(adinputs, **kwargs)
         return adinputs
 
-    def standardizeInstrumentHeaders(self, adinputs=None, stream='main',
-                                     **params):
+    def standardizeInstrumentHeaders(self, adinputs=None, **kwargs):
         return adinputs
 
-    def standardizeObservatoryHeaders(self, adinputs=None, stream='main',
-                                      **params):
+    def standardizeObservatoryHeaders(self, adinputs=None, **kwargs):
         return adinputs
 
-    def standardizeStructure(self, adinputs=None, stream='main', **params):
+    def standardizeStructure(self, adinputs=None, **kwargs):
         return adinputs
 
-    def validateData(self, adinputs=None, stream='main', **params):
+    def validateData(self, adinputs=None, **kwargs):
         return adinputs
 
     ##########################################################################

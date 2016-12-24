@@ -16,22 +16,21 @@ class CCD(PrimitivesBASE):
     """
     tagset = None
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(CCD, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                  ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(CCD, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersCCD
 
-    def biasCorrect(self, adinputs=None, stream='main', **params):
+    def biasCorrect(self, adinputs=None, **params):
         self.getProcessedBias(adinputs)
-        adinputs = self.subtractBias(adinputs)
+        adinputs = self.subtractBias(adinputs, **params)
         return adinputs
 
-    def overscanCorrect(self, adinputs=None, stream='main', **params):
-        adinputs = self.subtractOverscan(adinputs)
-        adinputs = self.trimOverscan(adinputs)
+    def overscanCorrect(self, adinputs=None, **params):
+        adinputs = self.subtractOverscan(adinputs, **params)
+        adinputs = self.trimOverscan(adinputs, **params)
         return adinputs
 
-    def subtractBias(self, adinputs=None, stream='main', **params):
+    def subtractBias(self, adinputs=None, **params):
         """
         The subtractBias primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
@@ -48,9 +47,8 @@ class CCD(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
-        bias_list = pars["bias"] if pars["bias"] else [
+        bias_list = params["bias"] if params["bias"] else [
             self._get_cal(ad, 'processed_bias') for ad in adinputs]
 
         # Provide a bias AD object for every science frame
@@ -85,11 +83,11 @@ class CCD(PrimitivesBASE):
             # Record bias used, timestamp, and update filename
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 
-    def subtractOverscan(self, adinputs=None, stream='main', **params):
+    def subtractOverscan(self, adinputs=None, **params):
         """
         This primitive uses External Task Interface to gireduce to subtract
         the overscan from the input images.
@@ -123,8 +121,7 @@ class CCD(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
-            gireduce_task = gireduceeti.GireduceETI([],
-                                        self.parameters.subtractOverscan, ad)
+            gireduce_task = gireduceeti.GireduceETI([], params, ad)
             adout = gireduce_task.run()
             # Need to reattach DQ, VAR, and other bits'n'bobs
             for extout, extin in zip(adout, ad):
@@ -137,12 +134,9 @@ class CCD(PrimitivesBASE):
                 adout.REFCAT = ad.REFCAT
             gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(adout)
+        return adoutputs
 
-        # Reset inputs to the ETI outputs
-        adinputs = adoutputs
-        return adinputs
-
-    def trimOverscan(self, adinputs=None, stream='main', **params):
+    def trimOverscan(self, adinputs=None, **params):
         """
         The trimOverscan primitive trims the overscan region from the input
         AstroData object and updates the headers.
@@ -155,7 +149,7 @@ class CCD(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = self.parameters.trimOverscan["suffix"]
+        sfx = params["suffix"]
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key) is not None:

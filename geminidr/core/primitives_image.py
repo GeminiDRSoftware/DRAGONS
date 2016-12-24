@@ -13,29 +13,28 @@ class Image(Register, Resample):
     """
     tagset = set(["IMAGE"])
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Image, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                    ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(Image, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersImage
 
-    def fringeCorrect(self, adinputs=None, stream='main', **params):
+    def fringeCorrect(self, adinputs=None, **params):
         self.getProcessedFringe(adinputs)
-        self.subtractFringe(adinputs)
+        adinputs = self.subtractFringe(adinputs, **params)
         return adinputs
 
-    def makeFringe(self, adinputs=None, stream='main', **params):
+    def makeFringe(self, adinputs=None, **params):
         return adinputs
 
-    def makeFringeFrame(self, adinputs=None, stream='main', **params):
+    def makeFringeFrame(self, adinputs=None, **params):
         return adinputs
 
-    def scaleByIntensity(self, adinputs=None, stream='main', **params):
+    def scaleByIntensity(self, adinputs=None, **params):
         return adinputs
 
-    def scaleFringeToScience(self, adinputs=None, stream='main', **params):
+    def scaleFringeToScience(self, adinputs=None, **params):
         return adinputs
 
-    def subtractFringe(self, adinputs=None, stream='main', **params):
+    def subtractFringe(self, adinputs=None, **params):
         """
         This primitive subtracts a specified fringe frame from the science frame(s)
 
@@ -49,9 +48,8 @@ class Image(Register, Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
-        fringe_list = pars["fringe"] if pars["fringe"] else [
+        fringe_list = params["fringe"] if params["fringe"] else [
             self._get_cal(ad, 'processed_fringe') for ad in adinputs]
 
         # Get a fringe AD object for every science frame
@@ -75,6 +73,6 @@ class Image(Register, Resample):
             # Update the header and filename
             ad.phu.set("FLATIM", fringe.filename, self.keyword_comments["FRINGEIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs

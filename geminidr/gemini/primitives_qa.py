@@ -27,12 +27,11 @@ class QA(PrimitivesBASE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs, context, upmetrics=False,ucals=None,uparms=None):
-        super(QA, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                 ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(QA, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersQA
 
-    def measureBG(self, adinputs=None, stream='main', **params):
+    def measureBG(self, adinputs=None, **params):
         """
         This primitive measures the sky background level for an image by
         averaging (clipped mean) the sky background level for each object 
@@ -56,9 +55,8 @@ class QA(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-        separate_ext = pars['separate_ext']
-        remove_bias = pars['remove_bias']
+        separate_ext = params['separate_ext']
+        remove_bias = params['remove_bias']
 
         # Define a few useful numbers for formatting output
         llen = 23
@@ -154,7 +152,7 @@ class QA(PrimitivesBASE):
                     # Now divide it by the exposure time and pixel area
                     bg_e /= ext.exposure_time()*pixscale*pixscale
                     std_e /= ext.exposure_time()*pixscale*pixscale
-                    log.fullinfo("BG electrons/s/as^2 = {:.3f}".format(bg_e))
+                    log.debug("BG electrons/s/as^2 = {:.3f}".format(bg_e))
 
                     # Now get that in (instrumental) magnitudes...
                     if bg_e<=0:
@@ -173,7 +171,7 @@ class QA(PrimitivesBASE):
 
                         # Error in magnitude
                         # dm = df * (2.5/ln(10)) / f 
-                        std_am = std_e * (2.5/math.log(10)) / bg_e;
+                        std_am = std_e * (2.5/math.log(10)) / bg_e
 
                         ext_info.update({"mag": bg_am, "mag_std": std_am,
                                     "electrons":bg_e, "electrons_std":std_e,
@@ -330,11 +328,11 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 
-    def measureCC(self, adinputs=None, stream='main', **params):
+    def measureCC(self, adinputs=None, **params):
         """
         This primitive will determine the zeropoint by looking at sources in
         the OBJCAT for which a reference catalog magnitude has been determined
@@ -373,7 +371,6 @@ class QA(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         # Define a few useful numbers for formatting output
         llen = 32
@@ -739,11 +736,11 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 
-    def measureIQ(self, adinputs=None, stream='main', **params):
+    def measureIQ(self, adinputs=None, **params):
         """
         This primitive is for use with sextractor-style source-detection.
         FWHM (from _profile_sources()) and CLASS_STAR (from SExtractor)
@@ -758,14 +755,15 @@ class QA(PrimitivesBASE):
             remove the bias level (if present) before measuring background?
         separate_ext: bool
             report one value per extension, instead of a global value?
+        display: bool
+            display the images?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-        display = pars["display"]
-        separate_ext = pars["separate_ext"]
-        remove_bias = pars["remove_bias"]
+        display = params["display"]
+        separate_ext = params["separate_ext"]
+        remove_bias = params["remove_bias"]
 
         mean_fwhms = []
         mean_ellips = []
@@ -1216,7 +1214,7 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 

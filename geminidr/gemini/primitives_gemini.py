@@ -20,14 +20,11 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(Gemini, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                     ucals=ucals, uparms=uparms)
-
+    def __init__(self, adinputs, **kwargs):
+        super(Gemini, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersGemini
 
-    def standardizeObservatoryHeaders(self, adinputs=None, stream='main',
-                                      **params):
+    def standardizeObservatoryHeaders(self, adinputs=None, **params):
         """
         This primitive is used to make the changes and additions to the
         keywords in the headers of Gemini data.
@@ -40,7 +37,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -59,5 +55,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(ad, suffix=pars["suffix"], strip=True)
+            ad.filename = gt.filename_updater(ad, suffix=params["suffix"],
+                                              strip=True)
         return adinputs

@@ -27,12 +27,11 @@ class GMOSImage(GMOS, Image, Photometry):
     """
     tagset = set(["GEMINI", "GMOS", "IMAGE"])
 
-    def __init__(self, adinputs, context, upmetrics=False, ucals=None, uparms=None):
-        super(GMOSImage, self).__init__(adinputs, context, upmetrics=upmetrics, 
-                                        ucals=ucals, uparms=uparms)
+    def __init__(self, adinputs, **kwargs):
+        super(GMOSImage, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersGMOSImage
 
-    def fringeCorrect(self, adinputs=None, stream='main', **params):
+    def fringeCorrect(self, adinputs=None, **params):
         """
         This uses a fringe frame to correct a GMOS image for fringing.
         The fringe frame is obtained either from the calibration database
@@ -78,7 +77,7 @@ class GMOSImage(GMOS, Image, Photometry):
             adoutputs.append(ad)
         return adoutputs
 
-    def makeFringe(self, adinputs=None, stream='main', **params):
+    def makeFringe(self, adinputs=None, **params):
         """
         This primitive performs the bookkeeping related to the construction of
         a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame
@@ -91,7 +90,6 @@ class GMOSImage(GMOS, Image, Photometry):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        pars = getattr(self.parameters, self.myself())
 
         # Exit without doing anything if any of the inputs are inappropriate
         if not all(_needs_fringe_correction(ad) for ad in adinputs):
@@ -104,7 +102,7 @@ class GMOSImage(GMOS, Image, Photometry):
         # Fringing on Cerro Pachon is generally stronger than on Maunakea.
         # A SExtractor mask alone is usually sufficient for GN data, but GS
         # data need to be median-subtracted to distinguish fringes from objects
-        sub_med = pars["subtract_median_image"]
+        sub_med = params["subtract_median_image"]
         if sub_med is None:
             sub_med = any(ad.telescope=="Gemini-South" for ad in adinputs)
 
@@ -152,7 +150,7 @@ class GMOSImage(GMOS, Image, Photometry):
         return fringe_adinputs
 
 
-    def makeFringeFrame(self, adinputs=None, stream='main', **params):
+    def makeFringeFrame(self, adinputs=None, **params):
         """
         Make a fringe frame from a list of images
 
@@ -161,10 +159,11 @@ class GMOSImage(GMOS, Image, Photometry):
         subtract_median_image: bool
             if True, create and subtract a median image before object
             detection as a first-pass fringe removal
+        operation: str
+            type of combine operation
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        pars = getattr(self.parameters, self.myself())
 
         if len(adinputs) < 3:
             log.stdinfo('Fewer than 3 frames provided as input. '
@@ -175,7 +174,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # If needed, do a rough median on all frames, subtract,
             # and then redetect to help distinguish sources from fringes
-            if pars["subtract_median_image"]:
+            if params["subtract_median_image"]:
                 # TODO: When stackFrames stops using gemcombine, we can
                 # maybe use that
                 median_ad = deepcopy(frinputs[0])
@@ -189,10 +188,10 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Add object mask to DQ plane and stack with masking
             frinputs = self.addObjectMaskToDQ(frinputs)
-            frinputs = self.stackFrames(frinputs, operation=pars["operation"])
+            frinputs = self.stackFrames(frinputs, **params)
         return frinputs
 
-    def normalizeFlat(self, adinputs=None, stream='main', **params):
+    def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive will calculate a normalization factor from statistics
         on CCD2, then divide by this factor and propagate variance accordingly.
@@ -208,7 +207,6 @@ class GMOSImage(GMOS, Image, Photometry):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
@@ -258,11 +256,11 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
     
-    def scaleByIntensity(self, adinputs=None, stream='main', **params):
+    def scaleByIntensity(self, adinputs=None, **params):
         """
         This primitive scales input images to the mean value of the first
         image. It is intended to be used to scale flats to the same
@@ -276,7 +274,6 @@ class GMOSImage(GMOS, Image, Photometry):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
 
         ref_mean = None
         for ad in adinputs:
@@ -313,11 +310,11 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=pars["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
 
-    def scaleFringeToScience(self, adinputs=None, stream='main', **params):
+    def scaleFringeToScience(self, adinputs=None, **params):
         """
         This primitive will scale the fringes to their matching science data
         The fringes should be in the stream this primitive is called on,
@@ -344,12 +341,13 @@ class GMOSImage(GMOS, Image, Photometry):
             suffix to be added to output files
         stats_scale: bool
             use statistics rather than exposure time to calculate scaling?
+        science: list
+            list of science frames to scale to
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        pars = getattr(self.parameters, self.myself())
-        science = pars["science"]
+        science = params["science"]
 
         if science is None:
             log.warning("No science frames specified; no scaling will be done")
@@ -371,7 +369,7 @@ class GMOSImage(GMOS, Image, Photometry):
                 gt.check_inputs_match(ad, fringe)
 
             # Check whether statistics should be used
-            stats_scale = pars["stats_scale"]
+            stats_scale = params["stats_scale"]
 
             # Calculate the scale value
             scale = 1.0
@@ -481,13 +479,13 @@ class GMOSImage(GMOS, Image, Photometry):
             # Timestamp and update filename
             gt.mark_history(scaled_fringe, primname=self.myself(), keyword=timestamp_key)
             scaled_fringe.filename = gt.filename_updater(
-                adinput=ad, suffix=pars["suffix"], strip=True)
+                adinput=ad, suffix=params["suffix"], strip=True)
             fringe_outputs.append(scaled_fringe)
 
         # We're returning the list of scaled fringe frames
         return fringe_outputs
     
-    def stackFlats(self, adinputs=None, stream='main', **params):
+    def stackFlats(self, adinputs=None, **params):
         """
         This primitive will combine the input flats with rejection
         parameters set appropriately for GMOS imaging twilight flats.
@@ -505,7 +503,6 @@ class GMOSImage(GMOS, Image, Photometry):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        pars = getattr(self.parameters, self.myself())
 
         nframes = len(adinputs)
         if nframes < 2:
@@ -515,7 +512,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # to be used with minmax rejection. Note: if reject_method
             # parameter is overridden, these parameters will just be
             # ignored
-            reject_method = pars["reject_method"]
+            reject_method = para,s["reject_method"]
             nlow, nhigh = 0, 0
             if nframes <= 2:
                 reject_method = None
@@ -532,10 +529,9 @@ class GMOSImage(GMOS, Image, Photometry):
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
             adinputs = self.scaleByIntensity(adinputs)
-            adinputs = self.stackFrames(adinputs, suffix=pars["suffix"],
-                        operation=pars["operation"], mask=pars["mask"],
+            adinputs = self.stackFrames(adinputs, suffix=params["suffix"],
+                        operation=params["operation"], mask=params["mask"],
                         reject_method=reject_method, nlow=nlow, nhigh=nhigh)
-        
         return adinputs
 
 def _needs_fringe_correction(ad, context=None):

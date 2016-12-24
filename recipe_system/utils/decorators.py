@@ -44,16 +44,16 @@ the decorated class.
             [ … ]
 
 """
-from copy import deepcopy
 from functools import wraps
 from gempy.utils import logutils
+import inspect
 
 # ------------------------------------------------------------------------------
 LOGINDENT = 0
 log = logutils.get_logger(__name__)
 
 # ------------------------------------------------------------------------------
-def userpar_override(pname, parset, upars):
+def userpar_override(pname, args, upars):
     """
     Implement user parameter overrides. In this implementation, user 
     parameters *always* take precedence. Any user parameters passed to the 
@@ -68,15 +68,16 @@ def userpar_override(pname, parset, upars):
     Other primitives with the same parameter (e.g. stackFlats reject_method)
     will not be affected.
 
+    This returns a dict of the overridden parameters and their values.
     """
+    parset = {}
     for key, val in upars.items():
         if ':' in key:
             prim, par = key.split(':')
-            if prim == pname and par in parset.keys():
-                parset[par] = val
-        else:
-            if key in parset.keys():
-                parset[key] = val
+            if prim == pname and par in args:
+                parset.update({par: val})
+        elif key in args:
+            parset.update({par: val})
     return parset
 
 # -------------------------------- decorators ----------------------------------
@@ -105,24 +106,23 @@ def parameter_override(fn):
         logutils.update_indent(LOGINDENT)
         pobj = args[0]
         pname = fn.__name__
-        ppars = pobj.parameters
-        if hasattr(ppars, pname):
-            parset = getattr(ppars, pname)
-            sdict = deepcopy(parset)
-            sdict.update(kwargs)
-            new_parset = userpar_override(pname, sdict, pobj.user_params)
-            pobj.primitive_parset = new_parset
-        else:
-            pass
+        params = getattr(getattr(pobj, pname), 'parameters').copy()
+        params.update(getattr(pobj.parameters, pname, {}))
+        params.update(userpar_override(pname, params.keys(),
+                      pobj.user_params))
+        params.update(kwargs)
 
-        if len(args) == 1 and 'adinputs' not in kwargs:
-            kwargs.update({'adinputs': pobj.adinputs})
-            ret_value = fn(*args, **kwargs)
+        if len(args) == 1 and 'adinputs' not in params:
+            params.update({'adinputs': pobj.adinputs})
+            ret_value = fn(*args, **params)
             pobj.adinputs = ret_value
         else:
-            ret_value = fn(*args, **kwargs)
+            ret_value = fn(*args, **params)
 
         LOGINDENT -= 1
         logutils.update_indent(LOGINDENT)
         return ret_value
+    # Make dict of default values (ignore args[0]='self', args[1]='adinputs')
+    argspec = inspect.getargspec(fn)
+    gn.parameters = dict(zip(argspec.args[2:], argspec.defaults[1:]))
     return gn
