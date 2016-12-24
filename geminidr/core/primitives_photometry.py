@@ -156,7 +156,7 @@ class Photometry(PrimitivesBASE):
                 dd = self.sx_default_dict[dqtype]
             # TODO: This path determination should probably done when the
             # sx_dict is set in the PrimitivesClass constructor
-            path = os.path.join(self.drroot, 'gemini', 'lookups',
+            path = os.path.join(self.dr_root, 'gemini', 'lookups',
                                 'source_detection')
             sexpars = {'config': os.path.join(path,dd['sex']),
                       'PARAMETERS_NAME': os.path.join(path,dd['param']),

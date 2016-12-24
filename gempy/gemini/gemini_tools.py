@@ -1054,7 +1054,7 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
                          'into filename_updater, so it has a name to update')
         else:
             infilename = adinput.filename
-            
+
     # Strip off any path that the input file name might have
     basefilename = os.path.basename(infilename)
 

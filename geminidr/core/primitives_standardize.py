@@ -32,8 +32,7 @@ class Standardize(PrimitivesBASE):
         super(Standardize, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersStandardize
 
-
-    def addDQ(self, adinputs=None, stream='main', **params):
+    def addDQ(self, adinputs=None, **params):
         """
         This primitive is used to add a DQ extension to the input AstroData
         object. The value of a pixel in the DQ extension will be the sum of the
@@ -53,7 +52,7 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["addDQ"]
-        sfx = self.parameters.addDQ["suffix"]
+        sfx = params["suffix"]
         dq_dtype = np.int16
 
         for ad in adinputs:
@@ -63,7 +62,7 @@ class Standardize(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            bpm = self.parameters.addDQ['bpm']
+            bpm = params['bpm']
             if bpm is None:
                 bpm = self._get_bpm_filename(ad)
             log.fullinfo("Using {} as BPM".format(bpm))
@@ -148,15 +147,15 @@ class Standardize(PrimitivesBASE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
         # Add the illumination mask if requested
-        if self.parameters.addDQ['illum_mask']:
+        if params['illum_mask']:
             self.addIllumMaskToDQ(adinputs)
 
         return adinputs
 
-    def addIllumMaskToDQ(self, adinputs=None, stream='main', **params):
+    def addIllumMaskToDQ(self, adinputs=None, **params):
         return adinputs
 
-    def addMDF(self, adinputs=None, stream='main', **params):
+    def addMDF(self, adinputs=None, **params):
         """
         This primitive is used to add an MDF extension to the input AstroData
         object. If only one MDF is provided, that MDF will be add to all input
@@ -175,7 +174,7 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", "addMDF", "starting"))
         timestamp_key = self.timestamp_keys["addMDF"]
-        sfx = self.parameters.addMDF["suffix"]
+        sfx = params["suffix"]
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -194,7 +193,7 @@ class Standardize(PrimitivesBASE):
                             'MDF will be added'.format(ad.filename))
                 continue
 
-            mdf = self.parameters.addMDF['mdf']
+            mdf = params['mdf']
             if mdf is None:
                 try:
                     inst = ad.instrument()
@@ -207,7 +206,7 @@ class Standardize(PrimitivesBASE):
 
                 try:
                     # Look in the instrument MDF directory
-                    mdf = os.path.join(self.drroot, inst.lower(), 'lookups',
+                    mdf = os.path.join(self.dr_root, inst.lower(), 'lookups',
                                        'MDF', MDFDict.bpm_dict[key])
                 except KeyError:
                     # Look through the possible MDF locations
@@ -237,7 +236,6 @@ class Standardize(PrimitivesBASE):
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-
         return adinputs
 
     def addVAR(self, adinputs=None, **params):
@@ -335,7 +333,7 @@ class Standardize(PrimitivesBASE):
 
         return adinputs
 
-    def prepare(self, adinputs=None, stream='main', **params):
+    def prepare(self, adinputs=None, **params):
         """
         Validate and standardize the datasets to ensure compatibility
         with the subsequent primitives.  The outputs, if written to
@@ -352,7 +350,7 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
         timestamp_key = self.timestamp_keys["prepare"]
-        sfx = self.parameters.prepare["suffix"]
+        sfx = params["suffix"]
         adinputs = self.validateData(adinputs)
         adinputs = self.standardizeStructure(adinputs)
         adinputs = self.standardizeObservatoryHeaders(adinputs)
@@ -362,24 +360,24 @@ class Standardize(PrimitivesBASE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
         return adinputs
 
-    def standardizeHeaders(self, adinputs=None, **kwargs):
+    def standardizeHeaders(self, adinputs=None, **params):
         log = self.log
         log.debug(gt.log_message("primitive", "standardizeHeaders",
                                  "starting"))
-        adinputs = self.standardizeObservatoryHeaders(adinputs, **kwargs)
-        adinputs = self.standardizeInstrumentHeaders(adinputs, **kwargs)
+        adinputs = self.standardizeObservatoryHeaders(adinputs, **params)
+        adinputs = self.standardizeInstrumentHeaders(adinputs, **params)
         return adinputs
 
-    def standardizeInstrumentHeaders(self, adinputs=None, **kwargs):
+    def standardizeInstrumentHeaders(self, adinputs=None, **params):
         return adinputs
 
-    def standardizeObservatoryHeaders(self, adinputs=None, **kwargs):
+    def standardizeObservatoryHeaders(self, adinputs=None, **params):
         return adinputs
 
-    def standardizeStructure(self, adinputs=None, **kwargs):
+    def standardizeStructure(self, adinputs=None, **params):
         return adinputs
 
-    def validateData(self, adinputs=None, **kwargs):
+    def validateData(self, adinputs=None, **params):
         return adinputs
 
     ##########################################################################
@@ -414,7 +412,7 @@ class Standardize(PrimitivesBASE):
         else:
             key = '{}_{}_{}'.format(inst, xbin, ybin)
 
-        filename = os.path.join(self.drroot, inst.lower(), 'lookups', 'BPM',
+        filename = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM',
                                     BPMDict.bpm_dict[key])
         return filename
 

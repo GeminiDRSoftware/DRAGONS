@@ -164,7 +164,6 @@ class GMOS(Gemini, CCD):
             ##M Hamamatsu data. This is temporary fix until GMOS-S DC is fixed
             if ad.detector_name(pretty=True) == "Hamamatsu":
                 log.status("Fixing headers for Hamamatsu data")
-                #TODO: Check that this works!
                 # Image extension headers appear to be correct - MS 2014-10-01
                 #     correct_image_extensions=Flase
                 # As does the DATE-OBS but as this seemed to break even after
@@ -172,7 +171,11 @@ class GMOS(Gemini, CCD):
                 hdulist = ad.to_hdulist()
                 correct_headers(hdulist, logger=log,
                                 correct_image_extensions=False)
+                # When we create the new AD object, it needs to retain the
+                # filename information
+                orig_path = ad.path
                 ad = astrodata.open(hdulist)
+                ad.path = orig_path
 
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
