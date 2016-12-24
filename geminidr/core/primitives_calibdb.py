@@ -222,11 +222,9 @@ def _update_datalab(ad, suffix, keyword_comments_lut):
     # Update the DATALAB. It should end with 'suffix'.  DATALAB will 
     # likely already have '_stack' suffix that needs to be replaced.
     searchsuffix = re.compile(r'(?<=[A-Za-z0-9\-])\_([a-z]+)')
-    datalab = ad.phu_get_key_value("DATALAB")
+    datalab = ad.phu.DATALAB
     new_datalab = re.sub(searchsuffix, suffix, datalab)
     if new_datalab == datalab:
         new_datalab += suffix
-    gt.update_key(adinput=ad, keyword="DATALAB", value=new_datalab,
-                  comment=None, extname="PHU", 
-                  keyword_comments=keyword_comments_lut)
+    ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return
