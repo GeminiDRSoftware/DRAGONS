@@ -207,9 +207,8 @@ class Standardize(PrimitivesBASE):
 
                 try:
                     # Look in the instrument MDF directory
-                    mdf = os.path.sep.join(MDFDict.__file__.split(os.path.sep)[:-3] +
-                                            [inst.lower(), 'lookups', 'MDF',
-                                            MDFDict.bpm_dict[key]])
+                    mdf = os.path.join(self.drroot, inst.lower(), 'lookups',
+                                       'MDF', MDFDict.bpm_dict[key])
                 except KeyError:
                     # Look through the possible MDF locations
                     mdf = mask_name if mask_name.endswidth('.fits') else \
@@ -415,9 +414,8 @@ class Standardize(PrimitivesBASE):
         else:
             key = '{}_{}_{}'.format(inst, xbin, ybin)
 
-        filename = os.path.sep.join(BPMDict.__file__.split(os.path.sep)[:-3] +
-                                    [inst.lower(), 'lookups', 'BPM',
-                                    BPMDict.bpm_dict[key]])
+        filename = os.path.join(self.drroot, inst.lower(), 'lookups', 'BPM',
+                                    BPMDict.bpm_dict[key])
         return filename
 
     def _calculate_var(self, adinput, add_read_noise=False,
