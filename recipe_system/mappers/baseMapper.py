@@ -1,6 +1,7 @@
 #
 #                                                          mappers.baseMapper.py
 # ------------------------------------------------------------------------------
+from builtins import object
 import sys
 import importlib
 

@@ -4,6 +4,8 @@
 # the Reduce class. Used by the reduce_alpha cli.
 
 # ------------------------------------------------------------------------------
+from builtins import str
+from builtins import object
 _version = ' alpha (new_hope) '
 # ------------------------------------------------------------------------------
 """
@@ -109,7 +111,7 @@ class Reduce(object):
 
         try:
             ffiles = self._check_files(self.files)
-        except IOError, err:
+        except IOError as err:
             xstat = signal.SIGIO
             log.error("_check_files() raised IOError exception.")
             log.error(str(err))
@@ -117,7 +119,7 @@ class Reduce(object):
 
         try:
             self.adinputs = self._convert_inputs(ffiles)
-        except IOError, err:
+        except IOError as err:
             xstat = signal.SIGIO
             log.error("_convert_inputs() raised IOError exception.")
             log.error(str(err))
@@ -221,11 +223,11 @@ class Reduce(object):
         for inp in inputs:
             try:
                 ad = astrodata.open(inp)
-            except AstroDataError, err:
+            except AstroDataError as err:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
                 continue
-            except IOError, err:
+            except IOError as err:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
                 continue
@@ -258,10 +260,10 @@ class Reduce(object):
         red_namespace = buildParser(_version).parse_args([])
         if exe_path:
             cstack = inspect.stack()
-            for local, value in cstack[-1][0].f_locals.items():
+            for local, value in list(cstack[-1][0].f_locals.items()):
                 if local == 'args':
                     try:
-                        assert value.__dict__.keys() == red_namespace.__dict__.keys()
+                        assert list(value.__dict__.keys()) == list(red_namespace.__dict__.keys())
                         is_reduce = True
                     except AssertionError:
                         log.stdinfo("A non-reduce command line was detected.")

@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 # reduce_alpha.py -- The new hope reduce. [pending name change status quo ante]
 # ------------------------------------------------------------------------------
+from __future__ import print_function
 _version = ' alpha (new_hope) '
 # ------------------------------------------------------------------------------
 """
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     if args.displayflags:
         show_parser_options(parser, args)
         for item in ["Input fits file(s):\t%s" % inf for inf in args.files]:
-            print item
+            print(item)
         sys.exit()
 
     # Deal with argparse structures that are different than optparse 
