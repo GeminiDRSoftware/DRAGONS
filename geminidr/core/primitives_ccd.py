@@ -132,6 +132,8 @@ class CCD(PrimitivesBASE):
                     extout.OBJMASK = extin.OBJMASK
             if hasattr(ad, 'REFCAT'):
                 adout.REFCAT = ad.REFCAT
+            if hasattr(ad, 'MDF'):
+                adout.MDF = ad.MDF
             gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(adout)
         return adoutputs
