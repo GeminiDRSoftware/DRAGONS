@@ -306,9 +306,9 @@ class AstroData(object):
 
         # In case data is an NDData object
         try:
-            self.data = data
-        except AttributeError:
             self.data = data.data
+        except AttributeError:
+            self.data = data
         # Set mask, with checking if required
         try:
             if mask.shape != self.data.shape and check:
