@@ -23,7 +23,7 @@ def reduce(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.findAcquisitionSlits()
-    p.skyCorrectNodShuffle()
+    p.skyCorrectNodAndShuffle()
     p.measureIQ(display=True)
     return
 

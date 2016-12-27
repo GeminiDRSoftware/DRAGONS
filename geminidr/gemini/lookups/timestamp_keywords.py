@@ -47,7 +47,7 @@ timestamp_keys = {
     "scaleFringeToScience": "SCLFRING",
     "separateSky": "SEPSKY",
     "skyCorrectFromSlit": "SKYCORR",
-    "skyCorrectNodShuffle": "SKYCORR",
+    "skyCorrectNodAndShuffle": "SKYCORR",
     "stackFrames": "STACKFRM",
     "stackSkyFrames": "STACKSKY",
     "standardizeObservatoryHeaders": "SDZHDRSG",

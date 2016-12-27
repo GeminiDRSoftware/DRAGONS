@@ -235,7 +235,7 @@ class GMOS(Gemini, CCD):
             
             # Attach an MDF to each input AstroData object
             if params["attach_mdf"]:
-                ad = self.addMDF(ad, mdf=params["mdf"])
+                ad = self.addMDF([ad], mdf=params["mdf"])[0]
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
