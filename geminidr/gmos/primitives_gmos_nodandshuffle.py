@@ -27,7 +27,7 @@ class GMOSNodAndShuffle(GMOS):
         self.parameters = ParametersGMOSNodAndShuffle
 
 
-    def skyCorrectNodAndShuffle(self, adinputs, **params):
+    def skyCorrectNodAndShuffle(self, adinputs=None, **params):
         """
         Perform sky correction on GMOS N&S images bytaking each image and
         subtracting from it a shifted version of the same image.
@@ -61,7 +61,9 @@ class GMOSNodAndShuffle(GMOS):
                 # Set image initially to zero
                 ext_nodded.multiply(0)
                 # Then replace with the upward-shifted data
-                ext_nodded.nddata[shuffle:, :] = ext.nddata[:-shuffle, :]
+                for attr in ('data', 'mask', 'variance'):
+                    getattr(ext_nodded, attr)[shuffle:] = getattr(ext,
+                                                        attr)[:-shuffle]
 
             # Normalize if the A and B nod counts differ
             if a_nod_count != b_nod_count:
@@ -77,4 +79,4 @@ class GMOSNodAndShuffle(GMOS):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad,
                                               suffix=params["suffix"], strip=True)
-        return
+        return adinputs
