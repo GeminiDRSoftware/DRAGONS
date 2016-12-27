@@ -207,10 +207,10 @@ class Standardize(PrimitivesBASE):
                 try:
                     # Look in the instrument MDF directory
                     mdf = os.path.join(self.dr_root, inst.lower(), 'lookups',
-                                       'MDF', MDFDict.bpm_dict[key])
+                                       'MDF', MDFDict.mdf_dict[key])
                 except KeyError:
                     # Look through the possible MDF locations
-                    mdf = mask_name if mask_name.endswidth('.fits') else \
+                    mdf = mask_name if mask_name.endswith('.fits') else \
                         '{}.fits'.format(mask_name)
                     for location in MDFDict.mdf_locations:
                         fullname = os.path.join(os.path.sep, location, mdf)
