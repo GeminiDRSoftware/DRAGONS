@@ -317,11 +317,11 @@ class FitsProviderProxy(DataProvider):
     def __deepcopy__(self, memo):
         return self._provider._clone(mapping=self._mapping)
 
-    def settable(self, attr):
+    def is_settable(self, attr):
         if attr in {'path', 'filename'}:
             return False
 
-        return self._provider.settable(attr)
+        return self._provider.is_settable(attr)
 
     def __len__(self):
         return len(self._mapping)
@@ -364,7 +364,7 @@ class FitsProviderProxy(DataProvider):
         # objects. First we check if the attribute belongs to this object's dictionary.
         # Otherwise, see if we can pass it down.
 
-        if not _my_attribute(attribute) and self._provider.settable(attribute):
+        if not _my_attribute(attribute) and self._provider.is_settable(attribute):
             if attribute.isupper():
                 if not self.is_single:
                     raise TypeError("This attribute can only be assigned to a single-slice object")
@@ -586,7 +586,7 @@ class FitsProvider(DataProvider):
 
         return dp
 
-    def settable(self, attr):
+    def is_settable(self, attr):
         return attr in self._fixed_settable or attr.isupper()
 
     @force_load
