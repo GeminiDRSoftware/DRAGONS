@@ -225,7 +225,9 @@ class GMOS(Gemini, CCD):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         adoutputs = []
-        for ad in adinputs:
+        # If attach_mdf=False, this just zips up the ADs with a list of Nones,
+        # which has no side-effects.
+        for ad, mdf in zip(*gt.make_lists(adinputs, params['mdf'])):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by standardizeStructure".
@@ -235,7 +237,7 @@ class GMOS(Gemini, CCD):
             
             # Attach an MDF to each input AstroData object
             if params["attach_mdf"]:
-                ad = self.addMDF([ad], mdf=params["mdf"])[0]
+                ad = self.addMDF([ad], mdf=mdf)[0]
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
