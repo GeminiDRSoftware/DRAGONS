@@ -4,7 +4,8 @@
 #                                                           primitives_nearIR.py
 # ------------------------------------------------------------------------------
 import os
-import numpy.ma as ma
+import numpy as np
+from astropy.stats import sigma_clip
 
 import astrodata
 import gemini_instruments
@@ -13,44 +14,33 @@ from gempy.gemini import gemini_tools as gt
 
 from recipe_system.utils.decorators import parameter_override
 
-from geminidr.core.parameters_NIR import ParametersNIR
+from geminidr.core.parameters_nearIR import ParametersNearIR
 
 from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
-# NOTE: This module/class is not complete. 
-# Primitives here were transferred from primitives_calibdb:
-# - makeBPM
-# - separateLampOff
-# - separateFlatsDarks
-# - stackDarks
-# - stackLampOnLampOff
-# - subtractLampOnLampOff
-#
-# The NIR class does *not* yetinclude other primitives specified in the 
-# Refactoring Coordination document:
-# - lampOnLmapOff
+
 # - makeLampOffFlat
 # - makeLampOnLampOffFlat
 # - thermalEmissionCorrect
 # (kra 09-12-16)
-# ------------------------------------------------------------------------------
 @parameter_override
-class NIR(PrimitivesBASE):
+class NearIR(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(NIR, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersNIR
+        super(NearIR, self).__init__(adinputs, **kwargs)
+        self.parameters = ParametersNearIR
 
-    def makeBPM(self, adinputs=None, stream='main', **params):
+    def makeBPM(self, adinputs=None, **params):
         """
         To be run from recipe makeProcessedBPM
 
         Input is a stacked short darks and flats On/Off (1 filter)
         The flats are stacked and subtracted (ON - OFF)
         The Dark is stack of short darks
-
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         # To exclude hot pixels from stddev calculation
         DARK_CLIP_THRESH = 5.0
@@ -60,109 +50,66 @@ class NIR(PrimitivesBASE):
         FLAT_LO_THRESH = 0.8
         N_SIGMA = 3.0
 
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        # Get the subtracted, stacked flat from the on lampOn stream
-        flat_stack = self.streams.get("lampOn")
-        if not flat_stack:
+        # Get the stacked flat and dark; these are single-element lists
+        try:
+            flat = self.streams['lampOn'][0]
+        except (KeyError, TypeError):
             raise IOError("A SET OF FLATS IS REQUIRED INPUT")
-        else:
-            flat = flat_stack[0]
-
-        # Get the stacked dark on the dark stream
-        dark_stack = self.streams.get("darks")
-        if not dark_stack:
+        try:
+            dark = self.streams['darks'][0]
+        except (KeyError, TypeError):
             raise IOError("A SET OF DARKS IS REQUIRED INPUT")
-        else:
-            dark = dark_stack[0]
 
-        # mask pixels of clipped mean (3 sigma) with a threshold.
-        mean = ma.mean(flat.data)
-        stddev = ma.std(flat.data)
-        upper_lim = mean + stddev * N_SIGMA
-        lower_lim = mean - stddev * N_SIGMA
+        for dark_ext, flat_ext in zip(dark, flat):
+            # Dubious clipping of the flat
+            clipped_median= np.ma.median(sigma_clip(flat_ext.data, sigma=N_SIGMA,
+                                                    iters=1, cenfunc=np.ma.mean))
+            upper_lim = FLAT_HI_THRESH * clipped_median
+            lower_lim = FLAT_LO_THRESH * clipped_median
+            msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {} "
+            log.stdinfo(msg.format(lower_lim, upper_lim))
+            flat_mask = np.ma.masked_outside(flat_ext.data, lower_lim, upper_lim)
 
-        clipped_median = ma.median(ma.masked_outside(flat.data, lower_lim, upper_lim))
+            # Dubious clipping of the dark
+            mean = np.mean(dark_ext.data)
+            upper_lim = mean + (DARK_CLIP_THRESH * mean)
+            lower_lim = mean - (DARK_CLIP_THRESH * mean)
+            stddev = np.ma.std(np.ma.masked_outside(dark_ext.data,
+                                                    lower_lim, upper_lim))
+            clipped_median = np.ma.median(np.ma.masked_outside(dark_ext.data,
+                                                        lower_lim, upper_lim))
+            upper_lim = clipped_median + (N_SIGMA * stddev)
+            lower_lim = clipped_median - (N_SIGMA * stddev)
 
-        upper_lim = FLAT_HI_THRESH * clipped_median
-        lower_lim = FLAT_LO_THRESH * clipped_median
+            msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {}"
+            log.stdinfo(msg.format(lower_lim, upper_lim))
 
-        msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {} " 
-        log.stdinfo(msg.format(lower_lim, upper_lim))
+            # create the mask -- darks (hot pixels)
+            dark_mask = np.ma.masked_outside(dark_ext.data, upper_lim, lower_lim)
 
-        # mask Flats -- cold pixels
-        flat_mask = ma.masked_outside(flat.data, lower_lim, upper_lim)
-
-        # mask pixels outside 3 sigma * clipped standard deviation of median
-        mean = ma.mean(dark.data)
-        upper_lim = mean + (DARK_CLIP_THRESH * mean)
-        lower_lim = mean - (DARK_CLIP_THRESH * mean)
-        stddev = ma.std(ma.masked_outside(dark.data, lower_lim, upper_lim))
-
-        clipped_median = ma.median(ma.masked_outside(dark.data, lower_lim, upper_lim))
-
-        upper_lim = clipped_median + (N_SIGMA * stddev)
-        lower_lim = clipped_median - (N_SIGMA * stddev)
-
-        msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {}"
-        log.stdinfo(msg.format(lower_lim, upper_lim))
-
-        # create the mask -- darks (hot pixels)
-        dark_mask = ma.masked_outside(dark.data, upper_lim, lower_lim)
-
-        # combine masks and write to bpm file
-        data_mask = ma.mask_or(dark_mask.mask, flat_mask.mask)
-        flat.data = data_mask.astype(float)
+            # combine masks and write to bpm file
+            data_mask = np.ma.mask_or(dark_mask.mask, flat_mask.mask)
+            flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
         flat.filename = gt.filename_updater(adinput=flat, suffix="_bpm")
-        flat.set_key_value('OBJECT', 'BPM')
-        flat.set_key_value('EXTNAME', 'DQ')
+        flat.phu.OBJECT = 'BPM'
+        return [flat]
 
-        # @TODO rc.report_output(flat) 
-
-        return adinputs
-
-    def separateLampOff(self, adinputs=None, stream='main', **params):
+    def lampOnLampOff(self, adinputs=None, **params):
         """
-        This primitive is intended to run on gcal imaging flats. 
-        It goes through the input list and figures out which ones are lamp-on
-        and which ones are lamp-off. It can also cope with domeflats if their
-        type is specified in the header keyword OBJECT.
-
+        This separates the lamp-on and lamp-off flats, stacks them, and subtracts
+        one from the other, and returns that single frame. It uses streams to
+        propagate the frames, hence there's no need to send/collect adinputs.
         """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        self.separateLampOff(adinputs)
+        self.stackLampOnLampOff(None)
+        return self.subtractLampOnLampOff(None)
 
-        # Initialize the list of output AstroData objects
-        lampon_list = []
-        lampoff_list = []
-
-        # Loop over the input frames
-        for ad in adinputs:
-            if('GCAL_IR_ON' in ad.tags):
-                log.stdinfo("%s is a lamp-on flat" % ad.data_label())
-                lampon_list.append(ad)
-            elif('GCAL_IR_OFF' in ad.tags):
-                log.stdinfo("%s is a lamp-off flat" % ad.data_label())
-                lampoff_list.append(ad)
-            elif('Domeflat OFF' in ad.phu_get_key_value('OBJECT')):
-                log.stdinfo("%s is a lamp-off domeflat" % ad.data_label())
-                lampoff_list.append(ad)
-            elif('Domeflat' in ad.phu_get_key_value('OBJECT')):
-                log.stdinfo("%s is a lamp-on domeflat" % ad.data_label())
-                lampon_list.append(ad)                
-            else:
-                warn = "Not a GCAL flatfield? "
-                warn += "Cannot determine lamp-on or lamp-off for {}"
-                log.warning(warn.format(ad.data_label()))
-
-        self.streams.update({"lampOn" : lampOn_list})
-        self.streamd.update({"lampOff": lampOff_list})
-
-        return adinputs
-
-    def separateFlatsDarks(self, adinputs=None, stream='main', **params):
+    def separateFlatsDarks(self, adinputs=None, **params):
+        """
+        This primitive produces two streams, one containing flats, and one
+        containing darks
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
@@ -178,7 +125,7 @@ class NIR(PrimitivesBASE):
                 flat_list.append(ad)
                 log.stdinfo("Flat: {}, {}".format(ad.data_label(), ad.filename))
             else:
-                log.warning("Not Dark/Flat: {} {}".format(ad.data_label(), 
+                log.warning("Not Dark/Flat: {} {}".format(ad.data_label(),
                                                           ad.filename))
         if not dark_list:
             log.warning("No Darks in input list")
@@ -187,89 +134,123 @@ class NIR(PrimitivesBASE):
 
         self.streams.update({"flats" : flat_list})
         self.streams.update({"darks" : dark_list})
-
         return adinputs
 
-    def stackDarks(self, adinputs=None, stream='main', **params):
+    def separateLampOff(self, adinputs=None, **params):
+        """
+        This primitive is intended to run on gcal imaging flats. 
+        It goes through the input list and figures out which ones are lamp-on
+        and which ones are lamp-off, and pushes these to two streams.
+        It can also cope with domeflats if their type is specified in the
+        header keyword OBJECT.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        # Initialize the list of output AstroData objects
+        lampon_list = []
+        lampoff_list = []
+
+        for ad in adinputs:
+            if 'GCAL_IR_ON' in ad.tags:
+                log.stdinfo("{} is a lamp-on flat".format(ad.data_label()))
+                lampon_list.append(ad)
+            elif 'GCAL_IR_OFF' in ad.tags:
+                log.stdinfo("{} is a lamp-off flat".format(ad.data_label()))
+                lampoff_list.append(ad)
+            elif ('Domeflat OFF' in ad.phu.get('OBJECT')):
+                log.stdinfo("{} is a lamp-off domeflat".format(ad.data_label()))
+                lampoff_list.append(ad)
+            elif ('Domeflat' in ad.phu.get('OBJECT')):
+                log.stdinfo("{} is a lamp-on domeflat".format(ad.data_label()))
+                lampon_list.append(ad)                
+            else:
+                log.warning("Cannot determine lamp-on/off for {}".
+                            format(ad.data_label()))
+
+        self.streams.update({"lampOn" : lampon_list, "lampOff": lampoff_list})
+        return adinputs
+
+    def stackDarks(self, adinputs=None, **params):
+        """
+        This primitive stacks the files in the "darks" stream, after checking
+        they have the same exposure time, and returns the output there.
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         # Check darks for equal exposure time
-        dark_list = self.streams.get("darks")
-        first_exp = dark_list[0].exposure_time()
-        for ad in dark_list[1:]:
-            file_exp = ad[0].exposure_time()
-            if first_exp != file_exp:
+        try:
+            dark_list = self.streams["darks"]
+        except KeyError:
+            log.warning("There are no darks in the 'darks' stream.")
+            return adinputs
+
+        if not all(dark.exposure_time()==dark_list[0].exposure_time()
+                   for dark in dark_list[1:]):
                 raise IOError("DARKS ARE NOT OF EQUAL EXPTIME")
 
         # stack the darks stream
-        rc.run("showInputs(stream=darks)")
-        rc.run("stackFrames(stream=darks)")
+        self.showInputs(stream='darks')
+        self.streams['darks'] = self.stackFrames(self.streams['darks'])
+        return adinputs
 
-        yield rc
-
-    def stackLampOnLampOff(self, adinputs=None, stream='main', **params):
+    def stackLampOnLampOff(self, adinputs=None, **params):
         """
-        This primitive stacks the Lamp On flats and the LampOff flats, 
-        then subtracts the two stacks.
-
+        This primitive stacks the Lamp On flats and the LampOff flats from
+        the streams, and returns the two stacked flats to the streams.
+        It doesn't even look at adinputs.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
+        if self.streams.get('lampOn'):
+            self.showInputs(stream='lampOn')
+            self.streams['lampOn'] = self.stackFrames(self.streams['lampOn'])
 
-        # Get the lamp on list, stack it, and add the stack to the lampOnStack stream
-        rc.run("showInputs(stream=lampOn)")
-        rc.run("stackFrames(stream=lampOn)")
+        if self.streams.get('lampOff'):
+            self.showInputs(stream='lampOff')
+            self.streams['lampOff'] = self.stackFrames(self.streams['lampOff'])
+        return adinputs
 
-        # Get the lamp off list, stack it, and add the stack to the lampOnStack stream
-        rc.run("showInputs(stream=lampOff)")
-        rc.run("stackFrames(stream=lampOff)")
-
-        yield rc
-
-    def subtractLampOnLampOff(self, adinputs=None, stream='main', **params):
+    def subtractLampOnLampOff(self, adinputs=None, **params):
         """
-        This primitive subtracts the lamp off stack from the lampon stack. It expects there to be only
-        one file (the stack) on each stream - call stackLampOnLampOff to do the stacking before calling this
+        This primitive subtracts the lamp off stack from the lampon stack.
+        It expects there to be only one file (the stack) in each stream -
+        call stackLampOnLampOff to do the stacking before calling this
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
+        lampon_list = self.streams.get('lampOn', [])
+        lampoff_list = self.streams.get('lampOff', [])
 
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "subtractLampOnLampOff", "starting"))
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        lampon_list = rc.get_stream(stream="lampOn", style="AD")
-        lampoff_list = rc.get_stream(stream="lampOff", style="AD")
-
-        if((len(lampon_list) > 0) and (len(lampoff_list) > 0)):
+        if lampon_list and lampoff_list:
+            if len(lampon_list) > 1:
+                log.warning('More than one file in the lampOn stream. '
+                            'Using first file only.')
+            if len(lampoff_list) > 1:
+                log.warning('More than one file in the lampOff stream. '
+                            'Using first file only.')
             lampon = lampon_list[0]
             lampoff = lampoff_list[0]
- 
-            log.stdinfo("Lamp ON is: %s %s" % (lampon.data_label(), lampon.filename))
-            log.stdinfo("Lamp OFF is: %s %s" % (lampoff.data_label(), lampoff.filename))
-            lampon.sub(lampoff)
-            lampon.filename = gt.filename_updater(adinput=lampon, suffix="lampOnOff")
-
-            adoutput_list.append(lampon)
-
+            log.stdinfo("Lamp ON is:  {} {}".format(lampon.data_label(),
+                                                    lampon.filename))
+            log.stdinfo("Lamp OFF is: {} {}".format(lampoff.data_label(),
+                                                    lampoff.filename))
+            lampon.subtract(lampoff)
+            lampon.filename = gt.filename_updater(lampon, suffix="lampOnOff")
+            del self.streams['lampOn'], self.streams['lampOff']
+            return [lampon]
         else:
-            log.warning("Cannot subtract lamp on - lamp off flats as do not have some of each")
+            log.warning("Cannot subtract lamp on - lamp off flats as do not "
+                        "have some of each")
             if len(lampon_list) > 0:
                 log.warning("Returning stacked lamp on flats")
-                adoutput_list.extend(lampon_list)
+                return lampon_list
             elif len(lampoff_list) > 0:
                 log.warning("Returning stacked lamp off flats")
-                adoutput_list.extend(lampoff_list)
+                return lampoff_list
             else:
-                log.warning("Something is not quite right, no flats were accessible.")
-
-        rc.report_output(adoutput_list)
-        yield rc
-
+                log.warning("Something is not right, no flats were accessible.")
+                return []
