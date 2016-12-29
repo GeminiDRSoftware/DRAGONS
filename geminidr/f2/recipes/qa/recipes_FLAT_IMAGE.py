@@ -14,10 +14,20 @@ def makeProcessedFlat(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesF2 object
         A primitive set matching the recipe_tags.
     """
 
-    p.selectFlatRecipe()
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    #p.nonlinearityCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.addToList(purpose='forFlat')
+    p.getList(purpose='forFlat')
+    p.makeLampFlat()
+    p.normalizeFlat()
+    p.thresholdFlatfield()
+    p.storeProcessedFlat()
     return
-
