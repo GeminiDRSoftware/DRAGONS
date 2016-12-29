@@ -181,8 +181,6 @@ class GMOS(Gemini, CCD):
             # the true values on unprepared data.
             descriptors = ['pixel_scale', 'read_noise', 'gain_setting',
                                'gain', 'saturation_level']
-            if 'SPECT' in ad.tags:
-                descriptors.append('dispersion_axis')
             for desc in descriptors:
                 keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]
@@ -192,6 +190,10 @@ class GMOS(Gemini, CCD):
                         ext.hdr.set(keyword, value, comment)
                 else:
                     ad.hdr.set(keyword, dv, comment)
+
+            if 'SPECT' in ad.tags:
+                kw = self._keyword_for('dispersion_axis')
+                ad.hdr.set(kw, 1, self.keyword_comments(kw))
 
             # And the bias level too!
             bias_level = get_bias_level(adinput=ad,

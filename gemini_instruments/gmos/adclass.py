@@ -400,19 +400,6 @@ class AstroDataGmos(AstroDataGemini):
         return dispersion
 
     @astro_data_descriptor
-    def dispersion_axis(self):
-        """
-        Returns the dispersion axis, where 1 is in the x-direction
-        and 2 is in the y-direction
-
-        Returns
-        -------
-        int
-            The dispersion axis (1)
-        """
-        return 1
-
-    @astro_data_descriptor
     def exposure_time(self):
         """
         Returns the exposure time in seconds.
