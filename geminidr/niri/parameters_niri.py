@@ -10,8 +10,8 @@ class ParametersNIRI(ParametersGemini, ParametersNearIR):
         "source"                : "2mass",
     }
     associateSky = {
-        "distance": 1.,
-        "time": 900.,
+        "distance"              : 1.,
+        "time"                  : 900.,
     }
     detectSources = {
         "suffix"                : "_sourcesDetected",
