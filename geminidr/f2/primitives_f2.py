@@ -121,32 +121,3 @@ class F2(Gemini, NearIR):
                                               strip=True)
             adoutputs.append(ad)
         return adoutputs
-
-    def validateData(self, adinputs=None, **params):
-        """
-        This primitive is used to validate F2 data, specifically.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        repair: bool
-            Repair the data, if necessary? This does not work yet!
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by validateData".
-                            format(ad.filename))
-                continue
-
-            log.status("No validation required for {}".format(ad.filename))
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
-        return adinputs
