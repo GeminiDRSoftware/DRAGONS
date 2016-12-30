@@ -5,7 +5,4 @@ from ..core.parameters_image import ParametersImage
 from ..core.parameters_photometry import ParametersPhotometry
 
 class ParametersNIRIImage(ParametersNIRI, ParametersImage, ParametersPhotometry):
-    associateSky = {
-        "distance"              : 1.,
-        "time"                  : 900.,
-    }
+    pass
