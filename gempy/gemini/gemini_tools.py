@@ -1324,7 +1324,6 @@ def fit_continuum(ad):
 
 def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     """
-
     Parameters
     ----------
     ad: AstroData
@@ -1340,6 +1339,7 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     -------
     dict
         the QA report
+
     """
     if metric not in ["iq", "zp", "sb", "pe"]:
         raise ValueError("Unknown metric {}".format(metric))
@@ -1410,9 +1410,9 @@ def send_fitsstore_report(qareport, calurl_dict):
     f.close()
     return
 
-def gui_metrics_report(qametric):
+def gui_metrics_report(ad=None, name=None, metric_report=None, metadata=None):
     adcc = ADCC()
-    adcc.events.event_list.append(qametric)
+    adcc.events.append_event(ad, name, metric_report, metadata=metadata)
     return
 
 def log_message(function=None, name=None, message_type=None):
