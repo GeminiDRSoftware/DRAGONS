@@ -31,16 +31,16 @@ from importlib import import_module
 from functools import wraps
 
 from ..library import astrotools as at
-
 from ..utils import logutils
 
 import astrodata
 from astrodata import __version__ as ad_version
 
-#import matplotlib.pyplot as plt
+from recipe_system.adcc.adcclib import ADCC
 
-# Allows all functions to treat input as a list and return a list
-# without the specific need to check
+# ------------------------------------------------------------------------------
+# Allows all functions to treat input as a list and return a list without the
+# specific need to check.
 def accept_single_adinput(fn):
     @wraps(fn)
     def wrapper(adinput, *args, **kwargs):
@@ -1408,6 +1408,11 @@ def send_fitsstore_report(qareport, calurl_dict):
     f = urllib2.urlopen(req)
     # Should do some error checking here.
     f.close()
+    return
+
+def gui_metrics_report(qametric):
+    adcc = ADCC()
+    adcc.events.event_list.append(qametric)
     return
 
 def log_message(function=None, name=None, message_type=None):
