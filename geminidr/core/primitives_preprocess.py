@@ -615,7 +615,12 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = pars["suffix"]
+        sfx = params["suffix"]
+        operator = getattr(np, params["scale"], None)
+        if not callable(operator):
+            log.warning("Operator {} not found, defaulting to median".
+                        format(params["scale"]))
+            operator = np.median
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -625,17 +630,17 @@ class Preprocess(PrimitivesBASE):
                 continue
             
             for ext in ad:
-                # Normalise the input AstroData object. Calculate the median
-                # value of the science extension
+                # Normalise the input AstroData object. Calculate the
+                # "average" value of the science extension
                 if ext.mask is None:
-                    median = np.median(ext.data).astype(np.float64)
+                    scaling = operator(ext.data).astype(np.float64)
                 else:
-                    median = np.median(ext.data[ext.mask==0]).astype(np.float64)
+                    scaling = operator(ext.data[ext.mask==0]).astype(np.float64)
                 # Divide the science extension by the median value
                 # VAR is taken care of automatically
-                log.fullinfo("Normalizing {} EXTVER {} by dividing by the median "
-                             "= {:.2f}" % (ad.filename, ext.hdr.EXTVER, median))
-                ext /= median
+                log.fullinfo("Normalizing {} EXTVER {} by dividing by {:.2f} ".
+                             format(ad.filename, ext.hdr.EXTVER, scaling))
+                ext /= scaling
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

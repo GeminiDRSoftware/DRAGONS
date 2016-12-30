@@ -40,6 +40,7 @@ class ParametersPreprocess(ParametersBASE):
     }
     normalizeFlat = {
         "suffix"            : "_normalized",
+        "scale"             : "median",
     }
     separateSky = {
         "suffix"            : "_skySeparated",
