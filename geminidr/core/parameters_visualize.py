@@ -9,9 +9,9 @@ class ParametersVisualize(ParametersBASE):
         "frame"             : 1,
         "ignore"            : False,
         "overlay"           : None,
-        "remove_bias"       : False,
+        "remove_bias"       : True,
         "threshold"         : "auto",
-        "tile"              : False,
+        "tile"              : True,
         "zscale"            : True,
     }
     mosaicDetectors = {
