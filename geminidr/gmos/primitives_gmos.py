@@ -208,46 +208,6 @@ class GMOS(Gemini, CCD):
             adoutputs.append(ad)
         return adoutputs
     
-    def standardizeStructure(self, adinputs=None, **params):
-        """
-        This primitive is used to standardize the structure of GMOS data,
-        specifically.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        attach_mdf: bool
-            attach an MDF to the AD objects? (ignored if not tagged as SPECT)
-        mdf: str
-            full path of the MDF to attach
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        adoutputs = []
-        # If attach_mdf=False, this just zips up the ADs with a list of Nones,
-        # which has no side-effects.
-        for ad, mdf in zip(*gt.make_lists(adinputs, params['mdf'])):
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by standardizeStructure".
-                            format(ad.filename))
-                adoutputs.append(ad)
-                continue
-            
-            # Attach an MDF to each input AstroData object
-            if params["attach_mdf"]:
-                ad = self.addMDF([ad], mdf=mdf)[0]
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
-            adoutputs.append(ad)
-        return adoutputs
-
     def tileArrays(self, adinputs=None, **params):
         """
         This tiles the GMOS detectors together
