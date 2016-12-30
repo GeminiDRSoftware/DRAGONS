@@ -1,6 +1,7 @@
 keyword_comments = {
     # Dictionary keys are header keywords that are commonly updated
     # Dictionary values are standard comments for each keyword
+    "ACQSLITS": "Locations of acquisition slits",
     "AMPNAME": "Amplifier name(s)",
     "BIASIM": "Bias image used",
     "BPMNAME": "Name of BPM used to identify bad pixels",
