@@ -6,6 +6,7 @@ from ..core.parameters_photometry import ParametersPhotometry
 
 class ParametersF2Image(ParametersF2, ParametersImage, ParametersPhotometry):
     associateSky = {
+        "suffix"                : "_skyAssociated",
         "distance"              : 1.,
         "time"                  : 600.,
     }
