@@ -99,7 +99,7 @@ def fetch_illum_mask(ad):
                          "be found for {}".format(ad.filename))
 
     try:
-        illum = path.join(path.dirname(IllumMaskDict.__file__),
+        illum = path.join(path.dirname(IllumMaskDict.__file__), 'BPM',
                           IllumMaskDict.illum_masks[key1,key2])
     except KeyError:
         raise IOError("No illumination mask found for {}".format(ad.filename))
