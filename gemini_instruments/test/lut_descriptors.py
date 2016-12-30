@@ -398,7 +398,7 @@ fixture_data = {
         ('raw_iq', 70),
         ('raw_wv', 100),
         ('read_mode', 'Faint Objects'),
-        ('read_noise', 14.142135623730951),
+        ('read_noise', [14.142135623730951]),
         ('read_speed_setting', None),
         ('requested_bg', 100),
         ('requested_cc', 100),
