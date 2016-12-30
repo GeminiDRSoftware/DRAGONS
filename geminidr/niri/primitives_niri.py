@@ -32,6 +32,11 @@ class NIRI(Gemini, NearIR):
         or escaped with a backslash. Do we need a badval parameter that defines
         a value to assign to uncorrectable pixels, or do we want to just add
         those pixels to the DQ plane with a specific value?
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
         """
         # Instantiate the log
         log = self.log
@@ -102,6 +107,11 @@ class NIRI(Gemini, NearIR):
         """
         This primitive is used to make the changes and additions to the
         keywords in the headers of NIRI data, specifically.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
         """
         # Instantiate the log
         log = self.log
