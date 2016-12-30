@@ -2,18 +2,7 @@
 #                                                                     QAP Gemini
 #
 #                                                                  http_proxy.py
-#                                                                        07-2013
 # ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]
-__version_date__ = '$Date$'[7:-2]
-# ------------------------------------------------------------------------------
-#
-# This has been modified to make queries on fitstore qaforgui urls.
-# 
-# Updated parsepath() w/ urlparse.
-
 import os
 import json
 import time
@@ -21,20 +10,19 @@ import select
 import urllib2
 import urlparse
 import datetime
-import subprocess
 
 from SocketServer import ThreadingMixIn
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
-from astrodata import AstroData
-from astrodata.utils.Lookups import get_lookup_table
-
+from recipe_system.cal_service import calurl_dict
 # ------------------------------------------------------------------------------
 def parsepath(path):
-    """A better parsepath w/ urlparse.
+    """
+    parsepath w/ urlparse.
 
     parameters: <string>
     return:     <dict>
+
     """
     rparms = {}
     parsed_url = urlparse.urlparse(path)
@@ -46,12 +34,14 @@ def parsepath(path):
 # ------------------------------------------------------------------------------
 #                                Timing functions
 def server_time():
-    """Return a dictionary of server timing quantities related to current time.
+    """
+    Return a dictionary of server timing quantities related to current time.
     This dict will be returned to a call on the server, /rqsite.json (See
     do_GET() method of ADCCHandler class.
 
     parameters: <void>
     return:     <dict>, dictionary of time now values.
+
     """
     lt_now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -80,15 +70,16 @@ def server_time():
 
 
 def stamp_to_ymd(timestamp):
-    """Caller sends a timestamp in seconds of epoch. Return string for
+    """
+    Caller sends a timestamp in seconds of epoch. Return string for
     year month day of that time as YYYYMMDD' as used by url requests, as in
     http://<fitsstore_server>/qaforgui/20130616
 
     parameters: <float>,  seconds of epochs.
     return:     <string>, YYYYMMDD of passed time.
+
     """
     return time.strftime("%Y%m%d", time.localtime(timestamp))
-
 
 def stamp_to_opday(timestamp):
     """Converts a passed time stamp (sec) into the corresponding operational
@@ -102,20 +93,21 @@ def stamp_to_opday(timestamp):
         timestamp = timestamp + 86400
     return  stamp_to_ymd(timestamp)
 
-
 def ymd_to_stamp(yy, mm, dd, hh=0):
-    """Caller passes integers for year, month, and day. Return is
+    """
+    Caller passes integers for year, month, and day. Return is
     the epoch time (sec). Year is 4 digit, eg., 2013
 
     parameters: <int>, <int>, <int> [, <int>] Year, Month, Day [,Hour]
     return:     <float>, epoch time in seconds.
-    """
-    return time.mktime(time.strptime("%s %s %s %s" % (yy, mm, dd, hh), 
-                                     "%Y %m %d %H"))
 
+    """
+    ymd = "{} {} {} {}".format(yy, mm, dd, hh)
+    return time.mktime(time.strptime(ymd, "%Y %m %d %H"))
 
 def current_op_timestamp():
-    """Return the epoch time (sec) of the start of current operational day,
+    """
+    Return the epoch time (sec) of the start of current operational day,
     where turnover occurs @ 14.00h localtime. I.e. if the hour >= 14.00,
     then the current operational day is tomorrow.
 
@@ -123,6 +115,7 @@ def current_op_timestamp():
 
     parameters: <void>
     return:     <float>
+
     """
     hh = 14
     tnow = datetime.datetime.now()
@@ -137,12 +130,12 @@ def current_op_timestamp():
     timestamp = ymd_to_stamp(yy, mm, dd, hh)
     return timestamp
 
-
-#                            End Timing functions
+#                             END Timing functions
 # ------------------------------------------------------------------------------
 #   FITS Store query.
 def fstore_get(timestamp):
-    """Open a url on fitsstore/qaforgui/ with the passed timestamp.
+    """
+    Open a url on fitsstore/qaforgui/ with the passed timestamp.
     timestamp is in epoch seconds, which is converted here to a 
     YMD string for the URL.  Return a list of dicts of qa metrics data.
 
@@ -151,11 +144,10 @@ def fstore_get(timestamp):
 
     parameters: <float>, time in epoch seconds
     return:     <list>,  list of dicts (json) of qametrics
+
     """
     # Get the fitsstore query url from calurl_dict
-    qurlPath     = "Gemini/calurl_dict"
-    fitsstore_qa = get_lookup_table(qurlPath, "calurl_dict")['QAQUERYURL']
-
+    fitsstore_qa = calurl_dict.calurl_dict['QAQUERYURL']
     if not timestamp:
         furl         = os.path.join(fitsstore_qa)
         store_handle = urllib2.urlopen(furl)
@@ -207,14 +199,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         """Defined ADCC services on GET requests."""
         global webserverdone
-        rim = self.informers["rim"]
+        rim = self.informers["eventmanager"]
         parms = parsepath(self.path)
-
-        # Older revisions of adcc may not supply 'verbose' key
-        try: 
-            self.informers["verbose"]
-        except KeyError: 
-            self.informers["verbose"] = True
+        self.informers["verbose"] = True
 
         try:
             # First test for an html request on the QAP nighttime_metrics 
@@ -344,110 +331,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
             raise
         return
 
-
-    def do_POST(self):
-        """Defined ADCC services on POST requests."""
-        global webserverdone
-        parms = parsepath(self.path)
-        vlen = int(self.headers["Content-Length"])
-        head = self.rfile.read(vlen)
-        pdict = head
-        
-        if parms["path"].startswith("/runreduce"):
-            # Get events manager
-            evman = None
-            if "rim" in ADCCHandler.informers:
-                rim = ADCCHandler.informers["rim"]
-                evman = rim.events_manager
-
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            
-            reduce_params = json.loads(pdict)
-
-            # get() returns None if no key
-            fp  = reduce_params.get("filepath")
-            opt = reduce_params.get("options")
-            prm = reduce_params.get("parameters")
-            cmdlist = ["reduce", "--invoked"]
-
-            # reduce_beta is the old reduce, deprecated @Rev4949
-            #cmdlist = ["reduce_beta", "--invoked"]
-
-            # cmdlist built for reduce2 parameters (-p) field, i.e. no commas
-            if prm is not None:
-                cmdlist.extend(["-p"])
-                cmdlist.extend([str(key)+"="+str(val) for key,val in prm.items()])
-
-            if opt is not None:
-                for key,val in opt.items():
-                    cmdlist.extend(["--"+str(key), str(val)])
-
-            # build for reduce_beat parameters (-p) field, i.e. w/ commas
-            # if prm is not None:
-            #     prm_str = ""
-            #     for key in prm:
-            #         prm_str += str(key) + "=" + str(prm[key]) + ","
-            #     if prm_str:
-            #         prm_str = prm_str.rstrip(",")
-            #     cmdlist.extend(["-p", prm_str])
-
-            if fp is not None:
-                cmdlist.append(str(fp))
-                # Check that file can be opened
-                try:
-                    ad = AstroData(fp)
-                except:
-                    self.wfile.write("Can't use AstroData to open %s"% fp)
-                    return
-
-                # Report reduction status
-                self.wfile.write("Reducing %s\n" % fp)
-                self.wfile.write("Command: %s\n" % " ".join(cmdlist))
-                evman.append_event(ad, "status", 
-                                   {"current":"reducing" , "logfile":None},
-                                   msgtype="reduce_status")
-
-            # Send reduce log to hidden directory
-            logdir = ".autologs"
-            if not os.path.exists(logdir):
-                os.mkdir(logdir)
-
-            reducelog = os.path.join(logdir, "reduce-addcinvokedlog-%d%s" % \
-                                     (os.getpid(), str(time.time())))
-
-            f = open(reducelog, "w")
-            loglink = "reducelog-latest"
-            if os.path.exists(loglink):
-                os.remove(loglink)
-
-            os.symlink(reducelog, loglink)
-
-            # Call reduce
-            pid = subprocess.call(cmdlist, stdout=f, stderr=f)
-
-            f.close()
-            # Report finished status
-            if fp is not None:
-                if pid == 0:
-                    evman.append_event(ad, "status",
-                                       {"current":"reduction finished",
-                                        "logfile":reducelog},
-                                       msgtype="reduce_status")
-                else:
-                    evman.append_event(ad, "status",
-                                       {"current":"reduction ERROR",
-                                        "logfile":reducelog},
-                                       msgtype="reduce_status")
-
-            # Get text from log
-            f = open(reducelog, "r")      
-            txt = f.read()
-            f.close()
-            self.wfile.write(txt)
-            self.wfile.flush()
-            return
 
     # -------------------------------------------------------------------------
     # privitized handling cmdqueue.json requests
