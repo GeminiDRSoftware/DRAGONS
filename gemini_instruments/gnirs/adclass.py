@@ -512,6 +512,7 @@ class AstroDataGnirs(AstroDataGemini):
         """
         return read_modes.get((self.phu.LNRS, self.phu.NDAVGS), "Invalid")
 
+    @returns_list
     @astro_data_descriptor
     def read_noise(self):
         """

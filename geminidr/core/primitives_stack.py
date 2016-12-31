@@ -24,7 +24,7 @@ class Stack(PrimitivesBASE):
     def __init__(self, adinputs, **kwargs):
         super(Stack, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersStack
-    
+
     def alignAndStack(self, adinputs=None, **params):
         """
         This primitive calls a set of primitives to perform the steps
@@ -93,7 +93,7 @@ class Stack(PrimitivesBASE):
         for ad in adinputs:
             if not "PREPARED" in ad.tags:
                 raise IOError("{} must be prepared" .format(ad.filename))
-        
+
         if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
                         "input AstroData objects are required for stackFrames")
@@ -112,7 +112,7 @@ class Stack(PrimitivesBASE):
                          for i in range(nexts)]
             read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                          for i in range(nexts)]
-            
+
             # Preserve the input dtype for the data quality extension
             #dq_dtypes_list = []
             #for ad in ad_input_list:
@@ -137,8 +137,8 @@ class Stack(PrimitivesBASE):
             #        # combining of the DQ extension can be handled correctly by
             #        # numpy).
             #        dq_dtype = np.dtype(np.uint16)
-            
-            # Instantiate ETI and then run the task 
+
+            # Instantiate ETI and then run the task
             gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
             ad = gemcombine_task.run()
 
@@ -156,14 +156,14 @@ class Stack(PrimitivesBASE):
 
             # Add suffix to datalabel to distinguish from the reference frame
             ad.phu.DATALAB = "{}{}".format(ad.phu.DATALAB, sfx)
-            
+
             # Timestamp and update filename and prepare to return single output
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             adinputs = [ad]
 
         return adinputs
-    
+
     def stackSkyFrames(self, adinputs=None, **params):
         """
         This primitive stacks the sky frames for each science frame (as

@@ -181,8 +181,6 @@ class GMOS(Gemini, CCD):
             # the true values on unprepared data.
             descriptors = ['pixel_scale', 'read_noise', 'gain_setting',
                                'gain', 'saturation_level']
-            if 'SPECT' in ad.tags:
-                descriptors.append('dispersion_axis')
             for desc in descriptors:
                 keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]
@@ -192,6 +190,10 @@ class GMOS(Gemini, CCD):
                         ext.hdr.set(keyword, value, comment)
                 else:
                     ad.hdr.set(keyword, dv, comment)
+
+            if 'SPECT' in ad.tags:
+                kw = self._keyword_for('dispersion_axis')
+                ad.hdr.set(kw, 1, self.keyword_comments(kw))
 
             # And the bias level too!
             bias_level = get_bias_level(adinput=ad,
@@ -206,44 +208,6 @@ class GMOS(Gemini, CCD):
             adoutputs.append(ad)
         return adoutputs
     
-    def standardizeStructure(self, adinputs=None, **params):
-        """
-        This primitive is used to standardize the structure of GMOS data,
-        specifically.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        attach_mdf: bool
-            attach an MDF to the AD objects? (ignored if not tagged as SPECT)
-        mdf: str
-            full path of the MDF to attach
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        adoutputs = []
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by standardizeStructure".
-                            format(ad.filename))
-                adoutputs.append(ad)
-                continue
-            
-            # Attach an MDF to each input AstroData object
-            if params["attach_mdf"]:
-                ad = self.addMDF([ad], mdf=params["mdf"])[0]
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
-            adoutputs.append(ad)
-        return adoutputs
-
     def tileArrays(self, adinputs=None, **params):
         """
         This tiles the GMOS detectors together

@@ -360,6 +360,28 @@ class AstroDataNiri(AstroDataGemini):
         return zpt
 
     @astro_data_descriptor
+    def nonlinearity_coeffs(self):
+        """
+        Returns a namedtuple containing the necessary information to perform
+        a nonlinearity correction.
+
+        Returns
+        -------
+        list/namedtuple
+            nonlinearity info (max counts, exptime correction, gamma, eta)
+        """
+        read_mode = self.read_mode()
+        well_depth_setting = self.well_depth_setting()
+        naxis2 = self.hdr.NAXIS2
+        try:
+            keys = [(read_mode, size, well_depth_setting) for size in naxis2]
+        except TypeError:
+            # Single slice
+            return lookup.nonlin_coeffs.get((read_mode, naxis2, well_depth_setting))
+        else:
+            return [lookup.nonlin_coeffs.get(key) for key in keys]
+
+    @astro_data_descriptor
     def non_linear_level(self):
         """
         Returns the ADU level at which the data become non-linear. A list is

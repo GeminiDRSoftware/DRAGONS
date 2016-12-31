@@ -55,8 +55,8 @@ class Bookkeeping(PrimitivesBASE):
     def getList(self, adinputs=None, **params):
         """
         This primitive will check the files in the stack lists are on disk,
-        and then update the inputs list to include all members of the stack 
-        for stacking.
+        and then update the inputs list to include all members that belong
+        to the same stack(s) as the input(s).
         
         Parameters
         ----------
@@ -87,8 +87,12 @@ class Bookkeeping(PrimitivesBASE):
             # Add each file to the input list if it's not already there
             for f in stacklist:
                 if f not in [ad.filename for ad in stream_list]:
-                    stream_list.append(astrodata.open(f))
-                log.stdinfo("   {}".format(f))
+                    try:
+                        stream_list.append(astrodata.open(f))
+                    except IOError:
+                        log.stdinfo("   {} NOT FOUND".format(f))
+                    else:
+                        log.stdinfo("   {}".format(f))
         return adinputs
 
     def showInputs(self, adinputs=None, stream='main'):

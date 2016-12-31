@@ -1,3 +1,9 @@
+from collections import namedtuple
+
+# Data structures used by this module
+
+NonLinCoeffs = namedtuple("NonLinCoeffs", "max_counts time_delta, gamma, eta")
+
 filter_wavelengths = {
     'Jcon(1065)'   : 1.0650,
     'HeI'          : 1.0830,
@@ -45,6 +51,22 @@ array_properties = {
     "deepbias"     : -0.87,     # detector bias (V)
     "linearlimit"  : 0.7,       # non-linear regime (fraction of saturation)
 }
+
+nonlin_coeffs = {
+    # In the following form for NIRI data:
+    #("read_mode", naxis2, "well_depth_setting"):
+    #    (maximum counts, exposure time correction, gamma, eta)
+    ("Low Background", 1024, "Shallow"):
+        NonLinCoeffs(12000, 1.2662732, 7.3877618e-06, 1.940645271e-10),
+    ("Medium Background", 1024, "Shallow"):
+        NonLinCoeffs(12000, 0.09442515154, 3.428783846e-06, 4.808353308e-10),
+    ("Medium Background", 256, "Shallow"):
+        NonLinCoeffs(12000, 0.01029262589, 6.815415667e-06, 2.125210479e-10),
+    ("High Background", 1024, "Shallow"):
+        NonLinCoeffs(12000, 0.009697324059, 3.040036696e-06, 4.640788333e-10),
+    ("High Background", 1024, "Deep"):
+        NonLinCoeffs(21000, 0.007680816203, 3.581914163e-06, 1.820403678e-10),
+    }
 
 spec_sections = {
     #

@@ -9,6 +9,9 @@ class ParametersStandardize(ParametersBASE):
         "bpm"               : None,
         "illum_mask"        : False,
     }
+    addIllumMaskToDQ = {
+        "suffix"            : "_illumMaskAdded",
+    }
     addMDF = {
         "suffix"            : "_mdfAdded",
         "mdf"               : None,

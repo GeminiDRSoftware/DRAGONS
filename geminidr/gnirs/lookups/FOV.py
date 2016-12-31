@@ -1,11 +1,11 @@
+from os import path
+
 import astrodata
+import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.gemini.lookups.keyword_comments import keyword_comments
-from .IllumMaskDict import illum_masks
-
-# ------------------------------------------------------------------------------
-keyword_comments = keyword_comments.keyword_comments
+from . import IllumMaskDict
 
 # ------------------------------------------------------------------------------
 # This code is looked up by gempy as part of the configuration for the
@@ -56,20 +56,13 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     
     # Imaging:
     if 'IMAGE' in pos.tags:
-        illum_ad = fetch_illum_mask(pos)
-        
-        # Checking the size of the illumination mask                
-        final_illum = None
-        if illum_ad is not None:
-            # Clip the illumination mask to match the size of the input 
-            # AstroData object science 
-            final_illum = gt.clip_auxiliary_data(adinput=pos, aux=illum_ad, 
-                                                 aux_type="bpm", 
-                                                 keyword_comments=keyword_comments)[0]
-        illum_data = final_illum[0].data
+        illum_ad = gt.clip_auxiliary_data(adinput=pos,
+                        aux=fetch_illum_mask(pos), aux_type="bpm",
+                        keyword_comments=keyword_comments)
+        illum_data = illum_ad[0].data
 
         # Finding the center of the illumination mask
-        center_illum = (final_illum.phu.CENMASSX, final_illum.phu.CENMASSY)
+        center_illum = (illum_ad.phu.CENMASSX, illum_ad.phu.CENMASSY)
         checkpos = (int(center_illum[0] + xshift),
                     int(center_illum[1] + yshift))
         
@@ -89,8 +82,8 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     # Some engineering observation or bad mask value etc.:
     else:
-        raise ValueError("Can't determine FOV for unrecognized GNIRS config " \
-          "(%s, %s)" % (str(ad.focal_plane_mask()), str(ad.disperser())))
+        raise ValueError("Can't determine FOV for unrecognized GNIRS config "
+          "({}, {})".format(ad.focal_plane_mask(), ad.disperser()))
 
 def fetch_illum_mask(ad):
     # Fetches the appropriate illumination mask for an astrodata instance
@@ -103,20 +96,17 @@ def fetch_illum_mask(ad):
         key2 = 'NoWings'
     else:
         raise ValueError("Unrecognised filter, no illumination mask can "
-                         "be found for %s" % ad.filename)
-    key = (key1,key2)
-    if key in illum_masks:
-        illum = lookup_path(illum_masks[key])
-    else:
-        raise IOError("No illumination mask found for %s" % ad.filename)
-    
-    illum_ad = None
-    if isinstance(illum, AstroData):
-        illum_ad = illum
-    else:
+                         "be found for {}".format(ad.filename))
+
+    try:
+        illum = path.join(path.dirname(IllumMaskDict.__file__), 'BPM',
+                          IllumMaskDict.illum_masks[key1,key2])
+    except KeyError:
+        raise IOError("No illumination mask found for {}".format(ad.filename))
+
+    try:
         illum_ad = astrodata.open(illum)
-        if illum_ad is None:
-            raise TypeError("Cannot convert %s into an AstroData object" 
-                            % illum)                
+    except:
+        raise IOError("Cannot convert {} into an AstroData object".format(illum))
                 
     return illum_ad

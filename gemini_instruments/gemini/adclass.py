@@ -715,15 +715,14 @@ class AstroDataGemini(AstroDataFits):
         ------
         ValueError
             If the data is tagged IMAGE or is not PREPARED.
-
         """
         tags = self.tags
         if 'IMAGE' in tags or 'PREPARED' not in tags:
             raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
 
         # TODO: We may need to sort out Nones here...
-        dispaxis_kwd = self._keyword_for('dispersion_axis')
-        return [int(dispaxis) for dispaxis in self.hdr.dispaxis_kwd]
+        kw = self._keyword_for('dispersion_axis')
+        return [int(dispaxis) for dispaxis in self.hdr.get(kw)]
 
     @astro_data_descriptor
     def effective_wavelength(self, output_units=None):

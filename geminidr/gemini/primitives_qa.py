@@ -1142,13 +1142,14 @@ class QA(PrimitivesBASE):
                                   "percentile_band": band,
                                   "comment": comment}
                 # These only exist for images
+                # Coerce to float from np.float so JSONable
                 if is_image and len(src)>0:
-                    ext_info.update({"isofwhm": np.mean(src["isofwhm_arcsec"]),
-                                     "isofwhm_std": np.std(src["isofwhm_arcsec"]),
-                                     "ee50d": np.mean(src["ee50d_arcsec"]),
-                                     "ee50d_std": np.std(src["ee50d_arcsec"]),
-                                     "pa": np.mean(src["pa"]),
-                                     "pa_std": np.std(src["pa"])})
+                    ext_info.update({"isofwhm": float(np.mean(src["isofwhm_arcsec"])),
+                                     "isofwhm_std": float(np.std(src["isofwhm_arcsec"])),
+                                     "ee50d": float(np.mean(src["ee50d_arcsec"])),
+                                     "ee50d_std": float(np.std(src["ee50d_arcsec"])),
+                                     "pa": float(np.mean(src["pa"])),
+                                     "pa_std": float(np.std(src["pa"]))})
                 if is_ao:
                     ext_info.update({"ao_seeing": ao_seeing, "strehl": strehl})
                 
