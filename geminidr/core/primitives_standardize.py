@@ -58,8 +58,7 @@ class Standardize(PrimitivesBASE):
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
-                            'already been processed by add DQ'.
-                            format(ad.filename))
+                    'already been processed by add DQ'.format(ad.filename))
                 continue
 
             bpm = params['bpm']
@@ -323,9 +322,8 @@ class Standardize(PrimitivesBASE):
         with the tasks in the Gemini IRAF package.
         """
         log = self.log
-        log.debug(gt.log_message('primitive', 'makeIRAFCompatible',
-                                 'starting'))
-        timestamp_key = self.timestamp_keys['makeIRAFCompatible']
+        log.debug(gt.log_message('primitive', self.myself(), 'starting'))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         for ad in adinputs:
             irafcompat.pipeline2iraf(ad)
@@ -362,8 +360,7 @@ class Standardize(PrimitivesBASE):
 
     def standardizeHeaders(self, adinputs=None, **params):
         log = self.log
-        log.debug(gt.log_message("primitive", "standardizeHeaders",
-                                 "starting"))
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adinputs = self.standardizeObservatoryHeaders(adinputs, **params)
         adinputs = self.standardizeInstrumentHeaders(adinputs, **params)
         return adinputs
@@ -404,7 +401,7 @@ class Standardize(PrimitivesBASE):
                 continue
 
             # Attach an MDF to each input AstroData object
-            if params["attach_mdf"]:
+            if params["attach_mdf"] and 'SPECT' in ad.tags:
                 ad = self.addMDF([ad], mdf=mdf)[0]
 
             # Timestamp and update filename
@@ -436,7 +433,34 @@ class Standardize(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            log.status("No validation required for {}".format(ad.filename))
+            # Report if this is an image without square binned pixels
+            if 'IMAGE' in ad.tags:
+                xbin = ad.detector_x_bin()
+                ybin = ad.detector_y_bin()
+                if xbin != ybin:
+                    log.warning("Image {} is {} x {} binned data".
+                                format(ad.filename, xbin, ybin))
+
+            try:
+                valid_num_ext = params['num_exts']
+            except KeyError:
+                log.status("No validation required for {}".format(ad.filename))
+            else:
+                if not isinstance(valid_num_ext, list):
+                    valid_num_ext = [valid_num_ext]
+                num_ext = len(ad)
+                if num_ext in valid_num_ext:
+                    log.fullinfo("The input file has been validated: {} "
+                             "contains {} extension(s)".format(ad.filename,
+                                                               num_ext))
+                else:
+                    if params['repair']:
+                        # Something could be done here
+                        pass
+                    raise IOError("The number of extensions in {} does not "
+                                "match the number of extensions expected "
+                                "in raw {} data.".format(ad.filename,
+                                                         ad.instrument()))
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -459,8 +483,7 @@ class Standardize(PrimitivesBASE):
 
         Returns
         -------
-        str:
-            Filename of the appropriate bpm
+        str: Filename of the appropriate bpm
         """
         inst = ad.instrument()
         xbin = ad.detector_x_bin()

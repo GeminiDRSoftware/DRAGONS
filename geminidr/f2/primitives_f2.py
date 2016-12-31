@@ -62,7 +62,7 @@ class F2(Gemini, NearIR):
                 ad.hdr.set(kw, getattr(ad, desc)()[0], self.keyword_comments[kw])
                 try:
                     ad.phu.remove(kw)
-                except KeyError:
+                except (KeyError, AttributeError):
                     pass
 
             if 'SPECT' in ad.tags:
