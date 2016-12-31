@@ -37,5 +37,6 @@ class ParametersStandardize(ParametersBASE):
     }
     validateData = {
         "suffix"            : "_dataValidated",
+        "num_exts"          : 1,
         "repair"            : False,
     }

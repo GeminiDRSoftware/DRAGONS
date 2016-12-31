@@ -20,3 +20,8 @@ class ParametersGSAOI(ParametersGemini, ParametersNearIR):
         "suffix"                : "_tiled",
         "tile_all"              : True,
     }
+    validateData = {
+        "suffix"            : "_dataValidated",
+        "num_exts"          : 4,
+        "repair"            : False,
+    }

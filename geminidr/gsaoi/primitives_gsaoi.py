@@ -190,43 +190,6 @@ class GSAOI(Gemini, NearIR):
 
         return adinputs
 
-    def validateData(self, adinputs=None, **params):
-        """
-        This is the generic data validation primitive, for data which do not
-        require any specific validation checks. It timestamps and moves on.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        repair: bool
-            Repair the data, if necessary? This does not work yet!
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by validateData".
-                            format(ad.filename))
-                continue
-
-            if len(ad) == 4:
-                log.fullinfo("The GSAOI input file has been validated: {} "
-                    "contains {} extensions".format(ad.filename, len(ad)))
-            else:
-                raise IOError("The number of extensions in {} do not match "
-                        "with the number of extensions expected in raw "
-                                    "GSAOI data.".format(ad.filename))
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(ad, suffix=params["suffix"],
-                                              strip=True)
-        return adinputs
-
-
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #
 ##############################################################################

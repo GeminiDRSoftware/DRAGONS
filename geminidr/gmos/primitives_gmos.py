@@ -412,69 +412,7 @@ class GMOS(Gemini, CCD):
             adoutput.filename = gt.filename_updater(adoutput,
                                     suffix=params["suffix"], strip=True)
             adoutputs.append(adoutput)
-        
         return adoutputs
-
-    def validateData(self, adinputs=None, **params):
-        """
-        This primitive is used to validate GMOS data, specifically. The input
-        AstroData object(s) are validated by ensuring that 1, 2, 3, 4, 6 or 12
-        extensions are present.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        repair: bool
-            Repair the data, if necessary? This does not work yet!
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by validateData".
-                            format(ad.filename))
-                continue
-            
-            # Issue a warning if the data is an image with non-square binning
-            if {'GMOS', 'IMAGE'}.issubset(ad.tags):
-                xbin = ad.detector_x_bin()
-                ybin = ad.detector_y_bin()
-                if xbin != ybin:
-                    log.warning("Image {} is {} x {} binned data".
-                                format(ad.filename, xbin, ybin))
-
-            repair = params["repair"]
-            if repair:
-                # Set repair to False, since it doesn't work at the moment
-                log.warning("Setting repair=False, since this functionality "
-                            "is not yet implemented")
-
-            # Validate the input AstroData object by ensuring that it has
-            # 1, 2, 3, 4, 6 or 12 extensions
-            valid_num_ext = [1, 2, 3, 4, 6, 12]
-            num_ext = len(ad)
-            if num_ext not in valid_num_ext:
-                if repair:
-                    # This would be where we would attempt to repair the data
-                    # This shouldn't happen while repair = False exists above
-                    pass
-                else:
-                    raise IOError("The number of extensions in {} does not "
-                                "match the number of extensions expected "
-                                "in raw GMOS data.".format(ad.filename))
-            else:
-                log.fullinfo("The GMOS input file has been validated: {} "
-                             "contains {} extensions".format(ad.filename, num_ext))
-            
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
-        return adinputs
 
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #
