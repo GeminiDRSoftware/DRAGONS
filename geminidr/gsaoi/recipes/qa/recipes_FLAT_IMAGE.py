@@ -31,7 +31,7 @@ def makeProcessedFlat(p):
     p.addVAR(read_noise=True, poisson_noise=True)
     p.addToList(purpose='forFlat')
     p.getList(purpose='forFlat')
-    p.darkCorrectAndStackFlats()
+    p.makeLampFlat()
     p.normalizeFlat()
     p.thresholdFlatfield()
     p.storeProcessedFlat()
