@@ -319,7 +319,7 @@ class QA(PrimitivesBASE):
                             "requested": req_bg,
                             "comment": bg_comment,
                             }
-                    #self.report_qametric(ad, "bg", qad)
+                    gt.adcc_report(ad, "bg", qad)
 
             # Report measurement to fitsstore
             fitsdict = gt.fitsstore_report(ad, "sb", info_list,
@@ -719,7 +719,7 @@ class QA(PrimitivesBASE):
                 # Report measurement to the adcc
                 qad["extinction"] = float(cloud)
                 qad["extinction_error"] = float(clouderr)
-                #self.report_qametric(ad, "cc", qad)
+                gt.adcc_report(ad, "cc", qad)
 
                 # Add band and comment to the info_list
                 [info.update({"percentile_band": qad["band"],
@@ -1129,7 +1129,7 @@ class QA(PrimitivesBASE):
                        "strehl": strehl,
                        "requested": req_iq,
                        "comment": comment,}
-                #self.report_qametric(adiq, "iq", qad)
+                gt.adcc_report(adiq, "iq", qad)
                 
                 # These exist for all data (ellip=None for spectra)
                 key = ('SCI', extver)

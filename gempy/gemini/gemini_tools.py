@@ -1410,7 +1410,7 @@ def send_fitsstore_report(qareport, calurl_dict):
     f.close()
     return
 
-def gui_metrics_report(ad=None, name=None, metric_report=None, metadata=None):
+def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
     adcc = ADCC()
     adcc.events.append_event(ad, name, metric_report, metadata=metadata)
     return
