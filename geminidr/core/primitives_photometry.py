@@ -195,6 +195,7 @@ class Photometry(PrimitivesBASE):
                 # We're deleting the OBJCAT first simply to suppress the
                 # "replacing" message in gt.add_objcat, which would otherwise
                 # be a bit confusing
+                _cull_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
                 ad = gt.add_objcat(ad, extver=ext.hdr.EXTVER, replace=False,
@@ -483,9 +484,9 @@ def _estimate_seeing(objcat):
     """
     This function tries to estimate the seeing from a SExtractor object
     catalog, so future runs of SExtractor can provide better CLASS_STAR
-    classifications. It also culls crap from the catalog. This uses a
-    catalog that hasn't yet been run through _profile_sources() so lacks
-    the extra columns that gemini_tools.clip_sources() needs.
+    classifications. This uses a catalog that hasn't yet been run through
+    _profile_sources() so lacks the extra columns that
+    gemini_tools.clip_sources() needs.
 
     Parameters
     ----------
@@ -495,31 +496,26 @@ def _estimate_seeing(objcat):
     -------
     float: the seeing estimate (or None)
     """
-    # Remove sources of less than 20 pixels
-    objcat.remove_rows(objcat['ISOAREA_IMAGE'] < 20)
-    # Remove implausibly narrow sources
-    objcat.remove_rows(objcat['B_IMAGE'] < 1.1)
-
-    # Now renumber what's left sequentially
-    objcat['NUMBER'].data[:] = range(1, len(objcat)+1)
-    # Convert FWHM_WORLD from degrees to arcseconds
-    objcat['FWHM_WORLD'] *= 3600
-
     try:
         badpix = objcat['NIMAFLAGS_ISO']
     except KeyError:
         badpix = np.zeros_like(objcat['NUMBER'])
+
+    # Convert FWHM_WORLD from degrees to arcseconds
+    objcat['FWHM_WORLD'] *= 3600
 
     # Only use objects that are: fairly round
     #                            thought to be stars by SExtractor
     #                            decent S/N ratio
     #                            unflagged (blended, saturated is OK)
     #                            not many bad pixels
-    good = np.logical_and.reduce([objcat['ELLIPTICITY']<0.5,
-                                  objcat['CLASS_STAR']>0.8,
-                                  objcat['FLUX_AUTO']>25*objcat['FLUXERR_AUTO'],
-                                  objcat['FLAGS'] & 65528==0,
-                                  badpix<0.2*objcat['ISOAREA_IMAGE']])
+    good = np.logical_and.reduce([objcat['ISOAREA_IMAGE'] < 20,
+                                  objcat['B_IMAGE'] < 1.1,
+                                  objcat['ELLIPTICITY'] < 0.5,
+                                  objcat['CLASS_STAR'] > 0.8,
+                                  objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
+                                  objcat['FLAGS'] & 65528 == 0,
+                                  badpix < 0.2*objcat['ISOAREA_IMAGE']])
     good_fwhm = objcat['FWHM_WORLD'][good]
     if len(good_fwhm) > 3:
         seeing_estimate = sigma_clip(good_fwhm, sigma=2, iters=3).mean()
@@ -529,6 +525,40 @@ def _estimate_seeing(objcat):
         seeing_estimate = None
 
     return seeing_estimate
+
+def _cull_objcat(ext):
+    """
+    Takes an extension of an AD object with attached OBJCAT (and possibly
+    OBJMASK) and culls the OBJCAT of crap. If the OBJMASK exists, it also
+    edits that to remove pixels associated with these sources. Finally, it
+    renumbers the 'NUMBER' column into a contiguous sequence.
+
+    Parameters
+    ----------
+    ext: a single extension of an AD object
+    """
+    try:
+        objcat = ext.OBJCAT
+    except AttributeError:
+        return ext
+
+    all_objects = objcat['NUMBER']
+    # Remove sources of less than 20 pixels
+    objcat.remove_rows(objcat['ISOAREA_IMAGE'] < 20)
+    # Remove implausibly narrow sources
+    objcat.remove_rows(objcat['B_IMAGE'] < 1.1)
+
+    # Remove all the culled sources from the OBJMASK
+    if hasattr(ext, 'OBJMASK'):
+        objmask = ext.OBJMASK
+        culled_objects = [n for n in all_objects if n not in objcat['NUMBER']]
+        for n in culled_objects:
+            objmask = np.where(objmask==n, 0, objmask)
+        ext.OBJMASK = np.where(objmask>0, 1, 0).astype(np.uint8)
+
+    # Now renumber what's left sequentially
+    objcat['NUMBER'].data[:] = range(1, len(objcat)+1)
+    return ext
 
 def _profile_sources(ad):
     """
