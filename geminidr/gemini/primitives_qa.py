@@ -838,7 +838,6 @@ class QA(PrimitivesBASE):
             llen = 32
             rlen = 24
             dlen = llen + rlen
-            fnStr = "Filename: {}".format(ad.filename)
 
             if "IMAGE" in ad.tags:
                 # Clip sources from the OBJCAT
@@ -990,8 +989,9 @@ class QA(PrimitivesBASE):
                     iq_band = _iq_band(adinput=ad, fwhm=corr_iq)[0]
 
                 # Format output for printing or logging
+                fnStr = "Filename: {}".format(ad.filename)
                 if separate_ext:
-                    fnStr += "[%s,%s]" % key
+                    fnStr += ':{}'.format(extver)
                 if len(src)!=0:
                     fmStr = ("FWHM Mean +/- Sigma:").ljust(llen) + \
                             "{:.3f} +/- {:.3f} arcsec".format(mean_fwhm,
