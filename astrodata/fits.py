@@ -94,12 +94,12 @@ class FitsKeywordManipulator(object):
                 except KeyError:
                     pass
             if not deleted:
-                raise AttributeError("'{}' is not on any of the extensions".format(key))
+                raise KeyError("'{}' is not on any of the extensions".format(key))
         else:
             try:
                 del self._headers[0][key]
             except KeyError:
-                raise AttributeError("'{}' is not on the PHU".format(key))
+                raise KeyError("'{}' is not on the PHU".format(key))
 
     def get_comment(self, key):
         if self._on_ext:
