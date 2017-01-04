@@ -1411,8 +1411,8 @@ def send_fitsstore_report(qareport, calurl_dict):
     return
 
 def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
-    adcc = ADCC()
-    adcc.events.append_event(ad, name, metric_report, metadata=metadata)
+    #adcc = ADCC()
+    #adcc.events.append_event(ad, name, metric_report, metadata=metadata)
     return
 
 def log_message(function=None, name=None, message_type=None):
@@ -1701,10 +1701,10 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
                         bg = np.mean(clipped_data)
                         bg_std = np.std(clipped_data)
                         nsamples = np.sum(~clipped_data.mask)
-            if value_only:
-                output_list.append(bg)
-            else:
-                output_list.append((bg, bg_std, nsamples))
+        if value_only:
+            output_list.append(bg)
+        else:
+            output_list.append((bg, bg_std, nsamples))
     return output_list
 
 def obsmode_add(ad):
