@@ -765,8 +765,6 @@ class QA(PrimitivesBASE):
         separate_ext = params["separate_ext"]
         remove_bias = params["remove_bias"]
 
-        mean_fwhms = []
-        mean_ellips = []
         frame = 1
         for ad in adinputs:
             # Check that the data is not an image with non-square binning
@@ -776,8 +774,6 @@ class QA(PrimitivesBASE):
                 if xbin != ybin:
                     log.warning("No IQ measurement possible, image {} is {} x "
                                 "{} binned data".format(ad.filename, xbin, ybin))
-                    mean_fwhms.append(None)
-                    mean_ellips.append(None)
                     continue
 
             # We may need to tile the image (and OBJCATs) so make an
@@ -855,17 +851,11 @@ class QA(PrimitivesBASE):
             else:
                 log.warning("{} is not IMAGE or SPECT; no IQ measurement "
                             "will be performed".format(ad.filename))
-                mean_fwhms.append(None)
-                mean_ellips.append(None)
                 continue
 
             # Check for no sources found: good_source is a list of Tables
             if all(len(t)==0 for t in good_source):
                 log.warning("No good sources found in {}".format(ad.filename))
-                if display:
-                    iq_overlays.append(None)
-                mean_fwhms.append(None)
-                mean_ellips.append(None)
                 continue
 
             # For AO observations, the AO-estimated seeing is used (the IQ
@@ -891,6 +881,8 @@ class QA(PrimitivesBASE):
 
             info_list = []
             iq_overlays = []
+            mean_fwhms = []
+            mean_ellips = []
             overlays_exist = False
             for src, extver in zip(good_source, adiq.hdr.EXTVER):
                 if len(src) == 0:
