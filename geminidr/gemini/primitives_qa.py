@@ -385,7 +385,7 @@ class QA(PrimitivesBASE):
             detzp_sigmas=[]
             total_sources=0
             qad = {}
-            if not np.any(hasattr(ext, 'OBJCAT') for ext in ad):
+            if not any(hasattr(ext, 'OBJCAT') for ext in ad):
                 log.warning("No OBJCAT found in {}".format(ad.filename))
                 continue
 
