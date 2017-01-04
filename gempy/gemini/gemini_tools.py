@@ -22,7 +22,8 @@ from astropy import stats
 from astropy.table import vstack, Table, Column
 from astropy.modeling import models, fitting
 from scipy.stats import norm
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, OptimizeWarning
+import warnings
 
 from copy import deepcopy
 from datetime import datetime
@@ -1411,8 +1412,8 @@ def send_fitsstore_report(qareport, calurl_dict):
     return
 
 def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
-    adcc = ADCC()
-    adcc.events.append_event(ad, name, metric_report, metadata=metadata)
+    #adcc = ADCC()
+    #adcc.events.append_event(ad, name, metric_report, metadata=metadata)
     return
 
 def log_message(function=None, name=None, message_type=None):
@@ -1617,8 +1618,11 @@ def measure_bg_from_image(ad, extver=None, sampling=10, value_only=False,
             bg = np.median(bg_data)
             bg_std = np.std(bg_data)
             # An ogive fit is more robust than a histogram fit
+            # We suppress a warning that the covariance cannot be estimated
             bg_data = np.sort(bg_data)
-            [bg, bg_std], _ = curve_fit(norm.cdf, bg_data,
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=OptimizeWarning)
+                [bg, bg_std], _ = curve_fit(norm.cdf, bg_data,
                         np.linspace(0,1,len(bg_data)+1)[1:], p0=[bg,bg_std])
             #binsize = bg_std * 0.1
             # Fit from -5 to +1 sigma
@@ -1701,10 +1705,10 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
                         bg = np.mean(clipped_data)
                         bg_std = np.std(clipped_data)
                         nsamples = np.sum(~clipped_data.mask)
-            if value_only:
-                output_list.append(bg)
-            else:
-                output_list.append((bg, bg_std, nsamples))
+        if value_only:
+            output_list.append(bg)
+        else:
+            output_list.append((bg, bg_std, nsamples))
     return output_list
 
 def obsmode_add(ad):
