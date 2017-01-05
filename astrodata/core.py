@@ -1,8 +1,10 @@
+from builtins import object
 from abc import ABCMeta, abstractmethod, abstractproperty
 from functools import wraps
 import inspect
 from collections import namedtuple
 from copy import deepcopy
+from future.utils import with_metaclass
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
@@ -167,12 +169,11 @@ def astro_data_tag(fn):
 class AstroDataError(Exception):
     pass
 
-class DataProvider(object):
+class DataProvider(with_metaclass(ABCMeta, object)):
     """
     Abstract class describing the minimal interface that `DataProvider` derivative
     classes need to implement.
     """
-    __metaclass__ = ABCMeta
 
     @property
     def is_sliced(self):

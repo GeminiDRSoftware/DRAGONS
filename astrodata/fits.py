@@ -1,10 +1,16 @@
-from types import StringTypes
+from __future__ import print_function
+
+from builtins import object
 from abc import abstractmethod
 from copy import deepcopy
 from collections import namedtuple, OrderedDict
 import os
 from functools import partial, wraps
-from itertools import izip_longest, ifilterfalse
+try:
+    # Python 3
+    from itertools import zip_longest
+except ImportError:
+    from itertools import izip_longest as zip_longest
 
 from .core import *
 
@@ -223,7 +229,7 @@ def header_for_table(table):
             data = col.data
             shape = data.shape
             if len(shape) > 1:
-                repeat = data.size / shape[0]
+                repeat = data.size // shape[0]
                 if len(shape) > 2:
                     descr['dim'] = shape[1:]
             if typedesc == 'L' and len(shape) > 1:
@@ -267,7 +273,7 @@ def update_header(headera, headerb):
     for key in ('HISTORY', 'COMMENT'):
         fltcardsa = card_filter(cardsa, include={key})
         fltcardsb = card_filter(cardsb, include={key})
-        for (ca, cb) in izip_longest(fltcardsa, fltcardsb):
+        for (ca, cb) in zip_longest(fltcardsa, fltcardsb):
             if cb is None:
                 headera.update((cb,))
 
@@ -277,7 +283,7 @@ def normalize_indices(slc, nitems):
     multiple = True
     if isinstance(slc, slice):
         start, stop, step = slc.indices(nitems)
-        indices = range(start, stop, step)
+        indices = list(range(start, stop, step))
     elif isinstance(slc, int):
         slc = (slc,)
         multiple = False
@@ -571,6 +577,16 @@ class FitsProvider(DataProvider):
                 'filename'
                 ])
             })
+
+    def __deepcopy__(self, memo):
+        nfp = FitsProvider()
+        to_copy = ('_sliced', '_single', '_header', '_nddata', '_hdulist',
+                   '_path', '_orig_filename', '_tables', '_exposed',
+                   '_resetting')
+        for attr in to_copy:
+            nfp.__dict__[attr] = deepcopy(self.__dict__[attr])
+
+        return nfp
 
     @force_load
     def _clone(self, mapping=None):
@@ -1197,6 +1213,43 @@ class FitsProvider(DataProvider):
         """
         return self._extver_impl()
 
+def fits_ext_comp_key(ext):
+    """
+    Returns a pair (integer, string) that will be used to sort extensions
+    """
+    if isinstance(ext, PrimaryHDU):
+        # This will guarantee that the primary HDU goes first
+        ret = (-1, "")
+    else:
+        header = ext.header
+        ver = header.get('EXTVER')
+
+        # When two extensions share version number, we'll use their names
+        # to sort them out. Choose a suitable key so that:
+        #
+        #  - SCI extensions come first
+        #  - unnamed extensions come last
+        #
+        # We'll resort to add 'z' in front of the usual name to force
+        # SCI to be the "smallest"
+        name = header.get('EXTNAME') # Make sure that the name is a string
+        if name is None:
+            name = "zzzz"
+        elif name != 'SCI':
+            name = "z" + name
+
+        if ver in (-1, None):
+            # In practice, this number should be larger than any
+            # EXTVER found in real life HDUs, pushing unnumbered
+            # HDUs to the end
+            ret = (2**32-1, name)
+        else:
+            # For the general case, just return version and name, to let them
+            # be sorted naturally
+            ret = (ver, name)
+
+    return ret
+
 class FitsLoader(object):
     @staticmethod
     def provider_for_hdulist(hdulist):
@@ -1237,40 +1290,7 @@ class FitsLoader(object):
             new_list.append(unit)
             recognized.add(unit)
 
-        def comp(a, b):
-            ha, hb = a.header, b.header
-            hav, hbv = ha.get('EXTVER'), hb.get('EXTVER')
-            # A PrimaryHDU is always sorted first
-            if isinstance(a, PrimaryHDU):
-                return -1
-            elif isinstance(b, PrimaryHDU):
-                return 1
-            elif hav not in (-1, None):
-                # If both headers have EXTVER, compare based on EXTVER.
-                # Else, b is a not a pixel image, push it to the end
-                if hbv not in (-1, None):
-                    ret = cmp(ha['EXTVER'], hb['EXTVER'])
-                    # Break ties depending on EXTNAME. SCI goes first
-                    if ret == 0:
-                        if hav == 'SCI':
-                            return -1
-                        elif hbv == 'SCI':
-                            return 1
-                        else:
-                            return 0
-                    else:
-                        return ret
-                else:
-                    return -1
-            elif hbv not in (-1, None):
-                # If b is the only one with EXTVER, push a to the end
-                return 1
-            else:
-                # If none of them are PrimaryHDU, nor have an EXTVER
-                # we don't care about the order
-                return 0
-
-        return HDUList(sorted(new_list, cmp=comp))
+        return HDUList(sorted(new_list, key=fits_ext_comp_key))
 
     @staticmethod
     def from_path(path):

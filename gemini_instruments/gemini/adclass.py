@@ -1701,7 +1701,8 @@ class AstroDataGemini(AstroDataFits):
         """
         ctrl_wave = self.effective_wavelength(output_units='micrometers')
 
-        def wavelength_diff((_, l)):
+        def wavelength_diff(pair):
+            _, l = pair
             return abs(l - ctrl_wave)
         band = min(wavelength_band.items(), key=wavelength_diff)[0]
 
