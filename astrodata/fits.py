@@ -645,6 +645,14 @@ class FitsProvider(DataProvider):
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
 
+    def _append_nddata(self, n, new_nddata):
+        self.header.append(new_nddata.meta['header'])
+        self._nddata.append(new_nddata)
+
+    def _set_nddata(self, n, new_nddata):
+        self.header[n] = new_nddata.meta['header']
+        self._nddata[n] = new_nddata
+
     @force_load
     def _oper(self, operator, operand, indices=None):
         if indices is None:
@@ -654,17 +662,17 @@ class FitsProvider(DataProvider):
                 raise ValueError("Operands are not the same size")
             for n in indices:
                 try:
-                    self._nddata[n] = operator(self._nddata[n], operand.nddata[n])
+                    self._set_nddata(n, operator(self._nddata[n], operand.nddata[n]))
                 except TypeError:
                     # This may happen if operand is a sliced, single AstroData object
-                    self._nddata[n] = operator(self._nddata[n], operand.nddata)
+                    self._set_nddata(n, operator(self._nddata[n], operand.nddata))
             op_table = operand.table()
             ltab, rtab = set(self._tables), set(op_table)
             for tab in (rtab - ltab):
                 self._tables[tab] = op_table[tab]
         else:
             for n in indices:
-                self._nddata[n] = operator(self._nddata[n], operand)
+                self._set_nddata(n, operator(self._nddata[n], operand))
 
     def _standard_nddata_op(self, fn, operand, indices=None):
         return self._oper(partial(fn, handle_mask=np.bitwise_or, handle_meta='first_found'),
@@ -1119,8 +1127,7 @@ class FitsProvider(DataProvider):
         top = add_to is None
         if isinstance(ext, NDDataObject):
             ext = deepcopy(ext)
-            self._header.append(ext.meta['header'])
-            self._nddata.append(self._process_pixel_plane(ext, top_level=True, reset_ver=reset_ver))
+            self._append_nddata(self._process_pixel_plane(ext, top_level=True, reset_ver=reset_ver))
             return ext
         else:
             add_to_other = None
