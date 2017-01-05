@@ -645,12 +645,12 @@ class FitsProvider(DataProvider):
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
 
-    def _append_nddata(self, n, new_nddata):
+    def _append_nddata(self, new_nddata):
         self.header.append(new_nddata.meta['header'])
         self._nddata.append(new_nddata)
 
     def _set_nddata(self, n, new_nddata):
-        self.header[n] = new_nddata.meta['header']
+        self.header[n+1] = new_nddata.meta['header']
         self._nddata[n] = new_nddata
 
     @force_load
