@@ -124,8 +124,6 @@ class Visualize(PrimitivesBASE):
             if any(len(ad)>1 for ad in p.adinputs):
                 log.fullinfo("Tiling extensions together before displaying")
                 p.tileArrays()
-        else:
-            p.adinputs = [ext for ad in p.adinputs for ext in ad]
 
         frame = params['frame'] if params['frame'] else 1
         lnd = _localNumDisplay()

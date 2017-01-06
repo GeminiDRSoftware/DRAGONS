@@ -2,7 +2,6 @@ import re
 import subprocess
 from astropy.io import fits
 from collections import deque
-from copy import deepcopy
 
 import numpy as np
 
@@ -107,8 +106,7 @@ class SExtractorETI(ETI):
             except TypeError:
                 ad.OBJCAT, objmask = objdata[i]
                 if self._getmask:
-                    ad.OBJMASK = np.where(fits.open(objmask)[0].data>0,
-                                          1, 0).astype(np.int16)
+                    ad.OBJMASK = fits.open(objmask)[0].data
         self.clean()
         return self.inputs
 
@@ -133,7 +131,7 @@ class SExtractorETI(ETI):
         for file_obj in self.file_objs:
             files = ['-CATALOG_NAME', file_obj._catalog_file]
             if self._getmask:
-                files.extend(['-CHECKIMAGE_TYPE', 'OBJECTS',
+                files.extend(['-CHECKIMAGE_TYPE', 'SEGMENTATION',
                               '-CHECKIMAGE_NAME', file_obj._objmask_file])
             if file_obj._dq_image is not None:
                 files.extend(['-FLAG_IMAGE', file_obj._dq_image])

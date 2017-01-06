@@ -1,4 +1,5 @@
-from types import StringTypes
+from builtins import object
+from future.builtins import str
 
 from .fits import FitsLoader
 from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
@@ -50,8 +51,7 @@ class AstroDataFactory(object):
         for the HDUList, among the registered AstroData classes.
         """
 
-        # NOTE: This is not Python3 ready, but don't worry about it now...
-        if isinstance(source, StringTypes):
+        if isinstance(source, (str, bytes)):
             return self._getAstroData(FitsLoader.from_path(source))
         else:
             # NOTE: This should be tested against the appropriate class.
