@@ -36,7 +36,7 @@ from ..utils import logutils
 import astrodata
 from astrodata import __version__ as ad_version
 
-from recipe_system.adcc.adcclib import ADCC
+from recipe_system.adcc.servers.eventsManager import EventsManager
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -1411,8 +1411,56 @@ def send_fitsstore_report(qareport, calurl_dict):
     return
 
 def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
-    adcc = ADCC()
-    adcc.events.append_event(ad, name, metric_report, metadata=metadata)
+    report_type = "metric_report"
+    URL = "http://localhost:8777/{}/".format(report_type)
+    evman = EventsManager()
+    evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)
+    event_pkt = evman.event_list.pop()
+    postdata = json.dumps(event_pkt)
+    try:
+        post_request= urllib2.Request(URL)
+        postr = urllib2.urlopen(post_request, postdata)
+    except urllib2.HTTPError as err:
+        sys.exit(str(err))
+
+    postr.read()
+    postr.close()
+    return
+
+def status_report(status):
+    """
+    Parameters
+    ----------
+        status: <dict>
+                A status report of type <dict>
+
+    A status parameter is of the form,
+
+        status = {"adinput": ad, "current": "Running", "logfile": log}
+
+    The key, 'current' may be any string, but will usually be one of
+    Running, ERROR, or Finished. ERROR messages will be accompanied by
+    a non-zero exit code, like,
+
+        status = {"adinput": ad, "current": ".ERROR: 23", "logfile": log}
+
+    """
+    report_type="status_report"
+    URL = "http://localhost:8777/{}/".format(report_type)
+    ad = status['adinput']
+    mdict = {"current": status['current'],"logfile": status['logfile']}
+    evman = EventsManager()
+    evman.append_event(ad=ad, name='status', mdict=mdict, msgtype='reduce_status')
+    event_pkt = evman.event_list.pop()
+    postdata = json.dumps(event_pkt)
+    try:
+        post_request= urllib2.Request(URL)
+        postr = urllib2.urlopen(post_request, postdata)
+    except urllib2.HTTPError as err:
+        sys.exit(str(err))
+
+    postr.read()
+    postr.close()
     return
 
 def log_message(function=None, name=None, message_type=None):

@@ -1,8 +1,10 @@
 #
 #                                                                     QAP Gemini
 #
-#                                                              eventsManager.py
+#                                                               eventsManager.py
 # ------------------------------------------------------------------------------
+from builtins import range
+from builtins import object
 __version__ = 'eventsManager, v(new hope)'
 # ------------------------------------------------------------------------------
 import json
@@ -12,10 +14,7 @@ import re
 from astrodata import AstroData
 
 # ------------------------------------------------------------------------------
-class EventsManager:
-    # reject reloading events older, in secs (cur 7 days)
-    lose_duration = float(24*60*60)*7
-
+class EventsManager(object):
     def __init__(self):
         self.event_list = []
         self.event_index = {}
@@ -64,10 +63,10 @@ class EventsManager:
 
         mtd_dict = {
             "raw_filename": ad.filename,
-            "types": ad.tags,
+            "types": list(ad.tags),
         }
 
-        for mtd_name, desc_name in descriptor_dict.items():
+        for mtd_name, desc_name in list(descriptor_dict.items()):
             try:
                 descriptor = getattr(ad, desc_name)
             except AttributeError:
@@ -99,7 +98,7 @@ class EventsManager:
         }
 
         if isinstance(ad, AstroData):
-            if metadata != None:
+            if metadata is not None:
                 md = metadata
             else:
                 md = self.get_metadict(ad)
