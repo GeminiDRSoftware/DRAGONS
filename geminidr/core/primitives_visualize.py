@@ -204,7 +204,7 @@ class Visualize(PrimitivesBASE):
                 log.stdinfo("Twilight flat counts for {}:".format(ad.filename))
                 log.stdinfo("    Mean value:   {:.0f}".format(mean))
                 log.stdinfo("    Median value: {:.0f}".format(median))
-        return
+        return adinputs
 
     def mosaicDetectors(self, adinputs=None, **params):
         return adinputs
