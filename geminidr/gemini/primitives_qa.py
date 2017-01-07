@@ -813,7 +813,7 @@ def _bg_report(ad, bg_count, bunit, bg_mag, qastatus):
             body.append(('WARNING: {}'.format(qastatus.warning), ''))
             comments.append(qastatus.warning)
     else:
-        body.append('(Requested BG could not be determined)', '')
+        body.append(('(Requested BG could not be determined)', ''))
 
     _qa_report([headstr], body, 23, 24)
     return comments
