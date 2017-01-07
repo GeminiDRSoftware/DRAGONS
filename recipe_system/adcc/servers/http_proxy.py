@@ -1,18 +1,25 @@
+from __future__ import division
+from __future__ import print_function
 #
 #                                                                     QAP Gemini
 #
 #                                                                  http_proxy.py
 # ------------------------------------------------------------------------------
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from past.utils import old_div
 import os
+import sys
 import json
 import time
 import select
-import urllib2
-import urlparse
+import urllib.request, urllib.error, urllib.parse
+import urllib.parse
 import datetime
 
-from SocketServer import ThreadingMixIn
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from recipe_system.cal_service import calurl_dict
 # ------------------------------------------------------------------------------
@@ -25,10 +32,10 @@ def parsepath(path):
 
     """
     rparms = {}
-    parsed_url = urlparse.urlparse(path)
+    parsed_url = urllib.parse.urlparse(path)
     rparms.update({"path": parsed_url.path})
     rparms.update({"query": parsed_url.query})
-    rparms.update(urlparse.parse_qs(parsed_url.query))
+    rparms.update(urllib.parse.parse_qs(parsed_url.query))
     return rparms
 
 # ------------------------------------------------------------------------------
@@ -49,11 +56,11 @@ def server_time():
 
     if utc_offset.days != 0:
         utc_offset = -utc_offset
-        utc_offset = -int(round(utc_offset.seconds/3600.))
+        utc_offset = -int(round(old_div(utc_offset.seconds,3600.)))
     else:
-        utc_offset = int(round(utc_offset.seconds/3600.))
-        
-    timezone = time.timezone / 3600
+        utc_offset = int(round(old_div(utc_offset.seconds,3600.)))
+
+    timezone = old_div(time.timezone, 3600)
     if timezone == 10:
         local_site = 'gemini-north'
     elif timezone in [3, 4]:   # TZ -4 but +1hr DST applied inconsistently
@@ -68,7 +75,6 @@ def server_time():
                  "utc_offset": utc_offset}
     return time_dict
 
-
 def stamp_to_ymd(timestamp):
     """
     Caller sends a timestamp in seconds of epoch. Return string for
@@ -82,11 +88,13 @@ def stamp_to_ymd(timestamp):
     return time.strftime("%Y%m%d", time.localtime(timestamp))
 
 def stamp_to_opday(timestamp):
-    """Converts a passed time stamp (sec) into the corresponding operational
+    """
+    Converts a passed time stamp (sec) into the corresponding operational
     day. I.e. timestamps >= 14.00h are the next operational day.
 
     parameters: <float>, time in epoch seconds
     return:     <string>, YYYYMMDD
+
     """
     dt_object = datetime.datetime.fromtimestamp(timestamp)
     if dt_object.hour >= 14:
@@ -150,27 +158,23 @@ def fstore_get(timestamp):
     fitsstore_qa = calurl_dict.calurl_dict['QAQUERYURL']
     if not timestamp:
         furl         = os.path.join(fitsstore_qa)
-        store_handle = urllib2.urlopen(furl)
+        store_handle = urllib.request.urlopen(furl)
         qa_data      = json.loads(store_handle.read())   
     else:
         date_query    = stamp_to_opday(timestamp)
         furl          = os.path.join(fitsstore_qa, date_query)
-        store_handle  = urllib2.urlopen(furl)
+        store_handle  = urllib.request.urlopen(furl)
         qa_data       = json.loads(store_handle.read())
     return qa_data
 
 # ------------------------------------------------------------------------------
-webserverdone = False
-# ------------------------------------------------------------------------------
 class ADCCHandler(BaseHTTPRequestHandler):
-    """ADCC services request handler.
     """
+    ADCC services request handler.
+
+    """
+    events = None
     informers  = None
-    dataSpider = None
-    dirdict    = None
-    state      = None
-    counter    = 0
-    stamp_register = []
 
     def address_string(self):
         host, port = self.client_address[:2]
@@ -181,31 +185,30 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
         This is called by send_response().
 
-        This is an override of BaseHTTPRequestHandler.log_request method.
+        This overrides BaseHTTPRequestHandler.log_request.
         See that class for what the method does normally.
+
         """
         try:
-            assert (self.informers["verbose"])
-            self.log_message('"%s" %s %s', self.requestline, 
-                             str(code), str(size))
+            assert self.informers["verbose"]
+            self.log_message("{} {} {}".format(self.requestline, code, size))
         except AssertionError:
             if "cmdqueue.json" in self.requestline:
                 pass
             else:
-                self.log_message('"%s" %s %s', self.requestline, 
-                                 str(code), str(size))
+                self.log_message("{} {} {}".format(self.requestline, code, size))
         return
 
     def do_GET(self):
-        """Defined ADCC services on GET requests."""
-        global webserverdone
-        rim = self.informers["eventmanager"]
-        parms = parsepath(self.path)
-        self.informers["verbose"] = True
+        """
+        Defined services on HTTP GET requests.
 
+        """
+        events = self.informers["events"]
+        self.informers["verbose"] = True
+        parms = parsepath(self.path)
         try:
-            # First test for an html request on the QAP nighttime_metrics 
-            # page. 
+            # First test for an html request on the QAP nighttime_metrics page.
             # I.e.  <localhost>:<port>/qap/nighttime_metrics.html
             if self.path.startswith("/qap"):
                 if ".." in self.path:
@@ -223,9 +226,8 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 #append any further directory info.
                 joinlist.append(self.path[5:])
                 fname = os.path.join(*joinlist)
-                self.log_message('"%s" %s %s', "Loading " + \
-                                 joinlist[1] + os.path.basename(fname), 
-                                 203, '-')
+                self.log_message('{} {} {}'.format("Loading "+joinlist[1]+
+                                            os.path.basename(fname), 203, '-'))
                 try:
                     f = open(fname, "r")
                     data = f.read()
@@ -251,7 +253,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
             # The vast majority of HTTP client GET requests will be on the 
             # cmdqueue service. Handle first.
             if parms["path"].startswith("/cmdqueue.json"):
-                self._handle_cmdqueue_json(rim, parms)
+                self._handle_cmdqueue_json(events, parms)
 
             # ------------------------------------------------------------------
             # Server time
@@ -269,10 +271,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-type', "application/json")
                 self.end_headers()
-                
                 if "file" in parms:
                     logfile = parms["file"][0]
-                    print logfile
+                    print(logfile)
                     if not os.path.exists(logfile):
                         msg = "Log file not available"
                     else:
@@ -285,59 +286,44 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 tdic = {"log":msg}
 
                 self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
-
-            # ------------------------------------------------------------------
-            elif parms["path"] == "/":
-                page = """
-                <html>
-                <head>
-                </head>
-                <body>
-                <h4>prsproxy engineering interface</h4>
-                <ul>
-                <li><a href="/engineering">Engeering Interface</a></li>
-                <li><a href="qap/engineering.html">Engeering AJAX App</a></li>
-                <li><a href="datadir.xml">Data Directory View</a></li>
-                <li><a href="killprs">Kill this server</a> (%(numinsts)d """ +\
-                    """copies of reduce registered)</li>
-                </ul>
-                <body>
-                </html>"""
-                self.send_response(200)
-                self.send_header("content-type", "text-html")
-                self.end_headers()
-                self.wfile.write(page % {"numinsts":rim.numinsts})
- 
-            # ------------------------------------------------------------------
-            elif self.path.startswith("/engineering"):
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                
-                if "rim" in ADCCHandler.informers:
-                    rim = ADCCHandler.informers["rim"]
-                    evman = rim.events_manager
-                    import pprint
-                    data = "<u>Events</u><br/><pre>"
-                    data += "num events: %d\n" % len(evman.event_list)
-                    for mevent in evman.event_list:
-                        data += pprint.pformat(mevent)
-                        data += "\n------------------------------\n"
-                    data += "</pre>"
-                    self.wfile.write(data)
         except IOError:
-            print "Caught IOError"
             self.send_error(404,'File Not Found: %s' % self.path)
             raise
         return
 
+    def do_POST(self):
+        info_code = 203
+        size = "-"
+        events = self.informers["events"]
+        parms  = parsepath(self.path)
+        vlen   = int(self.headers["Content-Length"])
+        pdict  = self.rfile.read(vlen)
+        if parms["path"].startswith("/metric_report"):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
 
+            qametric = json.loads(pdict)
+            events.append_event(qametric)
+            self.log_message('"%s" %s %s', "Appended event", info_code, size)
+            self.log_message('"%s" %s %s', repr(qametric), info_code, size)
+
+        elif parms["path"].startswith("/status_report"):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+
+            statusr = json.loads(pdict)
+            events.append_event(statusr)
+
+        return
     # -------------------------------------------------------------------------
     # privitized handling cmdqueue.json requests
     
-    def _handle_cmdqueue_json(self, rim, parms):
+    def _handle_cmdqueue_json(self, events, parms):
         """Handle HTTP client GET requests on service: cmdqueue.json
         """
+        reqmsg = "Requesting current OP day events "
         msg_form  = '"%s" %s %s'
         info_code = 203
         fail_code = 416
@@ -360,74 +346,54 @@ class ADCCHandler(BaseHTTPRequestHandler):
         # event_list = [] implies a new adcc. Request current op day 
         # metrics from fitsstore.
 
-        if not rim.events_manager.event_list:
-            self.log_message(msg_form, "No extant RIM events.",
-                             info_code, size)
-            self.log_message(msg_form, 
-                             "Requesting current OP day events @FITS store",
-                             info_code, size)
+        if not events.event_list:
+            self.log_message(msg_form, "No extant events.", info_code, size)
+            self.log_message(msg_form, reqmsg+"@fitsstore", info_code, size)
 
-            rim.events_manager.event_list = fstore_get(current_op_timestamp())
-
-            self.log_message(msg_form, "Received " + 
-                             str(len(rim.events_manager.event_list)) + 
-                             " events.", info_code, size)
-            self.log_message(msg_form, "On QA metrics request: " +
-                             stamp_to_opday(current_op_timestamp()),
+            events.event_list = fstore_get(current_op_timestamp())
+            self.log_message(msg_form,"Received "+str(len(events.event_list))+" events.",
                              info_code, size)
 
-            tdic = rim.events_manager.get_list()
-
-            tdic.insert(0, {"msgtype"  : "cmdqueue.request",
-                            "timestamp": time.time()})
-            tdic.append({"msgtype"  : "cmdqueue.request",
-                         "timestamp": time.time()})
-
+            tdic = events.get_list()
+            tdic.insert(0, {"msgtype": "cmdqueue.request","timestamp": time.time()})
+            tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
             self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
 
         # Handle current nighttime requests ...
         elif stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
             if verbosity:
-                self.log_message(msg_form, "Request metrics on current OP day: "+
-                                 stamp_to_opday(fromtime), 
-                                 info_code, size)
+                self.log_message(msg_form, reqmsg+stamp_to_opday(fromtime),info_code,size)
 
-            tdic = rim.events_manager.get_list(fromtime=fromtime)
-            tdic.insert(0, {"msgtype"  : "cmdqueue.request",
-                            "timestamp": time.time()})
+            # self.log_message(msg_form, "Events from extant events", info_code, size)
+            # self.log_message(msg_form, "Last event:", info_code, size)
+            # self.log_message(msg_form, repr(events.event_list.pop()), info_code, size)
 
+            tdic = events.get_list(fromtime=fromtime)
+            tdic.insert(0, {"msgtype":"cmdqueue.request","timestamp": time.time()})
             self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
-
         # Handle previous day requests
         elif fromtime < current_op_timestamp():
             if verbosity:
-                self.log_message(msg_form, 
-                                 "Requested metrics on ... " +
+                self.log_message(msg_form, "Requested metrics on ... " +
                                  stamp_to_opday(fromtime), info_code, size)
                                 
             tdic = fstore_get(fromtime)
-
             if verbosity:
-                self.log_message(msg_form, "Received " + str(len(tdic)) + 
-                                 " events from fitsstore.", info_code, size)
+                self.log_message(msg_form, "Received " + str(len(tdic)) +
+                                    " events from fitsstore.", info_code, size)
             
             # Append the last timestamp from the event_list. This is done
             # to trigger the client to pinging the adcc from the last 
             # recorded event.
-
-            tdic.insert(0, {"msgtype"  : "cmdqueue.request",
-                            "timestamp": time.time()})
-            tdic.append({"msgtype"  : "cmdqueue.request",
-                         "timestamp": time.time()})
-
+            tdic.insert(0, {"msgtype": "cmdqueue.request", "timestamp": time.time()})
+            tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
             self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
 
         # Cannot handle the future ...
         else:
-            self.log_message(msg_form, "Invalid timestamp received.", 
-                             fail_code, size)
-            self.log_message(msg_form, "Future events not known.",
-                             fail_code, size)
+            self.log_message(msg_form, "Invalid timestamp received.",fail_code, size)
+            self.log_message(msg_form, "Future events not known.", fail_code, size)
+
         return
             
 
@@ -436,33 +402,29 @@ class MTHTTPServer(ThreadingMixIn, HTTPServer):
     """Handles requests using threads"""
 
 
-def startInterfaceServer(port=8777, **informers):
+def startInterfaceServer(*args, **informers):
     import socket
-    try:
-        # important to set prior to any instantiations of ADCCHandler
-        ADCCHandler.informers = informers
-        # e.g. below by the HTTPServer class
-        findingPort = True
-        while findingPort:
-            try:
-                print "Starting HTTP server on port %s ... " % str(port)
-                server = MTHTTPServer(('', port), ADCCHandler)
-                findingPort = False
-            except socket.error:
-                print "failed, port taken"
-                port += 1
-                
-        print "Started  HTTP server on port %s" % str(port)
-        while True:
-            r, w, x = select.select([server.socket], [], [], .5)
-            if r:
-                server.handle_request()
+    run_event = args[0]
+    port = informers['port']
+    ADCCHandler.informers = informers
+    findingPort = True
+    while findingPort:
+        try:
+            print("Starting HTTP server on port %s ... " % str(port))
+            server = MTHTTPServer(('', port), ADCCHandler)
+            findingPort = False
+        except socket.error:
+            print("failed, port taken")
+            port += 1
 
-            if webserverdone == True:
-                print "shutting down HTTP interface"
-                break
-    except KeyboardInterrupt:
-        print '^C received, shutting down server'
-        server.socket.close()
+    print("Started  HTTP server on port %s" % str(port))
+    while run_event.is_set():
+        r, w, x = select.select([server.socket], [], [], .5)
+        if r:
+            server.handle_request()
+
+    print("http_proxy: recieved signal 'clear'. Shutting down proxy server ...")
+    server.socket.close()
+    return
 
 main = startInterfaceServer

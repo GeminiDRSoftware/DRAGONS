@@ -9,6 +9,8 @@ __version__ = 'beta (new hope)'
 Automated Dataflow Coordination Center
 
 """
+import sys
+
 from argparse import ArgumentParser
 from recipe_system.adcc.adcclib import ADCC
 # ------------------------------------------------------------------------------

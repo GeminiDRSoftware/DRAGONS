@@ -37,7 +37,7 @@ from ..utils import logutils
 import astrodata
 from astrodata import __version__ as ad_version
 
-from recipe_system.adcc.adcclib import ADCC
+from recipe_system.adcc.servers.eventsManager import EventsManager
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -1412,8 +1412,56 @@ def send_fitsstore_report(qareport, calurl_dict):
     return
 
 def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
-    adcc = ADCC()
-    adcc.events.append_event(ad, name, metric_report, metadata=metadata)
+    report_type = "metric_report"
+    URL = "http://localhost:8777/{}/".format(report_type)
+    evman = EventsManager()
+    evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)
+    event_pkt = evman.event_list.pop()
+    postdata = json.dumps(event_pkt)
+    try:
+        post_request= urllib2.Request(URL)
+        postr = urllib2.urlopen(post_request, postdata)
+    except urllib2.HTTPError as err:
+        sys.exit(str(err))
+
+    postr.read()
+    postr.close()
+    return
+
+def status_report(status):
+    """
+    Parameters
+    ----------
+        status: <dict>
+                A status report of type <dict>
+
+    A status parameter is of the form,
+
+        status = {"adinput": ad, "current": "Running", "logfile": log}
+
+    The key, 'current' may be any string, but will usually be one of
+    Running, ERROR, or Finished. ERROR messages will be accompanied by
+    a non-zero exit code, like,
+
+        status = {"adinput": ad, "current": ".ERROR: 23", "logfile": log}
+
+    """
+    report_type="status_report"
+    URL = "http://localhost:8777/{}/".format(report_type)
+    ad = status['adinput']
+    mdict = {"current": status['current'],"logfile": status['logfile']}
+    evman = EventsManager()
+    evman.append_event(ad=ad, name='status', mdict=mdict, msgtype='reduce_status')
+    event_pkt = evman.event_list.pop()
+    postdata = json.dumps(event_pkt)
+    try:
+        post_request= urllib2.Request(URL)
+        postr = urllib2.urlopen(post_request, postdata)
+    except urllib2.HTTPError as err:
+        sys.exit(str(err))
+
+    postr.read()
+    postr.close()
     return
 
 def log_message(function=None, name=None, message_type=None):
@@ -1572,7 +1620,8 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     return
 
 
-def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
+def measure_bg_from_image(ad, extver=None, sampling=10, value_only=False,
+                          gaussfit=True):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1583,6 +1632,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
     ----------
     ad: AstroData
         input image (NOT a list)
+    extver: int/None
+        if not None, use only this extension
     sampling: int
         1-in-n sampling factor
     value_only: bool
@@ -1596,8 +1647,12 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         if use_extver is set, returns a bg value or (bg, std) tuple; otherwise
         returns a list of such things
     """
-    single_slice = ad._single and ad._sliced
-    input_list = [ad] if single_slice else [ext for ext in ad]
+
+    try:
+        input_list = [ad.extver(extver)] if extver else [ext for ext in ad]
+    except IndexError:
+        # Invalid value of extver
+        return None if value_only else (None, None)
 
     output_list = []
     for ext in input_list:
@@ -1633,7 +1688,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
             #bg, bg_std = g.mean.value, abs(g.stddev.value)
         else:
             # Sigma-clipping will screw up the stats of course!
-            clipped_data = stats.sigma_clip(bg_data, sigma=3.0, iters=1)
+            clipped_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
             clipped_data = clipped_data.data[~clipped_data.mask]
             bg = np.median(clipped_data)
             bg_std = np.std(clipped_data)
@@ -1641,9 +1696,9 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         if value_only:
             output_list.append(bg)
         else:
-            output_list.append([bg, bg_std, len(bg_data)])
+            output_list.append((bg, bg_std))
 
-    if single_slice:
+    if extver:
         # We've created a single-element list, so return the value
         return output_list[0]
     else:
