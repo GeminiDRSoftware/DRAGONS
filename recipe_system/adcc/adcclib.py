@@ -56,6 +56,7 @@ class ADCC(object):
             pass
         else:
             self.clfn      = args.adccsrn
+            self.dark      = args.dark
             self.events    = eventsManager.EventsManager()
             self.http_port = args.httpport
             self.sreport   = args.adccsrn
@@ -64,11 +65,11 @@ class ADCC(object):
             self.web       = None
 
     def _http_interface(self, run_event):
-      # establish HTTP server and proxy.
+        # establish HTTP server and proxy.
         self.web = Thread(group=None, target=http_proxy.main, name="webface",
                           args=(run_event,),
-                          kwargs={"port": self.http_port, 'events': self.events,
-                                  "verbose": self.verbose})
+                          kwargs={'port': self.http_port, 'dark': self.dark,
+                                  'events': self.events, 'verbose': self.verbose})
         return
 
     def _handle_locks(self):
@@ -111,11 +112,13 @@ class ADCC(object):
         self.web.start()
         try:
             while True:
-                time.sleep(.1)
+                time.sleep(.01)
         except KeyboardInterrupt:
             print("\nadcc: exiting due to Ctrl-C")
             run_event.clear()
             self.web.join()
-            #if os.path.exists(self.racefile):
-                #os.remove(self.racefile)
+
+        if os.path.exists(self.racefile):
+            os.remove(self.racefile)
+
         return
