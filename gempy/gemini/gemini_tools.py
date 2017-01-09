@@ -1377,12 +1377,10 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
             except:
                 qametric["detector"] = None
 
-            # This is hard coded for now, as there does not seem
-            # to be a way to look it up easily
-            if metric == 'zp':
-                info.update({"photref": "SDSS8"})
-            elif metric == 'pe':
-                info.update({"astref": "SDSS8"})
+            # Extract catalog name from the table header comment
+            if metric in ('zp', 'pe'):
+                catalog = ad.REFCAT.meta['header'].get('CATALOG', 'SDSS8')
+                info.update({"photref" if metric=='zp' else "astref": catalog})
             qametric.update({metric: info})
             qametric_list.append(qametric)
 
