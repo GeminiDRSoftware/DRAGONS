@@ -3,26 +3,19 @@
 #
 #                                                           primitives_nearIR.py
 # ------------------------------------------------------------------------------
-import os
 import numpy as np
 from astropy.stats import sigma_clip
 
 import astrodata
 import gemini_instruments
-
 from gempy.gemini import gemini_tools as gt
 
 from recipe_system.utils.decorators import parameter_override
-
 from geminidr.core.parameters_nearIR import ParametersNearIR
 
 from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
 
-# - makeLampOffFlat
-# - makeLampOnLampOffFlat
-# - thermalEmissionCorrect
-# (kra 09-12-16)
 @parameter_override
 class NearIR(PrimitivesBASE):
     tagset = None

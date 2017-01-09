@@ -3,7 +3,6 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
-import os
 import math
 import datetime
 import numpy as np
