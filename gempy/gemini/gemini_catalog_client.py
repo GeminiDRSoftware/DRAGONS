@@ -233,6 +233,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
                              dtype='f4', unit='mag', format='8.4f'))
 
     header = add_header_to_table(ret_table)
+    header['CATALOG'] = (catalog.upper(), 'Origin of source catalog')
     # Add comments to the header to describe it
     header.add_comment('Source catalog derived from the {} catalog'.
                        format(catalog))

@@ -16,7 +16,6 @@ from geminidr.core.parameters_register import ParametersRegister
 from gempy.utils import logutils
 
 from recipe_system.utils.decorators import parameter_override
-log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 @parameter_override
 class Register(PrimitivesBASE):
@@ -486,6 +485,7 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, min_sources=1,
     :type cull_sources: bool
     """
     # If desired, select only the most star-like sources in the OBJCAT
+    log = logutils.get_logger(__name__)
     if cull_sources:
         good_src1 = gt.clip_sources(ad1)[0]
         good_src2 = gt.clip_sources(ad2)[0]
@@ -547,6 +547,7 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
     :type cull_sources: bool
     """
     # If desired, select only the most star-like sources in the OBJCAT
+    log = logutils.get_logger(__name__)
     if cull_sources:
         good_src1 = gt.clip_sources(ad1)[0]
         good_src2 = gt.clip_sources(ad2)[0]
@@ -639,6 +640,7 @@ def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
                   WCS. The same scale factor is applied to all dimensions.
     :type scale: bool
     """
+    log = logutils.get_logger(__name__)
     if len(objIns) != len(adinput):
         raise IOError("Argument objIns should have the same number of "
                       "elements as adinput")
@@ -721,13 +723,12 @@ def _header_align(ref_ad, adinput, keyword_comments):
     :type adinput: AstroData objects, either a single instance or a list
     """
     # get starting offsets from reference image (first one given)
+    log = logutils.get_logger(__name__)
     ref_pixscale = ref_ad.pixel_scale()
     ref_poff = ref_ad.phu.POFFSET/ref_pixscale
     ref_qoff = ref_ad.phu.QOFFSET/ref_pixscale
     ref_pa = ref_ad.phu_get_key_value("PA")
     ref_theta = math.radians(ref_pa)
-    ref_xoff = (ref_poff * math.cos(ref_theta)) - (ref_qoff * math.sin(ref_theta))
-    ref_yoff =  (ref_poff * math.sin(ref_theta)) + (ref_qoff * math.cos(ref_theta))                 
     log.fullinfo("Pixel scale: {:.4}".format(ref_pixscale))
 
     # Reference position is the center of the reference frame
