@@ -1411,7 +1411,35 @@ def send_fitsstore_report(qareport, calurl_dict):
     f.close()
     return
 
+def ping_adcc():
+    """
+    Check that there is an adcc running by requesting its site information.
+
+    Returns
+    -------
+        <bool>: an adcc is running, True/False
+
+    """
+    upp = False
+    site = None
+    url = "http://localhost:8777/rqsite.json"
+    try:
+        request = urllib2.Request(url)
+        adcc_file = urllib2.urlopen(request)
+        site = adcc_file.read()
+        adcc_file.close()
+    except (urllib2.HTTPError, urllib2.URLError):
+        pass
+
+    if site:
+        upp = True
+
+    return upp
+
 def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
+    if not ping_adcc():
+        return
+
     report_type = "metric_report"
     URL = "http://localhost:8777/{}/".format(report_type)
     evman = EventsManager()
@@ -1437,11 +1465,11 @@ def status_report(status):
 
     A status parameter is of the form,
 
-        status = {"adinput": ad, "current": "Running", "logfile": log}
+        status = {"adinput": ad, "current": <str>, "logfile": log}
 
-    The key, 'current' may be any string, but will usually be one of
-    Running, ERROR, or Finished. ERROR messages will be accompanied by
-    a non-zero exit code, like,
+    The key, 'current' may be any string, but usually will be one of
+    'Running', '.ERROR:', 'Finished', or a primitive function name.
+    ERROR messages should be accompanied by a non-zero exit code, like,
 
         status = {"adinput": ad, "current": ".ERROR: 23", "logfile": log}
 
@@ -1449,7 +1477,7 @@ def status_report(status):
     report_type="status_report"
     URL = "http://localhost:8777/{}/".format(report_type)
     ad = status['adinput']
-    mdict = {"current": status['current'],"logfile": status['logfile']}
+    mdict = {"current": status['current'], "logfile": status['logfile']}
     evman = EventsManager()
     evman.append_event(ad=ad, name='status', mdict=mdict, msgtype='reduce_status')
     event_pkt = evman.event_list.pop()
