@@ -206,6 +206,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         """
         events = self.informers["events"]
         self.informers["verbose"] = True
+        dark_theme = self.informers['dark']
         parms = parsepath(self.path)
         try:
             # First test for an html request on the QAP nighttime_metrics page.
@@ -218,8 +219,11 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     data = "<b>bad path error</b>"
                     self.wfile.write(data)
                 dirname = os.path.dirname(__file__)
-                joinlist = [dirname, "../client/adcc_faceplate/"]
-                
+                if dark_theme:
+                    joinlist = [dirname, "../client/adcc_faceplate_dark/"]
+                else:
+                    joinlist = [dirname, "../client/adcc_faceplate/"]
+
                 # Split out any parameters in the URL
                 self.path = self.path.split("?")[0]
 
@@ -292,6 +296,16 @@ class ADCCHandler(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
+        def _handle(pdict):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            aevent = json.loads(pdict)
+            events.append_event(aevent)
+            self.log_message('"%s" %s %s', "Appended event", info_code, size)
+            self.log_message('"%s" %s %s', repr(aevent), info_code, size)
+            return
+
         info_code = 203
         size = "-"
         events = self.informers["events"]
@@ -299,22 +313,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
         vlen   = int(self.headers["Content-Length"])
         pdict  = self.rfile.read(vlen)
         if parms["path"].startswith("/metric_report"):
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-
-            qametric = json.loads(pdict)
-            events.append_event(qametric)
-            self.log_message('"%s" %s %s', "Appended event", info_code, size)
-            self.log_message('"%s" %s %s', repr(qametric), info_code, size)
-
+            _handle(pdict)
         elif parms["path"].startswith("/status_report"):
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-
-            statusr = json.loads(pdict)
-            events.append_event(statusr)
+            _handle(pdict)
 
         return
     # -------------------------------------------------------------------------
