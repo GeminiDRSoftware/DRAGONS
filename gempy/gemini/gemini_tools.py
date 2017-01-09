@@ -1474,6 +1474,9 @@ def status_report(status):
         status = {"adinput": ad, "current": ".ERROR: 23", "logfile": log}
 
     """
+    if not ping_adcc():
+        return
+
     report_type="status_report"
     URL = "http://localhost:8777/{}/".format(report_type)
     ad = status['adinput']
