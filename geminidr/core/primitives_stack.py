@@ -12,7 +12,6 @@ from geminidr.core.parameters_stack import ParametersStack
 from gempy.utils import logutils
 
 from recipe_system.utils.decorators import parameter_override
-log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 @parameter_override
 class Stack(PrimitivesBASE):
@@ -308,6 +307,7 @@ def _can_stack(adinputs):
     :param adinput: List of AstroData instances
     :type adinput: List of AstroData instances
     """
+    log = logutils.get_logger(__name__)
     ref_pa = adinputs[0].phu.PA
     for ad in adinputs:
         if abs(ad.phu.PA - ref_pa) >= 1.0:

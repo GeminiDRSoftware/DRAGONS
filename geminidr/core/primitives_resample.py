@@ -14,7 +14,6 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from gempy.utils import logutils
 from recipe_system.utils.decorators import parameter_override
-log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 interpolators = {"nearest": 0,
                  "linear": 1,
@@ -210,6 +209,7 @@ def _transform_corners(ads, all_corners, ref_wcs, interpolator):
     return all_corners, xy_img_corners, shifts
 
 def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, shifts):
+    log = logutils.get_logger(__name__)
     if trim_data:
         cenoff=[0]*naxis
         out_shape = ref_shape
@@ -249,6 +249,7 @@ def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, s
     return cenoff, out_shape
 
 def _build_area_keys(corners):
+    log = logutils.get_logger(__name__)
     log.fullinfo("Setting AREA keywords to denote original data area.")
     log.fullinfo("AREATYPE = 'P4'     / Polygon with 4 vertices")
     area_keys = [("AREATYPE", "P4", "Polygon with 4 vertices")]
@@ -263,6 +264,7 @@ def _build_area_keys(corners):
     return area_keys
 
 def _composite_transformation_matrix(ad, out_wcs, keyword_comments):
+    log = logutils.get_logger(__name__)
     img_wcs = WCS(ad.header[1])
     # get transformation matrix from composite of wcs's
     # matrix = in_sky2pix*out_pix2sky (converts output to input)
@@ -307,6 +309,7 @@ def _composite_transformation_matrix(ad, out_wcs, keyword_comments):
     return (matrix, matrix_det, img_wcs, offset) # ad ?
 
 def _composite_from_ref_wcs(ad, out_wcs, keyword_comments):
+    log = logutils.get_logger(__name__)
     img_wcs = WCS(ad.header[1])
     img_shape = ad[0].data.shape
 
