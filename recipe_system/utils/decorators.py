@@ -113,9 +113,11 @@ def parameter_override(fn):
         params.update(kwargs)
 
         if len(args) == 1 and 'adinputs' not in params:
-            params.update({'adinputs': pobj.adinputs})
+            instream = params.get('instream', params.get('stream', 'main'))
+            params.update({'adinputs': pobj.streams[instream]})
             ret_value = fn(*args, **params)
-            pobj.adinputs = ret_value
+            outstream = params.get('outstream', params.get('stream', 'main'))
+            pobj.streams[outstream] = ret_value
         else:
             ret_value = fn(*args, **params)
 
