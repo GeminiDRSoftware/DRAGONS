@@ -58,7 +58,7 @@ class PrimitivesBASE(object):
 
     def __init__(self, adinputs, context='qa', upmetrics=False, upcalibs=False,
                  ucals=None, uparms=None):
-        self.adinputs         = adinputs
+        self.streams          = {'main': adinputs}
         self.context          = context.lower()
         self.parameters       = ParametersBASE
         self.log              = logutils.get_logger(__name__)
@@ -71,7 +71,6 @@ class PrimitivesBASE(object):
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_default_dict  = sextractor_default_dict.sextractor_default_dict
 
-        self.streams          = {}
         self.cachedict        = caches.set_caches()
         self.calibrations     = Calibrations()
         self.stacks           = caches.load_cache(caches.stkindfile)
