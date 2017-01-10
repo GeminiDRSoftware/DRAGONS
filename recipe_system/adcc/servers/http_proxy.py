@@ -296,7 +296,14 @@ class ADCCHandler(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
-        def _handle(pdict):
+        info_code = 203
+        size = "-"
+        events = self.informers["events"]
+        parms  = parsepath(self.path)
+        vlen   = int(self.headers["Content-Length"])
+        pdict  = self.rfile.read(vlen)
+
+        if parms["path"].startswith("/event_report"):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
@@ -304,18 +311,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
             events.append_event(aevent)
             self.log_message('"%s" %s %s', "Appended event", info_code, size)
             self.log_message('"%s" %s %s', repr(aevent), info_code, size)
-            return
-
-        info_code = 203
-        size = "-"
-        events = self.informers["events"]
-        parms  = parsepath(self.path)
-        vlen   = int(self.headers["Content-Length"])
-        pdict  = self.rfile.read(vlen)
-        if parms["path"].startswith("/metric_report"):
-            _handle(pdict)
-        elif parms["path"].startswith("/status_report"):
-            _handle(pdict)
 
         return
     # -------------------------------------------------------------------------

@@ -1417,7 +1417,7 @@ def ping_adcc():
 
     Returns
     -------
-        <bool>: an adcc is running, True/False
+        <bool>: An adcc is running
 
     """
     upp = False
@@ -1440,8 +1440,7 @@ def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
     if not ping_adcc():
         return
 
-    report_type = "metric_report"
-    URL = "http://localhost:8777/{}/".format(report_type)
+    URL = "http://localhost:8777/event_report"
     evman = EventsManager()
     evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)
     event_pkt = evman.event_list.pop()
@@ -1468,8 +1467,11 @@ def status_report(status):
         status = {"adinput": ad, "current": <str>, "logfile": log}
 
     The key, 'current' may be any string, but usually will be one of
-    'Running', '.ERROR:', 'Finished', or a primitive function name.
-    ERROR messages should be accompanied by a non-zero exit code, like,
+    '<primitive_name>', '.ERROR:', 'Finished'. <primitive_name> will be
+    the currently executing primitive. 'Finished' indicates execution
+    completed successfully. ERROR messages should be accompanied by a non-zero
+    exit code.
+    E.g.,
 
         status = {"adinput": ad, "current": ".ERROR: 23", "logfile": log}
 
@@ -1477,8 +1479,7 @@ def status_report(status):
     if not ping_adcc():
         return
 
-    report_type="status_report"
-    URL = "http://localhost:8777/{}/".format(report_type)
+    URL = "http://localhost:8777/event_report"
     ad = status['adinput']
     mdict = {"current": status['current'], "logfile": status['logfile']}
     evman = EventsManager()
