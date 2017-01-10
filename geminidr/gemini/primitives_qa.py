@@ -14,6 +14,7 @@ import gemini_instruments
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
 from gempy.gemini import gemini_tools as gt
+from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
 from geminidr import PrimitivesBASE
@@ -171,10 +172,10 @@ class QA(PrimitivesBASE):
                             "brightness_error": float(bg_mag.std),
                             "requested": ad.requested_bg(),
                             "comment": comments}
-                    gt.adcc_report(ad, "bg", qad)
+                    qap.adcc_report(ad, "bg", qad)
 
             # Report measurement to fitsstore
-            fitsdict = gt.fitsstore_report(ad, "sb", info_list,
+            fitsdict = qap.fitsstore_report(ad, "sb", info_list,
                         calurl_dict=self.calurl_dict, context=self.context,
                                            upload=self.upload_metrics)
 
@@ -365,14 +366,14 @@ class QA(PrimitivesBASE):
                 qad.update({'band': qastatus.band, 'comment': comments,
                             'extinction': float(avg_cloud.value),
                             'extinction_error': float(avg_cloud.std)})
-                gt.adcc_report(ad, "cc", qad)
+                qap.adcc_report(ad, "cc", qad)
 
                 # Add band and comment to the info_list
                 [info.update({"percentile_band": qad["band"],
                               "comment": qad["comment"]}) for info in info_list]
 
                 # Also report to fitsstore
-                fitsdict = gt.fitsstore_report(ad, "zp", info_list,
+                fitsdict = qap.fitsstore_report(ad, "zp", info_list,
                             calurl_dict=self.calurl_dict, context=self.context,
                                                upload=self.upload_metrics)
             else:
@@ -574,7 +575,7 @@ class QA(PrimitivesBASE):
                        "zenith": zfwhm.value, "zenith_error": zfwhm.std,
                        "is_ao": is_ao, "ao_seeing": ao_seeing,
                        "strehl": strehl.value, "comment": comments}
-                gt.adcc_report(adiq, "iq", qad)
+                qap.adcc_report(adiq, "iq", qad)
                 
                 # These exist for all data (ellip=None for spectra)
                 ext_info = {"fwhm": fwhm.value, "fwhm_std": fwhm.std,
@@ -611,9 +612,9 @@ class QA(PrimitivesBASE):
                     iq_overlays.append(_iq_overlay(src, ext.data.shape))
 
             if info_list:
-                fitsdict = gt.fitsstore_report(adiq, "iq", info_list,
+                fitsdict = qap.fitsstore_report(adiq, "iq", info_list,
                         calurl_dict=self.calurl_dict, context=self.context,
-                                               upload=self.upload_metrics)
+                                                upload=self.upload_metrics)
 
             if display:
                 # If separate_ext is True, we want the tile parameter

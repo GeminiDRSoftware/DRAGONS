@@ -12,18 +12,9 @@ __version_date__ = '$Date$'[7:-2]
 import os
 import re
 import sys
-import json
-import urllib2
 import numbers
-
-import numpy as np
-from astropy.wcs import WCS
-from astropy import stats
-from astropy.table import vstack, Table, Column
-from astropy.modeling import models, fitting
-from scipy.stats import norm
-from scipy.optimize import curve_fit, OptimizeWarning
 import warnings
+import numpy as np
 
 from copy import deepcopy
 from datetime import datetime
@@ -31,13 +22,19 @@ from importlib import import_module
 
 from functools import wraps
 
+from astropy import stats
+from astropy.wcs import WCS
+from astropy.modeling import models, fitting
+from astropy.table import vstack, Table, Column
+
+from scipy.stats import norm
+from scipy.optimize import curve_fit, OptimizeWarning
+
 from ..library import astrotools as at
 from ..utils import logutils
 
 import astrodata
 from astrodata import __version__ as ad_version
-
-from recipe_system.adcc.servers.eventsManager import EventsManager
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -1321,178 +1318,6 @@ def fit_continuum(ad):
 
         good_sources.append(table)
     return good_sources
-
-
-def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
-    """
-    Parameters
-    ----------
-    ad: AstroData
-        input image
-    metric: str
-        type of metric being reported (IQ, ZP, SB, PE)
-    info_list: list
-        the QA info, one dict item per extension
-    calurl_dict: dict
-        information about the FITSStore (needed if report gets sent)
-
-    Returns
-    -------
-    dict
-        the QA report
-
-    """
-    if metric not in ["iq", "zp", "sb", "pe"]:
-        raise ValueError("Unknown metric {}".format(metric))
-    
-    # Empty qareport dictionary to build into
-    qareport = {}
-
-    # Compose metadata
-    import getpass
-    import socket
-    qareport["hostname"]   = socket.gethostname()
-    qareport["userid"]     = getpass.getuser()
-    qareport["processid"]  = os.getpid()
-    qareport["executable"] = os.path.basename(sys.argv[0])
-
-    # These may need revisiting.  There doesn't seem to be a
-    # way to access a version name or number for the primitive
-    # set generating this metric
-    qareport["software"] = "QAP"
-    qareport["software_version"] = ad_version
-    qareport["context"] = context
-    
-    qametric_list = []
-    for ext, info in zip(ad, info_list):
-        # No report is given for an extension without information
-        if info:
-            qametric = {"filename": ad.filename}
-            try:
-                qametric["datalabel"] = ad.data_label()
-            except:
-                qametric["datalabel"] = None
-            try:
-                qametric["detector"] = ext.array_name()
-            except:
-                qametric["detector"] = None
-
-            # Extract catalog name from the table header comment
-            if metric in ('zp', 'pe'):
-                catalog = ad.REFCAT.meta['header'].get('CATALOG', 'SDSS8')
-                info.update({"photref" if metric=='zp' else "astref": catalog})
-            qametric.update({metric: info})
-            qametric_list.append(qametric)
-
-    # Add qametric dictionary into qareport
-    qareport["qametric"] = qametric_list
-
-    if upload:
-        send_fitsstore_report(qareport, calurl_dict)
-    return qareport
-
-def send_fitsstore_report(qareport, calurl_dict):
-    """
-    Sends a QA report to the FITSStore for ingestion
-
-    Parameters
-    ----------
-    qareport: dict
-        the QA report
-    calurl_dict: dict
-        information about the FITSstore
-    """
-    qalist = [qareport]
-    req = urllib2.Request(url=calurl_dict["QAMETRICURL"], data=json.dumps(qalist))
-    f = urllib2.urlopen(req)
-    # Should do some error checking here.
-    f.close()
-    return
-
-def ping_adcc():
-    """
-    Check that there is an adcc running by requesting its site information.
-
-    Returns
-    -------
-        <bool>: An adcc is running
-
-    """
-    upp = False
-    site = None
-    url = "http://localhost:8777/rqsite.json"
-    try:
-        request = urllib2.Request(url)
-        adcc_file = urllib2.urlopen(request)
-        site = adcc_file.read()
-        adcc_file.close()
-    except (urllib2.HTTPError, urllib2.URLError):
-        pass
-
-    if site:
-        upp = True
-
-    return upp
-
-def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
-    if not ping_adcc():
-        return
-
-    URL = "http://localhost:8777/event_report"
-    evman = EventsManager()
-    evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)
-    event_pkt = evman.event_list.pop()
-    postdata = json.dumps(event_pkt)
-    try:
-        post_request= urllib2.Request(URL)
-        postr = urllib2.urlopen(post_request, postdata)
-    except urllib2.HTTPError as err:
-        sys.exit(str(err))
-
-    postr.read()
-    postr.close()
-    return
-
-def status_report(status):
-    """
-    Parameters
-    ----------
-        status: <dict>
-                A status report of type <dict>
-
-    A status parameter is of the form,
-
-        status = {"adinput": ad, "current": <str>, "logfile": log}
-
-    The key, 'current' may be any string, but usually will be one of
-    '<primitive_name>', '.ERROR:', 'Finished'. <primitive_name> will be
-    the currently executing primitive. 'Finished' indicates execution
-    completed successfully. ERROR messages should be accompanied by a non-zero
-    exit code.
-    E.g.,
-
-        status = {"adinput": ad, "current": ".ERROR: 23", "logfile": log}
-
-    """
-    if not ping_adcc():
-        return
-
-    URL = "http://localhost:8777/event_report"
-    ad = status['adinput']
-    mdict = {"current": status['current'], "logfile": status['logfile']}
-    evman = EventsManager()
-    evman.append_event(ad=ad, name='status', mdict=mdict, msgtype='reduce_status')
-    event_pkt = evman.event_list.pop()
-    postdata = json.dumps(event_pkt)
-    try:
-        post_request= urllib2.Request(URL)
-        postr = urllib2.urlopen(post_request, postdata)
-    except urllib2.HTTPError as err:
-        sys.exit(str(err))
-
-    postr.read()
-    postr.close()
-    return
 
 def log_message(function=None, name=None, message_type=None):
     """

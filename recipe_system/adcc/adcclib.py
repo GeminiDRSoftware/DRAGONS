@@ -112,7 +112,7 @@ class ADCC(object):
         self.web.start()
         try:
             while True:
-                time.sleep(.01)
+                time.sleep(1)
         except KeyboardInterrupt:
             print("\nadcc: exiting due to Ctrl-C")
             run_event.clear()
