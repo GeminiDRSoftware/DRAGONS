@@ -64,14 +64,13 @@ class Bookkeeping(PrimitivesBASE):
             purpose/name of list to access
         max_frames: int
             maximum number of frames to return
-        to_stream: str
-            name of stream to which this list will be reported
         """
         log = self.log
         purpose = params.get('purpose', '')
         max_frames = params['max_frames']
-        stream = params.get('to_stream', 'main')
-        stream_list = self.streams[stream] if stream!='main' else adinputs
+
+        # This primitive ignores adinputs and builds a new list of ADs
+        adinputs = []
 
         # Get ID for all inputs; use a set to avoid duplication
         sidset = set()
@@ -86,9 +85,9 @@ class Bookkeeping(PrimitivesBASE):
                 stacklist = sorted(stacklist)[-max_frames:]
             # Add each file to the input list if it's not already there
             for f in stacklist:
-                if f not in [ad.filename for ad in stream_list]:
+                if f not in [ad.filename for ad in adinputs]:
                     try:
-                        stream_list.append(astrodata.open(f))
+                        adinputs.append(astrodata.open(f))
                     except IOError:
                         log.stdinfo("   {} NOT FOUND".format(f))
                     else:
@@ -103,7 +102,7 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         log.stdinfo("Inputs to stream {}".format(stream))
 
-        inputs = adinputs if stream=='main' else self.streams[stream]
+        inputs = self.streams[stream]
         for ad in inputs:
             log.stdinfo("  {}".format(ad.filename))
         return adinputs
