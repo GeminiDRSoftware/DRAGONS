@@ -8,7 +8,7 @@ import astrodata
 import gemini_instruments
 
 THIS_DIR = os.path.dirname(__file__)
-CHARA = '/net/chara/data2/pub'
+CHARA = '/net/chara/data2/pub/ad_testdata'
 
 def from_test_data(fname):
     return astrodata.open(os.path.join(THIS_DIR, 'test_data', fname))
