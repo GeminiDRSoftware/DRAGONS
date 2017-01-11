@@ -401,6 +401,13 @@ class FitsProviderProxy(DataProvider):
     def exposed(self):
         return self._provider._exposed.copy() | set(self._mapped_nddata(0).meta['other'])
 
+    def __iter__(self):
+        if self._single:
+            yield self
+        else:
+            for n in self._mapping:
+                yield self._provider._slice((n,), multi=False)
+
     def __getitem__(self, slc):
         if self.is_single:
             raise TypeError("Can't slice a single slice!")
@@ -792,6 +799,10 @@ class FitsProvider(DataProvider):
     @force_load
     def _slice(self, indices, multi=True):
         return FitsProviderProxy(self, indices, single=not multi)
+
+    def __iter__(self):
+        for n in range(len(self)):
+            yield self._slice((n,), multi=False)
 
     @force_load
     def __getitem__(self, slc):
