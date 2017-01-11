@@ -1,10 +1,16 @@
-from builtins import object
+
+
+try:
+    from builtins import object
+    from future.utils import with_metaclass
+except ImportError:
+    raise ImportError("AstroData requires the 'future' package for Python 2/3 compatibility")
+
 from abc import ABCMeta, abstractmethod, abstractproperty
 from functools import wraps
 import inspect
 from collections import namedtuple
 from copy import deepcopy
-from future.utils import with_metaclass
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
@@ -550,6 +556,10 @@ class AstroData(object):
         A set of strings that represent the tags defining this instance
         """
         return self.__process_tags()
+
+    def __iter__(self):
+        for single in self._dataprov:
+            yield self.__class__(single)
 
     def __getitem__(self, slicing):
         """
