@@ -81,9 +81,9 @@ class Visualize(PrimitivesBASE):
             mosaicked = [(ad.phu.get(self.timestamp_keys["mosaicDetectors"])
                           is not None) or
                          (ad.phu.get(self.timestamp_keys["tileArrays"])
-                          is not None) for ad in p.adinputs]
+                          is not None) for ad in p.streams['main']]
             has_dq = [all(ext.mask is not None for ext in ad)
-                      for ad in p.adinputs]
+                      for ad in p.streams['main']]
             if not all(has_dq):
                 if any([m and not d] for m,d in zip(mosaicked, has_dq)):
                     log.warning("Cannot add DQ to mosaicked data; no "
@@ -95,7 +95,7 @@ class Visualize(PrimitivesBASE):
                     p.addDQ()
 
         if remove_bias:
-            for ad in p.adinputs:
+            for ad in p.streams['main']:
                 if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
                     any(ad.hdr.get('OVERSCAN'))):
                     log.fullinfo("Bias level has already been removed from "
@@ -121,7 +121,7 @@ class Visualize(PrimitivesBASE):
         # Check whether data needs to be tiled before displaying
         # Otherwise, flatten all desired extensions into a single list
         if tile:
-            if any(len(ad)>1 for ad in p.adinputs):
+            if any(len(ad)>1 for ad in p.streams['main']):
                 log.fullinfo("Tiling extensions together before displaying")
                 p.tileArrays()
 
@@ -130,7 +130,7 @@ class Visualize(PrimitivesBASE):
 
         # Each extension is an individual display item (if the data have been
         # tiled, then there'll only be one extension per AD, of course)
-        for ad, overlay in zip(*gt.make_lists([ext for ad in p.adinputs
+        for ad, overlay in zip(*gt.make_lists([ext for ad in p.streams['main']
                                                for ext in ad], params['overlay'])):
             if frame > 16:
                 log.warning("Too many images; only the first 16 are displayed")
