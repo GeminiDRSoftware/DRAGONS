@@ -1420,13 +1420,13 @@ def make_lists(key_list=None, value_list=None, force_ad=False):
     if len(value_list) == 1:
         value_list *= len(key_list)
     if force_ad:
-        key_list = [x if isinstance(x, astrodata.AstroData) else
+        key_list = [x if isinstance(x, astrodata.AstroData) or x is None else
                     astrodata.open(x) for x in key_list]
         # We only want to open as many AD objects as there are unique entries
         # in value_list, so collapse to set and multiple keys with the same
         # value will be assigned references to the same open AD object
-        ad_map_dict = {x: x if isinstance(x, astrodata.AstroData) else
-                        astrodata.open(x) for x in set(value_list)}
+        ad_map_dict = {x: x if isinstance(x, astrodata.AstroData) or x is None
+                    else astrodata.open(x) for x in set(value_list)}
         value_list = [ad_map_dict[x] for x in value_list]
 
     return key_list, value_list
