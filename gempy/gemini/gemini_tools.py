@@ -836,7 +836,7 @@ def clip_sources(ad):
 
         stellar = np.fabs(objcat['FWHM_IMAGE']/1.08 - objcat['PROFILE_FWHM']
                           ) < 0.2*objcat['FWHM_IMAGE'] if is_ao else \
-                    objcat['CLASS_STAR'] > 0.9
+                    objcat['CLASS_STAR'] > 0.8
 
         good = np.logical_and.reduce((
             objcat['PROFILE_FWHM'] > 0,
