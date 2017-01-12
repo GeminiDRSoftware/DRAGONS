@@ -13,7 +13,6 @@ bpm_dict = {
     "GMOS-S_Ham_11_12amp_v1": "gmos-s_bpm_HAM_11_12amp_v1.fits",
     "GMOS-S_Ham_22_12amp_v1": "gmos-s_bpm_HAM_22_12amp_v1.fits",
     "GMOS-S_Ham_44_12amp_v1": "gmos-s_bpm_HAM_44_12amp_v1.fits",
-    "F2_1_1": "F2_bpm.fits",
     "NIRI_1_1": "NIRI_bpm.fits",
     "GSAOI_1_1": "gsaoibpm_high_full_extra.fits",
 #    "GSAOI_1_1": "Gemini/GSAOI/BPM/gsaoibpm_high_full.fits",

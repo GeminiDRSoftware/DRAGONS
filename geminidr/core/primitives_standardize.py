@@ -16,6 +16,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
 from geminidr.core.parameters_standardize import ParametersStandardize
+from gempy.utils import logutils
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -63,14 +64,18 @@ class Standardize(PrimitivesBASE):
 
             bpm = params['bpm']
             if bpm is None:
-                bpm = self._get_bpm_filename(ad)
-            log.fullinfo("Using {} as BPM".format(bpm))
-            bpm_ad = astrodata.open(bpm)
+                bpm = _get_bpm_filename(ad, self.dr_root, self.timestamp_keys)
 
-            clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                else gt.clip_auxiliary_data
-            final_bpm = clip_method(ad, bpm_ad, 'bpm', dq_dtype,
-                                    self.keyword_comments)
+            if bpm is None:
+                final_bpm = [None] * len(ad)
+            else:
+                log.fullinfo("Using {} as BPM".format(bpm))
+                bpm_ad = astrodata.open(bpm)
+
+                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
+                    else gt.clip_auxiliary_data
+                final_bpm = clip_method(ad, bpm_ad, 'bpm', dq_dtype,
+                                        self.keyword_comments)
 
             for ext, bpm_ext in zip(ad, final_bpm):
                 extver = ext.hdr.EXTVER
@@ -82,7 +87,8 @@ class Standardize(PrimitivesBASE):
                 non_linear_level = ext.non_linear_level()
                 saturation_level = ext.saturation_level()
 
-                ext.mask = bpm_ext.data
+                ext.mask = bpm_ext.data if bpm_ext is not None else \
+                    np.zeros_like(ext.data, dtype=np.int16)
                 if saturation_level:
                     log.fullinfo('Flagging saturated pixels in {} extver {} '
                                  'above level {:.2f}'.
@@ -310,7 +316,7 @@ class Standardize(PrimitivesBASE):
                             "noise component of the variance using data that "
                             "still contains a bias level")
 
-            self._calculate_var(ad, read_noise, poisson_noise)
+            _calculate_var(ad, read_noise, poisson_noise)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=suffix, strip=True)
 
@@ -468,112 +474,115 @@ class Standardize(PrimitivesBASE):
                                               strip=True)
         return adinputs
 
-    ##########################################################################
-    # Below are the helper functions for the primitives in this module       #
-    ##########################################################################
+##########################################################################
+# Below are the helper functions for the primitives in this module       #
+##########################################################################
 
-    def _get_bpm_filename(self, ad):
-        """
-        Gets a bad pixel mask for an input science frame
+def _get_bpm_filename(ad, dr_root, timestamp_keys):
+    """
+    Gets a bad pixel mask for an input science frame
 
-        Parameters
-        ----------
-        adinput: AstroData
-            AD instance for which we want a bpm
+    Parameters
+    ----------
+    adinput: AstroData
+        AD instance for which we want a bpm
 
-        Returns
-        -------
-        str: Filename of the appropriate bpm
-        """
-        inst = ad.instrument()
-        xbin = ad.detector_x_bin()
-        ybin = ad.detector_y_bin()
-        if 'GMOS' in inst:
-            det = ad.detector_name(pretty=True)[:3]
-            amps = '{}amp'.format(3 * ad.phu.NAMPS)
-            mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
-                or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
-            key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
-                                              'v1', mos)
-            inst = 'GMOS'
-        else:
-            key = '{}_{}_{}'.format(inst, xbin, ybin)
+    Returns
+    -------
+    str: Filename of the appropriate bpm
+    """
+    log = logutils.get_logger(__name__)
+    inst = ad.instrument()
+    xbin = ad.detector_x_bin()
+    ybin = ad.detector_y_bin()
+    if 'GMOS' in inst:
+        det = ad.detector_name(pretty=True)[:3]
+        amps = '{}amp'.format(3 * ad.phu.NAMPS)
+        mos = '_mosaic' if (ad.phu.get(timestamp_keys['mosaicDetectors'])
+            or ad.phu.get(timestamp_keys['tileArrays'])) else ''
+        key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
+                                          'v1', mos)
+        inst = 'GMOS'
+    else:
+        key = '{}_{}_{}'.format(inst, xbin, ybin)
 
-        filename = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM',
-                                    BPMDict.bpm_dict[key])
-        return filename
+    try:
+        return os.path.join(dr_root, inst.lower(), 'lookups', 'BPM',
+                                BPMDict.bpm_dict[key])
+    except KeyError:
+        log.stdinfo('No BPM entry matches {}'.format(ad.filename))
+    return None
 
-    def _calculate_var(self, adinput, add_read_noise=False,
-                       add_poisson_noise=False):
-        """
-        Calculates the variance of each extension in the input AstroData
-        object and updates the .variance attribute
+def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
+    """
+    Calculates the variance of each extension in the input AstroData
+    object and updates the .variance attribute
 
-        Parameters
-        ----------
-        adinput: AstroData
-            AD instance to add variance planes to
-        add_read_noise: bool
-            add the read noise component?
-        add_poisson_noise: bool
-            add the Poisson noise component?
+    Parameters
+    ----------
+    adinput: AstroData
+        AD instance to add variance planes to
+    add_read_noise: bool
+        add the read noise component?
+    add_poisson_noise: bool
+        add the Poisson noise component?
 
-        Returns
-        -------
-        AstroData:
-            an updated AD instance
-        """
-        log = self.log
-        gain_list = adinput.gain()
-        read_noise_list = adinput.read_noise()
-        var_dtype = np.float32
+    Returns
+    -------
+    AstroData:
+        an updated AD instance
+    """
+    log = logutils.get_logger(__name__)
+    gain_list = adinput.gain()
+    read_noise_list = adinput.read_noise()
+    var_dtype = np.float32
 
-        for ext, gain, read_noise in zip(adinput, gain_list, read_noise_list):
-            extver = ext.hdr.EXTVER
-            # Assume units are ADU if not explicitly given
-            bunit = ext.hdr.get('BUNIT', 'ADU')
+    for ext, gain, read_noise in zip(adinput, gain_list, read_noise_list):
+        extver = ext.hdr.EXTVER
+        # Assume units are ADU if not explicitly given
+        bunit = ext.hdr.get('BUNIT', 'ADU')
 
-            # Create a variance array with the read noise (or zero)
-            if add_read_noise:
-                if read_noise is None:
-                    log.warning('Read noise for {} extver {} = None. Setting '
-                                'to zero'.format(adinput.filename, extver))
-                    read_noise = 0.0
-                else:
-                    log.fullinfo('Read noise for {} extver {} = {} electrons'.
-                             format(adinput.filename, extver, read_noise))
-                    log.fullinfo('Calculating the read noise component of '
-                                 'the variance in {}'.format(bunit))
-                    if bunit.upper() == 'ADU':
-                        read_noise /= gain
-                var_array = np.full(ext.data.shape, read_noise*read_noise)
+        # Create a variance array with the read noise (or zero)
+        if add_read_noise:
+            if read_noise is None:
+                log.warning('Read noise for {} extver {} = None. Setting '
+                            'to zero'.format(adinput.filename, extver))
+                read_noise = 0.0
             else:
-                var_array = np.zeros(ext.data.shape)
-
-            # Add the Poisson noise if desired
-            if add_poisson_noise:
-                poisson_array = (ext.data if ext.is_coadds_summed() else
-                                 ext.data / ext.coadds())
-                if bunit.upper() == 'ADU':
-                    poisson_array /= gain
-                log.fullinfo('Calculating the Poisson noise component of '
+                log.fullinfo('Read noise for {} extver {} = {} electrons'.
+                         format(adinput.filename, extver, read_noise))
+                log.fullinfo('Calculating the read noise component of '
                              'the variance in {}'.format(bunit))
-                var_array += np.where(poisson_array > 0, poisson_array, 0)
+                if bunit.upper() == 'ADU':
+                    read_noise /= gain
+            var_array = np.full(ext.data.shape, read_noise*read_noise)
+        else:
+            var_array = np.zeros(ext.data.shape)
 
-            if ext.variance is not None:
-                if add_read_noise and add_poisson_noise:
-                    raise ValueError("Cannot add read noise and Poisson noise"
-                                     " components to variance as variance "
-                                     "already exists")
-                else:
-                    log.fullinfo("Combining the newly calculated variance "
-                                 "with the current variance extension {}:{}".
-                                 format(ext.filename, extver))
-                    var_array += ext.variance
+        # Add the Poisson noise if desired
+        if add_poisson_noise:
+            poisson_array = (ext.data if ext.is_coadds_summed() else
+                             ext.data / ext.coadds())
+            if bunit.upper() == 'ADU':
+                poisson_array /= gain
+            log.fullinfo('Calculating the Poisson noise component of '
+                         'the variance in {}'.format(bunit))
+            var_array += np.where(poisson_array > 0, poisson_array, 0)
+
+        if ext.variance is not None:
+            if add_read_noise and add_poisson_noise:
+                raise ValueError("Cannot add read noise and Poisson noise"
+                                 " components to variance as variance "
+                                 "already exists")
             else:
-                log.fullinfo("Adding variance to {}:{}".format(ext.filename,
-                                                               extver))
-            # Attach to the extension
-            ext.variance = var_array.astype(var_dtype)
+                log.fullinfo("Combining the newly calculated variance "
+                             "with the current variance extension {}:{}".
+                             format(ext.filename, extver))
+                var_array += ext.variance
+        else:
+            log.fullinfo("Adding variance to {}:{}".format(ext.filename,
+                                                           extver))
+        # Attach to the extension
+        ext.variance = var_array.astype(var_dtype)
 
-        return
+    return
