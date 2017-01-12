@@ -48,9 +48,7 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
-class ADCC(object):
-    __metaclass__ = Singleton
-
+class ADCC(with_metaclass(Singleton, object)):
     def __init__(self, args=None):
         if args is None:
             pass
