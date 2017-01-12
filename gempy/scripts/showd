@@ -7,10 +7,14 @@ Eg. showd N20120212S0012.fits -d camera filter_name
     showd N20120212S*.fits -d camera filter_name
 """
 
+from __future__ import print_function
+
 import sys
 import argparse
 
-from astrodata import AstroData
+#from astrodata import AstroData
+import astrodata
+import gemini_instruments
 
 def get_descriptor_value(ad, descriptors):
     """
@@ -60,7 +64,7 @@ def parse_args(command_line_args):
     args = parser.parse_args(command_line_args)
 
     if args.debug:
-        print args
+        print(args)
 
     return args
 
@@ -76,12 +80,12 @@ def main(argv=None):
     args = parse_args(sys.argv[1:])
 
     for filename in args.inputs:
-        ad = AstroData(filename)
+        ad = astrodata.open(filename)
         values = get_descriptor_value(ad, args.descriptors)
         msg = "%s: " % ad.filename
         for value in values:
             msg += "%s " % value
-        print msg
+        print(msg)
 
 
 if __name__ == '__main__':
