@@ -56,14 +56,16 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         dq_dtype = np.int16
 
+        # Getting all the filenames first prevents reopening the same file
+        # for each science AD
         bpm_list = params['bpm']
         if bpm_list is None:
-            bpm_list = self._get_bpm_filenames(adinputs)
+            bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
 
         for ad, bpm in zip(*gt.make_lists(adinputs, bpm_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
-                    'already been processed by add DQ'.format(ad.filename))
+                    'already been processed by addDQ'.format(ad.filename))
                 continue
 
             if bpm is None:
@@ -146,6 +148,7 @@ class Standardize(PrimitivesBASE):
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0)
 
+            # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
@@ -156,6 +159,55 @@ class Standardize(PrimitivesBASE):
         return adinputs
 
     def addIllumMaskToDQ(self, adinputs=None, **params):
+        """
+        Adds an illumination mask to each AD object
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mask: str/None
+            name of illumination mask mask (None -> use default)
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        dq_dtype = np.int16
+
+        # Getting all the filenames first prevents reopening the same file
+        # for each science AD
+        illum_list = params['mask']
+        if illum_list is None:
+            illum_list = [self._get_illum_mask_filename(ad) for ad in adinputs]
+
+        for ad, illum in zip(*gt.make_lists(adinputs, illum_list, force_ad=True)):
+            if ad.phu.get(timestamp_key):
+                log.warning('No changes will be made to {}, since it has '
+                    'already been processed by addIllumMaskToDQ'.
+                            format(ad.filename))
+                continue
+
+            if illum is None:
+                # So it can be zipped with the AD
+                final_illum = [None] * len(ad)
+            else:
+                log.fullinfo("Using {} as illumination mask".format(illum.filename))
+                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
+                    else gt.clip_auxiliary_data
+                final_illum = clip_method(ad, illum, 'bpm', dq_dtype,
+                                        self.keyword_comments)
+
+            for ext, illum_ext in zip(ad, final_illum):
+                # Ensure we're only adding the unilluminated bit
+                iext = np.where(illum_ext > 0, DQ.unilluminated,
+                                0).astype(dq_dtype)
+                ext.mask = iext if ext.mask is None else ext.mask | iext
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+
         return adinputs
 
     def addMDF(self, adinputs=None, **params):
@@ -472,61 +524,91 @@ class Standardize(PrimitivesBASE):
                                               strip=True)
         return adinputs
 
-    def _get_bpm_filenames(self, adinputs=None):
+    def _get_bpm_filename(self, ad):
         """
-        Gets pixel mask(s) for input science frame(s). Takes bpm_dict from
-        geminidr.<instrument>.lookups.mask_dict and looks for a key
-        <INSTRUMENT>_<XBIN>_<YBIN>. As a backup, uses the dict value if there's
-        only one entry, or the file in geminidr/<instrument>/lookups/BPM/ if
-        there's only one file.
+        Gets the BPM filename for an input science frame. Takes bpm_dict from
+        geminidr.<instrument>.lookups.maskdb.py and looks for a key
+        <INSTRUMENT>_<XBIN><YBIN>. As a backup, uses the file in
+        geminidr/<instrument>/lookups/BPM/ if there's only one file. This
+        will be sent to clip_auxiliary_data for a subframe ROI.
 
         Returns
         -------
-        list of str: Filename(s) of the appropriate bpm
+        str/None: Filename of the appropriate bpm
         """
         log = self.log
-        inst = adinputs[0].instrument()
+        inst = ad.instrument()
+        xbin = ad.detector_x_bin()
+        ybin = ad.detector_y_bin()
+        bpm = None
+
         bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
         bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
         try:
-            masks = import_module('.mask_dict', bpm_pkg)
-        except ImportError:
+            masks = import_module('.maskdb', bpm_pkg)
+            bpm_dict = getattr(masks, 'bpm_dict')
+            key = '{}_{}{}'.format(inst, xbin, ybin)
+            try:
+                bpm = bpm_dict[key]
+            except KeyError:
+                log.warning('No BPM found for {}'.format(ad.filename))
+        except:
             # No dict; maybe there's only one file in BPM dir
             try:
                 bpm_files = [file for file in os.listdir(bpm_dir) if
                              file.endswith('.fits')]
             except OSError:
-                log.warning('No BPM directory. Cannot add BPM.')
+                log.fullinfo('No BPM directory found. Cannot add BPM.')
             else:
                 if len(bpm_files) == 1:
-                    log.fullinfo('Found single image in BPM directory. '
-                                'Using {} as BPM'.format(bpm_files[0]))
-                    return bpm_files * len(adinputs)
+                    bpm = bpm_files[0]
+                    log.fullinfo('Using only image found in BPM directory.')
                 elif len(bpm_files) == 0:
-                    log.warning('No files in BPM directory. Cannot add BPM.')
+                    log.fullinfo('No files in BPM directory. Cannot add BPM.')
                 else:
-                    log.warning('{} files in BPM directory, but no dict to '
+                    log.fullinfo('{} files in BPM directory, but no dict to '
                                 'choose. Cannot add BPM'.format(len(bpm_files)))
-            return [None] * len(adinputs)
-        else:
-            bpm_dict = masks.bpm_dict
 
-        bpm_list = []
-        for ad in adinputs:
-            bpm = None
-            xbin = ad.detector_x_bin()
-            ybin = ad.detector_y_bin()
-            key = '{}_{}_{}'.format(inst, xbin, ybin)
+        if bpm is not None:
+            # Prepend standard path if the filename doesn't start with '/'
+            return bpm if bpm.startswith(os.path.sep) else \
+                os.path.join(bpm_dir, bpm)
+        return None
 
-            if bpm_dict is not None:
-                try:
-                    bpm = os.path.join(bpm_dir, bpm_dict[key])
-                except KeyError:
-                    bpm = None
-                    log.warning('No BPM for {}'.format(ad.filename))
+    def _get_illum_mask_filename(self, ad):
+        """
+        Gets the illumMask filename for an input science frame, using
+        illumMask_dict in geminidr.<instrument>.lookups.maskdb.py and looks
+        for a key <INSTRUMENT>_<MODE>_<XBIN><YBIN>. This file will be sent
+        to clip_auxiliary_data for a subframe ROI.
 
-            bpm_list.append(bpm)
-        return bpm_list
+        Returns
+        -------
+        str/None: Filename of the appropriate illumination mask
+        """
+        log = self.log
+        inst = ad.instrument()
+        mode = 'IMAGE' if 'IMAGE' in ad.tags else 'SPECT'
+        xbin = ad.detector_x_bin()
+        ybin = ad.detector_y_bin()
+        bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
+        bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
+        try:
+            masks = import_module('.maskdb', bpm_pkg)
+            illum_dict = getattr(masks, 'illumMask_dict')
+        except:
+            # No dict; maybe there's only one file in BPM dir
+            log.fullinfo('No illumination mask dict for {}'.
+                         format(ad.filename))
+            return None
+
+        # We've successfully loaded the bpm_dict
+        key = '{}_{}_{}{}'.format(inst, mode, xbin, ybin)
+        try:
+            return os.path.join(bpm_dir, illum_dict[key])
+        except KeyError:
+            log.warning('No illumination mask found for {}'.format(ad.filename))
+        return None
 
 ##########################################################################
 # Below are the helper functions for the primitives in this module       #

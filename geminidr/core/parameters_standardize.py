@@ -10,6 +10,7 @@ class ParametersStandardize(ParametersBASE):
         "illum_mask"        : False,
     }
     addIllumMaskToDQ = {
+        "mask"              : None,
         "suffix"            : "_illumMaskAdded",
     }
     addMDF = {

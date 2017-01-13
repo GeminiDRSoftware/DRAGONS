@@ -1,8 +1,13 @@
+# gnirs/maskdb.py
+#
+# This file contains the bad pixel mask (BPMs), illumination mask,
+# and mask definition file (MDF) lookup tables for GNIRS
+
 bpm_dict = {
-    "GNIRS_1_1": "gnirsn_2012dec05_bpm_alt.fits"
+    "GNIRS_11": "gnirsn_2012dec05_bpm_alt.fits"
 }
 
-illum_masks = {
+illumMask_dict = {
     # Table of GNIRS illumination masks by camera and filter type (filters with or
     # without wings, see http://www.gemini.edu/sciops/instruments/gnirs/imaging).
     # Updated 2016.02.03

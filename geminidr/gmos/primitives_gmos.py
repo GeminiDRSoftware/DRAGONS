@@ -14,7 +14,7 @@ from geminidr.core import CCD
 from geminidr.gemini.primitives_gemini import Gemini
 from geminidr.gmos.parameters_gmos import ParametersGMOS
 from geminidr.gmos.lookups.array_gaps import gmosArrayGaps
-from geminidr.gmos.lookups.mask_dict import bpm_dict
+from geminidr.gmos.lookups import maskdb
 
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
@@ -417,34 +417,34 @@ class GMOS(Gemini, CCD):
             adoutputs.append(adoutput)
         return adoutputs
 
-    def _get_bpm_filenames(self, adinputs=None):
+    def _get_bpm_filename(self, ad):
         """
-        Gets pixel mask(s) for input GMOS science frame(s).
+        Gets bad pixel mask for input GMOS science frame.
 
         Returns
         -------
-        list of str: Filename(s) of the appropriate bpms
+        str/None: Filename of the appropriate bpms
         """
         log = self.log
         bpm_dir = os.path.join(self.dr_root, 'gmos', 'lookups', 'BPM')
-        bpm_list = []
-        for ad in adinputs:
-            inst = ad.instrument()  # Could be GMOS-N or GMOS-S
-            xbin = ad.detector_x_bin()
-            ybin = ad.detector_y_bin()
-            det = ad.detector_name(pretty=True)[:3]
-            amps = '{}amp'.format(3 * ad.phu.NAMPS)
-            mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
-                or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
-            key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
-                                              'v1', mos)
-            try:
-                bpm = os.path.join(bpm_dir, bpm_dict[key])
-            except:
-                log.warning('No BPM found for {}'.format(ad.filename))
-                bpm = None
-            bpm_list.append(bpm)
-        return bpm_list
+
+        inst = ad.instrument()  # Could be GMOS-N or GMOS-S
+        xbin = ad.detector_x_bin()
+        ybin = ad.detector_y_bin()
+        det = ad.detector_name(pretty=True)[:3]
+        amps = '{}amp'.format(3 * ad.phu.NAMPS)
+        mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
+            or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
+        key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
+                                          'v1', mos)
+        try:
+            bpm = maskdb.bpm_dict[key]
+        except:
+            log.warning('No BPM found for {}'.format(ad.filename))
+            return None
+
+        # Prepend standard path if the filename doesn't start with '/'
+        return bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir, bpm)
 
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #

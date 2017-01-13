@@ -1,3 +1,8 @@
+# gmos/maskdb.py
+#
+# This file contains the bad pixel mask (BPMs), illumination mask,
+# and mask definition file (MDF) lookup tables for GMOS
+
 bpm_dict = {
     "GMOS-N_EEV_11_3amp_v1": "gmos-n_bpm_EEV_11_3amp_v1.fits",
     "GMOS-N_EEV_22_3amp_v1": "gmos-n_bpm_EEV_22_3amp_v1.fits",

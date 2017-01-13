@@ -5,7 +5,7 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.gemini.lookups.keyword_comments import keyword_comments
-from . import mask_dict
+from . import maskdb
 
 # ------------------------------------------------------------------------------
 # This code is looked up by gempy as part of the configuration for the
@@ -99,8 +99,8 @@ def fetch_illum_mask(ad):
                          "be found for {}".format(ad.filename))
 
     try:
-        illum = path.join(path.dirname(mask_dict.__file__), 'BPM',
-                          mask_dict.illum_masks[key1, key2])
+        illum = path.join(path.dirname(maskdb.__file__), 'BPM',
+                          maskdb.illum_masks[key1, key2])
     except KeyError:
         raise IOError("No illumination mask found for {}".format(ad.filename))
 
