@@ -417,37 +417,34 @@ class GMOS(Gemini, CCD):
             adoutputs.append(adoutput)
         return adoutputs
 
-    def _get_bpm_filename(self, ad):
+    def _get_bpm_filenames(self, adinputs=None):
         """
-        Gets a bad pixel mask for a GMOS science frame.
-
-        Parameters
-        ----------
-        adinput: AstroData
-            AD instance for which we want a bpm
+        Gets pixel mask(s) for input GMOS science frame(s).
 
         Returns
         -------
-        str: Filename of the appropriate bpm
+        list of str: Filename(s) of the appropriate bpms
         """
         log = self.log
-        inst = ad.instrument()
-        xbin = ad.detector_x_bin()
-        ybin = ad.detector_y_bin()
         bpm_dir = os.path.join(self.dr_root, 'gmos', 'lookups', 'BPM')
-        det = ad.detector_name(pretty=True)[:3]
-        amps = '{}amp'.format(3 * ad.phu.NAMPS)
-        mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
-            or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
-        key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
-                                          'v1', mos)
-        try:
-            return os.path.join(bpm_dir, bpm_dict[key])
-        except:
-            pass
-
-        log.stdinfo('No BPM found for {}'.format(ad.filename))
-        return None
+        bpm_list = []
+        for ad in adinputs:
+            inst = ad.instrument()  # Could be GMOS-N or GMOS-S
+            xbin = ad.detector_x_bin()
+            ybin = ad.detector_y_bin()
+            det = ad.detector_name(pretty=True)[:3]
+            amps = '{}amp'.format(3 * ad.phu.NAMPS)
+            mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
+                or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
+            key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
+                                              'v1', mos)
+            try:
+                bpm = os.path.join(bpm_dir, bpm_dict[key])
+            except:
+                log.warning('No BPM found for {}'.format(ad.filename))
+                bpm = None
+            bpm_list.append(bpm)
+        return bpm_list
 
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #

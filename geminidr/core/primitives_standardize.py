@@ -56,25 +56,24 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         dq_dtype = np.int16
 
-        for ad in adinputs:
+        bpm_list = params['bpm']
+        if bpm_list is None:
+            bpm_list = self._get_bpm_filenames(adinputs)
+
+        for ad, bpm in zip(*gt.make_lists(adinputs, bpm_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                     'already been processed by add DQ'.format(ad.filename))
                 continue
 
-            bpm = params['bpm']
             if bpm is None:
-                bpm = self._get_bpm_filename(ad)
-
-            if bpm is None:
+                # So it can be zipped with the AD
                 final_bpm = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as BPM".format(bpm))
-                bpm_ad = astrodata.open(bpm)
-
+                log.fullinfo("Using {} as BPM".format(bpm.filename))
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
-                final_bpm = clip_method(ad, bpm_ad, 'bpm', dq_dtype,
+                final_bpm = clip_method(ad, bpm, 'bpm', dq_dtype,
                                         self.keyword_comments)
 
             for ext, bpm_ext in zip(ad, final_bpm):
@@ -88,7 +87,7 @@ class Standardize(PrimitivesBASE):
                 saturation_level = ext.saturation_level()
 
                 ext.mask = bpm_ext.data if bpm_ext is not None else \
-                    np.zeros_like(ext.data, dtype=np.int16)
+                    np.zeros_like(ext.data, dtype=dq_dtype)
                 if saturation_level:
                     log.fullinfo('Flagging saturated pixels in {}:{} '
                                  'above level {:.2f}'.
@@ -473,66 +472,65 @@ class Standardize(PrimitivesBASE):
                                               strip=True)
         return adinputs
 
-##########################################################################
-# Below are the helper functions for the primitives in this module       #
-##########################################################################
-
-    def _get_bpm_filename(self, ad):
+    def _get_bpm_filenames(self, adinputs=None):
         """
-        Gets a bad pixel mask for an input science frame. Takes bpm_dict from
+        Gets pixel mask(s) for input science frame(s). Takes bpm_dict from
         geminidr.<instrument>.lookups.mask_dict and looks for a key
         <INSTRUMENT>_<XBIN>_<YBIN>. As a backup, uses the dict value if there's
         only one entry, or the file in geminidr/<instrument>/lookups/BPM/ if
         there's only one file.
 
-        Parameters
-        ----------
-        adinput: AstroData
-            AD instance for which we want a bpm
-
         Returns
         -------
-        str: Filename of the appropriate bpm
+        list of str: Filename(s) of the appropriate bpm
         """
         log = self.log
-        inst = ad.instrument()
-        xbin = ad.detector_x_bin()
-        ybin = ad.detector_y_bin()
-        key = '{}_{}_{}'.format(inst, xbin, ybin)
+        inst = adinputs[0].instrument()
         bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
         bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
-
         try:
             masks = import_module('.mask_dict', bpm_pkg)
         except ImportError:
-            pass
+            # No dict; maybe there's only one file in BPM dir
+            try:
+                bpm_files = [file for file in os.listdir(bpm_dir) if
+                             file.endswith('.fits')]
+            except OSError:
+                log.warning('No BPM directory. Cannot add BPM.')
+            else:
+                if len(bpm_files) == 1:
+                    log.fullinfo('Found single image in BPM directory. '
+                                'Using {} as BPM'.format(bpm_files[0]))
+                    return bpm_files * len(adinputs)
+                elif len(bpm_files) == 0:
+                    log.warning('No files in BPM directory. Cannot add BPM.')
+                else:
+                    log.warning('{} files in BPM directory, but no dict to '
+                                'choose. Cannot add BPM'.format(len(bpm_files)))
+            return [None] * len(adinputs)
         else:
             bpm_dict = masks.bpm_dict
-            try:
-                return os.path.join(bpm_dir, bpm_dict[key])
-            except KeyError:
-                if len(bpm_dict) == 1:
-                    bpm = bpm_dict.values()[0]
-                    log.stdinfo('Only one entry in BPM dict. Using {} as BPM'.
-                                format(bpm))
-                    return bpm
 
-        # No help from the dict.
-        # Look in the BPM directory; return a file if there's only one
-        try:
-            bpm_files = [file for file in os.listdir(bpm_dir) if
-                         file.endswith('.fits')]
-        except OSError:
-            # Directory doesn't exist
-            pass
-        else:
-            if len(bpm_files) == 1:
-                bpm = bpm_files[0]
-                log.stdinfo('Found single image in BPM directory. Using {} as BPM'.
-                            format(bpm))
-                return bpm
-        log.stdinfo('No BPM found for {}'.format(ad.filename))
-        return None
+        bpm_list = []
+        for ad in adinputs:
+            bpm = None
+            xbin = ad.detector_x_bin()
+            ybin = ad.detector_y_bin()
+            key = '{}_{}_{}'.format(inst, xbin, ybin)
+
+            if bpm_dict is not None:
+                try:
+                    bpm = os.path.join(bpm_dir, bpm_dict[key])
+                except KeyError:
+                    bpm = None
+                    log.warning('No BPM for {}'.format(ad.filename))
+
+            bpm_list.append(bpm)
+        return bpm_list
+
+##########################################################################
+# Below are the helper functions for the primitives in this module       #
+##########################################################################
 
 def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
     """
