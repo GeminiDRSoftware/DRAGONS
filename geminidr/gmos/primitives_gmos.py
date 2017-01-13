@@ -1,5 +1,7 @@
+import os
 import numpy as np
 from copy import deepcopy
+from importlib import import_module
 
 import astrodata
 import gemini_instruments
@@ -12,6 +14,7 @@ from geminidr.core import CCD
 from geminidr.gemini.primitives_gemini import Gemini
 from geminidr.gmos.parameters_gmos import ParametersGMOS
 from geminidr.gmos.lookups.array_gaps import gmosArrayGaps
+from geminidr.gmos.lookups.mask_dict import bpm_dict
 
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
@@ -413,6 +416,38 @@ class GMOS(Gemini, CCD):
                                     suffix=params["suffix"], strip=True)
             adoutputs.append(adoutput)
         return adoutputs
+
+    def _get_bpm_filename(self, ad):
+        """
+        Gets a bad pixel mask for a GMOS science frame.
+
+        Parameters
+        ----------
+        adinput: AstroData
+            AD instance for which we want a bpm
+
+        Returns
+        -------
+        str: Filename of the appropriate bpm
+        """
+        log = self.log
+        inst = ad.instrument()
+        xbin = ad.detector_x_bin()
+        ybin = ad.detector_y_bin()
+        bpm_dir = os.path.join(self.dr_root, 'gmos', 'lookups', 'BPM')
+        det = ad.detector_name(pretty=True)[:3]
+        amps = '{}amp'.format(3 * ad.phu.NAMPS)
+        mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
+            or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
+        key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
+                                          'v1', mos)
+        try:
+            return os.path.join(bpm_dir, bpm_dict[key])
+        except:
+            pass
+
+        log.stdinfo('No BPM found for {}'.format(ad.filename))
+        return None
 
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #
