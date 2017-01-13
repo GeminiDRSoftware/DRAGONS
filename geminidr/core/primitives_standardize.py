@@ -597,18 +597,20 @@ class Standardize(PrimitivesBASE):
             masks = import_module('.maskdb', bpm_pkg)
             illum_dict = getattr(masks, 'illumMask_dict')
         except:
-            # No dict; maybe there's only one file in BPM dir
             log.fullinfo('No illumination mask dict for {}'.
                          format(ad.filename))
             return None
 
-        # We've successfully loaded the bpm_dict
+        # We've successfully loaded the illumMask_dict
         key = '{}_{}_{}{}'.format(inst, mode, xbin, ybin)
         try:
-            return os.path.join(bpm_dir, illum_dict[key])
+            mask = illum_dict[key]
         except KeyError:
             log.warning('No illumination mask found for {}'.format(ad.filename))
-        return None
+            return None
+        # Prepend standard path if the filename doesn't start with '/'
+        return mask if mask.startswith(os.path.sep) else \
+            os.path.join(bpm_dir, mask)
 
 ##########################################################################
 # Below are the helper functions for the primitives in this module       #
