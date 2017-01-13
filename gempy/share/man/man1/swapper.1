@@ -17,19 +17,16 @@ swapper
 ]
 [
 .B -l
-LOGNAME 
-]
+LOGNAME]
 [
 .B -m 
-MODULE
-]
+MODULE]
 [
 .B -r
 ]
 [
 .B -u 
-USERPATH
-]
+USERPATH]
 [
 .B -v 
 ]
@@ -60,7 +57,9 @@ repository. E.g.,
 If a user has a non-standard or partial gemini_python installation, or has
 otherwise changed the above organisation, the
 .B -u
-option should be used to pass the location of this code base to swapper.
+option should be used to pass the location of this code base to 
+.B swapper.
+
 If 
 .B -u 
 is passed, search packages should be directly under this path.
@@ -73,9 +72,26 @@ Examples:
       $ swapper -c -r "old string" "new string"
 
   -- astrodata, gempy, and other gemini_python packages are in directory
-     ~/foobar/. Use -u:
-
+     ~/foobar/. Use
+.B -u:
       $ swapper -r -c -u ~/foobar "old string" "new string"
+
+.B Tip:
+While
+.B swapper
+requires two (2) positional arguments, requesting report only (
+.B -r
+) ignores the second positional argument ("new string") since no swapping
+will occur. This implies that users may pass an arbitrary string as the second
+argument.
+
+E.g.,
+
+    $ swapper -r -c "old string" x
+
+And 
+.B swapper
+will report the matches.
 
 .SH OPTIONS
 .TP
@@ -127,7 +143,7 @@ None known.
 .SH HISTORY
 The 
 .B swapper
-tool was originally written for version one (1) of the gemini_python, astrodata, and
+tool was originally written for version one (1) of gemini_python, astrodata, and
 the recipe_system.
 
 .SH AUTHOR
