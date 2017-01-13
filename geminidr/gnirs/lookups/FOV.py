@@ -3,9 +3,10 @@ from os import path
 import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
 
 from geminidr.gemini.lookups.keyword_comments import keyword_comments
-from . import IllumMaskDict
+from . import maskdb
 
 # ------------------------------------------------------------------------------
 # This code is looked up by gempy as part of the configuration for the
@@ -56,10 +57,15 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     
     # Imaging:
     if 'IMAGE' in pos.tags:
-        illum_ad = gt.clip_auxiliary_data(adinput=pos,
-                        aux=fetch_illum_mask(pos), aux_type="bpm",
-                        keyword_comments=keyword_comments)
-        illum_data = illum_ad[0].data
+        illum = get_illum_mask_filename(ad)
+        if illum:
+            illum_ad = gt.clip_auxiliary_data(adinput=pos,
+                            aux=astrodata.open(illum), aux_type="bpm",
+                            keyword_comments=keyword_comments)
+            illum_data = illum_ad[0].data
+        else:
+            raise IOError("Cannot find illumination mask for {}".
+                          format(ad.filename))
 
         # Finding the center of the illumination mask
         center_illum = (illum_ad.phu.CENMASSX, illum_ad.phu.CENMASSY)
@@ -85,9 +91,16 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         raise ValueError("Can't determine FOV for unrecognized GNIRS config "
           "({}, {})".format(ad.focal_plane_mask(), ad.disperser()))
 
-def fetch_illum_mask(ad):
-    # Fetches the appropriate illumination mask for an astrodata instance
-            
+def get_illum_mask_filename(ad):
+    """
+    Gets the illumMask filename for an input science frame, using
+    illumMask_dict in geminidr.gnirs.lookups.maskdb.py
+
+    Returns
+    -------
+    str/None: Filename of the appropriate illumination mask
+    """
+    log = logutils.get_logger(__name__)
     key1 = ad.camera()
     filter = ad.filter_name(pretty=True)
     if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
@@ -95,18 +108,15 @@ def fetch_illum_mask(ad):
     elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
         key2 = 'NoWings'
     else:
-        raise ValueError("Unrecognised filter, no illumination mask can "
+        log.warning("Unrecognised filter, no illumination mask can "
                          "be found for {}".format(ad.filename))
+        return None
 
     try:
-        illum = path.join(path.dirname(IllumMaskDict.__file__), 'BPM',
-                          IllumMaskDict.illum_masks[key1,key2])
+        illum = path.join(maskdb.illumMask_dict[key1, key2])
     except KeyError:
-        raise IOError("No illumination mask found for {}".format(ad.filename))
+        log.warning("No illumination mask found for {}".format(ad.filename))
+        return None
 
-    try:
-        illum_ad = astrodata.open(illum)
-    except:
-        raise IOError("Cannot convert {} into an AstroData object".format(illum))
-                
-    return illum_ad
+    return illum if illum.startswith(path.sep) else \
+        path.join(path.dirname(maskdb.__file__), 'BPM', illum)

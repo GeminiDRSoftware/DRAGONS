@@ -27,14 +27,17 @@ from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
 
-from scipy.stats import norm
-from scipy.optimize import curve_fit, OptimizeWarning
+from scipy.special import erf
 
 from ..library import astrotools as at
 from ..utils import logutils
 
 import astrodata
 from astrodata import __version__ as ad_version
+
+@models.custom_model
+def CumGauss1D(x, mean=0.0, stddev=1.0):
+    return 0.5*(1.0+erf((x-mean)/(1.414213562*stddev)))
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -833,7 +836,7 @@ def clip_sources(ad):
 
         stellar = np.fabs(objcat['FWHM_IMAGE']/1.08 - objcat['PROFILE_FWHM']
                           ) < 0.2*objcat['FWHM_IMAGE'] if is_ao else \
-                    objcat['CLASS_STAR'] > 0.9
+                    objcat['CLASS_STAR'] > 0.8
 
         good = np.logical_and.reduce((
             objcat['PROFILE_FWHM'] > 0,
@@ -1417,13 +1420,13 @@ def make_lists(key_list=None, value_list=None, force_ad=False):
     if len(value_list) == 1:
         value_list *= len(key_list)
     if force_ad:
-        key_list = [x if isinstance(x, astrodata.AstroData) else
+        key_list = [x if isinstance(x, astrodata.AstroData) or x is None else
                     astrodata.open(x) for x in key_list]
         # We only want to open as many AD objects as there are unique entries
         # in value_list, so collapse to set and multiple keys with the same
         # value will be assigned references to the same open AD object
-        ad_map_dict = {x: x if isinstance(x, astrodata.AstroData) else
-                        astrodata.open(x) for x in set(value_list)}
+        ad_map_dict = {x: x if isinstance(x, astrodata.AstroData) or x is None
+                    else astrodata.open(x) for x in set(value_list)}
         value_list = [ad_map_dict[x] for x in value_list]
 
     return key_list, value_list
@@ -1475,8 +1478,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     return
 
 
-def measure_bg_from_image(ad, extver=None, sampling=10, value_only=False,
-                          gaussfit=True):
+def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1502,12 +1504,10 @@ def measure_bg_from_image(ad, extver=None, sampling=10, value_only=False,
         if use_extver is set, returns a bg value or (bg, std) tuple; otherwise
         returns a list of such things
     """
-
     try:
-        input_list = [ad.extver(extver)] if extver else [ext for ext in ad]
-    except IndexError:
-        # Invalid value of extver
-        return None if value_only else (None, None)
+        input_list = [ext for ext in ad]
+    except:
+        input_list = [ext]
 
     output_list = []
     for ext in input_list:
@@ -1518,15 +1518,15 @@ def measure_bg_from_image(ad, extver=None, sampling=10, value_only=False,
 
         bg_data = bg_data.flatten()[::sampling]
         if gaussfit:
-            bg = np.median(bg_data)
-            bg_std = np.std(bg_data)
             # An ogive fit is more robust than a histogram fit
-            # We suppress a warning that the covariance cannot be estimated
             bg_data = np.sort(bg_data)
-            with warnings.catch_warnings():
-                warnings.filterwarnings('ignore', category=OptimizeWarning)
-                [bg, bg_std], _ = curve_fit(norm.cdf, bg_data,
-                        np.linspace(0,1,len(bg_data)+1)[1:], p0=[bg,bg_std])
+            bg = np.median(bg_data)
+            bg_std = 0.5*(np.percentile(bg_data, 84.13) -
+                          np.percentile(bg_data, 15.87))
+            g_init = CumGauss1D(bg, bg_std)
+            fit_g = fitting.LevMarLSQFitter()
+            g = fit_g(g_init, bg, np.linspace(0.,1.,len(bg_data)+1)[1:])
+            bg, bg_std = g.mean.value, abs(g.stddev.value)
             #binsize = bg_std * 0.1
             # Fit from -5 to +1 sigma
             #bins = np.arange(bg - 5 * bg_std, bg + bg_std, binsize)
@@ -1543,21 +1543,17 @@ def measure_bg_from_image(ad, extver=None, sampling=10, value_only=False,
             #bg, bg_std = g.mean.value, abs(g.stddev.value)
         else:
             # Sigma-clipping will screw up the stats of course!
-            clipped_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
-            clipped_data = clipped_data.data[~clipped_data.mask]
-            bg = np.median(clipped_data)
-            bg_std = np.std(clipped_data)
+            bg_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
+            bg_data = bg_data.data[~bg_data.mask]
+            bg = np.median(bg_data)
+            bg_std = np.std(bg_data)
 
         if value_only:
             output_list.append(bg)
         else:
-            output_list.append((bg, bg_std))
+            output_list.append((bg, bg_std, len(bg_data)))
 
-    if extver:
-        # We've created a single-element list, so return the value
-        return output_list[0]
-    else:
-        return output_list
+    return output_list
 
 
 def measure_bg_from_objcat(ad, min_ok=5, value_only=False):

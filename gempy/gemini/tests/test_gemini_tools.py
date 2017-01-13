@@ -149,17 +149,17 @@ class TestGeminiTools:
     def test_measure_bg_from_image(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                     'S20150110S0208_sourcesDetected.fits'))
-        ret = gt.measure_bg_from_image(ad)
-        correct = [(4766.1092957925521, 133.05741868184813),
-                   (4751.3978053635265, 139.48162435882048),
-                   (4795.2896966415474, 147.26329160720647),
-                   (4757.0842356247831, 137.44112506830069)]
+        ret = gt.measure_bg_from_image(ad, sampling=1000)
+        correct = [(4769.6451962739029, 135.15673217773428, 4051),
+                   (4755.2097051531528, 139.58898356740355, 4141),
+                   (4795.2710757263212, 144.54896204033864, 4130),
+                   (4758.6914804861226, 136.653889361643, 4134)]
         for rv, cv in zip(ret, correct):
             for a, b in zip(rv, cv):
                 assert abs(a - b) < 0.001, 'Problem with gaussfit=True'
-        ret = gt.measure_bg_from_image(ad, gaussfit=False)
-        correct = [(4766.8877, 118.89507), (4751.3643, 123.5854),
-                   (4795.1802, 129.7478), (4756.998, 121.68998)]
+        ret = gt.measure_bg_from_image(ad, sampling=100, gaussfit=False)
+        correct = [(4766.5586, 118.92503, 38514), (4750.9131, 124.56567, 39535),
+                   (4794.6167, 128.12645, 39309), (4757.0063, 121.23917, 39388)]
         for rv, cv in zip(ret, correct):
             for a, b in zip(rv, cv):
                 assert abs(a - b) < 0.001, 'Problem with gaussfit=False'

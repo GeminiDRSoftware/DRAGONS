@@ -1,6 +1,7 @@
 import os
 import shutil
 import numpy as np
+from importlib import import_module
 
 from scipy.ndimage import measurements
 
@@ -10,12 +11,12 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
 
-from geminidr.gemini.lookups import BPMDict
 from geminidr.gemini.lookups import MDFDict
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
 from geminidr.core.parameters_standardize import ParametersStandardize
+from gempy.utils import logutils
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -55,22 +56,27 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         dq_dtype = np.int16
 
-        for ad in adinputs:
+        # Getting all the filenames first prevents reopening the same file
+        # for each science AD
+        bpm_list = params['bpm']
+        if bpm_list is None:
+            bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+
+        for ad, bpm in zip(*gt.make_lists(adinputs, bpm_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
-                    'already been processed by add DQ'.format(ad.filename))
+                    'already been processed by addDQ'.format(ad.filename))
                 continue
 
-            bpm = params['bpm']
             if bpm is None:
-                bpm = self._get_bpm_filename(ad)
-            log.fullinfo("Using {} as BPM".format(bpm))
-            bpm_ad = astrodata.open(bpm)
-
-            clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                else gt.clip_auxiliary_data
-            final_bpm = clip_method(ad, bpm_ad, 'bpm', dq_dtype,
-                                    self.keyword_comments)
+                # So it can be zipped with the AD
+                final_bpm = [None] * len(ad)
+            else:
+                log.fullinfo("Using {} as BPM".format(bpm.filename))
+                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
+                    else gt.clip_auxiliary_data
+                final_bpm = clip_method(ad, bpm, 'bpm', dq_dtype,
+                                        self.keyword_comments)
 
             for ext, bpm_ext in zip(ad, final_bpm):
                 extver = ext.hdr.EXTVER
@@ -82,9 +88,10 @@ class Standardize(PrimitivesBASE):
                 non_linear_level = ext.non_linear_level()
                 saturation_level = ext.saturation_level()
 
-                ext.mask = bpm_ext.data
+                ext.mask = bpm_ext.data if bpm_ext is not None else \
+                    np.zeros_like(ext.data, dtype=dq_dtype)
                 if saturation_level:
-                    log.fullinfo('Flagging saturated pixels in {} extver {} '
+                    log.fullinfo('Flagging saturated pixels in {}:{} '
                                  'above level {:.2f}'.
                                  format(ad.filename, extver, saturation_level))
                     ext.mask |= np.where(ext.data >= saturation_level,
@@ -93,8 +100,8 @@ class Standardize(PrimitivesBASE):
                 if non_linear_level:
                     if saturation_level:
                         if saturation_level > non_linear_level:
-                            log.fullinfo('Flagging non-linear pixels in {} '
-                                         'extver {} above level {:.2f}'.
+                            log.fullinfo('Flagging non-linear pixels in {}:{} '
+                                         'above level {:.2f}'.
                                          format(ad.filename, extver,
                                                 non_linear_level))
                             ext.mask |= np.where((ext.data >= non_linear_level) &
@@ -126,22 +133,22 @@ class Standardize(PrimitivesBASE):
                             ext.mask |= hidden_saturation_array
 
                         elif saturation_level < non_linear_level:
-                            log.warning('{} extver {} has saturation level '
-                                        'less than non-linear level'.
-                                        format(ad.filename, extver))
+                            log.warning('{}:{} has saturation level less than '
+                                'non-linear level'.format(ad.filename, extver))
                         else:
                             log.fullinfo('Saturation and non-linear levels '
-                                         'are the same for {} extver {}. Only '
+                                         'are the same for {}:{}. Only '
                                          'flagging saturated pixels'.
                                 format(ad.filename, extver))
                     else:
-                        log.fullinfo('Flagging non-linear pixels in {} '
-                                     'extver {} above level {:.2f}'.
+                        log.fullinfo('Flagging non-linear pixels in {}:{} '
+                                     'above level {:.2f}'.
                                      format(ad.filename, extver,
                                             non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0)
 
+            # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
@@ -152,6 +159,55 @@ class Standardize(PrimitivesBASE):
         return adinputs
 
     def addIllumMaskToDQ(self, adinputs=None, **params):
+        """
+        Adds an illumination mask to each AD object
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mask: str/None
+            name of illumination mask mask (None -> use default)
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        dq_dtype = np.int16
+
+        # Getting all the filenames first prevents reopening the same file
+        # for each science AD
+        illum_list = params['mask']
+        if illum_list is None:
+            illum_list = [self._get_illum_mask_filename(ad) for ad in adinputs]
+
+        for ad, illum in zip(*gt.make_lists(adinputs, illum_list, force_ad=True)):
+            if ad.phu.get(timestamp_key):
+                log.warning('No changes will be made to {}, since it has '
+                    'already been processed by addIllumMaskToDQ'.
+                            format(ad.filename))
+                continue
+
+            if illum is None:
+                # So it can be zipped with the AD
+                final_illum = [None] * len(ad)
+            else:
+                log.fullinfo("Using {} as illumination mask".format(illum.filename))
+                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
+                    else gt.clip_auxiliary_data
+                final_illum = clip_method(ad, illum, 'bpm', dq_dtype,
+                                        self.keyword_comments)
+
+            for ext, illum_ext in zip(ad, final_illum):
+                # Ensure we're only adding the unilluminated bit
+                iext = np.where(illum_ext > 0, DQ.unilluminated,
+                                0).astype(dq_dtype)
+                ext.mask = iext if ext.mask is None else ext.mask | iext
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+
         return adinputs
 
     def addMDF(self, adinputs=None, **params):
@@ -310,7 +366,7 @@ class Standardize(PrimitivesBASE):
                             "noise component of the variance using data that "
                             "still contains a bias level")
 
-            self._calculate_var(ad, read_noise, poisson_noise)
+            _calculate_var(ad, read_noise, poisson_noise)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=suffix, strip=True)
 
@@ -468,112 +524,168 @@ class Standardize(PrimitivesBASE):
                                               strip=True)
         return adinputs
 
-    ##########################################################################
-    # Below are the helper functions for the primitives in this module       #
-    ##########################################################################
-
     def _get_bpm_filename(self, ad):
         """
-        Gets a bad pixel mask for an input science frame
-
-        Parameters
-        ----------
-        adinput: AstroData
-            AD instance for which we want a bpm
+        Gets the BPM filename for an input science frame. Takes bpm_dict from
+        geminidr.<instrument>.lookups.maskdb.py and looks for a key
+        <INSTRUMENT>_<XBIN><YBIN>. As a backup, uses the file in
+        geminidr/<instrument>/lookups/BPM/ if there's only one file. This
+        will be sent to clip_auxiliary_data for a subframe ROI.
 
         Returns
         -------
-        str: Filename of the appropriate bpm
+        str/None: Filename of the appropriate bpm
         """
+        log = self.log
         inst = ad.instrument()
         xbin = ad.detector_x_bin()
         ybin = ad.detector_y_bin()
-        if 'GMOS' in inst:
-            det = ad.detector_name(pretty=True)[:3]
-            amps = '{}amp'.format(3 * ad.phu.NAMPS)
-            mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
-                or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
-            key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
-                                              'v1', mos)
-            inst = 'GMOS'
-        else:
-            key = '{}_{}_{}'.format(inst, xbin, ybin)
+        bpm = None
 
-        filename = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM',
-                                    BPMDict.bpm_dict[key])
-        return filename
+        bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
+        bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
+        try:
+            masks = import_module('.maskdb', bpm_pkg)
+            bpm_dict = getattr(masks, 'bpm_dict')
+            key = '{}_{}{}'.format(inst, xbin, ybin)
+            try:
+                bpm = bpm_dict[key]
+            except KeyError:
+                log.warning('No BPM found for {}'.format(ad.filename))
+        except:
+            # No dict; maybe there's only one file in BPM dir
+            try:
+                bpm_files = [file for file in os.listdir(bpm_dir) if
+                             file.endswith('.fits')]
+            except OSError:
+                log.fullinfo('No BPM directory found. Cannot add BPM.')
+            else:
+                if len(bpm_files) == 1:
+                    bpm = bpm_files[0]
+                    log.fullinfo('Using only image found in BPM directory.')
+                elif len(bpm_files) == 0:
+                    log.fullinfo('No files in BPM directory. Cannot add BPM.')
+                else:
+                    log.fullinfo('{} files in BPM directory, but no dict to '
+                                'choose. Cannot add BPM'.format(len(bpm_files)))
 
-    def _calculate_var(self, adinput, add_read_noise=False,
-                       add_poisson_noise=False):
+        if bpm is not None:
+            # Prepend standard path if the filename doesn't start with '/'
+            return bpm if bpm.startswith(os.path.sep) else \
+                os.path.join(bpm_dir, bpm)
+        return None
+
+    def _get_illum_mask_filename(self, ad):
         """
-        Calculates the variance of each extension in the input AstroData
-        object and updates the .variance attribute
-
-        Parameters
-        ----------
-        adinput: AstroData
-            AD instance to add variance planes to
-        add_read_noise: bool
-            add the read noise component?
-        add_poisson_noise: bool
-            add the Poisson noise component?
+        Gets the illumMask filename for an input science frame, using
+        illumMask_dict in geminidr.<instrument>.lookups.maskdb.py and looks
+        for a key <INSTRUMENT>_<MODE>_<XBIN><YBIN>. This file will be sent
+        to clip_auxiliary_data for a subframe ROI.
 
         Returns
         -------
-        AstroData:
-            an updated AD instance
+        str/None: Filename of the appropriate illumination mask
         """
         log = self.log
-        gain_list = adinput.gain()
-        read_noise_list = adinput.read_noise()
-        var_dtype = np.float32
+        inst = ad.instrument()
+        mode = 'IMAGE' if 'IMAGE' in ad.tags else 'SPECT'
+        xbin = ad.detector_x_bin()
+        ybin = ad.detector_y_bin()
+        bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
+        bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
+        try:
+            masks = import_module('.maskdb', bpm_pkg)
+            illum_dict = getattr(masks, 'illumMask_dict')
+        except:
+            log.fullinfo('No illumination mask dict for {}'.
+                         format(ad.filename))
+            return None
 
-        for ext, gain, read_noise in zip(adinput, gain_list, read_noise_list):
-            extver = ext.hdr.EXTVER
-            # Assume units are ADU if not explicitly given
-            bunit = ext.hdr.get('BUNIT', 'ADU')
+        # We've successfully loaded the illumMask_dict
+        key = '{}_{}_{}{}'.format(inst, mode, xbin, ybin)
+        try:
+            mask = illum_dict[key]
+        except KeyError:
+            log.warning('No illumination mask found for {}'.format(ad.filename))
+            return None
+        # Prepend standard path if the filename doesn't start with '/'
+        return mask if mask.startswith(os.path.sep) else \
+            os.path.join(bpm_dir, mask)
 
-            # Create a variance array with the read noise (or zero)
-            if add_read_noise:
-                if read_noise is None:
-                    log.warning('Read noise for {} extver {} = None. Setting '
-                                'to zero'.format(adinput.filename, extver))
-                    read_noise = 0.0
-                else:
-                    log.fullinfo('Read noise for {} extver {} = {} electrons'.
-                             format(adinput.filename, extver, read_noise))
-                    log.fullinfo('Calculating the read noise component of '
-                                 'the variance in {}'.format(bunit))
-                    if bunit.upper() == 'ADU':
-                        read_noise /= gain
-                var_array = np.full(ext.data.shape, read_noise*read_noise)
+##########################################################################
+# Below are the helper functions for the primitives in this module       #
+##########################################################################
+
+def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
+    """
+    Calculates the variance of each extension in the input AstroData
+    object and updates the .variance attribute
+
+    Parameters
+    ----------
+    adinput: AstroData
+        AD instance to add variance planes to
+    add_read_noise: bool
+        add the read noise component?
+    add_poisson_noise: bool
+        add the Poisson noise component?
+
+    Returns
+    -------
+    AstroData:
+        an updated AD instance
+    """
+    log = logutils.get_logger(__name__)
+    gain_list = adinput.gain()
+    read_noise_list = adinput.read_noise()
+    var_dtype = np.float32
+
+    for ext, gain, read_noise in zip(adinput, gain_list, read_noise_list):
+        extver = ext.hdr.EXTVER
+        # Assume units are ADU if not explicitly given
+        bunit = ext.hdr.get('BUNIT', 'ADU')
+
+        # Create a variance array with the read noise (or zero)
+        if add_read_noise:
+            if read_noise is None:
+                log.warning('Read noise for {} extver {} = None. Setting '
+                            'to zero'.format(adinput.filename, extver))
+                read_noise = 0.0
             else:
-                var_array = np.zeros(ext.data.shape)
-
-            # Add the Poisson noise if desired
-            if add_poisson_noise:
-                poisson_array = (ext.data if ext.is_coadds_summed() else
-                                 ext.data / ext.coadds())
-                if bunit.upper() == 'ADU':
-                    poisson_array /= gain
-                log.fullinfo('Calculating the Poisson noise component of '
+                log.fullinfo('Read noise for {} extver {} = {} electrons'.
+                         format(adinput.filename, extver, read_noise))
+                log.fullinfo('Calculating the read noise component of '
                              'the variance in {}'.format(bunit))
-                var_array += np.where(poisson_array > 0, poisson_array, 0)
+                if bunit.upper() == 'ADU':
+                    read_noise /= gain
+            var_array = np.full(ext.data.shape, read_noise*read_noise)
+        else:
+            var_array = np.zeros(ext.data.shape)
 
-            if ext.variance is not None:
-                if add_read_noise and add_poisson_noise:
-                    raise ValueError("Cannot add read noise and Poisson noise"
-                                     " components to variance as variance "
-                                     "already exists")
-                else:
-                    log.fullinfo("Combining the newly calculated variance "
-                                 "with the current variance extension {}:{}".
-                                 format(ext.filename, extver))
-                    var_array += ext.variance
+        # Add the Poisson noise if desired
+        if add_poisson_noise:
+            poisson_array = (ext.data if ext.is_coadds_summed() else
+                             ext.data / ext.coadds())
+            if bunit.upper() == 'ADU':
+                poisson_array /= gain
+            log.fullinfo('Calculating the Poisson noise component of '
+                         'the variance in {}'.format(bunit))
+            var_array += np.where(poisson_array > 0, poisson_array, 0)
+
+        if ext.variance is not None:
+            if add_read_noise and add_poisson_noise:
+                raise ValueError("Cannot add read noise and Poisson noise"
+                                 " components to variance as variance "
+                                 "already exists")
             else:
-                log.fullinfo("Adding variance to {}:{}".format(ext.filename,
-                                                               extver))
-            # Attach to the extension
-            ext.variance = var_array.astype(var_dtype)
+                log.fullinfo("Combining the newly calculated variance "
+                             "with the current variance extension {}:{}".
+                             format(ext.filename, extver))
+                var_array += ext.variance
+        else:
+            log.fullinfo("Adding variance to {}:{}".format(ext.filename,
+                                                           extver))
+        # Attach to the extension
+        ext.variance = var_array.astype(var_dtype)
 
-        return
+    return
