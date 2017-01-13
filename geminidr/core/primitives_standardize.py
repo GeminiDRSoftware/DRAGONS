@@ -1,6 +1,7 @@
 import os
 import shutil
 import numpy as np
+from importlib import import_module
 
 from scipy.ndimage import measurements
 
@@ -10,7 +11,6 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
 
-from geminidr.gemini.lookups import BPMDict
 from geminidr.gemini.lookups import MDFDict
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -64,7 +64,7 @@ class Standardize(PrimitivesBASE):
 
             bpm = params['bpm']
             if bpm is None:
-                bpm = _get_bpm_filename(ad, self.dr_root, self.timestamp_keys)
+                bpm = self._get_bpm_filename(ad)
 
             if bpm is None:
                 final_bpm = [None] * len(ad)
@@ -90,7 +90,7 @@ class Standardize(PrimitivesBASE):
                 ext.mask = bpm_ext.data if bpm_ext is not None else \
                     np.zeros_like(ext.data, dtype=np.int16)
                 if saturation_level:
-                    log.fullinfo('Flagging saturated pixels in {} extver {} '
+                    log.fullinfo('Flagging saturated pixels in {}:{} '
                                  'above level {:.2f}'.
                                  format(ad.filename, extver, saturation_level))
                     ext.mask |= np.where(ext.data >= saturation_level,
@@ -99,8 +99,8 @@ class Standardize(PrimitivesBASE):
                 if non_linear_level:
                     if saturation_level:
                         if saturation_level > non_linear_level:
-                            log.fullinfo('Flagging non-linear pixels in {} '
-                                         'extver {} above level {:.2f}'.
+                            log.fullinfo('Flagging non-linear pixels in {}:{} '
+                                         'above level {:.2f}'.
                                          format(ad.filename, extver,
                                                 non_linear_level))
                             ext.mask |= np.where((ext.data >= non_linear_level) &
@@ -132,17 +132,16 @@ class Standardize(PrimitivesBASE):
                             ext.mask |= hidden_saturation_array
 
                         elif saturation_level < non_linear_level:
-                            log.warning('{} extver {} has saturation level '
-                                        'less than non-linear level'.
-                                        format(ad.filename, extver))
+                            log.warning('{}:{} has saturation level less than '
+                                'non-linear level'.format(ad.filename, extver))
                         else:
                             log.fullinfo('Saturation and non-linear levels '
-                                         'are the same for {} extver {}. Only '
+                                         'are the same for {}:{}. Only '
                                          'flagging saturated pixels'.
                                 format(ad.filename, extver))
                     else:
-                        log.fullinfo('Flagging non-linear pixels in {} '
-                                     'extver {} above level {:.2f}'.
+                        log.fullinfo('Flagging non-linear pixels in {}:{} '
+                                     'above level {:.2f}'.
                                      format(ad.filename, extver,
                                             non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
@@ -478,40 +477,62 @@ class Standardize(PrimitivesBASE):
 # Below are the helper functions for the primitives in this module       #
 ##########################################################################
 
-def _get_bpm_filename(ad, dr_root, timestamp_keys):
-    """
-    Gets a bad pixel mask for an input science frame
+    def _get_bpm_filename(self, ad):
+        """
+        Gets a bad pixel mask for an input science frame. Takes bpm_dict from
+        geminidr.<instrument>.lookups.mask_dict and looks for a key
+        <INSTRUMENT>_<XBIN>_<YBIN>. As a backup, uses the dict value if there's
+        only one entry, or the file in geminidr/<instrument>/lookups/BPM/ if
+        there's only one file.
 
-    Parameters
-    ----------
-    adinput: AstroData
-        AD instance for which we want a bpm
+        Parameters
+        ----------
+        adinput: AstroData
+            AD instance for which we want a bpm
 
-    Returns
-    -------
-    str: Filename of the appropriate bpm
-    """
-    log = logutils.get_logger(__name__)
-    inst = ad.instrument()
-    xbin = ad.detector_x_bin()
-    ybin = ad.detector_y_bin()
-    if 'GMOS' in inst:
-        det = ad.detector_name(pretty=True)[:3]
-        amps = '{}amp'.format(3 * ad.phu.NAMPS)
-        mos = '_mosaic' if (ad.phu.get(timestamp_keys['mosaicDetectors'])
-            or ad.phu.get(timestamp_keys['tileArrays'])) else ''
-        key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
-                                          'v1', mos)
-        inst = 'GMOS'
-    else:
+        Returns
+        -------
+        str: Filename of the appropriate bpm
+        """
+        log = self.log
+        inst = ad.instrument()
+        xbin = ad.detector_x_bin()
+        ybin = ad.detector_y_bin()
         key = '{}_{}_{}'.format(inst, xbin, ybin)
+        bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
+        bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
 
-    try:
-        return os.path.join(dr_root, inst.lower(), 'lookups', 'BPM',
-                                BPMDict.bpm_dict[key])
-    except KeyError:
-        log.stdinfo('No BPM entry matches {}'.format(ad.filename))
-    return None
+        try:
+            masks = import_module('.mask_dict', bpm_pkg)
+        except ImportError:
+            pass
+        else:
+            bpm_dict = masks.bpm_dict
+            try:
+                return os.path.join(bpm_dir, bpm_dict[key])
+            except KeyError:
+                if len(bpm_dict) == 1:
+                    bpm = bpm_dict.values()[0]
+                    log.stdinfo('Only one entry in BPM dict. Using {} as BPM'.
+                                format(bpm))
+                    return bpm
+
+        # No help from the dict.
+        # Look in the BPM directory; return a file if there's only one
+        try:
+            bpm_files = [file for file in os.listdir(bpm_dir) if
+                         file.endswith('.fits')]
+        except OSError:
+            # Directory doesn't exist
+            pass
+        else:
+            if len(bpm_files) == 1:
+                bpm = bpm_files[0]
+                log.stdinfo('Found single image in BPM directory. Using {} as BPM'.
+                            format(bpm))
+                return bpm
+        log.stdinfo('No BPM found for {}'.format(ad.filename))
+        return None
 
 def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
     """

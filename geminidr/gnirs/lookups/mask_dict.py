@@ -1,3 +1,6 @@
+bpm_dict = {
+    "GNIRS_1_1": "gnirsn_2012dec05_bpm_alt.fits"
+}
 
 illum_masks = {
     # Table of GNIRS illumination masks by camera and filter type (filters with or
