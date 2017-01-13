@@ -1,0 +1,134 @@
+.TH swapper 1 "13-01-2017" "version 2.0" "swapper man page"
+.SH NAME
+swapper
+.SH SYNOPSIS
+swapper
+[
+.B -h
+]
+[
+.B -a, --auto
+]
+[
+.B -c
+]
+[
+.B -d
+]
+[
+.B -l
+LOGNAME 
+]
+[
+.B -m 
+MODULE
+]
+[
+.B -r
+]
+[
+.B -u 
+USERPATH
+]
+[
+.B -v 
+]
+
+.SH DESCRIPTION
+.B swapper(1)
+replaces string literals that occur within predefined gemini_python
+packages. These packages are
+
+    astrodata/ 
+    gemini_instruments/ 
+    geminidr/ 
+    gempy/ 
+    recipe_system/ 
+
+Search paths are based upon an environment variable,
+.B $NGEM
+, OR on the path
+passed with the
+.B '-u USERPATH'
+option.
+.B $NGEM
+defines a path to a user's gemini_python installation as pulled from the GDPSG
+repository. E.g.,
+
+    export NGEM=/user/path/to/gemini_python
+
+If a user has a non-standard or partial gemini_python installation, or has
+otherwise changed the above organisation, the
+.B -u
+option should be used to pass the location of this code base to swapper.
+If 
+.B -u 
+is passed, search packages should be directly under this path.
+
+Examples:
+
+  -- a standard gemini_python repo checkout in ~ :
+
+      $ export NGEM=~/gemini_python
+      $ swapper -c -r "old string" "new string"
+
+  -- astrodata, gempy, and other gemini_python packages are in directory
+     ~/foobar/. Use -u:
+
+      $ swapper -r -c -u ~/foobar "old string" "new string"
+
+.SH OPTIONS
+.TP
+.B -h, --help
+show the
+.B swapper
+help message and exit
+.TP
+.B -a, --auto
+Execute swaps without user confirmation. Default is False. User
+.B must
+request auto execute
+.TP
+.B -c
+Switch on color high lighting. Default is Off.
+.TP
+.B -d
+Self-document line changes w/ inline comments. Default is False.
+.TP
+.B -l LOGNAME
+Set the logfile name to
+.B LOGNAME
+Default is 'swap.log'.
+.TP
+.B -m MODULE
+Execute swaps in
+.B MODULE 
+only. Default is all.
+.TP
+.B -r
+Report potential swaps only. Default is 'False'.
+.TP
+.B -u USERPATH
+Use
+.B USERPATH
+to build search paths. Default is None. Without -u, search under $NGEM.
+.TP
+.B -v, --version
+show program's version number and exit
+
+.SH ENVIRONMENT
+No special environment is required.
+.SH BUGS
+None known.
+
+.SH SEE ALSO 
+.I reduce(1), typewalk(1)
+
+.SH HISTORY
+The 
+.B swapper
+tool was originally written for version one (1) of the gemini_python, astrodata, and
+the recipe_system.
+
+.SH AUTHOR
+Kenneth Anderson, Gemini Observatory, 2016(c). 

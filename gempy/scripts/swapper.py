@@ -9,8 +9,6 @@ __version__  = 'v2.0 (new hope)'
 #
 #    functional tasks
 #
-
-# -- switchable search trunk, either 'trunk' or a passed 'branch'
 # -- sift through each module, searching for input 'string'
 # -- report each found line, showing current current line
 # -- report the matching line with it's new string insert.
@@ -22,8 +20,8 @@ __version__  = 'v2.0 (new hope)'
 # (escape chars, color codes). more the log to get highlighting text.
 #
 # $ swapper -h
-# usage: swapper [-h] [-a] [-b BRANCH] [-c] [-d] [-l LOGNAME] [-m MODULE]
-#                [-p PKG] [-r] [-u USERPATH]
+# usage: swapper [-h] [-a] [-c] [-d] [-l LOGNAME] [-m MODULE]
+#                [-r] [-u USERPATH]
 #                ostring nstring
 #
 # positional arguments:
@@ -53,14 +51,8 @@ Description:
     gempy/
     recipe_system/
 
-  A user may specify that a different 'astrodata_X' package is searched rather 
-  than the default 'astrodata_Gemini' (see -p option). The 'astrodata_FITS'
-  package is fixed and present within gemini_python. It provides neither recipes
-  nor primitives and provides only a limited set of generic descriptors.
-  astrodata_FITS/ is searched if present, but is not presumed to exist.
-
-  Search paths are based upon an environment variable, $GEM, OR on the path
-  passed with the '-u USERPATH' option. $GEM defines a path to a user's 
+  Search paths are based upon an environment variable, $NGEM, OR on the path
+  passed with the '-u USERPATH' option. $NGEM defines a path to a user's 
   gemini_python installation as pulled from the GDPSG repository, and which
   nominally contains the 'branches' and 'trunk' directories as they appear 
   in the gemini_python repo. I.e.,
