@@ -4,16 +4,11 @@
 #
 #                                                                     swapper.py
 # ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
-__version__  = '$Rev$'[6:-1]
-__version_date__ = '$Date$'[7:-2]
+__version__  = 'v2.0 (new hope)'
 # ------------------------------------------------------------------------------
 #
 #    functional tasks
 #
-
-# -- switchable search trunk, either 'trunk' or a passed 'branch'
 # -- sift through each module, searching for input 'string'
 # -- report each found line, showing current current line
 # -- report the matching line with it's new string insert.
@@ -25,8 +20,8 @@ __version_date__ = '$Date$'[7:-2]
 # (escape chars, color codes). more the log to get highlighting text.
 #
 # $ swapper -h
-# usage: swapper [-h] [-a] [-b BRANCH] [-c] [-d] [-l LOGNAME] [-m MODULE]
-#                [-p PKG] [-r] [-u USERPATH]
+# usage: swapper [-h] [-a] [-c] [-d] [-l LOGNAME] [-m MODULE]
+#                [-r] [-u USERPATH]
 #                ostring nstring
 #
 # positional arguments:
@@ -37,62 +32,47 @@ __version_date__ = '$Date$'[7:-2]
 #   -h, --help   show this help message and exit
 #   -a, --auto   Execute swaps without user confirmation. Default is False. User
 #                must request auto execute
-#   -b BRANCH    Execute swaps in <branch> of gemini_python. Default is 'trunk.'
 #   -c           Switch on color high lighting. Default is Off.
 #   -d           Document line changes w/ swapper comments.
 #   -l LOGNAME   Set the logfile name. Default is 'swap.log'.
 #   -m MODULE    Execute swaps in <module> only. Default is all.
-#   -p PKG       Execute swaps in <package>. Default is 'Gemini'.
 #   -r           Report potential swaps only. Default is 'False'.
 #   -u USERPATH  Use this path to build search paths. Default is None. Without
 #                -u, search under $GEM.
 # ------------------------------------------------------------------------------
 desc = """
 Description:
-  swapper replaces string literals that occur within predefined gemini_python 
-  packages. By default, these packages are specifically, 
+  swapper replaces string literals that occur within predefined gemini_python
+  packages. These packages are,
 
     astrodata/
-    astrodata_FITS
-    astrodata_Gemini/ 
+    gemini_instruments/
+    geminidr/
     gempy/
+    recipe_system/
 
-  A user may specify that a different 'astrodata_X' package is searched rather 
-  than the default 'astrodata_Gemini' (see -p option). The 'astrodata_FITS'
-  package is fixed and present within gemini_python. It provides neither recipes
-  nor primitives and provides only a limited set of generic descriptors.
-  astrodata_FITS/ is searched if present, but is not presumed to exist.
-
-  Search paths are based upon an environment variable, $GEM, OR on the path
-  passed with the '-u USERPATH' option. $GEM defines a path to a user's 
+  Search paths are based upon an environment variable, $NGEM, OR on the path
+  passed with the '-u USERPATH' option. $NGEM defines a path to a user's 
   gemini_python installation as pulled from the GDPSG repository, and which
   nominally contains the 'branches' and 'trunk' directories as they appear 
   in the gemini_python repo. I.e.,
 
-    export GEM=/user/path/to/gemini_python
+    export NGEM=/user/path/to/gemini_python
 
-  which shall contain
-
-    branches/
-    trunk/
-
-  The critical paths are 'branches' and 'trunk'. 'branches' need only be 
-  present if a branch is specified by the user (-b option). Other repo 
-  directories need not be present, as they are not considered in the search. 
   If a user has a non-standard or partial gemini_python installation, or has 
   otherwise changed the above organisation, the -u option should be used to 
   pass the location of this code base to swapper. If -u is passed, search 
-  packages should be directly under this path and any -b option will be ignored.
+  packages should be directly under this path.
 
   Examples:
 
   -- a standard gemini_python repo checkout in ~ :
 
-      $ export GEM=~/gemini_python  [or setenv ... for csh-ish]
+      $ export NGEM=~/gemini_python
       $ swapper -c -r "old string" "new string"
 
-  -- astrodata, gempy, and other astrodata packages are in directory
-     ~/foobar/ . I.e. there is no 'trunk' subdir. Use -u:
+  -- astrodata, gempy, and other gemini_python packages are in directory
+     ~/foobar/. Use -u:
 
       $ swapper -r -c -u ~/foobar "old string" "new string"
 
@@ -106,14 +86,13 @@ import subprocess
 
 from time import strftime
 from shutil import copyfile
-from os.path import basename, exists, join
+from os.path import basename, exists, join, split
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
 from gempy.utils import logutils
 
 # ------------------------------------------------------------------------------
-version = "1.0 (r" + __version__.strip() +")"
 def handleCLArgs():
     parser = ArgumentParser(description=desc, prog='swapper',
                             formatter_class=RawDescriptionHelpFormatter)
@@ -123,10 +102,6 @@ def handleCLArgs():
     parser.add_argument("-a", "--auto", dest="auto", action="store_true",
                         help="Execute swaps without user confirmation."
                         " Default is False. User must request auto execute")
-
-    parser.add_argument("-b", dest="branch", default="trunk",
-                        help="Execute swaps in <branch> of gemini_python."
-                        " Default is 'trunk.'")
 
     parser.add_argument("-c", dest="color", action="store_true",
                         help="Switch on color high lighting."
@@ -143,20 +118,16 @@ def handleCLArgs():
                         help="Execute swaps in <module> only."
                         " Default is all.")
 
-    parser.add_argument("-p", dest="pkg", default="Gemini",
-                        help="Execute swaps in <package>."
-                        " Default is 'Gemini'.")
-
     parser.add_argument("-r", dest="report", action="store_true",
                         help="Report potential swaps only."
                         " Default is 'False'.")
 
     parser.add_argument("-u", dest="userpath", default=None,
                         help="Use this path to build search paths."
-                        " Default is None. Without -u, search under $GEM. ")
+                        " Default is None. Without -u, search under $NGEM. ")
 
     parser.add_argument("-v", '--version', action='version', 
-                        version='%(prog)s ' + version)  
+                        version='%(prog)s ' + __version__)
 
     args = parser.parse_args()
     return args
@@ -186,27 +157,16 @@ class Swap(object):
     def __init__(self, args):
         """ Instance definitions."""
         
-        # Get the gemini_python location. Users should define $GEM
+        # Get the gemini_python location. Users should define $NGEM
         # set up with report only flag. TBR
+        # E.g., NGEM=~/Gemini/gitlab/gemini_python
         try:
-            self.GEM = os.path.abspath(os.environ['GEM'])
+            self.GEM = os.path.abspath(os.environ['NGEM'])
         except KeyError:
             self.GEM = None
 
-        self.pif    = "PIF"
-        self.fits   = "FITS"
-        self.config = "ADCONFIG"
-        self.recipe = "RECIPES"
-        self.pymods = []
-        self.pkg_paths  = []
-        self.fits_paths = []
-        self.full_paths = []
-        self.swap_summary = ()
-        
         self.doc      = args.doc
-        self.package  = args.pkg
         self.auto_run = args.auto
-        self.branch   = args.branch
         self.focus    = args.module
         self.colorize = args.color
         self.cur_str  = args.ostring
@@ -216,165 +176,96 @@ class Swap(object):
         else:
             self.userpath = args.userpath
 
+        self.pymods = []
+        self.full_paths = []
+        self.swap_summary = ()
+
     # paths in a package
     def setup_search(self):
-        ppif     = self.pif    + "_" + self.package
-        adconfig = self.config + "_" + self.package
-        recipes  = self.recipe + "_" + self.package
-        adfits   = self.config + "_" + "FITS"
-        
-        self.search_set = {"astro_paths": ['astrodata', 'astrodata/adutils', 
-                                           'astrodata/adutils/reduceutils',
-                                           'astrodata/eti', 'astrodata/scripts'
-                                       ],
-                           "astro_new_paths": ['astrodata', 'astrodata/eti',
-                                               'astrodata/interface',
-                                               'astrodata/scripts', 
-                                               'astrodata/utils',
-                                               'recipe_system/adcc/servers',
-                                               'recipe_system/apps',
-                                               'recipe_system/cal_service',
-                                               'recipe_system/reduction'
-                                           ],
-                           "gemp_paths": [ 'gempy/adlibrary', 'gempy/gemini',
-                                           'gempy/gemini/eti', 'gempy/library',
-                                           'gempy/scripts'
-                                       ],
-                           "fits_paths": [ join(adfits, 'descriptors')
-                                       ],
-                           "pkg_paths": [ join(recipes, 'primitives'),
-                                          join(adconfig,'structures'),
-                                          join(adconfig,'lookups'),
-                                          join(adconfig,'lookups/F2'),
-                                          join(adconfig,'lookups/GMOS'),
-                                          join(adconfig,'lookups/GNIRS'),
-                                          join(adconfig,'lookups/GSAOI'),
-                                          join(adconfig,'lookups/NIFS'),
-                                          join(adconfig,'lookups/NIRI'),
-                                          join(adconfig,'descriptors'),
-                                          join(adconfig,'descriptors/F2'),
-                                          join(adconfig,'descriptors/GMOS'),
-                                          join(adconfig,'descriptors/GNIRS'),
-                                          join(adconfig,'descriptors/GSAOI'),
-                                          join(adconfig,'descriptors/MICHELLE'),
-                                          join(adconfig,'descriptors/NICI'),
-                                          join(adconfig,'descriptors/NIFS'),
-                                          join(adconfig,'descriptors/NIRI'),
-                                          join(adconfig,'descriptors/PHOENIX'),
-                                          join(adconfig,'descriptors/TRECS'),
-                                          join(adconfig,'classifications/status'),
-                                          join(adconfig,'classifications/types'),
-                                          join(adconfig,'classifications/types/ABU'),
-                                          join(adconfig,'classifications/types/BHROS'),
-                                          join(adconfig,'classifications/types/CIRPASS'),
-                                          join(adconfig,'classifications/types/F2'),
-                                          join(adconfig,'classifications/types/GMOS'),
-                                          join(adconfig,'classifications/types/GNIRS'),
-                                          join(adconfig,'classifications/types/GPI'),
-                                          join(adconfig,'classifications/types/GSAOI'),
-                                          join(adconfig,'classifications/types/MICHELLE'),
-                                          join(adconfig,'classifications/types/NICI'),
-                                          join(adconfig,'classifications/types/NIFS'),
-                                          join(adconfig,'classifications/types/NIRI'),
-                                          join(adconfig,'classifications/types/OSCIR'),
-                                          join(adconfig,'classifications/types/PHOENIX'),
-                                          join(adconfig,'classifications/types/QUIRC'),
-                                          join(adconfig,'classifications/types/TEXES'),
-                                          join(adconfig,'classifications/types/TRECS'),
-                                          join(ppif,'primdicts'),
-                                          join(ppif,'pifgemini'),
-                                          join(ppif,'pifgemini/bookkeeping'),
-                                          join(ppif,'pifgemini/display'),
-                                          join(ppif,'pifgemini/general'),
-                                          join(ppif,'pifgemini/gmos'),
-                                          join(ppif,'pifgemini/gmos_image'),
-                                          join(ppif,'pifgemini/gmos_spect'),
-                                          join(ppif,'pifgemini/mask'),
-                                          join(ppif,'pifgemini/photometry'),
-                                          join(ppif,'pifgemini/preprocess'),
-                                          join(ppif,'pifgemini/qa'),
-                                          join(ppif,'pifgemini/register'),
-                                          join(ppif,'pifgemini/resample'),
-                                          join(ppif,'pifgemini/stack'),
-                                          join(ppif,'pifgemini/standardize')
-                                      ]
+        self.search_set = {"apaths": [ 'astrodata',
+                                       'gemini_instruments',
+                                       'gemini_instruments/bhros',
+                                       'gemini_instruments/f2',
+                                       'gemini_instruments/gemini',
+                                       'gemini_instruments/gmos',
+                                       'gemini_instruments/gnirs',
+                                       'gemini_instruments/gpi',
+                                       'gemini_instruments/graces',
+                                       'gemini_instruments/gsaoi',
+                                       'gemini_instruments/michelle',
+                                       'gemini_instruments/nici',
+                                       'gemini_instruments/nifs',
+                                       'gemini_instruments/niri',
+                                       'gemini_instruments/phoenix',
+                                       'gemini_instruments/test',
+                                       'gemini_instruments/trecs'
+                                   ],
+                           "gdr_paths": [ 'geminidr',
+                                          'geminidr/core',
+                                          'geminidr/f2',
+                                          'geminidr/f2/lookups',
+                                          'geminidr/f2/recipes',
+                                          'geminidr/gemini',
+                                          'geminidr/gemini/lookups',
+                                          'geminidr/gmos',
+                                          'geminidr/gmos/lookups',
+                                          'geminidr/gmos/recipes',
+                                          'geminidr/gnirs',
+                                          'geminidr/gnirs/lookups',
+                                          'geminidr/gnirs/recipes',
+                                          'geminidr/gsaoi',
+                                          'geminidr/gsaoi/lookups',
+                                          'geminidr/gsaoi/recipes',
+                                          'geminidr/niri',
+                                          'geminidr/niri/lookups',
+                                          'geminidr/niri/recipes',
+                                      ],
+                           "rpaths": [ 'recipe_system/adcc',
+                                       'recipe_system/adcc/servers',
+                                       'recipe_system/cal_service',
+                                       'recipe_system/mappers',
+                                       'recipe_system/reduction'
+                                       'recipe_system/scripts',
+                                       'recipe_system/stacks',
+                                       'recipe_system/utils',
+                                   ],
+                           "gpaths": [ 'gempy/adlibrary', 
+                                       'gempy/eti_core',
+                                       'gempy/gemini',
+                                       'gempy/library',
+                                       'gempy/scripts',
+                                       'gempy/utils',
+                                   ],
                        }
-        return
-
-    def set_pkg_paths(self):
-        """ Configure list of package paths for package name, pkg.
-
-        Populates <list> instance variable,
-
-            self.package_search.
-
-        parameters: <void>
-        return:     <void>
-        
-        Eg., 
-        >>> self.set_pkg_paths()
-        >>> paths[0]
-        'astrodata_Gemini/RECIPES_Gemini/primitives'
-        """
-        package_paths = self.search_set['pkg_paths']
-        for path in package_paths:
-            self.pkg_paths.append(join('astrodata_' + self.package, path))
-        return
-
-    def set_fits_paths(self):
-        """ Configure list of paths for the generic astrodata_FITS.
-        Currently, there is only one code directory under astrodata_FITS,
-        which is ADCONFIG_FITS/descriptors.
-
-        parameters: <void>
-        return:     <void>
-        
-        Eg., 
-        >>> self.set_fits_paths()
-        >>> paths[0]
-        'astrodata_FITS/ADCONFIG_FITS/descriptors'
-        """
-        package_paths = self.search_set['fits_paths']
-        for path in package_paths:
-            self.fits_paths.append(join('astrodata_' + self.fits, path))
         return
 
     def set_full_paths(self):
         """ Sets the instance var 'full_paths' with the fulls paths
-        for the search, as defined by .setup_search()
+        for the search.
 
         parameters: <void>
         return:     <void>
         """
-        gemp_paths  = self.search_set['gemp_paths']
-        gem_path    = self._determine_gem_path()
-        branch_path = self._determine_branch_path()
-
+        gem_path = self._determine_gem_path()
         try:
             assert exists(gem_path)
         except AssertionError:
             msg = "Supplied path '" + gem_path + "' cannot be found."
             raise SystemExit(msg)
 
-        try:
-            assert exists(join(gem_path, branch_path))
-        except AssertionError:
-            msg = "Branch '" + self.branch + "' cannot be found."
-            raise SystemExit(msg)
-
-        if exists(join(gem_path, branch_path, 'recipe_system')):
-            astro_paths = self.search_set['astro_new_paths']
-        else:
-            astro_paths = self.search_set['astro_paths']
+        astro_paths = self.search_set['apaths']
+        gemp_paths  = self.search_set['gpaths']
+        rs_paths    = self.search_set['rpaths']
+        dr_paths    = self.search_set['gdr_paths']
 
         for path in astro_paths:
-            self.full_paths.append(join(gem_path, branch_path, path))
+            self.full_paths.append(join(gem_path, path))
         for path in gemp_paths:
-            self.full_paths.append(join(gem_path, branch_path, path))
-        for path in self.pkg_paths:
-            self.full_paths.append(join(gem_path, branch_path, path))
-        for path in self.fits_paths:
-            fpath = join(gem_path, branch_path, path)
+            self.full_paths.append(join(gem_path, path))
+        for path in rs_paths:
+            self.full_paths.append(join(gem_path, path))
+        for path in dr_paths:
+            fpath = join(gem_path, path)
             if exists(fpath):
                 self.full_paths.append(fpath)
         return
@@ -390,6 +281,7 @@ class Swap(object):
         """
         Report *only* matches found in modules. Called when user specifies
         -r switch.
+
         """
         new_head = ""
         self._echo_header()
@@ -402,7 +294,8 @@ class Swap(object):
             if self.userpath:
                 head = fpath.split(self.userpath)[-1]
             else:
-                head = fpath.split(self.branch)[-1]
+                head = fpath.split(self.GEM)[-1]
+
             match_lines = self._search_and_report(mod, self.cur_str)
             if match_lines:
                 if head != new_head:
@@ -435,7 +328,7 @@ class Swap(object):
             if self.userpath:
                 head = fpath.split(self.userpath)[-1]
             else:
-                head = fpath.split(self.branch)[-1]
+                head = split(self.GEM)[-1]
 
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
             if match_lines:
@@ -479,23 +372,18 @@ class Swap(object):
 
     # ------------------------------ prive -------------------------------------
     def _echo_header(self):
-        astro_pkg = "astrodata_" + self.package
-        log.stdinfo("\n" + basename(__file__) + " \tr" + __version__)
-
+        log.stdinfo("\n" + basename(__file__) + " \t" + __version__)
         if self.userpath:
             log.stdinfo("USERPATH\t" + Faces.BOLD + self.userpath + Faces.END)
-            log.stdinfo("BRANCH: \t" + Faces.BOLD + "None" + Faces.END)
         elif self.GEM:
             log.stdinfo("Searching\t" + Faces.BOLD + "gemini_python ..." + Faces.END)
-            log.stdinfo("BRANCH: \t" + Faces.BOLD + self.branch + Faces.END)
-            log.stdinfo("PACKAGE:\t" + Faces.BOLD + astro_pkg + Faces.END + "\n")
         return
 
     def _determine_gem_path(self):
         """ Build the instance gem_path variable. """
         gem_path = None
         if not self.userpath and not self.GEM:
-            msg = "Specify -u USERPATH or define $GEM. -h for help."
+            msg = "Specify -u USERPATH or define $NGEM. -h for help."
             raise SystemExit(msg)
 
         # Override gem_path if userpath has been specified.
@@ -504,16 +392,6 @@ class Swap(object):
         else:
             gem_path = self.GEM
         return gem_path
-
-    def _determine_branch_path(self):
-        """ Build an appropriate branch path. """
-        if self.userpath:
-            branch_path = ""
-        elif self.branch is 'trunk':
-            branch_path = self.branch
-        else:
-            branch_path = join('branches', self.branch)
-        return branch_path
 
     def _get_py_modules(self, path):
         """ Return a list of python modules in the passed path.
@@ -669,8 +547,6 @@ class Swap(object):
 def main(args):
     swap = Swap(args)
     swap.setup_search()
-    swap.set_pkg_paths()
-    swap.set_fits_paths()
     swap.set_full_paths()
     swap.set_searchable_mods()
     if args.report:
