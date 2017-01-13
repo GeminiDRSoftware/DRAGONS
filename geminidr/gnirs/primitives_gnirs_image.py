@@ -2,6 +2,8 @@ import numpy as np
 import scipy.ndimage
 from skimage.morphology import binary_dilation
 
+import astrodata
+import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 from .primitives_gnirs import GNIRS
@@ -60,13 +62,15 @@ class GNIRSImage(GNIRS, Image, Photometry):
         
         # Fetching a corrected illumination mask with a keyhole that aligns 
         # with the science data
-        if reference:
-            corr_illum_ad = _position_illum_mask(reference, log)
-            if corr_illum_ad is None:
-                log.warning("No illumination mask found for {}, no mask can "
-                            "be added to the DQ planes of the inputs".
-                            format(reference.filename))
-                return adinputs
+        illum = self._get_illum_mask_filename(reference)
+        if illum is None:
+            log.warning("No illumination mask found for {}, no mask can "
+                        "be added to the DQ planes of the inputs".
+                        format(reference.filename))
+            return adinputs
+
+        illum_ad = astrodata.open(illum)
+        corr_illum_ad = _position_illum_mask(reference, illum_ad, log)
 
         for ad in adinputs:
             final_illum = gt.clip_auxiliary_data(adinput=ad, aux=corr_illum_ad,
@@ -83,26 +87,39 @@ class GNIRSImage(GNIRS, Image, Photometry):
                                               strip=True)
         return adinputs
 
+    def _get_illum_mask_filename(self, ad):
+        """
+        Gets the illumMask filename for an input science frame, using
+        illumMask_dict in geminidr.<instrument>.lookups.maskdb.py and looks
+        for a key <INSTRUMENT>_<MODE>_<XBIN><YBIN>. This file will be sent
+        to clip_auxiliary_data for a subframe ROI.
+
+        Returns
+        -------
+        str/None: Filename of the appropriate illumination mask
+        """
+        # TODO: Look at the whole pointing_in_field situation
+        return fov.get_illum_mask_filename(ad)
+
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
     
-def _position_illum_mask(adinput, log):
+def _position_illum_mask(adinput, illum, log):
     """
     This function is used to reposition a GNIRS illumination mask so that 
     the keyhole matches with the science data.
         
     Parameters
     ----------
-    adinput: astrodata
+    adinput: AstroData
         single AD instance to which the keyhole should be matched
+    illum: AstroData
+        the standard illumination mask
     log: logger
         the log
     """
-    # Fetch the illumination mask
-    illum_ad = fov.fetch_illum_mask(adinput)
-
-    # Normalizing and thresholding the science data to get a rough 
+    # Normalizing and thresholding the science data to get a rough
     # illumination mask. A 5x5 box around non-illuminated pixels is also 
     # flagged as non-illuminated to better handle the edge effects. The
     # limit for thresholding is set to an empirically determined value of
@@ -124,8 +141,8 @@ def _position_illum_mask(adinput, log):
     # this in comparison with the centre of mass of the illumination
     # mass to adjust the keyholes to align. Note that the  
     # center_of_mass function has switched x and y axes compared to normal.        
-    comx_illummask = illum_ad.phu.CENMASSX
-    comy_illummask = illum_ad.phu.CENMASSY
+    comx_illummask = illum.phu.CENMASSX
+    comy_illummask = illum.phu.CENMASSY
     y, x = scipy.ndimage.measurements.center_of_mass(keyhole)
     if not np.isnan(x) and not np.isnan(y):        
         dx = int(x - comx_illummask)
@@ -134,18 +151,18 @@ def _position_illum_mask(adinput, log):
         log.warning("The centre of mass of {} cannot be measured, so "
                 "the illumination mask cannot be positioned and "
                 "will be used without adjustment".format(adinput.filename))
-        return illum_ad
+        return illum
     
     # Recording the shifts in the header of the illumination mask
     log.stdinfo("Applying shifts to the illumination mask: dx = {}px, dy = "
                 "{}px.".format(dx, dy))
-    illum_ad.phu.set('OBSHIFTX', dx, "Relative x shift to object frame")
-    illum_ad.phu.set('OBSHIFTY', dy, "Relative y shift to object frame")
+    illum.phu.set('OBSHIFTX', dx, "Relative x shift to object frame")
+    illum.phu.set('OBSHIFTY', dy, "Relative y shift to object frame")
 
     # Applying the offsets to the illumination mask
-    illumpixdata1 = illum_ad[0].data
+    illumpixdata1 = illum[0].data
     illumpixdata2 = np.roll(illumpixdata1, dx, 1)
     illumpixdata3 = np.roll(illumpixdata2, dy, 0)
-    illum_ad[0].data = illumpixdata3
+    illum[0].data = illumpixdata3
 
-    return illum_ad
+    return illum
