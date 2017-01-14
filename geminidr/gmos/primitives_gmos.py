@@ -195,7 +195,7 @@ class GMOS(Gemini, CCD):
                     ad.hdr.set(keyword, dv, comment)
 
             if 'SPECT' in ad.tags:
-                kw = self._keyword_for('dispersion_axis')
+                kw = ad._keyword_for('dispersion_axis')
                 ad.hdr.set(kw, 1, self.keyword_comments(kw))
 
             # And the bias level too!
