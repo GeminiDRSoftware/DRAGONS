@@ -138,7 +138,7 @@ class CalibDB(PrimitivesBASE):
                 try:
                     mdf = os.path.join(self.dr_root, inst_pkg, 'lookups',
                                        'MDF', mdf_dict[key])
-                except KeyError:
+                except (KeyError, TypeError):
                     mdf = mask_name if mask_name.endswith('.fits') else \
                         '{}.fits'.format(mask_name)
                     for loc in mdf_locations:
