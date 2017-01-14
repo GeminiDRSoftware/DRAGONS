@@ -25,11 +25,11 @@ import os
 from gempy.utils import logutils
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
-from gemini.lookups import calurl_dict
 from gemini.lookups import keyword_comments
 from gemini.lookups import timestamp_keywords
 from gemini.lookups.source_detection import sextractor_default_dict
 
+from recipe_system.cal_service import calurl_dict
 from recipe_system.cal_service import caches
 from recipe_system.cal_service import Calibrations
 

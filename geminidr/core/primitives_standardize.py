@@ -11,7 +11,6 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
 
-from geminidr.gemini.lookups import MDFDict
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
@@ -227,15 +226,24 @@ class Standardize(PrimitivesBASE):
             name of MDF to add (None => use default)
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "addMDF", "starting"))
-        timestamp_key = self.timestamp_keys["addMDF"]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
-        for ad in adinputs:
+        mdf_list = params["mdf"]
+        if mdf_list is None:
+            self.getMDF(adinputs)
+            mdf_list = [self._get_cal(ad, 'mdf') for ad in adinputs]
+
+        for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                             'already been processed by addMDF'.
                             format(ad.filename))
+                continue
+            if hasattr(ad, 'MDF'):
+                log.warning('An MDF extension already exists in {}, so no '
+                            'MDF will be added'.format(ad.filename))
                 continue
 
             if 'SPECT' not in ad.tags:
@@ -243,51 +251,22 @@ class Standardize(PrimitivesBASE):
                             'be added'.format(ad.filename))
                 continue
 
-            if hasattr(ad, 'MDF'):
-                log.warning('An MDF extension already exists in {}, so no '
-                            'MDF will be added'.format(ad.filename))
-                continue
-
-            mdf = params['mdf']
             if mdf is None:
-                try:
-                    inst = ad.instrument()
-                    mask_name = ad.phu.MASKNAME
-                    key = '{}_{}'.format(inst, mask_name)
-                except AttributeError:
-                    log.warning('Unable to create the key for the lookup '
-                                'table so no MDF will be added')
-                    continue
-
-                try:
-                    # Look in the instrument MDF directory
-                    mdf = os.path.join(self.dr_root, inst.lower(), 'lookups',
-                                       'MDF', MDFDict.mdf_dict[key])
-                except KeyError:
-                    # Look through the possible MDF locations
-                    mdf = mask_name if mask_name.endswith('.fits') else \
-                        '{}.fits'.format(mask_name)
-                    for location in MDFDict.mdf_locations:
-                        fullname = os.path.join(os.path.sep, location, mdf)
-                        if os.path.exists(fullname):
-                            # Copy MDF to local directory if it's elsewhere
-                            if location != '.':
-                                shutil.copy(fullname, '.')
-                            break
-                    else:
-                        log.warning('The MDF {} was not found in any of the '
-                                    'search directories, so no MDF will be '
-                                    'added'.format(mdf))
-                        continue
+                log.stdinfo('No MDF could be retrieved for {}'.
+                            format(ad.filename))
+                continue
 
             try:
                 # This will raise some sort of exception unless the MDF file
                 # has a single MDF Table extension
-                ad.MDF = astrodata.open(mdf).MDF
+                ad.MDF = mdf.MDF
             except:
-                log.warning('Cannot convert {} to AstroData object, so no '
-                            'MDF will be added'.format(mdf))
+                log.warning('Cannot find MDF in {}, so no MDF will be '
+                            'added'.format(mdf))
                 continue
+
+            log.fullinfo('Attaching the MDF {} to {}'.format(mdf.filename,
+                                                             ad.filename))
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -543,9 +522,9 @@ class Standardize(PrimitivesBASE):
         bpm = None
 
         bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
-        bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
+        pkg = 'geminidr.{}.lookups'.format(inst.lower())
         try:
-            masks = import_module('.maskdb', bpm_pkg)
+            masks = import_module('.maskdb', pkg)
             bpm_dict = getattr(masks, 'bpm_dict')
             key = '{}_{}{}'.format(inst, xbin, ybin)
             try:
@@ -588,13 +567,14 @@ class Standardize(PrimitivesBASE):
         """
         log = self.log
         inst = ad.instrument()
+        inst_pkg = 'gmos' if inst.startswith('GMOS-') else inst.lower()
         mode = 'IMAGE' if 'IMAGE' in ad.tags else 'SPECT'
         xbin = ad.detector_x_bin()
         ybin = ad.detector_y_bin()
-        bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
-        bpm_pkg = 'geminidr.{}.lookups'.format(inst.lower())
+        bpm_dir = os.path.join(self.dr_root, inst_pkg, 'lookups', 'BPM')
+        pkg = 'geminidr.{}.lookups'.format(inst.lower())
         try:
-            masks = import_module('.maskdb', bpm_pkg)
+            masks = import_module('.maskdb', pkg)
             illum_dict = getattr(masks, 'illumMask_dict')
         except:
             log.fullinfo('No illumination mask dict for {}'.
