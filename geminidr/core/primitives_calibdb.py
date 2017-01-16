@@ -113,20 +113,16 @@ class CalibDB(PrimitivesBASE):
 
     def getMDF(self, adinputs=None, **params):
         caltype = "mdf"
-        log = self.log
-        mdf_locations = ['.',
-                 os.path.join(os.path.sep,
-                              'net', 'mko-nfs', 'sci', 'dataflow', 'masks'),
-                 os.path.join(os.path.sep,
-                              'net', 'cpostonfs-nv1', 'dataflow', 'masks')]
-
-        inst = adinputs[0].instrument()
-        inst_pkg = 'gmos' if inst.startswith('GMOS-') else inst.lower()
-        pkg = 'geminidr.{}.lookups'.format(inst_pkg)
+        log   = self.log
+        gdr   = self.dr_root
+        groot = os.path.split(gdr)[1]
+        inst  = adinputs[0].instrument()
+        inst_pkg = adinputs[0].instrument_name.lower()
+        pkg   = '.'.join([groot, inst_pkg, 'lookups'])
         try:
             masks = import_module('.maskdb', pkg)
             mdf_dict = getattr(masks, 'mdf_dict')
-        except:
+        except (ImportError, AttributeError):
             mdf_dict = None
 
         rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
@@ -136,27 +132,23 @@ class CalibDB(PrimitivesBASE):
                 mask_name = ad.phu.get('MASKNAME')
                 key = '{}_{}'.format(inst, mask_name)
                 try:
-                    mdf = os.path.join(self.dr_root, inst_pkg, 'lookups',
-                                       'MDF', mdf_dict[key])
+                    mdf = os.path.join(gdr, inst_pkg, 'lookups', 'MDF', mdf_dict[key])
+                    self._add_cal((ad, caltype), mdf)
                 except (KeyError, TypeError):
-                    mdf = mask_name if mask_name.endswith('.fits') else \
-                        '{}.fits'.format(mask_name)
-                    for loc in mdf_locations:
-                        fullname = os.path.join(os.path.sep, loc, mdf)
-                        if os.path.exists(fullname):
-                            mdf = fullname
-                            break
-                    else:
-                        log.warning('The MDF {} was not found in any of the '
-                                    'search directories, so no MDF will be '
-                                    'added'.format(mdf))
-            self.calibrations._add_cal((ad, caltype), mdf)
+                    log.warn("MDF not found in {} lookups.".format(inst_pkg))
+                    log.stdinfo("Requesting MDF from fitsstore ...")
+                    mdf_request = get_cal_requests([ad], caltype)
+                    mdf_records = process_cal_requests(mdf_requests)
+                    self._add_cal(mdf_records)
+                    # Do we want to add new mdfs to lookups.masksdb.mdf_dict
+                    # and write the MDF to lookups.MDF ? I'm guessing not ... ?
         return adinputs
 
-        # =========================== STORE PRIMITIVES =================================
+    # =========================== STORE PRIMITIVES =================================
     def storeCalibration(self, adinputs=None, **params):
         """
         Will write calibrations in calibrations/<cal_type>/
+
         """ 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
