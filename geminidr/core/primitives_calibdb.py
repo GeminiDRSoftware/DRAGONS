@@ -113,33 +113,31 @@ class CalibDB(PrimitivesBASE):
 
     def getMDF(self, adinputs=None, **params):
         caltype = "mdf"
-        log   = self.log
-        gdr   = self.dr_root
-        groot = os.path.split(gdr)[1]
-        inst  = adinputs[0].instrument()
-        inst_pkg = 'gmos' if 'GMOS' in inst else inst.lower()
-        pkg   = '.'.join([groot, inst_pkg, 'lookups'])
+        log = self.log
+        inst_lookups = self.inst_lookups
         try:
-            masks = import_module('.maskdb', pkg)
+            masks = import_module('.maskdb', inst_lookups)
             mdf_dict = getattr(masks, 'mdf_dict')
         except (ImportError, AttributeError):
             mdf_dict = None
 
         rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
         for ad in rqs_actual:
-            mdf = None
             if 'SPECT' in ad.tags:
                 mask_name = ad.phu.get('MASKNAME')
-                key = '{}_{}'.format(inst, mask_name)
-                try:
-                    mdf = os.path.join(gdr, inst_pkg, 'lookups', 'MDF', mdf_dict[key])
-                    self._add_cal((ad, caltype), mdf)
-                except (KeyError, TypeError):
-                    log.warn("MDF not found in {} lookups.".format(inst_pkg))
-                    log.stdinfo("Requesting MDF from fitsstore ...")
-                    mdf_requests = get_cal_requests([ad], caltype)
-                    mdf_records = process_cal_requests(mdf_requests)
-                    self._add_cal(mdf_records)
+                key = '{}_{}'.format(ad.instrument(), mask_name)
+                if mdf_dict is not None:
+                    try:
+                        mdf = os.path.join(masks.__path__[0], 'MDF', mdf_dict[key])
+                    except KeyError:
+                        log.warn("MDF not found in {}".format(inst_lookups))
+                    else:
+                        self._add_cal((ad, caltype), mdf)
+                        continue
+                log.stdinfo("Requesting MDF from fitsstore ...")
+                mdf_requests = get_cal_requests([ad], caltype)
+                mdf_records = process_cal_requests(mdf_requests)
+                self._add_cal(mdf_records)
 
         return adinputs
 

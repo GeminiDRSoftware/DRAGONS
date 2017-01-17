@@ -19,6 +19,7 @@ class NIRI(Gemini, NearIR):
 
     def __init__(self, adinputs, **kwargs):
         super(NIRI, self).__init__(adinputs, **kwargs)
+        self.inst_lookups = 'geminidr.niri.lookups'
         self.parameters = ParametersNIRI
 
     def nonlinearityCorrect(self, adinputs=None, **params):

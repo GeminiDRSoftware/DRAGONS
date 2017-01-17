@@ -521,10 +521,9 @@ class Standardize(PrimitivesBASE):
         ybin = ad.detector_y_bin()
         bpm = None
 
-        bpm_dir = os.path.join(self.dr_root, inst.lower(), 'lookups', 'BPM')
-        pkg = 'geminidr.{}.lookups'.format(inst.lower())
         try:
-            masks = import_module('.maskdb', pkg)
+            masks = import_module('.maskdb', self.inst_lookups)
+            bpm_dir = os.path.join(os.path.dir(masks.__file__), 'BPM')
             bpm_dict = getattr(masks, 'bpm_dict')
             key = '{}_{}{}'.format(inst, xbin, ybin)
             try:
@@ -533,6 +532,8 @@ class Standardize(PrimitivesBASE):
                 log.warning('No BPM found for {}'.format(ad.filename))
         except:
             # No dict; maybe there's only one file in BPM dir
+            bpm_dir = os.path.join(os.path.dirname(
+                import_module(self.inst_lookups).__file__), 'BPM')
             try:
                 bpm_files = [file for file in os.listdir(bpm_dir) if
                              file.endswith('.fits')]
@@ -567,14 +568,11 @@ class Standardize(PrimitivesBASE):
         """
         log = self.log
         inst = ad.instrument()
-        inst_pkg = 'gmos' if inst.startswith('GMOS-') else inst.lower()
         mode = 'IMAGE' if 'IMAGE' in ad.tags else 'SPECT'
         xbin = ad.detector_x_bin()
         ybin = ad.detector_y_bin()
-        bpm_dir = os.path.join(self.dr_root, inst_pkg, 'lookups', 'BPM')
-        pkg = 'geminidr.{}.lookups'.format(inst.lower())
         try:
-            masks = import_module('.maskdb', pkg)
+            masks = import_module('.maskdb', self.inst_lookups)
             illum_dict = getattr(masks, 'illumMask_dict')
         except:
             log.fullinfo('No illumination mask dict for {}'.
@@ -582,6 +580,7 @@ class Standardize(PrimitivesBASE):
             return None
 
         # We've successfully loaded the illumMask_dict
+        bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
         key = '{}_{}_{}{}'.format(inst, mode, xbin, ybin)
         try:
             mask = illum_dict[key]

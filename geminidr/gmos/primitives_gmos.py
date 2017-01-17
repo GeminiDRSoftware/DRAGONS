@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from copy import deepcopy
-from importlib import import_module
 
 import astrodata
 import gemini_instruments
@@ -11,10 +10,10 @@ from gempy.gemini import gemini_tools as gt
 from gempy.scripts.gmoss_fix_headers import correct_headers
 
 from geminidr.core import CCD
-from geminidr.gemini.primitives_gemini import Gemini
-from geminidr.gmos.parameters_gmos import ParametersGMOS
-from geminidr.gmos.lookups.array_gaps import gmosArrayGaps
-from geminidr.gmos.lookups import maskdb
+from ..gemini.primitives_gemini import Gemini
+from .parameters_gmos import ParametersGMOS
+from .lookups.array_gaps import gmosArrayGaps
+from .lookups import maskdb
 
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
@@ -31,6 +30,7 @@ class GMOS(Gemini, CCD):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOS, self).__init__(adinputs, **kwargs)
+        self.inst_lookups = 'gemini.gmos.lookups'
         self.parameters = ParametersGMOS
 
     def mosaicDetectors(self, adinputs=None, **params):
@@ -426,7 +426,7 @@ class GMOS(Gemini, CCD):
         str/None: Filename of the appropriate bpms
         """
         log = self.log
-        bpm_dir = os.path.join(self.dr_root, 'gmos', 'lookups', 'BPM')
+        bpm_dir = os.path.join(os.path.dirname(maskdb.__file__), 'BPM')
 
         inst = ad.instrument()  # Could be GMOS-N or GMOS-S
         xbin = ad.detector_x_bin()

@@ -20,6 +20,7 @@ class GSAOI(Gemini, NearIR):
 
     def __init__(self, adinputs, **kwargs):
         super(GSAOI, self).__init__(adinputs, **kwargs)
+        self.inst_lookups = 'geminidr.gsaoi.lookups'
         self.parameters = ParametersGSAOI
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
