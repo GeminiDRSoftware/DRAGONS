@@ -1,1 +1,0 @@
-../reduce_UsersManual/index.rst
