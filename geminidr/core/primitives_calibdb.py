@@ -117,7 +117,7 @@ class CalibDB(PrimitivesBASE):
         gdr   = self.dr_root
         groot = os.path.split(gdr)[1]
         inst  = adinputs[0].instrument()
-        inst_pkg = adinputs[0].instrument_name.lower()
+        inst_pkg = 'gmos' if 'GMOS' in inst else inst.lower()
         pkg   = '.'.join([groot, inst_pkg, 'lookups'])
         try:
             masks = import_module('.maskdb', pkg)
