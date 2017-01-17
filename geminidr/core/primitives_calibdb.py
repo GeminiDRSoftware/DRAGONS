@@ -27,6 +27,7 @@ from geminidr import PrimitivesBASE
 class CalibDB(PrimitivesBASE):
     """
     Only 'storeProcessedXXX' calibration primitives have associated parameters.
+
     """
     tagset = None
 
