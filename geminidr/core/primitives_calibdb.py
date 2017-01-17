@@ -140,8 +140,7 @@ class CalibDB(PrimitivesBASE):
                     mdf_request = get_cal_requests([ad], caltype)
                     mdf_records = process_cal_requests(mdf_requests)
                     self._add_cal(mdf_records)
-                    # Do we want to add new mdfs to lookups.masksdb.mdf_dict
-                    # and write the MDF to lookups.MDF ? I'm guessing not ... ?
+
         return adinputs
 
     # =========================== STORE PRIMITIVES =================================
