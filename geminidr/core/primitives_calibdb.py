@@ -113,7 +113,7 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
     def getMDF(self, adinputs=None, **params):
-        caltype = "mdf"
+        caltype = "mask"
         log = self.log
         inst_lookups = self.inst_lookups
         try:

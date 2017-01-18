@@ -18,16 +18,36 @@ UPLOADPROCCAL = CALURL_DICT["UPLOADPROCCAL"]
 UPLOADCOOKIE  = CALURL_DICT["UPLOADCOOKIE"]
 _CALMGR       = CALURL_DICT["CALMGR"]
 # ------------------------------------------------------------------------------
-CALTYPEDICT = { "arc" : "arc",
-                "bias": "bias",
-                "dark": "dark",
-                "flat": "flat",
-                "mdf" : "mdf",
-                "processed_arc" :   "processed_arc",
-                "processed_bias":   "processed_bias",
-                "processed_dark":   "processed_dark",
-                "processed_flat":   "processed_flat",
-                "processed_fringe": "processed_fringe"}
+# sourced from fits_storage.gemini_metadata_utils.cal_types
+CALTYPEDICT = {
+    "arc" : "arc",
+    "bias": "bias",
+    "dark": "dark",
+    # flats
+    "flat"             : "flat",
+    "domeflat"         : "domeflat",
+    "lampoff_flat"     : "lampoff_flat",
+    "lampoff_domeflat" : "lampoff_domeflat",
+    "polarization_flat": "polarization_flat",
+    "qh_flat"          : "qh_flat",
+    # masks (use caltype='mask' for MDF queries.)
+    "mask"             : "mask",
+    "pinhole_mask"     : "pinhole_mask",
+    "ronchi_mask"      : "ronchi_mask",
+    # processed cals
+    "processed_arc"    : "processed_arc",
+    "processed_bias"   : "processed_bias",
+    "processed_dark"   : "processed_dark",
+    "processed_flat"   : "processed_flat",
+    "processed_fringe" : "processed_fringe",
+    # other ...
+    "specphot"         : "specphot",
+    "spectwilight"     : "spectwilight",
+    "astrometric_standard" : "astrometric_standard",
+    "photometric_standard" : "photometric_standard",
+    "telluric_standard"    : "telluric_standard",
+    "polarization_standard":"polarization_standard",
+}
 # -----------------------------------------------------------------------------
 RESPONSESTR = """########## Request Data BEGIN ##########
 %(sequence)s
