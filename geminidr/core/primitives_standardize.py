@@ -523,7 +523,7 @@ class Standardize(PrimitivesBASE):
 
         try:
             masks = import_module('.maskdb', self.inst_lookups)
-            bpm_dir = os.path.join(os.path.dir(masks.__file__), 'BPM')
+            bpm_dir = os.path.join(masks.__path__[0], 'BPM')
             bpm_dict = getattr(masks, 'bpm_dict')
             key = '{}_{}{}'.format(inst, xbin, ybin)
             try:
@@ -532,8 +532,8 @@ class Standardize(PrimitivesBASE):
                 log.warning('No BPM found for {}'.format(ad.filename))
         except:
             # No dict; maybe there's only one file in BPM dir
-            bpm_dir = os.path.join(os.path.dirname(
-                import_module(self.inst_lookups).__file__), 'BPM')
+            bpm_dir = os.path.join(import_module(self.inst_lookups).__path__[0],
+                                   'BPM')
             try:
                 bpm_files = [file for file in os.listdir(bpm_dir) if
                              file.endswith('.fits')]
@@ -580,7 +580,7 @@ class Standardize(PrimitivesBASE):
             return None
 
         # We've successfully loaded the illumMask_dict
-        bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
+        bpm_dir = os.path.join(masks.__path__[0], 'BPM')
         key = '{}_{}_{}{}'.format(inst, mode, xbin, ybin)
         try:
             mask = illum_dict[key]
