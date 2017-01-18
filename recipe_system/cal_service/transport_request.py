@@ -19,7 +19,7 @@ UPLOADCOOKIE  = CALURL_DICT["UPLOADCOOKIE"]
 _CALMGR       = CALURL_DICT["CALMGR"]
 # ------------------------------------------------------------------------------
 # sourced from fits_storage.gemini_metadata_utils.cal_types
-CALTYPEDICT = {
+CALTYPES = {
     "arc" : "arc",
     "bias": "bias",
     "dark": "dark",
@@ -108,7 +108,7 @@ def calibration_search(rq, return_xml=False):
     rqurl = None
     calserv_msg = None
     CALMGR = _CALMGR
-    rqurl = join(CALMGR, CALTYPEDICT[rq.caltype])
+    rqurl = join(CALMGR, CALTYPES[rq.caltype])
     log.stdinfo("CENTRAL CALIBRATION SEARCH: {}".format(rqurl))
     rqurl = rqurl + "/{}".format(rq.filename)
     # encode and send request
