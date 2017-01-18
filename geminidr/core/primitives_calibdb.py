@@ -27,6 +27,7 @@ from geminidr import PrimitivesBASE
 class CalibDB(PrimitivesBASE):
     """
     Only 'storeProcessedXXX' calibration primitives have associated parameters.
+
     """
     tagset = None
 
@@ -137,7 +138,7 @@ class CalibDB(PrimitivesBASE):
                 except (KeyError, TypeError):
                     log.warn("MDF not found in {} lookups.".format(inst_pkg))
                     log.stdinfo("Requesting MDF from fitsstore ...")
-                    mdf_request = get_cal_requests([ad], caltype)
+                    mdf_requests = get_cal_requests([ad], caltype)
                     mdf_records = process_cal_requests(mdf_requests)
                     self._add_cal(mdf_records)
 
