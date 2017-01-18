@@ -125,7 +125,7 @@ class CalibDB(PrimitivesBASE):
         rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
         for ad in rqs_actual:
             if 'SPECT' in ad.tags:
-                mask_name = ad.phu.get('MASKNAME')
+                mask_name = ad.focal_plane_mask()
                 key = '{}_{}'.format(ad.instrument(), mask_name)
                 if mdf_dict is not None:
                     try:
