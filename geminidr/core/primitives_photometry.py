@@ -149,19 +149,10 @@ class Photometry(PrimitivesBASE):
 
             # Get the appropriate SExtractor input files
             dqtype = 'no_dq' if any(ext.mask is None for ext in ad) else 'dq'
-            try:
-                dd = self.sx_default_dict['{}_{}'.format(ad.instrument().lower,
-                                                         dqtype)]
-            except KeyError:
-                dd = self.sx_default_dict[dqtype]
-            # TODO: This path determination should probably done when the
-            # sx_dict is set in the PrimitivesClass constructor
-            path = os.path.join(self.dr_root, 'gemini', 'lookups',
-                                'source_detection')
-            sexpars = {'config': os.path.join(path,dd['sex']),
-                      'PARAMETERS_NAME': os.path.join(path,dd['param']),
-                      'FILTER_NAME': os.path.join(path,dd['conv']),
-                      'STARNNW_NAME': os.path.join(path,dd['nnw'])}
+            sexpars = {'config': self.sx_dict[dqtype, 'sex'],
+                      'PARAMETERS_NAME': self.sx_dict[dqtype, 'param'],
+                      'FILTER_NAME': self.sx_dict[dqtype, 'conv'],
+                      'STARNNW_NAME': self.sx_dict[dqtype, 'nnw']}
 
             for ext in ad:
                 # saturation_level() descriptor always returns level in ADU,
@@ -199,7 +190,7 @@ class Photometry(PrimitivesBASE):
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
                 ad = gt.add_objcat(ad, extver=ext.hdr.EXTVER, replace=False,
-                                table=objcat, sxdict=self.sx_default_dict)
+                                   table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
                                                 ad.filename, ext.hdr.EXTVER))
 

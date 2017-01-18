@@ -53,7 +53,7 @@ def accept_single_adinput(fn):
     return wrapper
 # ------------------------------------------------------------------------------
 @accept_single_adinput
-def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
+def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
 
@@ -77,7 +77,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
 
     # ensure caller passes the sextractor default dictionary of parameters.
     try:
-        assert isinstance(sxdict, dict) and sxdict.has_key('dq')
+        assert isinstance(sx_dict, dict) and sx_dict.has_key(('dq', 'param'))
     except AssertionError:
         log.error("TypeError: A SExtractor dictionary was not received.")
         raise TypeError("Require SExtractor parameter dictionary.")
@@ -85,7 +85,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
     # Initialize the list of output AstroData objects
     adoutput = []
     # Parse sextractor parameters for the list of expected columns
-    expected_columns = parse_sextractor_param(sxdict)
+    expected_columns = parse_sextractor_param(sx_dict['dq', 'param'])
     # Append a few more that don't come from directly from sextractor
     expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR",
                              "PROFILE_FWHM","PROFILE_EE50"])
@@ -1680,7 +1680,7 @@ def obsmode_del(ad):
     return ad
     
 
-def parse_sextractor_param(default_dict):
+def parse_sextractor_param(param_file):
     """
     Provides a list of columns being produced by SExtractor
 
@@ -1694,12 +1694,6 @@ def parse_sextractor_param(default_dict):
     list
         names of all the columns in the SExtractor output catalog
     """
-    #TODO hardcoded... need to think about this
-    param_file = '{}/../../geminidr/gemini/lookups/source_detection/{}'.format(
-            os.path.dirname(__file__), default_dict["dq"]["param"])
-    if param_file.endswith(".py"):
-        param_file = param_file[:-3]
-    
     columns = []
     fp = open(param_file)
     for line in fp:
@@ -1797,7 +1791,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
             out_objcat.remove_column('NUMBER')
 
             adoutput = add_objcat(adinput=adoutput, extver=outextver,
-                            replace=True, table=out_objcat, sxdict=sx_dict)
+                            replace=True, table=out_objcat, sx_dict=sx_dict)
     return adoutput
 
 @accept_single_adinput

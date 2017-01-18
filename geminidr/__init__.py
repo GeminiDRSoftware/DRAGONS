@@ -25,9 +25,9 @@ import os
 from gempy.utils import logutils
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
-from gemini.lookups import keyword_comments
-from gemini.lookups import timestamp_keywords
-from gemini.lookups.source_detection import sextractor_default_dict
+from .gemini.lookups import keyword_comments
+from .gemini.lookups import timestamp_keywords
+from .gemini.lookups.source_detection import sextractor_dict
 
 from recipe_system.cal_service import calurl_dict
 from recipe_system.cal_service import caches
@@ -69,7 +69,11 @@ class PrimitivesBASE(object):
         self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
-        self.sx_default_dict  = sextractor_default_dict.sextractor_default_dict
+        self.sx_dict          = sextractor_dict.sx_dict
+        # Prepend paths to SExtractor input files now
+        [self.sx_dict.update({k:
+            os.path.join(os.path.dirname(sextractor_dict.__file__), v)})
+                for k,v in self.sx_dict.items()]
 
         self.cachedict        = caches.set_caches()
         self.calibrations     = Calibrations()

@@ -403,7 +403,7 @@ class GMOS(Gemini, CCD):
                         ccd_map = np.full_like(ccd_map, 1)
                     adoutput = gt.tile_objcat(adinput=ad, adoutput=adoutput,
                                               ext_mapping=ccd_map,
-                                              sx_dict=self.sx_default_dict)
+                                              sx_dict=self.sx_dict)
                     
                 # Attach MDF if it exists
                 if hasattr(ad, 'MDF'):
