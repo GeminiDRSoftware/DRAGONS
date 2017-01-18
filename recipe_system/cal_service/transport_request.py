@@ -18,11 +18,12 @@ UPLOADPROCCAL = CALURL_DICT["UPLOADPROCCAL"]
 UPLOADCOOKIE  = CALURL_DICT["UPLOADCOOKIE"]
 _CALMGR       = CALURL_DICT["CALMGR"]
 # ------------------------------------------------------------------------------
-CALTYPEDICT = { "arc": "arc",
+CALTYPEDICT = { "arc" : "arc",
                 "bias": "bias",
                 "dark": "dark",
                 "flat": "flat",
-                "processed_arc":   "processed_arc",
+                "mdf" : "mdf",
+                "processed_arc" :   "processed_arc",
                 "processed_bias":   "processed_bias",
                 "processed_dark":   "processed_dark",
                 "processed_flat":   "processed_flat",
