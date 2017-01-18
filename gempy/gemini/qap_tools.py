@@ -75,7 +75,7 @@ def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
         postr.read()
         postr.close()
     except urllib2.HTTPError:
-        log.warn("Attempt to deliver metrics to adcc failed.")
+        log.warning("Attempt to deliver metrics to adcc failed.")
 
     return
 
@@ -115,7 +115,7 @@ def status_report(status):
         postr.read()
         postr.close()
     except urllib2.HTTPError:
-        log.warn("Attempt to deliver status report to adcc failed.")
+        log.warning("Attempt to deliver status report to adcc failed.")
 
     return
 
@@ -203,6 +203,6 @@ def send_fitsstore_report(qareport, calurl_dict):
         f = urllib2.urlopen(req)
         f.close()
     except urllib2.HTTPError, urllib2.URLError:
-        log.warn("Attempt to deliver metrics to fitsstore failed.")
+        log.warning("Attempt to deliver metrics to fitsstore failed.")
 
     return

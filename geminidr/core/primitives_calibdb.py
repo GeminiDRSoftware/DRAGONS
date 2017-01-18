@@ -109,7 +109,7 @@ class CalibDB(PrimitivesBASE):
         except IOError:
             wstr = "Warning: one or more processed fringe frames could not"
             wstr += " be found. "
-            log.warn(wstr)
+            log.warning(wstr)
         return adinputs
 
     def getMDF(self, adinputs=None, **params):
@@ -132,7 +132,7 @@ class CalibDB(PrimitivesBASE):
                         mdf = os.path.join(os.path.dirname(masks.__file__),
                                            'MDF', mdf_dict[key])
                     except KeyError:
-                        log.warn("MDF not found in {}".format(inst_lookups))
+                        log.warning("MDF not found in {}".format(inst_lookups))
                     else:
                         self._add_cal((ad, caltype), mdf)
                         continue
