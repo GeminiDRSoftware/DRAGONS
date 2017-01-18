@@ -523,7 +523,7 @@ class Standardize(PrimitivesBASE):
 
         try:
             masks = import_module('.maskdb', self.inst_lookups)
-            bpm_dir = os.path.join(masks.__path__[0], 'BPM')
+            bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
             bpm_dict = getattr(masks, 'bpm_dict')
             key = '{}_{}{}'.format(inst, xbin, ybin)
             try:
@@ -580,7 +580,7 @@ class Standardize(PrimitivesBASE):
             return None
 
         # We've successfully loaded the illumMask_dict
-        bpm_dir = os.path.join(masks.__path__[0], 'BPM')
+        bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
         key = '{}_{}_{}{}'.format(inst, mode, xbin, ybin)
         try:
             mask = illum_dict[key]

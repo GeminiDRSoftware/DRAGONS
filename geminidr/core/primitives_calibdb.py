@@ -129,7 +129,8 @@ class CalibDB(PrimitivesBASE):
                 key = '{}_{}'.format(ad.instrument(), mask_name)
                 if mdf_dict is not None:
                     try:
-                        mdf = os.path.join(masks.__path__[0], 'MDF', mdf_dict[key])
+                        mdf = os.path.join(os.path.dirname(masks.__file__),
+                                           'MDF', mdf_dict[key])
                     except KeyError:
                         log.warn("MDF not found in {}".format(inst_lookups))
                     else:
