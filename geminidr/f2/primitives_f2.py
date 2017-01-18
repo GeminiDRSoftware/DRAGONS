@@ -20,6 +20,7 @@ class F2(Gemini, NearIR):
 
     def __init__(self, adinputs, **kwargs):
         super(F2, self).__init__(adinputs, **kwargs)
+        self.inst_lookups = 'geminidr.f2.lookups'
         self.parameters = ParametersF2
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):

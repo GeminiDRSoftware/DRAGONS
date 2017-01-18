@@ -22,6 +22,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
     def __init__(self, adinputs, **kwargs):
         super(Gemini, self).__init__(adinputs, **kwargs)
+        self.inst_lookups = 'geminidr.gemini.lookups'
         self.parameters = ParametersGemini
 
     def standardizeObservatoryHeaders(self, adinputs=None, **params):

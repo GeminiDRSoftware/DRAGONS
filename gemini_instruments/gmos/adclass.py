@@ -132,10 +132,6 @@ class AstroDataGmos(AstroDataGemini):
         if 'NODPIX' in self.phu:
             return TagSet(['NODANDSHUFFLE'])
 
-    @property
-    def instrument_name(self):
-        return 'GMOS'
-
     @astro_data_descriptor
     def amp_read_area(self):
         """
