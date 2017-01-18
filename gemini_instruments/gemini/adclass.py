@@ -243,10 +243,6 @@ class AstroDataGemini(AstroDataFits):
             return gmu.removeComponentID(val)
         return val
 
-    @property
-    def instrument_name(self):
-        return self.instrument().upper()
-
     @astro_data_descriptor
     def airmass(self):
         """

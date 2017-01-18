@@ -1,4 +1,5 @@
 import numpy as np
+from os import path
 from astropy.table import vstack
 
 from gempy.gemini import gemini_tools as gt
@@ -6,6 +7,7 @@ from gempy.gemini import gemini_tools as gt
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from .parameters_gsaoi import ParametersGSAOI
+from .lookups.source_detection import sextractor_dict
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -20,6 +22,10 @@ class GSAOI(Gemini, NearIR):
 
     def __init__(self, adinputs, **kwargs):
         super(GSAOI, self).__init__(adinputs, **kwargs)
+        self.inst_lookups = 'geminidr.gsaoi.lookups'
+        [self.sx_dict.update({k:
+                path.join(path.dirname(sextractor_dict.__file__), v)})
+            for k,v in sextractor_dict.sx_dict.items()]
         self.parameters = ParametersGSAOI
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
