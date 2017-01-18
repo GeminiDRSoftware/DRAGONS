@@ -426,7 +426,7 @@ class GMOS(Gemini, CCD):
         str/None: Filename of the appropriate bpms
         """
         log = self.log
-        bpm_dir = os.path.join(os.path.dirname(maskdb.__file__), 'BPM')
+        bpm_dir = os.path.join(maskdb.__path__[0], 'BPM')
 
         inst = ad.instrument()  # Could be GMOS-N or GMOS-S
         xbin = ad.detector_x_bin()

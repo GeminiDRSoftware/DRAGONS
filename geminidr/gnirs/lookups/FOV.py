@@ -119,4 +119,4 @@ def get_illum_mask_filename(ad):
         return None
 
     return illum if illum.startswith(path.sep) else \
-        path.join(path.dirname(maskdb.__file__), 'BPM', illum)
+        path.join(maskdb.__path__[0], 'BPM', illum)
