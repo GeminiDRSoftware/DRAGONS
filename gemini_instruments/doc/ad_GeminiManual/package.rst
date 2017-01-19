@@ -1,6 +1,6 @@
-.. package::
+.. package.rst
 
-.. _package::
+.. _package:
 
 *****************************
 Package Structure and Content

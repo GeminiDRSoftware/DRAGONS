@@ -1,6 +1,6 @@
-.. tags::
+.. tags.rst
 
-.. _tags::
+.. _tags:
 
 **************
 Astrodata Tags

@@ -1,6 +1,6 @@
-.. descriptors::
+.. descriptors.rst
 
-.. _descriptors::
+.. _descriptors:
 
 ******************************************
 *gemini_instruments* Astrodata Descriptors
