@@ -1,5 +1,4 @@
 import os
-import shutil
 import numpy as np
 from importlib import import_module
 
@@ -24,7 +23,6 @@ class Standardize(PrimitivesBASE):
     """
     This is the class containing all of the primitives used to standardize an
     AstroData object.
-
     """
     tagset = None
 
@@ -340,7 +338,8 @@ class Standardize(PrimitivesBASE):
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
             if (poisson_noise and 'GMOS' in tags and
-                ad.phu.get(self.timestamp_keys['subtractBias']) is None):
+                ad.phu.get(self.timestamp_keys['subtractBias']) is None and
+                ad.phu.get(self.timestamp_keys['subtractOverscan']) is None):
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
                             "still contains a bias level")
@@ -608,11 +607,6 @@ def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
         add the read noise component?
     add_poisson_noise: bool
         add the Poisson noise component?
-
-    Returns
-    -------
-    AstroData:
-        an updated AD instance
     """
     log = logutils.get_logger(__name__)
     gain_list = adinput.gain()
@@ -666,5 +660,4 @@ def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
                                                            extver))
         # Attach to the extension
         ext.variance = var_array.astype(var_dtype)
-
     return
