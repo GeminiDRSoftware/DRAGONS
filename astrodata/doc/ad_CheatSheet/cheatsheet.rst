@@ -1,6 +1,6 @@
 .. cheatsheet
 
-.. _cheatsheet
+.. _cheatsheet::
 
 *********************
 Astrodata Cheat Sheet
