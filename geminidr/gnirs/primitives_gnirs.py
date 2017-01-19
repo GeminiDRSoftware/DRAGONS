@@ -20,9 +20,9 @@ class GNIRS(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(GNIRS, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gnirs.lookups'
-        [self.sx_dict.update({k:
-                path.join(path.dirname(sextractor_dict.__file__), v)})
-            for k,v in sextractor_dict.sx_dict.items()]
+        self.sx_dict.update({k:
+                path.join(path.dirname(sextractor_dict.__file__), v)
+                for k,v in sextractor_dict.sx_dict.items()})
         self.parameters = ParametersGNIRS
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):

@@ -5,7 +5,12 @@ from geminidr import ParametersBASE
 
 class ParametersCCD(ParametersBASE):
     biasCorrect = {
+        "suffix"            : "_biasCorrected",
         "bias"              : None,
+    }
+    overscanCorrect = {
+        "suffix"            : "_overscanCorrected",
+        "overscan_section"  : None,
     }
     subtractBias = {
         "suffix"            : "_biasCorrected",
@@ -17,5 +22,4 @@ class ParametersCCD(ParametersBASE):
     }
     trimOverscan = {
         "suffix"            : "_overscanTrimmed",
-        "repair"            : False,
     }

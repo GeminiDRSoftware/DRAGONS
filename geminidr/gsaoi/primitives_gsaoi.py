@@ -23,9 +23,9 @@ class GSAOI(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(GSAOI, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gsaoi.lookups'
-        [self.sx_dict.update({k:
-                path.join(path.dirname(sextractor_dict.__file__), v)})
-            for k,v in sextractor_dict.sx_dict.items()]
+        self.sx_dict.update({k:
+                path.join(path.dirname(sextractor_dict.__file__), v)
+            for k,v in sextractor_dict.sx_dict.items()})
         self.parameters = ParametersGSAOI
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
