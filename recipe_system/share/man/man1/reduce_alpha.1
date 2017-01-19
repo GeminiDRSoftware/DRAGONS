@@ -1,27 +1,21 @@
 .TH reduce_alpha 1 "1 Dec. 2016" "version 0.1" "reduce man page"
 .SH NAME
-reduce_alpha - New reduce (New Hope).
+reduce_alpha \- recipe system, v2.0, command line interface (cli)
 .SH SYNOPSIS
-reduce_alpha
-.B [-h] [-v] [-d] [--context 
-CONTEXT
-.B ] [--logmode 
-LOGMODE
-.B ] [--logfile 
-LOGFILE
-.B ] [--loglevel 
-.B LOGLEVEL] [-p 
-USERPARAM 
-.B [
-USERPARAM ...
-.B ]] [-r 
-RECIPENAME
-.B ] [--user_cal 
-USER_CAL
-.B ] [--suffix 
-SUFFIX
-.B ]
-fitsfile [ fitsfile ... ]
+.B reduce_alpha 
+[\fB\-h\fR] 
+[\fB\-v\fR]
+[\fB\-d\fR]
+[\fB\--context\fR CONTEXT]
+[\fB\--logmode\fR LOGMODE]
+[\fB\--logfile\fR LOGFILE]
+[\fB\--loglevel\fR LOGLEVEL]
+[\fB\-p\fR USERPARAM [USERPARAM ...]]
+[\fB\-r\fR RECIPENAME]
+[\fB\--suffix\fR SUFFIX]
+[\fB\--upload_metrics\fR]
+[\fB\--user_cal\fR USER_CAL]
+fitsfile [fitsfile ...]
 
 .SH DESCRIPTION
 .B reduce_alpha(1) 
@@ -42,7 +36,7 @@ show program's version number and exit
 .B -d , --displayflags
 display all parsed option flags and exit.
 .TP 
-.B --context CONTEXT
+\fB\--context\fR CONTEXT
 Use
 .B CONTEXT
 for recipe selection and primitives sensitive to context. Current values supported are 
@@ -59,19 +53,12 @@ Eg.,
 .RE
 .RE
 .TP 
-.B --logmode LOGMODE
-Set log mode. One of 
-.B standard, console, quiet, debug, or null
-(default is
-.B standard
-)
-.TP 
-.B --logfile LOGFILE
-name of log file (default is 
+\fB\--logfile\fR LOGFILE 
+Name of log file (default is 
 .B 'reduce.log'
 )
 .TP 
-.B --loglevel LOGLEVEL
+\fB\--loglevel\fR LOGLEVEL
 Set the verbose level for console logging. One of
 .RS
 .B critical, error, warning, status, stdinfo, fullinfo, debug 
@@ -79,21 +66,25 @@ Set the verbose level for console logging. One of
 .B stdinfo
 )
 .RE
+.TP
+\fB\--logmode\fR LOGMODE
+Set log mode. One of \fB\ standard, console, quiet, debug, or null\fR
+(default is \fB\ standard\fR)
+.RE
 .RE
 .TP 
-.B -p USERPARAM [USERPARAM ...], --param USERPARAM [USERPARAM ...]
+\fB\-p\fR USERPARAM [USERPARAM ...], \fB\--param\fR USERPARAM [USERPARAM ...]
 Set a primitive parameter from the command line. The form, 
 .B -p par=val
 sets a parameter such that all primitives with that defined parameter will 'see' it. 
 The form:  
-.B -p primitivename:par=val
-, focuses the parameter only for 
-.B 'primitivename'
- . Separate par/val pairs by whitespace: (eg. 
-.B -p par1=val1 par2=val2
-).
+\fB\-p primitivename:par=val\fR, focuses the parameter only for 'primitivename'.
+Separate par/val pairs by whitespace:
+.RS
+E.g., \fB\-p\fR par1=val1 par2=val2).
+.RE
 .TP
-.B -r RECIPENAME, --recipe RECIPENAME
+\fB\-r\fR RECIPENAME, \fB\--recipe\fR RECIPENAME
 Specify a recipe by name. Users can request non-default system recipe functions by 
 their simple names, e.g., 
 .B -r qaStack 
@@ -104,11 +95,13 @@ E.g.,
 .RS
 .B -r /path/to/recipes/recipefile.recipe_function
 .RE
+
 For a recipe file in the current working directory (cwd), only the file name is 
 needed, as in, 
 .RS
-.B -r recipefile.recipe_function
+\fB\-r\fR recipefile.recipe_function
 .RE
+
 The fact that the recipe function is dotted with the recipe file name implies that 
 multiple user defined recipe functions can be defined in a single file.
 
@@ -117,21 +110,23 @@ should be named accordingly. I.e., in the example above,
 .B 'recipefile' 
 is a python module named, 
 .B 'recipefile.py'
-.
+.RE
+.TP	
+\fB\-\-upload_metrics\fR
+Use this switch to send QA metrics to fitsstore. Default is \fBFalse\fR.
 .RE
 .TP
-.B --user_cal USER_CAL
+\fB\-\-user_cal\fR USER_CAL
 Specify user supplied calibrations for calibration types.
 .RS
 Eg.,
 .RS 
-.B --user_cal gsTest_arc.fits
+\fB\-\-user_cal\fR gsTest_arc.fits
 .RE
 .RE
 .TP 
-.B --suffix SUFFIX
-Add 'suffix' to filenames at end of reduction.
-
+\fB\-\-suffix\fR SUFFIX
+Add SUFFIX to filenames at end of reduction.
 
 .SH ENVIRONMENT
 Recommend Anaconda 4.2.0, Astropy 1.2.1. (Ureka 1.5.2 should also work

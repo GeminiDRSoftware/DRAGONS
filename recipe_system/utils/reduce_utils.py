@@ -76,11 +76,6 @@ def buildParser(version):
                         help="Use <context> for recipe selection and "
                         " primitives sensitive to context. Eg., --context QA")
 
-    parser.add_argument("--logmode", dest="logmode", default="standard",
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="Set log mode: 'standard', 'console', 'quiet', "
-                        "'debug', or 'null'.")
-
     parser.add_argument("--logfile", dest="logfile", default="reduce.log",
                         nargs="*", action=UnitaryArgumentAction,
                         help="name of log (default is 'reduce.log')")
@@ -90,6 +85,11 @@ def buildParser(version):
                         help="Set the verbose level for console "
                         "logging; (critical, error, warning, status, stdinfo, "
                         "fullinfo, debug)")
+
+    parser.add_argument("--logmode", dest="logmode", default="standard",
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Set log mode: 'standard', 'console', 'quiet', "
+                        "'debug', or 'null'.")
 
     parser.add_argument("-p", "--param", dest="userparam", default=None,
                         nargs="*", action=ParameterAction,
@@ -117,6 +117,10 @@ def buildParser(version):
                         "recipe file name implies that multiple user defined "
                         "recipe functions can be defined in a single file." )
 
+    parser.add_argument("--suffix", dest='suffix', default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Add 'suffix' to filenames at end of reduction.")
+
     parser.add_argument("--upload_metrics", dest='upmetrics', default=False,
                         action=BooleanAction, nargs="*",
                         help="Send QA metrics to fitsstore. Default is False."
@@ -127,10 +131,6 @@ def buildParser(version):
                         help="Specify user supplied calibrations for "
                         "calibration types. "
                         "Eg., --user_cal processed_arc:gsTest_arc.fits")
-
-    parser.add_argument("--suffix", dest='suffix', default=None,
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="Add 'suffix' to filenames at end of reduction.")
 
     return parser
 

@@ -2,130 +2,83 @@
 .SH NAME
 typewalk
 .SH SYNOPSIS
-typewalk
-.B [-h] [-b 
-BATCHNUM
-.B] [-d 
-TWDIR
-.B ] [-f 
-FILEMASK
-.B ] [-n] [--or] [-o 
-OUTFILE
-.B ] [--tags 
-TAGS [TAGS ...]
-.B ] [--xtags 
-XTAGS [XTAGS ...]
-.B]
+.B typewalk
+[\fB\-h\fR]
+[\fB\-b\fR BATCHNUM]
+[\fB\-d\fR TWDIR]
+[\fB\-f\fR FILEMASK]
+[\fB\-n\fR]
+[\fB\-\-or\fR]
+[\fB\-o\fR OUTFILE]
+[\fB\-\-tags\fR TAGS [TAGS ...]]
+[\fB\-\-xtags\fR XTAGS [XTAGS ...]]
 
 .SH DESCRIPTION
 .B typewalk
 examines files in a directory or directory tree and reports the tag set through the 
-astrodata classification scheme. Running 
-.B typewalk 
-on a directory containing some Gemini datasets will demonstrate what users can expect 
-to see.
+astrodata classification scheme. Running \fBtypewalk\fR on a directory containing 
+some Gemini datasets will demonstrate what users can expect to see.
 
-By default, 
-.B typewalk
-will recurse all subdirectories under the current directory. Users may specify an 
-explicit directory with the 
-.B -d
-or
-.B --dir
-option; the behavior remains recursive.
+By default, \fBtypewalk\fR will recurse all subdirectories under the current 
+directory. Users may specify an explicit directory with the \fB-d\fR or 
+\fB\-\-dir\fR option; the behavior remains recursive.
 
 Files are selected and reported through a regular expression mask which, 
 by default, finds all ".fits" and ".FITS" files. Users can change this mask 
-with the 
-.B -f, --filemask 
-option.
+with the \fB\-f\fR, \fB\-\-filemask\fR option.
 
-As the 
-.B --tags 
-option indicates,
-.B typewalk 
-can find and report data that match specific tag criteria. 
-For example, a user might want to find all GMOS image flats under a certain 
-directory. 
-.B typewalk
-will locate and report all datasets that would match the tag set (GMOS, IMAGE, FLAT).
+As the \fB--tags\fR option indicates, \fBtypewalk\fR can find and report data 
+that match specific tag criteria. For example, a user might want to find all 
+GMOS image flats under a certain directory. \fBtypewalk\fR will locate and 
+report all datasets that would match the tag set (GMOS, IMAGE, FLAT).
 
 A user may request that a file be written containing all datasets matching 
-astrodata tags qualifiers passed by the
-.B --tags
-option. An output file is specified through the 
-.B -o, --out
+astrodata tags qualifiers passed by the \fB--tags\fR option. An output file is 
+specified through the \fB\-o\fR, \fB\-\-out\fR
 option. Output files are formatted so they may be passed directly to the 
 reduce command line via that applications 'at-file' (@file) facility. 
-(See the 
-.I Reduce Users Manual 
-for further detail.)
+(See the \fIRecipe System Users Manual\fR for further detail.)
 
-Users may select tag matching logic with the 
-.B --or
-switch. By default, qualifying logic is 
-.B AND, 
-i.e. the logic specifies that `all` tags must be present (x AND y); 
-.B --or
-specifies that ANY tags, enumerated with 
-.B --tags
-, may be present (x OR y). 
-.B --or
-is only effective when the 
-.B --tags
- option is specified with more than one tag.
+Users may select tag matching logic with the \fB\-\-or switch\fR. By default, 
+qualifying logic is \fBAND\fR, i.e. the logic specifies that `all` tags must be 
+present (x AND y); \fB\-\-or\fR specifies that ANY tags, enumerated with 
+\fB\-\-tags\fR, may be present (x OR y). \fB\-\-or\fR is only effective when the 
+\fB\-\-tags\fR option is specified with more than one tag.
 
 .SH OPTIONS
 .TP
-.B -h, --help
-show the
-.B typewalk
-help message and exit
+\fB\-h\fR, \fB\-\-help\fR
+show the \fBtypewalk\fR help message and exit
 .TP
-.B -b BATCHNUM, --batch BATCHNUM
-In shallow walk mode, number of files to process at a time in the current directory. 
-Controls behavior in large data directories. Default = 100.
+\fB\-b\fR BATCHNUM, \fB\-\-batch\fR BATCHNUM
+In shallow walk mode, number of files to process at a time in the current 
+directory. Controls behavior in large data directories. Default is \fB100\fR.
 .TP
-.B -d TWDIR, --dir TWDIR
+\fB\-d\fR TWDIR, \fB\-\-dir\fR TWDIR
 Walk this directory and report tags. default is cwd.
 .TP
-.B -f FILEMASK, --filemask FILEMASK
+\fB\-f\fR FILEMASK, \fB\-\-filemask\fR FILEMASK
 Show files matching regex <FILEMASK>. Default is all .fits and .FITS files.
 .TP
-.B -n, --norecurse
+\fB\-n\fR, \fB\-\-norecurse\fR
 Do not recurse subdirectories.
 .TP
-.B --or
+\fB\-\-or\fR
 Use OR logic on 'tags' criteria. If not specified, matching logic is AND 
-(See 
-.B --tags
-). Eg.,
-.B --or --tags
-SOUTH GMOS IMAGE will report datasets that are one of SOUTH 
-.B OR 
-GMOS 
-.B OR
-IMAGE.
+(See \fB\-\-tags\fR). Eg., \fB\-\-or \-\-tags\fR
+SOUTH GMOS IMAGE will report datasets that are one of SOUTH \fBOR\fR GMOS 
+\fBOR\fR IMAGE.
 .TP
-.B -o OUTFILE, --out OUTFILE
-Write reported files to this file. Effective only with
-.B --tags
-option.
+\fB\-o\fR OUTFILE, \fB\-\-out\fR OUTFILE
+Write reported files to this file. Effective only with \fB\-\-tags\fR option.
 .TP
-.B --tags TAGS [TAGS ...]
-Find datasets that match only these tag criteria. Eg., 
-.B --tags SOUTH GMOS IMAGE 
-will report datasets that are all tagged 
-.B SOUTH 
-and 
-.B GMOS 
-and 
-.B IMAGE.
+\fB\-\-tags\fR TAGS [TAGS ...]
+Find datasets that match only these tag criteria. Eg., \fB\-\-tags\fR SOUTH 
+GMOS IMAGE will report datasets that are all tagged \fBSOUTH\fR and \fBGMOS\fR
+and \fBIMAGE\fR.
 .TP
-.B --xtags XTAGS [XTAGS ...]
-Exclude
-.B XTAGS
-from reporting.
+\fB\-\-xtags\fR XTAGS [XTAGS ...]
+Exclude \fBXTAGS\fR from reporting.
 
 .SH ENVIRONMENT
 Recommend Anaconda 4.2.0, Astropy 1.2.1., astrodata.__version__ '9999'
