@@ -196,7 +196,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index-latex', 'AstrodataCheatSheet', u'Astrodata Cheat Sheet',
+  ('index-latex', 'AstrodataCheatSheet.tex', u'Astrodata Cheat Sheet',
    u'Kathleen Labrie', 'manual'),
 ]
 

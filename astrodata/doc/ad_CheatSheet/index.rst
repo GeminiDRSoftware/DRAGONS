@@ -3,8 +3,12 @@
    contain the root `toctree` directive.
    Manually edited by KL Tue Jan 17 2017
 
-<REPLACE-WITH-TITLE>
-====================
+Astrodata Cheat Sheet 
+=====================
+
+.. admonition:: Document ID
+
+   PIPE-USER-105_AstrodataCheatSheet
 
 .. toctree::
    :numbered:
