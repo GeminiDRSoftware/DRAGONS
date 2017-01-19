@@ -22,9 +22,9 @@ class NIRI(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(NIRI, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.niri.lookups'
-        [self.sx_dict.update({k:
-                path.join(path.dirname(sextractor_dict.__file__), v)})
-            for k,v in sextractor_dict.sx_dict.items()]
+        self.sx_dict.update({k:
+                path.join(path.dirname(sextractor_dict.__file__), v)
+            for k,v in sextractor_dict.sx_dict.items()})
         self.parameters = ParametersNIRI
 
     def nonlinearityCorrect(self, adinputs=None, **params):

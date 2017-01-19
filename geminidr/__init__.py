@@ -71,9 +71,9 @@ class PrimitivesBASE(object):
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict
         # Prepend paths to SExtractor input files now
-        [self.sx_dict.update({k:
-            os.path.join(os.path.dirname(sextractor_dict.__file__), v)})
-                for k,v in self.sx_dict.items()]
+        self.sx_dict.update({k:
+                os.path.join(os.path.dirname(sextractor_dict.__file__), v)
+                for k,v in self.sx_dict.items()})
 
         self.cachedict        = caches.set_caches()
         self.calibrations     = Calibrations()
