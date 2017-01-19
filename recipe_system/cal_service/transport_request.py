@@ -19,35 +19,35 @@ UPLOADCOOKIE  = CALURL_DICT["UPLOADCOOKIE"]
 _CALMGR       = CALURL_DICT["CALMGR"]
 # ------------------------------------------------------------------------------
 # sourced from fits_storage.gemini_metadata_utils.cal_types
-CALTYPES = {
-    "arc" : "arc",
-    "bias": "bias",
-    "dark": "dark",
+CALTYPES = [
+    "arc" ,
+    "bias",
+    "dark",
     # flats
-    "flat"             : "flat",
-    "domeflat"         : "domeflat",
-    "lampoff_flat"     : "lampoff_flat",
-    "lampoff_domeflat" : "lampoff_domeflat",
-    "polarization_flat": "polarization_flat",
-    "qh_flat"          : "qh_flat",
+    "flat",
+    "domeflat",
+    "lampoff_flat",
+    "lampoff_domeflat" ,
+    "polarization_flat",
+    "qh_flat",
     # masks (use caltype='mask' for MDF queries.)
-    "mask"             : "mask",
-    "pinhole_mask"     : "pinhole_mask",
-    "ronchi_mask"      : "ronchi_mask",
+    "mask",
+    "pinhole_mask",
+    "ronchi_mask",
     # processed cals
-    "processed_arc"    : "processed_arc",
-    "processed_bias"   : "processed_bias",
-    "processed_dark"   : "processed_dark",
-    "processed_flat"   : "processed_flat",
-    "processed_fringe" : "processed_fringe",
+    "processed_arc",
+    "processed_bias",
+    "processed_dark",
+    "processed_flat",
+    "processed_fringe",
     # other ...
-    "specphot"         : "specphot",
-    "spectwilight"     : "spectwilight",
-    "astrometric_standard" : "astrometric_standard",
-    "photometric_standard" : "photometric_standard",
-    "telluric_standard"    : "telluric_standard",
-    "polarization_standard":"polarization_standard",
-}
+    "specphot",
+    "spectwilight",
+    "astrometric_standard",
+    "photometric_standard",
+    "telluric_standard",
+    "polarization_standard"
+]
 # -----------------------------------------------------------------------------
 RESPONSESTR = """########## Request Data BEGIN ##########
 %(sequence)s
@@ -108,7 +108,11 @@ def calibration_search(rq, return_xml=False):
     rqurl = None
     calserv_msg = None
     CALMGR = _CALMGR
-    rqurl = join(CALMGR, CALTYPES[rq.caltype])
+    if rq.caltype not in CALTYPES:
+        calserv_msg = "Unrecognised caltype '{}'".format(rq.caltype)
+        return (None, calserv_msg)
+
+    rqurl = join(CALMGR, rq.caltype)
     log.stdinfo("CENTRAL CALIBRATION SEARCH: {}".format(rqurl))
     rqurl = rqurl + "/{}".format(rq.filename)
     # encode and send request
