@@ -1,42 +1,35 @@
 #
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
-from os import mkdir
-from os.path import dirname, basename, exists, join
-from datetime import datetime
-
 import hashlib
-# Handle 2.x and 3.x. Module urlparse is urllib.parse in 3.x
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
 
+from os import mkdir
+from os.path import basename, exists, join
+
+from urlparse import urlparse
 from urllib2  import HTTPError
-
-import astrodata
-import gemini_instruments
 
 from gempy.utils import logutils
 from gempy.utils import netutil
+
+from gemini_instruments.common import Section
 
 from .caches  import set_caches
 from recipe_system.cal_service import cal_search_factory
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
-Section = gemini_instruments.common.Section
 # ------------------------------------------------------------------------------
 # Currently delivers transport_request.calibration_search fn.
 calibration_search = cal_search_factory()
 # ------------------------------------------------------------------------------
-descriptor_list = ['amp_read_area','camera','central_wavelength','coadds',
-                   'data_label','data_section','detector_roi_setting',
-                   'detector_x_bin','detector_y_bin','disperser','exposure_time',
-                   'filter_name','focal_plane_mask','gain_setting','gcal_lamp',
-                   'instrument','lyot_stop','nod_count','nod_pixels','object',
-                   'observation_class','observation_type','program_id',
-                   'read_speed_setting', 'ut_datetime','read_mode',
-                   'well_depth_setting']
+descriptor_list = ['amp_read_area', 'camera', 'central_wavelength', 'coadds',
+                   'data_label', 'data_section', 'detector_roi_setting',
+                   'detector_x_bin', 'detector_y_bin', 'disperser',
+                   'exposure_time', 'filter_name', 'focal_plane_mask',
+                   'gain_setting', 'gcal_lamp', 'instrument', 'lyot_stop',
+                   'nod_count', 'nod_pixels', 'object', 'observation_class',
+                   'observation_type', 'program_id', 'read_speed_setting',
+                   'ut_datetime', 'read_mode', 'well_depth_setting']
 # ------------------------------------------------------------------------------
 def generate_md5_digest(filename):
     md5 = hashlib.md5()
@@ -61,11 +54,11 @@ def _makecachedir(caltype):
 class CalibrationRequest(object):
     """
     Request objects are passed to a calibration_search() function
-    
+
     """
     def __init__(self, ad, caltype=None):
         self.ad = ad
-        self.caltype  = caltype
+        self.caltype = caltype
         self.datalabel = ad.data_label()
         self.descriptors = None
         self.filename = ad.filename
@@ -93,26 +86,25 @@ class CalibrationRequest(object):
 def get_cal_requests(inputs, caltype):
     """
     Builds a list of CalibrationRequest objects, one for each 'ad' input.
-    
+
     @param inputs: list of input AstroData instances
     @type inputs:  <list>
-    
+
     @param caltype: Calibration type, eg., 'processed_bias', 'flat', etc.
     @type caltype:  <str>
-    
+
     @return: Returns a list of CalibrationRequest instances, one for
              each passed 'ad' instance in 'inputs'.
     @rtype:  <list>
 
     """
-    dlist = []
-    options = { 'central_wavelength': 'asMicrometers=True' }
+    options = {'central_wavelength': 'asMicrometers=True'}
     def _handle_sections(dv):
         if isinstance(dv, list) and isinstance(dv[0], Section):
-                return [ [el.x1, el.x2, el.y1, el.y2] for el in dv ]
+            return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
         return dv
 
-    rqEvents = []
+    rq_events = []
     for ad in inputs:
         log.stdinfo("Recieved calibration request for {}".format(ad.filename))
         rq = CalibrationRequest(ad, caltype)
@@ -130,9 +122,8 @@ def get_cal_requests(inputs, caltype):
                 except (KeyError, ValueError):
                     desc_dict[desc_name] = None
         rq.descriptors = desc_dict
-        rqEvents.append(rq)
-            
-    return rqEvents
+        rq_events.append(rq)
+    return rq_events
 
 
 def process_cal_requests(cal_requests):
@@ -146,7 +137,7 @@ def process_cal_requests(cal_requests):
     If a calibration match is found by the calibration manager, a URL is
     returned. This function will perform a cache inspection to see if the
     matched calibraiton file is already present. If not, the calibration
-    will be downloaded and written to the cache. It is this path that is 
+    will be downloaded and written to the cache. It is this path that is
     returned in the dictionary structure. A path of 'None' indicates that no
     calibration match was found.
 
@@ -156,7 +147,7 @@ def process_cal_requests(cal_requests):
     :returns: A set of science frames and matching calibrations.
     :rtype:   <dict>
 
-    E.g., The returned dictionary has the form, 
+    E.g., The returned dictionary has the form,
 
     { (input datalabel, caltype): <filename_of_calibration_including_path>,
       ...
@@ -175,7 +166,6 @@ def process_cal_requests(cal_requests):
         calname = None
         calmd5 = None
         calurl = None
-        sci_ad = rq.ad
         calurl, calmd5 = calibration_search(rq)
         if calurl is None:
             log.error("START CALIBRATION SERVICE REPORT\n")
@@ -206,9 +196,10 @@ def process_cal_requests(cal_requests):
                                                clobber=True)
                     _add_cal_record(rq, cachename)
                     continue
-                except HTTPError, error:
+                except HTTPError as error:
                     errstr = "Could not retrieve {}".format(calurl)
                     log.error(errstr)
+                    log.error(str(error))
 
         try:
             calname = netutil.urlfetch(calurl, store=cachedir)
