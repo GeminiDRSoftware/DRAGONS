@@ -1,6 +1,6 @@
-.. qarecord::
+.. qarecord.rst
 
-.. _qarecord::
+.. _qarecord:
 
 *****************
 QA Metrics Record

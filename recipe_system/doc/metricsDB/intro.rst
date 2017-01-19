@@ -1,6 +1,6 @@
-.. intro::
+.. intro.rst
 
-.. _intro::
+.. _intro:
 
 ************
 Introduction
