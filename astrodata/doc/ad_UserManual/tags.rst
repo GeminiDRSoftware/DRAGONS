@@ -1,4 +1,4 @@
-.. tags:
+.. tags.rst
 
 .. _tags:
 

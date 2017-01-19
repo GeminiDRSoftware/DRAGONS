@@ -1,4 +1,4 @@
-.. structure:
+.. structure.rst
 
 .. _structure:
 

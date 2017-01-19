@@ -1,4 +1,4 @@
-.. descriptors:
+.. descriptors.rst
 
 .. _descriptors:
 
