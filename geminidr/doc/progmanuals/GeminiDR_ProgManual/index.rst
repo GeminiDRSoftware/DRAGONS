@@ -6,6 +6,10 @@
 Gemini Data Reduction Programmer Manual
 =======================================
 
+.. admonition:: Document ID
+
+   PIPE-USER-112_GeminiDRProgManual
+
 .. toctree::
    :numbered:
    :maxdepth: 2
