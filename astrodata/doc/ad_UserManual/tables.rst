@@ -1,4 +1,4 @@
-.. tables:
+.. tables.rst
 
 .. _tables:
 

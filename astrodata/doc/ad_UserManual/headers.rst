@@ -1,4 +1,4 @@
-.. headers:
+.. headers.rst
 
 .. _headers:
 

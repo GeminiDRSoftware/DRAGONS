@@ -1,4 +1,4 @@
-.. iomef:
+.. iomef.rst
 
 .. _iomef:
 
