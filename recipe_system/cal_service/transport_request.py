@@ -3,7 +3,6 @@
 # ------------------------------------------------------------------------------
 import urllib
 import urllib2
-import datetime
 import traceback
 
 from os.path import join, basename
@@ -14,20 +13,20 @@ from gempy.utils import logutils
 from . import calurl_dict
 # ------------------------------------------------------------------------------
 CALURL_DICT   = calurl_dict.calurl_dict
+_CALMGR       = CALURL_DICT["CALMGR"]
 UPLOADPROCCAL = CALURL_DICT["UPLOADPROCCAL"]
 UPLOADCOOKIE  = CALURL_DICT["UPLOADCOOKIE"]
-_CALMGR       = CALURL_DICT["CALMGR"]
 # ------------------------------------------------------------------------------
 # sourced from fits_storage.gemini_metadata_utils.cal_types
 CALTYPES = [
-    "arc" ,
+    "arc",
     "bias",
     "dark",
     # flats
     "flat",
     "domeflat",
     "lampoff_flat",
-    "lampoff_domeflat" ,
+    "lampoff_domeflat",
     "polarization_flat",
     "qh_flat",
     # masks (use caltype='mask' for MDF queries.)
@@ -73,7 +72,7 @@ def upload_calibration(filename):
 
     :return:     <void>
     """
-    fn  = basename(filename)
+    fn = basename(filename)
     url = join(UPLOADPROCCAL, fn)
     postdata = open(filename).read()
     try:
@@ -83,11 +82,10 @@ def upload_calibration(filename):
         rq.add_header('Cookie', 'gemini_fits_upload_auth=%s' % UPLOADCOOKIE)
         u = urllib2.urlopen(rq, postdata)
         response = u.read()
-    except urllib2.HTTPError, error:
-        contents = error.read()
+    except urllib2.HTTPError as error:
+        log.error(str(error))
         raise
     return
-
 
 def calibration_search(rq, return_xml=False):
     """
@@ -136,11 +134,11 @@ def calibration_search(rq, return_xml=False):
         if dval is None:
             nones.append(dname)
 
-    preerr = RESPONSESTR % { "sequence": pformat(sequence),
-                             "response": response.strip(),
-                             "nones"   : ", ".join(nones) \
-                             if len(nones) > 0 else "No Nones Sent" }
-
+    preerr = RESPONSESTR % {"sequence": pformat(sequence),
+                            "response": response.strip(),
+                            "nones"   : ", ".join(nones) \
+                            if len(nones) > 0 else "No Nones Sent"}
+    
     try:
         dom = minidom.parseString(response)
         calel = dom.getElementsByTagName("calibration")
