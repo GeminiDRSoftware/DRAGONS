@@ -6,6 +6,10 @@
 *gemini_instruments* Manual
 ===========================
 
+.. admonition:: Document ID
+
+   PIPE-USER-107_AstrodataGeminiManual
+
 .. toctree::
    :numbered:
    :maxdepth: 2
