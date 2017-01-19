@@ -81,6 +81,3 @@ class PrimitivesBASE(object):
 
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]
-
-        # Use the location of this file to determine the top of the DR tree
-        self.dr_root          = os.path.dirname(__file__)
