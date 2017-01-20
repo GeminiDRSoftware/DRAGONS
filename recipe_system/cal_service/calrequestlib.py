@@ -98,12 +98,10 @@ def get_cal_requests(inputs, caltype):
     @rtype:  <list>
 
     """
-    options = {'central_wavelength': 'asMicrometers=True'}
+    options = {'central_wavelength': {'asMicrometers': True}}
     def _handle_returns(dv):
         if isinstance(dv, list) and isinstance(dv[0], Section):
             return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
-        elif isinstance(dv, list) and dv[0] is None:
-            return None
         else:
             return dv
 
@@ -117,20 +115,17 @@ def get_cal_requests(inputs, caltype):
             try:
                 descriptor = getattr(ad, desc_name)
             except AttributeError:
-                desc_dict[desc_name] = None
-
-            if desc_name in options.keys():
-                desc_dict[desc_name] = descriptor(options[desc_name])
-            elif desc_name == 'amp_read_area':
-                if _handle_returns(descriptor()) is None:
-                    desc_dict[desc_name] = None
-                else:
-                    desc_dict[desc_name] = "+".join(descriptor())
+                pass
             else:
+                kwargs = options[desc_name] if desc_name in options.keys() else {}
                 try:
-                    desc_dict[desc_name] = _handle_returns(descriptor())
-                except (KeyError, ValueError):
-                    desc_dict[desc_name] = None
+                    dv = _handle_returns(descriptor(**kwargs))
+                except:
+                    dv = None
+                # Munge list to value if all item(s) are the same
+                if isinstance(dv, list):
+                    dv = dv[0] if len(set(dv)) == 1 else "+".join(dv)
+                desc_dict[desc_name] = dv
         rq.descriptors = desc_dict
         rq_events.append(rq)
     return rq_events
