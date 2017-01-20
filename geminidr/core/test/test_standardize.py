@@ -51,11 +51,11 @@ class TestStandardize:
 
     def test_addDQ(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20160713S0118_prepared.fits'))
+                                'N20070819S0104_prepared.fits'))
         p = NIRIImage([ad])
         ad = p.addDQ()[0]
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20160713S0118_dqAdded.fits'))
+                                'N20070819S0104_dqAdded.fits'))
 
     def test_addIllumMaskToDQ(self):
         pass
@@ -69,16 +69,16 @@ class TestStandardize:
 
     def test_addVAR(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20160713S0118_ADUToElectrons.fits'))
+                                'N20070819S0104_ADUToElectrons.fits'))
         p = NIRIImage([ad])
         ad = p.addVAR(read_noise=True, poisson_noise=True)[0]
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20160713S0118_varAdded.fits'))
+                                'N20070819S0104_varAdded.fits'))
 
     def test_prepare(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20160713S0118.fits'))
+                                'N20070819S0104.fits'))
         p = NIRIImage([ad])
         ad = p.prepare()[0]
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20160713S0118_prepared.fits'))
+                                'N20070819S0104_prepared.fits'))
