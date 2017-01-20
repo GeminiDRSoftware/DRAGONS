@@ -6,6 +6,10 @@
 Metrics Database Interfaces
 ===========================
 
+.. admonition:: Document ID
+
+   PIPE-USER-111_MetricsDB
+
 .. toctree::
    :numbered:
    :maxdepth: 2
