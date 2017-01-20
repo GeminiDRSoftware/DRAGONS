@@ -13,7 +13,7 @@ Gemini Primitive Classes
 primitives_Gemini
 =================
 Description of purpose.
-See :ref: `gemini` for details on the primitives.
+See :ref:`geminiclass` for details on the primitives.
 
 - primitive 1 : short description
 - primitive 2 : short description
