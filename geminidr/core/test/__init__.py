@@ -135,11 +135,11 @@ def ad_compare(ad1, ad2):
                         # TODO: Maybe compare data difference against variance?
                         if 'int' in attr1.dtype.name:
                             if maxdiff > 0:
-                                log.warning('    int arrays not identical: '
-                                    'max difference {}'.format(maxdiff))
+                                log.warning('    {} int arrays not identical: '
+                                    'max difference {}'.format(attr, maxdiff))
                                 ok = False
                         elif maxdiff > 0.1:
-                            log.warning('    float arrays differ: max difference '
-                                        '{}'.format(maxdiff))
+                            log.warning('    {} float arrays differ: max difference '
+                                        '{}'.format(attr, maxdiff))
                             ok = False
     return ok
