@@ -119,11 +119,11 @@ def ad_compare(ad1, ad2):
                         ok = False
                 else:
                     # Pixel-data extensions
-                    if attr1.dtype != attr2.dtype:
+                    if attr1.dtype.name != attr2.dtype.name:
                         log.warning('    Datatype mismatch for {}: {} v {}'.
                                     format(attr, attr1.dtype, attr2.dtype))
                         ok = False
-                    elif attr1.shape != attr2.shape:
+                    if attr1.shape != attr2.shape:
                         log.warning('    Shape mismatch for {}: {} v {}'.
                                     format(attr, attr1.shape, attr2.shape))
                         ok = False
