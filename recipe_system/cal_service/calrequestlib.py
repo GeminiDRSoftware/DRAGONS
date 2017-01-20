@@ -99,10 +99,13 @@ def get_cal_requests(inputs, caltype):
 
     """
     options = {'central_wavelength': 'asMicrometers=True'}
-    def _handle_sections(dv):
+    def _handle_returns(dv):
         if isinstance(dv, list) and isinstance(dv[0], Section):
             return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
-        return dv
+        elif isinstance(dv, list) and dv[0] is None:
+            return None
+        else:
+            return dv
 
     rq_events = []
     for ad in inputs:
@@ -111,14 +114,21 @@ def get_cal_requests(inputs, caltype):
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
         for desc_name in descriptor_list:
-            descriptor = getattr(ad, desc_name)
+            try:
+                descriptor = getattr(ad, desc_name)
+            except AttributeError:
+                desc_dict[desc_name] = None
+
             if desc_name in options.keys():
                 desc_dict[desc_name] = descriptor(options[desc_name])
             elif desc_name == 'amp_read_area':
-                desc_dict[desc_name] = "+".join(descriptor())
+                if _handle_returns(descriptor()) is None:
+                    desc_dict[desc_name] = None
+                else:
+                    desc_dict[desc_name] = "+".join(descriptor())
             else:
                 try:
-                    desc_dict[desc_name] = _handle_sections(descriptor())
+                    desc_dict[desc_name] = _handle_returns(descriptor())
                 except (KeyError, ValueError):
                     desc_dict[desc_name] = None
         rq.descriptors = desc_dict

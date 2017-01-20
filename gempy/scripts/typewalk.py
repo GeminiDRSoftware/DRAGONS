@@ -46,6 +46,8 @@ import gemini_instruments
 from astrodata.core import AstroDataError
 
 # ------------------------------------------------------------------------------
+batchno = 100
+# ------------------------------------------------------------------------------
 def typewalk_argparser():
     from argparse import ArgumentParser
     from argparse import RawDescriptionHelpFormatter
