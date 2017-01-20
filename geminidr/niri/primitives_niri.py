@@ -68,6 +68,12 @@ class NIRI(Gemini, NearIR):
                                                                  ad.filename))
 
             for ext, coeffs in zip(ad, ad.nonlinearity_coeffs()):
+                if coeffs is None:
+                    log.warning("No nonlinearity coefficients found for "
+                                "{}:{} - no correction applied".
+                                format(ad.filename, ext.hdr.EXTVER))
+                    continue
+
                 raw_pixel_data = ext.data / coadds
                 
                 raw_mean_value = np.mean(raw_pixel_data, dtype=np.float64)

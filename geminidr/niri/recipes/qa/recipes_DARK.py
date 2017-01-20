@@ -24,7 +24,7 @@ def makeProcessedDark(p):
     p.prepare()
     p.addDQ(illum_mask=False)
     p.addVAR(read_noise=True)
-    #p.nonlinearityCorrect()
+    p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.addToList(purpose="forStack")

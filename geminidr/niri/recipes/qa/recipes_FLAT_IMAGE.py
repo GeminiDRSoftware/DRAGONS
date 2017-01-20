@@ -24,7 +24,7 @@ if __name__ == '__main__':
         p.prepare()
         p.addDQ()
         p.addVAR(read_noise=True)
-        #p.nonlinearityCorrect()
+        p.nonlinearityCorrect()
         p.ADUToElectrons()
         p.addVAR(poisson_noise=True)
         p.addToList(purpose='forFlat')
