@@ -26,10 +26,16 @@ class ParametersPreprocess(ParametersBASE):
         "suffix"            : "_backgroundCorrected",
         "remove_zero_level" : False,
     }
-    # No default type defined; the flat parameter could be a string
-    # or an AstroData object
+    darkCorrect = {
+        "suffix"            : '_darkCorrected',
+        "dark"              : None,
+    }
     divideByFlat = {
         "suffix"            : "_flatCorrected",
+        "flat"              : None,
+    }
+    flatCorrect = {
+        "suffix"            : '_darkCorrected',
         "flat"              : None,
     }
     makeSky = {

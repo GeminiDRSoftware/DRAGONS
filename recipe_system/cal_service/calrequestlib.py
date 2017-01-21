@@ -124,7 +124,8 @@ def get_cal_requests(inputs, caltype):
                     dv = None
                 # Munge list to value if all item(s) are the same
                 if isinstance(dv, list):
-                    dv = dv[0] if len(set(dv)) == 1 else "+".join(dv)
+                    dv = dv[0] if all(v==dv[0] for v in dv) else "+".join(
+                        [str(v) for v in dv])
                 desc_dict[desc_name] = dv
         rq.descriptors = desc_dict
         rq_events.append(rq)

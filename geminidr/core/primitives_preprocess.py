@@ -17,9 +17,7 @@ from recipe_system.utils.decorators import parameter_override
 @parameter_override
 class Preprocess(PrimitivesBASE):
     """
-    This is the class containing all of the preprocessing primitives
-    for the GEMINI level of the type hierarchy tree. It inherits all
-    the primitives from the level above, 'GENERALPrimitives'.
+    This is the class containing all of the preprocessing primitives.
     """
     tagset = None
 
@@ -393,6 +391,17 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def darkCorrect(self, adinputs=None, **params):
+        """
+        Obtains processed dark(s) from the calibration service and subtracts
+        it/them from the science image(s).
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        dark: str/list
+            name of dark to use (in which case the cal request is superfluous)
+        """
         self.getProcessedDark(adinputs)
         adinputs = self.subtractDark(adinputs, **params)
         return adinputs
@@ -468,11 +477,22 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def flatCorrect(self, adinputs=None, **params):
+        """
+        Obtains processed flat(s) from the calibration service and divides
+        the science image(s) by it/them.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        flat: str/list
+            name of flat to use (in which case the cal request is superfluous)
+        """
         self.getProcessedFlat(adinputs)
         adinputs = self.divideByFlat(adinputs, **params)
         return adinputs
 
-    def makeSky(self, adinputs=None, stream='main', **params):
+    def makeSky(self, adinputs=None, **params):
         adinputs = self.separateSky(adinputs, **params)
         adinputs = self.associateSky(adinputs, **params)
         adinputs = self.stackSkyFrames(adinputs, **params)
@@ -1013,7 +1033,7 @@ class Preprocess(PrimitivesBASE):
             
             if dark is None:
                 log.warning("No changes will be made to {}, since no "
-                            "adark was specified".format(ad.filename))
+                            "dark was specified".format(ad.filename))
                 continue
 
             log.fullinfo("Subtracting the dark ({}) from the input "
