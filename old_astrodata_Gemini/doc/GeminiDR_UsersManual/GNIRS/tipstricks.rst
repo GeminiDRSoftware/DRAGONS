@@ -1,1 +1,0 @@
-../../usermanuals/GNIRS_UsersManual/tipstricks.rst

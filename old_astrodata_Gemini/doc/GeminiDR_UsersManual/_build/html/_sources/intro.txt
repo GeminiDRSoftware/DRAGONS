@@ -1,9 +1,0 @@
-.. intro:
-
-.. _Introduction:
-
-************
-Introduction
-************
-
-

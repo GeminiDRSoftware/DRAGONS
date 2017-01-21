@@ -1,1 +1,0 @@
-../../usermanuals/GSAOI_UsersManual/instrument.rst
