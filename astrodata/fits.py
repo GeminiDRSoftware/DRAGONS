@@ -297,6 +297,19 @@ def normalize_indices(slc, nitems):
 
     return indices, multiple
 
+class StdDevAsVariance(object):
+    def as_variance(self):
+        if self.array is not None:
+            return self.array ** 2
+        else:
+            return None
+
+def new_variance_uncertainty_instance(array):
+    obj = StdDevUncertainty(np.sqrt(array))
+    cls = obj.__class__
+    obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
+    return obj
+
 class FitsProviderProxy(DataProvider):
     # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not make
     #       sense for slices. If a method of interest is identified, we need to
@@ -504,7 +517,7 @@ class FitsProviderProxy(DataProvider):
         if value is None:
             nd.uncertainty = None
         else:
-            nd.uncertainty = StdDevUncertainty(np.sqrt(value))
+            nd.uncertainty = new_variance_uncertainty_instance(value)
 
     @property
     def nddata(self):
@@ -744,7 +757,7 @@ class FitsProvider(DataProvider):
         for idx, obj in enumerate(self._nddata):
             header = obj.meta['header']
             other_objects = []
-            fixed = (('uncertainty', obj.uncertainty), ('mask', obj.mask))
+            fixed = (('variance', obj.uncertainty.as_variance()), ('mask', obj.mask))
             for name, other in fixed + tuple(sorted(obj.meta['other'].items())):
                 if other is not None:
                     if isinstance(other, Table):
@@ -1166,7 +1179,7 @@ class FitsProvider(DataProvider):
                         add_to.mask = ext.data
                         ret = ext.data
                     elif name == 'VAR':
-                        std_un = StdDevUncertainty(np.sqrt(ext.data))
+                        std_un = new_variance_uncertainty_instance(ext.data)
                         std_un.parent_nddata = add_to
                         add_to.uncertainty = std_un
                         ret = std_un
