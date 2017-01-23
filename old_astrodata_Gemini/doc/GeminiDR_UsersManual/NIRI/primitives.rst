@@ -1,1 +1,0 @@
-../../usermanuals/NIRI_UsersManual/primitives.rst

@@ -1,1 +1,0 @@
-../../../../astrodata/doc/rs_UsersManual/customize.rst
