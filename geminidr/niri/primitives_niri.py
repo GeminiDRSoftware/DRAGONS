@@ -1,12 +1,18 @@
+#
+#                                                                  gemini_python
+#
+#                                                             primitives_niri.py
+# ------------------------------------------------------------------------------
 import numpy as np
 from os import path
 
 from gempy.gemini import gemini_tools as gt
 
+from .lookups.source_detection import sextractor_dict
+
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from .parameters_niri import ParametersNIRI
-from .lookups.source_detection import sextractor_dict
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

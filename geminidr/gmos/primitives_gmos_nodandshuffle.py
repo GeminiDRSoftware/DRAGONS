@@ -1,15 +1,14 @@
 #
+#                                                                  gemini_python
+#
 #                                                primtives_gmos_nodandshuffle.py
 # ------------------------------------------------------------------------------
-import astrodata
-import gemini_instruments
-
 from copy import deepcopy
+
+from gempy.gemini import gemini_tools as gt
 
 from .primitives_gmos import GMOS
 from .parameters_gmos_nodandshuffle import ParametersGMOSNodAndShuffle
-
-from gempy.gemini import gemini_tools as gt
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

@@ -1,28 +1,33 @@
+#
+#                                                                  gemini_python
+#
+#                                                               primitives_qa.py
+# ------------------------------------------------------------------------------
+import numpy as np
 import math
 import operator
 from copy import deepcopy
 from collections import namedtuple
-QAstatus = namedtuple('QAstatus', 'band req warning info')
-Measurement = namedtuple('Measurement', 'value std samples')
 
-import numpy as np
 from astropy.stats import sigma_clip
 from scipy.special import j1
 
-import astrodata
-import gemini_instruments
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
+from .lookups import DQ_definitions as DQ
+from .lookups import qaConstraints as qa
+
 from geminidr import PrimitivesBASE
-from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.gemini.lookups import qaConstraints as qa
 from geminidr import ParametersBASE
 
 from recipe_system.utils.decorators import parameter_override
+
+QAstatus = namedtuple('QAstatus', 'band req warning info')
+Measurement = namedtuple('Measurement', 'value std samples')
 # ------------------------------------------------------------------------------
 @parameter_override
 class QA(PrimitivesBASE):

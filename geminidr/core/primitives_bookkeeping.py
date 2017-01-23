@@ -1,9 +1,14 @@
+#
+#                                                                  gemini_python
+#
+#                                                      primitives_bookkeeping.py
+# ------------------------------------------------------------------------------
 import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_bookkeeping import ParametersBookkeeping
+from .parameters_bookkeeping import ParametersBookkeeping
 
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.cal_service import caches

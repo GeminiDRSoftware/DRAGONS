@@ -1,10 +1,15 @@
+#
+#                                                                  gemini_python
+#
+#                                                               primitives_f2.py
+# ------------------------------------------------------------------------------
 import numpy as np
 
 from gempy.gemini import gemini_tools as gt
 from gempy.utils.manipulate_ad import remove_single_length_dimension
 
-from ..core import NearIR
-from ..gemini.primitives_gemini import Gemini
+from geminidr.core import NearIR
+from geminidr.gemini.primitives_gemini import Gemini
 from .parameters_f2 import ParametersF2
 
 from recipe_system.utils.decorators import parameter_override

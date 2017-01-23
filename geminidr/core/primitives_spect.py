@@ -1,13 +1,9 @@
 #
+#                                                                  gemini_python
+#
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
-import numpy as np
-
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-
-from .. import PrimitivesBASE
+from geminidr import PrimitivesBASE
 from .parameters_spect import ParametersSpect
 
 from recipe_system.utils.decorators import parameter_override

@@ -1,16 +1,21 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
+#
+#                                                                  gemini_python
+#
+#                                                       primitives_preprocess.py
+# ------------------------------------------------------------------------------
 import math
 import datetime
 import numpy as np
-
 from copy import deepcopy
 
+import astrodata
+import gemini_instruments
+
+from gempy.gemini import gemini_tools as gt
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_preprocess import ParametersPreprocess
+from .parameters_preprocess import ParametersPreprocess
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

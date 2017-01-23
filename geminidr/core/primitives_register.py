@@ -1,19 +1,20 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
-import scipy.optimize
+#
+#                                                                  gemini_python
+#
+#                                                          primitives_register.py
+# ------------------------------------------------------------------------------
 import math
 import numpy as np
+import scipy.optimize
 from astropy.wcs import WCS
 from astropy import table
 
-from .. import PrimitivesBASE
-from geminidr.core.parameters_register import ParametersRegister
-
+from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 from gempy.utils import logutils
+
+from geminidr import PrimitivesBASE
+from .parameters_register import ParametersRegister
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

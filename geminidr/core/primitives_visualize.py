@@ -1,3 +1,8 @@
+#
+#                                                                  gemini_python
+#
+#                                                        primitives_visualize.py
+# ------------------------------------------------------------------------------
 import numpy as np
 
 try:
@@ -5,15 +10,12 @@ try:
 except ImportError:
     import numdisplay as nd
 
-import astrodata
-import gemini_instruments
-
-from gemini_instruments.gmos.pixel_functions import get_bias_level
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from gemini_instruments.gmos.pixel_functions import get_bias_level
 
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_visualize import ParametersVisualize
+from .parameters_visualize import ParametersVisualize
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

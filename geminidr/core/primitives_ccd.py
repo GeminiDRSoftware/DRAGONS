@@ -1,10 +1,13 @@
-import astrodata
-import gemini_instruments
+#
+#                                                                  gemini_python
+#
+#                                                              primitives_ccd.py
+# ------------------------------------------------------------------------------
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.eti import gireduceeti
 
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_ccd import ParametersCCD
+from .parameters_ccd import ParametersCCD
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

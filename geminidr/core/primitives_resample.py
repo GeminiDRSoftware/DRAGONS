@@ -1,18 +1,21 @@
-import astrodata
-import gemini_instruments
-
+#
+#                                                                  gemini_python
+#
+#                                                         primitives_resample.py
+# ------------------------------------------------------------------------------
 import numpy as np
 from astropy.wcs import WCS
 from scipy.ndimage import affine_transform
 
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
 
-from geminidr import PrimitivesBASE
-from geminidr.core.parameters_resample import ParametersResample
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
-from gempy.utils import logutils
+from geminidr import PrimitivesBASE
+from .parameters_resample import ParametersResample
+
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 interpolators = {"nearest": 0,

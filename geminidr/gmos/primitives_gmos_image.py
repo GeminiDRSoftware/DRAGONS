@@ -1,20 +1,18 @@
 #
+#                                                                  gemini_python
+#
 #                                                        primtives_gmos_image.py
-# ------------------------------------------------------------------------------
+#  ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
-
 import scipy.ndimage as ndimage
-
-import astrodata
-import gemini_instruments
-
-from geminidr.core import Image, Photometry
-from geminidr.gmos.primitives_gmos import GMOS
-from geminidr.gmos.parameters_gmos_image import ParametersGMOSImage
 
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
+
+from geminidr.core import Image, Photometry
+from .primitives_gmos import GMOS
+from .parameters_gmos_image import ParametersGMOSImage
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
