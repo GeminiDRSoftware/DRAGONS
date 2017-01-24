@@ -127,13 +127,13 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         sidset = set()
         if purpose == 'all':
-            [sidset.add(sid) for sid in self.stacks.keys()]
+            [sidset.add(sid) for sid in self.stacks]
         else:
             if purpose is None:
                 purpose = ''
             [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
         for sid in sidset:
-            stacklist = self.stacks(sid)
+            stacklist = self.stacks.get(sid, [])
             log.status("List for stack id={}".format(sid))
             if len(stacklist) > 0:
                 for f in stacklist:
