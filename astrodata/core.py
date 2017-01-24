@@ -895,7 +895,7 @@ class AstroData(object):
             Raised if the extension is of a proper type, but its value is illegal
             somehow.
         """
-        return self._dataprov.append(extension, *args, **kw)
+        return self._dataprov.append(extension, name=name, *args, **kw)
 
     def operate(self, operator, *args, **kwargs):
         """
