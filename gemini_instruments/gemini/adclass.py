@@ -6,7 +6,6 @@ import warnings
 
 from astropy.wcs import WCS, FITSFixedWarning
 from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
-from ..gmu import toicrs
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 from ..common import section_to_tuple
@@ -1424,7 +1423,7 @@ class AstroDataGemini(AstroDataFits):
             ra += pmra
 
         if icrs:
-            ra, dec = toicrs(frame,
+            ra, dec = gmu.toicrs(frame,
                     self.target_ra(offset=offset, pm=pm, icrs=False),
                     self.target_dec(offset=offset, pm=pm, icrs=False),
                     equinox=2000.0,
