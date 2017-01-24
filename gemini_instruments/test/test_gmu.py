@@ -10,7 +10,7 @@ To run:
 from datetime import datetime
 from gemini_instruments import gmu
 
-class TestCoordinateUtils:
+class TestGMU:
     """
     Suite of tests for the functions in the coordinate utils module.
         """
@@ -37,3 +37,28 @@ class TestCoordinateUtils:
         correct_value = (22.779814880901004, 1.913607699746111)
         for rv, cv in zip(ret, correct_value):
             assert abs(rv - cv) < 0.00001
+
+    def test_removeComponentID1(self):
+        value = 'H_G0999'
+        assert ('H', gmu.removeComponentID(value))
+
+    def test_removeComponentID2(self):
+        value = 'H'
+        assert ('H', gmu.removeComponentID(value))
+
+    def test_sectionStrToIntList(self):
+        section = '[1:2,3:4]'
+        expected = [0, 2, 2, 4]
+        assert expected == gmu.sectionStrToIntList(section)
+
+    def test_parse_percentile1(self):
+        string = 'Any'
+        assert 100 == gmu.parse_percentile(string)
+
+    def test_parse_percentile2(self):
+        string = '80-percentile'
+        assert 80 == gmu.parse_percentile(string)
+
+    def test_parse_percentile3(self):
+        string = '80'
+        assert gmu.parse_percentile(string) is None
