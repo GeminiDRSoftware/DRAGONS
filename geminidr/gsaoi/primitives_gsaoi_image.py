@@ -1,7 +1,12 @@
+#
+#                                                                  gemini_python
+#
+#                                                      primitives_gsaoi_image.py
+# ------------------------------------------------------------------------------
 from gempy.gemini import gemini_tools as gt
 
-from .primitives_gsaoi import GSAOI
 from ..core import Image, Photometry
+from .primitives_gsaoi import GSAOI
 from .parameters_gsaoi_image import ParametersGSAOIImage
 
 from recipe_system.utils.decorators import parameter_override

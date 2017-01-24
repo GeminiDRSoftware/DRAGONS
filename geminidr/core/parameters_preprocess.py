@@ -35,7 +35,7 @@ class ParametersPreprocess(ParametersBASE):
         "flat"              : None,
     }
     flatCorrect = {
-        "suffix"            : '_darkCorrected',
+        "suffix"            : '_flatCorrected',
         "flat"              : None,
     }
     makeSky = {

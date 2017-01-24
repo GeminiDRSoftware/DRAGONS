@@ -125,7 +125,7 @@ class SExtractorETI(ETI):
             if isinstance(value, list):
                 list_params.update({parameter: deque(value)})
             elif parameter != 'config':
-                cmd.extend(['-'+parameter, value])
+                cmd.extend(['-'+parameter, str(value)])
 
         # Run SExtractor for each input file
         for file_obj in self.file_objs:
@@ -148,7 +148,7 @@ class SExtractorETI(ETI):
         # Return a list of OBJCATs
         return [fil.recover() for fil in self.file_objs]
 
-    def _execute(self, command=list, return_output=False):
+    def _execute(self, command, return_output=False):
         """
         Call subprocess to execute shell 'command'. Tests the executed task's
         returncode: raises if non-zero. Raises an OSError.

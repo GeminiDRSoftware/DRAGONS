@@ -1,19 +1,20 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from gempy.library import astrotools as at
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
-import scipy.optimize
+#
+#                                                                  gemini_python
+#
+#                                                          primitives_register.py
+# ------------------------------------------------------------------------------
 import math
 import numpy as np
+import scipy.optimize
 from astropy.wcs import WCS
 from astropy import table
 
-from .. import PrimitivesBASE
-from geminidr.core.parameters_register import ParametersRegister
-
+from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 from gempy.utils import logutils
+
+from geminidr import PrimitivesBASE
+from .parameters_register import ParametersRegister
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -187,7 +188,7 @@ class Register(PrimitivesBASE):
                                                          firstPass=firstpasspix,
                                                          min_sources=min_sources,
                                                          cull_sources=cull_sources)
-                        except ImportError, msg:
+                        except ImportError as msg:
                             log.warning("{}: No object list.".format(msg))
                             obj_list = [[],[]]
                     else:
@@ -509,8 +510,8 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, min_sources=1,
     ind1,ind2 = at.match_cxy(x1,conv_x2, y1,conv_y2,
                              first_pass=firstPass, delta=delta, log=log)
 
-    obj_list = [[],[]] if len(ind1)<1 else [zip(x1[ind1], y1[ind1]),
-                                            zip(x2[ind2], y2[ind2])]
+    obj_list = [[],[]] if len(ind1)<1 else [list(zip(x1[ind1], y1[ind1])),
+                                            list(zip(x2[ind2], y2[ind2]))]
     return obj_list
 
 def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1, cull_sources=False):
@@ -608,8 +609,8 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
     ind1,ind2 = at.match_cxy(x1,conv_x2,y1,conv_y2,
                              delta=delta, first_pass=firstPass, log=log)
 
-    obj_list = [[],[]] if len(ind1)<1 else [zip(x1[ind1], y1[ind1]),
-                                            zip(x2[ind2], y2[ind2])]
+    obj_list = [[],[]] if len(ind1)<1 else [list(zip(x1[ind1], y1[ind1])),
+                                            list(zip(x2[ind2], y2[ind2]))]
     return obj_list
 
 def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,

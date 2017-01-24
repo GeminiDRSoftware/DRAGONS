@@ -1,19 +1,21 @@
-import astrodata
-import gemini_instruments
+#
+#                                                                  gemini_python
+#
+#                                                       primitives_photometry.py
+# ------------------------------------------------------------------------------
+import numpy as np
+from astropy.wcs import WCS
+from astropy.stats import sigma_clip
+
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
 from gempy.library import astrotools as at
 from gempy.gemini.eti.sextractoreti import SExtractorETI
 from gempy.utils import logutils
-
-import os
-import numpy as np
-from astropy.stats import sigma_clip
-from astropy.wcs import WCS
+from geminidr.gemini.lookups import color_corrections
 
 from geminidr import PrimitivesBASE
-from geminidr.gemini.lookups import ColorCorrections
-from geminidr.core.parameters_photometry import ParametersPhotometry
+from .parameters_photometry import ParametersPhotometry
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -271,7 +273,7 @@ def _match_objcat_refcat(ad):
     debug = False
 
     filter_name = ad.filter_name(pretty=True)
-    colterm_dict = ColorCorrections.colorTerms
+    colterm_dict = color_corrections.colorTerms
     if filter_name in colterm_dict:
         formulae = colterm_dict[filter_name]
     else:

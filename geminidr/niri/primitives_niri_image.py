@@ -1,3 +1,8 @@
+#
+#                                                                  gemini_python
+#
+#                                                       primitives_niri_image.py
+# ------------------------------------------------------------------------------
 from .primitives_niri import NIRI
 from ..core import Image, Photometry
 from .parameters_niri_image import ParametersNIRIImage

@@ -1,20 +1,21 @@
+#
+#                                                                  gemini_python
+#
+#                                                      primitives_standardize.py
+# ------------------------------------------------------------------------------
 import os
 import numpy as np
 from importlib import import_module
-
 from scipy.ndimage import measurements
-
-import astrodata
-import gemini_instruments
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.utils import logutils
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_standardize import ParametersStandardize
-from gempy.utils import logutils
+from .parameters_standardize import ParametersStandardize
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

@@ -1,28 +1,33 @@
+#
+#                                                                  gemini_python
+#
+#                                                               primitives_qa.py
+# ------------------------------------------------------------------------------
+import numpy as np
 import math
 import operator
 from copy import deepcopy
 from collections import namedtuple
-QAstatus = namedtuple('QAstatus', 'band req warning info')
-Measurement = namedtuple('Measurement', 'value std samples')
 
-import numpy as np
 from astropy.stats import sigma_clip
 from scipy.special import j1
 
-import astrodata
-import gemini_instruments
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
+from .lookups import DQ_definitions as DQ
+from .lookups import qaConstraints as qa
+
 from geminidr import PrimitivesBASE
-from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.gemini.lookups import qaConstraints as qa
 from geminidr import ParametersBASE
 
 from recipe_system.utils.decorators import parameter_override
+
+QAstatus = namedtuple('QAstatus', 'band req warning info')
+Measurement = namedtuple('Measurement', 'value std samples')
 # ------------------------------------------------------------------------------
 @parameter_override
 class QA(PrimitivesBASE):
@@ -304,7 +309,7 @@ class QA(PrimitivesBASE):
 
                 # TODO: weight instead?
                 # Trim out where zeropoint error > err_threshold
-                if len(filter(lambda z: z is not None, zps)) <= 5:
+                if len([z for z in zps if z is not None]) <= 5:
                     # 5 sources or less. Beggars are not choosers.
                     ok = zperrs<0.2
                 else:
@@ -720,9 +725,8 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
         if simple:
             # Straightfoward determination of which band the measured value
             # lies in. The uncertainty on the measurement is ignored.
-            bands, limits = zip(*sorted(limit_dict.items(),
-                                key=lambda (k,v): k, reverse=True))
-            limits = [limit_dict[k] for k in bands]
+            bands, limits = list(zip(*sorted(limit_dict.items(),
+                                key=lambda (k,v): k, reverse=True)))
             sign = cmp(limits[1], limits[0])
             inequality = '<' if sign > 0 else '>'
             qaband = 100
@@ -739,8 +743,8 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
             # Assumes the measured value and uncertainty represent a Normal
             # distribution, and works out the probability that the true value
             # lies in each band
-            bands, limits = zip(*sorted(limit_dict.items(),
-                                key=lambda (k,v): v))
+            bands, limits = list(zip(*sorted(limit_dict.items(),
+                                key=lambda (k,v): v)))
             bands = (100,)+bands if bands[0]>bands[1] else bands+(100,)
             # To Bayesian this, prepend (0,) to limits and not to probs
             # and renormalize (divide all by 1-probs[0]) and add prior

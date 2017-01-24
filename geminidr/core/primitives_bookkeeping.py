@@ -1,9 +1,14 @@
+#
+#                                                                  gemini_python
+#
+#                                                      primitives_bookkeeping.py
+# ------------------------------------------------------------------------------
 import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_bookkeeping import ParametersBookkeeping
+from .parameters_bookkeeping import ParametersBookkeeping
 
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.cal_service import caches
@@ -122,13 +127,13 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         sidset = set()
         if purpose == 'all':
-            [sidset.add(sid) for sid in self.stacks.keys()]
+            [sidset.add(sid) for sid in self.stacks]
         else:
             if purpose is None:
                 purpose = ''
             [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
         for sid in sidset:
-            stacklist = self.stacks(sid)
+            stacklist = self.stacks.get(sid, [])
             log.status("List for stack id={}".format(sid))
             if len(stacklist) > 0:
                 for f in stacklist:

@@ -1,8 +1,13 @@
+#
+#                                                                  gemini_python
+#
+#                                                            primitives_image.py
+# ------------------------------------------------------------------------------
 from gempy.gemini import gemini_tools as gt
 
-from geminidr.core.primitives_register import Register
-from geminidr.core.primitives_resample import Resample
-from geminidr.core.parameters_image import ParametersImage
+from .primitives_register import Register
+from .primitives_resample import Resample
+from .parameters_image import ParametersImage
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

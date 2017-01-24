@@ -1,9 +1,6 @@
 #
 #                                                          primtives_gmos_ifu.py
 # ------------------------------------------------------------------------------
-import astrodata
-import gemini_instruments
-
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
 from .parameters_gmos_ifu import ParametersGMOSIFU

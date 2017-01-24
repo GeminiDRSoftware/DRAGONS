@@ -1,17 +1,16 @@
 #
+#                                                                  gemini_python
+#
 #                                                        primtives_gmos_spect.py
 # ------------------------------------------------------------------------------
 import numpy as np
 
-import astrodata
-import gemini_instruments
-
-from .primitives_gmos import GMOS
-from ..core import Spect
-from .parameters_gmos_spect import ParametersGMOSSpect
-
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
+
+from geminidr.core import Spect
+from .primitives_gmos import GMOS
+from .parameters_gmos_spect import ParametersGMOSSpect
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

@@ -1,3 +1,8 @@
+#
+#                                                                  gemini_python
+#
+#                                                             primitives_gmos.py
+# ------------------------------------------------------------------------------
 import os
 import numpy as np
 from copy import deepcopy
@@ -295,7 +300,7 @@ class GMOS(Gemini, CCD):
                     amps_on_ccd = ampsorder[ccd_map==ccd]
                     extns = [ad[i] for i in amps_on_ccd]
                     # Use the centre-left amplifier's HDU as basis for new HDU
-                    ref_ext = amps_on_ccd[int(len(amps_on_ccd)/2-1)]
+                    ref_ext = amps_on_ccd[(len(amps_on_ccd) - 1) // 2]
                     # Stack the data, etc.
                     data = np.hstack([ext.data for ext in extns])
                     mask = None if any(ext.mask is None for ext in extns) \
@@ -314,11 +319,11 @@ class GMOS(Gemini, CCD):
 
                     # Add the widths of all arrays to the left of the reference
                     xshift = sum(ext.data.shape[1] for
-                                 ext in extns[:int((len(amps_on_ccd) - 1) / 2)])
+                                 ext in extns[:int((len(amps_on_ccd) - 1) // 2)])
 
                     if tile_all and ccd>1:
                         # Set reference extension to be the centre-left of all
-                        ref_ext = ampsorder[int(len(ampsorder)/2-1)]
+                        ref_ext = ampsorder[(len(ampsorder) - 1) // 2]
                         # Calculate total horizontal shift if the reference
                         # array is on this CCD
                         if ref_ext in amps_on_ccd:

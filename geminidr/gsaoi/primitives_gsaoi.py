@@ -1,13 +1,19 @@
+#
+#                                                                  gemini_python
+#
+#                                                      primitives_gsaoi_image.py
+# ------------------------------------------------------------------------------
 import numpy as np
 from os import path
 from astropy.table import vstack
 
 from gempy.gemini import gemini_tools as gt
 
-from ..core import NearIR
-from ..gemini.primitives_gemini import Gemini
-from .parameters_gsaoi import ParametersGSAOI
 from .lookups.source_detection import sextractor_dict
+
+from ..core import NearIR
+from geminidr.gemini.primitives_gemini import Gemini
+from .parameters_gsaoi import ParametersGSAOI
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

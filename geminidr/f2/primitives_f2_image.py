@@ -1,7 +1,12 @@
+#
+#                                                                  gemini_python
+#
+#                                                         primitives_f2_image.py
+# ------------------------------------------------------------------------------
 from gempy.gemini import gemini_tools as gt
 
+from geminidr.core import Image, Photometry
 from .primitives_f2 import F2
-from ..core import Image, Photometry
 from .parameters_f2_image import ParametersF2Image
 
 from recipe_system.utils.decorators import parameter_override

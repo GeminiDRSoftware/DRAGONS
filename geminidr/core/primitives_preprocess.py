@@ -1,16 +1,21 @@
-import astrodata
-import gemini_instruments
-from gempy.gemini import gemini_tools as gt
-from geminidr.gemini.lookups import DQ_definitions as DQ
-
+#
+#                                                                  gemini_python
+#
+#                                                       primitives_preprocess.py
+# ------------------------------------------------------------------------------
 import math
 import datetime
 import numpy as np
-
 from copy import deepcopy
 
+import astrodata
+import gemini_instruments
+
+from gempy.gemini import gemini_tools as gt
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_preprocess import ParametersPreprocess
+from .parameters_preprocess import ParametersPreprocess
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -1067,8 +1072,8 @@ class Preprocess(PrimitivesBASE):
             # Use the list of sky frames provided by the user. Generate a
             # dictionary associating the input sky AstroData objects to the
             # input science AstroData objects.
-            sky_dict = dict(zip(**gt.make_lists([ad.phu.get('ORIGNAME')
-                                            for ad in adinputs], params['sky'])))
+            sky_dict = dict(list(zip(**gt.make_lists([ad.phu.get('ORIGNAME')
+                                     for ad in adinputs], params['sky']))))
 
         else:
             # The stackSkyFrames primitive makes the dictionary containing the

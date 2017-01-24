@@ -7,27 +7,22 @@ import os
 import re
 from importlib import import_module
 
-import astrodata
-import gemini_instruments
-
 from gempy.gemini import gemini_tools as gt
 
 from recipe_system.cal_service.calrequestlib import get_cal_requests
 from recipe_system.cal_service.calrequestlib import process_cal_requests
 from recipe_system.cal_service.transport_request import upload_calibration
 
+from geminidr import PrimitivesBASE
+from .parameters_calibdb import ParametersCalibDB
+
 from recipe_system.utils.decorators import parameter_override
 from recipe_system.cal_service import caches
-
-from geminidr.core.parameters_calibdb import ParametersCalibDB
-
-from geminidr import PrimitivesBASE
 # ------------------------------------------------------------------------------
 @parameter_override
 class CalibDB(PrimitivesBASE):
     """
     Only 'storeProcessedXXX' calibration primitives have associated parameters.
-
     """
     tagset = None
 

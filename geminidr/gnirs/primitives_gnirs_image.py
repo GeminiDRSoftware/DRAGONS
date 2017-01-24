@@ -1,3 +1,8 @@
+#
+#                                                                  gemini_python
+#
+#                                                      primitives_gnirs_image.py
+# ------------------------------------------------------------------------------
 import numpy as np
 import scipy.ndimage
 from skimage.morphology import binary_dilation
@@ -6,11 +11,11 @@ import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
+from .lookups import FOV as fov
+
 from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
 from .parameters_gnirs_image import ParametersGNIRSImage
-
-from lookups import FOV as fov
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

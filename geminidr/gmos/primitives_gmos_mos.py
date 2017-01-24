@@ -1,9 +1,8 @@
 #
+#                                                                  gemini_python
+#
 #                                                          primtives_gmos_mos.py
 # ------------------------------------------------------------------------------
-import astrodata
-import gemini_instruments
-
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
 from .parameters_gmos_mos import ParametersGMOSMOS

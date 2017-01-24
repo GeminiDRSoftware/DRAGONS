@@ -1,13 +1,15 @@
-import astrodata
-import gemini_instruments
-
+#
+#                                                                  gemini_python
+#
+#                                                           primitives_gemini.py
+# ------------------------------------------------------------------------------
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
 from geminidr.core import Visualize, Standardize, Stack
 
-from geminidr.gemini.primitives_qa import QA
-from geminidr.gemini.parameters_gemini import ParametersGemini
+from .primitives_qa import QA
+from .parameters_gemini import ParametersGemini
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------

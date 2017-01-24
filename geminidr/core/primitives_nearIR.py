@@ -6,14 +6,11 @@
 import numpy as np
 from astropy.stats import sigma_clip
 
-import astrodata
-import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
-from recipe_system.utils.decorators import parameter_override
-from geminidr.core.parameters_nearIR import ParametersNearIR
-
 from geminidr import PrimitivesBASE
+from .parameters_nearIR import ParametersNearIR
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
 @parameter_override

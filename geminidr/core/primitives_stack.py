@@ -1,15 +1,17 @@
+#
+#                                                                  gemini_python
+#
+#                                                            primitives_stack.py
+# ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
 
-import astrodata
-import gemini_instruments
-
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.eti import gemcombineeti
+from gempy.utils import logutils
 
 from geminidr import PrimitivesBASE
-from geminidr.core.parameters_stack import ParametersStack
-from gempy.utils import logutils
+from .parameters_stack import ParametersStack
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
