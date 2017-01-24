@@ -6,7 +6,7 @@
 import numpy as np
 
 from gempy.gemini import gemini_tools as gt
-from gempy.utils.manipulate_ad import remove_single_length_dimension
+from gempy.adlibrary.manipulate_ad import remove_single_length_dimension
 
 from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
@@ -48,11 +48,11 @@ class F2(Gemini, NearIR):
                             "already been processed by "
                             "standardizeInstrumentHeaders".format(ad.filename))
                 continue
-            
+
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are specific to FLAMINGOS-2.
             log.status("Updating keywords that are specific to FLAMINGOS-2")
-            
+
             # Filter name (required for IRAF?)
             ad.phu.set('FILTER', ad.filter_name(stripID=True, pretty=True),
                        self.keyword_comments['FILTER'])
@@ -80,7 +80,7 @@ class F2(Gemini, NearIR):
             ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
         return adinputs
-    
+
     def standardizeStructure(self, adinputs=None, **params):
         """
         This primitive is used to standardize the structure of GMOS data,
