@@ -1,5 +1,5 @@
 import numpy as np
-from . import logutils
+from gempy.utils import logutils
 
 # ------------------------------------------------------------------------------
 def remove_single_length_dimension(adinput):
@@ -26,24 +26,24 @@ def remove_single_length_dimension(adinput):
         # Ensure that there is only one single length dimension in the pixel
         # data
         if ext.data.shape.count(1) == 1:
-            
+
             # Determine the position of the single length dimension in the
             # tuple of array dimensions output by ext.data.shape
             axis = np.where([length==1 for length in ext.data.shape])[0][0]
-            
-            # numpy arrays use 0-based indexing and the axes are ordered from 
+
+            # numpy arrays use 0-based indexing and the axes are ordered from
             # slow to fast. So, if the position of the single length dimension
             # is located in e.g., ext.data.shape[0], the dimension number of
             # the FITS pixel data array is ext.data.ndim + 1 (since FITS pixel
             # data arrays use 1-based indexing).
             dimension = ext.data.ndim - axis
-            
+
             # The np.squeeze method only removes a dimension from the array if
-            # the dimension has a length equal to 1 
+            # the dimension has a length equal to 1
             log.status("Removing dimension {} from {}".
                        format(dimension, adinput.filename))
             ext.operate(np.squeeze)
-            
+
             # Set the NAXIS keyword appropriately now that a dimension has been
             # removed
             ext.hdr.set("NAXIS", ext.data.ndim)
@@ -54,7 +54,7 @@ def remove_single_length_dimension(adinput):
             #                                                       ext.hdr.EXTNAME,
             #                                                       ext.hdr.EXTVER,
             #                                                       ext.data.shape))
-            
+
             # Remove the keywords relating to the dimension that has been
             # removed (IRAF seems to add WCSDIM=3, CTYPE3='LINEAR  ', CD3_3=1.,
             # LTM1_1=1., LTM2_2=1., LTM3_3=1., WAXMAP01='1 0 2 0 0 0 ',
@@ -66,5 +66,5 @@ def remove_single_length_dimension(adinput):
         else:
             log.warning("No dimension of length 1 in extension pixel data."
                         "No changes will be made to {}. ".format(adinput.filename))
-    
+
     return adinput
