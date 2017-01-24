@@ -1072,8 +1072,8 @@ class Preprocess(PrimitivesBASE):
             # Use the list of sky frames provided by the user. Generate a
             # dictionary associating the input sky AstroData objects to the
             # input science AstroData objects.
-            sky_dict = dict(zip(**gt.make_lists([ad.phu.get('ORIGNAME')
-                                            for ad in adinputs], params['sky'])))
+            sky_dict = dict(list(zip(**gt.make_lists([ad.phu.get('ORIGNAME')
+                                     for ad in adinputs], params['sky']))))
 
         else:
             # The stackSkyFrames primitive makes the dictionary containing the

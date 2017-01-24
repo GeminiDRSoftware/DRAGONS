@@ -11,6 +11,8 @@ except ImportError:
     import numdisplay as nd
 
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
+
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
@@ -241,6 +243,7 @@ class _localNumDisplay(nd.NumDisplay):
             If input is not byte-scaled, it will perform scaling using
             set values/defaults.
         """
+        log = logutils.get_logger(__name__)
 
         #Ensure that the input array 'pix' is a numpy array
         pix = np.array(pix)
@@ -256,7 +259,7 @@ class _localNumDisplay(nd.NumDisplay):
         if zscale:
             if transform != None:
                 if not quiet:
-                    print "transform disallowed when zscale=True"
+                    log.fullinfo("transform disallowed when zscale=True")
                 transform = None
             z1, z2 = nd.zscale.zscale(pix, contrast=contrast)
 
@@ -306,7 +309,8 @@ class _localNumDisplay(nd.NumDisplay):
         # array as the one to be displayed, even though it may not be ideal.
         if _z1 == _z2:
             if not quiet:
-                print 'Error encountered during transformation. No transformation applied...'
+                log.warning('Error encountered during transformation. '
+                            'No transformation applied...')
             bpix = pix
             self.z1 = np.minimum.reduce(np.ravel(bpix))
             self.z2 = np.maximum.reduce(np.ravel(bpix))
@@ -324,7 +328,8 @@ class _localNumDisplay(nd.NumDisplay):
 
         _wcsinfo = nd.displaydev.ImageWCS(bpix,z1=self.z1,z2=self.z2,name=name)
         if not quiet:
-            print 'Image displayed with Z1: ',self.z1,' Z2:',self.z2
+            log.fullinfo('Image displayed with z1: {} z2: {}'.format(self.z1,
+                                                                     self.z2))
 
         bpix = self._fbclipImage(bpix,_d.fbwidth,_d.fbheight)
 
