@@ -6,7 +6,7 @@ import warnings
 
 from astropy.wcs import WCS, FITSFixedWarning
 from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
-from gempy.gemini.coordinate_utils import toicrs
+from ..gmu import toicrs
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 from ..common import section_to_tuple

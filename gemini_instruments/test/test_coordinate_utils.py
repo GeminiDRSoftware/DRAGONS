@@ -8,7 +8,7 @@ To run:
     1) py.test -v --capture=no
 """
 from datetime import datetime
-from gempy.gemini.coordinate_utils import toicrs
+from gemini_instruments import gmu
 
 class TestCoordinateUtils:
     """
@@ -33,7 +33,7 @@ class TestCoordinateUtils:
         pass
 
     def test_icrs(self):
-        ret = toicrs('APPT', 23.0, 2.0, ut_datetime=datetime(2016, 11, 3))
+        ret = gmu.toicrs('APPT', 23.0, 2.0, ut_datetime=datetime(2016, 11, 3))
         correct_value = (22.779814880901004, 1.913607699746111)
         for rv, cv in zip(ret, correct_value):
             assert abs(rv - cv) < 0.00001
