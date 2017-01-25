@@ -251,30 +251,25 @@ class Stack(PrimitivesBASE):
                         log.stdinfo("  {}".format(ad_sky.filename))
                         ad_sky_to_stack_list.append(ad_sky)
 
-                    # Stack the skies by creating a new primitivesClass instance
-                    #p = self.__class__(ad_sky_to_stack_list, self.context)
-                    #p.showInputs()
-                    #p.stackFrames(**pars)
-                    #p.showInputs()
-                    #ad_stacked_sky_list = p.adinputs
-                    # Stack the skies by calling the primitive function directly
-                    self.showInputs(ad_sky_to_stack_list)
                     ad_stacked_sky_list = self.stackFrames(ad_sky_to_stack_list,
                                                            **params)
-                    self.showInputs(ad_stacked_sky_list)
 
                     # Add the sky to be used to correct this science AstroData
                     # object to the list of output sky AstroData objects
                     if len(ad_stacked_sky_list) == 1:
                         ad_stacked_sky = ad_stacked_sky_list[0]
+                        # Change filename so the _skyStacked frame associated
+                        # with a particular science frame has the same root
+                        ad_stacked_sky.filename = gt.filename_updater(
+                            infilename=origname, suffix=params['suffix'])
 
                         # Add the appropriate time stamp to the PHU
                         gt.mark_history(adinput=ad_stacked_sky,
                                         primname=self.myself(),
                                         keyword=timestamp_key)
 
-                        ad_sky_for_correction_output_list.append(
-                          ad_stacked_sky)
+                        #ad_sky_for_correction_output_list.append(
+                        #  ad_stacked_sky)
 
                         # Update the dictionary with the stacked sky AD object
                         stacked_sky_dict.update({origname: ad_stacked_sky})
@@ -283,8 +278,8 @@ class Stack(PrimitivesBASE):
 
         # Add the appropriate time stamp to the PHU and update the filename of
         # the science AstroData objects
-        adinputs = gt.finalise_adinput(adinputs, timestamp_key=timestamp_key,
-                                        suffix=params["suffix"])
+        #adinputs = gt.finalise_adinput(adinputs, timestamp_key=timestamp_key,
+        #                                suffix=params["suffix"])
 
         # Add the association dictionary to the reduction context
         self.stacked_sky_dict = stacked_sky_dict
