@@ -74,13 +74,10 @@ class Bookkeeping(PrimitivesBASE):
         purpose = params.get('purpose', '')
         max_frames = params['max_frames']
 
-        # This primitive ignores adinputs and builds a new list of ADs
-        adinputs = []
-
         # Get ID for all inputs; use a set to avoid duplication
         sidset = set()
         [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
-        
+
         # Import inputs from all lists
         for sid in sidset:
             stacklist = self.stacks[sid]

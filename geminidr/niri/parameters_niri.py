@@ -13,6 +13,8 @@ class ParametersNIRI(ParametersGemini, ParametersNearIR):
         "suffix"                : "_skyAssociated",
         "distance"              : 1.,
         "time"                  : 900.,
+        "max_skies"             : None,
+        "use_all"               : False,
     }
     detectSources = {
         "suffix"                : "_sourcesDetected",

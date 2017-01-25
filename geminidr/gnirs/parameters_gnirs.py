@@ -18,4 +18,6 @@ class ParametersGNIRS(ParametersGemini, ParametersNearIR):
         "suffix"                : "_skyAssociated",
         "distance"              : 1.,
         "time"                  : 600.,
+        "max_skies"             : None,
+        "use_all"               : False,
     }
