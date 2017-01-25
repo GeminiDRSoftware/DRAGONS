@@ -42,7 +42,7 @@ def CumGauss1D(x, mean=0.0, stddev=1.0):
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
 # specific need to check.
-def accept_single_adinput(fn):
+def handle_single_adinput(fn):
     @wraps(fn)
     def wrapper(adinput, *args, **kwargs):
         if not isinstance(adinput, list):
@@ -52,7 +52,7 @@ def accept_single_adinput(fn):
             return fn(adinput, *args, **kwargs)
     return wrapper
 # ------------------------------------------------------------------------------
-@accept_single_adinput
+@handle_single_adinput
 def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
@@ -127,7 +127,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
 
     return adoutput
 
-@accept_single_adinput
+@handle_single_adinput
 def array_information(adinput=None):
     """
     Returns information about the relationship between amps (extensions)
@@ -436,7 +436,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
     
     return result
 
-@accept_single_adinput
+@handle_single_adinput
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None, 
                         return_dtype=None, keyword_comments=None):
     """
@@ -617,7 +617,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
     return aux_output_list
 
-@accept_single_adinput
+@handle_single_adinput
 def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None, 
                         return_dtype=None, keyword_comments=None):
     """
@@ -879,7 +879,7 @@ def clip_sources(ad):
 
     return good_sources
 
-@accept_single_adinput
+@handle_single_adinput
 def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     """
     This function replaces position, object, and program information 
@@ -1007,15 +1007,13 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     return adinput
 
 
-def filename_updater(adinput=None, infilename='', suffix='', prefix='',
-                    strip=False):
+def filename_updater(adinput=None, suffix='', prefix='', strip=False):
     """
     This function is for updating the file names of astrodata objects.
-    It can be used in a few different ways.  For simple post/pre pending of
-    the infilename string, there is no need to define adinput or strip. The 
-    current filename for adinput will be used if infilename is not defined. 
-    The examples below should make the main uses clear.
-        
+    A prefix and/or suffix can be added, either to the current filename
+    or to the original filename (strip=True does NOT attempt to parse
+    the current filename to find the original root).
+
     Note: 
     1.if the input filename has a path, the returned value will have
     path stripped off of it.
@@ -1025,59 +1023,35 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
     ----------
     adinput: AstroData
         input astrodata instance having its filename updated
-    infilename: str
-        filename to be updated
     suffix: str
         string to put between end of current filename and extension
     prefix: str
         string to put at the beginning of a filename
     strip: bool
         if True, use the original filename of the AD object, not what it has now
-    ::
-     filename_updater(adinput=myAstrodataObject, suffix='_prepared', strip=True)
-     result: 'N20020214S022_prepared.fits'
-        
-     filename_updater(infilename='N20020214S022_prepared.fits',
-         suffix='_biasCorrected')
-     result: 'N20020214S022_prepared_biasCorrected.fits'
-        
-     filename_updater(adinput=myAstrodataObject, prefix='testversion_')
-     result: 'testversion_N20020214S022.fits'
-    
     """
-    log = logutils.get_logger(__name__) 
-
-    # Check there is a name to update
-    if infilename == '':
-        # if both infilename and adinput are not passed in, then log critical msg
-        if adinput is None:
-            log.critical('A filename or an astrodata object must be passed '+
-                         'into filename_updater, so it has a name to update')
-        else:
-            infilename = adinput.filename
-
-    # Strip off any path that the input file name might have
-    basefilename = os.path.basename(infilename)
-
-    # Split up the filename and the file type ie. the extension
-    (name,filetype) = os.path.splitext(basefilename)
-    
+    # We need the original filename if we're going to strip
     if strip:
         try:
-            orig_filename = adinput.phu.ORIGNAME
+            filename = adinput.phu.ORIGNAME
         except KeyError:
             # If it's not there, grab the AD attr instead and add the keyword
-            orig_filename = adinput.orig_filename
-            adinput.phu.set('ORIGNAME', orig_filename,
+            filename = adinput.orig_filename
+            adinput.phu.set('ORIGNAME', filename,
                             'Original filename prior to processing')
-            
-        # Split up the filename and the file type ie. the extension
-        (name, filetype) = os.path.splitext(orig_filename)
+    else:
+        filename = adinput.filename
+
+    # Possibly, filename could be None
+    try:
+        name, filetype = os.path.splitext(filename)
+    except AttributeError:
+        name, filetype = '', '.fits'
 
     outFileName = prefix+name+suffix+filetype
     return outFileName
 
-@accept_single_adinput
+@handle_single_adinput
 def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
                      allow_empty=False):
     """
@@ -1436,7 +1410,7 @@ def make_lists(key_list=None, value_list=None, force_ad=False):
 
     return key_list, value_list
 
-@accept_single_adinput
+@handle_single_adinput
 def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     """
     Add or update a keyword with the UT time stamp as the value (in the form
@@ -1794,7 +1768,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
                             replace=True, table=out_objcat, sx_dict=sx_dict)
     return adoutput
 
-@accept_single_adinput
+@handle_single_adinput
 def trim_to_data_section(adinput=None, keyword_comments=None):
     """
     This function trims the data in each extension to the section returned
@@ -2204,7 +2178,7 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
 # descriptors appropriately, I've put it here instead of in
 # gemini_metadata_utils to avoid creating an import that's circular WRT
 # existing imports and might later hang around causing trouble.
-@accept_single_adinput
+@handle_single_adinput
 def get_offset_dict(adinput=None):
     """
     (To be deprecated)
