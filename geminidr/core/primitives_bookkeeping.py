@@ -26,7 +26,7 @@ class Bookkeeping(PrimitivesBASE):
         super(Bookkeeping, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersBookkeeping
     
-    def addToList(self, adinputs=None, purpose=None):
+    def addToList(self, adinputs=None, purpose=None, **params):
         """
         This primitive will update the lists of files to be stacked
         that have the same observationID with the current inputs.
@@ -74,13 +74,10 @@ class Bookkeeping(PrimitivesBASE):
         purpose = params.get('purpose', '')
         max_frames = params['max_frames']
 
-        # This primitive ignores adinputs and builds a new list of ADs
-        adinputs = []
-
         # Get ID for all inputs; use a set to avoid duplication
         sidset = set()
         [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
-        
+
         # Import inputs from all lists
         for sid in sidset:
             stacklist = self.stacks[sid]
@@ -99,7 +96,7 @@ class Bookkeeping(PrimitivesBASE):
                         log.stdinfo("   {}".format(f))
         return adinputs
 
-    def showInputs(self, adinputs=None, stream='main'):
+    def showInputs(self, adinputs=None, stream='main', **params):
         """
         A simple primitive to show the filenames for the current inputs to 
         this primitive.
@@ -107,14 +104,13 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         log.stdinfo("Inputs to stream {}".format(stream))
 
-        inputs = self.streams[stream]
-        for ad in inputs:
+        for ad in adinputs:
             log.stdinfo("  {}".format(ad.filename))
         return adinputs
 
     showFiles = showInputs
     
-    def showList(self, adinputs=None, purpose=None):
+    def showList(self, adinputs=None, purpose=None, **params):
         """
         This primitive will log the list of files in the stacking list matching
         the current inputs and 'purpose' value.

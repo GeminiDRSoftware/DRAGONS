@@ -19,7 +19,7 @@ from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
 from .lookups import DQ_definitions as DQ
-from .lookups import qaConstraints as qa
+from .lookups import qa_constraints as qa
 
 from geminidr import PrimitivesBASE
 from geminidr import ParametersBASE
@@ -169,10 +169,14 @@ class QA(PrimitivesBASE):
 
                 # Report measurement to the adcc
                 if bg_mag.value:
+                    try:
+                        req_bg = ad.requested_bg()
+                    except KeyError:
+                        req_bg = None
                     qad =  {"band": qastatus.band,
                             "brightness": float(bg_mag.value),
                             "brightness_error": float(bg_mag.std),
-                            "requested": ad.requested_bg(),
+                            "requested": req_bg,
                             "comment": comments}
                     qap.adcc_report(ad, "bg", qad)
 
@@ -358,7 +362,7 @@ class QA(PrimitivesBASE):
                 info_list.append(ext_info)
 
             # Only if we've managed to measure at least one zeropoint
-            if all_zp:
+            if any(zp.value for zp in all_zp):
                 avg_cloud = _stats(all_cloud, weights=None)
                 qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=False)
 
@@ -925,7 +929,7 @@ def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
                                                                 ellip.std)))
         if ad.is_ao():
             if strehl.value:
-                body.append(('Strehl ratio:', '{:3.f} +/- {:.3f}'.
+                body.append(('Strehl ratio:', '{:.3f} +/- {:.3f}'.
                             format(strehl.value, strehl.std)))
             else:
                 body.append(('(Strehl could not be determined)', ''))

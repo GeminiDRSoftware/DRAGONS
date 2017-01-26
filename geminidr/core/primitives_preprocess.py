@@ -498,6 +498,7 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def makeSky(self, adinputs=None, **params):
+        print len(adinputs)
         adinputs = self.separateSky(adinputs, **params)
         adinputs = self.associateSky(adinputs, **params)
         adinputs = self.stackSkyFrames(adinputs, **params)
