@@ -132,8 +132,9 @@ class GSAOI(Gemini, NearIR):
             ad = gt.trim_to_data_section(ad, keyword_comments=self.keyword_comments)
 
             # Determine output size and info to determine locations of arrays
+            # Gap size estimated at 3.0 arcsec from Disco-Stu output tiles
             detsec_list = ad.detector_section()
-            gap_size = int(2.5 / ad.pixel_scale())
+            gap_size = int(3.0 / ad.pixel_scale())
             x1 = min(s.x1 for s in detsec_list)
             x2 = max(s.x2 for s in detsec_list)
             y1 = min(s.y1 for s in detsec_list)
