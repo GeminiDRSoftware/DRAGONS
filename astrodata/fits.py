@@ -1211,7 +1211,14 @@ class FitsProvider(DataProvider):
         # _append_XXX signature
         if add_to is not None:
             raise TypeError("You can only append NDData derived instances at the top level")
-        self.header.append(new_nddata.meta['header'])
+        hd = new_nddata.meta['header']
+        try:
+            # If we're lazy loading data, it may be that the header is already there. Check for existance first
+            # and do a sanity check to make sure that both header and the data will match positions
+            hdpos = self.header.index(hd) - 1
+            assert (hdpos == len(self._nddata)), "Appending new data with existing header, which does not match positions"
+        except ValueError:
+            self.header.append(hd)
         self._nddata.append(new_nddata)
         return new_nddata
 
