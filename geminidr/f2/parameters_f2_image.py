@@ -9,6 +9,8 @@ class ParametersF2Image(ParametersF2, ParametersImage, ParametersPhotometry):
         "suffix"                : "_skyAssociated",
         "distance"              : 1.,
         "time"                  : 600.,
+        "max_skies"             : None,
+        "use_all"               : False,
     }
     makeLampFlat = {}
     stackSkyFrames = {

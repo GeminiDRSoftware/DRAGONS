@@ -10,6 +10,7 @@ from astropy.wcs import WCS
 from astropy import table
 
 from gempy.gemini import gemini_tools as gt
+from gempy.gemini import qap_tools as qap
 from gempy.library import astrotools as at
 from gempy.utils import logutils
 
@@ -361,7 +362,7 @@ class Register(PrimitivesBASE):
                             format(ad.filename))
                 
             # Report the measurement to the fitsstore
-            fitsdict = gt.fitsstore_report(ad, "pe", info_list,
+            fitsdict = qap.fitsstore_report(ad, "pe", info_list,
                         self.calurl_dict, self.context, self.upload_metrics)
 
             # Re-rename the column back to its original name
