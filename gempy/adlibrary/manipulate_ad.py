@@ -61,8 +61,12 @@ def remove_single_length_dimension(adinput):
             # WAT0_001='system=image', WAT1_001='wtype=tan axtype=ra' and
             # WAT2_001= 'wtype=tan axtype=dec' when doing e.g., imcopy
             # f2.fits[*,*,1], so perhaps these should be removed as well?)
+            #
+            # old data don't have all keywords.  need to check first.
             keywords = ("NAXIS{0}, AXISLAB{0}, CD{0}_{0}".format(dimension))
-            [ext.hdr.remove(keyword) for keyword in keywords.split(",")]
+            for keyword in keywords.split(','):
+                if keyword in ext.hdr:
+                    ext.hdr.remove(keyword)
         else:
             log.warning("No dimension of length 1 in extension pixel data."
                         "No changes will be made to {}. ".format(adinput.filename))
