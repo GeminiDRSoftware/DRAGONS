@@ -192,7 +192,7 @@ class Bookkeeping(PrimitivesBASE):
             
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
-            ad.write(filename=outfilename, clobber=params["clobber"])
+            ad.write(outfilename, clobber=params["clobber"])
         return adinputs
 
 # Helper function to make a stackid, without the IDFactory nonsense
