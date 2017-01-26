@@ -76,7 +76,7 @@ class PrimitivesBASE(object):
                 for k,v in self.sx_dict.items()})
 
         self.cachedict        = caches.set_caches()
-        self.calibrations     = Calibrations()
+        self.calibrations     = Calibrations(caches.calindfile)
         self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.

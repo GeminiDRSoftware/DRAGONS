@@ -53,10 +53,10 @@ def cal_search_factory():
     return ret
 
 class Calibrations(dict):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, calindfile, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
-        caches.set_caches()
-        self.update(caches.load_cache(caches.calindfile))
+        self._calindfile = calindfile
+        self.update(caches.load_cache(self._calindfile))
 
     def __getitem__(self, key):
         return self._get_cal(*key)
@@ -69,7 +69,7 @@ class Calibrations(dict):
         # Munge the key from (ad, caltype) to (ad.data_label, caltype)
         key = (key[0].data_label(), key[1])
         self.update({key: val})
-        caches.save_cache(self, caches.calindfile)
+        caches.save_cache(self, self._calindfile)
         return
 
     def _get_cal(self, ad, caltype):
@@ -83,5 +83,5 @@ class Calibrations(dict):
                 return calfile
             else:
                 del self[key]
-                caches.save_cache(self, caches.calindfile)
+                caches.save_cache(self, self._calindfile)
                 return None
