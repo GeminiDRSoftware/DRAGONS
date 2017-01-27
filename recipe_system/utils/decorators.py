@@ -112,6 +112,9 @@ def parameter_override(fn):
                       pobj.user_params))
         params.update(kwargs)
 
+        stat_msg = "PRIMITVE:{}".format(pname)
+        log.status(stat_msg)
+        log.status("-" * len(stat_msg))
         if len(args) == 1 and 'adinputs' not in params:
             instream = params.get('instream', params.get('stream', 'main'))
             params.update({'adinputs': pobj.streams[instream]})
@@ -121,6 +124,7 @@ def parameter_override(fn):
         else:
             ret_value = fn(*args, **params)
 
+        log.status(".")
         LOGINDENT -= 1
         logutils.update_indent(LOGINDENT)
         return ret_value
