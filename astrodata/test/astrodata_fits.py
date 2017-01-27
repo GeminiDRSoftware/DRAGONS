@@ -21,10 +21,18 @@ def test_iterate_over_extensions():
     for ext, md in zip(ad, metadata):
         assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == md
 
-def test_slice_multiple():
+def test_slice_range():
     ad = from_test_data('GMOS/N20110826S0336.fits')
     metadata = ('SCI', 2), ('SCI', 3)
     slc = ad[1:]
+    assert len(slc) == 2
+    for ext, md in zip(slc, metadata):
+        assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == md
+
+def test_slice_multiple():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    metadata = ('SCI', 2), ('SCI', 3)
+    slc = ad[1, 2]
     assert len(slc) == 2
     for ext, md in zip(slc, metadata):
         assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == md
@@ -44,7 +52,7 @@ def test_iterate_over_single_slice():
 
 def test_slice_negative():
     ad = from_test_data('GMOS/N20110826S0336.fits')
-    assert ad[len(ad) - 1].data is ad[-1].data
+    assert ad.data[-1] is ad[-1].data
 
 # Regression:
 
