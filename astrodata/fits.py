@@ -284,9 +284,12 @@ def normalize_indices(slc, nitems):
     if isinstance(slc, slice):
         start, stop, step = slc.indices(nitems)
         indices = list(range(start, stop, step))
-    elif isinstance(slc, int):
-        slc = (slc,)
-        multiple = False
+    elif isinstance(slc, int) or (isinstance(slc, tuple) and all(isinstance(i, int) for i in slc)):
+        if isinstance(slc, int):
+            slc = (slc,)
+            multiple = False
+        else:
+            multiple = True
         # Normalize negative indices...
         indices = [(x if x >= 0 else nitems + x) for x in slc]
     else:
