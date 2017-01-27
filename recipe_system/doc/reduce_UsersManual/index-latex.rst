@@ -1,18 +1,21 @@
-.. Reduce Users Manual master file, created by
-   sphinx-quickstart on Thu Mar 20 15:06:19 2014.
+.. Recipe System Users Manual master file, created from team template
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
-   Manually edited by KL Fri Apr 4 2014.
+   Manually edited by KRA, 23-01-2017.
 
-reduce Users Manual
-===================
+Recipe System Users Manual
+==========================
+
+.. admonition:: Document ID
+
+   PIPE-USER-108_RSUserManual
 
 .. toctree::
    :numbered:
    :maxdepth: 2
 
    intro
-   userenv
+   overview
    interfaces
    supptools
    discuss
@@ -28,8 +31,8 @@ reduce Users Manual
 .. toctree::
    :maxdepth: 1
    
+   appendices/glossary
    appendices/appendix_demo
    appendices/reduce_properties   
    
 .. todolist::
-

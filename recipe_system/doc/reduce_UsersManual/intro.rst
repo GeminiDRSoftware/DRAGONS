@@ -1,115 +1,201 @@
-.. intro:
 .. include discuss
 
+.. _intro:
+
+************
 Introduction
+************
+
+This document is version 2.0(beta) of the Recipe System Users Manual. Subsequent
+to this introduction, this document will provide a high-level overview of the
+Recipe System (Chapter 2, :ref:`overview`), followed by a detailed presentation
+of the interfaces available on the system.
+
+The Recipe System provides the command line tool, ``reduce``. This application 
+allows users to invoke the Gemini Recipe System from the command line to perform
+complex data processing and reduction on one or more astronomical datasets with
+a minimal set of parameters when default processing is requested.
+
+This document will further describe usage of the Recipe System's application
+programming interface (API). Details and information about the ``astrodata``
+package, the Recipe System, and/or the data processing involved in data
+reduction are beyond the scope of this document and will only be engaged when
+directly pertinent to the operations of the Recipe System.
+
+
+Installation
 ============
 
-This document is version 1.0 of the ``reduce`` Users Manual. This manual will 
-describe the usage of ``reduce`` as an application provided by the Gemini Observatory 
-Astrodata package suite. ``reduce`` is an application that allows users to invoke the 
-Gemini Recipe System to perform data processing and reduction on one or more 
-astronomical datasets.
+.. note:: While the original Recipe System, v1.0, was written in such a way as
+   to prevent migration to Python 3.x, Recipe System v2.0 has been written with
+   efforts to ensure compatibility with both Python 2.7.x and Python 3.x. Because
+   of this, the Recipe System, and the larger gemini_python package introduce a
+   dependency on the ``future`` module (currently, v0.16.0). Users may need to
+   install this package (see http://python-future.org).
 
-This document presents details on applying ``reduce`` to astronomical datasets, 
-currently defined as multi-extension FITS (MEF) files, both through the application's 
-command line interface and the application programming interface (API). Details and 
-information about the ``astrodata`` package, the Recipe System, and/or the data 
-processing involved in data reduction are beyond the scope of this document and 
-will only be engaged when directly pertinent to the operations of ``reduce``.
+The ``astrodata`` package has several dependencies like ``numpy``, ``astropy``,
+and others. All dependencies of ``gemini_python`` and ``astrodata`` are provided
+by the Ureka package, and users are highly encouraged to install and use this
+very useful package. It is an easy and, perhaps, best way to get everything you
+need and then some. Ureka is available at http://ssb.stsci.edu/ureka/.
 
-Reference Documents
--------------------
+WARNING:  The Ureka installation script will not set up IRAF for you. You need
+to do that yourself. Here's how::
 
-  - *The Gemini Recipe System: a dynamic workflow for automated data reduction*, 
-    K. Labrie *et al*, SPIE, 2010.
-  - *Developing for Gemini’s extensible pipeline environment*, K. Labrie, 
-    C. Allen, P. Hirst, ADASS, 2011
-  - *Gemini's Recipe System; A publicly available instrument-agnostic pipeline 
-    infrastructure*, K. Labrie et al, ADASS 2013.
-
-Overview
---------
-
-As an application, ``reduce`` provides interfaces to configure and launch the 
-Gemini Recipe System, a framework for developing and running configurable data 
-processing pipelines and which can accommodate processing pipelines for arbitrary 
-dataset types. In conjunction with the development of ``astrodata``, Gemini 
-Observatory has also developed the ``gemini_instruments`` and ``GeminiDR`` 
-packages, the code base currently providing abstraction of, and processing for, 
-Gemini Observatory astronomical observations.
-
-In Gemini Observatory's operational environment "on summit," ``reduce``, 
-``astrodata``, and the ``gemini_instruments`` packages provide a currently defined, 
-near-realtime, quality assurance pipeline, the so-called QAP. ``reduce`` is used 
-to launch this pipeline on newly acquired data and provide image quality metrics 
-to observers, who then assess the metrics and apply observational decisions on 
-telescope operations.
-
-Users unfamiliar with terms and concepts heretofore presented should consult 
-documentation cited in the previous sections (working on the Recipe System User 
-Manual).
+   $ cd ~
+   $ mkdir iraf
+   $ cd iraf
+   $ mkiraf
+   -- creating a new uparm directory
+   Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+   Enter terminal type: xgterm
+   A new LOGIN.CL file has been created in the current directory.
+   You may wish to review and edit this file to change the defaults.
 
 
-Glossary
---------
+Once a user has has retrieved the gemini_python package, available as a tarfile 
+from the Gemini website (http://gemini.edu), and untarred only minor adjustments 
+need to be made to the user environment in order to make astrodata importable and 
+allow ``reduce`` to work properly.
 
-  **adcc** -- Automatated Data Communication Center. Provides  HTTP 
-  service for moinitoring QA metrics produced during pipeline operations. 
-  This is run externally to ``reduce.`` Users need not know about or invoke 
-  the ``adcc`` for ``reduce`` operations.
+.. _config:
 
-  **astrodata** (or Astrodata) -- part of the **gemini_python** package suite 
-  that defines the dataset abstraction layer for the Recipe System.
+Install
+-------
 
-  **AstroData** -- not to be confused with **astrodata**, this is the main class 
-  of the ``astrodata`` package, and the one most users and developers will 
-  interact with at a programmatic level.
+Recommended Installation
+++++++++++++++++++++++++
 
-  **AstroData tags** -- Astrodata tags Represents a data classification. A dataset 
-  will be classified by a number of types that describe both the data and its 
-  processing state. For example, a typical unprocessed GMOS image would have a 
-  set of tags like
+It is recommended to install the software in a location other than the standard 
+python location for modules (the default ``site-packages``). This is also the 
+only solution if you do not have write permission to the default ``site-packages``. 
+Here is how you install the software somewhere other than the default location::
 
-  set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
-  (see **tags** below).
+   $ python setup.py install --prefix=/your/location
 
-  **Descriptor** -- Represents a high-level metadata name. Descriptors allow 
-  access to essential information about the data through a uniform, 
-  instrument-agnostic interface to the FITS headers.
+``/your/location`` must already exist.  This command will install executable
+scripts in a ``bin`` subdirectory, the documentation in a ``share`` subdirectory,
+and the modules in a ``lib/python2.7/site-packages`` subdirectory.  The modules
+being installed are ``astrodata``, ``gemini_instruments``, ``geminidr``, 
+``recipe_system``, and ``gempy``. In this manual, we will only use ``astrodata``.
 
-  **gemini_python** -- A suite of packages comprising **astrodata**, 
-  **gemini_instruments**, the **recipe system** and **gempy**, all of which 
-  provide the full functionality needed to run recipe  pipelines on 
-  observational datasets.
+Because you are not using the default location, you will need to add two paths to
+your environment.  You might want to add the following to your .cshrc or
+.bash_profile, or equivalent shell configuration script.
 
-  **gempy** -- a **gemini_python** package comprising gemini specific functional 
-  utilities.
+C shell(csh, tcsh)::
 
-  **MEF** -- Multiple Extension FITS, the standard data format not only for 
-  Gemini Observatory but many observatories.
+   setenv PATH /your/location/bin:${PATH}
+   setenv PYTHONPATH /your/location/lib/python2.7/site-packages:${PYTHONPATH}
 
-  **primitive** -- A function defined within an **GeminiDR** package that 
-  performs actual work on the passed dataset. Primitives observe tightly 
-  controlled interfaces in support of re-use of primitives and recipes for 
-  different types of data, when possible. For example, all primitives called 
-  ``flatCorrect`` must apply the flat field correction appropriate for the data’s 
-  current astrdata tag set, and must have the same set of input parameters.  This
-  is a Gemini Coding Standard, it is not enforced by the Recipe System.
+Bourne shells (sh, bash, ksh, ...) ::
 
-  **recipe** -- Represents the sequence of transformations, which are defined as
-  methods on a primitive class. A recipe is a simple python function recieves an 
-  instance of the the appropriate primitive class and calls the available methods 
-  that are to be done for a given recipe function. A **recipe** is the high-level 
-  pipeline definition. Users can pass recipe names directly to reduce. Essentially, 
-  a recipe is a pipeline.
+   export PATH=/your/location/bin:${PATH}
+   export PYTHONPATH=/your/location/lib/python2.7/site-packages:${PYTHONPATH}
 
-  **Recipe System** -- The gemin_python framework that accommodates an arbitrary 
-  number of defined recipes and the primitives 
+If you added those lines to your shell configuration script, make sure your 
+``source`` the file to activate the new setting.
 
-  **reduce** -- The command line interface to the Recipe System and its associated 
-  recipes/pipelines.
-  
-  **tags** or **tag set** --  these are tags that characterise the dataset and 
-  defined in a ``gemini_instruments`` instrument package used to describe the 
-  kind of observational data that has been passed to the Recipe System., 
-  Eg., a GMOS IMAGE; a NIRI IMAGE.
+For csh/tcsh::
+
+   $ source ~/.cshrc
+   $ rehash
+
+For bash::
+
+   $ source ~/.bash_profile
+
+Installation under Ureka
+++++++++++++++++++++++++
+
+Assuming that you have installed Ureka and that you have write access to the Ureka
+directory, this will install ``astrodata`` in the Ureka ``site-packages`` directory.
+WARNING: While easier to install and configure, this will modify your Ureka
+installation. ::
+
+   $ python setup.py install
+
+This will also add executables to the Ureka ``bin`` directory and documentation to
+the Ureka ``share`` directory.
+
+With this installation scheme, there is no need to add paths to your environment.
+However, it is a lot more complicated to remove the Gemini software in case of
+problems, or if you just want to clean it out after evaluation.
+
+In tcsh, you will need to run ``rehash`` to pick the new executables written to
+``bin``.
+
+.. _test:
+
+Test the installation
+---------------------
+
+Start up the python interpreter and import astrodata::
+
+   $ python
+   >>> import astrodata
+
+Next, return to the command line and test that ``reduce`` is reachable 
+and runs. There may be some delay as package modules are byte compiled::
+
+   $ reduce -h
+
+or ::
+
+   $ reduce [--help]
+
+This will print the reduce help to the screen.
+
+If users have Gemini fits files available, they can test that the Recipe System
+is functioning as expected with a test recipe provided by the astrodata_Gemini
+package::
+
+  $ reduce --recipe test_one /path/to/gemini_data.fits
+
+If all is well, users will see something like::
+
+  Resetting logger for application: reduce
+  Logging configured for application: reduce
+                         --- reduce, v4890  ---
+		Running under astrodata Version GP-X1
+  All submitted files appear valid
+  Starting Reduction on set #1 of 1
+
+    Processing dataset(s):
+	  gemini_data.fits
+
+  ==============================================================================
+  RECIPE: test_one
+  ==============================================================================
+   PRIMITIVE: showParameters
+   -------------------------
+   rtf = False
+   suffix = '_scafaasled'
+   otherTest = False
+   logindent = 3
+   logfile = 'reduce.log'
+   reducecache = '.reducecache'
+   storedcals = 'calibrations/storedcals'
+   index = 1
+   retrievedcals = 'calibrations/retrievedcals'
+   cachedict = {'storedcals': 'calibrations/storedcals', 'retrievedcals': 
+                'calibrations/retrievedcals', 'calibrations': 'calibrations', 
+                'reducecache': '.reducecache'}
+   loglevel = 'stdinfo'
+   calurl_dict = {'CALMGR': 'http://fits/calmgr', 
+                  'UPLOADPROCCAL': 'http://fits/upload_processed_cal', 
+                  'QAMETRICURL': 'http://fits/qareport', 
+                  'QAQUERYURL': 'http://fits/qaforgui', 
+                  'LOCALCALMGR': 'http://localhost:%(httpport)d/calmgr/%(caltype)s'}
+   logmode = 'standard'
+   test = True
+   writeInt = False
+   calibrations = 'calibrations'
+   .
+  Wrote gemini_data.fits in output directory
+
+
+  reduce completed successfully.
+
+Users curious about the URLs in the example above, i.e. ``http://fits/...``, see
+Sec. :ref:`fitsstore` in Chapter 5, Discussion.

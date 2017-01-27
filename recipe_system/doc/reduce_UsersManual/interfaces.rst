@@ -1,26 +1,27 @@
 .. interfaces:
 .. include discuss
 
-
 Interfaces
 ==========
 
 Introduction
 ------------
 
-The ``reduce`` application provides a command line interface and an API, both
-of which can configure and launch a Recipe System processing pipeline (a 'recipe')
-on the input dataset. Control of ``reduce`` and the Recipe System is provided 
-by a variety of options and switches. Of course, all options and switches 
-can be accessed and controlled through the API.
+The Recipe System provides a command line interface and an API. Both
+allow users to configure and launch a Recipe System processing pipeline (a
+'recipe') on one or more input datasets. Control of the Recipe System on the
+``reduce`` command line is provided by a variety of options and switches. All
+options and switches can be accessed and controlled through the API.
 
+This chapter will first present details of the command line interface,
+``reduce``, including an extended discussion of :ref:`atfile`. This is followed
+by a detailed presentation on the Recipe System's :ref:`api`.
 
-Command line interface
-----------------------
+Command line interface, ``reduce``
+----------------------------------
 
 We begin with the command line help provided by ``reduce --help``, followed by 
-further description and discussion of certain non-trivial options that require 
-detailed explanation. ::
+further description and discussion of certain non-trivial options. ::
 
   usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--logmode LOGMODE]
               [--logfile LOGFILE] [--loglevel LOGLEVEL]
@@ -38,7 +39,7 @@ detailed explanation. ::
   optional arguments:
     -h, --help            show this help message and exit
     -v, --version         show program's version number and exit
-    -d , --displayflags   display all parsed option flags and exit.
+    -d, --displayflags    display all parsed option flags and exit.
     --context CONTEXT     Use <context> for recipe selection.
     --logmode LOGMODE     log mode: 'standard', 'console', 'quiet', 'debug','null'.
     --logfile LOGFILE     name of log (default is 'reduce.log')
@@ -47,9 +48,9 @@ detailed explanation. ::
                           Set a parameter from the command line.
     -r RECIPENAME, --recipe RECIPENAME 
                           Specify a recipe by name.
+    --suffix SUFFIX       Add SUFFIX to filenames at end of reduction.
+    --upload_metrics      Send QA metrics to fitsstore. Default is False.
     --user_cal USER_CAL   Specify user supplied calibrations.
-    --suffix SUFFIX       Add 'suffix' to filenames at end of reduction.
-
 
 The [options] are described in the following sections.
 
@@ -75,23 +76,22 @@ Informational switches
     Eg.,::
 
        $ reduce -d --logmode console fitsfile.fits
-       
-       --------------------   switches, vars, vals  --------------------
-       
-       Literals			var 'dest'		Value
-       -----------------------------------------------------------------
-       ['-d', '--displayflags'] :: displayflags 	:: True
-       ['-p', '--param'] 	:: userparam 		:: None
-       ['--logmode'] 		:: logmode 		:: ['console']
-       ['-r', '--recipe'] 	:: recipename 		:: None
-       ['--logfile'] 		:: logfile 		:: reduce.log
-       ['--user_cal'] 	        :: user_cal 		:: None
-       ['--context'] 		:: context      	:: None
-       ['--suffix'] 		:: suffix 		:: None
-       ['--loglevel'] 		:: loglevel 		:: stdinfo
-       -----------------------------------------------------------------
-       
-       Input fits file(s):	fitsfile.fits
+
+       --------------------   switches, vars, vals  ------------------
+
+       Literals			var 'dest'	Value
+       ---------------------------------------------------------------
+       ['-d', '--displayflags']       :: displayflags    :: True
+       ['--context']                  :: context         :: None
+       ['--logfile']                  :: logfile         :: reduce.log
+       ['--loglevel']                 :: loglevel        :: stdinfo
+       ['--logmode']                  :: logmode         :: console
+       ['-p', '--param']              :: userparam       :: None
+       ['-r', '--recipe']             :: recipename      :: None
+       ['--suffix']                   :: suffix          :: None
+       ['--upload_metrics']           :: upmetrics       :: False
+       ['--user_cal']                 :: user_cal        :: None
+	--------------------------------------------------------------
 
 .. _options:
 
@@ -100,18 +100,6 @@ Configuration Switches, Options
 **--context <CONTEXT>**
     Use <CONTEXT> for recipe selection and for primitives sensitive to context. 
     Eg., ``--context QA``. When not specified, the context defaults to 'QA'. 
-
-**--logmode <LOGMODE>**
-    Set logging mode. One of
-
-    * standard
-    * console
-    * quiet
-    * debug
-    * null
-
-    where 'console' writes only to screen and 'quiet' writes only to the log
-    file. Default is 'standard'.
 
 **--logfile <LOGFILE>**
     Set the log file name. Default is 'reduce.log' in the current directory.
@@ -129,13 +117,17 @@ Configuration Switches, Options
 
     Default setting is 'stdinfo.'
 
-**--user_cal <USER_CAL [USER_CAL ...]>**
-    The option allows users to provide their own calibrations to ``reduce``.
-    Add a calibration to User Calibration Service. 
-    '--override_cal CAL_PATH'
-    Eg.,
+**--logmode <LOGMODE>**
+    Set logging mode. One of
 
-    ``--user_cal wcal/gsTest_arc.fits``
+    * standard
+    * console
+    * quiet
+    * debug
+    * null
+
+    where 'console' writes only to screen and 'quiet' writes only to the log
+    file. Default is 'standard'.
 
 **-p <USERPARAM [USERPARAM ...]>, --param <USERPARAM [USERPARAM ...]>**
     Set a primitive parameter from the command line. The form '-p par=val' sets 
@@ -157,6 +149,17 @@ Configuration Switches, Options
 
 **--suffix <SUFFIX>**
     Add 'suffix' to output filenames at end of reduction.
+
+**--upload_metrics**
+    Send QA metrics to fitsstore. Default is False.
+
+**--user_cal <USER_CAL [USER_CAL ...]>**
+    The option allows users to provide their own calibrations to ``reduce``.
+    Add a calibration to User Calibration Service. 
+    '--override_cal CAL_PATH'
+    Eg.,
+
+    ``--user_cal wcal/gsTest_arc.fits``
 
 Nominal Usage
 +++++++++++++
@@ -492,6 +495,7 @@ the @file will be ignored::
   Parameters:    tpar=100, detectSources:threshold=4.5
   RECIPE:        recipe.FOO
 
+.. _api:
 
 Application Programming Interface (API)
 ---------------------------------------
