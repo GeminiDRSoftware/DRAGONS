@@ -77,7 +77,7 @@ def userpar_override(pname, args, upars):
             if prim == pname and par in args:
                 parset.update({par: val})
         elif key in args:
-            parset.update({par: val})
+            parset.update({key: val})
     return parset
 
 # -------------------------------- decorators ----------------------------------

@@ -213,7 +213,7 @@ class Preprocess(PrimitivesBASE):
         else:
             # The separateSky primitive puts the sky AstroData objects in the
             # sky stream.
-            ad_sky_list = self.streams['sky']
+            ad_sky_list = self.streams.get('sky')
         
         if not adinputs or not ad_sky_list:
             log.warning("Cannot associate sky frames, since at least one "
