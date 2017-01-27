@@ -47,7 +47,8 @@ class Bookkeeping(PrimitivesBASE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
                                               strip=True)
             log.stdinfo("Writing {} to disk".format(ad.filename))
-            ad.write(clobber=True)
+            # Need to specify 'ad.filename' here so writes to current dir
+            ad.write(ad.filename, clobber=True)
             try:
                 self.stacks[_stackid(purpose, ad)].add(ad.filename)
             except KeyError:
@@ -165,7 +166,6 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         sfx = params['suffix']
         pfx = params['prefix']
-        outfilename = params['outfilename']
         log.fullinfo("suffix = {}".format(sfx))
         log.fullinfo("prefix = {}".format(pfx))
         
@@ -175,14 +175,17 @@ class Bookkeeping(PrimitivesBASE):
                                 prefix=pfx, suffix=sfx, strip=params["strip"])
                 log.fullinfo("File name updated to {}".format(ad.filename))
                 outfilename = ad.filename
-            elif outfilename:
+            elif params['outfilename']:
                 # Check that there is not more than one file to be written
                 # to this file name, if so throw exception
-                if len(self.adinputs) > 1:
+                if len(adinputs) > 1:
                     message = "More than one file was requested to be " \
-                              "written to the same name {}".format(outfilename)
+                              "written to the same name {}".format(
+                        params['outfilename'])
                     log.critical(message)
                     raise IOError(message)
+                else:
+                    outfilename = params['outfilename']
             else:
                 # If no changes to file names are requested then write inputs
                 # to their current file names
@@ -192,7 +195,7 @@ class Bookkeeping(PrimitivesBASE):
             
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
-            ad.write(filename=outfilename, clobber=params["clobber"])
+            ad.write(outfilename, clobber=params["clobber"])
         return adinputs
 
 # Helper function to make a stackid, without the IDFactory nonsense
