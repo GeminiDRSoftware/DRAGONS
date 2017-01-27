@@ -565,6 +565,9 @@ class FitsProviderProxy(DataProvider):
 
         return self._provider._extver_impl(self._mapped_nddata)
 
+    def info(self, tags):
+        self._provider.info(tags, indices=self._mapping)
+
 def force_load(fn):
     @wraps(fn)
     def wrapper(self, *args, **kw):
@@ -707,7 +710,7 @@ class FitsProvider(DataProvider):
         self._standard_nddata_op(NDDataObject.divide, operand)
         return self
 
-    def info(self, tags):
+    def info(self, tags, indices=None):
         print("Filename: {}".format(self.path if self.path else "Unknown"))
         # This is fixed. We don't support opening for update
         # print("Mode: readonly")
@@ -725,12 +728,14 @@ class FitsProvider(DataProvider):
 
         # Let's try to be generic. Could it be that some file contains only tables?
         self._lazy_populate_object()
-        if len(self._nddata) > 0:
+        if indices is None:
+            indices = tuple(range(len(self._nddata)))
+        if indices:
             main_fmt = "{:6} {:24} {:17} {:14} {}"
             other_fmt = "          .{:20} {:17} {:14} {}"
             print("\nPixels Extensions")
             print(main_fmt.format("Index", "Content", "Type", "Dimensions", "Format"))
-            for pi in self._pixel_info():
+            for pi in self._pixel_info(indices):
                 main_obj = pi['main']
                 print(main_fmt.format(pi['idx'], main_obj['content'][:24], main_obj['type'][:17],
                                                  main_obj['dim'], main_obj['data_type']))
@@ -745,12 +750,13 @@ class FitsProvider(DataProvider):
             for (attr, type_, dim) in additional_ext:
                 print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
 
-    def _pixel_info(self):
+    def _pixel_info(self, indices):
         self._lazy_populate_object()
-        for idx, obj in enumerate(self._nddata):
+        for idx, obj in ((n, self._nddata[k]) for (n, k) in enumerate(indices)):
             header = obj.meta['header']
             other_objects = []
-            fixed = (('variance', obj.uncertainty.as_variance()), ('mask', obj.mask))
+            uncer = obj.uncertainty
+            fixed = (('variance', None if uncer is None else uncer.as_variance()), ('mask', obj.mask))
             for name, other in fixed + tuple(sorted(obj.meta['other'].items())):
                 if other is not None:
                     if isinstance(other, Table):
