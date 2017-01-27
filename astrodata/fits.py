@@ -21,7 +21,7 @@ from astropy.io.fits import Column, FITS_rec
 from astropy.io.fits.hdu.table import _TableBaseHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
-from astropy.nddata import NDDataRef as NDDataObject
+from astropy.nddata import NDData, NDDataRef as NDDataObject
 from astropy.nddata import StdDevUncertainty
 from astropy.table import Table
 import numpy as np
@@ -876,13 +876,16 @@ class FitsProvider(DataProvider):
 
         return obj
 
-    def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=False):
+    def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=False, custom_header=None):
         if not isinstance(pixim, NDDataObject):
             # Assume that we get an ImageHDU or something that can be
             # turned into one
             if isinstance(pixim, ImageHDU):
                 header = pixim.header
                 nd = NDDataObject(pixim.data, meta={'header': header})
+            elif custom_header is not None:
+                header = custom_header
+                nd = NDDataObject(pixim, meta={'header': custom_header})
             else:
                 header = {}
                 nd = NDDataObject(pixim, meta={})
@@ -1160,7 +1163,7 @@ class FitsProvider(DataProvider):
             header['EXTVER'] = meta.get('ver', -1)
             meta['other_header'][name] = header
 
-    def _append_array(self, data, name=None, add_to=None, header=None):
+    def _append_array(self, data, name=None, add_to=None):
         def_ext = FitsProvider.default_extension
         # Top level:
         if add_to is None:
@@ -1170,21 +1173,17 @@ class FitsProvider(DataProvider):
 
             if name in {'DQ', 'VAR'}:
                 raise ValueError("'{}' need to be associated to a '{}' one".format(name, def_ext))
-            elif name != def_ext:
-                # Don't use setattr, which is overloaded and may case problems
-                # TODO: For this, we want to generate an ND with a default header
-                #       Make sure that it can be used properly
-                self.__dict__[name] = data
-                self._exposed.add(name)
-                ret = data
             else:
-                nd = self._process_pixel_plane(data, name=name, top_level=True)
-                self._nddata.append(nd)
-                ret = nd
+                hname = name if name is not None else def_ext
+                hdu = ImageHDU(data)
+                hdu.header['EXTNAME'] = hname
+                ret = self._append_imagehdu(hdu, name=hname, add_to=None)
         # Attaching to another extension
         else:
             if name is None:
                 raise ValueError("Can't append pixel planes to other objects without a name")
+            elif name is def_ext:
+                raise ValueError("Can't attach '{}' arrays to other objects".format(def_ext))
             elif name == 'DQ':
                 add_to.mask = ext.data
                 ret = ext.data
@@ -1206,20 +1205,36 @@ class FitsProvider(DataProvider):
             nd = self._process_pixel_plane(unit, name=name, top_level=True, reset_ver=reset_ver)
             return self._append_nddata(nd, name, add_to=None)
 
+    def _append_raw_nddata(self, raw_nddata, name, add_to, reset_ver=False):
+        # We want to make sure that the instance we add is whatever we specify as
+        # `NDDataObject`, instead of the random one that the user may pass
+        top_level = add_to is None
+        if not isinstance(raw_nddata, NDDataObject):
+            raw_nddata = NDDataObject(raw_nddata)
+        processed_nddata = self._process_pixel_plane(raw_nddata, top_level=top_level, reset_ver=reset_ver)
+        return self._append_nddata(processed_nddata, name=name, add_to=add_to)
+
     def _append_nddata(self, new_nddata, name, add_to, reset_ver=False):
         # 'name' is ignored. It's there just to comply with the
         # _append_XXX signature
+        def_ext = FitsProvider.default_extension
         if add_to is not None:
             raise TypeError("You can only append NDData derived instances at the top level")
+
         hd = new_nddata.meta['header']
-        try:
-            # If we're lazy loading data, it may be that the header is already there. Check for existance first
-            # and do a sanity check to make sure that both header and the data will match positions
-            hdpos = self.header.index(hd) - 1
-            assert (hdpos == len(self._nddata)), "Appending new data with existing header, which does not match positions"
-        except ValueError:
-            self.header.append(hd)
-        self._nddata.append(new_nddata)
+        hname = hd.get('EXTNAME', def_ext)
+        if hname == def_ext:
+            try:
+                # If we're lazy loading data, it may be that the header is already there. Check for existance first
+                # and do a sanity check to make sure that both header and the data will match positions
+                hdpos = self.header.index(hd) - 1
+                assert (hdpos == len(self._nddata)), "Appending new data with existing header, which does not match positions"
+            except ValueError:
+                self.header.append(hd)
+            self._nddata.append(new_nddata)
+        else:
+            raise ValueError("Arbitrary image extensions can only be added in association to a '{}'".format(def_ext))
+
         return new_nddata
 
     def _set_nddata(self, n, new_nddata):
@@ -1228,10 +1243,9 @@ class FitsProvider(DataProvider):
 
     def _append_table(self, new_table, name, add_to, reset_ver=False):
         tb = self._process_table(new_table, name)
-        try:
-            hname = tb.meta['header'].get('EXTNAME') if name is None else name
-        except KeyError:
-            raise ValueError("Cannot add a table that has no EXTNAME")
+        hname = tb.meta['header'].get('EXTNAME') if name is None else name
+        if hname is None:
+            raise ValueError("Can't attach a table without a name!")
         if add_to is None:
             # Don't use setattr, which is overloaded and may case problems
             self.__dict__[hname] = tb
@@ -1247,8 +1261,7 @@ class FitsProvider(DataProvider):
         self._lazy_populate_object()
 
         dispatcher = (
-                (NDDataObject,
-                    lambda dt, nm, at: self._append_nddata(self._process_pixel_plane(dt, top_level=True, reset_ver=reset_ver), name=nm, add_to=at)),
+                (NDData, self._append_raw_nddata),
                 ((Table, _TableBaseHDU), self._append_table),
                 (ImageHDU, self._append_imagehdu)
                 )
