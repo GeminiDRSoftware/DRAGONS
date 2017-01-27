@@ -95,6 +95,8 @@ if __name__ == "__main__":
     version_report = _version
     parser = buildParser(version_report)
     args = parser.parse_args()
+    # Deal with argparse structures that are different than optparse
+    args = normalize_args(args)
 
     if args.displayflags:
         show_parser_options(parser, args)
@@ -102,6 +104,4 @@ if __name__ == "__main__":
             print(item)
         sys.exit()
 
-    # Deal with argparse structures that are different than optparse 
-    args = normalize_args(args)
     sys.exit(main(args))
