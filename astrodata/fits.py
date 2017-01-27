@@ -1194,10 +1194,10 @@ class FitsProvider(DataProvider):
             elif name is def_ext:
                 raise ValueError("Can't attach '{}' arrays to other objects".format(def_ext))
             elif name == 'DQ':
-                add_to.mask = ext.data
-                ret = ext.data
+                add_to.mask = data
+                ret = data
             elif name == 'VAR':
-                std_un = new_variance_uncertainty_instance(ext.data)
+                std_un = new_variance_uncertainty_instance(data)
                 std_un.parent_nddata = add_to
                 add_to.uncertainty = std_un
                 ret = std_un
