@@ -401,10 +401,10 @@ class FitsProviderProxy(DataProvider):
         super(FitsProviderProxy, self).__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
+        if not attribute.isupper():
+            raise ValueError("Can't delete non-capitalized attributes from slices")
         if not self.is_single:
             raise TypeError("Can't delete attributes on non-single slices")
-        elif not attribute.isupper():
-            raise ValueError("Can't delete non-capitalized attributes from slices")
         other, otherh = self.nddata.meta['other'], self.nddata.meta['other_header']
         if attribute in other:
             del other[attribute]
@@ -671,6 +671,17 @@ class FitsProvider(DataProvider):
 
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
+
+    @force_load
+    def __delattr__(self, attribute):
+        # TODO: So far we're only deleting tables by name.
+        #       Figure out what to do with aliases
+        if not attribute.isupper():
+            raise ValueError("Can't delete non-capitalized attributes")
+        try:
+            del self._tables[attribute]
+        except KeyError:
+            raise AttributeError("'{}' is not a global table for this instance".format(attribute))
 
     @force_load
     def _oper(self, operator, operand, indices=None):
