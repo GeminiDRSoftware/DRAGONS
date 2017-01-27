@@ -107,13 +107,32 @@ def test_append_table_to_extension():
     ad[0].append(table, 'MYTABLE')
     assert (ad[0].MYTABLE == table).all()
 
-# Removal
+# Deletion
 
 def test_delete_named_attribute_at_top_level():
-    ad = from_chara('N20131215S0202_refcatAdded.fits')
+    ad = from_test_data('NIRI/N20131215S0202_refcatAdded.fits')
     assert 'REFCAT' in ad.tables
     del ad.REFCAT
     assert 'REFCAT' not in ad.tables
+
+def test_delete_named_associated_extension():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
+                  names=('a', 'b', 'c'))
+    ad[0].append(table, 'MYTABLE')
+    assert 'MYTABLE' in ad[0]
+    del ad[0].MYTABLE
+    assert 'MYTABLE' not in ad[0]
+
+def test_delete_arbitrary_attribute_from_ad():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    with pytest.raises(AttributeError):
+        ad.arbitrary
+    ad.arbitrary = 15
+    assert ad.arbitrary == 15
+    del ad.arbitrary
+    with pytest.raises(AttributeError):
+        ad.arbitrary
 
 # Append / assign Gemini specific
 
