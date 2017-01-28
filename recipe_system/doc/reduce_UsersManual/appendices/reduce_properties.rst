@@ -1,4 +1,4 @@
-.. settables:
+.. reduce_properties:
 
 .. _props:
 
