@@ -83,8 +83,8 @@ class GMOS(Gemini, CCD):
             else:
                 bunit = bunit.pop()
             try:
-                avg_overscan = np.mean(overscan for overscan in
-                                ad.hdr.get('OVERSCAN') if overscan is not None)
+                avg_overscan = np.mean([overscan for overscan in
+                                ad.hdr.get('OVERSCAN') if overscan is not None])
             except TypeError:
                 avg_overscan = None
             all_ampname = ','.join(ampname for ampname in ad.hdr.get('AMPNAME')
