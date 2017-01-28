@@ -131,10 +131,10 @@ def _get_bias_level_estimate(adinput=None):
 
     # Create appropriate object (list/value) of LUT bias level(s)
     if isinstance(ampname, list):
-        lut_bias = [bias_dict[read_speed_setting, gain_setting, a]
+        lut_bias = [bias_dict.get((read_speed_setting, gain_setting, a))
                 for a in ampname]
     else:
-        lut_bias = bias_dict[read_speed_setting, gain_setting, ampname]
+        lut_bias = bias_dict.get((read_speed_setting, gain_setting, ampname))
 
     # Get the overscan value and the raw bias level from the extension headers
     overscan_values = adinput.hdr.get('OVERSCAN')
