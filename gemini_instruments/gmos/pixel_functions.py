@@ -53,10 +53,13 @@ def _get_bias_level(adinput=None):
     """
     # Get the overscan section value using the appropriate descriptor
     overscans = adinput.overscan_section()
+    if not isinstance(overscans, list):
+        overscans = [overscans]
 
     bias_level = []
-    
-    if overscans is not None:
+
+    # Only measure if *all* extensions return an overscan section
+    if all(ov is not None for ov in overscans):
         # The type of CCD determines the number of contaminated columns in the
         # overscan region. Get the pretty detector name value using the
         # appropriate descriptor.
@@ -71,9 +74,7 @@ def _get_bias_level(adinput=None):
             nbiascontam = 4
 
         # adinput is always iterable (even if _single); make sure overscans is
-        for ext, overscan_section in zip(adinput, overscans
-            if isinstance(overscans, list) else [overscans]):
-
+        for ext, overscan_section in zip(adinput, overscans):
             # Turn tuple into list to make mutable
             osec = list(overscan_section)
             # Don't include columns at edges
@@ -85,18 +86,13 @@ def _get_bias_level(adinput=None):
                 # Overscan region is on the right
                 osec[0] += nbiascontam
                 osec[1] -= 1
-            
+
             # Extract overscan data. In numpy arrays, y indices come first.
             overscan_data = ext.data[osec[2]:osec[3], osec[0]:osec[1]]
             bias_level.append(np.median(overscan_data))
 
-        #unique_values = set(ret_bias_level.values())
-        #if len(unique_values) == 1 and None in unique_values:
-            # The bias level was not found for any of the pixel data extensions
-            # (all the values in the dictionary are equal to None)
-            #ret_bias_level = None
         # Turn single-element list into a value if sent a single-extension slice
-        if not isinstance(overscans, list):
+        if adinput._single:
             bias_level = bias_level[0]
     else:
         bias_level = _get_bias_level_estimate(adinput=adinput)
