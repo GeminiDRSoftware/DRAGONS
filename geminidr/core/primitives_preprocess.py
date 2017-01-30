@@ -571,62 +571,6 @@ class Preprocess(PrimitivesBASE):
                                               strip=True)
         return adinputs
     
-    def thresholdFlatfield(self, adinputs=None, **params):
-        """
-        This primitive sets the DQ '64' bit for any pixels which have a value
-        <lower or >upper in the SCI plane.
-        it also sets the science plane pixel value to 1.0 for pixels which are bad
-        and very close to zero, to avoid divide by zero issues and inf values
-        in the flatfielded science data.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        lower: float
-            value below which DQ pixels should be set to unilluminated
-        upper: float
-            value above which DQ pixels should be set to unilluminated
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        lower = params["lower"]
-        upper = params["upper"]
-
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by thresholdFlatfield".
-                            format(ad.filename))
-                continue
-
-            for ext in ad:
-                # Mark the unilumminated pixels with a bit '64' in the DQ plane.
-                # make sure the 64 is an int16 64 else it will
-                # promote the DQ plane to int64
-                unillum = np.where(((ext.data>upper) | (ext.data<lower)) &
-                                   (ext.mask | DQ.bad_pixel==0),
-                                  np.int16(DQ.unilluminated), np.int16(0))
-                ext.mask |= unillum
-                log.fullinfo("ThresholdFlatfield set bit '64' for values "
-                             "outside the range [{:.2f},{:.2f}]".
-                             format(lower, upper))
-
-                # Set the sci value to 1.0 where it is less that 0.001 and
-                # where the DQ says it's non-illuminated.
-                ext.data[ext.data < 0.001] = 1.0
-                ext.data[ext.mask==DQ.unilluminated] = 1.0
-                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 "
-                             "for values below 0.001 and non-illuminated pixels.")
-
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-                                              strip=True)
-        return adinputs
-
     def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive normalizes each science extension of the input
@@ -1151,4 +1095,60 @@ class Preprocess(PrimitivesBASE):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+        return adinputs
+
+    def thresholdFlatfield(self, adinputs=None, **params):
+        """
+        This primitive sets the DQ '64' bit for any pixels which have a value
+        <lower or >upper in the SCI plane.
+        it also sets the science plane pixel value to 1.0 for pixels which are bad
+        and very close to zero, to avoid divide by zero issues and inf values
+        in the flatfielded science data.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        lower: float
+            value below which DQ pixels should be set to unilluminated
+        upper: float
+            value above which DQ pixels should be set to unilluminated
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        lower = params["lower"]
+        upper = params["upper"]
+
+        for ad in adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by thresholdFlatfield".
+                            format(ad.filename))
+                continue
+
+            for ext in ad:
+                # Mark the unilumminated pixels with a bit '64' in the DQ plane.
+                # make sure the 64 is an int16 64 else it will promote the DQ
+                # plane to int64
+                unillum = np.where(((ext.data>upper) | (ext.data<lower)) &
+                                   (ext.mask & DQ.bad_pixel==0),
+                                  np.int16(DQ.unilluminated), np.int16(0))
+                ext.mask = unillum if ext.mask is None else ext.mask | unillum
+                log.fullinfo("ThresholdFlatfield set bit '64' for values "
+                             "outside the range [{:.2f},{:.2f}]".
+                             format(lower, upper))
+
+                # Set the sci value to 1.0 where it is less that 0.001 and
+                # where the DQ says it's non-illuminated.
+                ext.data[ext.data < 0.001] = 1.0
+                ext.data[ext.mask==DQ.unilluminated] = 1.0
+                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 "
+                             "for values below 0.001 and non-illuminated pixels.")
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
+                                              strip=True)
         return adinputs

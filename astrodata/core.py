@@ -663,9 +663,9 @@ class AstroData(object):
         Implements attribute removal. If `self` represents a single slice, the 
         """
         try:
-            if self._dataprov.is_single:
+            try:
                 self._dataprov.__delattr__(attribute)
-            else:
+            except (ValueError, AttributeError):
                 super(AstroData, self).__delattr__(attribute)
         except AttributeError:
             if self._dataprov.is_sliced:

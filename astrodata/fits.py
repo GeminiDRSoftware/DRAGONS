@@ -401,10 +401,10 @@ class FitsProviderProxy(DataProvider):
         super(FitsProviderProxy, self).__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
+        if not attribute.isupper():
+            raise ValueError("Can't delete non-capitalized attributes from slices")
         if not self.is_single:
             raise TypeError("Can't delete attributes on non-single slices")
-        elif not attribute.isupper():
-            raise ValueError("Can't delete non-capitalized attributes from slices")
         other, otherh = self.nddata.meta['other'], self.nddata.meta['other_header']
         if attribute in other:
             del other[attribute]
@@ -671,6 +671,17 @@ class FitsProvider(DataProvider):
 
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
+
+    @force_load
+    def __delattr__(self, attribute):
+        # TODO: So far we're only deleting tables by name.
+        #       Figure out what to do with aliases
+        if not attribute.isupper():
+            raise ValueError("Can't delete non-capitalized attributes")
+        try:
+            del self._tables[attribute]
+        except KeyError:
+            raise AttributeError("'{}' is not a global table for this instance".format(attribute))
 
     @force_load
     def _oper(self, operator, operand, indices=None):
@@ -959,10 +970,16 @@ class FitsProvider(DataProvider):
 
             # We've loaded the SCI headers *beforehand*. Use those instead of the ones
             # coming from the file. The user may have manipulated them by now.
-            for prev_header, unit in zip(self._header[1:], sci_units):
+            for idx, unit in enumerate(sci_units, 1):
                 seen.add(unit)
+                prev_header = self._header[idx]
                 ver = prev_header.get('EXTVER', -1)
-                nd = self._append(unit, name=def_ext)
+                # Use the header that we had saved in memory as a template, no the
+                # one that came from disk
+                new_unit = ImageHDU(unit.data, prev_header)
+                # ImageHDU generates a new header instance! Replace it in the internal cache
+                self._header[idx] = new_unit.header
+                nd = self._append(new_unit, name=def_ext)
 
                 for extra_unit in search_for_associated(ver):
                     seen.add(extra_unit)

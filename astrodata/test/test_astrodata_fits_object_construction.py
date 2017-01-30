@@ -18,6 +18,8 @@ def test_for_length():
     ad = from_test_data('GMOS/N20110826S0336.fits')
     assert len(ad) == 3
 
+# Append basic elements
+
 def test_append_array_to_root_no_name():
     ad = from_test_data('GMOS/N20160524S0119.fits')
     lbefore = len(ad)
@@ -104,3 +106,56 @@ def test_append_table_to_extension():
                   names=('a', 'b', 'c'))
     ad[0].append(table, 'MYTABLE')
     assert (ad[0].MYTABLE == table).all()
+
+# Deletion
+
+def test_delete_named_attribute_at_top_level():
+    ad = from_test_data('NIRI/N20131215S0202_refcatAdded.fits')
+    assert 'REFCAT' in ad.tables
+    del ad.REFCAT
+    assert 'REFCAT' not in ad.tables
+
+def test_delete_named_associated_extension():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
+                  names=('a', 'b', 'c'))
+    ad[0].append(table, 'MYTABLE')
+    assert 'MYTABLE' in ad[0]
+    del ad[0].MYTABLE
+    assert 'MYTABLE' not in ad[0]
+
+def test_delete_arbitrary_attribute_from_ad():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    with pytest.raises(AttributeError):
+        ad.arbitrary
+    ad.arbitrary = 15
+    assert ad.arbitrary == 15
+    del ad.arbitrary
+    with pytest.raises(AttributeError):
+        ad.arbitrary
+
+# Append / assign Gemini specific
+
+def test_append_dq_to_root():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    dq = np.zeros(ad[0].data.shape)
+    with pytest.raises(ValueError):
+        ad.append(dq, 'DQ')
+
+def test_append_dq_to_ext():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    dq = np.zeros(ad[0].data.shape)
+    ad[0].append(dq, 'DQ')
+    assert dq is ad[0].mask
+
+def test_append_var_to_root():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    var = np.random.random(ad[0].data.shape)
+    with pytest.raises(ValueError):
+        ad.append(var, 'VAR')
+
+def test_append_var_to_ext():
+    ad = from_test_data('GMOS/N20160524S0119.fits')
+    var = np.random.random(ad[0].data.shape)
+    ad[0].append(var, 'VAR')
+    assert np.abs(var - ad[0].variance).mean() < 0.00000001
