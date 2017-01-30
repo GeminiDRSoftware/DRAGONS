@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #
 #
-#                                                                reduce_alpha.py
+#                                                                      reduce.py
 # ------------------------------------------------------------------------------
-# reduce_alpha.py -- The new hope reduce. [pending name change status quo ante]
+# reduce.py -- next gen reduce
 # ------------------------------------------------------------------------------
 from __future__ import print_function
-_version = ' alpha (new_hope) '
+_version = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 """
 Prototype reduce (New Hope).
