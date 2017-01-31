@@ -106,19 +106,25 @@ def parameter_override(fn):
         logutils.update_indent(LOGINDENT)
         pobj = args[0]
         pname = fn.__name__
+        # Start with parameters listed in the function definition
         params = getattr(getattr(pobj, pname), 'parameters').copy()
+        # Override with those in the parameters file
         params.update(getattr(pobj.parameters, pname, {}))
+        # Override with user inputs
         params.update(userpar_override(pname, params.keys(),
                       pobj.user_params))
+        # Override with values in the function call
         params.update(kwargs)
 
-        stat_msg = "PRIMITVE:{}".format(pname)
+        stat_msg = "PRIMITVE: {}".format(pname)
         log.status(stat_msg)
         log.status("-" * len(stat_msg))
         if len(args) == 1 and 'adinputs' not in params:
+            # Use appropriate stream inputs
             instream = params.get('instream', params.get('stream', 'main'))
             params.update({'adinputs': pobj.streams[instream]})
             ret_value = fn(*args, **params)
+            # And place the outputs in the appropriate stream
             outstream = params.get('outstream', params.get('stream', 'main'))
             pobj.streams[outstream] = ret_value
         else:
