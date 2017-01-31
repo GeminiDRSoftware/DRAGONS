@@ -10,49 +10,49 @@ import subprocess
 from getpass import getuser
 from optparse import OptionParser
 
-from astrodata.utils import Errors
+#from astrodata.utils import Errors
 
 # parsing the command line
 parser = OptionParser()
 parser.set_description("""'superclean' is a script used to clean the current \
 working directory of files, hidden directories, and processes that may have \
 occured from running reduce.py. An option must be selected from the list \
-below. 
+below.
 """)
-parser.add_option("-a", "--adcc", dest="adcc_process", action="store_true", 
-                  default=False, 
+parser.add_option("-a", "--adcc", dest="adcc_process", action="store_true",
+                  default=False,
                   help="stop all user adcc processes currently running")
-parser.add_option("-c", "--cache", dest="cache", action="store_true", 
+parser.add_option("-c", "--cache", dest="cache", action="store_true",
                   default=False, help="clear the cache directory (.reducecache)")
-parser.add_option("-d", dest="dirs", action="store_true", 
+parser.add_option("-d", dest="dirs", action="store_true",
                   default=False, help="remove reduce-spawned directories"
                   " (backups, calibrations, locks)")
 parser.add_option("-f", dest="fits", action="store_true", default=False,
                   help="remove *.fits files")
 parser.add_option("-l", dest="log", action="store_true", default=False,
                   help="remove *.log files")
-parser.add_option("-p", dest="pkl", action="store_true", 
-                  default=False, 
+parser.add_option("-p", dest="pkl", action="store_true",
+                  default=False,
                   help="remove *.pkl files in .reducecache")
-parser.add_option("-o", "--hiddendirs", dest="hdirs", 
-                  action="store_true", default=False, 
+parser.add_option("-o", "--hiddendirs", dest="hdirs",
+                  action="store_true", default=False,
                   help="Clear all the hidden directories (.adcc, .autologs,"
                   ".fitsstore, .reducecache) and adcclog-latest, which "
                   "is a symbolic link to the latest log in the .adcc "
                   "directory")
 parser.add_option("-r", "--reduce", dest="reduce_process", action="store_true",
-                  default=False, 
+                  default=False,
                   help="stop all user reduce processes currently runnings")
-parser.add_option("-s", "--showall", dest="show_all_processes", 
+parser.add_option("-s", "--showall", dest="show_all_processes",
                   action="store_true", default=False,
                   help="show all reduce and adcc running instances")
-parser.add_option("-t", dest="tmps", action="store_true", 
+parser.add_option("-t", dest="tmps", action="store_true",
                   default=False, help="remove tmp* files")
-parser.add_option("-u", "--showuser", dest="show_user_processes", 
+parser.add_option("-u", "--showuser", dest="show_user_processes",
                   action="store_true",
                   default = False, help="show user reduce and adcc running "
                   "instances")
-parser.add_option("-v", dest="verbose", action="store_true", 
+parser.add_option("-v", dest="verbose", action="store_true",
                   default=False, help="produce superclean report")
 parser.add_option("--all", dest="ALL", action="store_true", default=False,
                   help="rm *.fits, *.log, tmp*, and adcclog-latest in the "
@@ -60,13 +60,13 @@ parser.add_option("--all", dest="ALL", action="store_true", default=False,
                   "(.reducecache, .adcc, .fitsstore, .autologs). Remove "
                   "reduce-spawned directories (backups, calibrations,locks)"
                   ". Stop user reduce and adcc processes")
-parser.add_option("--ra", dest="reduce_adcc", action="store_true", 
+parser.add_option("--ra", dest="reduce_adcc", action="store_true",
                   default=False, help="stop all reduce and adcc processes.")
-parser.add_option("--safe", dest="safe", action="store_true", 
+parser.add_option("--safe", dest="safe", action="store_true",
                   default=False, help="-radot, and keeps calibrations")
-parser.add_option("--silent", dest="silent", action="store_true", 
+parser.add_option("--silent", dest="silent", action="store_true",
                   default=False, help="no standard output")
-parser.add_option("--txt", dest="txt", action="store_true", 
+parser.add_option("--txt", dest="txt", action="store_true",
                   default=False, help="remove text files (.txt)")
 (options, args) = parser.parse_args()
 
@@ -90,7 +90,7 @@ def rmfiles(dir_=None, ext=None, path_file="", pre=None):
     flist = ""
     fstr = ""
     if path_file == "":
-        # creates list of cache content, 
+        # creates list of cache content,
         # if .<ext> files are in the list, rm them, and kick them off list
         # compare length of old to new list to determine if .<ext> removed
         # Note** (must append / to dir_)
@@ -146,14 +146,14 @@ if options.safe:
     options.dirs = True
     options.tmps = True
 
-    
+
 rstr = ""
 
 # remove hidden directories
 if options.cache or options.hdirs:
     hidden_dirs = []
     if options.hdirs:
-        hdirs = ["./.reducecache", "./.adcc", "./.autologs","./.fitsstore"] 
+        hdirs = ["./.reducecache", "./.adcc", "./.autologs","./.fitsstore"]
     else:
         hdirs = ["./.reducecache"]
     hid = False
@@ -192,7 +192,7 @@ if options.dirs:
             dirstr += "\nremoved 'locks'"
     if pass_ == 0:
         rstr += dirstr
-    
+
 # remove files (hidden or current working dir)
 if options.pkl or options.log or options.tmps or options.fits:
     fhead = "\n\nFiles\n-----"
@@ -222,12 +222,12 @@ if optka or optkr or optsap or optsup:
     showstr = ""
     for line in lines:
         processinfo = string.split(line)
-        
+
         # skips over grep and superclean commands
         if (line.rfind("grep") > -1) or (line.rfind("superclean") > -1):
             continue
         puserid = None
-        pusername = None 
+        pusername = None
         if processinfo[0].isdigit():
             puserid = int(processinfo[0])
         else:
@@ -261,7 +261,7 @@ if optsup or optsap:
         print("%s\nno %s processes running" % (hstr,instr))
     else:
         print("%s\n\nProcesses\n%s%s" % (hstr, "-"*9, showstr))
-    
+
 
 if options.verbose:
     if rstr != "":
