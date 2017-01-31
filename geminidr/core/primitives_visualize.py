@@ -115,7 +115,7 @@ class Visualize(PrimitivesBASE):
                     if bias_level is not None:
                         log.stdinfo("Subtracting approximate bias level from "
                                     "{} for display".format(ad.filename))
-                        log.fullinfo("Bias levels used: {}".str(bias_level))
+                        log.fullinfo("Bias levels used: {}".format(str(bias_level)))
                         for ext, bias in zip(ad, bias_level):
                             ext.add(bias)
                     else:
