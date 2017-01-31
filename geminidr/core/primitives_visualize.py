@@ -89,7 +89,7 @@ class Visualize(PrimitivesBASE):
             has_dq = [all(ext.mask is not None for ext in ad)
                       for ad in p.streams['main']]
             if not all(has_dq):
-                if any([m and not d] for m,d in zip(mosaicked, has_dq)):
+                if any([m and not d for m,d in zip(mosaicked, has_dq)]):
                     log.warning("Cannot add DQ to mosaicked data; no "
                                 "threshold mask will be applied")
                     threshold = None
@@ -117,7 +117,7 @@ class Visualize(PrimitivesBASE):
                                     "{} for display".format(ad.filename))
                         log.fullinfo("Bias levels used: {}".format(str(bias_level)))
                         for ext, bias in zip(ad, bias_level):
-                            ext.add(bias)
+                            ext.subtract(bias)
                     else:
                         log.warning("Bias level not found for {}; approximate "
                                     "bias will not be removed".format(ad.filename))
@@ -127,7 +127,7 @@ class Visualize(PrimitivesBASE):
         if tile:
             if any(len(ad)>1 for ad in p.streams['main']):
                 log.fullinfo("Tiling extensions together before displaying")
-                p.tileArrays()
+                p.tileArrays(tile_all=True)
 
         frame = params['frame'] if params['frame'] else 1
         lnd = _localNumDisplay()
