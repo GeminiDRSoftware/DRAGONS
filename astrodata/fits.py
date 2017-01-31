@@ -896,7 +896,7 @@ class FitsProvider(DataProvider):
 
         return obj
 
-    def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=False, custom_header=None):
+    def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=True, custom_header=None):
         if not isinstance(pixim, NDDataObject):
             # Assume that we get an ImageHDU or something that can be
             # turned into one
@@ -1224,14 +1224,14 @@ class FitsProvider(DataProvider):
 
         return ret
 
-    def _append_imagehdu(self, unit, name, add_to, reset_ver=False):
+    def _append_imagehdu(self, unit, name, add_to, reset_ver=True):
         if name in {'DQ', 'VAR'} or add_to is not None:
             return self._append_array(unit.data, name=name, add_to=add_to)
         else:
             nd = self._process_pixel_plane(unit, name=name, top_level=True, reset_ver=reset_ver)
             return self._append_nddata(nd, name, add_to=None)
 
-    def _append_raw_nddata(self, raw_nddata, name, add_to, reset_ver=False):
+    def _append_raw_nddata(self, raw_nddata, name, add_to, reset_ver=True):
         # We want to make sure that the instance we add is whatever we specify as
         # `NDDataObject`, instead of the random one that the user may pass
         top_level = add_to is None
@@ -1240,7 +1240,7 @@ class FitsProvider(DataProvider):
         processed_nddata = self._process_pixel_plane(raw_nddata, top_level=top_level, reset_ver=reset_ver)
         return self._append_nddata(processed_nddata, name=name, add_to=add_to)
 
-    def _append_nddata(self, new_nddata, name, add_to, reset_ver=False):
+    def _append_nddata(self, new_nddata, name, add_to, reset_ver=True):
         # 'name' is ignored. It's there just to comply with the
         # _append_XXX signature
         def_ext = FitsProvider.default_extension
@@ -1267,7 +1267,7 @@ class FitsProvider(DataProvider):
         self.header[n+1] = new_nddata.meta['header']
         self._nddata[n] = new_nddata
 
-    def _append_table(self, new_table, name, add_to, reset_ver=False):
+    def _append_table(self, new_table, name, add_to, reset_ver=True):
         tb = self._process_table(new_table, name)
         hname = tb.meta['header'].get('EXTNAME') if name is None else name
         if hname is None:
@@ -1283,7 +1283,7 @@ class FitsProvider(DataProvider):
             add_to.meta['other'][hname] = tb
         return tb
 
-    def _append(self, ext, name=None, add_to=None, reset_ver=False):
+    def _append(self, ext, name=None, add_to=None, reset_ver=True):
         self._lazy_populate_object()
 
         dispatcher = (
@@ -1299,7 +1299,7 @@ class FitsProvider(DataProvider):
             # Assume that this is an array for a pixel plane
             return self._append_array(ext, name=name, add_to=add_to)
 
-    def append(self, ext, name=None, reset_ver=False):
+    def append(self, ext, name=None, reset_ver=True):
         # TODO: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, PrimaryHDU):
