@@ -979,7 +979,7 @@ class FitsProvider(DataProvider):
                 new_unit = ImageHDU(unit.data, prev_header)
                 # ImageHDU generates a new header instance! Replace it in the internal cache
                 self._header[idx] = new_unit.header
-                nd = self._append(new_unit, name=def_ext)
+                nd = self._append(new_unit, name=def_ext, reset_ver=False)
 
                 for extra_unit in search_for_associated(ver):
                     seen.add(extra_unit)
@@ -996,7 +996,7 @@ class FitsProvider(DataProvider):
     # NOTE: This happens with GPI. Let's leave it for later...
     #            if other.header.get('EXTVER', -1) >= 0:
     #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
-                added = self._append(other, name=name)
+                added = self._append(other, name=name, reset_ver=False)
         finally:
             self._resetting = prev_reset
 
