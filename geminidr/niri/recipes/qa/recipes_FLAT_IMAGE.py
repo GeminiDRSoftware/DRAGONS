@@ -4,8 +4,6 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = set(['NIRI', 'IMAGE', 'CAL', 'FLAT'])
 
-default = makeProcessedFlat
-
 if __name__ == '__main__':
     def makeProcessedFlat(p):
         """
@@ -60,3 +58,5 @@ if __name__ == '__main__':
     #     p.makeBPM()
     #     p.storeBPM()
     #     return
+
+default = makeProcessedFlat

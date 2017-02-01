@@ -4,8 +4,6 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = set(['GNIRS', 'IMAGE', 'CAL', 'FLAT'])
 
-default = makeProcessedFlat
-
 def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to convert
@@ -35,3 +33,4 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
+default = makeProcessedFlat

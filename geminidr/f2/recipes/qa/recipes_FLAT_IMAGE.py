@@ -4,8 +4,6 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = set(['F2', 'IMAGE', 'CAL', 'FLAT'])
 
-default = makeProcessedFlat
-
 # TODO: This recipe needs serious fixing to be made meaningful to the user.
 def makeProcessedFlat(p):
     """
@@ -31,3 +29,5 @@ def makeProcessedFlat(p):
     p.thresholdFlatfield()
     p.storeProcessedFlat()
     return
+
+default = makeProcessedFlat

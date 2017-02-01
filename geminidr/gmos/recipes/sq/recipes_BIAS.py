@@ -4,8 +4,6 @@ Default is "makeProcessedBias".
 """
 recipe_tags = set(['GMOS', 'CAL', 'BIAS'])
 
-default = makeProcessedBias
-
 def makeProcessedBias(p):
     """
      This recipe performs the standardization and corrections needed to convert
@@ -27,3 +25,5 @@ def makeProcessedBias(p):
     p.makeIRAFCompatible()
     p.storeProcessedBias()
     return
+
+default = makeProcessedBias

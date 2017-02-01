@@ -4,9 +4,6 @@ Default is "reduce_nostack".
 """
 recipe_tags = set(['GSAOI', 'IMAGE'])
 
-# The nostack version is used because stacking of GSAOI is time consuming.
-default = reduce_nostack
-
 def reduce_nostack(p):
     """
     This recipe reduce GSAOI up to but NOT including alignment and stacking.
@@ -38,3 +35,6 @@ def reduce_nostack(p):
     p.measureIQ(display=True)
     p.measureCCAndAstrometry()
     return
+
+# The nostack version is used because stacking of GSAOI is time consuming.
+default = reduce_nostack
