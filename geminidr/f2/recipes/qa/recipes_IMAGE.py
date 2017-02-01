@@ -4,10 +4,6 @@ Default is "reduce_nostack".
 """
 recipe_tags = set(['F2', 'IMAGE'])
 
-# The nostack version is used because stacking was too slow for QAP.
-# KL: Is this still true with gemini_python 2.0?
-default = reduce_nostack
-
 def reduce(p):
     """
     This recipe process F2 data up to and including alignment and stacking.
@@ -79,3 +75,7 @@ def reduce_nostack(p):
     p.measureIQ(display=True)
     p.measureCCAndAstrometry()
     return
+
+# The nostack version is used because stacking was too slow for QAP.
+# KL: Is this still true with gemini_python 2.0?
+default = reduce_nostack

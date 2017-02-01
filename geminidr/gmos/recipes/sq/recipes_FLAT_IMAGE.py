@@ -4,8 +4,6 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = set(['GMOS', 'IMAGE', 'CAL', 'FLAT'])
 
-default = makeProcessedFlat
-
 def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -32,3 +30,4 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
+default = makeProcessedFlat

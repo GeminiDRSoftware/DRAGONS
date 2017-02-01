@@ -5,8 +5,6 @@ Default is "makeProcessedDark".
 
 recipe_tags = set(['NIRI', 'CAL', 'DARK'])
 
-default = makeProcessedDark
-
 def makeProcessedDark(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -32,3 +30,5 @@ def makeProcessedDark(p):
     p.stackFrames()
     p.storeProcessedDark()
     return
+
+default = makeProcessedDark

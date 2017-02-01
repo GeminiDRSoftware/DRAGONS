@@ -1,3 +1,9 @@
+"""
+Recipes available to data with tags ['NIRI', 'IMAGE'].
+Default is "reduce".
+"""
+recipe_tags = set(['NIRI', 'IMAGE'])
+
 def reduce(p):
     """
     This recipe process NIRI data up to and including alignment and stacking.
@@ -36,3 +42,4 @@ def reduce(p):
     p.measureCCAndAstrometry()
     return
 
+default = reduce

@@ -4,8 +4,6 @@ Default is "reduce".
 """
 recipe_tags = set(['GNIRS', 'IMAGE'])
 
-default = reduce
-
 def reduce(p):
     """
     This recipe process GNIRS keyhole imaging data and stack them in
@@ -41,3 +39,4 @@ def reduce(p):
     p.measureCCAndAstrometry()
     return
 
+default = reduce
