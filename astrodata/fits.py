@@ -542,9 +542,9 @@ class FitsProviderProxy(DataProvider):
     def append(self, ext, name):
         if not self.is_single:
             # TODO: We could rethink this one, but leave it like that at the moment
-            raise TypeError("Can't append pixel planes to non-single slices")
+            raise TypeError("Can't append objects to non-single slices")
         elif name is None:
-            raise TypeError("Can't append pixel planes to a slice without an extension name")
+            raise TypeError("Can't append objects to a slice without an extension name")
         target = self._mapped_nddata(0)
 
         return self._provider._append(ext, name=name, add_to=target)
@@ -896,6 +896,35 @@ class FitsProvider(DataProvider):
 
         return obj
 
+    def _get_max_ver(self):
+        try:
+            return max(_nd.meta['ver'] for _nd in self._nddata) + 1
+        except ValueError:
+            # This seems to be the first extension!
+            return 1
+
+    def _reset_ver(self, nd):
+        ver = self._get_max_ver()
+        nd.meta['header']['EXTVER'] = ver
+        nd.meta['ver'] = ver
+
+        try:
+            oheaders = nd.meta['other_header']
+            for extname, ext in nd.meta['other'].items():
+                try:
+                    oheaders[extname]['EXTVER'] = ver
+                except KeyError:
+                    try:
+                        # The object may keep the header on its own structure
+                        ext.meta['header']['EXTVER'] = ver
+                    except AttributeError:
+                        # No header. We don't need to set anything
+                        pass
+        except KeyError:
+            pass
+
+        return ver
+
     def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=True, custom_header=None):
         if not isinstance(pixim, NDDataObject):
             # Assume that we get an ImageHDU or something that can be
@@ -929,25 +958,9 @@ class FitsProvider(DataProvider):
                 nd.meta['other_header'] = {}
 
             if reset_ver or ver == -1:
-                try:
-                    ver = max(_nd.meta['ver'] for _nd in self._nddata) + 1
-                except ValueError:
-                    # Got an empty sequence. This is the first extension!
-                    ver = 1
-                header['EXTVER'] = ver
-                oheaders = nd.meta['other_header']
-                for extname, ext in nd.meta['other'].items():
-                    try:
-                        oheaders[extname]['EXTVER'] = ver
-                    except KeyError:
-                        try:
-                            # The object may keep the header on its own structure
-                            ext.meta['header']['EXTVER'] = ver
-                        except AttributeError:
-                            # No header. We don't need to set anything
-                            pass
-
-            nd.meta['ver'] = ver
+                self._reset_ver(nd)
+            else:
+                nd.meta['ver'] = ver
 
         return nd
 
@@ -1251,12 +1264,14 @@ class FitsProvider(DataProvider):
         hname = hd.get('EXTNAME', def_ext)
         if hname == def_ext:
             try:
-                # If we're lazy loading data, it may be that the header is already there. Check for existance first
+                # If we're lazy-loading data, it may be that the header is already there. Check for existance first
                 # and do a sanity check to make sure that both header and the data will match positions
                 hdpos = self.header.index(hd) - 1
                 assert (hdpos == len(self._nddata)), "Appending new data with existing header, which does not match positions"
             except ValueError:
                 self.header.append(hd)
+            if reset_ver:
+                self._reset_ver(new_nddata)
             self._nddata.append(new_nddata)
         else:
             raise ValueError("Arbitrary image extensions can only be added in association to a '{}'".format(def_ext))
@@ -1283,13 +1298,22 @@ class FitsProvider(DataProvider):
             add_to.meta['other'][hname] = tb
         return tb
 
+    def _append_astrodata(self, ad, name, add_to, reset_ver=True):
+        if not ad.is_single:
+            raise ValueError("Cannot append AstroData instances that are not single slices")
+        elif add_to is not None:
+            raise ValueError("Cannot append an AstroData slice to another slice")
+
+        return self._append_nddata(deepcopy(ad.nddata), name=None, add_to=None, reset_ver=True)
+
     def _append(self, ext, name=None, add_to=None, reset_ver=True):
         self._lazy_populate_object()
 
         dispatcher = (
                 (NDData, self._append_raw_nddata),
                 ((Table, _TableBaseHDU), self._append_table),
-                (ImageHDU, self._append_imagehdu)
+                (ImageHDU, self._append_imagehdu),
+                (AstroData, self._append_astrodata),
                 )
 
         for bases, method in dispatcher:
