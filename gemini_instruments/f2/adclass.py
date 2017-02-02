@@ -40,7 +40,7 @@ class AstroDataF2(AstroDataGemini):
 
     @astro_data_tag
     def _tag_image(self):
-        if self.phu.get('GRISM') == 'Open':
+        if self.phu.get('GRISM') == 'Open' or self.phu.get('GRISMPOS') == 'Open':
             return TagSet(['IMAGE'])
 
     # Do not tag this as astro_data_tag. It's a helper function
