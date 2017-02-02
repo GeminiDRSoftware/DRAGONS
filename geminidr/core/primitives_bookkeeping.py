@@ -50,10 +50,11 @@ class Bookkeeping(PrimitivesBASE):
             # Need to specify 'ad.filename' here so writes to current dir
             ad.write(ad.filename, clobber=True)
             try:
-                self.stacks[_stackid(purpose, ad)].add(ad.filename)
+                if ad.filename not in self.stacks[_stackid(purpose, ad)]:
+                    self.stacks[_stackid(purpose, ad)].append(ad.filename)
             except KeyError:
                 # Stack doesn't exist yet, so start it off...
-                self.stacks[_stackid(purpose, ad)] = set([ad.filename])
+                self.stacks[_stackid(purpose, ad)] = [ad.filename]
 
         caches.save_cache(self.stacks, caches.stkindfile)
         return adinputs
@@ -79,13 +80,14 @@ class Bookkeeping(PrimitivesBASE):
         sidset = set()
         [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
 
+        adinputs = []
         # Import inputs from all lists
         for sid in sidset:
             stacklist = self.stacks[sid]
             log.stdinfo("List for stack id {}(...):".format(sid[:35]))
             # Limit length of stacklist
             if len(stacklist)>max_frames and max_frames is not None:
-                stacklist = sorted(stacklist)[-max_frames:]
+                stacklist = stacklist[-max_frames:]
             # Add each file to the input list if it's not already there
             for f in stacklist:
                 if f not in [ad.filename for ad in adinputs]:

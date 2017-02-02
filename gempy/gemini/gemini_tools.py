@@ -1007,7 +1007,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     return adinput
 
 
-def filename_updater(adinput=None, suffix='', prefix='', strip=False):
+def filename_updater(adinput=None, infilename='', suffix='', prefix='',
+                     strip=False):
     """
     This function is for updating the file names of astrodata objects.
     A prefix and/or suffix can be added, either to the current filename
@@ -1040,7 +1041,7 @@ def filename_updater(adinput=None, suffix='', prefix='', strip=False):
             adinput.phu.set('ORIGNAME', filename,
                             'Original filename prior to processing')
     else:
-        filename = adinput.filename
+        filename = infilename if infilename else adinput.filename
 
     # Possibly, filename could be None
     try:
