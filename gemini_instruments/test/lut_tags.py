@@ -168,7 +168,6 @@ fixture_data = {
 #   F2 MOS
     ('F2', 'S20120104S0072.fits') : ['F2', 'MOS', 'SPECT', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('F2', 'S20120104S0070.fits') : ['CAL', 'F2', 'MOS', 'FLAT', 'GCALFLAT', 'LAMPON', 'SPECT', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
-       # But GCALSHUT = CLOSED. Is this really a GCALFLAT?
     ('F2', 'S20120104S0068.fits') : ['CAL', 'F2', 'MOS', 'ARC', 'SPECT', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('F2', 'S20120104S0053.fits') : ['ACQUISITION', 'F2', 'IMAGE', 'GEMINI', 'SOUTH', 'RAW', 'SIDEREAL', 'UNPREPARED'],
        # But the headers are crap, so OBSCLASS not set to "acq", so
