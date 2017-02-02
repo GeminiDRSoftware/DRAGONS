@@ -36,18 +36,24 @@ class Stack(PrimitivesBASE):
 
         # Add the input frames to the forStack list and
         # get other available frames from the same list
-        self.addToList(purpose='forStack')
-        self.getList(purpose='forStack')
+        self.addToList(adinputs, purpose='forStack')
+        stack_inputs = self.getList(adinputs, purpose='forStack')
 
-        if len(adinputs) <= 1:
+        # Return entire list if only one object (which would presumably be the
+        # adinputs, or return the input list if we can't stack
+        if len(stack_inputs) <= 1:
             log.stdinfo("No alignment or correction will be performed, since "
                         "at least two input AstroData objects are required "
                         "for alignAndStack")
+            return stack_inputs
         else:
             if (self.parameters.alignAndStack['check_if_stack'] and
-                    not _can_stack(adinputs)):
+                    not _can_stack(stack_inputs)):
+                log.warning("No stacking will be performed, since a frame varies "
+                            "from the reference image by more than 1 degree")
                 return adinputs
             else:
+                adinputs = stack_inputs
                 #TODO: Must be an easier way than this to determine whether
                 # an AD object has no OBJCATs
                 if any(all(getattr(ext, 'OBJCAT', None) is None for ext in ad)
@@ -304,11 +310,5 @@ def _can_stack(adinputs):
     :param adinput: List of AstroData instances
     :type adinput: List of AstroData instances
     """
-    log = logutils.get_logger(__name__)
     ref_pa = adinputs[0].phu.PA
-    for ad in adinputs:
-        if abs(ad.phu.PA - ref_pa) >= 1.0:
-            log.warning("No stacking will be performed, since a frame varies "
-                        "from the reference image by more than 1 degree")
-            return False
-    return True
+    return all(abs(ad.phu.PA - ref_pa) < 1.0 for ad in adinputs)
