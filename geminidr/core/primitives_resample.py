@@ -345,7 +345,7 @@ def _pad_image(ad, padding):
             ad[0].mask[-padding[0][1]:] = DQ.no_data
         ad[0].mask[:,:padding[1][0]] = DQ.no_data
         if padding[1][1] > 0:
-            ad[0].mask[:,-padding[1][1]] = DQ.no_data
+            ad[0].mask[:,-padding[1][1]:] = DQ.no_data
     if hasattr(ad[0], 'OBJMASK'):
         ad[0].OBJMASK = np.pad(ad[0].OBJMASK, padding, 'constant',
                              constant_values=0)
