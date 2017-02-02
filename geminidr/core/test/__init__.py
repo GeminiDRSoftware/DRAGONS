@@ -19,7 +19,7 @@ def ad_compare(ad1, ad2):
 
     Returns
     -------
-
+    bool: are the two AD instances basically the same?
     """
     log = logutils.get_logger(__name__)
 
@@ -37,6 +37,9 @@ def ad_compare(ad1, ad2):
         log.warning('Files have different numbers of extensions: {} v {}'.
                       format(len(ad1), len(ad2)))
         return False
+
+    assert fname1 == fname2, ('Files have different filename attributes: '
+                              '{} v {}'.format(fname1, fname2))
 
     # Check tags
     if ad1.tags == ad2.tags:
@@ -70,7 +73,7 @@ def ad_compare(ad1, ad2):
         for kw in h1:
             # GEM-TLM is "time last modified"
             if kw not in timestamp_keys.values() and kw not in ['GEM-TLM',
-                                                    'HISTORY', 'COMMENT']:
+                                                    'HISTORY', 'COMMENT', '']:
                 try:
                     v1, v2 = h1[kw], h2[kw]
                 except KeyError:  # Missing keyword in AD2
