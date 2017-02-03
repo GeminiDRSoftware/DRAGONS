@@ -117,6 +117,9 @@ class FitsKeywordManipulator(object):
             else:
                 return default
 
+    def __delitem__(self, key):
+        self.remove(key)
+
     def remove(self, key):
         if self._on_ext:
             deleted = 0
@@ -164,7 +167,7 @@ class FitsKeywordManipulator(object):
         self[key] = value
 
     def __delattr__(self, key):
-        self.remove(key)
+        del self[key]
 
     def __contains__(self, key):
         if self._on_ext:
