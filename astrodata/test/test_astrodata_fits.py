@@ -71,6 +71,11 @@ def test_set_a_keyword_on_phu():
     assert ad.phu['DETECTOR'] == 'FooBar'
     assert ad.phu['ARBTRARY'] == 'BarBaz'
 
+def test_remove_a_keyword_from_phu():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    del ad.phu['DETECTOR']
+    assert 'DETECTOR' not in ad.phu
+
 # Access to headers: DEPRECATED METHODS
 # These should fail at some point
 
@@ -88,6 +93,11 @@ def test_set_a_keyword_on_phu_deprecated():
     ad.phu.ARBTRARY = 'BarBaz'
     assert ad.phu.DETECTOR == 'FooBar'
     assert ad.phu.ARBTRARY == 'BarBaz'
+
+def test_remove_a_keyword_from_phu_deprecated():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    del ad.phu.DETECTOR
+    assert 'DETECTOR' not in ad.phu
 
 # Regression:
 

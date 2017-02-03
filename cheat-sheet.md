@@ -165,7 +165,7 @@ To get info on the PHU:
 To get values from the PHU:
 
     # This may raise a KeyError
-    >>> ad.phu.KEYWORD
+    >>> ad.phu['KEYWORD']
     'foo'
     # The following won't raise a KeyError
     >>> ad.phu.get('EXISTSNO')
@@ -175,7 +175,7 @@ To get values from the PHU:
 
 Setting values:
 
-    >>> ad.phu.KEYWORD = 'bar'
+    >>> ad.phu['KEYWORD'] = 'bar'
     >>> ad.set('KEYWORD', 'bar')
 
 This, of course, works on non-existing keywords (it will create a new one)
@@ -191,7 +191,7 @@ Getting/setting comments:
 
 Removing keywords:
 
-    >>> del ad.phu.KEYWORD
+    >>> del ad.phu['KEYWORD']
     >>> ad.phu.remove('KEYWORD')
 
 All these operations work the same for extension headers, but to access them
