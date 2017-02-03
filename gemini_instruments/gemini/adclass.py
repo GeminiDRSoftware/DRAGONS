@@ -166,7 +166,7 @@ class AstroDataGemini(AstroDataFits):
         # Check if the intersection of both sets is non-empty...
         if frames & valid_frames:
             try:
-                dectrack, ratrack = float(self.phu['DECTRACK']), float(self.phu.RATRACK)
+                dectrack, ratrack = float(self.phu['DECTRACK']), float(self.phu['RATRACK'])
                 if dectrack == 0 and ratrack == 0:
                     return TagSet(['SIDEREAL'])
             except (ValueError, TypeError, KeyError):
@@ -884,7 +884,7 @@ class AstroDataGemini(AstroDataFits):
             Name of the GCAL lamp being used, or "Off" if not in use.
         """
         try:
-            lamps, shut = self.phu['GCALLAMP'], self.phu.GCALSHUT
+            lamps, shut = self.phu['GCALLAMP'], self.phu['GCALSHUT']
             if (shut.upper() == 'CLOSED' and lamps.upper() in
                 ('IRHIGH', 'IRLOW')) or lamps.upper() in ('', 'NO VALUE'):
                 return 'Off'

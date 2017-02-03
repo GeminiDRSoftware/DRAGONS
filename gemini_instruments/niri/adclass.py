@@ -430,7 +430,7 @@ class AstroDataNiri(AstroDataGemini):
         str
             the read mode used
         """
-        setting = (self.phu['LNRS'], self.phu.NDAVGS)
+        setting = (self.phu['LNRS'], self.phu['NDAVGS'])
         if setting == (16,16):
             read_mode = 'Low Background'
         elif setting == (1,16):
@@ -495,7 +495,7 @@ class AstroDataNiri(AstroDataGemini):
         str
             the well-depth setting
         """
-        biasvolt = self.phu['A_VDDUC'] - self.phu.A_VDET
+        biasvolt = self.phu['A_VDDUC'] - self.phu['A_VDET']
         if abs(biasvolt - lookup.array_properties['shallowbias']) < 0.05:
             return 'Shallow'
         elif abs(biasvolt - lookup.array_properties['deepbias']) < 0.05:
