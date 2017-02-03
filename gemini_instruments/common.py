@@ -57,10 +57,10 @@ def build_ir_section(instance, pretty=False):
     A list of `Section` instances.
     """
     # This is identical to the GNIRS code
-    hirows = instance.hdr.HIROW
-    lowrows = instance.hdr.LOWROW
-    hicols = instance.hdr.HICOL
-    lowcols = instance.hdr.LOWCOL
+    hirows = instance.hdr['HIROW']
+    lowrows = instance.hdr['LOWROW']
+    hicols = instance.hdr['HICOL']
+    lowcols = instance.hdr['LOWCOL']
 
     # NOTE: Rows are X and cols are Y? These Romans are crazy
     def format_section(x1,x2,y1,y2, pretty):

@@ -7,7 +7,7 @@ import numpy as np
 import astrodata
 import gemini_instruments
 
-from common_astrodata_test import from_test_data, from_chara
+from .common_astrodata_test import from_test_data, from_chara
 
 # Object construction
 def test_for_length():
@@ -53,6 +53,51 @@ def test_iterate_over_single_slice():
 def test_slice_negative():
     ad = from_test_data('GMOS/N20110826S0336.fits')
     assert ad.data[-1] is ad[-1].data
+
+# Access to headers
+
+def test_read_a_keyword_from_phu():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    assert ad.phu['DETECTOR'] == 'GMOS + Red1'
+
+def test_read_a_keyword_from_hdr():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    assert ad.hdr['CCDNAME'] == ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']
+
+def test_set_a_keyword_on_phu():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    ad.phu['DETECTOR'] = 'FooBar'
+    ad.phu['ARBTRARY'] = 'BarBaz'
+    assert ad.phu['DETECTOR'] == 'FooBar'
+    assert ad.phu['ARBTRARY'] == 'BarBaz'
+
+def test_remove_a_keyword_from_phu():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    del ad.phu['DETECTOR']
+    assert 'DETECTOR' not in ad.phu
+
+# Access to headers: DEPRECATED METHODS
+# These should fail at some point
+
+def test_read_a_keyword_from_phu_deprecated():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    assert ad.phu.DETECTOR == 'GMOS + Red1'
+
+def test_read_a_keyword_from_hdr_deprecated():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    assert ad.hdr.CCDNAME == ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']
+
+def test_set_a_keyword_on_phu_deprecated():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    ad.phu.DETECTOR = 'FooBar'
+    ad.phu.ARBTRARY = 'BarBaz'
+    assert ad.phu.DETECTOR == 'FooBar'
+    assert ad.phu.ARBTRARY == 'BarBaz'
+
+def test_remove_a_keyword_from_phu_deprecated():
+    ad = from_test_data('GMOS/N20110826S0336.fits')
+    del ad.phu.DETECTOR
+    assert 'DETECTOR' not in ad.phu
 
 # Regression:
 

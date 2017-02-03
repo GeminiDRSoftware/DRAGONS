@@ -26,17 +26,17 @@ class AstroDataGnirs(AstroDataGemini):
 
     @astro_data_tag
     def _type_dark(self):
-        if self.phu.OBSTYPE == 'DARK':
+        if self.phu['OBSTYPE'] == 'DARK':
             return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _type_arc(self):
-        if self.phu.OBSTYPE == 'ARC':
+        if self.phu['OBSTYPE'] == 'ARC':
             return TagSet(['ARC', 'CAL'])
 
     @astro_data_tag
     def _type_image(self):
-        if self.phu.ACQMIR == 'In':
+        if self.phu['ACQMIR'] == 'In':
             return TagSet(['IMAGE'])
 
     @astro_data_tag
@@ -46,7 +46,7 @@ class AstroDataGnirs(AstroDataGemini):
 
     @astro_data_tag
     def _type_spect(self):
-        if self.phu.ACQMIR == 'Out':
+        if self.phu['ACQMIR'] == 'Out':
             tags = set(['SPECT'])
             slit = self.phu.get('SLIT', '').lower()
             grat = self.phu.get('GRATING', '')
@@ -62,8 +62,8 @@ class AstroDataGnirs(AstroDataGemini):
 
     @astro_data_tag
     def _type_flats(self):
-        if self.phu.OBSTYPE == 'FLAT':
-            if 'Pinholes' in self.phu.SLIT:
+        if self.phu['OBSTYPE'] == 'FLAT':
+            if 'Pinholes' in self.phu['SLIT']:
                 return TagSet(['PINHOLE', 'CAL'], remove=['GCALFLAT'])
             else:
                 return TagSet(['FLAT', 'CAL'])
@@ -270,7 +270,7 @@ class AstroDataGnirs(AstroDataGemini):
             The name of the grating with or without the component ID.
 
         """
-        grating = self.phu.GRATING
+        grating = self.phu['GRATING']
 
         match = re.match("([\d/m]+)[A-Z]*(_G)(\d+)", grating)
         try:
@@ -341,8 +341,8 @@ class AstroDataGnirs(AstroDataGemini):
         filter_name = self.filter_name(pretty=True)
 
         result = []
-        for bunit in self.hdr.BUNIT:
-            gain_factor = (2.5 * math.log10(gain)) if bunit == 'adu' else 0.0
+        for bunit in self.hdr.get('BUNIT', 'adu'):
+            gain_factor = (2.5 * math.log10(gain)) if bunit.lower() == 'adu' else 0.0
             nz_key = (filter_name, camera)
             nom_phot_zeropoint = nominal_zeropoints[nz_key] - gain_factor
             result.append(nom_phot_zeropoint)
@@ -399,9 +399,9 @@ class AstroDataGnirs(AstroDataGemini):
                 raise Exception('No camera match for imaging mode')
         else:
             # Spectroscopy mode
-            prism = self.phu.PRISM
-            decker = self.phu.DECKER
-            disperser = self.phu.GRATING
+            prism = self.phu['PRISM']
+            decker = self.phu['DECKER']
+            disperser = self.phu['GRATING']
 
             ps_key = (prism, decker, disperser, camera)
             ret_pixel_scale = float(config_dict[ps_key].pixscale)
@@ -428,7 +428,7 @@ class AstroDataGnirs(AstroDataGemini):
             The name of the prism with or without the component ID.
 
         """
-        prism = self.phu.PRISM
+        prism = self.phu['PRISM']
         match = re.match("[LBSR]*\+*([A-Z]*_G\d+)", prism)
         # NOTE: The original descriptor has no provisions for not matching
         #       the RE... which will produce an exception down the road.
@@ -510,7 +510,7 @@ class AstroDataGnirs(AstroDataGemini):
         str
             Read mode for the observation.
         """
-        return read_modes.get((self.phu.LNRS, self.phu.NDAVGS), "Invalid")
+        return read_modes.get((self.phu['LNRS'], self.phu['NDAVGS']), "Invalid")
 
     @returns_list
     @astro_data_descriptor
@@ -580,7 +580,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         """
 
-        slit = self.phu.SLIT.replace(' ', '')
+        slit = self.phu['SLIT'].replace(' ', '')
 
         return gmu.removeComponentID(slit) if stripID or pretty else slit
 
@@ -596,7 +596,7 @@ class AstroDataGnirs(AstroDataGemini):
             Well depth setting.
 
         """
-        biasvolt = self.phu.DETBIAS
+        biasvolt = self.phu['DETBIAS']
 
         if abs(0.3 - abs(biasvolt)) < 0.1:
             return "Shallow"

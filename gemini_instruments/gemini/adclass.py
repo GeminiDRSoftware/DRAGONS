@@ -109,12 +109,12 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_acquisition(self):
-        if self.phu.OBSCLASS in ('acq', 'acqCal'):
+        if self.phu['OBSCLASS'] in ('acq', 'acqCal'):
             return TagSet(['ACQUISITION'])
 
     @astro_data_tag
     def _type_az(self):
-        if self.phu.FRAME == 'AZEL_TOPO':
+        if self.phu['FRAME'] == 'AZEL_TOPO':
             try:
                 if self.phu.get('ELEVATIO', 0) >= 90:
                     return TagSet(['AZEL_TARGET', 'AT_ZENITH'])
@@ -124,7 +124,7 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_fringe(self):
-        if self.phu.GIFRINGE is not None:
+        if self.phu['GIFRINGE'] is not None:
             return TagSet(['FRINGE'])
 
     # GCALFLAT and the LAMPON/LAMPOFF are kept separated because the
@@ -132,13 +132,13 @@ class AstroDataGemini(AstroDataFits):
     # GCALFLAT is still needed
     @astro_data_tag
     def _type_gcalflat(self):
-        if self.phu.GCALLAMP == 'IRhigh':
+        if self.phu['GCALLAMP'] == 'IRhigh':
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
-        if self.phu.GCALLAMP == 'IRhigh':
-            shut = self.phu.GCALSHUT
+        if self.phu['GCALLAMP'] == 'IRhigh':
+            shut = self.phu['GCALSHUT']
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
@@ -155,7 +155,7 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_nodandchop(self):
-        if self.phu.DATATYPE == "marked-nodandchop":
+        if self.phu['DATATYPE'] == "marked-nodandchop":
             return TagSet(['NODCHOP'])
 
     @astro_data_tag
@@ -166,7 +166,7 @@ class AstroDataGemini(AstroDataFits):
         # Check if the intersection of both sets is non-empty...
         if frames & valid_frames:
             try:
-                dectrack, ratrack = float(self.phu.DECTRACK), float(self.phu.RATRACK)
+                dectrack, ratrack = float(self.phu['DECTRACK']), float(self.phu['RATRACK'])
                 if dectrack == 0 and ratrack == 0:
                     return TagSet(['SIDEREAL'])
             except (ValueError, TypeError, KeyError):
@@ -213,7 +213,7 @@ class AstroDataGemini(AstroDataFits):
             if not any((pattern in kw) for kw in self.phu.keywords):
                 return
 
-        if self.phu.OBSTYPE == 'OBJECT':
+        if self.phu['OBSTYPE'] == 'OBJECT':
             return TagSet(['PROCESSED_SCIENCE'])
 
     def _parse_section(self, descriptor_name, keyword, pretty):
@@ -253,7 +253,7 @@ class AstroDataGemini(AstroDataFits):
             Airmass value.
 
         """
-        am = float(getattr(self.phu, self._keyword_for('airmass')))
+        am = float(self.phu[self._keyword_for('airmass')])
 
         if am < 1:
             raise ValueError("Can't have less than 1 airmass!")
@@ -273,7 +273,7 @@ class AstroDataGemini(AstroDataFits):
 
         """
         try:
-            return getattr(self.phu, self._keyword_for('ao_seeing'))
+            return self.phu[self._keyword_for('ao_seeing')]
         except KeyError:
             try:
                 # If r_zero_val (Fried's parameter) is present, 
@@ -283,7 +283,7 @@ class AstroDataGemini(AstroDataFits):
                 # http://www.ctio.noao.edu/~atokovin/tutorial/part1/turb.html )
 
                 # Seeing at 0.5 micron
-                rzv = getattr(self.phu, self._keyword_for('r_zero_val'))
+                rzv = self.phu[self._keyword_for('r_zero_val')]
                 return (206265. * 0.98 * 0.5e-6) / (rzv * 0.01)
             except KeyError:
                 raise AttributeError("There is no information about AO seeing")
@@ -669,7 +669,7 @@ class AstroDataGemini(AstroDataFits):
         """
         # Look for the relevant, which we assume is in meters per pixel
         try:
-            dispersion = getattr(self.hdr, self._keyword_for('dispersion'))
+            dispersion = self.hdr[self._keyword_for('dispersion')]
         except KeyError:
             dispersion = self.phu.get(self._keyword_for('dispersion'))
 
@@ -884,7 +884,7 @@ class AstroDataGemini(AstroDataFits):
             Name of the GCAL lamp being used, or "Off" if not in use.
         """
         try:
-            lamps, shut = self.phu.GCALLAMP, self.phu.GCALSHUT
+            lamps, shut = self.phu['GCALLAMP'], self.phu['GCALSHUT']
             if (shut.upper() == 'CLOSED' and lamps.upper() in
                 ('IRHIGH', 'IRLOW')) or lamps.upper() in ('', 'NO VALUE'):
                 return 'Off'
@@ -1232,7 +1232,7 @@ class AstroDataGemini(AstroDataFits):
         str
             BG, background brightness, of the observation.
         """
-        return self._raw_to_percentile('raw_bg', self.phu.RAWBG)
+        return self._raw_to_percentile('raw_bg', self.phu['RAWBG'])
 
     @astro_data_descriptor
     def raw_cc(self):
@@ -1244,7 +1244,7 @@ class AstroDataGemini(AstroDataFits):
         str
             CC, cloud coverage of the observation.
         """
-        return self._raw_to_percentile('raw_cc', self.phu.RAWCC)
+        return self._raw_to_percentile('raw_cc', self.phu['RAWCC'])
 
     @astro_data_descriptor
     def raw_iq(self):
@@ -1256,7 +1256,7 @@ class AstroDataGemini(AstroDataFits):
         str
             IQ, image quality, of the observation.
         """
-        return self._raw_to_percentile('raw_iq', self.phu.RAWIQ)
+        return self._raw_to_percentile('raw_iq', self.phu['RAWIQ'])
 
     @astro_data_descriptor
     def raw_wv(self):
@@ -1268,7 +1268,7 @@ class AstroDataGemini(AstroDataFits):
         str
             WV, water vapor, of the observation.
         """
-        return self._raw_to_percentile('raw_wv', self.phu.RAWWV)
+        return self._raw_to_percentile('raw_wv', self.phu['RAWWV'])
 
     @astro_data_descriptor
     def read_mode(self):
@@ -1305,7 +1305,7 @@ class AstroDataGemini(AstroDataFits):
         str
             BG, background brightness, requested by the PI.
         """
-        return self._raw_to_percentile('requested_bg', self.phu.REQBG)
+        return self._raw_to_percentile('requested_bg', self.phu['REQBG'])
 
     @astro_data_descriptor
     def requested_cc(self):
@@ -1317,7 +1317,7 @@ class AstroDataGemini(AstroDataFits):
         str
             CC, cloud coverage, requested by the PI.
         """
-        return self._raw_to_percentile('requested_cc', self.phu.REQCC)
+        return self._raw_to_percentile('requested_cc', self.phu['REQCC'])
 
     @astro_data_descriptor
     def requested_iq(self):
@@ -1329,7 +1329,7 @@ class AstroDataGemini(AstroDataFits):
         str
             IQ, image quality, requested by the PI.
         """
-        return self._raw_to_percentile('requested_iq', self.phu.REQIQ)
+        return self._raw_to_percentile('requested_iq', self.phu['REQIQ'])
 
     @astro_data_descriptor
     def requested_wv(self):
@@ -1341,7 +1341,7 @@ class AstroDataGemini(AstroDataFits):
         str
             WV, water vapor, requested by the PI.
         """
-        return self._raw_to_percentile('requested_wv', self.phu.REQWV)
+        return self._raw_to_percentile('requested_wv', self.phu['REQWV'])
 
     @astro_data_descriptor
     def saturation_level(self):
@@ -1391,7 +1391,7 @@ class AstroDataGemini(AstroDataFits):
         float
             Right Ascension of the target in degrees.
         """
-        ra = getattr(self.phu, self._keyword_for('ra'))
+        ra = self.phu[self._keyword_for('ra')]
         raoffset = self.phu.get('RAOFFSET', 0)
         targ_raoffset = self.phu.get('RATRGOFF', 0)
         pmra = self.phu.get('PMRA', 0)
@@ -1454,7 +1454,7 @@ class AstroDataGemini(AstroDataFits):
         float
             Declination of the target in degrees.
         """
-        dec = getattr(self.phu, self._keyword_for('dec'))
+        dec = self.phu[self._keyword_for('dec')]
         decoffset = self.phu.get('DECOFFSE', 0)
         targ_decoffset = self.phu.get('DECTRGOF', 0)
         pmdec = self.phu.get('PMDEC', 0)
@@ -1842,10 +1842,10 @@ class AstroDataGemini(AstroDataFits):
         list of floats/float
             List of pixel scales, one per extension
         """
-        cd11 = self.hdr.CD1_1
-        cd12 = self.hdr.CD1_2
-        cd21 = self.hdr.CD2_1
-        cd22 = self.hdr.CD2_2
+        cd11 = self.hdr['CD1_1']
+        cd12 = self.hdr['CD1_2']
+        cd21 = self.hdr['CD2_1']
+        cd22 = self.hdr['CD2_2']
         try:
             pixel_scale_list = [3600 * 0.5 * (math.sqrt(a*a + b*b) +
                                   math.sqrt(c*c + d*d))

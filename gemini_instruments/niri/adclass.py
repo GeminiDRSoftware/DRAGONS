@@ -221,7 +221,7 @@ class AstroDataNiri(AstroDataGemini):
         str
             The name of the disperser with or without the component ID.
         """
-        filter3 = self.phu.FILTER3
+        filter3 = self.phu['FILTER3']
         if 'grism' in filter3:
             disperser = gmu.removeComponentID(filter3) if stripID else filter3
         else:
@@ -372,7 +372,7 @@ class AstroDataNiri(AstroDataGemini):
         """
         read_mode = self.read_mode()
         well_depth_setting = self.well_depth_setting()
-        naxis2 = self.hdr.NAXIS2
+        naxis2 = self.hdr['NAXIS2']
         try:
             keys = [(read_mode, size, well_depth_setting) for size in naxis2]
         except TypeError:
@@ -410,7 +410,7 @@ class AstroDataNiri(AstroDataGemini):
         str
             the pupil mask
         """
-        filter3 = self.phu.FILTER3
+        filter3 = self.phu['FILTER3']
         if filter3.startswith('pup'):
             pupil_mask = gmu.removeComponentID(filter3) if pretty or stripID \
                 else filter3
@@ -430,7 +430,7 @@ class AstroDataNiri(AstroDataGemini):
         str
             the read mode used
         """
-        setting = (self.phu.LNRS, self.phu.NDAVGS)
+        setting = (self.phu['LNRS'], self.phu['NDAVGS'])
         if setting == (16,16):
             read_mode = 'Low Background'
         elif setting == (1,16):
@@ -495,7 +495,7 @@ class AstroDataNiri(AstroDataGemini):
         str
             the well-depth setting
         """
-        biasvolt = self.phu.A_VDDUC - self.phu.A_VDET
+        biasvolt = self.phu['A_VDDUC'] - self.phu['A_VDET']
         if abs(biasvolt - lookup.array_properties['shallowbias']) < 0.05:
             return 'Shallow'
         elif abs(biasvolt - lookup.array_properties['deepbias']) < 0.05:

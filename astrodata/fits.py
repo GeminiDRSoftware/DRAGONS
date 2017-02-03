@@ -74,13 +74,40 @@ class FitsKeywordManipulator(object):
         else:
             print(repr(self._headers[0]))
 
+    def __setitem__(self, key, value):
+        if isinstance(value, tuple):
+            self.set(key, value=value[0], comment=value[1])
+        else:
+            self.set(key, value=value)
+
     def set(self, key, value=None, comment=None):
         for header in self._headers:
             header.set(key, value=value, comment=comment)
 
+    def __getitem__(self, key):
+        if self._on_ext:
+            raised = False
+            missing_at = []
+            ret = []
+            for n, header in enumerate(self._headers):
+                try:
+                    ret.append(header[key])
+                except KeyError:
+                    missing_at.append(n)
+                    ret.append(None)
+                    raised = True
+            if raised:
+                error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
+                error.missing_at = missing_at
+                error.values = ret
+                raise error
+            return self._ret_ext(ret)
+        else:
+            return self._headers[0][key]
+
     def get(self, key, default=None):
         try:
-            return getattr(self, key)
+            return self[key]
         except KeyError as err:
             if self._on_ext:
                 vals = err.values
@@ -89,6 +116,9 @@ class FitsKeywordManipulator(object):
                 return self._ret_ext(vals)
             else:
                 return default
+
+    def __delitem__(self, key):
+        self.remove(key)
 
     def remove(self, key):
         if self._on_ext:
@@ -131,34 +161,13 @@ class FitsKeywordManipulator(object):
             _inner_set_comment(self._headers[0])
 
     def __getattr__(self, key):
-        if self._on_ext:
-            raised = False
-            missing_at = []
-            ret = []
-            for n, header in enumerate(self._headers):
-                try:
-                    ret.append(header[key])
-                except KeyError:
-                    missing_at.append(n)
-                    ret.append(None)
-                    raised = True
-            if raised:
-                error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
-                error.missing_at = missing_at
-                error.values = ret
-                raise error
-            return self._ret_ext(ret)
-        else:
-            return self._headers[0][key]
+        return self[key]
 
     def __setattr__(self, key, value):
-        if isinstance(value, tuple):
-            self.set(key, value=value[0], comment=value[1])
-        else:
-            self.set(key, value=value)
+        self[key] = value
 
     def __delattr__(self, key):
-        self.remove(key)
+        del self[key]
 
     def __contains__(self, key):
         if self._on_ext:

@@ -59,11 +59,11 @@ class AstroDataGsaoi(AstroDataGemini):
             names of the arrays
         """
         try:
-            return self.hdr.ARRAYID
+            return self.hdr['ARRAYID']
         except KeyError:
             # Data have been mosaicked, so return the detector name
             # (as a single-element list if necessary)
-            return self.phu.DETECTOR
+            return self.phu['DETECTOR']
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
@@ -102,7 +102,7 @@ class AstroDataGsaoi(AstroDataGemini):
             # return the central wavelength in the default units of meters.
             output_units = "meters"
 
-        central_wavelength = float(self.phu.WAVELENG)
+        central_wavelength = float(self.phu['WAVELENG'])
         if central_wavelength < 0.0:
             raise ValueError("Central wavelength can't be negative!")
         else:
@@ -328,7 +328,7 @@ class AstroDataGsaoi(AstroDataGemini):
             read speed setting
         """
         # The number of non-destructive reads is the key in the dict
-        lnrs = self.phu.LNRS
+        lnrs = self.phu['LNRS']
         try:
             return lookup.read_modes[lnrs]
         except KeyError:
@@ -364,8 +364,8 @@ class AstroDataGsaoi(AstroDataGemini):
             crval = h.CRVAL1
             ctype = h.CTYPE1
         except KeyError:
-            crval = self.phu.CRVAL1
-            ctype = self.phu.CTYPE1
+            crval = self.phu['CRVAL1']
+            ctype = self.phu['CTYPE1']
 
         if ctype == 'RA---TAN':
             return crval
@@ -389,8 +389,8 @@ class AstroDataGsaoi(AstroDataGemini):
             crval = h.CRVAL2
             ctype = h.CTYPE2
         except KeyError:
-            crval = self.phu.CRVAL2
-            ctype = self.phu.CTYPE2
+            crval = self.phu['CRVAL2']
+            ctype = self.phu['CTYPE2']
 
         if ctype == 'DEC--TAN':
             return crval

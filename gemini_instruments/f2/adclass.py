@@ -169,8 +169,8 @@ class AstroDataF2(AstroDataGemini):
             # return the central wavelength in the default units of meters.
             output_units = "meters"
 
-        central_wavelength = float(self.phu.GRWLEN)
-        if self.phu.FILTER1 == 'K-long-G0812':
+        central_wavelength = float(self.phu['GRWLEN'])
+        if self.phu['FILTER1'] == 'K-long-G0812':
                 central_wavelength = 2.2
 
         if central_wavelength < 0.0:
@@ -264,12 +264,12 @@ class AstroDataF2(AstroDataGemini):
 
         """
         try:
-            filter1 = self.phu.FILTER1
-            filter2 = self.phu.FILTER2
+            filter1 = self.phu['FILTER1']
+            filter2 = self.phu['FILTER2']
         except:
             # Old (pre-20100301) keyword names
-            filter1 = self.phu.FILT1POS
-            filter2 = self.phu.FILT2POS
+            filter1 = self.phu['FILT1POS']
+            filter2 = self.phu['FILT2POS']
 
         if stripID or pretty:
             filter1 = gmu.removeComponentID(filter1)
@@ -308,7 +308,7 @@ class AstroDataF2(AstroDataGemini):
             Gain used for the observation
 
         """
-        lnrs = self.phu.LNRS
+        lnrs = self.phu['LNRS']
         # F2 adds the reads (in ADU), so the electron-to-ADU conversion
         # needs to be divided by the number of reads
         gain = array_properties[lnrs][1] / lnrs
@@ -485,7 +485,7 @@ class AstroDataF2(AstroDataGemini):
         """
         # Element [3] gives the fraction of the saturation level at which
         # the data become non-linear
-        fraction = array_properties[self.phu.LNRS][3]
+        fraction = array_properties[self.phu['LNRS']][3]
         saturation_level = self.saturation_level()
         # Saturation level might be an element or a list
         try:
@@ -505,7 +505,7 @@ class AstroDataF2(AstroDataGemini):
         str
             Observation type
         """
-        return 'DARK' if 'F2_DARK' in self.tags else self.phu.OBSTYPE
+        return 'DARK' if 'F2_DARK' in self.tags else self.phu['OBSTYPE']
 
     @astro_data_descriptor
     def pixel_scale(self):
@@ -521,7 +521,7 @@ class AstroDataF2(AstroDataGemini):
         try:
             pixel_scale = self._get_wcs_pixel_scale()
         except KeyError:
-            pixel_scale = self.phu.PIXSCALE
+            pixel_scale = self.phu['PIXSCALE']
         return pixel_scale
 
     @astro_data_descriptor
@@ -534,7 +534,7 @@ class AstroDataF2(AstroDataGemini):
         str
             readout mode
         """
-        return str(self.phu.LNRS)
+        return str(self.phu['LNRS'])
 
     @returns_list
     @astro_data_descriptor
@@ -548,7 +548,7 @@ class AstroDataF2(AstroDataGemini):
             read noise
         """
         # Element [0] gives the read noise
-        return array_properties[self.phu.LNRS][0]
+        return array_properties[self.phu['LNRS']][0]
 
     @returns_list
     @astro_data_descriptor
@@ -562,7 +562,7 @@ class AstroDataF2(AstroDataGemini):
             saturation level
         """
         # Element [2] gives the saturation level in electrons
-        saturation_electrons = array_properties[self.phu.LNRS][2]
+        saturation_electrons = array_properties[self.phu['LNRS']][2]
         gain = self.gain()
         # Gain might be an element or a list
         try:
@@ -582,7 +582,7 @@ class AstroDataF2(AstroDataGemini):
         float
             x offset
         """
-        return -self.phu.YOFFSET
+        return -self.phu['YOFFSET']
 
     @astro_data_descriptor
     def y_offset(self):
@@ -594,7 +594,7 @@ class AstroDataF2(AstroDataGemini):
         float
             y offset
         """
-        return -self.phu.XOFFSET
+        return -self.phu['XOFFSET']
 
     def _get_wcs_coords(self):
         """
