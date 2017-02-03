@@ -7,10 +7,12 @@ from os import mkdir
 from os.path import basename, exists, join
 
 from urlparse import urlparse
-from urllib2  import HTTPError
+
+from urllib2 import HTTPError
+from urllib import urlretrieve
+from urllib import ContentTooShortError
 
 from gempy.utils import logutils
-from gempy.utils import netutil
 
 from gemini_instruments.common import Section
 
@@ -198,19 +200,35 @@ def process_cal_requests(cal_requests):
                 log.stdinfo("Making request on calibration service")
                 log.stdinfo("Requesting URL {}".format(calurl))
                 try:
-                    calname = netutil.urlfetch(calurl, store=cachedir,
-                                               clobber=True)
+                    calname, headers = urlretrieve(calurl, filename=cachename)
                     _add_cal_record(rq, cachename)
+                    continue
+                except ContentTooShortError as err:
+                    log.error(str(err))
                     continue
                 except HTTPError as error:
                     errstr = "Could not retrieve {}".format(calurl)
                     log.error(errstr)
                     log.error(str(error))
+                    continue
 
         try:
-            calname = netutil.urlfetch(calurl, store=cachedir)
-            _add_cal_record(rq, calname)
+            log.status("Calling urlretrieve on {}".format(calurl))
+            calname, headers = urlretrieve(calurl, filename=cachename)
+        except ContentTooShortError as err:
+            altmsg = "Download failed on {}; download incomplete."
+            log.error(altmsg.format(calname))
+            log.error(str(err))
         except HTTPError as err:
             log.error(str(err))
+        else:
+            # hash compare
+            download_mdf5 = generate_md5_digest(calname)
+            if download_mdf5 == calmd5:
+                log.status("MD5 hash match. Download OK.")
+                _add_cal_record(rq, calname)
+            else:
+                err = "MD5 hash of downloaded file does not match expected hash {}"
+                raise IOError(err.format(calmd5))
 
     return calibration_records
