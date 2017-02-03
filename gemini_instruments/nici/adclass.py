@@ -46,8 +46,8 @@ class AstroDataNici(AstroDataGemini):
         float/list of floats
             exposure time for each extension
         """
-        exptime_r = self.phu.ITIME_R * self.phu.NCOADD_R
-        exptime_b = self.phu.ITIME_B * self.phu.NCOADD_B
+        exptime_r = self.phu['ITIME_R'] * self.phu.NCOADD_R
+        exptime_b = self.phu['ITIME_B'] * self.phu.NCOADD_B
 
         # Use the filter header keywords to determine which exptime to use
         # Assume it's a red exposure if FILTER_B is not defined
