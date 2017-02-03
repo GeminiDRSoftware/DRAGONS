@@ -167,6 +167,7 @@ class Photometry(PrimitivesBASE):
 
                 # If we don't have a seeing estimate, try to get one
                 if seeing_estimate is None:
+                    log.debug("Running SExtractor to obtain seeing estimate")
                     sex_task = SExtractorETI([ext], sexpars,
                                     mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
@@ -502,8 +503,8 @@ def _estimate_seeing(objcat):
     #                            decent S/N ratio
     #                            unflagged (blended, saturated is OK)
     #                            not many bad pixels
-    good = np.logical_and.reduce([objcat['ISOAREA_IMAGE'] < 20,
-                                  objcat['B_IMAGE'] < 1.1,
+    good = np.logical_and.reduce([objcat['ISOAREA_IMAGE'] > 20,
+                                  objcat['B_IMAGE'] > 1.1,
                                   objcat['ELLIPTICITY'] < 0.5,
                                   objcat['CLASS_STAR'] > 0.8,
                                   objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
