@@ -510,7 +510,7 @@ class AstroDataGnirs(AstroDataGemini):
         str
             Read mode for the observation.
         """
-        return read_modes.get((self.phu['LNRS'], self.phu.NDAVGS), "Invalid")
+        return read_modes.get((self.phu['LNRS'], self.phu['NDAVGS']), "Invalid")
 
     @returns_list
     @astro_data_descriptor

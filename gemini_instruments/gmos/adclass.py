@@ -46,7 +46,7 @@ class AstroDataGmos(AstroDataGemini):
     def _tag_flat(self):
         if self.phu.get('OBSTYPE') == 'FLAT':
             if self.phu.get('GRATING') == 'MIRROR':
-                f1, f2 = self.phu['FILTER1'], self.phu.FILTER2
+                f1, f2 = self.phu['FILTER1'], self.phu['FILTER2']
                 # This kind of filter prevents imaging to be classified as FLAT
                 if any(('Hartmann' in f) for f in (f1, f2)):
                     return
@@ -595,7 +595,7 @@ class AstroDataGmos(AstroDataGemini):
         tuple
             number of integrations in the A and B positions
         """
-        return (int(self.phu['ANODCNT']), int(self.phu.BNODCNT))
+        return (int(self.phu['ANODCNT']), int(self.phu['BNODCNT']))
 
     @astro_data_descriptor
     def nod_offsets(self):

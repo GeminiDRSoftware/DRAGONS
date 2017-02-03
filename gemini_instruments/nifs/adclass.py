@@ -42,7 +42,7 @@ class AstroDataNifs(AstroDataGemini):
 
     @astro_data_tag
     def _tag_ronchi(self):
-        req = self.phu['OBSTYPE'], self.phu.APERTURE
+        req = self.phu['OBSTYPE'], self.phu['APERTURE']
         if req == ('FLAT', 'Ronchi_Screen_G5615'):
             return TagSet(['RONCHI', 'CAL'])
 
