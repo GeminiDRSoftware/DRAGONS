@@ -4,6 +4,7 @@
 #                                                        primitives_visualize.py
 # ------------------------------------------------------------------------------
 import numpy as np
+from copy import deepcopy
 
 try:
     from stsci import numdisplay as nd
@@ -73,7 +74,7 @@ class Visualize(PrimitivesBASE):
 
         # We may be manipulating the data significantly, so the best option
         # is to create a new PrimitivesClass instance and work with that
-        p = self.__class__(adinputs, context=self.context)
+        p = self.__class__([deepcopy(ad) for ad in adinputs], context=self.context)
 
         # Threshold and bias make sense only for SCI extension
         if extname != 'SCI':
