@@ -341,8 +341,8 @@ class AstroDataGnirs(AstroDataGemini):
         filter_name = self.filter_name(pretty=True)
 
         result = []
-        for bunit in self.hdr.BUNIT:
-            gain_factor = (2.5 * math.log10(gain)) if bunit == 'adu' else 0.0
+        for bunit in self.hdr.get('BUNIT', 'adu'):
+            gain_factor = (2.5 * math.log10(gain)) if bunit.lower() == 'adu' else 0.0
             nz_key = (filter_name, camera)
             nom_phot_zeropoint = nominal_zeropoints[nz_key] - gain_factor
             result.append(nom_phot_zeropoint)
