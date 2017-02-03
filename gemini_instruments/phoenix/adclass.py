@@ -53,7 +53,7 @@ class AstroDataPhoenix(AstroDataGemini):
         str
             The name of the filter combination with or without the component ID.
         """
-        return gmu.removeComponentID(self.phu.FILT_POS, stripID, pretty)
+        return gmu.removeComponentID(self.phu['FILT_POS'], stripID, pretty)
 
     @astro_data_descriptor
     def ra(self):

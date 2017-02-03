@@ -64,7 +64,7 @@ class AstroDataMichelle(AstroDataGemini):
         str
             The name of the filter
         """
-        filter_name = self.phu.FILTER
+        filter_name = self.phu['FILTER']
         if filter_name == 'NBlock':
             filter_name = 'blank'
         return filter_name
@@ -82,4 +82,4 @@ class AstroDataMichelle(AstroDataGemini):
         float/list of floats
             the pixel scale
         """
-        return self.phu.PIXELSIZ
+        return self.phu['PIXELSIZ']

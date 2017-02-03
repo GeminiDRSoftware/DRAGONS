@@ -27,28 +27,28 @@ class AstroDataNifs(AstroDataGemini):
 
     @astro_data_tag
     def _tag_dark(self):
-        if self.phu.OBSTYPE == 'DARK':
+        if self.phu['OBSTYPE'] == 'DARK':
             return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_image(self):
-        if self.phu.FLIP == 'In':
+        if self.phu['FLIP'] == 'In':
             return TagSet(['IMAGE'])
 
     @astro_data_tag
     def _tag_arc(self):
-        if self.phu.OBSTYPE == 'ARC':
+        if self.phu['OBSTYPE'] == 'ARC':
             return TagSet(['ARC', 'CAL'])
 
     @astro_data_tag
     def _tag_ronchi(self):
-        req = self.phu.OBSTYPE, self.phu.APERTURE
+        req = self.phu['OBSTYPE'], self.phu.APERTURE
         if req == ('FLAT', 'Ronchi_Screen_G5615'):
             return TagSet(['RONCHI', 'CAL'])
 
     @astro_data_tag
     def _tag_spect(self):
-        if self.phu.FLIP == 'Out':
+        if self.phu['FLIP'] == 'Out':
             return TagSet(['SPECT', 'IFU'])
 
     @astro_data_descriptor
@@ -73,7 +73,7 @@ class AstroDataNifs(AstroDataGemini):
             The name of the filter with or without the component ID.
 
         """
-        filt = str(self.phu.FILTER)
+        filt = str(self.phu['FILTER'])
         if stripID or pretty:
             filt = gmu.removeComponentID(filt)
 
@@ -82,7 +82,7 @@ class AstroDataNifs(AstroDataGemini):
         return filt
 
     def _from_biaspwr(self, constant_name):
-        bias_volt = self.phu.BIASPWR
+        bias_volt = self.phu['BIASPWR']
 
         for bias, constants in constants_by_bias.items():
             if abs(bias - bias_volt) < 0.1:
@@ -173,7 +173,7 @@ class AstroDataNifs(AstroDataGemini):
         # NOTE: The original read_mode descriptor obtains the bias voltage
         #       value, but then it does NOTHING with it. I'll just skip it.
 
-        return lnrs_mode_map.get(self.phu.LNRS, 'Invalid')
+        return lnrs_mode_map.get(self.phu['LNRS'], 'Invalid')
 
     @returns_list
     @astro_data_descriptor
@@ -190,7 +190,7 @@ class AstroDataNifs(AstroDataGemini):
 
         """
         rn = self._from_biaspwr("readnoise")
-        return float(rn * math.sqrt(self.coadds()) / math.sqrt(self.phu.LNRS))
+        return float(rn * math.sqrt(self.coadds()) / math.sqrt(self.phu['LNRS']))
 
     @returns_list
     @astro_data_descriptor
