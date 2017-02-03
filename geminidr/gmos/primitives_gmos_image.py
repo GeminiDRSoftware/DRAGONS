@@ -45,7 +45,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         adoutputs = []
         for ad in adinputs:
-            if _needs_fringe_correction(ad):
+            if _needs_fringe_correction(ad, self.context):
                 # Check for a fringe in the "fringe" stream first; the makeFringe
                 # primitive, if it was called, would have added it there;
                 # this avoids the latency involved in storing and retrieving
@@ -90,7 +90,7 @@ class GMOSImage(GMOS, Image, Photometry):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         # Exit without doing anything if any of the inputs are inappropriate
-        if not all(_needs_fringe_correction(ad) for ad in adinputs):
+        if not all(_needs_fringe_correction(ad, self.context) for ad in adinputs):
             return adinputs
         if len(set(ad.filter_name(pretty=True) for ad in adinputs)) > 1:
             log.warning("Mismatched filters in input; not making fringe "
@@ -532,7 +532,7 @@ class GMOSImage(GMOS, Image, Photometry):
                         reject_method=reject_method, nlow=nlow, nhigh=nhigh)
         return adinputs
 
-def _needs_fringe_correction(ad, context=None):
+def _needs_fringe_correction(ad, context):
     """
     This function determines whether an AstroData object needs a fringe
     correction. If it says no, it reports its decision to the log.
