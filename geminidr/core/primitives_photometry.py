@@ -542,13 +542,11 @@ def _cull_objcat(ext):
     # Remove implausibly narrow sources
     objcat.remove_rows(objcat['B_IMAGE'] < 1.1)
 
-    # Remove all the culled sources from the OBJMASK
+    # Create new OBJMASK with 1 only for unculled objects
     if hasattr(ext, 'OBJMASK'):
-        objmask = ext.OBJMASK
-        culled_objects = [n for n in all_objects if n not in objcat['NUMBER']]
-        for n in culled_objects:
-            objmask = np.where(objmask==n, 0, objmask)
-        ext.OBJMASK = np.where(objmask>0, 1, 0).astype(np.uint8)
+        objmask_shape = ext.OBJMASK.shape
+        ext.OBJMASK = np.where(np.in1d(ext.OBJMASK.ravel(), objcat['NUMBER']),
+                               1, 0).reshape(objmask_shape).astype(np.uint8)
 
     # Now renumber what's left sequentially
     objcat['NUMBER'].data[:] = range(1, len(objcat)+1)
