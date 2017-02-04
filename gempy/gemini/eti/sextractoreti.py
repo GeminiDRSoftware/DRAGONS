@@ -92,7 +92,6 @@ class SExtractorETI(ETI):
         self.execute()
         objdata = self.recover()
         # Attach the OBJCATs and OBJMASKs to each extension in each input
-        # OBJMASK needs to be an np.int16 array of 1s or 0s
         # This is kind of ugly, so maybe want to look at it
         i = 0
         for ad in self.inputs:
@@ -100,8 +99,7 @@ class SExtractorETI(ETI):
                 for ext in ad:
                     ext.OBJCAT, objmask = objdata[i]
                     if self._getmask:
-                        ext.OBJMASK = np.where(fits.open(objmask)[0].data>0,
-                                               1, 0).astype(np.int16)
+                        ext.OBJMASK = fits.open(objmask)[0].data
                     i += 1
             except TypeError:
                 ad.OBJCAT, objmask = objdata[i]
