@@ -4,7 +4,8 @@
 import hashlib
 
 from os import mkdir
-from os.path import basename, exists, join
+from os.path import basename, exists
+from os.path import join, split
 
 from urlparse import urlparse
 
@@ -214,7 +215,9 @@ def process_cal_requests(cal_requests):
 
         try:
             log.status("Calling urlretrieve on {}".format(calurl))
-            calname, headers = urlretrieve(calurl, filename=cachename)
+            fname = split(calurl)[1]
+            calname = join(cachedir, fname)
+            calname, headers = urlretrieve(calurl, filename=calname)
         except ContentTooShortError as err:
             altmsg = "Download failed on {}; download incomplete."
             log.error(altmsg.format(calname))
