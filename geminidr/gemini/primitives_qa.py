@@ -798,7 +798,7 @@ def _bg_report(ad, bg_count, bunit, bg_mag, qastatus):
     """
     comments = []
     headstr = 'Filename: {}'.format(ad.filename)
-    if ad._single and ad._sliced:
+    if ad.is_single:
         headstr += ':{}'.format(ad.hdr.EXTVER)
 
     body = [('Sky level measurement:', '{:.0f} +/- {:.0f} {}'.
@@ -844,7 +844,7 @@ def _cc_report(ad, zpt, cloud, qastatus):
     -------
     list: list of comments to be passed to the FITSstore report
     """
-    single_ext = ad._single and ad._sliced
+    single_ext = ad.is_single
     comments = []
     headstr = 'Filename: {}'.format(ad.filename)
     if single_ext:
@@ -914,7 +914,7 @@ def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
     log = logutils.get_logger(__name__)
     comments = []
     headstr = 'Filename: {}'.format(ad.filename)
-    if ad._single and ad._sliced:
+    if ad.is_single:
         headstr += ':{}'.format(ad.hdr.EXTVER)
     header = [headstr]
     header.append('{} sources used to measure IQ'.format(fwhm.samples))

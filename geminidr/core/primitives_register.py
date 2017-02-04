@@ -397,10 +397,11 @@ class Register(PrimitivesBASE):
             return adinputs
 
         for ad in adinputs:
+            failed_extver = []
             ad_wcs = wcs if isinstance(wcs, WCS) else wcs.get(ad)
 
             if ad_wcs is None:
-                log.warning("No new WCS supplied for {}; no correction will "
+                log.fullinfo("No new WCS supplied for {}; no correction will "
                             "be performed".format(ad.filename))
                 continue
 
@@ -409,8 +410,9 @@ class Register(PrimitivesBASE):
                 ext_wcs = ad_wcs if isinstance(wcs, WCS) else ad_wcs.get(extver)
 
                 if ext_wcs is None:
-                    log.warning("No new WCS supplied for {}:{}; no correction "
-                                "will be performed".format(ad.filename,extver))
+                    log.fullinfo("No new WCS supplied for {}:{}; no correction "
+                                 "will be performed".format(ad.filename,extver))
+                    failed_extver.append(extver)
                     continue
 
                 # If image extension, correct the header values
@@ -443,6 +445,15 @@ class Register(PrimitivesBASE):
                                                               extver))
                     objcat['X_WORLD'], objcat['Y_WORLD'] = ext_wcs.all_pix2world(
                         objcat['X_IMAGE'], objcat['Y_WORLD'], 1)
+
+            if failed_extver:
+                ok_extver = [extver for extver in ad.hdr.EXTVER
+                             if extver not in failed_extver]
+                log.stdinfo("Updated WCS for {} extver {}. Extver {} failed."
+                            .format(ad.filename, ok_extver, failed_extver))
+            else:
+                log.stdinfo("Updated WCS for all extvers in {}.".
+                            format(ad.filename))
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
