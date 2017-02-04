@@ -401,7 +401,7 @@ class Register(PrimitivesBASE):
             ad_wcs = wcs if isinstance(wcs, WCS) else wcs.get(ad)
 
             if ad_wcs is None:
-                log.fullinfo("No new WCS supplied for {}; no correction will "
+                log.warning("No new WCS supplied for {}; no correction will "
                             "be performed".format(ad.filename))
                 continue
 
