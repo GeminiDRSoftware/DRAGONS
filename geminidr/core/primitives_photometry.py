@@ -542,6 +542,10 @@ def _cull_objcat(ext):
     objcat.remove_rows(objcat['ISOAREA_IMAGE'] < 20)
     # Remove implausibly narrow sources
     objcat.remove_rows(objcat['B_IMAGE'] < 1.1)
+    # Remove *really* bad sources. "Bad" pixels might be saturated, but the
+    # source is still real, so be very conservative
+    if 'NIMAFLAGS_ISO' in objcat.columns:
+        objcat.remove_rows(objcat['NIMAFLAGS_ISO'] > 0.9*objcat['ISOAREA_IMAGE'])
 
     # Create new OBJMASK with 1 only for unculled objects
     if hasattr(ext, 'OBJMASK'):
