@@ -1,12 +1,12 @@
 #
 #                                                                  coreReduce.py
 # ------------------------------------------------------------------------------
-# the Reduce class. Used by the reduce_alpha cli.
+# the Reduce class. Used by the reduce, v2.0 cli.
 
 # ------------------------------------------------------------------------------
 from builtins import str
 from builtins import object
-_version = ' alpha (new_hope) '
+_version = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 """
 class Reduce (New Hope) provides one (1) public method:
