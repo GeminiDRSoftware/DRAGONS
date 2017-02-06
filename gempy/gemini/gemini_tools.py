@@ -1496,37 +1496,40 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
             else getattr(ext, 'OBJMASK', None)
         bg_data = ext.data[flags==0] if flags is not None else ext.data
 
-        bg_data = bg_data.flatten()[::sampling]
-        if gaussfit:
-            # An ogive fit is more robust than a histogram fit
-            bg_data = np.sort(bg_data)
-            bg = np.median(bg_data)
-            bg_std = 0.5*(np.percentile(bg_data, 84.13) -
-                          np.percentile(bg_data, 15.87))
-            g_init = CumGauss1D(bg, bg_std)
-            fit_g = fitting.LevMarLSQFitter()
-            g = fit_g(g_init, bg, np.linspace(0.,1.,len(bg_data)+1)[1:])
-            bg, bg_std = g.mean.value, abs(g.stddev.value)
-            #binsize = bg_std * 0.1
-            # Fit from -5 to +1 sigma
-            #bins = np.arange(bg - 5 * bg_std, bg + bg_std, binsize)
-            #histdata, _ = np.histogram(bg_data, bins)
-            # bin centers
-            #x = bins[:-1] + 0.5 * (bins[1] - bins[0])
-            # Eliminate bins with no data (e.g., if data are quantized)
-            #x = x[histdata > 0]
-            #histdata = histdata[histdata > 0]
-            #g_init = models.Gaussian1D(amplitude=np.max(histdata),
-            #                           mean=bg, stddev=bg_std)
-            #fit_g = fitting.LevMarLSQFitter()
-            #g = fit_g(g_init, x, histdata)
-            #bg, bg_std = g.mean.value, abs(g.stddev.value)
+        bg_data = bg_data.ravel()[::sampling]
+        if len(bg_data) > 0:
+            if gaussfit:
+                # An ogive fit is more robust than a histogram fit
+                bg_data = np.sort(bg_data)
+                bg = np.median(bg_data)
+                bg_std = 0.5*(np.percentile(bg_data, 84.13) -
+                              np.percentile(bg_data, 15.87))
+                g_init = CumGauss1D(bg, bg_std)
+                fit_g = fitting.LevMarLSQFitter()
+                g = fit_g(g_init, bg, np.linspace(0.,1.,len(bg_data)+1)[1:])
+                bg, bg_std = g.mean.value, abs(g.stddev.value)
+                #binsize = bg_std * 0.1
+                # Fit from -5 to +1 sigma
+                #bins = np.arange(bg - 5 * bg_std, bg + bg_std, binsize)
+                #histdata, _ = np.histogram(bg_data, bins)
+                # bin centers
+                #x = bins[:-1] + 0.5 * (bins[1] - bins[0])
+                # Eliminate bins with no data (e.g., if data are quantized)
+                #x = x[histdata > 0]
+                #histdata = histdata[histdata > 0]
+                #g_init = models.Gaussian1D(amplitude=np.max(histdata),
+                #                           mean=bg, stddev=bg_std)
+                #fit_g = fitting.LevMarLSQFitter()
+                #g = fit_g(g_init, x, histdata)
+                #bg, bg_std = g.mean.value, abs(g.stddev.value)
+            else:
+                # Sigma-clipping will screw up the stats of course!
+                bg_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
+                bg_data = bg_data.data[~bg_data.mask]
+                bg = np.median(bg_data)
+                bg_std = np.std(bg_data)
         else:
-            # Sigma-clipping will screw up the stats of course!
-            bg_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
-            bg_data = bg_data.data[~bg_data.mask]
-            bg = np.median(bg_data)
-            bg_std = np.std(bg_data)
+            bg, bg_std = None, None
 
         if value_only:
             output_list.append(bg)
