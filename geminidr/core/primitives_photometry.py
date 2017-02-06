@@ -138,8 +138,9 @@ class Photometry(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        mask_bits = params["replace_flags"]
         set_saturation = params["set_saturation"]
+        # Setting mask_bits=0 is the same as not replacing bad pixels
+        mask_bits = params["replace_flags"] if params["mask"] else 0
 
         # Will raise an Exception if SExtractor is too old or missing
         SExtractorETI().check_version()
