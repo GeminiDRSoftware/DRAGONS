@@ -66,9 +66,9 @@ class Reduce(object):
         if sys_args:
             args = sys_args
         elif self._confirm_args():
-            args = buildParser(__version__).parse_args()
+            args = buildParser(_version).parse_args()
         else:
-            args = buildParser(__version__).parse_args([])
+            args = buildParser(_version).parse_args([])
 
         self.adinputs = None
         self.files   = args.files

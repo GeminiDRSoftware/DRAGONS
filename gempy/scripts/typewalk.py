@@ -4,6 +4,8 @@
 #
 #                                                                    typewalk.py
 # ------------------------------------------------------------------------------
+__version__ = "v2.0 (beta) "
+# ------------------------------------------------------------------------------
 desc = """
 Description:
   typewalk examines files in a directory or directory tree and reports the
