@@ -56,6 +56,19 @@ class CalibDB(PrimitivesBASE):
                     raise IOError(self._not_found.format(ad.filename))
         return adinputs
 
+    def addCalibration(self, adinputs=None, **params):
+        caltype = params.get('caltype')
+        calfile = params.get('calfile')
+        log = self.log
+        if caltype is None or calfile is None:
+            log.error("getCalibration: Received no caltype or calfile")
+            raise TypeError("getCalibration: Received no caltype or calfile.")
+
+        for ad in adinputs:
+            self._add_cal({(ad.data_label(), caltype): calfile})
+
+        return adinputs
+
     def getCalibration(self, adinputs=None, **params):
         caltype = params.get('caltype')
         log = self.log
