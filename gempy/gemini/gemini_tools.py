@@ -1292,7 +1292,7 @@ def fit_continuum(ad):
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~stats.sigma_clip(table['fwhm_arcsec'])]
+            table = table[~stats.sigma_clip(table['fwhm_arcsec']).mask]
 
         good_sources.append(table)
     return good_sources
