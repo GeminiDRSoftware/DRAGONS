@@ -9,13 +9,13 @@ from builtins import object
 _version = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 """
-class Reduce (New Hope) provides one (1) public method:
+class Reduce {} provides one (1) public method:
 
     runr()
 
 which calls on the mapper classes and passes the recieved data to them.
 
-"""
+""".format(_version)
 # ---------------------------- Package Import ----------------------------------
 import os
 import sys
@@ -75,9 +75,9 @@ class Reduce(object):
         self.uparms  = set_btypes(args.userparam)
         self.ucals   = args.user_cal
         self.context = args.context.lower() if args.context else 'qa'
-        self.urecipe = args.recipename if args.recipename else 'default'
+        self.suffix  = args.suffix
         self.upload_metrics = args.upmetrics
-
+        self.urecipe = args.recipename if args.recipename else 'default'
 
     def runr(self):
         """
@@ -162,9 +162,13 @@ class Reduce(object):
             self._logheader(recipe)
             recipe(p)
 
+        # Write block
+        # Only write files at this point if self.adinputs filenames have changed
+        # from .orig_filename, or if --suffix has been provided.
+
         return xstat
 
-# -------------------------------- prive ---------------------------------------
+    # -------------------------------- prive -----------------------------------
     def _check_files(self, ffiles):
         """
         Sanity check on submitted files.

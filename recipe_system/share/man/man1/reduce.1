@@ -1,8 +1,8 @@
-.TH reduce_alpha 1 "1 Dec. 2016" "version 0.1" "reduce man page"
+.TH reduce 1 "1 Dec. 2016" "version 0.1" "reduce man page"
 .SH NAME
-reduce_alpha \- recipe system, v2.0, command line interface (cli)
+reduce \- Recipe Processing Management System, v2.0, command line interface (cli)
 .SH SYNOPSIS
-.B reduce_alpha 
+.B reduce
 [\fB\-h\fR] 
 [\fB\-v\fR]
 [\fB\-d\fR]
@@ -18,16 +18,17 @@ reduce_alpha \- recipe system, v2.0, command line interface (cli)
 fitsfile [fitsfile ...]
 
 .SH DESCRIPTION
-.B reduce_alpha(1) 
-provides a command line interface that can be configured and launch a Recipe System p
-rocessing pipeline (a 'recipe') on input dataset(s). Control of reduce and the Recipe 
-System is provided by a variety of options and switches.
+.B reduce(1)
+provides a command line interface that can be used to configure and launch a
+pipeline (a 'recipe') under the Recipe Processing Management System, a.k.a.,
+the Recipe System, on input dataset(s). Control of reduce and the recipe system
+is provided by a variety of options and switches.
 
 .SH OPTIONS
 .TP 
 .B -h, --help
 show the
-.B reduce_alpha
+.B reduce
 help message and exit
 .TP 
 .B -v, --version
@@ -112,6 +113,11 @@ should be named accordingly. I.e., in the example above,
 is a python module named, 
 .B 'recipefile.py'
 .RE
+.TP
+\fB\-\-suffix\fR SUFFIX
+Add SUFFIX to filenames at end of reduction; strip all other suffixes
+marked by '_'.
+.RE
 .TP	
 \fB\-\-upload_metrics\fR
 Use this switch to send QA metrics to fitsstore. Default is \fBFalse\fR.
@@ -124,10 +130,6 @@ Eg.,
 .RS 
 \fB\-\-user_cal\fR gsTest_arc.fits
 .RE
-.RE
-.TP 
-\fB\-\-suffix\fR SUFFIX
-Add SUFFIX to filenames at end of reduction.
 
 .SH ENVIRONMENT
 Recommend Anaconda 4.2.0, Astropy 1.2.1. (Ureka 1.5.2 should also work

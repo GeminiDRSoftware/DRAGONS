@@ -23,10 +23,10 @@ Command line interface, ``reduce``
 We begin with the command line help provided by ``reduce --help``, followed by 
 further description and discussion of certain non-trivial options. ::
 
-  usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--logmode LOGMODE]
-              [--logfile LOGFILE] [--loglevel LOGLEVEL]
-              [-p USERPARAM [USERPARAM ...]] [-r RECIPENAME]
-              [--user_cal USER_CAL] [--suffix SUFFIX]
+  usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--logfile LOGFILE]
+              [--loglevel LOGLEVEL] [--logmode LOGMODE]
+              [-p USERPARAM [USERPARAM ...]] [-r RECIPENAME] [--suffix SUFFIX]
+              [--upload_metrics] [--user_cal USER_CAL]
               fitsfile [fitsfile ...]
 
   _____________________________ Gemini Observatory ____________________________

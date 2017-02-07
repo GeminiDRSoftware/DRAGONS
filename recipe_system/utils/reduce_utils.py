@@ -54,8 +54,8 @@ def buildParser(version):
     parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " + 
                                   "_"*28 + "\n" + "_"*20 + 
                                   " Recipe Processing Management System " + 
-                                  "_"*20 + "\n" + "_"*18 + 
-                                  " recipeSystem2 Release" + version + "_"*18, 
+                                  "_"*20 + "\n" + "_"*22 + 
+                                  " Recipe System Release" + version + " " + "_"*22, 
                                   prog="reduce", 
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
@@ -119,7 +119,8 @@ def buildParser(version):
 
     parser.add_argument("--suffix", dest='suffix', default=None,
                         nargs="*", action=UnitaryArgumentAction,
-                        help="Add 'suffix' to filenames at end of reduction.")
+                        help="Add 'suffix' to filenames at end of reduction; "
+                        "strip all other suffixes marked by '_'; ")
 
     parser.add_argument("--upload_metrics", dest='upmetrics', default=False,
                         action=BooleanAction, nargs="*",
