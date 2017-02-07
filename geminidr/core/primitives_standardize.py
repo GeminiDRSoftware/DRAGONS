@@ -232,7 +232,7 @@ class Standardize(PrimitivesBASE):
         mdf_list = params["mdf"]
         if mdf_list is None:
             self.getMDF(adinputs)
-            mdf_list = [self._get_cal(ad, 'mdf') for ad in adinputs]
+            mdf_list = [self._get_cal(ad, 'mask') for ad in adinputs]
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
