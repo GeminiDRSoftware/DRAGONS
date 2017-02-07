@@ -35,7 +35,7 @@ class GMOS(Gemini, CCD):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOS, self).__init__(adinputs, **kwargs)
-        self.inst_lookups = 'gemini.gmos.lookups'
+        self.inst_lookups = 'geminidr.gmos.lookups'
         self.parameters = ParametersGMOS
 
     def mosaicDetectors(self, adinputs=None, **params):

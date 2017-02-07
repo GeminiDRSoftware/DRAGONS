@@ -129,7 +129,7 @@ class CalibDB(PrimitivesBASE):
                     except KeyError:
                         log.warning("MDF not found in {}".format(inst_lookups))
                     else:
-                        self._add_cal((ad, caltype), mdf)
+                        self._add_cal({(ad.data_label(), caltype): mdf})
                         continue
                 log.stdinfo("Requesting MDF from fitsstore ...")
                 mdf_requests = get_cal_requests([ad], caltype)
