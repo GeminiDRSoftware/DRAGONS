@@ -16,7 +16,7 @@ class GMOSMOS(GMOSSpect, GMOSNodAndShuffle):
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "LONGSLIT"])
+    tagset = set(["GEMINI", "GMOS", "SPECT", "MOS"])
 
     def __init__(self, adinputs, **kwargs):
         super(GMOSMOS, self).__init__(adinputs, **kwargs)
