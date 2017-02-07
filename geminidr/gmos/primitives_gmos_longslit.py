@@ -16,7 +16,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "SPECT", "LONGSLIT"])
+    tagset = set(["GEMINI", "GMOS", "SPECT", "LS"])
 
     def __init__(self, adinputs, **kwargs):
         super(GMOSLongslit, self).__init__(adinputs, **kwargs)
