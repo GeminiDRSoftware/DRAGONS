@@ -179,7 +179,8 @@ class Photometry(PrimitivesBASE):
                 if seeing_estimate is not None:
                     log.debug("Running SExtractor with seeing estimate "
                               "{:.3f}".format(seeing_estimate))
-                    sexpars.update({'SEEING_FWHM': '{:.3f}'.format(seeing_estimate)})
+                    sexpars.update({'SEEING_FWHM': '{:.3f}'.
+                                   format(seeing_estimate)})
                     sex_task = SExtractorETI([ext], sexpars,
                                     mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
@@ -193,10 +194,10 @@ class Photometry(PrimitivesBASE):
                 _cull_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
-                ad = gt.add_objcat(ad, extver=ext.hdr.EXTVER, replace=False,
+                ad = gt.add_objcat(ad, extver=ext.hdr['EXTVER'], replace=False,
                                    table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
-                                                ad.filename, ext.hdr.EXTVER))
+                                            ad.filename, ext.hdr['EXTVER']))
 
             # Run some profiling code on the best sources to produce a
             # more IRAF-like FWHM number, adding two columns to the OBJCAT
@@ -324,7 +325,7 @@ def _match_objcat_refcat(ad):
     for index in objcat_order:
         objcat = ad[index].OBJCAT
         objcat_len = len(objcat)
-        extver = ad[index].hdr.EXTVER
+        extver = ad[index].hdr['EXTVER']
         xx = objcat['X_IMAGE']
         yy = objcat['Y_IMAGE']
 

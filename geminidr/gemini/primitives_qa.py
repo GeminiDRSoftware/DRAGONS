@@ -101,7 +101,7 @@ class QA(PrimitivesBASE):
             bg_mag_list = []
             for i, (ext, npz) in enumerate(
                     zip(ad, ad.nominal_photometric_zeropoint())):
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 ext_info = {}
                 bunit = ext.hdr.get('BUNIT', 'adu')
 
@@ -276,7 +276,7 @@ class QA(PrimitivesBASE):
             info_list = []
 
             for ext, npz in zip(ad, nom_phot_zpt):
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 ext_info = {}
                 objcat = ext.OBJCAT
 
@@ -522,7 +522,7 @@ class QA(PrimitivesBASE):
             info_list = []
             iq_overlays = []
             for src, ext in zip(good_source, adiq):
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 ellip = Measurement(None, None, 0)
                 if len(src) == 0:
                     fwhm = Measurement(None, None, 0)
@@ -801,7 +801,7 @@ def _bg_report(ad, bg_count, bunit, bg_mag, qastatus):
     comments = []
     headstr = 'Filename: {}'.format(ad.filename)
     if ad.is_single:
-        headstr += ':{}'.format(ad.hdr.EXTVER)
+        headstr += ':{}'.format(ad.hdr['EXTVER'])
 
     body = [('Sky level measurement:', '{:.0f} +/- {:.0f} {}'.
              format(bg_count.value, bg_count.std, bunit))]
@@ -850,7 +850,7 @@ def _cc_report(ad, zpt, cloud, qastatus):
     comments = []
     headstr = 'Filename: {}'.format(ad.filename)
     if single_ext:
-        headstr += ':{}'.format(ad.hdr.EXTVER)
+        headstr += ':{}'.format(ad.hdr['EXTVER'])
     header = [headstr]
     header.append('{} sources used to measure zeropoint'.format(cloud.samples))
 
@@ -917,7 +917,7 @@ def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
     comments = []
     headstr = 'Filename: {}'.format(ad.filename)
     if ad.is_single:
-        headstr += ':{}'.format(ad.hdr.EXTVER)
+        headstr += ':{}'.format(ad.hdr['EXTVER'])
     header = [headstr]
     header.append('{} sources used to measure IQ'.format(fwhm.samples))
 

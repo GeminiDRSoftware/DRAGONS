@@ -290,7 +290,7 @@ class Register(PrimitivesBASE):
             refcat.rename_column('Id', 'REF_NUMBER')
 
             for ext in ad:
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 try:
                     objcat = ext.OBJCAT
                 except AttributeError:
@@ -406,7 +406,7 @@ class Register(PrimitivesBASE):
                 continue
 
             for ext in ad:
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 ext_wcs = ad_wcs if isinstance(wcs, WCS) else ad_wcs.get(extver)
 
                 if ext_wcs is None:
@@ -447,7 +447,7 @@ class Register(PrimitivesBASE):
                         objcat['X_IMAGE'], objcat['Y_WORLD'], 1)
 
             if failed_extver:
-                ok_extver = [extver for extver in ad.hdr.EXTVER
+                ok_extver = [extver for extver in ad.hdr['EXTVER']
                              if extver not in failed_extver]
                 log.stdinfo("Updated WCS for {} extver {}. Extver {} failed."
                             .format(ad.filename, ok_extver, failed_extver))
@@ -579,16 +579,16 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
     # Shift the catalog of image to be aligned using the header offsets.
     # The instrument alignment angle should be used to check how to 
     # use the offsets.
-    poffset1 = ad1.phu.POFFSET
-    qoffset1 = ad1.phu.QOFFSET
-    poffset2 = ad2.phu.POFFSET
-    qoffset2 = ad2.phu.QOFFSET
+    poffset1 = ad1.phu['POFFSET']
+    qoffset1 = ad1.phu['QOFFSET']
+    poffset2 = ad2.phu['POFFSET']
+    qoffset2 = ad2.phu['QOFFSET']
     pixscale = ad1.pixel_scale()
     xdiff = -1.0 * (qoffset1 - qoffset2) / pixscale
     ydiff = (poffset1 - poffset2) / pixscale
     
-    pa1 = ad1.phu.PA
-    pa2 = ad2.phu.PA
+    pa1 = ad1.phu['PA']
+    pa2 = ad2.phu['PA']
     # Can only deal with rotations for GNIRS at the moment. This code
     # will need to be totally rewritten to generalize it, so I'm going
     # to do a quick and ugly refactor.
@@ -738,9 +738,9 @@ def _header_align(ref_ad, adinput, keyword_comments):
     # get starting offsets from reference image (first one given)
     log = logutils.get_logger(__name__)
     ref_pixscale = ref_ad.pixel_scale()
-    ref_poff = ref_ad.phu.POFFSET/ref_pixscale
-    ref_qoff = ref_ad.phu.QOFFSET/ref_pixscale
-    ref_pa = ref_ad.phu_get_key_value("PA")
+    ref_poff = ref_ad.phu['POFFSET'] / ref_pixscale
+    ref_qoff = ref_ad.phu['QOFFSET'] / ref_pixscale
+    ref_pa = ref_ad.phu['PA']
     ref_theta = math.radians(ref_pa)
     log.fullinfo("Pixel scale: {:.4}".format(ref_pixscale))
 
@@ -751,9 +751,9 @@ def _header_align(ref_ad, adinput, keyword_comments):
     objIns = []
     for ad in adinput:
         pixscale = ad.pixel_scale()
-        poff = ad.phu.POFFSET/pixscale
-        qoff = ad.phu.QOFFSET/pixscale
-        pa = ad.phu.PA
+        poff = ad.phu['POFFSET'] / pixscale
+        qoff = ad.phu['QOFFSET'] / pixscale
+        pa = ad.phu['PA']
         theta = math.radians(pa - ref_pa)
         pdiff = poff - ref_poff
         qdiff = qoff - ref_qoff

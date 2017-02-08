@@ -55,7 +55,7 @@ class Preprocess(PrimitivesBASE):
                 else:
                     log.warning('No object mask present for {}:{}; cannot '
                                 'apply object mask'.format(ad.filename,
-                                                           ext.hdr.EXTVER))
+                                                           ext.hdr['EXTVER']))
             ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
         return adinputs
 
@@ -88,7 +88,7 @@ class Preprocess(PrimitivesBASE):
             log.status("Converting {} from ADU to electrons by multiplying by "
                        "the gain".format(ad.filename))
             for ext, gain in zip(ad, gain_list):
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 log.stdinfo("  gain for EXTVER {} = {}".format(extver, gain))
                 ext.multiply(gain)
             
@@ -129,7 +129,7 @@ class Preprocess(PrimitivesBASE):
                 if ext.mask is None:
                     log.warning("No DQ plane exists for {}:{}, so the correction "
                                 "cannot be applied".format(ad.filename,
-                                                           ext.hdr.EXTVER))
+                                                           ext.hdr['EXTVER']))
                     continue
 
                 if replace_value in ['median', 'average']:
@@ -137,13 +137,13 @@ class Preprocess(PrimitivesBASE):
                     rep_value = oper(ext.data[ext.mask & replace_flags == 0])
                     log.fullinfo("Replacing bad pixels in {}:{} with the {} "
                                  "of the good data".format(ad.filename,
-                                            ext.hdr.EXTVER, replace_value))
+                                            ext.hdr['EXTVER'], replace_value))
                 else:
                     try:
                         rep_value = float(replace_value)
                         log.fullinfo("Replacing bad pixels in {}:{} with the "
                                      "user value {}".format(ad.filename,
-                                           ext.hdr.EXTVER, rep_value))
+                                           ext.hdr['EXTVER'], rep_value))
                     except:
                         log.warning("Value for replacement should be 'median', "
                                     "'average', or a number")
@@ -372,15 +372,15 @@ class Preprocess(PrimitivesBASE):
                     if bg is None:
                         if 'qa' in self.context:
                             log.warning("Could not get background level from "
-                                "{}:{}".format(ad.filename, ext.hdr.EXTVER))
+                                "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
                             continue
                         else:
                             raise LookupError("Could not get background level "
-                            "from {}:{}".format(ad.filename, ext.hdr.EXTVER))
+                            "from {}:{}".format(ad.filename, ext.hdr['EXTVER']))
 
                     # Add the appropriate value to this extension
                     log.fullinfo("Background level is {:.0f} for {}:{}".
-                                 format(bg, ad.filename, ext.hdr.EXTVER))
+                                 format(bg, ad.filename, ext.hdr['EXTVER']))
                     difference = ref - bg
                     log.fullinfo("Adding {:.0f} to match reference background "
                                      "level {:.0f}".format(difference, ref))
@@ -543,7 +543,7 @@ class Preprocess(PrimitivesBASE):
                        format(ad.filename))
             for ext, coeffs in zip(ad, nonlin_coeffs):
                 log.status("   nonlinearity correction for EXTVER {} is {:s}".
-                           format(ext.hdr.EXTVER, coeffs))
+                           format(ext.hdr['EXTVER'], coeffs))
                 pixel_data = np.zeros_like(ext.data)
                 for n in range(len(coeffs), 0, -1):
                     pixel_data += coeffs[n-1]
@@ -608,7 +608,7 @@ class Preprocess(PrimitivesBASE):
                 # Divide the science extension by the median value
                 # VAR is taken care of automatically
                 log.fullinfo("Normalizing {} EXTVER {} by dividing by {:.2f} ".
-                             format(ad.filename, ext.hdr.EXTVER, scaling))
+                             format(ad.filename, ext.hdr['EXTVER'], scaling))
                 ext /= scaling
 
             # Timestamp and update the filename
@@ -727,7 +727,7 @@ class Preprocess(PrimitivesBASE):
         # trivial once we address the issues noted below.
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
-        filenames = [strip_fits(ad.phu.ORIGNAME) for ad in adinputs]
+        filenames = [strip_fits(ad.phu['ORIGNAME']) for ad in adinputs]
 
         # Warn the user if they referred to non-existent input file(s):
         missing = [name for name in ref_obj if name not in filenames]
@@ -752,13 +752,13 @@ class Preprocess(PrimitivesBASE):
                 if sky:
                     log.warning("{} previously classified as SKY; added "
                       "OBJECT as requested".format(base_name))
-                ad.phu.OBJNAME = 'TRUE'
+                ad.phu.set('OBJFRAME', 'TRUE')
 
             if base_name in ref_sky and not sky:
                 if obj:
                     log.warning("{} previously classified as OBJECT; added "
                       "SKY as requested".format(base_name))
-                ad.phu.SKYFRAME = 'TRUE'
+                ad.phu.set('SKYFRAME', 'TRUE')
 
             # If the exposure is unguided, classify it as sky unless the
             # user has specified otherwise (in which case we loudly point
@@ -785,7 +785,7 @@ class Preprocess(PrimitivesBASE):
                     else:
                         log.fullinfo("Treating {} as sky since it's unguided".
                                     format(base_name))
-                        ad.phu.SKYFRAME = 'TRUE'
+                        ad.phu.set('SKYFRAME', 'TRUE')
                 # (else can't determine guiding state reliably so ignore it)
 
         # Analyze the spatial clustering of exposures and attempt to sort them
@@ -825,13 +825,13 @@ class Preprocess(PrimitivesBASE):
             if any(ad.phu.get('OBJFRAME') for ad in adlist):
                 haveobj = True
                 for ad in adlist:
-                    ad.phu.OBJFRAME = 'TRUE'
+                    ad.phu.set('OBJFRAME', 'TRUE')
             else:
                 allobj = False
             if any(ad.phu.get('SKYFRAME') for ad in adlist):
                 havesky = True
                 for ad in adlist:
-                    ad.phu.SKYFRAME = 'TRUE'
+                    ad.phu.set('SKYFRAME', 'TRUE')
             else:
                 allsky = False
 
@@ -840,11 +840,11 @@ class Preprocess(PrimitivesBASE):
         if haveobj and not havesky:
             for ad in adinputs:
                 if allobj or not ad.phu.get('OBJFRAME'):
-                    ad.phu.SKYFRAME = 'TRUE'
+                    ad.phu.set('SKYFRAME', 'TRUE')
         elif havesky and not haveobj:
             for ad in adinputs:
                 if allsky or not ad.phu.get('SKYFRAME'):
-                    ad.phu.OBJFRAME = 'TRUE'
+                    ad.phu.set('OBJFRAME', 'TRUE')
 
         # If all the exposures are still unclassified at this point, we
         # couldn't decide which groups are which based on user input or guiding
@@ -886,8 +886,8 @@ class Preprocess(PrimitivesBASE):
                 else:
                     log.fullinfo("Treating a single group as both object & sky")
                 for ad in adinputs:
-                    ad.phu.OBJFRAME = 'TRUE'
-                    ad.phu.SKYFRAME = 'TRUE'
+                    ad.phu.set('OBJFRAME', 'TRUE')
+                    ad.phu.set('SKYFRAME', 'TRUE')
 
         # It's still possible for some exposures to be unclassified at this
         # point if the user has identified some but not all of several groups
@@ -1082,7 +1082,7 @@ class Preprocess(PrimitivesBASE):
 
             bg_list = ad.hdr.get('SKYLEVEL')
             for ext, bg in zip(ad, bg_list):
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 if bg is None:
                     log.warning("No changes will be made to {}:{}, since there "
                                 "is no sky background measured".

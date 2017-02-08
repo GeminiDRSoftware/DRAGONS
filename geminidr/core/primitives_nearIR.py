@@ -82,7 +82,7 @@ class NearIR(PrimitivesBASE):
             flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
         flat.filename = gt.filename_updater(adinput=flat, suffix="_bpm")
-        flat.phu.OBJECT = 'BPM'
+        flat.phu.set('OBJECT', 'BPM')
         return [flat]
 
     def lampOnLampOff(self, adinputs=None, **params):

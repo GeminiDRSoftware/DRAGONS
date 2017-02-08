@@ -264,7 +264,7 @@ def _update_datalab(ad, suffix, keyword_comments_lut):
     # Update the DATALAB. It should end with 'suffix'.  DATALAB will 
     # likely already have '_stack' suffix that needs to be replaced.
     searchsuffix = re.compile(r'(?<=[A-Za-z0-9\-])\_([a-z]+)')
-    datalab = ad.phu.DATALAB
+    datalab = ad.data_label()
     new_datalab = re.sub(searchsuffix, suffix, datalab)
     if new_datalab == datalab:
         new_datalab += suffix
