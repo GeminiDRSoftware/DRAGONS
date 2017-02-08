@@ -74,11 +74,11 @@ class GSAOI(Gemini, NearIR):
 
             # Move BUNIT from PHU to the extension HDUs
             try:
-                bunit = ad.phu.BUNIT
+                bunit = ad.phu['BUNIT']
             except KeyError:
                 pass
             else:
-                del ad.phu.BUNIT
+                del ad.phu['BUNIT']
                 ad.hdr.set('BUNIT', bunit, self.keyword_comments['BUNIT'])
 
             # There is a bug in GSAOI data where the central 1K x 1K ROI is
@@ -91,7 +91,7 @@ class GSAOI(Gemini, NearIR):
                 for ext in ad:
                     if ext.array_section(pretty=True) == '[513:1536,513:1536]':
                         log.stdinfo("Updating the CCDSEC for central ROI data")
-                        y1o = 513 if ext.hdr.EXTVER < 3 else 511
+                        y1o = 513 if ext.hdr['EXTVER'] < 3 else 511
                         y2o = y1o + 1024
                         secstr = "[{0}:{1},{2}:{3}]".format(513, 1536, y1o+1, y2o)
                         ext.hdr.set('CCDSEC', secstr, self.keyword_comments['CCDSEC'])
@@ -173,9 +173,9 @@ class GSAOI(Gemini, NearIR):
                 del ad[1]
 
             # These are no longer valid
-            del ad.hdr.CCDNAME
+            del ad.hdr['CCDNAME']
             try:
-                del ad.hdr.TRIMSEC
+                del ad.hdr['TRIMSEC']
             except (KeyError, AttributeError):
                 pass
 

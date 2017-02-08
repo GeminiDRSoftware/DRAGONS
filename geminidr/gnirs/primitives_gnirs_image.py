@@ -146,8 +146,8 @@ def _position_illum_mask(adinput, illum, log):
     # this in comparison with the centre of mass of the illumination
     # mass to adjust the keyholes to align. Note that the  
     # center_of_mass function has switched x and y axes compared to normal.        
-    comx_illummask = illum.phu.CENMASSX
-    comy_illummask = illum.phu.CENMASSY
+    comx_illummask = illum.phu['CENMASSX']
+    comy_illummask = illum.phu['CENMASSY']
     y, x = scipy.ndimage.measurements.center_of_mass(keyhole)
     if not np.isnan(x) and not np.isnan(y):        
         dx = int(x - comx_illummask)

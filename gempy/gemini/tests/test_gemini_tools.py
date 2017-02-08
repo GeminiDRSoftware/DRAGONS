@@ -197,11 +197,11 @@ class TestGeminiTools:
     def test_trim_to_data_section(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GMOS',
                                          'S20160914S0274.fits'))
-        new_crpix1 = [ext.hdr.CRPIX1 - (32 if ext.hdr.EXTVER%2==0 else 0)
-                      for ext in ad]
+        new_crpix1 = [ext.hdr['CRPIX1'] -
+                      (32 if ext.hdr['EXTVER'] % 2 == 0 else 0) for ext in ad]
         ret = gt.trim_to_data_section(ad, keyword_comments)
         assert all([ext.data.shape == (2112,256) for ext in ret])
-        for rv, cv in zip(ret.hdr.CRPIX1, new_crpix1):
+        for rv, cv in zip(ret.hdr['CRPIX1'], new_crpix1):
             assert abs(rv -cv) < 0.001
 
 
