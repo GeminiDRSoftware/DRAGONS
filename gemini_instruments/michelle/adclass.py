@@ -41,8 +41,7 @@ class AstroDataMichelle(AstroDataGemini):
         exposure_time = self.phu.get(self._keyword_for('exposure_time'), -1)
         num_ext = self.phu.get('NUMEXT', 1)
         if exposure_time < 0:
-            raise ValueError("Invalid exposure time: {}".format(exposure_time))
-
+            return None
         return exposure_time * num_ext * self.coadds()
 
     @astro_data_descriptor
@@ -64,10 +63,8 @@ class AstroDataMichelle(AstroDataGemini):
         str
             The name of the filter
         """
-        filter_name = self.phu['FILTER']
-        if filter_name == 'NBlock':
-            filter_name = 'blank'
-        return filter_name
+        filter_name = self.phu.get('FILTER')
+        return 'blank' if filter_name == 'NBlock' else filter_name
 
     @returns_list
     @astro_data_descriptor
@@ -82,4 +79,4 @@ class AstroDataMichelle(AstroDataGemini):
         float/list of floats
             the pixel scale
         """
-        return self.phu['PIXELSIZ']
+        return self.phu.get('PIXELSIZ')

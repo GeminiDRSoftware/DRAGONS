@@ -53,7 +53,7 @@ class AstroDataGpi(AstroDataGemini):
         # The ITIME keyword is in the extension HDUs!
         exposure_time = self.hdr.get('ITIME', -1)[0]
         if exposure_time < 0:
-            raise ValueError("Invalid exposure time: {}".format(exposure_time))
+            return None
 
         if 'PREPARED' in self.tags:
             return exposure_time

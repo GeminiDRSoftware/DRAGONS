@@ -73,20 +73,17 @@ class AstroDataNifs(AstroDataGemini):
             The name of the filter with or without the component ID.
 
         """
-        filt = str(self.phu['FILTER'])
+        filt = self.phu.get('FILTER')
         if stripID or pretty:
             filt = gmu.removeComponentID(filt)
-
-        if filt == "Blocked":
-            return "blank"
-        return filt
+        return 'blank' if filt == 'Blocked' else filt
 
     def _from_biaspwr(self, constant_name):
-        bias_volt = self.phu['BIASPWR']
+        bias_volt = self.phu.get('BIASPWR')
 
         for bias, constants in constants_by_bias.items():
             if abs(bias - bias_volt) < 0.1:
-                return getattr(constants, constant_name)
+                return getattr(constants, constant_name, None)
 
         raise KeyError("The bias value for this image doesn't match any on the lookup table")
 
@@ -118,45 +115,36 @@ class AstroDataNifs(AstroDataGemini):
         -------
         list/int
             Level in ADU at which the non-linear regime starts.
-
         """
         saturation_level = self.saturation_level()
         corrected = 'NONLINCR' in self.phu
 
-        linearlimit = self._from_biaspwr("linearlimit" if corrected else "nonlinearlimit")
-        try:
-            return [int(linear_limit * s) for s in saturation_level]
-        except TypeError:
-            return int(saturation_level * linearlimit)
+        linear_limit = self._from_biaspwr("linearlimit" if corrected
+                                          else "nonlinearlimit")
+        if self.is_single:
+            try:
+                return int(saturation_level * linear_limit)
+            except TypeError:
+                return None
+        else:
+            return [int(linear_limit * s) if linear_limit and s else None
+                    for s in saturation_level]
 
-    @returns_list
     @astro_data_descriptor
     def pixel_scale(self):
         """
         Returns the pixel scale in arc seconds.  A lookup table indexed on
         focal_plane_mask, disperser, and filter_name is used.
-         A list is returned unless called on a single-extension slice.
 
         Returns
         -------
-        list/float
+        lfloat
             Pixel scale in arcsec.
-
         """
         fpm = self.focal_plane_mask()
         disp = self.disperser()
         filt = self.filter_name()
-        pixel_scale = (fpm, disp, filt)
-
-        try:
-            config = config_dict[pixel_scale]
-        except KeyError:
-            raise KeyError("Unknown configuration: {}".format(pixel_scale))
-
-        # The value is always a float for the common config. We'll keep the
-        # coercion just to make sure people don't mess with new entries
-        # This will raise a ValueError for bogus pixscales
-        return float(config.pixscale)
+        return getattr(config_dict.get((fpm, disp, filt)), 'pixscale', None)
 
     @astro_data_descriptor
     def read_mode(self):
@@ -168,12 +156,10 @@ class AstroDataNifs(AstroDataGemini):
         -------
         str
             Read mode for the observation.
-
         """
         # NOTE: The original read_mode descriptor obtains the bias voltage
         #       value, but then it does NOTHING with it. I'll just skip it.
-
-        return lnrs_mode_map.get(self.phu['LNRS'], 'Invalid')
+        return lnrs_mode_map.get(self.phu.get('LNRS'), 'Unknown')
 
     @returns_list
     @astro_data_descriptor
@@ -190,7 +176,10 @@ class AstroDataNifs(AstroDataGemini):
 
         """
         rn = self._from_biaspwr("readnoise")
-        return float(rn * math.sqrt(self.coadds()) / math.sqrt(self.phu['LNRS']))
+        try:
+            return float(rn * math.sqrt(self.coadds()) / math.sqrt(self.phu.get('LNRS')))
+        except TypeError:
+            return None
 
     @returns_list
     @astro_data_descriptor
@@ -206,5 +195,7 @@ class AstroDataNifs(AstroDataGemini):
             Saturation level in ADUs.
 
         """
-        well = self._from_biaspwr("well")
-        return int(well * self.coadds())
+        try:
+            return int(self._from_biaspwr("well") * self.coadds())
+        except TypeError:
+            return None
