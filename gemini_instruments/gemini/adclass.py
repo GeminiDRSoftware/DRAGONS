@@ -1784,17 +1784,22 @@ class AstroDataGemini(AstroDataFits):
             warnings.filterwarnings('ignore', category=FITSFixedWarning)
             # header[0] is PHU, header[1] is first extension HDU
             # If no CTYPE1 in first HDU, try PHU
-            if self.hdr.get('CTYPE1')[0] is None:
-                ctypes = (self.phu.get('CTYPE1', ''),
-                          self.phu.get('CTYPE2', ''))
-                wcs = WCS(self.header[0])
+            try:
+                ctypes = (self.header[1]['CTYPE1'], self.header[1]['CTYPE2'])
+            except KeyError:
+                try:
+                    ctypes = (self.phu['CTYPE1'], self.phu['CTYPE2'])
+                except KeyError:
+                    return (None, None)
+                else:
+                    wcs = WCS(self.header[0])
             else:
-                ctypes = (self.hdr.get('CTYPE1', '')[0],
-                          self.hdr.get('CTYPE2', '')[0])
                 wcs = WCS(self.header[1])
-            assert ctypes[0].startswith('RA') and ctypes[1].startswith('DEC'), \
-                'WCS error'
-            x, y = [0.5 * self.hdr.get(naxis)[0]
+
+            if not (ctypes[0].startswith('RA') and ctypes[1].startswith('DEC')):
+                return (None, None)
+
+            x, y = [0.5 * self.header[1][naxis]
                     for naxis in ('NAXIS1', 'NAXIS2')]
             result = wcs.wcs_pix2world(x,y, 1)
         ra, dec = float(result[0]), float(result[1])
