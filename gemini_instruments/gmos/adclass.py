@@ -145,13 +145,14 @@ class AstroDataGmos(AstroDataGemini):
             read_area of each extension
         """
         ampname = self.array_name()
-        detector_section = self.detector_section(pretty=True)
+        detsec = self.detector_section(pretty=True)
         # Combine the amp name(s) and detector section(s)
-        try:
-            read_area = ["'{}':{}".format(a,d) for a,d in zip(ampname, detector_section)]
-        except TypeError:
-            read_area = "'{}':{}".format(ampname, detector_section)
-        return read_area
+        if self.is_single:
+            return "'{}':{}".format(ampname,
+                        detsec) if ampname and detsec else None
+        else:
+            return ["'{}':{}".format(a,d) if a and d else None
+                    for a,d in zip(ampname, detsec)]
 
     @astro_data_descriptor
     def array_name(self):
@@ -164,7 +165,7 @@ class AstroDataGmos(AstroDataGemini):
         list/str
             names of the arrays
         """
-        return self.hdr['AMPNAME']
+        return self.hdr.get('AMPNAME')
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
@@ -200,11 +201,10 @@ class AstroDataGmos(AstroDataGemini):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters.
             output_units = "meters"
-
-        central_wavelength = float(self.phu['CENTWAVE'])
+        central_wavelength = self.phu.get('CENTWAVE', -1)
 
         if central_wavelength < 0.0:
-            raise ValueError("Central wavelength can't be negative!")
+            return None
         else:
             return gmu.convert_units('nanometers', central_wavelength,
                                      output_units)
@@ -231,11 +231,9 @@ class AstroDataGmos(AstroDataGemini):
                 "SDSU II e2v DD CCD42-90": "e2vDD",
                 "S10892": "Hamamatsu",
                 }
-            det_type = self.phu['DETTYPE']
-            det_name = pretty_detname_dict[det_type]
+            return pretty_detname_dict.get(self.phu.get('DETTYPE'))
         else:
-            det_name = self.phu['DETID']
-        return det_name
+            return self.phu.get('DETID')
 
     @astro_data_descriptor
     def detector_rois_requested(self):
@@ -253,7 +251,7 @@ class AstroDataGmos(AstroDataGemini):
             xs = self.phu.get('DETRO{}XS'.format(roi))
             y1 = self.phu.get('DETRO{}Y'.format(roi))
             ys = self.phu.get('DETRO{}YS'.format(roi))
-            if x1 is not None:
+            if x1 and xs and y1 and ys:
                 xs *= self.detector_x_bin()
                 ys *= self.detector_y_bin()
                 roi_list.append((x1, x1+xs-1, y1, y1+ys-1))
@@ -278,7 +276,7 @@ class AstroDataGmos(AstroDataGemini):
         rois = self.detector_rois_requested()
         if rois:
             roi_setting = 'Custom'
-            for s in roi_dict.keys():
+            for s in roi_dict:
                 if rois[0] in roi_dict[s]:
                     roi_setting = s
         else:
@@ -295,16 +293,19 @@ class AstroDataGmos(AstroDataGemini):
         int
             The detector binning
         """
-        binning = self.hdr['CCDSUM']
-        if isinstance(binning, list):
-            xbin_list = [b.split()[0] for b in binning]
-            # Check list is single-valued
-            if xbin_list != xbin_list[::-1]:
-                raise ValueError("Multiple values of x-binning!")
-            xbin = xbin_list[0]
+        def _get_xbin(b):
+            try:
+                return int(b.split()[0])
+            except (AttributeError, ValueError):
+                return None
+
+        binning = self.hdr.get('CCDSUM')
+        if self.is_single:
+            return _get_xbin(binning)
         else:
-            xbin = binning.split()[0]
-        return int(xbin)
+            xbin_list = [_get_xbin(b) for b in binning]
+            # Check list is single-valued
+            return xbin_list[0] if xbin_list == xbin_list[::-1] else None
 
     @astro_data_descriptor
     def detector_y_bin(self):
@@ -316,16 +317,19 @@ class AstroDataGmos(AstroDataGemini):
         int
             The detector binning
         """
-        binning = self.hdr['CCDSUM']
-        if isinstance(binning, list):
-            ybin_list = [b.split()[1] for b in binning]
-            # Check list is single-valued
-            if ybin_list != ybin_list[::-1]:
-                raise ValueError("Multiple values of y-binning!")
-            ybin = ybin_list[0]
+        def _get_ybin(b):
+            try:
+                return int(b.split()[1])
+            except (AttributeError, ValueError, IndexError):
+                return None
+
+        binning = self.hdr.get('CCDSUM')
+        if self.is_single:
+            return _get_ybin(binning)
         else:
-            ybin = binning.split()[1]
-        return int(ybin)
+            ybin_list = [_get_ybin(b) for b in binning]
+            # Check list is single-valued
+            return ybin_list[0] if ybin_list == ybin_list[::-1] else None
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
@@ -345,7 +349,7 @@ class AstroDataGmos(AstroDataGemini):
             name of the grating
         """
         stripID |= pretty
-        disperser = self.phu['GRATING']
+        disperser = self.phu.get('GRATING')
         if stripID:
             disperser = gmu.removeComponentID(disperser).strip('+') if pretty \
                 else gmu.removeComponentID(disperser)
@@ -387,7 +391,7 @@ class AstroDataGmos(AstroDataGemini):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters.
             output_units = "meters"
-        cd11 = self.hdr['CD1_1']
+        cd11 = self.hdr.get('CD1_1')
         try:
             dispersion = [gmu.convert_units('meters', d, output_units)
                           for d in cd11]
@@ -406,10 +410,8 @@ class AstroDataGmos(AstroDataGemini):
             Exposure time.
 
         """
-        exp_time = float(self.phu[self._keyword_for('exposure_time')])
-        if exp_time < 0 or exp_time > 10000:
-            raise ValueError('Invalid exposure time {}'.format(exp_time))
-        return exp_time
+        exp_time = self.phu.get(self._keyword_for('exposure_time'), -1)
+        return None if exp_time < 0 or exp_time > 10000 else exp_time
 
     @astro_data_descriptor
     def focal_plane_mask(self, stripID=False, pretty=False):
@@ -428,9 +430,10 @@ class AstroDataGmos(AstroDataGemini):
         str
             The name of the focal plane mask
         """
-        mask = self.phu['MASKNAME']
-        return 'Imaging' if mask=='None' else mask
+        mask = self.phu.get('MASKNAME')
+        return 'Imaging' if mask == 'None' else mask
 
+    @returns_list
     @astro_data_descriptor
     def gain(self):
         """
@@ -444,10 +447,13 @@ class AstroDataGmos(AstroDataGemini):
         """
         # If the file has been prepared, we trust the header keywords
         if 'PREPARED' in self.tags:
-            return self.hdr[self._keyword_for('gain')]
+            return self.hdr.get(self._keyword_for('gain'))
 
         # Get the correct dict of gain values
         ut_date = self.ut_date()
+        if ut_date is None:
+            return None  # converted to list by decorator if needed
+
         if ut_date >= date(2015, 8, 26):
             gain_dict = lookup.gmosampsGain
         elif ut_date >= date(2006, 8, 31):
@@ -461,12 +467,11 @@ class AstroDataGmos(AstroDataGemini):
         ampname = self.array_name()
 
         # Return appropriate object
-        if isinstance(ampname, list):
-            gain = [gain_dict[read_speed_setting, gain_setting, a]
-                    for a in ampname]
+        if self.is_single:
+            return gain_dict.get((read_speed_setting, gain_setting, ampname))
         else:
-            gain = gain_dict[read_speed_setting, gain_setting, ampname]
-        return gain
+            return [gain_dict.get((read_speed_setting, gain_setting, a))
+                    for a in ampname]
 
     @astro_data_descriptor
     def gain_setting(self):
@@ -480,11 +485,17 @@ class AstroDataGmos(AstroDataGemini):
         str
             Gain setting
         """
+        def _get_setting(g):
+            if g is None:
+                return None
+            else:
+                return 'low' if g < 3.0 else 'high'
+
         # This seems to rely on obtaining the original GAIN header keyword
         gain_settings = None
         if 'PREPARED' not in self.tags:
             # Use the (incorrect) GAIN header keywords to determine the setting
-            gain = self.hdr['GAIN']
+            gain = self.hdr.get('GAIN')
         else:
             # For prepared data, we use the value of the gain_setting keyword
             try:
@@ -496,27 +507,23 @@ class AstroDataGmos(AstroDataGemini):
                     gain = self.hdr['GAINORIG']
                     # If GAINORIG is 1 in all the extensions, then the original
                     # gain is actually in GAINMULT(!?)
-                    try:
-                        if gain == 1:
-                            gain = self.hdr['GAINMULT']
-                    except TypeError:
-                        if gain == [1] * len(gain):
-                            gain = self.hdr['GAINMULT']
+                    if gain == 1 or gain == [1] * len(self):
+                        gain = self.hdr['GAINMULT']
                 except KeyError:
                     # Use the gain() descriptor as a last resort
                     gain = self.gain()
 
         # Convert gain to gain_settings if we only got the gain
         if gain_settings is None:
-            try:
-                gain_settings = ['high' if g > 3.0 else 'low' for g in gain]
-            except TypeError:
-                gain_settings = 'high' if gain > 3.0 else 'low'
+            if self.is_single:
+                gain_settings = _get_setting(gain)
+            else:
+                gain_settings = [_get_setting(g) for g in gain]
 
         # Check that all gain settings are the same if multiple extensions
         if isinstance(gain_settings, list):
             if gain_settings != gain_settings[::-1]:
-                raise ValueError("Multiple values of gain setting!")
+                return None
             return gain_settings[0]
         else:
             return gain_settings
@@ -595,7 +602,10 @@ class AstroDataGmos(AstroDataGemini):
         tuple
             number of integrations in the A and B positions
         """
-        return (int(self.phu['ANODCNT']), int(self.phu['BNODCNT']))
+        try:
+            return (int(self.phu['ANODCNT']), int(self.phu['BNODCNT']))
+        except KeyError:
+            return None
 
     @astro_data_descriptor
     def nod_offsets(self):
@@ -614,7 +624,10 @@ class AstroDataGmos(AstroDataGemini):
             byoff = self.phu['NODBYOFF']
         except KeyError:
             ayoff = 0.0
-            byoff = self.phu['NODYOFF']
+            try:
+                byoff = self.phu['NODYOFF']
+            except KeyError:
+                return None
         return (ayoff, byoff)
 
     @astro_data_descriptor
@@ -628,12 +641,8 @@ class AstroDataGmos(AstroDataGemini):
         int
             The number of rows by which the charge is shuffled
         """
-        if 'NODANDSHUFFLE' in self.tags:
-            return int(self.phu['NODPIX'])
-        else:
-            raise ValueError('nod_pixels() only works for NODANDSHUFFLE data')
+        return self.phu.get('NODPIX') if 'NODANDSHUFFLE' in self.tags else None
 
-    @returns_list
     @astro_data_descriptor
     def nominal_photometric_zeropoint(self):
         """
@@ -645,7 +654,13 @@ class AstroDataGmos(AstroDataGemini):
         float/list
             zeropoint values, one per SCI extension
         """
-        zpt_dict = lookup.nominal_zeropoints
+        def _zpt(ccd, filt, gain, bunit):
+            zpt = lookup.nominal_zeropoints.get((ccd, filt))
+            try:
+                return zpt - (2.5 * math.log10(gain) if
+                              bunit.lower() == 'adu' else 0)
+            except TypeError:
+                return None
 
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
@@ -653,20 +668,13 @@ class AstroDataGmos(AstroDataGemini):
         # Explicit: if BUNIT is missing, assume data are in ADU
         bunit = self.hdr.get('BUNIT', 'adu')
 
-        # Have to do the list/not-list stuff here
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
         # if the data are in ADU
-        try:
-            zpt = [None if ccd is None else
-                    zpt_dict[(ccd, filter_name)] -
-                   (2.5 * math.log10(g) if b=='adu' else 0)
-                   for ccd,g,b in zip(ccd_name, gain, bunit)]
-        except TypeError:
-            zpt = None if ccd_name is None else \
-                zpt_dict[(ccd_name, filter_name)] - (
-                2.5 * math.log10(gain) if bunit=='adu' else 0)
-
-        return zpt
+        if self.is_single:
+            return _zpt(ccd_name, filter_name, gain, bunit)
+        else:
+            return [_zpt(c, filter_name, g, b)
+                    for c, g, b in zip(ccd_name, gain, bunit)]
 
     @returns_list
     @astro_data_descriptor
@@ -708,7 +716,7 @@ class AstroDataGmos(AstroDataGemini):
             Position of the overscan section using an IRAF section
             format (1-based).
         """
-        return self._parse_section('overscan_section', 'BIASSEC', pretty)
+        return self._parse_section('BIASSEC', pretty)
 
     @astro_data_descriptor
     def pixel_scale(self):
@@ -724,8 +732,11 @@ class AstroDataGmos(AstroDataGemini):
 
         # Pixel scale dict is keyed by instrument ('GMOS-N' or 'GMOS-S')
         # and detector type
-        pixscale_key = (self.instrument(), self.phu['DETTYPE'])
-        raw_pixel_scale = pixscale_dict[pixscale_key]
+        pixscale_key = (self.instrument(), self.phu.get('DETTYPE'))
+        try:
+            raw_pixel_scale = pixscale_dict[pixscale_key]
+        except KeyError:
+            return None
         return raw_pixel_scale * self.detector_y_bin()
 
     @astro_data_descriptor
@@ -741,10 +752,10 @@ class AstroDataGmos(AstroDataGemini):
         """
         # Get the right mapping (detector-dependent)
         det_key = 'Hamamatsu' if \
-            self.detector_name(pretty=True)=='Hamamatsu' else 'default'
-        mode_dict = lookup.read_mode_map[det_key]
+            self.detector_name(pretty=True) == 'Hamamatsu' else 'default'
+        mode_dict = lookup.read_mode_map.get(det_key)
         mode_key = (self.gain_setting(), self.read_speed_setting())
-        return mode_dict[mode_key]
+        return mode_dict.get(mode_key)
 
     @returns_list
     @astro_data_descriptor
@@ -763,6 +774,9 @@ class AstroDataGmos(AstroDataGemini):
         else:
             # Get the correct dict of read noise values
             ut_date = self.ut_date()
+            if ut_date is None:
+                return None  # converted to list by decorator if needed
+
             if ut_date >= date(2015, 8, 26):
                 rn_dict = lookup.gmosampsRdnoise
             elif ut_date >= date(2006, 8, 31):
@@ -776,12 +790,12 @@ class AstroDataGmos(AstroDataGemini):
         ampname = self.array_name()
 
         # Return appropriate object
-        try:
-            read_noise = [rn_dict[read_speed_setting, gain_setting, a]
+        # Return appropriate object
+        if self.is_single:
+            return rn_dict.get((read_speed_setting, gain_setting, ampname))
+        else:
+            return [rn_dict.get((read_speed_setting, gain_setting, a))
                     for a in ampname]
-        except TypeError:
-            read_noise = rn_dict[read_speed_setting, gain_setting, ampname]
-        return read_noise
 
     @astro_data_descriptor
     def read_speed_setting(self):
@@ -793,13 +807,15 @@ class AstroDataGmos(AstroDataGemini):
         str
             the setting for the readout speed
         """
-        ampinteg = self.phu['AMPINTEG']
+        try:
+            ampinteg = self.phu['AMPINTEG']
+        except KeyError:
+            return None
         detector = self.detector_name(pretty=True)
         if detector == 'Hamamatsu':
-            setting = 'slow' if ampinteg > 8000 else 'fast'
+            return 'slow' if ampinteg > 8000 else 'fast'
         else:
-            setting = 'slow' if ampinteg > 2000 else 'fast'
-        return setting
+            return'slow' if ampinteg > 2000 else 'fast'
 
     @astro_data_descriptor
     def saturation_level(self):
@@ -811,6 +827,13 @@ class AstroDataGmos(AstroDataGemini):
         list/float
             saturation level
         """
+        def _well_depth(amp, bin, gain, bunit):
+            try:
+                return lookup.gmosThresholds[amp] * bin / (
+                    gain if 'electron' in bunit else 1)
+            except KeyError:
+                return None
+
         # We need to know whether the data have been bias-subtracted
         # First, look for keywords in PHU
         bias_subtracted = \
@@ -819,12 +842,6 @@ class AstroDataGmos(AstroDataGemini):
 
         # OVERSCAN keyword also means data have been bias-subtracted
         overscan_levels = self.hdr.get('OVERSCAN')
-        # Make bias_subtracted a list if necessary, for each extension
-        try:
-            bias_subtracted = [bias_subtracted or o is not None
-                               for o in overscan_levels]
-        except TypeError:
-            bias_subtracted |= overscan_levels is not None
 
         detname = self.detector_name(pretty=True)
         xbin = self.detector_x_bin()
@@ -840,37 +857,40 @@ class AstroDataGmos(AstroDataGemini):
 
         adc_limit = 65535
         # Get the limit that could be processed without hitting the ADC limit
-        try:
-            # Subtracted bias level if data are bias-substracted, and
-            # multiply by gain if data are in electron/electrons
+        # Subtracted bias level if data are bias-subtracted, and
+        # multiply by gain if data are in electron/electrons
+        if self.is_single:
+            bias_subtracted |= overscan_levels is not None
+            processed_limit = (adc_limit - (bias_levels if bias_subtracted
+                              else 0)) * (gain if 'electron' in bunits else 1)
+        else:
+            bias_subtracted = [bias_subtracted or o is not None
+                               for o in overscan_levels]
             processed_limit = [(adc_limit - (blev if bsub else 0))
                               * (g if 'electron' in bunit else 1)
                               for blev, bsub, g, bunit in
                               zip(bias_levels, bias_subtracted, gain, bunits)]
-        except TypeError:
-            processed_limit = (adc_limit - (bias_levels if bias_subtracted
-                              else 0)) * (gain if 'electron' in bunits else 1)
 
         # For old EEV data, or heavily-binned data, we're ADC-limited
         if detname == 'EEV' or bin_factor > 2:
             return processed_limit
         else:
             # Otherwise, we're limited by the electron well depths
-            try:
-                well_limit = [lookup.gmosThresholds[a] * bin_factor /
-                              (g if 'electron' not in bunit else 1) +
-                              (blev if not bsub else 0) for a,g,bunit,blev,bsub
-                              in zip(ampname, gain, bunits, bias_levels,
-                                     bias_subtracted)]
-                saturation = [min(w, p) for w, p
-                              in zip(well_limit, processed_limit)]
-            except TypeError:
-                saturation = lookup.gmosThresholds[ampname] * bin_factor / (
-                    gain if 'electron' not in bunits else 1) + (bias_levels if
-                                                not bias_subtracted else 0)
-                if saturation > processed_limit:
+            if self.is_single:
+                saturation = _well_depth(ampname, bin_factor, gain, bunits)
+                if saturation is None:
                     saturation = processed_limit
-
+                else:
+                    saturation += bias_levels if not bias_subtracted else 0
+                    if saturation > processed_limit:
+                        saturation = processed_limit
+            else:
+                well_limit = [_well_depth(a, bin_factor, g, b)
+                              for a, g, b in zip(ampname, gain, bunits)]
+                saturation = [None if w is None else
+                              min(w + blev if not bsub else 0, p)
+                              for w, p, blev, bsub in zip(well_limit,
+                                processed_limit, bias_levels, bias_subtracted)]
         return saturation
 
     @astro_data_descriptor
@@ -887,16 +907,12 @@ class AstroDataGmos(AstroDataGemini):
         # Try the first (only if sliced) extension, then the PHU
         try:
             h = self[0].hdr
-            crval = h.CRVAL1
-            ctype = h.CTYPE1
+            crval = h['CRVAL1']
+            ctype = h['CTYPE1']
         except KeyError:
-            crval = self.phu['CRVAL1']
-            ctype = self.phu['CTYPE1']
-
-        if ctype == 'RA---TAN':
-            return crval
-        else:
-            raise ValueError('CTYPE1 keyword is not RA---TAN')
+            crval = self.phu.get('CRVAL1')
+            ctype = self.phu.get('CTYPE1')
+        return crval if ctype == 'RA---TAN' else None
 
     @astro_data_descriptor
     def wcs_dec(self):
@@ -912,13 +928,9 @@ class AstroDataGmos(AstroDataGemini):
         # Try the first (only if sliced) extension, then the PHU
         try:
             h = self[0].hdr
-            crval = h.CRVAL2
-            ctype = h.CTYPE2
+            crval = h['CRVAL2']
+            ctype = h['CTYPE2']
         except KeyError:
-            crval = self.phu['CRVAL2']
-            ctype = self.phu['CTYPE2']
-
-        if ctype == 'DEC--TAN':
-            return crval
-        else:
-            raise ValueError('CTYPE2 keyword is not DEC--TAN')
+            crval = self.phu.get('CRVAL2')
+            ctype = self.phu.get('CTYPE2')
+        return crval if ctype == 'DEC--TAN' else None

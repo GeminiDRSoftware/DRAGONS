@@ -56,8 +56,7 @@ class AstroDataBhros(AstroDataGemini):
         keyword = self._keyword_for('central_wavelength')
         wave_in_angstroms = self.phu.get(keyword, -1)
         if wave_in_angstroms < 0:
-            raise ValueError("Invalid {} value: {}".format(keyword,
-                                                           wave_in_angstroms))
+            return None
         return gmu.convert_units('angstroms', wave_in_angstroms,
                                  output_units)
 

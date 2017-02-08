@@ -7,7 +7,7 @@ from .lookup import array_properties, nominal_zeropoints
 from astropy.wcs import WCS, FITSFixedWarning
 import warnings
 
-from ..common import section_to_tuple
+from ..common import section_to_tuple, build_group_id
 from .. import gmu
 
 class AstroDataF2(AstroDataGemini):
@@ -16,6 +16,7 @@ class AstroDataF2(AstroDataGemini):
                           central_wavelength = 'GRWLEN',
                           disperser = 'GRISM',
                           focal_plane_mask = 'MOSPOS',
+                          lyot_stop = 'LYOT',
                           )
 
     @staticmethod
@@ -126,7 +127,6 @@ class AstroDataF2(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-
         value_filter = (str if pretty else section_to_tuple)
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
@@ -174,7 +174,7 @@ class AstroDataF2(AstroDataGemini):
                 central_wavelength = 2.2
 
         if central_wavelength < 0.0:
-            raise ValueError("Central wavelength can't be negative!")
+            return None
         else:
             return gmu.convert_units('micrometers', central_wavelength,
                                      output_units)
@@ -266,10 +266,13 @@ class AstroDataF2(AstroDataGemini):
         try:
             filter1 = self.phu['FILTER1']
             filter2 = self.phu['FILTER2']
-        except:
-            # Old (pre-20100301) keyword names
-            filter1 = self.phu['FILT1POS']
-            filter2 = self.phu['FILT2POS']
+        except KeyError:
+            try:
+                # Old (pre-20100301) keyword names
+                filter1 = self.phu['FILT1POS']
+                filter2 = self.phu['FILT2POS']
+            except KeyError:
+                return None
 
         if stripID or pretty:
             filter1 = gmu.removeComponentID(filter1)
@@ -293,7 +296,7 @@ class AstroDataF2(AstroDataGemini):
                 filter = ['open']
 
         # Return &-concatenated names if we still have two filter names
-        return str(filter[0]) if len(filter)==1 else '{}&{}'.format(*filter)
+        return '&'.join(filter[:2])
 
     @returns_list
     @astro_data_descriptor
@@ -308,11 +311,11 @@ class AstroDataF2(AstroDataGemini):
             Gain used for the observation
 
         """
-        lnrs = self.phu['LNRS']
+        lnrs = self.phu.get('LNRS')
+        gain = getattr(array_properties.get(self.read_mode()), 'gain', None)
         # F2 adds the reads (in ADU), so the electron-to-ADU conversion
         # needs to be divided by the number of reads
-        gain = array_properties[lnrs][1] / lnrs
-        return gain
+        return gain / lnrs if gain and lnrs else None
 
     @astro_data_descriptor
     def group_id(self):
@@ -326,29 +329,12 @@ class AstroDataF2(AstroDataGemini):
         -------
         str
             A group ID for compatible data.
-
         """
         # essentially a copy of the NIRI group_id descriptor,
         # adapted for F2.
+        tags = self.tags
 
-        # Descriptors used for all image types
-        unique_id_descriptor_list_all = ["read_mode", "detector_section"]
-
-
-        # List to format descriptor calls using 'pretty=True' parameter
-        call_pretty_version_list = ["filter_name", "disperser",
-                                    "focal_plane_mask"]
-
-        # Descriptors to be returned as a list, even if a single extension
-        # TODO: Maybe this descriptor should just barf if run on a slice.
-        convert_to_list_list = ["detector_section"]
-
-        # Other descriptors required for spectra
-        required_spectra_descriptors = ["disperser", "focal_plane_mask"]
-        if "SPECT" in self.tags:
-            unique_id_descriptor_list_all.extend(required_spectra_descriptors)
-
-        # Additional descriptors required for each frame type
+        # Descriptors required for each frame type
         dark_id = ["exposure_time", "coadds"]
         flat_id = ["filter_name", "camera", "exposure_time", "observation_id"]
         flat_twilight_id = ["filter_name", "camera"]
@@ -360,49 +346,31 @@ class AstroDataF2(AstroDataGemini):
 
         # This is used for imaging flats and twilights to distinguish between
         # the two types
-        additional_item_to_include = None
+        additional_item = None
 
         # Update the list of descriptors to be used depending on image type
         ## This requires updating to cover all spectral types
         ## Possible updates to the classification system will make this usable
         ## at the Gemini level
-        tags = self.tags
         if "DARK" in tags:
             id_descriptor_list = dark_id
         elif 'IMAGE' in tags and 'FLAT' in tags:
             id_descriptor_list = flat_id
-            additional_item_to_include = "F2_IMAGE_FLAT"
+            additional_item = "F2_IMAGE_FLAT"
         elif 'IMAGE' in tags and 'TWILIGHT' in tags:
             id_descriptor_list = flat_twilight_id
-            additional_item_to_include = "F2_IMAGE_TWILIGHT"
+            additional_item = "F2_IMAGE_TWILIGHT"
         else:
             id_descriptor_list = science_id
 
         # Add in all of the common descriptors required
-        id_descriptor_list.extend(unique_id_descriptor_list_all)
+        id_descriptor_list.extend(["read_mode", "detector_section"])
+        if "SPECT" in tags:
+            id_descriptor_list.extend(["disperser", "focal_plane_mask"])
 
-        # Form the group_id
-        descriptor_object_string_list = []
-        for descriptor in id_descriptor_list:
-            kw = {}
-            if descriptor in call_pretty_version_list:
-                kw['pretty'] = True
-            descriptor_object = getattr(self, descriptor)(**kw)
-
-            # Ensure we get a list, even if only looking at one extension
-            if (descriptor in convert_to_list_list and
-                    not isinstance(descriptor_object, list)):
-                descriptor_object = [descriptor_object]
-
-            # Convert descriptor to a string and store
-            descriptor_object_string_list.append(str(descriptor_object))
-
-        # Add in any none descriptor related information
-        if additional_item_to_include is not None:
-            descriptor_object_string_list.append(additional_item_to_include)
-
-        # Create and return the final group_id string
-        return '_'.join(descriptor_object_string_list)
+        return build_group_id(self, id_descriptor_list,
+                              prettify=["filter_name", "disperser", "focal_plane_mask"],
+                              additional=additional_item)
 
     @astro_data_descriptor
     def instrument(self):
@@ -417,28 +385,6 @@ class AstroDataF2(AstroDataGemini):
         """
         return 'F2'
 
-    # TODO: Don't think this is used. camera() returns the same thing
-    @astro_data_descriptor
-    def lyot_stop(self, stripID=False, pretty=False):
-        """
-        Returns the name of the Lyot stop used.  The component ID can be
-        removed with either 'stripID' or 'pretty', which do exactly the
-        same thing.
-
-        Parameters
-        ----------
-        stripID : bool
-            If True, removes the component ID.
-        pretty : bool
-            Same as for stripID.
-
-        Returns
-        -------
-        str
-            The name of the Lyot stop with or without the component ID.
-        """
-        return self._may_remove_component('LYOT', stripID, pretty)
-
     @returns_list
     @astro_data_descriptor
     def nominal_photometric_zeropoint(self):
@@ -451,26 +397,29 @@ class AstroDataF2(AstroDataGemini):
         list/float
             zeropoint values, one per SCI extension
         """
-        zpt_dict = nominal_zeropoints
-
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
         camera = self.camera(pretty=True)
         # Explicit: if BUNIT is missing, assume data are in ADU
         bunit = self.hdr.get('BUNIT', 'adu')
+        zpt = nominal_zeropoints.get((camera, filter_name))
 
-        # Have to do the list/not-list stuff here
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
         # if the data are in ADU
-        try:
-            zpt = [zpt_dict[filter_name, camera] -
-                   (2.5 * math.log10(g) if b=='adu' else 0)
-                   for g,b in zip(gain, bunit)]
-        except TypeError:
-            zpt = zpt_dict[camera, filter_name] - (
-                2.5 * math.log10(gain) if bunit=='adu' else 0)
+        if self.is_single:
+            try:
+                return zpt - (
+                    2.5 * math.log10(gain) if bunit.lower() == 'adu' else 0)
+            except TypeError:
+                return None
+        else:
+            return [zpt - (2.5 * math.log10(g) if b.lower() == 'adu' else 0)
+                   if zpt and g else None
+                   for g, b in zip(gain, bunit)]
 
-        return zpt
+    @astro_data_descriptor
+    def nonlinearity_coeffs(self):
+        return getattr(array_properties.get(self.read_mode()), 'coeffs', None)
 
     @returns_list
     @astro_data_descriptor
@@ -480,19 +429,23 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float
+        int
             Value at which the data become non-linear
         """
         # Element [3] gives the fraction of the saturation level at which
         # the data become non-linear
-        fraction = array_properties[self.phu['LNRS']][3]
-        saturation_level = self.saturation_level()
+        fraction = getattr(array_properties.get(self.read_mode()),
+                           'linlimit', None)
+        sat_level = self.saturation_level()
         # Saturation level might be an element or a list
-        try:
-            nonlin_level = [fraction * s for s in saturation_level]
-        except TypeError:
-            nonlin_level = fraction * saturation_level
-        return nonlin_level
+        if self.is_single:
+            try:
+                return int(fraction * sat_level)
+            except TypeError:
+                return None
+        else:
+            return [int(fraction * s) if fraction and s else None
+                    for s in sat_level]
 
     # TODO: is 'F2_DARK' still a tag?
     @astro_data_descriptor
@@ -505,7 +458,7 @@ class AstroDataF2(AstroDataGemini):
         str
             Observation type
         """
-        return 'DARK' if 'F2_DARK' in self.tags else self.phu['OBSTYPE']
+        return 'DARK' if 'F2_DARK' in self.tags else self.phu.get('OBSTYPE')
 
     @astro_data_descriptor
     def pixel_scale(self):
@@ -519,10 +472,9 @@ class AstroDataF2(AstroDataGemini):
         """
         # Try to use the Gemini-level helper method
         try:
-            pixel_scale = self._get_wcs_pixel_scale()
+            return self._get_wcs_pixel_scale()
         except KeyError:
-            pixel_scale = self.phu['PIXSCALE']
-        return pixel_scale
+            return self.phu.get('PIXSCALE')
 
     @astro_data_descriptor
     def read_mode(self):
@@ -534,7 +486,8 @@ class AstroDataF2(AstroDataGemini):
         str
             readout mode
         """
-        return str(self.phu['LNRS'])
+        lnrs = self.phu.get('LNRS')
+        return None if lnrs is None else str(lnrs)
 
     @returns_list
     @astro_data_descriptor
@@ -548,7 +501,8 @@ class AstroDataF2(AstroDataGemini):
             read noise
         """
         # Element [0] gives the read noise
-        return array_properties[self.phu['LNRS']][0]
+        return getattr(array_properties.get(self.read_mode(), None),
+                       'readnoise', None)
 
     @returns_list
     @astro_data_descriptor
@@ -558,17 +512,20 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float
+        float/list
             saturation level
         """
-        # Element [2] gives the saturation level in electrons
-        saturation_electrons = array_properties[self.phu['LNRS']][2]
+        well_depth = getattr(array_properties.get(self.read_mode(), None),
+                       'welldepth', None)
         gain = self.gain()
-        # Gain might be an element or a list
-        try:
-            saturation_adu = [saturation_electrons / g for g in gain]
-        except TypeError:
-            saturation_adu = saturation_electrons / gain
+        if self.is_single:
+            try:
+                return int(well_depth / gain)
+            except TypeError:
+                return None
+        else:
+            saturation_adu = [int(well_depth / g) if well_depth and g else None
+                              for g in gain]
         return saturation_adu
 
     # TODO: document why these are reversed
@@ -582,7 +539,10 @@ class AstroDataF2(AstroDataGemini):
         float
             x offset
         """
-        return -self.phu['YOFFSET']
+        try:
+            return -self.phu['YOFFSET']
+        except KeyError:
+            return None
 
     @astro_data_descriptor
     def y_offset(self):
@@ -594,7 +554,10 @@ class AstroDataF2(AstroDataGemini):
         float
             y offset
         """
-        return -self.phu['XOFFSET']
+        try:
+            return -self.phu['XOFFSET']
+        except KeyError:
+            return None
 
     def _get_wcs_coords(self):
         """

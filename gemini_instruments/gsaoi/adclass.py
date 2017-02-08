@@ -3,6 +3,7 @@ import math
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini
 from .. import gmu
+from ..common import build_group_id
 from . import lookup
 
 class AstroDataGsaoi(AstroDataGemini):
@@ -63,7 +64,7 @@ class AstroDataGsaoi(AstroDataGemini):
         except KeyError:
             # Data have been mosaicked, so return the detector name
             # (as a single-element list if necessary)
-            return self.phu['DETECTOR']
+            return self.phu.get('DETECTOR')
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
@@ -102,9 +103,9 @@ class AstroDataGsaoi(AstroDataGemini):
             # return the central wavelength in the default units of meters.
             output_units = "meters"
 
-        central_wavelength = float(self.phu['WAVELENG'])
+        central_wavelength = self.phu.get('WAVELENG', -1)
         if central_wavelength < 0.0:
-            raise ValueError("Central wavelength can't be negative!")
+            return None
         else:
             return gmu.convert_units('angstroms', central_wavelength,
                                      output_units)
@@ -120,8 +121,7 @@ class AstroDataGsaoi(AstroDataGemini):
         list/float
             gain (e/ADU)
         """
-        return self._look_up_arr_property(1)
-
+        return self._look_up_arr_property('gain')
 
     @astro_data_descriptor
     def group_id(self):
@@ -135,16 +135,6 @@ class AstroDataGsaoi(AstroDataGemini):
         str
             A group ID for compatible data
         """
-        # Descriptors used for all image types
-        unique_id_descriptor_list_all = ["read_mode", "detector_section"]
-
-        # List to format descriptor calls using 'pretty=True' parameter
-        call_pretty_version_list = ["filter_name"]
-
-        # Descriptors to be returned as a list, even if a single extension
-        # TODO: Maybe this descriptor should just barf if run on a slice.
-        force_list = ["detector_section"]
-
         # Additional descriptors required for each frame type
         # Note: dark_id and flat_twilight are not in common use.
         #       Those are therefore place holder with initial guess
@@ -171,46 +161,17 @@ class AstroDataGsaoi(AstroDataGemini):
         #flat_twilight_id = ["filter_name"]
         science_id = ["observation_id", "filter_name", "exposure_time"]
 
-        # non-descriptor strings to attach to the group_id
-        #   Note: the local date will be added for flats below.
-        additional_item_to_include = None
-
         # Associate rules with data type
         # Note: add darks and twilight if necessary later.
-        tags = self.tags
-        if 'FLAT' in tags:
+        if 'FLAT' in self.tags:
             id_descriptor_list = flat_id
-            # get the local date and save as additional item.
-            #datestr = re.search('S([0-9]+)S.*', dataset.filename).group(1)
-            #additional_item_to_include = [datestr]
         else:
             id_descriptor_list = science_id
 
         # Add in all the common descriptors required
-        id_descriptor_list.extend(unique_id_descriptor_list_all)
+        id_descriptor_list.extend(["read_mode", "detector_section"])
 
-        # Form the group_id
-        descriptor_object_string_list = []
-        for descriptor in id_descriptor_list:
-            kw = {}
-            if descriptor in call_pretty_version_list:
-                kw['pretty'] = True
-            descriptor_object = getattr(self, descriptor)(**kw)
-
-            # Ensure we get a list, even if only looking at one extension
-            if (descriptor in force_list and
-                    not isinstance(descriptor_object, list)):
-                descriptor_object = [descriptor_object]
-
-            # Convert descriptor to a string and store
-            descriptor_object_string_list.append(str(descriptor_object))
-
-        # Add in any none descriptor related information
-        if additional_item_to_include is not None:
-            descriptor_object_string_list.append(additional_item_to_include)
-
-        # Create and return the final group_id string
-        return '_'.join(descriptor_object_string_list)
+        return build_group_id(self, id_descriptor_list, prettify=('filter_name'))
 
     @astro_data_descriptor
     def is_coadds_summed(self):
@@ -237,7 +198,13 @@ class AstroDataGsaoi(AstroDataGemini):
         float/list
             zeropoint values, one per SCI extension
         """
-        zpt_dict = lookup.nominal_zeropoints
+        def _zpt(array, filt, gain, bunit):
+            zpt = lookup.nominal_zeropoints.get((filt, array))
+            try:
+                return zpt - (2.5 * math.log10(gain) if
+                              bunit.lower() == 'adu' else 0)
+            except TypeError:
+                return None
 
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
@@ -248,16 +215,11 @@ class AstroDataGsaoi(AstroDataGemini):
         # Have to do the list/not-list stuff here
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
         # if the data are in ADU
-        try:
-            zpt = [zpt_dict[(filter_name, a)] -
-                   (2.5 * math.log10(g) if b=='adu' else 0)
-                   for a,g,b in zip(array_name, gain, bunit)]
-        except TypeError:
-            zpt = zpt_dict[(filter_name, array_name)] - (
-                2.5 * math.log10(gain) if bunit=='adu' else 0)
-
-        return zpt
-
+        if self.is_single:
+            return _zpt(array_name, filter_name, gain, bunit)
+        else:
+            return [_zpt(a, filter_name, g, b)
+                    for a, g, b, in zip(array_name, gain, bunit)]
 
     @astro_data_descriptor
     def nonlinearity_coeffs(self):
@@ -270,13 +232,7 @@ class AstroDataGsaoi(AstroDataGemini):
         tuple/list
             coefficients
         """
-        a0 = self._look_up_arr_property(4)
-        a1 = self._look_up_arr_property(5)
-        a2 = self._look_up_arr_property(6)
-        try:
-            return [[a, b, c] for a, b, c in zip(a0, a1, a2)]
-        except TypeError:
-            return [a0, a1, a2]
+        return self._look_up_arr_property('coeffs')
 
     @astro_data_descriptor
     def non_linear_level(self):
@@ -290,14 +246,17 @@ class AstroDataGsaoi(AstroDataGemini):
         """
         # Column 3 gives the fraction of the saturation level at which
         # the data become non-linear
-        fraction = self._look_up_arr_property(3)
-        saturation_level = self.saturation_level()
-        # Saturation level might be an element or a list
-        try:
-            nonlin_level = [f*s for f, s in zip(fraction,saturation_level)]
-        except TypeError:
-            nonlin_level = fraction * saturation_level
-        return nonlin_level
+        fraction = self._look_up_arr_property('linlimit')
+        sat_level = self.saturation_level()
+
+        if self.is_single:
+            try:
+                return fraction * sat_level
+            except TypeError:
+                return None
+        else:
+            return [f * s if f and s else None
+                    for f, s in zip(fraction, sat_level)]
 
     @astro_data_descriptor
     def read_noise(self):
@@ -310,12 +269,16 @@ class AstroDataGsaoi(AstroDataGemini):
             read noise in electrons
         """
         # Column 0 has the read noise (for 1 coadd)
-        raw_read_noise = self._look_up_arr_property(0)
+        raw_read_noise = self._look_up_arr_property('readnoise')
         coadd_factor = math.sqrt(self.coadds())
-        try:
-            return [round(r / coadd_factor, 2) for r in raw_read_noise]
-        except TypeError:
-            return round(raw_read_noise / coadd_factor, 2)
+        if self.is_single:
+            try:
+                return round(raw_read_noise / coadd_factor, 2)
+            except TypeError:
+                return None
+        else:
+            return [round(r / coadd_factor, 2) if r else None
+                    for r in raw_read_noise]
 
     @astro_data_descriptor
     def read_speed_setting(self):
@@ -328,11 +291,7 @@ class AstroDataGsaoi(AstroDataGemini):
             read speed setting
         """
         # The number of non-destructive reads is the key in the dict
-        lnrs = self.phu['LNRS']
-        try:
-            return lookup.read_modes[lnrs]
-        except KeyError:
-            return 'Invalid'
+        return lookup.read_modes.get(self.phu.get('LNRS'), 'Unknown')
 
     @astro_data_descriptor
     def saturation_level(self):
@@ -345,7 +304,7 @@ class AstroDataGsaoi(AstroDataGemini):
         float/list
             saturation level in ADU
         """
-        return self._look_up_arr_property(2)
+        return self._look_up_arr_property('welldepth')
 
     @astro_data_descriptor
     def wcs_ra(self):
@@ -364,13 +323,9 @@ class AstroDataGsaoi(AstroDataGemini):
             crval = h.CRVAL1
             ctype = h.CTYPE1
         except KeyError:
-            crval = self.phu['CRVAL1']
-            ctype = self.phu['CTYPE1']
-
-        if ctype == 'RA---TAN':
-            return crval
-        else:
-            raise ValueError('CTYPE1 keyword is not RA---TAN')
+            crval = self.phu.get('CRVAL1')
+            ctype = self.phu.get('CTYPE1')
+        return crval if ctype == 'RA---TAN' else None
 
     @astro_data_descriptor
     def wcs_dec(self):
@@ -389,15 +344,12 @@ class AstroDataGsaoi(AstroDataGemini):
             crval = h.CRVAL2
             ctype = h.CTYPE2
         except KeyError:
-            crval = self.phu['CRVAL2']
-            ctype = self.phu['CTYPE2']
+            crval = self.phu.get('CRVAL2')
+            ctype = self.phu.get('CTYPE2')
 
-        if ctype == 'DEC--TAN':
-            return crval
-        else:
-            raise ValueError('CTYPE2 keyword is not DEC--TAN')
+        return crval if ctype == 'DEC--TAN' else None
 
-    def _look_up_arr_property(self, table_column):
+    def _look_up_arr_property(self, attr):
         """
         Helper function to extract information from the array_properties dict
         Will return a list or a value, depending on the object it's called on
@@ -407,12 +359,12 @@ class AstroDataGsaoi(AstroDataGemini):
         list/float
             the required data
         """
-        read_speed_setting = self.read_speed_setting()
+        read_speed = self.read_speed_setting()
         array_names = self.array_name()
 
         if isinstance(array_names, list):
-            return [lookup.array_properties[read_speed_setting, a][table_column]
-                    for a in array_names]
+            return [getattr(lookup.array_properties.get((read_speed, a)),
+                            attr, None) for a in array_names]
         else:
-            return lookup.array_properties[read_speed_setting,
-                                           array_names][table_column]
+            return getattr(lookup.array_properties.get((read_speed,
+                                            array_names)), attr, None)

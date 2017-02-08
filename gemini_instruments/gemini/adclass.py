@@ -216,7 +216,7 @@ class AstroDataGemini(AstroDataFits):
         if self.phu['OBSTYPE'] == 'OBJECT':
             return TagSet(['PROCESSED_SCIENCE'])
 
-    def _parse_section(self, descriptor_name, keyword, pretty):
+    def _parse_section(self, keyword, pretty):
         try:
             value_filter = (str if pretty else section_to_tuple)
             process_fn = lambda x: (None if x is None else value_filter(x))
@@ -233,8 +233,8 @@ class AstroDataGemini(AstroDataFits):
                 return process_fn(sections)
             else:
                 return [process_fn(raw) for raw in sections]
-        except KeyError:
-            raise AttributeError("No {} information".format(descriptor_name))
+        except (KeyError, TypeError):
+            return None
 
     def _may_remove_component(self, keyword, stripID, pretty):
         val = self.phu.get(keyword)
@@ -251,14 +251,9 @@ class AstroDataGemini(AstroDataFits):
         -------
         float
             Airmass value.
-
         """
-        am = float(self.phu[self._keyword_for('airmass')])
-
-        if am < 1:
-            raise ValueError("Can't have less than 1 airmass!")
-
-        return am
+        am = self.phu.get(self._keyword_for('airmass'), -1)
+        return am if am >= 1 else None
 
     @astro_data_descriptor
     def ao_seeing(self):
@@ -286,7 +281,7 @@ class AstroDataGemini(AstroDataFits):
                 rzv = self.phu[self._keyword_for('r_zero_val')]
                 return (206265. * 0.98 * 0.5e-6) / (rzv * 0.01)
             except KeyError:
-                raise AttributeError("There is no information about AO seeing")
+                return None
 
     @astro_data_descriptor
     def amp_read_area(self, pretty=False):
@@ -299,8 +294,7 @@ class AstroDataGemini(AstroDataFits):
         list/(tuple or string)
             the amp readout areas
         """
-        return self._parse_section('amp_read_area',
-                                   self._keyword_for('amp_read_area'), pretty)
+        return self._parse_section(self._keyword_for('amp_read_area'), pretty)
 
     @astro_data_descriptor
     def array_name(self):
@@ -342,8 +336,7 @@ class AstroDataGemini(AstroDataFits):
         str/list of str
             Position of extension(s) using an IRAF section format (1-based)
         """
-        return self._parse_section('array_section',
-                                   self._keyword_for('array_section'), pretty)
+        return self._parse_section(self._keyword_for('array_section'), pretty)
 
     @astro_data_descriptor
     def azimuth(self):
@@ -391,10 +384,8 @@ class AstroDataGemini(AstroDataFits):
             Position angle of the Cassegrain rotator.
 
         """
-        val = float(self.phu.get(self._keyword_for('cass_rotator_pa')))
-        if val < -360 or val > 360:
-            raise ValueError("Invalid CRPA value: {}".format(val))
-        return val
+        crpa = self.phu.get(self._keyword_for('cass_rotator_pa'), 400)
+        return crpa if abs(crpa) <= 360 else None
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
@@ -436,8 +427,7 @@ class AstroDataGemini(AstroDataFits):
         keyword = self._keyword_for('central_wavelength')
         wave_in_microns = self.phu.get(keyword, -1)
         if wave_in_microns < 0:
-            raise ValueError("Invalid {} value: {}".format(keyword,
-                                                           wave_in_microns))
+            return None
         return gmu.convert_units('micrometers', wave_in_microns,
                              output_units)
 
@@ -494,8 +484,7 @@ class AstroDataGemini(AstroDataFits):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-        return self._parse_section('data_section',
-                                   self._keyword_for('data_section'), pretty)
+        return self._parse_section(self._keyword_for('data_section'), pretty)
 
     @astro_data_descriptor
     def dec(self):
@@ -595,8 +584,7 @@ class AstroDataGemini(AstroDataFits):
         string or list of strings
             Position of the detector using an IRAF section format (1-based).
         """
-        return self._parse_section('detector_section',
-                                   self._keyword_for('detector_section'), pretty)
+        return self._parse_section(self._keyword_for('detector_section'), pretty)
 
     @astro_data_descriptor
     def detector_x_bin(self):
@@ -650,8 +638,7 @@ class AstroDataGemini(AstroDataFits):
         """
         Returns the dispersion (wavelength units per pixel) in meters
         or specified units, as a list (one value per extension) or a
-        float if used on a single-extension slice, or if the keyword
-        is in the PHU
+        float if used on a single-extension slice.
 
         Parameters
         ----------
@@ -667,34 +654,36 @@ class AstroDataGemini(AstroDataFits):
         list/float
             The dispersion(s)
         """
-        # Look for the relevant, which we assume is in meters per pixel
+        # Look for the relevant value, which we assume is in meters per pixel
         try:
             dispersion = self.hdr[self._keyword_for('dispersion')]
         except KeyError:
-            dispersion = self.phu.get(self._keyword_for('dispersion'))
-
-        if dispersion is not None:
-            unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-            if unit_arg_list.count(True) == 1:
-                # Just one of the unit arguments was set to True. Return the
-                # central wavelength in these units
-                if asMicrometers:
-                    output_units = "micrometers"
-                if asNanometers:
-                    output_units = "nanometers"
-                if asAngstroms:
-                    output_units = "angstroms"
-            else:
-                # Either none of the unit arguments were set to True or more than
-                # one of the unit arguments was set to True. In either case,
-                # return the central wavelength in the default units of meters.
-                output_units = "meters"
             try:
-                return [gmu.convert_units('meters', d, output_units)
-                              for d in dispersion]
-            except TypeError:
-                return gmu.convert_units('meters', dispersion, output_units)
-        return dispersion
+                dispersion = self.phu[self._keyword_for(
+                    'dispersion')] * len(self)
+            except KeyError:
+                return None
+
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+        else:
+            # Either none of the unit arguments were set to True or more than
+            # one of the unit arguments was set to True. In either case,
+            # return the central wavelength in the default units of meters.
+            output_units = "meters"
+        try:
+            return [gmu.convert_units('meters', d, output_units)
+                          for d in dispersion]
+        except TypeError:
+            return gmu.convert_units('meters', dispersion, output_units)
 
     @astro_data_descriptor
     def dispersion_axis(self):
@@ -713,7 +702,7 @@ class AstroDataGemini(AstroDataFits):
         """
         tags = self.tags
         if 'IMAGE' in tags or 'PREPARED' not in tags:
-            raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
+            return None
 
         # TODO: We may need to sort out Nones here...
         kw = self._keyword_for('dispersion_axis')
@@ -737,20 +726,17 @@ class AstroDataGemini(AstroDataFits):
         """
         if not output_units in ('micrometers', 'nanometers', 'angstroms'):
             output_units = 'meters'
+        wave_in_microns = None
         tags = self.tags
         if 'IMAGE' in tags:
-            wave_in_microns = None
             filter_name = self.filter_name(pretty=True)
             for inst in ('*', self.instrument()):
                 try:
                     wave_in_microns = filter_wavelengths[inst, filter_name]
                 except KeyError:
                     pass
-            if wave_in_microns is None:
-                raise KeyError("Can't find the wavelength for this filter in the look-up table")
         elif 'SPECT' in tags:
             wave_in_microns = self.central_wavelength(asMicrometers=True)
-
         return gmu.convert_units('micrometers', wave_in_microns, output_units)
 
     @astro_data_descriptor
@@ -777,7 +763,7 @@ class AstroDataGemini(AstroDataFits):
         """
         exposure_time = self.phu.get(self._keyword_for('exposure_time'), -1)
         if exposure_time < 0:
-            raise ValueError("Invalid exposure time: {}".format(exposure_time))
+            return None
 
         if 'PREPARED' not in self.tags and self.is_coadds_summed():
             return exposure_time * self.coadds()
@@ -809,6 +795,8 @@ class AstroDataGemini(AstroDataFits):
         """
         f1 = self._may_remove_component('FILTER1', stripID, pretty)
         f2 = self._may_remove_component('FILTER2', stripID, pretty)
+        if f1 is None or f2 is None:
+            return None
 
         if pretty:
             filter_comps = []
@@ -961,23 +949,30 @@ class AstroDataGemini(AstroDataFits):
             Local time of the observation.
         """
         local_time = self.phu.get(self._keyword_for('local_time'))
-        if re.match("^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$",
-                    str(local_time)):
+        try:
             return dateutil.parser.parse(local_time).time()
-        else:
-            raise ValueError("Invalid local_time: {!r}".format(local_time))
+        except ValueError:
+            return None
 
     @astro_data_descriptor
-    def lyot_stop(self):
+    def lyot_stop(self, stripID=False, pretty=False):
         """
         Returns the Lyot stop used for the observation
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID.
+        pretty : bool
+            Same as for stripID.
 
         Returns
         -------
         str
             Lyot stop used for the observation
         """
-        return self.phu.get(self._keyword_for('lyot_stop'))
+        return self._may_remove_component(self._keyword_for('lyot_stop'),
+                                          stripID, pretty)
 
     @astro_data_descriptor
     def mdf_row_id(self):
@@ -992,8 +987,7 @@ class AstroDataGemini(AstroDataFits):
         """
         tags = self.tags
         if 'IMAGE' in tags or 'PREPARED' not in tags:
-            raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
-
+            return None
         return self.hdr.get(self._keyword_for('mdf_row_id'))
 
     @astro_data_descriptor
@@ -1009,7 +1003,8 @@ class AstroDataGemini(AstroDataFits):
         """
         nom_ext_idx = (self.telescope(), self.filter_name(pretty=True))
         coeff = nominal_extinction.get(nom_ext_idx, 0.0)
-        return coeff * (self.airmass() - 1.0)
+        am = self.airmass()
+        return coeff * (self.airmass() - 1.0) if am else None
 
     @astro_data_descriptor
     def nominal_photometric_zeropoint(self):
@@ -1051,19 +1046,6 @@ class AstroDataGemini(AstroDataFits):
             the observation class
         """
         return self.phu.get('OBSCLASS')
-
-    @astro_data_descriptor
-    def observation_epoch(self):
-        """
-        Returns the epoch of an observation, as derived from the relevant
-        header keyword
-
-        Returns
-        -------
-        str
-            the observation epoch
-        """
-        return self.phu.get(self._keyword_for('observation_epoch'))
 
     @astro_data_descriptor
     def observation_id(self):
@@ -1117,8 +1099,7 @@ class AstroDataGemini(AstroDataFits):
         str/list of str
             Position of extension(s) using an IRAF section format (1-based)
         """
-        return self._parse_section('overscan_section',
-                                   self._keyword_for('overscan_section'), pretty)
+        return self._parse_section(self._keyword_for('overscan_section'), pretty)
 
     @astro_data_descriptor
     def pixel_scale(self):
@@ -1391,13 +1372,15 @@ class AstroDataGemini(AstroDataFits):
         float
             Right Ascension of the target in degrees.
         """
-        ra = self.phu[self._keyword_for('ra')]
+        try:
+            ra = self.phu['RA']
+        except KeyError:
+            return None
         raoffset = self.phu.get('RAOFFSET', 0)
         targ_raoffset = self.phu.get('RATRGOFF', 0)
         pmra = self.phu.get('PMRA', 0)
-        epoch = self.phu.get('EPOCH')
-        frame = self.phu.get('FRAME')
-        equinox = self.phu.get('EQUINOX')
+        epoch = self.phu.get('EPOCH', 2000.0)
+        frame = self.phu.get('FRAME', 'FK5')
 
         if offset:
             raoffset /= 3600.0
@@ -1454,13 +1437,15 @@ class AstroDataGemini(AstroDataFits):
         float
             Declination of the target in degrees.
         """
-        dec = self.phu[self._keyword_for('dec')]
+        try:
+            dec = self.phu['DEC']
+        except KeyError:
+            return None
         decoffset = self.phu.get('DECOFFSE', 0)
         targ_decoffset = self.phu.get('DECTRGOF', 0)
         pmdec = self.phu.get('PMDEC', 0)
-        epoch = self.phu.get('EPOCH')
-        frame = self.phu.get('FRAME')
-        equinox = self.phu.get('EQUINOX')
+        epoch = self.phu.get('EPOCH', 2000.0)
+        frame = self.phu.get('FRAME', 'FK5')
 
         if offset:
             decoffset /= 3600.0
@@ -1483,7 +1468,7 @@ class AstroDataGemini(AstroDataFits):
             dec += pmdec
 
         if icrs:
-            ra, dec = toicrs(frame,
+            ra, dec = gmu.toicrs(frame,
                     self.target_ra(offset=offset, pm=pm, icrs=False),
                     self.target_dec(offset=offset, pm=pm, icrs=False),
                     equinox=2000.0,
@@ -1505,7 +1490,7 @@ class AstroDataGemini(AstroDataFits):
         try:
             return self.ut_datetime(strict=True, dateonly=True)
         except AttributeError:
-            raise LookupError("Can't find information to return a proper date")
+            return None
 
     @astro_data_descriptor
     def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
@@ -1637,7 +1622,6 @@ class AstroDataGemini(AstroDataFits):
             return dateutil.parser.parse('{}T{}'.format(utdate_hdr, uttime_hdr))
 
         # Give up
-        #raise LookupError("Can't find information to return requested date/time")
         return None
 
     @astro_data_descriptor
@@ -1654,7 +1638,7 @@ class AstroDataGemini(AstroDataFits):
         try:
             return self.ut_datetime(strict=True, timeonly=True)
         except AttributeError:
-            raise LookupError("Can't find information to return a proper time")
+            return None
 
     @astro_data_descriptor
     def wavefront_sensor(self):
@@ -1700,11 +1684,6 @@ class AstroDataGemini(AstroDataFits):
             _, l = pair
             return abs(l - ctrl_wave)
         band = min(wavelength_band.items(), key=wavelength_diff)[0]
-
-        # TODO: This can't happen. We probably want to check against "None"
-        if band is None:
-            raise ValueError()
-
         return band
 
     @astro_data_descriptor
@@ -1822,7 +1801,7 @@ class AstroDataGemini(AstroDataFits):
 
         # TODO: This isn't in old Gemini descriptors. Should it be?
         if 'NON_SIDEREAL' in self.tags:
-            ra, dec = toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
 
         return (ra, dec)
 
@@ -1842,18 +1821,22 @@ class AstroDataGemini(AstroDataFits):
         list of floats/float
             List of pixel scales, one per extension
         """
-        cd11 = self.hdr['CD1_1']
-        cd12 = self.hdr['CD1_2']
-        cd21 = self.hdr['CD2_1']
-        cd22 = self.hdr['CD2_2']
         try:
-            pixel_scale_list = [3600 * 0.5 * (math.sqrt(a*a + b*b) +
-                                  math.sqrt(c*c + d*d))
-                for a,b,c,d in zip(cd11,cd12,cd21,cd22)]
-        except TypeError:
+            cd11 = self.hdr['CD1_1']
+            cd12 = self.hdr['CD1_2']
+            cd21 = self.hdr['CD2_1']
+            cd22 = self.hdr['CD2_2']
+        except KeyError:
+            # Make sure we return the right type of object
+            return None if mean else [None] * len(self)
+
+        if self.is_single:
             return 3600 * 0.5 * (math.sqrt(cd11*cd11 + cd12*cd12) +
                                  math.sqrt(cd21*cd21 + cd22*cd22))
         else:
+            pixel_scale_list = [3600 * 0.5 * (math.sqrt(a*a + b*b) +
+                                  math.sqrt(c*c + d*d))
+                for a,b,c,d in zip(cd11,cd12,cd21,cd22)]
             if mean:
                 return sum(pixel_scale_list) / len(pixel_scale_list)
             else:
@@ -1868,7 +1851,7 @@ class AstroDataGemini(AstroDataFits):
         ----------
         descriptor : str
             The name of the descriptor calling this function.  For error
-            reporting purposes.
+            reporting purposes. [Not used since we want to return None]
         raw_value : str
             The sky constraint band.  (eg. 'IQ50')
 
@@ -1878,6 +1861,4 @@ class AstroDataGemini(AstroDataFits):
             Percentile part of the Gemini constraint band.
         """
         val = gmu.parse_percentile(raw_value)
-        if val is None:
-            raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
         return val

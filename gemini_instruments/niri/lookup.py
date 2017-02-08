@@ -149,7 +149,7 @@ nominal_zeropoints = {
 
 # Adapted from old AD_Config/IR/appwave.py. Since NIRI is the only instrument
 # to use this, removed all extraneous columns
-spec_wavlengths = {
+spec_wavelengths = {
     ('f6-2pix_G5211',   'Jgrism') : 12330.0,
     ('f6-4pix_G5212',   'Jgrism') : 12330.0,
     ('f6-4pix_G5222',   'Jgrism') : 12330.0,
