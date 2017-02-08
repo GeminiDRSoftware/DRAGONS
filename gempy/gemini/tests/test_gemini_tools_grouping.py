@@ -56,8 +56,8 @@ def offdict_to_adlist(offdict):
     adlist = []
     for item in offdict:
         a = dummy_ad()
-        a.phu.POFFSET = offdict[item][0]
-        a.phu.QOFFSET = offdict[item][1]
+        a.phu['POFFSET'] = offdict[item][0]
+        a.phu['QOFFSET'] = offdict[item][1]
         a.filename = item
         adlist.append(a)
     return adlist

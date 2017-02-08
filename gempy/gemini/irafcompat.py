@@ -12,7 +12,7 @@ def pipeline2iraf(ad, verbose=False):
         compat_with_iraf_GMOS(ad, verbose)
     else:
         if verbose:
-            print("Data type not supported, {0}".format(filename))
+            print("Data type not supported, {0}".format(ad.filename))
          
     return
 
@@ -22,39 +22,39 @@ def compat_with_iraf_GMOS(ad, verbose):
     obsmode = _get_gmos_obsmode(ad)
     if verbose:
         print("Add OBSMODE {0} to PHU.".format(obsmode))
-    ad.phu.OBSMODE = (obsmode, "Observing mode (IMAGE|IFU|MOS|LONGSLIT)")
+    ad.phu.set('OBSMODE', obsmode, "Observing mode (IMAGE|IFU|MOS|LONGSLIT)")
     
     # The other keywords required by the Gemini IRAF tasks.
     if "PREPARED" in ad.tags:
         if verbose:
             print("Add GPREPARE to PHU")
-        ad.phu.GPREPARE = ("Compatibility", "For IRAF compatibility")
-    if 'STACKFRM' in ad.phu.keywords and  ad.phu.OBSTYPE == "BIAS":
+        ad.phu.set('GPREPARE', "Compatibility", "For IRAF compatibility")
+    if 'STACKFRM' in ad.phu.keywords and  ad.phu['OBSTYPE'] == "BIAS":
         if verbose:
             print("Add GBIAS to PHU")
-        ad.phu.GBIAS = ("Compatibility", "For IRAF compatibility")
+        ad.phu.set('GBIAS', "Compatibility", "For IRAF compatibility")
     if 'ADUTOELE' in ad.phu.keywords:
         if verbose:
             print("Add GGAIN to PHU")
             print("Add GAINMULT to PHU")
-        ad.phu.GGAIN = ("Compatibility", "For IRAF compatibility")
-        ad.phu.GAINMULT = ("Compatibility", "For IRAF compatibility")
+        ad.phu.set('GGAIN', "Compatibility", "For IRAF compatibility")
+        ad.phu.set('GAINMULT', "Compatibility", "For IRAF compatibility")
     if 'NORMLIZE' in ad.phu.keywords:
         if verbose:
             print("Add GIFLAT to PHU")
-        ad.phu.GIFLAT = ("Compatibility", "For IRAF compatibility")
+        ad.phu.set('GIFLAT', "Compatibility", "For IRAF compatibility")
     if 'BIASIM' in ad.phu.keywords:
         if verbose:
             print("Add GIREDUCE to PHU")
-        ad.phu.GIREDUCE = ("Compatibility", "For IRAF compatibility")
+        ad.phu.set('GIREDUCE', "Compatibility", "For IRAF compatibility")
     
     return
 
 def _get_gmos_obsmode(ad):
-    obstype = ad.phu.OBSTYPE
-    masktype = ad.phu.MASKTYP
-    maskname = ad.phu.MASKNAME
-    grating = ad.phu.GRATING
+    obstype = ad.phu['OBSTYPE']
+    masktype = ad.phu['MASKTYP']
+    maskname = ad.phu['MASKNAME']
+    grating = ad.phu['GRATING']
         
     if obstype == "BIAS" or obstype == "DARK" or masktype == 0:
         obsmode = "IMAGE"

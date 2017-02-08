@@ -192,7 +192,7 @@ def array_information(adinput=None):
             last_arrx1 = this_arrx1
 
         # Reference extension if tiling/mosaicing all data together
-        refext = ad[ampsorder[int(0.5 * (len(ampsorder)-1))]].hdr.EXTVER
+        refext = ad[ampsorder[int(0.5 * (len(ampsorder)-1))]].hdr['EXTVER']
 
         arrayinfo['array_number'] = list(array_number)
         arrayinfo['amps_order'] = ampsorder
@@ -344,7 +344,7 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True):
 
         # Now check each extension
         for ext1, ext2 in zip(ad1, ad2):
-            log.fullinfo('Checking EXTVER {}'.format(ext1.hdr.EXTVER))
+            log.fullinfo('Checking EXTVER {}'.format(ext1.hdr['EXTVER']))
             
             # Check shape/size
             if ext1.data.shape != ext2.data.shape:
@@ -609,7 +609,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 raise IOError(
                   "No auxiliary data in {} matches the detector section "
                   "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                       ad.filename, ext.hdr.EXTVER))
+                                       ad.filename, ext.hdr['EXTVER']))
 
         log.stdinfo("Clipping {} to match science data.".
                     format(os.path.basename(this_aux.filename)))
@@ -688,7 +688,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
         for ext, detsec, datasec, arraysec in zip(ad, sci_detsec,
                                             sci_datasec, sci_arraysec):
 
-            frameid = ext.hdr.FRAMEID
+            frameid = ext.hdr['FRAMEID']
 
             # Check whether science data has been overscan-trimmed
             science_shape = ext.data.shape[-2:]
@@ -703,7 +703,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
             for auxext, adatasec, aarraysec in zip(this_aux, aux_datasec,
                                                    aux_arraysec):
                 # Retrieve the extension number for this extension
-                aux_frameid = auxext.hdr.FRAMEID
+                aux_frameid = auxext.hdr['FRAMEID']
                 aux_shape = auxext.data.shape
 
                 if (aux_frameid == frameid and
@@ -1034,7 +1034,7 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
     # We need the original filename if we're going to strip
     if strip:
         try:
-            filename = adinput.phu.ORIGNAME
+            filename = adinput.phu['ORIGNAME']
         except KeyError:
             # If it's not there, grab the AD attr instead and add the keyword
             filename = adinput.orig_filename
@@ -1611,10 +1611,10 @@ def obsmode_add(ad):
     if 'GMOS' in tags:
         if 'PREPARED' in tags:
             try:
-                ad.phu.set('PREPARE', ad.phu.GPREPARE,
+                ad.phu.set('PREPARE', ad.phu['GPREPARE'],
                            'UT Time stamp for GPREPARE')
             except:
-                ad.phu.set('GPREPARE', ad.phu.PREPARE,
+                ad.phu.set('GPREPARE', ad.phu['PREPARE'],
                            'UT Time stamp for GPREPARE')
 
         if {'PROCESSED', 'BIAS'}.issubset(tags):
@@ -1722,7 +1722,7 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
     out_basename,filetype = os.path.splitext(out_basename)
 
     for ext in ad:
-        extver = ext.hdr.EXTVER
+        extver = ext.hdr['EXTVER']
         record_name = '{}_{:0.3d}'.format(basename, extver)
         db = at.SpectralDatabase(database_name,record_name)
         out_record_name = '{}_{:0.3d}'.format(out_basename, extver)
@@ -1748,7 +1748,7 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
         SExtractor dictionary
     """
     for ext, header in zip(adoutput, adoutput.header[1:]):
-        outextver = ext.hdr.EXTVER
+        outextver = ext.hdr['EXTVER']
         output_wcs = WCS(header)
         indices = [i for i in range(len(ext_mapping))
                    if ext_mapping[i] == outextver]
@@ -1816,12 +1816,12 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 dsl.x1==0 and dsl.y1==0):
                 log.fullinfo('No changes will be made to {}[*,{}], since '
                              'the data section matches the data shape'.format(
-                             ad.filename,ext.hdr.EXTVER))
+                             ad.filename,ext.hdr['EXTVER']))
                 continue
 
             # Update logger with the section being kept
             log.fullinfo('For {}:{}, keeping the data from the section {}'.
-                         format(ad.filename, ext.hdr.EXTVER, datasecStr))
+                         format(ad.filename, ext.hdr['EXTVER'], datasecStr))
 
             # Trim SCI, VAR, DQ to new section
             ext.reset(ext.nddata[dsl.y1:dsl.y2,dsl.x1:dsl.x2])
@@ -1839,8 +1839,8 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
             # Update WCS reference pixel coordinate
             try:
-                crpix1 = ext.hdr.CRPIX1 - dsl.x1
-                crpix2 = ext.hdr.CRPIX2 - dsl.y1
+                crpix1 = ext.hdr['CRPIX1'] - dsl.x1
+                crpix2 = ext.hdr['CRPIX2'] - dsl.y1
             except:
                 log.warning("Could not access WCS keywords; using dummy "
                             "CRPIX1 and CRPIX2")
@@ -2138,7 +2138,7 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     # for the reference position (at least for now). All these checks add ~4%
     # in overhead for imaging.
     try:
-        pointing = (refpos.phu.POFFSET, refpos.phu.QOFFSET)
+        pointing = (refpos.phu['POFFSET'], refpos.phu['QOFFSET'])
     except AttributeError:
         if not isinstance(refpos, (list, tuple)) or \
            not all(isinstance(x, numbers.Number) for x in refpos):
@@ -2206,8 +2206,8 @@ def get_offset_dict(adinput=None):
     # Loop over AstroData instances:
     for ad in adinput:
         # Get the offsets from the primary header:
-        poff = ad.phu.POFFSET
-        qoff = ad.phu.QOFFSET
+        poff = ad.phu['POFFSET']
+        qoff = ad.phu['QOFFSET']
         # name = ad.filename
         name = ad  # store a direct reference
         offsets[name] = (poff, qoff)
