@@ -260,8 +260,11 @@ class Standardize(PrimitivesBASE):
                 # has a single MDF Table extension
                 ad.MDF = mdf.MDF
             except:
-                log.warning('Cannot find MDF in {}, so no MDF will be '
-                            'added'.format(mdf))
+                if len(mdf.tables) == 1:
+                    ad.MDF = getattr(mdf, mdf.tables.pop())
+                else:
+                    log.warning('Cannot find MDF in {}, so no MDF will be '
+                                'added'.format(mdf.filename))
                 continue
 
             log.fullinfo('Attaching the MDF {} to {}'.format(mdf.filename,
