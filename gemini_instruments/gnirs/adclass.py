@@ -125,9 +125,7 @@ class AstroDataGnirs(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-        # TODO: Even though image is 1024x1022, 1024x1024 must be returned for
-        # calibration matching with the archive, since old AD returned 1024x1024
-        return build_ir_section(self, pretty)
+        return self._parse_section('FULLFRAME', pretty)
 
     @astro_data_descriptor
     def detector_section(self, pretty=False):
