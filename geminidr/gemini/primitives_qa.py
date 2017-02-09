@@ -479,6 +479,7 @@ class QA(PrimitivesBASE):
                 zcorr = ad.airmass()**(-0.6)
             except:
                 zcorr = None
+
             is_ao = ad.is_ao()
             try:
                 wvband = 'AO' if is_ao else ad.wavelength_band()
@@ -494,11 +495,6 @@ class QA(PrimitivesBASE):
             else:
                 log.warning("{} is not IMAGE or SPECT; no IQ measurement "
                             "will be performed".format(ad.filename))
-                continue
-
-            # Check for no sources found: good_source is a list of Tables
-            if all(len(t)==0 for t in good_source):
-                log.warning("No good sources found in {}".format(ad.filename))
                 continue
 
             # For AO observations, the AO-estimated seeing is used (the IQ
@@ -518,6 +514,12 @@ class QA(PrimitivesBASE):
                 if is_image and ad.instrument() in ('GSAOI', 'NIRI', 'GNIRS'):
                     if len(good_source) > 0:
                         strehl = _strehl(ad, good_source)
+
+            # Check for no sources found: good_source is a list of Tables
+            # ...but can continue if we have an AO seeing measurement
+            if all(len(t)==0 for t in good_source) and ao_seeing is None:
+                log.warning("No good sources found in {}".format(ad.filename))
+                continue
 
             info_list = []
             iq_overlays = []
@@ -919,16 +921,19 @@ def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
     if ad.is_single:
         headstr += ':{}'.format(ad.hdr['EXTVER'])
     header = [headstr]
-    header.append('{} sources used to measure IQ'.format(fwhm.samples))
+    if fwhm.samples > 0:  # AO seeing has no sources
+        header.append('{} sources used to measure IQ'.format(fwhm.samples))
 
-    body = [('FWHM measurement:', '{:.3f} +/- {:.3f} arcsec'.format(fwhm.value,
-                                                                   fwhm.std))]
+    body = [('FWHM measurement:', '{:.3f} +/- {:.3f} arcsec'.
+             format(fwhm.value, fwhm.std))] if fwhm.value else []
+
     if 'IMAGE' in ad.tags:
         if 'NON_SIDEREAL' in ad.tags:
             header.append('WARNING: NON SIDEREAL tracking. IQ measurements '
                           'will be unreliable')
-        body.append(('Ellipticity:', '{:.3f} +/- {:.3f}'.format(ellip.value,
-                                                                ellip.std)))
+        if ellip.value:
+            body.append(('Ellipticity:', '{:.3f} +/- {:.3f}'.
+                         format(ellip.value, ellip.std)))
         if ad.is_ao():
             if strehl.value:
                 body.append(('Strehl ratio:', '{:.3f} +/- {:.3f}'.
@@ -943,7 +948,8 @@ def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
                      stdmsg))
 
     if qastatus.band:
-        body.append(('IQ range for {}-band:'.format(ad.filter_name(pretty=True)),
+        body.append(('IQ range for {}-band:'.
+                 format('AO' if ad.is_ao() else ad.filter_name(pretty=True)),
                  'IQ{} ({} arcsec)'.format('Any' if qastatus.band==100 else
                                            qastatus.band, qastatus.info)))
     else:
@@ -998,6 +1004,7 @@ def _qa_report(header, body, llen, rlen, logtype='stdinfo'):
     log = logutils.get_logger(__name__)
     logit = getattr(log, logtype)
     indent = ' ' * logutils.SW
+    logit('')
     for line in header:
         logit(indent + line)
     logit(indent + '-'*(llen+rlen))
@@ -1007,6 +1014,7 @@ def _qa_report(header, body, llen, rlen, logtype='stdinfo'):
         else:
             logit(indent + lstr.ljust(llen) + rstr.rjust(rlen))
     logit(indent + '-'*(llen+rlen))
+    logit('')
     return
 
 def _gsaoi_iq_estimate(ad, fwhm, strehl):

@@ -511,13 +511,17 @@ def _estimate_seeing(objcat):
                                   objcat['CLASS_STAR'] > 0.8,
                                   objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
                                   objcat['FLAGS'] & 65528 == 0,
+                                  objcat['FWHM_WORLD'] > 0,
                                   badpix < 0.2*objcat['ISOAREA_IMAGE']])
     good_fwhm = objcat['FWHM_WORLD'][good]
     if len(good_fwhm) > 3:
-        seeing_estimate = sigma_clip(good_fwhm, sigma=2, iters=3).mean()
+        seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
     elif len(good_fwhm) > 0:
         seeing_estimate = np.mean(good_fwhm)
     else:
+        seeing_estimate = None
+
+    if seeing_estimate <= 0:
         seeing_estimate = None
 
     return seeing_estimate

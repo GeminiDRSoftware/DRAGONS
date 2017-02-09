@@ -411,7 +411,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
     for descriptor in things_to_check:
         if getattr(ad1, descriptor)() != getattr(ad2, descriptor)():
             result = False
-            log.debug('  Descriptor failure for {}'.descriptor)
+            log.debug('  Descriptor failure for {}'.format(descriptor))
 
     # This is the tolerance Paul used for NIRI & F2 in FITS store:
     try:
