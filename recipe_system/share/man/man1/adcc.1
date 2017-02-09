@@ -1,0 +1,88 @@
+.TH adcc 1 "16 Feb 2017" "version 2.0(beta)" "adcc man page"
+.SH NAME
+adcc \- Automated Dataflow Coordination Center (adcc)
+.SH SYNOPSIS
+.B adcc
+[\fB\-h\fR] 
+[\fB\-d\fR]
+[\fB\-v\fR]
+[\fB\--startup-report\fR ADCCSRN]
+[\fB\--http-port\fR HTTPORT]
+
+.SH DESCRIPTION
+.B adcc(1)
+Historically known as the "adcc", the application provides a HTTP
+server that listens on either a user-provided port number (via \fB\--http-port\fR),
+or the default port of 8777. This webserver provides an interactive, graphical
+interface by which users can monitor incoming metrics that may be reported by
+recipe system pipelines (recipes), specifically the Quality Assurance Pipeline
+(QAP). The near real time QAP produces image quality and weather related metrics
+that are passed to the \fBadcc\fR as message events. Users wishing to use the adcc
+to monitor QA metrics need to simply open a web browser on the service's URL.
+
+E.g., Start the adcc,
+
+    $ adcc 
+
+And open a browser window on
+
+    http://localhost:8777/qap/nighttime_metrics.html
+
+Start the adcc on another port:
+
+    $ adcc --http-port 8778
+
+And point a browser to
+
+    http://localhost:8778/qap/nighttime_metrics.html
+
+Once metrics are produced and sent to the adcc, the display will automatically
+update with the latest metric event.
+
+When the adcc is started, certain information is written to a special file in
+a .adcc directory that records the process id (pid) and port number on which
+the web server is listening.
+
+.B N.B.
+Currently, only one adcc instance is permitted to run. Should users move to another
+directory, another adcc will not be allowed to start. Users running the QA pipeline,
+or other recipes that may produce metrics, should remain in the directory containing
+the .adcc directory before starting \fBreduce(1)\fR.
+
+.SH OPTIONS
+.TP 
+.B -h, --help
+show the
+.B adcc
+help message and exit
+.TP 
+.B -d, --dark
+Use the adcc faceplate 'dark' theme.
+.TP
+.B -v, --verbose
+increase HTTP client messaging on GET requests.
+.TP
+\fB\--startup-report\fR ADCCSRN
+file name for adcc startup report. This contains information about the http port 
+and process id. Report name is adccReport.
+.TP
+\fB\--http-port\fR HTTPPORT
+Response port for the web interface. i.e. http://localhost:<http-port>.
+Default is 8777.
+.RE
+
+.SH ENVIRONMENT
+Recommend Anaconda 4.2.0, Astropy 1.2.1. (Ureka 1.5.2 should also work for
+awhile.)
+
+.SH FILES
+adccinfo.py - Written on startup in ./.adcc/. Contains information on the process
+such as port number and process id.
+
+adccReport - ibid.
+
+.SH BUGS
+None known.
+
+.SH SEE ALSO 
+.I reduce(1)
