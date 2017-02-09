@@ -464,12 +464,21 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        prim_class_name = self.__class__.__name__
+
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by validateData".
                             format(ad.filename))
                 continue
+
+            # Check that the input is appropriate for this primitivesClass
+            # Only the instrument is checked
+            inst_name = 'GMOS' if 'GMOS' in ad.tags else ad.instrument()
+            if not inst_name in prim_class_name:
+                raise IOError("Input file {} is {} data and not suitable for "
+                    "{} class".format(ad.filename, inst_name, prim_class_name))
 
             # Report if this is an image without square binned pixels
             if 'IMAGE' in ad.tags:
