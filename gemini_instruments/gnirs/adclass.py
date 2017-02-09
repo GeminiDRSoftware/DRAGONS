@@ -4,7 +4,7 @@ import re
 from astrodata import astro_data_tag, astro_data_descriptor, TagSet, returns_list
 
 from ..gemini import AstroDataGemini
-from ..common import build_ir_section
+from ..common import build_ir_section, build_group_id, section_to_tuple
 from .lookup import detector_properties, nominal_zeropoints, config_dict, read_modes
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
@@ -94,10 +94,10 @@ class AstroDataGnirs(AstroDataGemini):
 
         string or list of strings
             Position of extension(s) using an IRAF section format (1-based)
-
         """
-        return build_ir_section(self, pretty)
+        return self._parse_section('FULLFRAME', pretty)
 
+    @returns_list
     @astro_data_descriptor
     def data_section(self, pretty=False):
         """
@@ -124,10 +124,8 @@ class AstroDataGnirs(AstroDataGemini):
         string or list of strings
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
-
         """
-        # All GNIRS pixels are data
-        return self._parse_section('data_section', 'FULLFRAME', pretty)
+        return self._parse_section('FULLFRAME', pretty)
 
     @astro_data_descriptor
     def detector_section(self, pretty=False):
@@ -154,7 +152,6 @@ class AstroDataGnirs(AstroDataGemini):
 
         string or list of strings
             Position of the detector using an IRAF section format (1-based).
-
         """
         return self.array_section(pretty=pretty)
 
@@ -179,7 +176,6 @@ class AstroDataGnirs(AstroDataGemini):
         str
             The disperser group, as grism&prism, with or without the
             component ID.
-
         """
         if self.phu.get('ACQMIR') == 'In':
             return 'MIRROR'
@@ -187,7 +183,7 @@ class AstroDataGnirs(AstroDataGemini):
         grating = self.grating(stripID=stripID, pretty=pretty)
         prism = self.prism(stripID=stripID, pretty=pretty)
         if prism.startswith('MIR'):
-            return str(grating)
+            return grating
         else:
             return "{}&{}".format(grating, prism)
 
@@ -212,7 +208,6 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         str
             The name of the focal plane mask with or without the component ID.
-
         """
         slit = self.slit(stripID=stripID, pretty=pretty).replace('Acquisition', 'Acq')
         decker = self.decker(stripID=stripID, pretty=pretty).replace('Acquisition', 'Acq')
@@ -228,7 +223,6 @@ class AstroDataGnirs(AstroDataGemini):
                 fpm = "IFU"
             elif "Acq" in slit and "Acq" in decker:
                 fpm = "Acq"
-
         return fpm
 
     @returns_list
@@ -242,12 +236,12 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         float
             Gain used for the observation.
-
         """
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        return float(detector_properties[read_mode, well_depth].gain)
+        return getattr(detector_properties.get((read_mode, well_depth)),
+                       'gain', None)
 
     @astro_data_descriptor
     def grating(self, stripID=False, pretty=False):
@@ -268,14 +262,12 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         str
             The name of the grating with or without the component ID.
-
         """
-        grating = self.phu['GRATING']
-
-        match = re.match("([\d/m]+)[A-Z]*(_G)(\d+)", grating)
+        grating = self.phu.get('GRATING')
         try:
+            match = re.match("([\d/m]+)[A-Z]*(_G)(\d+)", grating)
             ret_grating = "{}{}{}".format(*match.groups())
-        except AttributeError:
+        except (TypeError, AttributeError):
             ret_grating = grating
 
         if stripID or pretty:
@@ -293,7 +285,6 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         str
             A group ID for compatible data.
-
         """
         tags = self.tags
         if 'DARK' in tags:
@@ -302,26 +293,17 @@ class AstroDataGnirs(AstroDataGemini):
             # The descriptor list is the same for flats and science frames
             desc_list = ['observation_id', 'filter_name', 'camera', 'read_mode']
 
-        desc_list = desc_list + ['well_depth_setting', 'detector_section', 'disperser', 'focal_plane_mask']
-
-        pretty_ones = ['filter_name', 'disperser', 'focal_plane_mask']
-        force_list = ['detector_section']
-
-        collected_strings = []
-        for desc in desc_list:
-            method = getattr(self, desc)
-            if desc in pretty_ones:
-                result = method(pretty=True)
-            else:
-                result = method()
-            if desc in force_list and not isinstance(result, list):
-                result = [result]
-            collected_strings.append(str(result))
+        desc_list.extend(['well_depth_setting', 'detector_section',
+                          'disperser', 'focal_plane_mask'])
 
         if 'IMAGE' in tags and 'FLAT' in tags:
-            collected_strings.append('GNIRS_IMAGE_FLAT')
+            additional_item = 'GNIRS_IMAGE_FLAT'
+        else:
+            additional_item = None
 
-        return '_'.join(collected_strings)
+        return build_group_id(self, desc_list, prettify=('filter_name',
+                              'disperser', 'focal_plane_mask'),
+                              additional=additional_item)
 
     @astro_data_descriptor
     def nominal_photometric_zeropoint(self):
@@ -334,20 +316,25 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         float
             The nominal photometric zeropoint as a magnitude.
-
         """
         gain = self.gain()
         camera = self.camera()
         filter_name = self.filter_name(pretty=True)
+        bunit = self.hdr.get('BUNIT', 'adu')
+        zpt = nominal_zeropoints.get((camera, filter_name))
 
-        result = []
-        for bunit in self.hdr.get('BUNIT', 'adu'):
-            gain_factor = (2.5 * math.log10(gain)) if bunit.lower() == 'adu' else 0.0
-            nz_key = (filter_name, camera)
-            nom_phot_zeropoint = nominal_zeropoints[nz_key] - gain_factor
-            result.append(nom_phot_zeropoint)
-
-        return result
+        # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
+        # if the data are in ADU
+        if self.is_single:
+            try:
+                return zpt - (
+                    2.5 * math.log10(gain) if bunit.lower() == 'adu' else 0)
+            except TypeError:
+                return None
+        else:
+            return [zpt - (2.5 * math.log10(g) if b.lower() == 'adu' else 0)
+                   if zpt and g else None
+                   for g, b in zip(gain, bunit)]
 
     @astro_data_descriptor
     def non_linear_level(self):
@@ -365,13 +352,18 @@ class AstroDataGnirs(AstroDataGemini):
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
 
-        limit = detector_properties[read_mode, well_depth].linearlimit
-        saturation_level = self.saturation_level()
+        limit = getattr(detector_properties.get((read_mode, well_depth)),
+                        'linearlimit', None)
+        sat_level = self.saturation_level()
 
-        try:
-            return [int(limit * s) for s in saturation_level]
-        except TypeError:
-            return int(limit * saturation_level)
+        if self.is_single:
+            try:
+                return int(limit * sat_level)
+            except TypeError:
+                return None
+        else:
+            return [int(limit * s) if limit and s else None
+                    for s in sat_level]
 
     @astro_data_descriptor
     def pixel_scale(self):
@@ -382,31 +374,31 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         float
             Pixel scale in arcsec.
-
         """
         camera = self.camera()
 
         if self.tags & set(['IMAGE', 'DARK']):
             # Imaging or darks
-            match = re.match("^(Short|Long)(Red|Blue)_G\d+$", camera)
             try:
+                match = re.match("^(Short|Long)(Red|Blue)_G\d+$", camera)
                 cameratype = match.group(1)
                 if cameratype == 'Short':
-                    ret_pixel_scale = 0.15
+                    return 0.15
                 elif cameratype == 'Long':
-                    ret_pixel_scale = 0.05
-            except AttributeError:
-                raise Exception('No camera match for imaging mode')
+                    return 0.05
+            except (TypeError, AttributeError):
+                pass
+            return None
         else:
             # Spectroscopy mode
-            prism = self.phu['PRISM']
-            decker = self.phu['DECKER']
-            disperser = self.phu['GRATING']
-
+            prism = self.phu.get('PRISM')
+            decker = self.phu.get('DECKER')
+            disperser = self.phu.get('GRATING')
             ps_key = (prism, decker, disperser, camera)
-            ret_pixel_scale = float(config_dict[ps_key].pixscale)
-
-        return ret_pixel_scale
+            try:
+                return config_dict.get(ps_key).pixscale
+            except TypeError:
+                return None
 
     @astro_data_descriptor
     def prism(self, stripID=False, pretty=False):
@@ -426,18 +418,16 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         str
             The name of the prism with or without the component ID.
-
         """
-        prism = self.phu['PRISM']
-        match = re.match("[LBSR]*\+*([A-Z]*_G\d+)", prism)
-        # NOTE: The original descriptor has no provisions for not matching
-        #       the RE... which will produce an exception down the road.
-        #       Let's do it here (it will be an AttributeError, though)
-        ret_prism = match.group(1)
+        prism = self.phu.get('PRISM')
+        try:
+            match = re.match("[LBSR]*\+*([A-Z]*_G\d+)", prism)
+            ret_prism = match.group(1)
+        except (TypeError, AttributeError):  # prism=None, no match
+            return None
 
         if stripID or pretty:
             ret_prism = gmu.removeComponentID(ret_prism)
-
         return ret_prism
 
     @astro_data_descriptor
@@ -510,7 +500,8 @@ class AstroDataGnirs(AstroDataGemini):
         str
             Read mode for the observation.
         """
-        return read_modes.get((self.phu['LNRS'], self.phu['NDAVGS']), "Invalid")
+        return read_modes.get((self.phu.get('LNRS'), self.phu.get('NDAVGS')),
+                              "Unknown")
 
     @returns_list
     @astro_data_descriptor
@@ -531,9 +522,12 @@ class AstroDataGnirs(AstroDataGemini):
         well_depth = self.well_depth_setting()
         coadds = self.coadds()
 
-        read_noise = detector_properties[(read_mode, well_depth)].readnoise
-
-        return read_noise * math.sqrt(coadds)
+        read_noise = getattr(detector_properties.get((read_mode, well_depth)),
+                             'readnoise', None)
+        try:
+            return read_noise * math.sqrt(coadds)
+        except TypeError:
+            return None
 
     @astro_data_descriptor
     def saturation_level(self):
@@ -546,18 +540,23 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         int
             Saturation level in ADUs.
-
         """
         gain = self.gain()
         coadds = self.coadds()
         read_mode = self.read_mode()
         well_depth = self.well_depth_setting()
-        well = detector_properties[(read_mode, well_depth)].well
+        well = getattr(detector_properties.get((read_mode, well_depth)),
+                       'well', None)
 
-        try:
-            return [int(well * coadds / g) for g in gain]
-        except TypeError:
-            return int(well * coadds / gain)
+        if self.is_single:
+            try:
+                return int(well * coadds / gain)
+            except TypeError:
+                return None
+        else:
+            return [int(well * coadds / g) if well and g else None
+                    for g in gain]
+
 
     @astro_data_descriptor
     def slit(self, stripID=False, pretty=False):
@@ -577,11 +576,11 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         str
             The name of the slit with or without the component ID.
-
         """
-
-        slit = self.phu['SLIT'].replace(' ', '')
-
+        try:
+            slit = self.phu['SLIT'].replace(' ', '')
+        except KeyError:
+            return None
         return gmu.removeComponentID(slit) if stripID or pretty else slit
 
     @astro_data_descriptor
@@ -596,11 +595,14 @@ class AstroDataGnirs(AstroDataGemini):
             Well depth setting.
 
         """
-        biasvolt = self.phu['DETBIAS']
+        try:
+            biasvolt = self.phu['DETBIAS']
+        except KeyError:
+            return None
 
         if abs(0.3 - abs(biasvolt)) < 0.1:
             return "Shallow"
         elif abs(0.6 - abs(biasvolt)) < 0.1:
             return "Deep"
         else:
-            return "Invalid"
+            return "Unknown"

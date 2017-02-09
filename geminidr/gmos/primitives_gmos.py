@@ -399,7 +399,7 @@ class GMOS(Gemini, CCD):
                 #adoutput = astrodata.open(out_hdulist)
                 adoutput.filename = ad.filename
                 #for extver, ext in enumerate(adoutput, start=1):
-                #    ext.hdr.EXTVER = extver
+                #    ext.hdr['EXTVER'] = extver
 
                 # Update and attach OBJCAT if needed
                 if any(hasattr(ext, 'OBJCAT') for ext in ad):
@@ -437,7 +437,7 @@ class GMOS(Gemini, CCD):
         xbin = ad.detector_x_bin()
         ybin = ad.detector_y_bin()
         det = ad.detector_name(pretty=True)[:3]
-        amps = '{}amp'.format(3 * ad.phu.NAMPS)
+        amps = '{}amp'.format(3 * ad.phu['NAMPS'])
         mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
             or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
         key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
@@ -460,7 +460,7 @@ def _obtain_arraygap(adinput=None):
     This function obtains the raw array gap size for the different GMOS
     detectors and returns it after correcting for binning.
     """
-    det_type = adinput.phu.DETTYPE
+    det_type = adinput.phu.get('DETTYPE')
     
     # Obtain the array gap value and fix for any binning
     arraygap = int(gmosArrayGaps[det_type] / adinput.detector_x_bin())

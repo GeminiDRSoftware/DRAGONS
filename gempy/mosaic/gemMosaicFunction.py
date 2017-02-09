@@ -126,8 +126,8 @@ def _set_geo_values(ad, ccdsecs, detsecs, binning):
     geotable = import_module(lookup_tables)
     
     # key elements for chip geometries
-    dettype      =  ad.phu.DETTYPE
-    detector     =  ad.phu.DETECTOR
+    dettype      =  ad.phu['DETTYPE']
+    detector     =  ad.phu['DETECTOR']
     instrument   = ad.instrument()
     x_bin, y_bin = binning
     if x_bin > 1 or y_bin > 1:

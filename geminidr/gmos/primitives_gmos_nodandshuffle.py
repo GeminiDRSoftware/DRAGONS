@@ -2,6 +2,8 @@
 #                                                                  gemini_python
 #
 #                                                primtives_gmos_nodandshuffle.py
+#
+# NB This is a pure mixin and should not be instantiated as a primitives class!
 # ------------------------------------------------------------------------------
 from copy import deepcopy
 
@@ -13,18 +15,17 @@ from .parameters_gmos_nodandshuffle import ParametersGMOSNodAndShuffle
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class GMOSNodAndShuffle(GMOS):
+class GMOSNodAndShuffle():
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSImage level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "NODANDSHUFFLE"])
+    tagset = set()
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSNodAndShuffle, self).__init__(adinputs, **kwargs)
+        #super(GMOSNodAndShuffle, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersGMOSNodAndShuffle
-
 
     def skyCorrectNodAndShuffle(self, adinputs=None, **params):
         """

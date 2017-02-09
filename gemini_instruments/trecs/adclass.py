@@ -62,6 +62,8 @@ class AstroDataTrecs(AstroDataGemini):
             output_units = "meters"
 
         disperser = self.disperser()
+        if disperser is None:
+            return None
         if disperser == 'LowRes-10':
             wave_in_microns = 10.5
         elif disperser == 'LowRes-20':
@@ -69,7 +71,7 @@ class AstroDataTrecs(AstroDataGemini):
         elif disperser.startswith('HighRes-10'):
             wave_in_microns = self.phu.get('HRCENWL')
         else:
-            wave_in_microns = None
+            return None
         return gmu.convert_units('microns', wave_in_microns, output_units)
 
     @astro_data_descriptor
@@ -121,7 +123,6 @@ class AstroDataTrecs(AstroDataGemini):
             dispersion = 0.0019
         else:
             dispersion = None
-
         return gmu.convert_units('microns', dispersion, output_units)
 
     @returns_list
@@ -140,7 +141,6 @@ class AstroDataTrecs(AstroDataGemini):
             return 214.0
         elif bias_level == '1':
             return 718.0
-
 
     @astro_data_descriptor
     def pixel_scale(self):

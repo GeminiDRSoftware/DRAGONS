@@ -155,14 +155,15 @@ class Stack(PrimitivesBASE):
             # the variance and data quality extensions to be the same as the
             # science extensions.
             for ext, gain, rn in zip(ad, gain_list, read_noise_list):
-                ext.hdr.GAIN = gain
-                ext.hdr.RDNOISE = rn
+                ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
+                ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
             # Stick the first extension's values in the PHU
-            ad.phu.GAIN = gain_list[0]
-            ad.phu.RDNOISE = read_noise_list[0]
+            ad.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
+            ad.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
 
             # Add suffix to datalabel to distinguish from the reference frame
-            ad.phu.DATALAB = "{}{}".format(ad.phu.DATALAB, sfx)
+            ad.phu.set('DATALAB', "{}{}".format(ad.phu.DATALAB, sfx),
+                       self.keyword_comments['DATALAB'])
 
             # Timestamp and update filename and prepare to return single output
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -212,7 +213,7 @@ class Stack(PrimitivesBASE):
         for ad_sci in adinputs:
             # Retrieve the list of sky AstroData objects associated with the
             # input science AstroData object
-            origname = ad_sci.phu.ORIGNAME
+            origname = ad_sci.phu.get('ORIGNAME')
             if sky_dict and (origname in sky_dict):
                 ad_sky_list = sky_dict[origname]
 
@@ -310,5 +311,5 @@ def _can_stack(adinputs):
     :param adinput: List of AstroData instances
     :type adinput: List of AstroData instances
     """
-    ref_pa = adinputs[0].phu.PA
-    return all(abs(ad.phu.PA - ref_pa) < 1.0 for ad in adinputs)
+    ref_pa = adinputs[0].phu['PA']
+    return all(abs(ad.phu['PA'] - ref_pa) < 1.0 for ad in adinputs)

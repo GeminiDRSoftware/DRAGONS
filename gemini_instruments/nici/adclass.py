@@ -46,8 +46,14 @@ class AstroDataNici(AstroDataGemini):
         float/list of floats
             exposure time for each extension
         """
-        exptime_r = self.phu['ITIME_R'] * self.phu['NCOADD_R']
-        exptime_b = self.phu['ITIME_B'] * self.phu['NCOADD_B']
+        try:
+            exptime_r = self.phu['ITIME_R'] * self.phu['NCOADD_R']
+        except KeyError:
+            exptime_r = None
+        try:
+            exptime_b = self.phu['ITIME_B'] * self.phu['NCOADD_B']
+        except KeyError:
+            exptime_b = None
 
         # Use the filter header keywords to determine which exptime to use
         # Assume it's a red exposure if FILTER_B is not defined
@@ -95,16 +101,14 @@ class AstroDataNici(AstroDataGemini):
             filter = filt_r if filt_b is None else filt_b
             return gmu.removeComponentID(filter) if pretty or stripID else filter
 
-    @returns_list
     @astro_data_descriptor
     def pixel_scale(self):
         """
-        Returns the image scale in arcseconds per pixel, one value per
-        extension unless called on a single-extension slice
+        Returns the image scale in arcseconds per pixel
 
         Returns
         -------
-        float/list of floats
+        float
             the pixel scale
         """
         return 0.018

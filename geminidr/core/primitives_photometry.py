@@ -179,7 +179,8 @@ class Photometry(PrimitivesBASE):
                 if seeing_estimate is not None:
                     log.debug("Running SExtractor with seeing estimate "
                               "{:.3f}".format(seeing_estimate))
-                    sexpars.update({'SEEING_FWHM': '{:.3f}'.format(seeing_estimate)})
+                    sexpars.update({'SEEING_FWHM': '{:.3f}'.
+                                   format(seeing_estimate)})
                     sex_task = SExtractorETI([ext], sexpars,
                                     mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
@@ -193,10 +194,10 @@ class Photometry(PrimitivesBASE):
                 _cull_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
-                ad = gt.add_objcat(ad, extver=ext.hdr.EXTVER, replace=False,
+                ad = gt.add_objcat(ad, extver=ext.hdr['EXTVER'], replace=False,
                                    table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
-                                                ad.filename, ext.hdr.EXTVER))
+                                            ad.filename, ext.hdr['EXTVER']))
 
             # Run some profiling code on the best sources to produce a
             # more IRAF-like FWHM number, adding two columns to the OBJCAT
@@ -324,7 +325,7 @@ def _match_objcat_refcat(ad):
     for index in objcat_order:
         objcat = ad[index].OBJCAT
         objcat_len = len(objcat)
-        extver = ad[index].hdr.EXTVER
+        extver = ad[index].hdr['EXTVER']
         xx = objcat['X_IMAGE']
         yy = objcat['Y_IMAGE']
 
@@ -510,13 +511,17 @@ def _estimate_seeing(objcat):
                                   objcat['CLASS_STAR'] > 0.8,
                                   objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
                                   objcat['FLAGS'] & 65528 == 0,
+                                  objcat['FWHM_WORLD'] > 0,
                                   badpix < 0.2*objcat['ISOAREA_IMAGE']])
     good_fwhm = objcat['FWHM_WORLD'][good]
     if len(good_fwhm) > 3:
-        seeing_estimate = sigma_clip(good_fwhm, sigma=2, iters=3).mean()
+        seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
     elif len(good_fwhm) > 0:
         seeing_estimate = np.mean(good_fwhm)
     else:
+        seeing_estimate = None
+
+    if seeing_estimate <= 0:
         seeing_estimate = None
 
     return seeing_estimate

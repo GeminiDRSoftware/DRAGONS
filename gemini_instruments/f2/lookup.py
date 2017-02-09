@@ -1,3 +1,6 @@
+from collections import namedtuple
+ArrayProperties = namedtuple("ArrayProperties",
+                             "readnoise gain welldepth linlimit nonlinlimit coeffs")
 
 filter_wavelengths = {
     'Jlow'  : 1.1220,
@@ -20,9 +23,9 @@ array_properties = {
     # Non-linear limit: Saturation starts at ~35 kADU,
     # 35 kADU = 155400e-
     # readnoise and well are in units of electrons
-    1:(11.7, 4.44, 155400, 0.6286, 1.0, 0.0, 0.0, 1.0),
-    4:(6.0, 4.44, 155400, 0.6286, 1.0, 0.0, 0.0, 1.0),
-    8:(5.0, 4.44, 155400, 0.6286, 1.0, 0.0, 0.0, 1.0)
+    '1': ArrayProperties(11.7, 4.44, 155400, 0.6286, 1.0, (1.0, 0.0, 0.0)),
+    '4': ArrayProperties(6.0, 4.44, 155400, 0.6286, 1.0, (1.0, 0.0, 0.0)),
+    '8': ArrayProperties(5.0, 4.44, 155400, 0.6286, 1.0, (1.0, 0.0, 0.0))
     }
 
 nominal_zeropoints = {

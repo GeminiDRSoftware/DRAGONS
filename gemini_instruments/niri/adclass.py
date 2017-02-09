@@ -4,7 +4,7 @@ import math
 
 from . import lookup
 from .. import gmu
-from ..common import build_ir_section
+from ..common import build_ir_section, build_group_id
 
 class AstroDataNiri(AstroDataGemini):
 
@@ -113,7 +113,7 @@ class AstroDataNiri(AstroDataGemini):
             output_units = "meters"
 
         # Use the lookup dict, keyed on focal_plane_mask and grism
-        wave_in_angstroms = lookup.spec_wavlengths.get((self.focal_plane_mask(),
+        wave_in_angstroms = lookup.spec_wavelengths.get((self.focal_plane_mask(),
                                                    self.disperser(stripID=True)))
         return gmu.convert_units('angstroms', wave_in_angstroms,
                              output_units)
@@ -146,7 +146,7 @@ class AstroDataNiri(AstroDataGemini):
             format (1-based).
         """
         # All NIRI pixels are data
-        return self._parse_section('data_section', 'FULLFRAME', pretty)
+        return self._parse_section('FULLFRAME', pretty)
 
     @astro_data_descriptor
     def detector_roi_setting(self):
@@ -221,12 +221,14 @@ class AstroDataNiri(AstroDataGemini):
         str
             The name of the disperser with or without the component ID.
         """
-        filter3 = self.phu['FILTER3']
+        try:
+            filter3 = self.phu['FILTER3']
+        except KeyError:
+            return None
         if 'grism' in filter3:
-            disperser = gmu.removeComponentID(filter3) if stripID else filter3
+            return gmu.removeComponentID(filter3) if stripID else filter3
         else:
-            disperser = 'MIRROR'
-        return disperser
+            return 'MIRROR'
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
@@ -254,7 +256,7 @@ class AstroDataNiri(AstroDataGemini):
         raw_filters = [self._may_remove_component('FILTER{}'.format(i),
                                         stripID, pretty) for i in [1,2,3]]
         # eliminate any open/grism/pupil from the list
-        filters = [f for f in raw_filters if
+        filters = [f for f in raw_filters if f is not None and
                    not any(x in f.lower() for x in ['open', 'grism', 'pupil'])]
         filters.sort()
 
@@ -282,7 +284,7 @@ class AstroDataNiri(AstroDataGemini):
         float/list
             gain
         """
-        return lookup.array_properties['gain']
+        return lookup.array_properties.get('gain')
 
     @astro_data_descriptor
     def group_id(self):
@@ -302,30 +304,20 @@ class AstroDataNiri(AstroDataGemini):
         else:
             desc_list = ['observation_id', 'filter_name', 'camera']
 
-        desc_list.extend(['read_mode', 'well_depth_setting', 'detector_section'])
+        desc_list.extend(['read_mode', 'well_depth_setting',
+                          'detector_section'])
         if 'SPECT' in tags:
             desc_list.extend(['disperser', 'focal_plane_mask'])
-
-        pretty_ones = ['filter_name', 'disperser', 'focal_plane_mask']
-        force_list = ['detector_section']
-
-        collected_strings = []
-        for desc in desc_list:
-            method = getattr(self, desc)
-            if desc in pretty_ones:
-                result = method(pretty=True)
-            else:
-                result = method()
-            if desc in force_list and not isinstance(result, list):
-                result = [result]
-            collected_strings.append(str(result))
 
         if 'IMAGE' in tags and 'FLAT' in tags:
             additional_item = 'NIRI_IMAGE_TWILIGHT' if 'TWILIGHT' in tags \
                 else 'NIRI_IMAGE_FLAT'
-            collected_strings.append(additional_item)
+        else:
+            additional_item = None
 
-        return '_'.join(collected_strings)
+        return build_group_id(self, desc_list, prettify=['filter_name',
+                              'disperser', 'focal_plane_mask'],
+                              additional=additional_item)
 
     @astro_data_descriptor
     def nominal_photometric_zeropoint(self):
@@ -338,26 +330,25 @@ class AstroDataNiri(AstroDataGemini):
         float/list of floats
             Photometric zeropoint
         """
-        zpt_dict = lookup.nominal_zeropoints
-
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
         camera = self.camera()
         # Explicit: if BUNIT is missing, assume data are in ADU
         bunit = self.hdr.get('BUNIT', 'adu')
+        zpt = lookup.nominal_zeropoints.get((camera, filter_name))
 
-        # Have to do the list/not-list stuff here
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
         # if the data are in ADU
-        try:
-            zpt = [zpt_dict[filter_name, camera] -
-                   (2.5 * math.log10(g) if b=='adu' else 0)
-                   for g,b in zip(gain, bunit)]
-        except TypeError:
-            zpt = zpt_dict[camera, filter_name] - (
-                2.5 * math.log10(gain) if bunit=='adu' else 0)
-
-        return zpt
+        if self.is_single:
+            try:
+                return zpt - (
+                    2.5 * math.log10(gain) if bunit.lower() == 'adu' else 0)
+            except TypeError:
+                return None
+        else:
+            return [zpt - (2.5 * math.log10(g) if b.lower() == 'adu' else 0)
+                   if zpt and g else None
+                   for g, b in zip(gain, bunit)]
 
     @astro_data_descriptor
     def nonlinearity_coeffs(self):
@@ -371,15 +362,13 @@ class AstroDataNiri(AstroDataGemini):
             nonlinearity info (max counts, exptime correction, gamma, eta)
         """
         read_mode = self.read_mode()
-        well_depth_setting = self.well_depth_setting()
-        naxis2 = self.hdr['NAXIS2']
-        try:
-            keys = [(read_mode, size, well_depth_setting) for size in naxis2]
-        except TypeError:
-            # Single slice
-            return lookup.nonlin_coeffs.get((read_mode, naxis2, well_depth_setting))
+        well_depth = self.well_depth_setting()
+        naxis2 = self.hdr.get('NAXIS2')
+        if self.is_single:
+            return lookup.nonlin_coeffs.get((read_mode, naxis2, well_depth))
         else:
-            return [lookup.nonlin_coeffs.get(key) for key in keys]
+            return [lookup.nonlin_coeffs.get((read_mode, size, well_depth))
+                    for size in naxis2]
 
     @astro_data_descriptor
     def non_linear_level(self):
@@ -393,12 +382,12 @@ class AstroDataNiri(AstroDataGemini):
         list/int
             non-linearity level in ADU
         """
-        saturation_level = self.saturation_level()
+        sat_level = self.saturation_level()
         linear_limit = lookup.array_properties['linearlimit']
-        try:
-            return [int(linear_limit * s) for s in saturation_level]
-        except TypeError:
-            return int(linear_limit * saturation_level)
+        if isinstance(sat_level, list):
+            return [int(linear_limit * s) for s in sat_level]
+        else:
+            return int(linear_limit * sat_level)
 
     @astro_data_descriptor
     def pupil_mask(self, stripID=False, pretty=False):
@@ -410,13 +399,15 @@ class AstroDataNiri(AstroDataGemini):
         str
             the pupil mask
         """
-        filter3 = self.phu['FILTER3']
+        try:
+            filter3 = self.phu['FILTER3']
+        except KeyError:
+            return None
         if filter3.startswith('pup'):
-            pupil_mask = gmu.removeComponentID(filter3) if pretty or stripID \
+             return gmu.removeComponentID(filter3) if pretty or stripID \
                 else filter3
         else:
-            pupil_mask = 'MIRROR'
-        return pupil_mask
+            return 'MIRROR'
 
     @astro_data_descriptor
     def read_mode(self):
@@ -430,16 +421,15 @@ class AstroDataNiri(AstroDataGemini):
         str
             the read mode used
         """
-        setting = (self.phu['LNRS'], self.phu['NDAVGS'])
+        setting = (self.phu.get('LNRS'), self.phu.get('NDAVGS'))
         if setting == (16,16):
-            read_mode = 'Low Background'
+            return 'Low Background'
         elif setting == (1,16):
-            read_mode = 'Medium Background'
+            return 'Medium Background'
         elif setting == (1,1):
-            read_mode = 'High Background'
+            return 'High Background'
         else:
-            read_mode = 'Invalid'
-        return read_mode
+            return 'Unknown'
 
     @returns_list
     @astro_data_descriptor
@@ -460,7 +450,10 @@ class AstroDataNiri(AstroDataGemini):
             key = 'readnoise'
         else:
             key = 'medreadnoise'
-        read_noise = lookup.array_properties[key]
+        try:
+            read_noise = lookup.array_properties[key]
+        except KeyError:
+            return None
         # Because coadds are summed, read noise increases by sqrt(COADDS)
         return read_noise * math.sqrt(self.coadds())
 
@@ -476,12 +469,14 @@ class AstroDataNiri(AstroDataGemini):
         """
         coadds = self.coadds()
         gain = self.gain()
-        well = lookup.array_properties[self.well_depth_setting().lower()+'well']
-        try:
-            saturation_level = [int(well * coadds / g) for g in gain]
-        except TypeError:
-            saturation_level = int(well * coadds / gain)
-        return saturation_level
+        well = lookup.array_properties.get(self.well_depth_setting().lower()+'well')
+        if self.is_single:
+            try:
+                return int(well * coadds / gain)
+            except TypeError:
+                return None
+        else:
+            return [int(well * coadds / g) if g and well else None for g in gain]
 
     @astro_data_descriptor
     def well_depth_setting(self):
@@ -495,9 +490,12 @@ class AstroDataNiri(AstroDataGemini):
         str
             the well-depth setting
         """
-        biasvolt = self.phu['A_VDDUC'] - self.phu['A_VDET']
-        if abs(biasvolt - lookup.array_properties['shallowbias']) < 0.05:
-            return 'Shallow'
-        elif abs(biasvolt - lookup.array_properties['deepbias']) < 0.05:
-            return 'Deep'
-        return 'Invalid'
+        try:
+            biasvolt = self.phu['A_VDDUC'] - self.phu['A_VDET']
+            if abs(biasvolt - lookup.array_properties['shallowbias']) < 0.05:
+                return 'Shallow'
+            elif abs(biasvolt - lookup.array_properties['deepbias']) < 0.05:
+                return 'Deep'
+        except KeyError:
+            pass
+        return 'Unknown'

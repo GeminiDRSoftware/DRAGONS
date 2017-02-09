@@ -58,12 +58,12 @@ class Nbiascontam(GireduceParam):
         else:
             e2v = False
             if ad:
-                detector_type = ad.phu.DETTYPE
+                detector_type = ad.phu['DETTYPE']
                 if detector_type == "SDSU II e2v DD CCD42-90":
                     e2v = True
             else:
                 for ad in inputs:
-                    detector_type = ad.phu.DETTYPE
+                    detector_type = ad.phu['DETTYPE']
                     if detector_type == "SDSU II e2v DD CCD42-90":
                         e2v = True
             if e2v:

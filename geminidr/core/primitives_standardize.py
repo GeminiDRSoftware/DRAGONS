@@ -77,7 +77,7 @@ class Standardize(PrimitivesBASE):
                                         self.keyword_comments)
 
             for ext, bpm_ext in zip(ad, final_bpm):
-                extver = ext.hdr.EXTVER
+                extver = ext.hdr['EXTVER']
                 if ext.mask is not None:
                     log.warning('A mask already exists in extver {}'.
                                 format(extver))
@@ -260,8 +260,11 @@ class Standardize(PrimitivesBASE):
                 # has a single MDF Table extension
                 ad.MDF = mdf.MDF
             except:
-                log.warning('Cannot find MDF in {}, so no MDF will be '
-                            'added'.format(mdf))
+                if len(mdf.tables) == 1:
+                    ad.MDF = getattr(mdf, mdf.tables.pop())
+                else:
+                    log.warning('Cannot find MDF in {}, so no MDF will be '
+                                'added'.format(mdf.filename))
                 continue
 
             log.fullinfo('Attaching the MDF {} to {}'.format(mdf.filename,
@@ -615,7 +618,7 @@ def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
     var_dtype = np.float32
 
     for ext, gain, read_noise in zip(adinput, gain_list, read_noise_list):
-        extver = ext.hdr.EXTVER
+        extver = ext.hdr['EXTVER']
         # Assume units are ADU if not explicitly given
         bunit = ext.hdr.get('BUNIT', 'ADU')
 

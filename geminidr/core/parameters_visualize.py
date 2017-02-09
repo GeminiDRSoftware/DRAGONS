@@ -9,7 +9,7 @@ class ParametersVisualize(ParametersBASE):
         "frame"             : 1,
         "ignore"            : False,
         "overlay"           : None,
-        "remove_bias"       : True,
+        "remove_bias"       : False,
         "threshold"         : "auto",
         "tile"              : True,
         "zscale"            : True,
