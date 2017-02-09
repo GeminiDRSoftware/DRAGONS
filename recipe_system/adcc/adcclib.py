@@ -5,7 +5,7 @@ from __future__ import print_function
 # ------------------------------------------------------------------------------
 from builtins import object
 from future.utils import with_metaclass
-__version__ = 'beta (new hope)'
+__version__ = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 """
 Automated Dataflow Coordination Center
@@ -13,6 +13,7 @@ Automated Dataflow Coordination Center
 """
 import os
 import sys
+import signal
 import time
 from threading import Event
 from threading import Thread
@@ -22,23 +23,16 @@ from recipe_system.adcc.servers import eventsManager
 
 from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
 # ------------------------------------------------------------------------------
-def getPersistDir(dirtitle="adcc"):
+def get_adcc_dir(dirtitle="adcc"):
     dotadcc = {"adcc": ".adcc"}
     if not os.path.exists(dotadcc[dirtitle]):
         os.mkdir(dotadcc[dirtitle])
     return dotadcc[dirtitle]
 
-def writeADCCSR(filename, vals=None):
-    if filename is None:
-        print("adcc.writeADCCSR(): no filename for sr")
-        filename = ".adcc/adccReport"
-
-    print("adcc.writeADCCSR(): startup report in {}".format(filename))
-    with open(filename, "w+") as sr:
-        if vals is None:
-            sr.write("ADCC ALREADY RUNNING\n")
-        else:
-            sr.write(repr(vals))
+def write_adcc_sr(srname, vals):
+    print("adcclib: adcc startup report in {}".format(srname))
+    with open(srname, "w+") as sr:
+        sr.write(repr(vals))
     return
 # ------------------------------------------------------------------------------
 class Singleton(type):
@@ -53,14 +47,29 @@ class ADCC(with_metaclass(Singleton, object)):
         if args is None:
             pass
         else:
-            self.clfn      = args.adccsrn
             self.dark      = args.dark
             self.events    = eventsManager.EventsManager()
             self.http_port = args.httpport
             self.sreport   = args.adccsrn
-            self.racefile  = ".adcc/adccinfo.py"
+            self.racefile  = "adccinfo.py"
             self.verbose   = args.verbosity
             self.web       = None
+
+    def _check_adcc(self):
+        curpid = os.getpid()
+        running = []
+        for line in os.popen("ps ax | grep adcc | grep -v grep"):
+            fields = line.split()
+            pid = fields[0]
+            if int(pid) != int(curpid):
+                print("adcclib: adcc process {} running.".format(pid))
+                running.append(pid)
+        return running
+
+    def _check_kill_adcc(self, pids):
+        for pid in pids:
+            os.kill(int(pid), signal.SIGKILL)
+        return
 
     def _http_interface(self, run_event):
         # establish HTTP server and proxy.
@@ -71,19 +80,18 @@ class ADCC(with_metaclass(Singleton, object)):
         return
 
     def _handle_locks(self):
-        adccdir = getPersistDir()
-        if os.path.exists(self.racefile):
-            print("adcclib: adcc lockfile present.")
-            try:
-                if not self.web.is_alive():
-                    print("adcc.main(): no adcc running, clearing lockfile.")
-                    os.remove(racefile)
-                else:
-                    writeADCCSR(clfn)
-                    sys.exit("adcc instance already running. No-Op.")
-            except AttributeError:
-                print("Web Interface thread is not alive.")
-                pass
+        adccdir = get_adcc_dir()
+        lockf = os.path.join(adccdir, self.racefile)
+        lfile = True if os.path.exists(lockf) else False
+        pids = self._check_adcc()
+        if pids and lfile:
+            sys.exit("adcclib: adcc running and lockfile detected.")
+        elif pids and not lfile:
+            sys.exit("adcclib: adcc running on port {}".format(self.http_port))
+        elif lfile and not pids:
+            print("adcclib: No adcc running but lockfile found.")
+            print("adcclib: adcc configuration appears to be corrupted. Clearing ...")
+            os.unlink(lockf)
         return
 
     def _write_locks(self):
@@ -91,12 +99,14 @@ class ADCC(with_metaclass(Singleton, object)):
         Write racefile and ADCC Startup Report
 
         """
-        # write HTTP port
+        dotadcc = get_adcc_dir()
         vals = {"http_port": self.http_port, "pid": os.getpid()}
-        with open(self.racefile, "w") as ports:
+        rfile = os.path.join(dotadcc, self.racefile)
+        with open(rfile, "w") as ports:
             ports.write(repr(vals))
 
-        writeADCCSR(self.clfn, vals=vals)
+        sr = os.path.join(dotadcc, self.sreport)
+        write_adcc_sr(sr, vals)
         return
 
     def main(self):
