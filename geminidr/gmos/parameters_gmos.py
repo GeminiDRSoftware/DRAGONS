@@ -14,6 +14,11 @@ class ParametersGMOS(ParametersGemini, ParametersCCD):
         "tile"              : True,
         "zscale"            : True,
     }
+    measureBG = {
+        "suffix"            : "_bgMeasured",
+        "remove_bias"       : True,
+        "separate_ext"      : False,
+    }
     validateData = {
         "suffix"            : "_dataValidated",
         "num_exts"          : [1,2,3,4,6,12],

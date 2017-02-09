@@ -40,7 +40,7 @@ class QA(PrimitivesBASE):
         super(QA, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersBASE
 
-    def measureBG(self, adinputs=None, suffix='_bgMeasured', remove_bias=True,
+    def measureBG(self, adinputs=None, suffix='_bgMeasured', remove_bias=False,
                   separate_ext=False):
         """
         This primitive measures the sky background level for an image by
