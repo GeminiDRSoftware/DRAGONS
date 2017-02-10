@@ -5,7 +5,6 @@ from abc import abstractmethod
 from copy import deepcopy
 from collections import namedtuple, OrderedDict
 import os
-import warnings
 from functools import partial, wraps
 try:
     # Python 3
@@ -77,17 +76,13 @@ class FitsKeywordManipulator(object):
 
     def __setitem__(self, key, value):
         if isinstance(value, tuple):
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore', category=fits.verify.VerifyWarning)
-                self.set(key, value=value[0], comment=value[1])
+            self.set(key, value=value[0], comment=value[1])
         else:
             self.set(key, value=value)
 
     def set(self, key, value=None, comment=None):
         for header in self._headers:
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore', category=fits.verify.VerifyWarning)
-                header.set(key, value=value, comment=comment)
+            header.set(key, value=value, comment=comment)
 
     def __getitem__(self, key):
         if self._on_ext:
