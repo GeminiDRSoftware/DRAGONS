@@ -31,6 +31,7 @@ descriptor_list = ['amp_read_area', 'camera', 'central_wavelength', 'coadds',
                    'exposure_time', 'filter_name', 'focal_plane_mask',
                    'gain_setting', 'gcal_lamp', 'instrument', 'lyot_stop',
                    'nod_count', 'nod_pixels', 'object', 'observation_class',
+                   'observation_id',
                    'observation_type', 'program_id', 'read_speed_setting',
                    'ut_datetime', 'read_mode', 'well_depth_setting']
 # ------------------------------------------------------------------------------
