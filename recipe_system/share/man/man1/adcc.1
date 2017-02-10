@@ -36,12 +36,16 @@ And point a browser to
 
     http://localhost:8778/qap/nighttime_metrics.html
 
-Once metrics are produced and sent to the adcc, the display will automatically
-update with the latest metric event.
+When metrics are produced and sent to the adcc, the display will automatically
+update with the latest metric event. If users are processing datasets taken on a
+day prior to the current operational day, the URL to monitor metrics produced
+for that day is
+
+     http://localhost:8778/qap/nighttime_metrics.html?date=YYYYMMDD
 
 When the adcc is started, certain information is written to a special file in
-a .adcc directory that records the process id (pid) and port number on which
-the web server is listening.
+a .adcc directory that records the process id (pid) of the adcc instance and
+port number on which the web server is listening.
 
 .B N.B.
 Currently, only one adcc instance is permitted to run. Should users move to another
@@ -76,10 +80,10 @@ Recommend Anaconda 4.2.0, Astropy 1.2.1. (Ureka 1.5.2 should also work for
 awhile.)
 
 .SH FILES
-adccinfo.py - Written on startup in ./.adcc/. Contains information on the process
+\fBadccinfo.py\fR - Written on startup in ./.adcc/. Contains information on the process
 such as port number and process id.
 
-adccReport - ibid.
+\fBadccReport\fR - ibid.
 
 .SH BUGS
 None known.

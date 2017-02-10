@@ -8,6 +8,7 @@ from importlib import import_module
 from .baseMapper import Mapper
 
 from ..utils.errors import RecipeNotFound
+from ..utils.errors import ContextError
 
 from ..utils.mapper_utils import dotpath
 from ..utils.mapper_utils import find_user_recipe
@@ -88,13 +89,19 @@ class RecipeMapper(Mapper):
             yield dotpath(pkgname, context_pkg), ispkg
 
     def _generate_context_pkg(self, pkg):
+        found = False
         ppath = pkg.__path__[0]
         pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
             if ispkg and pkgname in self.context:
+                found = True
                 break
             else:
                 continue
+
+        if not found:
+            cerr = "No context package matched {}"
+            raise ContextError(cerr.format(self.context))
 
         loaded_pkg = import_module(dotpath(pkg.__name__, pkgname))
         for mod, ispkg in self._generate_context_libs(loaded_pkg):

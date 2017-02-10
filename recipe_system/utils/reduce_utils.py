@@ -51,11 +51,11 @@ class ReduceArgumentParser(ArgumentParser):
 
 # ------------------------------------------------------------------------------
 def buildParser(version):
-    parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " + 
-                                  "_"*28 + "\n" + "_"*20 + 
-                                  " Recipe Processing Management System " + 
+    parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " +
+                                  "_"*28 + "\n" + "_"*20 +
+                                  " Recipe Processing Management System " +
                                   "_"*20 + "\n" + "_"*22 + 
-                                  " Recipe System Release" + version + " " + "_"*22, 
+                                  " Recipe System Release"+version+" "+"_"*22, 
                                   prog="reduce", 
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
@@ -255,8 +255,8 @@ def normalize_args(args):
 
     if isinstance(args.recipename, list):
         args.recipename = args.recipename[0]
-    if isinstance(args.context, list):
-        args.context = args.context[0]
+    # if isinstance(args.context, list):     # v2.0, context is now a list 
+    #     args.context = args.context[0]
     if isinstance(args.loglevel, list):
         args.loglevel = args.loglevel[0]
     if isinstance(args.logmode, list):
@@ -267,3 +267,33 @@ def normalize_args(args):
         args.suffix = args.suffix[0]
     return args
 
+def normalize_context(context):
+    """
+    For Recipe System v2.0, context shall now be a list of context values.
+    E.g.,
+
+    $ reduce --context QA upload    <file.fits> <file2.fits>
+    $ reduce --context=QA,upload    <file.fits> <file2.fits>
+    $ reduce --context="QA, upload" <file.fits> <file2.fits>
+
+    all result in context == ['qa', 'upload']
+
+    A passed None defaults to 'qa'.
+
+    :parameter context: context argument recieved by the reduce command line.
+    :type context: <list>
+
+    :return: list of coerced or defaulted context values.
+    :rtype: <list>
+
+    """
+    if context is None:
+        context = ['qa']                   # Set default 'qa' [later, 'sq']
+    else:
+        try:
+            assert isinstance(context, list)
+        except AssertionError:
+            raise TypeError("context must be a list")
+
+    splitc = context if len(context) > 1 else context[0].split(',')
+    return [c.lower() for c in splitc]

@@ -2,16 +2,15 @@
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
 import hashlib
+import requests
+
+from requests.exceptions import HTTPError
 
 from os import mkdir
 from os.path import basename, exists
 from os.path import join, split
 
 from urlparse import urlparse
-
-from urllib2 import HTTPError
-from urllib import urlretrieve
-from urllib import ContentTooShortError
 
 from gempy.utils import logutils
 
@@ -34,6 +33,14 @@ descriptor_list = ['amp_read_area', 'camera', 'central_wavelength', 'coadds',
                    'observation_type', 'program_id', 'read_speed_setting',
                    'ut_datetime', 'read_mode', 'well_depth_setting']
 # ------------------------------------------------------------------------------
+def get_request(url, filename):
+    r = requests.get(url)
+    r.raise_for_status()
+    with open(filename, 'wb') as fd:
+        for chunk in r.iter_content(chunk_size=128):
+            fd.write(chunk)
+    return filename
+
 def generate_md5_digest(filename):
     md5 = hashlib.md5()
     fdata = open(filename).read()
@@ -201,27 +208,20 @@ def process_cal_requests(cal_requests):
                 log.stdinfo("Making request on calibration service")
                 log.stdinfo("Requesting URL {}".format(calurl))
                 try:
-                    calname, headers = urlretrieve(calurl, filename=cachename)
+                    calname = get_request(calurl, cachename)
                     _add_cal_record(rq, cachename)
                     continue
-                except ContentTooShortError as err:
-                    log.error(str(err))
-                    continue
-                except HTTPError as error:
+                except HTTPError as err:
                     errstr = "Could not retrieve {}".format(calurl)
                     log.error(errstr)
-                    log.error(str(error))
+                    log.error(str(err))
                     continue
 
+        log.status("Making request for {}".format(calurl))
+        fname = split(calurl)[1]
+        calname = join(cachedir, fname)
         try:
-            log.status("Calling urlretrieve on {}".format(calurl))
-            fname = split(calurl)[1]
-            calname = join(cachedir, fname)
-            calname, headers = urlretrieve(calurl, filename=calname)
-        except ContentTooShortError as err:
-            altmsg = "Download failed on {}; download incomplete."
-            log.error(altmsg.format(calname))
-            log.error(str(err))
+            calname = get_request(calurl, calname)
         except HTTPError as err:
             log.error(str(err))
         else:

@@ -62,7 +62,6 @@ class Reduce(object):
         :rtype: <ReduceNH>
 
         """
-
         if sys_args:
             args = sys_args
         elif self._confirm_args():
@@ -74,7 +73,7 @@ class Reduce(object):
         self.files   = args.files
         self.uparms  = set_btypes(args.userparam)
         self.ucals   = args.user_cal
-        self.context = args.context.lower() if args.context else 'qa'
+        self.context = args.context
         self.suffix  = args.suffix
         self.upload_metrics = args.upmetrics
         self.urecipe = args.recipename if args.recipename else 'default'

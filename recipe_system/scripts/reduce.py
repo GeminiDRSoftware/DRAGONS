@@ -21,12 +21,13 @@ from recipe_system.reduction.coreReduce import Reduce
 
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_args
+from recipe_system.utils.reduce_utils import normalize_context
 from recipe_system.utils.reduce_utils import show_parser_options
 
 # ------------------------------------------------------------------------------
 def main(args):
     """
-    'main' is called with a Namespace 'args' parameter, or an object that 
+    'main' is called with a Namespace 'args' parameter, or an object that
     presents an equivalent interface.
     
     Eg.,
@@ -41,8 +42,9 @@ def main(args):
 
     -- argparse Namespace instance
     
-    Use of the reduce_utils function buildParser will get the caller a fully defined 
-    reduce Namespace instance, values for which can be then be adjusted as desired.
+    Use of the reduce_utils function buildParser will get the caller a fully
+    defined reduce Namespace instance, values for which can be then be adjusted
+    as desired.
     
     Eg.,
     
@@ -55,7 +57,7 @@ def main(args):
     []
     >>> args.files.append('some_fits_file.fits')
     
-    Once 'args' attributes have been appropriately set, the caller then simply 
+    Once 'args' attributes have been appropriately set, the caller then simply
     calls main():
     
     >>> reduce_alpha.main(args)
@@ -97,6 +99,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Deal with argparse structures that are different than optparse
     args = normalize_args(args)
+    args.context = normalize_context(args.context)
 
     if args.displayflags:
         show_parser_options(parser, args)
