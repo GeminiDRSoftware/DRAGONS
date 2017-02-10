@@ -86,8 +86,11 @@ class Standardize(PrimitivesBASE):
                 non_linear_level = ext.non_linear_level()
                 saturation_level = ext.saturation_level()
 
-                ext.mask = bpm_ext.data if bpm_ext is not None else \
-                    np.zeros_like(ext.data, dtype=dq_dtype)
+                # Need to create the array first for 3D raw F2 data, with 2D BPM
+                ext.mask = np.zeros_like(ext.data, dtype=dq_dtype)
+                if bpm_ext is not None:
+                    ext.mask |= bpm_ext.data
+
                 if saturation_level:
                     log.fullinfo('Flagging saturated pixels in {}:{} '
                                  'above level {:.2f}'.
