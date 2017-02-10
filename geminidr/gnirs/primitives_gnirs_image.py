@@ -45,6 +45,10 @@ class GNIRSImage(GNIRS, Image, Photometry):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        # Since this primitive needs a reference, it must no-op without any
+        if not adinputs:
+            return adinputs
+
         # Get list of input and identify a suitable reference frame.
         # In most case it will be the first image, but for lamp-on, lamp-off
         # flats, one wants the reference frame to be a lamp-on since there's
