@@ -765,9 +765,9 @@ def _header_align(ref_ad, adinput, keyword_comments):
         
         log.fullinfo("Reference coordinates: {:.1f} {:.1f}".format(*ref_coord))
         log.fullinfo("For image {}:".format(ad.filename))
-        log.fullinfo("   Relative image offsets: {:.4f} {.4f}".
+        log.fullinfo("   Relative image offsets: {:.4f} {:.4f}".
                      format(xoff, yoff))
-        log.fullinfo("   Coordinates to transform: {:.4f] {:.4f}".
+        log.fullinfo("   Coordinates to transform: {:.4f} {:.4f}".
                      format(img_x, img_y))
         objIns.append(np.array([[ref_coord],[[img_x,img_y]]]))
 
