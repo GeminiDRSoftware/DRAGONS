@@ -198,6 +198,8 @@ class Photometry(PrimitivesBASE):
                                    table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
                                             ad.filename, ext.hdr['EXTVER']))
+                if len(ext.OBJCAT) == 0:
+                    del ext.OBJCAT
 
             # Run some profiling code on the best sources to produce a
             # more IRAF-like FWHM number, adding two columns to the OBJCAT
