@@ -50,7 +50,7 @@ class PrimitivesBASE(object):
         <list>
 
     context: the context for recipe selection, etc.
-        <str>
+        <list>
 
     upmetrics: upload the QA metrics produced by the QAP.
         <bool>
