@@ -546,7 +546,7 @@ class Standardize(PrimitivesBASE):
             except KeyError:
                 log.warning('No BPM found for {}'.format(ad.filename))
         except:
-            log.warning('Cannot read BPM dictionary')
+            log.warning('No BPMs defined')
 
         if bpm is not None:
             # Prepend standard path if the filename doesn't start with '/'
