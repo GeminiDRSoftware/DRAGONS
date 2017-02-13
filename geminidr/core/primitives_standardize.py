@@ -546,23 +546,7 @@ class Standardize(PrimitivesBASE):
             except KeyError:
                 log.warning('No BPM found for {}'.format(ad.filename))
         except:
-            # No dict; maybe there's only one file in BPM dir
-            bpm_dir = os.path.join(import_module(self.inst_lookups).__path__[0],
-                                   'BPM')
-            try:
-                bpm_files = [file for file in os.listdir(bpm_dir) if
-                             file.endswith('.fits')]
-            except OSError:
-                log.fullinfo('No BPM directory found. Cannot add BPM.')
-            else:
-                if len(bpm_files) == 1:
-                    bpm = bpm_files[0]
-                    log.fullinfo('Using only image found in BPM directory.')
-                elif len(bpm_files) == 0:
-                    log.fullinfo('No files in BPM directory. Cannot add BPM.')
-                else:
-                    log.fullinfo('{} files in BPM directory, but no dict to '
-                                'choose. Cannot add BPM'.format(len(bpm_files)))
+            log.warning('Cannot read BPM dictionary')
 
         if bpm is not None:
             # Prepend standard path if the filename doesn't start with '/'
