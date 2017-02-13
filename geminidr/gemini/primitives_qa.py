@@ -419,14 +419,8 @@ class QA(PrimitivesBASE):
 
         frame = 1
         for ad in adinputs:
-            # Check that the data is not an image with non-square binning
-            if 'IMAGE' in ad.tags:
-                xbin = ad.detector_x_bin()
-                ybin = ad.detector_y_bin()
-                if xbin != ybin:
-                    log.warning("No IQ measurement possible, image {} is {} x "
-                                "{} binned data".format(ad.filename, xbin, ybin))
-                    continue
+            iq_overlays = []
+            measure_iq = True
 
             # We may need to tile the image (and OBJCATs) so make an
             # adiq object for such purposes
@@ -474,18 +468,14 @@ class QA(PrimitivesBASE):
                 # original AD object instead of making a copy
                 adiq = ad
 
-            # Descriptors and other things will be the same for ad and adiq
-            try:
-                zcorr = ad.airmass()**(-0.6)
-            except:
-                zcorr = None
-
-            is_ao = ad.is_ao()
-            try:
-                wvband = 'AO' if is_ao else ad.wavelength_band()
-                iq_band_limits = qa.iqBands[wvband]
-            except KeyError:
-                iq_band_limits = None
+            # Check that the data is not an image with non-square binning
+            if 'IMAGE' in ad.tags:
+                xbin = ad.detector_x_bin()
+                ybin = ad.detector_y_bin()
+                if xbin != ybin:
+                    log.warning("No IQ measurement possible, image {} is {} x "
+                                "{} binned data".format(ad.filename, xbin, ybin))
+                    measure_iq = False
 
             # Get suitable FWHM-measurement sources
             if {'IMAGE', 'SPECT'} & ad.tags:
@@ -495,8 +485,9 @@ class QA(PrimitivesBASE):
             else:
                 log.warning("{} is not IMAGE or SPECT; no IQ measurement "
                             "will be performed".format(ad.filename))
-                continue
+                measure_iq = False
 
+            is_ao = ad.is_ao()
             # For AO observations, the AO-estimated seeing is used (the IQ
             # is also calculated from the image if possible)
             strehl = Measurement(None, None, 0)
@@ -519,116 +510,128 @@ class QA(PrimitivesBASE):
             # ...but can continue if we have an AO seeing measurement
             if all(len(t)==0 for t in good_source) and ao_seeing is None:
                 log.warning("No good sources found in {}".format(ad.filename))
-                continue
+                measure_iq = False
 
-            info_list = []
-            iq_overlays = []
-            for src, ext in zip(good_source, adiq):
-                extver = ext.hdr['EXTVER']
-                ellip = Measurement(None, None, 0)
-                if len(src) == 0:
-                    fwhm = Measurement(None, None, 0)
-                    log.warning("No good sources found in {}:{}".
-                                format(ad.filename, extver))
-                    iq_overlays.append(None)
-                    # If there is an AO-estimated seeing value, this can be
-                    # delivered as a metric, otherwise we can't do anything
-                    if not (is_ao and ao_seeing):
-                        info_list.append({})
-                        continue
-                else:
-                    # Weighted mean of clipped FWHM and ellipticity
-                    if "weight" in src.columns:
-                        mean_fwhm = np.average(src["fwhm_arcsec"],
-                                                  weights=src["weight"])
-                        std_fwhm = np.sqrt(np.average((src["fwhm_arcsec"] -
-                                    mean_fwhm)**2, weights=src["weight"]))
+            if measure_iq:
+                # Descriptors and other things will be the same for ad and adiq
+                try:
+                    zcorr = ad.airmass()**(-0.6)
+                except:
+                    zcorr = None
+
+                try:
+                    wvband = 'AO' if is_ao else ad.wavelength_band()
+                    iq_band_limits = qa.iqBands[wvband]
+                except KeyError:
+                    iq_band_limits = None
+
+                info_list = []
+                for src, ext in zip(good_source, adiq):
+                    extver = ext.hdr['EXTVER']
+                    ellip = Measurement(None, None, 0)
+                    if len(src) == 0:
+                        fwhm = Measurement(None, None, 0)
+                        log.warning("No good sources found in {}:{}".
+                                    format(ad.filename, extver))
+                        iq_overlays.append(None)
+                        # If there is an AO-estimated seeing value, this can be
+                        # delivered as a metric, otherwise we can't do anything
+                        if not (is_ao and ao_seeing):
+                            info_list.append({})
+                            continue
                     else:
-                        mean_fwhm = np.mean(src["fwhm_arcsec"])
-                        std_fwhm = np.std(src["fwhm_arcsec"])
-                    fwhm = Measurement(float(mean_fwhm), float(std_fwhm),
-                                       len(src))
-                    if is_image:
-                        ellip = Measurement(float(np.mean(src['ellipticity'])),
-                        float(np.std(src['ellipticity'])), len(src))
-                    
-                # Find the corrected FWHM. For AO observations, the IQ
-                # constraint band is taken from the AO-estimated seeing
-                # except for GSAOI, which has some magic formula that kind of works
-                if not is_ao:
-                    iq = fwhm
-                else:
-                    if len(src) > 0 and {'GSAOI', 'IMAGE'}.issubset(ad.tags):
-                        iq = _gsaoi_iq_estimate(ad, fwhm, strehl)
+                        # Weighted mean of clipped FWHM and ellipticity
+                        if "weight" in src.columns:
+                            mean_fwhm = np.average(src["fwhm_arcsec"],
+                                                      weights=src["weight"])
+                            std_fwhm = np.sqrt(np.average((src["fwhm_arcsec"] -
+                                        mean_fwhm)**2, weights=src["weight"]))
+                        else:
+                            mean_fwhm = np.mean(src["fwhm_arcsec"])
+                            std_fwhm = np.std(src["fwhm_arcsec"])
+                        fwhm = Measurement(float(mean_fwhm), float(std_fwhm),
+                                           len(src))
+                        if is_image:
+                            ellip = Measurement(float(np.mean(src['ellipticity'])),
+                            float(np.std(src['ellipticity'])), len(src))
+
+                    # Find the corrected FWHM. For AO observations, the IQ
+                    # constraint band is taken from the AO-estimated seeing
+                    # except for GSAOI, which has some magic formula that kind of works
+                    if not is_ao:
+                        iq = fwhm
                     else:
-                        iq = Measurement(ao_seeing, None, 0)
+                        if len(src) > 0 and {'GSAOI', 'IMAGE'}.issubset(ad.tags):
+                            iq = _gsaoi_iq_estimate(ad, fwhm, strehl)
+                        else:
+                            iq = Measurement(ao_seeing, None, 0)
 
-                if zcorr:
-                    zfwhm = _arith(iq, 'mul', zcorr)
-                    qastatus = _get_qa_band('iq', ad, zfwhm, iq_band_limits)
-                else:
-                    log.warning('Airmass not found, not correcting to zenith')
-                    qastatus = _get_qa_band('iq', ad, iq, iq_band_limits)
-                    zfwhm = Measurement(None, None, 0)
+                    if zcorr:
+                        zfwhm = _arith(iq, 'mul', zcorr)
+                        qastatus = _get_qa_band('iq', ad, zfwhm, iq_band_limits)
+                    else:
+                        log.warning('Airmass not found, not correcting to zenith')
+                        qastatus = _get_qa_band('iq', ad, iq, iq_band_limits)
+                        zfwhm = Measurement(None, None, 0)
 
-                comments = _iq_report(ext if separate_ext else ad, fwhm,
-                                      ellip, zfwhm, strehl, qastatus)
-                if is_ao:
-                    comments.append("AO observation. IQ band from estimated AO "
-                                   "seeing.")
+                    comments = _iq_report(ext if separate_ext else ad, fwhm,
+                                          ellip, zfwhm, strehl, qastatus)
+                    if is_ao:
+                        comments.append("AO observation. IQ band from estimated AO "
+                                       "seeing.")
 
-                qad = {"band": qastatus.band, "requested": qastatus.req,
-                       "delivered": fwhm.value, "delivered_error": fwhm.std,
-                       "ellipticity": ellip.value, "ellip_error": ellip.std,
-                       "zenith": zfwhm.value, "zenith_error": zfwhm.std,
-                       "is_ao": is_ao, "ao_seeing": ao_seeing,
-                       "strehl": strehl.value, "comment": comments}
-                qap.adcc_report(adiq, "iq", qad)
-                
-                # These exist for all data (ellip=None for spectra)
-                ext_info = {"fwhm": fwhm.value, "fwhm_std": fwhm.std,
-                            "elip": ellip.value, "elip_std": ellip.std,
-                            "nsamples": fwhm.samples, "adaptive_optics": is_ao,
-                            "percentile_band": qastatus.band,
-                            "comment": comments}
-                # These only exist for images
-                # Coerce to float from np.float so JSONable
-                if is_image and len(src)>0:
-                    ext_info.update({"isofwhm": float(np.mean(src["isofwhm_arcsec"])),
-                                     "isofwhm_std": float(np.std(src["isofwhm_arcsec"])),
-                                     "ee50d": float(np.mean(src["ee50d_arcsec"])),
-                                     "ee50d_std": float(np.std(src["ee50d_arcsec"])),
-                                     "pa": float(np.mean(src["pa"])),
-                                     "pa_std": float(np.std(src["pa"]))})
-                if is_ao:
-                    ext_info.update({"ao_seeing": ao_seeing, "strehl": strehl.value})
-                info_list.append(ext_info)
+                    qad = {"band": qastatus.band, "requested": qastatus.req,
+                           "delivered": fwhm.value, "delivered_error": fwhm.std,
+                           "ellipticity": ellip.value, "ellip_error": ellip.std,
+                           "zenith": zfwhm.value, "zenith_error": zfwhm.std,
+                           "is_ao": is_ao, "ao_seeing": ao_seeing,
+                           "strehl": strehl.value, "comment": comments}
+                    qap.adcc_report(adiq, "iq", qad)
 
-                # Store measurements in the extension header if desired
-                if separate_ext:
-                    if fwhm.value:
-                        ext.hdr.set("MEANFWHM", fwhm.value,
-                                    comment=self.keyword_comments["MEANFWHM"])
-                    if ellip.value:
-                        ext.hdr.set("MEANELLP", ellip.value,
-                                    comment=self.keyword_comments["MEANELLP"])
+                    # These exist for all data (ellip=None for spectra)
+                    ext_info = {"fwhm": fwhm.value, "fwhm_std": fwhm.std,
+                                "elip": ellip.value, "elip_std": ellip.std,
+                                "nsamples": fwhm.samples, "adaptive_optics": is_ao,
+                                "percentile_band": qastatus.band,
+                                "comment": comments}
+                    # These only exist for images
+                    # Coerce to float from np.float so JSONable
+                    if is_image and len(src)>0:
+                        ext_info.update({"isofwhm": float(np.mean(src["isofwhm_arcsec"])),
+                                         "isofwhm_std": float(np.std(src["isofwhm_arcsec"])),
+                                         "ee50d": float(np.mean(src["ee50d_arcsec"])),
+                                         "ee50d_std": float(np.std(src["ee50d_arcsec"])),
+                                         "pa": float(np.mean(src["pa"])),
+                                         "pa_std": float(np.std(src["pa"]))})
+                    if is_ao:
+                        ext_info.update({"ao_seeing": ao_seeing, "strehl": strehl.value})
+                    info_list.append(ext_info)
 
-                # If displaying, make a mask to display along with image
-                # that marks which stars were used (a None was appended
-                # earlier if len(src)==0
-                if display and len(src) > 0:
-                    iq_overlays.append(_iq_overlay(src, ext.data.shape))
+                    # Store measurements in the extension header if desired
+                    if separate_ext:
+                        if fwhm.value:
+                            ext.hdr.set("MEANFWHM", fwhm.value,
+                                        comment=self.keyword_comments["MEANFWHM"])
+                        if ellip.value:
+                            ext.hdr.set("MEANELLP", ellip.value,
+                                        comment=self.keyword_comments["MEANELLP"])
 
-            if info_list:
-                fitsdict = qap.fitsstore_report(adiq, "iq", info_list,
-                        calurl_dict=self.calurl_dict, context=self.context,
-                                                upload=self.upload_metrics)
+                    if info_list:
+                        fitsdict = qap.fitsstore_report(adiq, "iq", info_list,
+                                calurl_dict=self.calurl_dict, context=self.context,
+                                upload=self.upload_metrics)
+
+                    # If displaying, make a mask to display along with image
+                    # that marks which stars were used (a None was appended
+                    # earlier if len(src)==0
+                    if display and len(src) > 0:
+                        iq_overlays.append(_iq_overlay(src, ext.data.shape))
 
             if display:
                 # If separate_ext is True, we want the tile parameter
                 # for the display primitive to be False
                 self.display([adiq], tile=not separate_ext, remove_bias=remove_bias,
-                             overlay=iq_overlays, frame=frame)
+                             overlay=iq_overlays if iq_overlays else None, frame=frame)
                 frame += len(adiq)
                 if any(ov is not None for ov in iq_overlays):
                     log.stdinfo("Sources used to measure IQ are marked "
@@ -636,7 +639,7 @@ class QA(PrimitivesBASE):
                     log.stdinfo("")
 
             # Store measurements in the PHU if desired
-            if len(ad)==1 or not separate_ext:
+            if measure_iq and (len(ad)==1 or not separate_ext):
                 if fwhm.value:
                     ad.phu.set("MEANFWHM", fwhm.value,
                                comment=self.keyword_comments["MEANFWHM"])
