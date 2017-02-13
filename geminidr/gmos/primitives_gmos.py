@@ -295,6 +295,7 @@ class GMOS(Gemini, CCD):
                 elif num_ccd != len(ad):
                     log.fullinfo("Tiling data into one extension per array")
 
+                chip_xshift = 0  # Shift due to CCDs on left of reference
                 ccd_map = np.array(ccd_map)
                 for ccd in range(1, num_ccd+1):
                     amps_on_ccd = ampsorder[ccd_map==ccd]
@@ -327,8 +328,7 @@ class GMOS(Gemini, CCD):
                         # Calculate total horizontal shift if the reference
                         # array is on this CCD
                         if ref_ext in amps_on_ccd:
-                            full_xshift = xshift + all_data.shape[1] + \
-                                          chip_gap.shape[1]
+                            chip_xshift += all_data.shape[1] + chip_gap.shape[1]
 
                         # Add a gap and this CCD to the existing tiled data
                         all_data = np.hstack([all_data, chip_gap, data])
@@ -389,7 +389,9 @@ class GMOS(Gemini, CCD):
                         if crpix1:
                             # xshift is the shift due to other arrays on CCD
                             # full_xshift is total shift when tile_all=True
-                            crpix1 += full_xshift if tile_all else xshift
+                            crpix1 += xshift
+                            if tile_all:
+                                crpix1 += chip_xshift
                             ext_to_add.hdr.set('CRPIX1', crpix1,
                                            self.keyword_comments['CRPIX1'])
                         adoutput.append(ext_to_add[0].nddata, reset_ver=True)
