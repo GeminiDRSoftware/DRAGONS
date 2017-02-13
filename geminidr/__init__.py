@@ -85,4 +85,3 @@ class PrimitivesBASE(object):
         self.myself           = lambda: stack()[1][3]
 
         warnings.simplefilter('ignore', category=VerifyWarning)
-
