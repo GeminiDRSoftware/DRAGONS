@@ -35,6 +35,10 @@ class GSAOIImage(GSAOI, Image, Photometry):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        # Since this primitive needs a reference, it must no-op without any
+        if not adinputs:
+            return adinputs
+
         if adinputs[0].wavelength_band() in ['Z', 'J']:
             log.stdinfo('Using stackFrames to make flatfield')
             adinputs = self.stackFrames(adinputs)
