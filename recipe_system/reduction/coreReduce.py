@@ -29,6 +29,7 @@ from gempy.utils import logutils
 
 from astrodata.core import AstroDataError
 
+from recipe_system.utils.errors import ContextError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
 
@@ -131,6 +132,10 @@ class Reduce(object):
 
         try:
             recipe = rm.get_applicable_recipe()
+        except ContextError as err:
+            xstat = signal.SIGTERM
+            log.error("No context package matched: {}".format(rm.context))
+            return xstat
         except RecipeNotFound as err:
             pass
 

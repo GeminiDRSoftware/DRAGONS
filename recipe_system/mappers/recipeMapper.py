@@ -53,7 +53,9 @@ class RecipeMapper(Mapper):
             if hasattr(rlib, 'recipe_tags'):
                 if self.tags.issuperset(rlib.recipe_tags):
                     isect = rlib.recipe_tags
-                    matched_set = (isect, rlib) if isect > matched_set[0] else matched_set
+                    l1 = len(isect)
+                    l2 = len(matched_set[0])
+                    matched_set = (isect, rlib) if l1 > l2 else matched_set
                 else:
                     continue
             else:
@@ -100,7 +102,7 @@ class RecipeMapper(Mapper):
                 continue
 
         if not found:
-            cerr = "No context package matched {}"
+            cerr = "No context package matched '{}'"
             raise ContextError(cerr.format(self.context))
 
         loaded_pkg = import_module(dotpath(pkg.__name__, pkgname))

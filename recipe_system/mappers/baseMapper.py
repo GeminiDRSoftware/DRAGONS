@@ -22,7 +22,7 @@ class Mapper(object):
     module and class attributes that match on a dataset's tags attribute.
 
     """
-    def __init__(self, adinputs, recipename='default', context='QA', 
+    def __init__(self, adinputs, recipename='default', context=['qa'],
                  usercals=None, uparms=None, upload_metrics=False):
         """
         :parameter adinputs: list of AstroData objects.
@@ -55,7 +55,7 @@ class Mapper(object):
 
         """
         self.adinputs   = adinputs
-        self.context    = context.lower()
+        self.context    = context
         ainst = adinputs[0].instrument()
         self.pkg        = 'gmos' if "GMOS" in ainst else ainst.lower()
         self.dotpackage = dotpath(DRMARKER, self.pkg)

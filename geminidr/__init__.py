@@ -56,10 +56,10 @@ class PrimitivesBASE(object):
     """
     tagset = None
 
-    def __init__(self, adinputs, context='qa', upmetrics=False, upcalibs=False,
+    def __init__(self, adinputs, context=['qa'], upmetrics=False, upcalibs=False,
                  ucals=None, uparms=None):
         self.streams          = {'main': adinputs}
-        self.context          = context.lower()
+        self.context          = context
         self.parameters       = ParametersBASE
         self.log              = logutils.get_logger(__name__)
         self.upload_metrics   = upmetrics
