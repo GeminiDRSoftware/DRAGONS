@@ -5,12 +5,17 @@ from ..core.parameters_image import ParametersImage
 from ..core.parameters_photometry import ParametersPhotometry
 
 class ParametersF2Image(ParametersF2, ParametersImage, ParametersPhotometry):
+    addDQ = {
+        "suffix"            : "_dqAdded",
+        "bpm"               : None,
+        "illum_mask"        : True,
+    }
     associateSky = {
-        "suffix"                : "_skyAssociated",
-        "distance"              : 1.,
-        "time"                  : 600.,
-        "max_skies"             : None,
-        "use_all"               : False,
+        "suffix"            : "_skyAssociated",
+        "distance"          : 1.,
+        "time"              : 600.,
+        "max_skies"         : None,
+        "use_all"           : False,
     }
     makeLampFlat = {}
     stackSkyFrames = {
