@@ -402,7 +402,7 @@ class AstroDataF2(AstroDataGemini):
         camera = self.camera(pretty=True)
         # Explicit: if BUNIT is missing, assume data are in ADU
         bunit = self.hdr.get('BUNIT', 'adu')
-        zpt = nominal_zeropoints.get((camera, filter_name))
+        zpt = nominal_zeropoints.get((filter_name, camera))
 
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
         # if the data are in ADU
