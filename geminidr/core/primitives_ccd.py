@@ -4,7 +4,6 @@
 #                                                              primitives_ccd.py
 # ------------------------------------------------------------------------------
 from gempy.gemini import gemini_tools as gt
-from gempy.gemini.eti import gireduceeti
 
 from geminidr import PrimitivesBASE
 from .parameters_ccd import ParametersCCD
@@ -91,55 +90,8 @@ class CCD(PrimitivesBASE):
         return adinputs
 
     def subtractOverscan(self, adinputs=None, **params):
-        """
-        This primitive uses External Task Interface to gireduce to subtract
-        the overscan from the input images.
-
-        Variance and DQ planes, if they exist, will be saved and restored
-        after gireduce has been run.
-
-        NOTE:
-        The inputs to this function MUST be prepared.
-
-        Parameters
-        ----------
-        overscan_section: str/None
-            comma-separated list of IRAF-style overscan sections
-            None => use nbiascontam=4 columns
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        # Need to create a new output list since the ETI makes new AD objects
-        adoutputs = []
-        for ad in adinputs:
-            if (ad.phu.get('GPREPARE') is None and
-                        ad.phu.get('PREPARE') is None):
-                raise IOError('{} must be prepared'.format(ad.filename))
-            if ad.phu.get(timestamp_key) is not None:
-                log.warning('No changes will be made to {}, since it has '
-                            'already been processed by subtractOverscan'.
-                            format(ad.filename))
-                adoutputs.append(ad)
-                continue
-
-            gireduce_task = gireduceeti.GireduceETI([], params, ad)
-            adout = gireduce_task.run()
-            # Need to reattach DQ, VAR, and other bits'n'bobs
-            for extout, extin in zip(adout, ad):
-                extout.reset(extout.data, extin.mask, extin.variance)
-                if hasattr(extin, 'OBJCAT'):
-                    extout.OBJCAT = extin.OBJCAT
-                if hasattr(extin, 'OBJMASK'):
-                    extout.OBJMASK = extin.OBJMASK
-            if hasattr(ad, 'REFCAT'):
-                adout.REFCAT = ad.REFCAT
-            if hasattr(ad, 'MDF'):
-                adout.MDF = ad.MDF
-            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
-            adoutputs.append(adout)
-        return adoutputs
+        """No-op since we only have a GMOS-specific version"""
+        return adinputs
 
     def trimOverscan(self, adinputs=None, **params):
         """
