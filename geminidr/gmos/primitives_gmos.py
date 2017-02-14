@@ -7,6 +7,8 @@ import os
 import numpy as np
 from copy import deepcopy
 
+from astropy.modeling import models, fitting
+
 import astrodata
 import gemini_instruments
 
@@ -216,6 +218,96 @@ class GMOS(Gemini, CCD):
             adoutputs.append(ad)
         return adoutputs
     
+    def subtractOverscan(self, adinputs=None, **params):
+        """
+        Subtract the overscan level from the image.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        average: str ("mean"/"median")
+            function for averaging in short direction
+        niterate: int
+            number of rejection iterations
+        high_reject: float
+            number of standard deviations above which to reject high pixels
+        low_reject: float
+            number of standard deviations above which to reject low pixels
+        overscan_section: str/None
+            comma-separated list of IRAF-style overscan sections
+        nbiascontam: int/None
+            number of columns adjacent to the illuminated region to reject
+        order: int
+            order of Chebyshev fit/None
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+        average = params["average"]
+        niterate = params["niterate"]
+        lo_rej = params["low_reject"]
+        hi_rej = params["high_reject"]
+        order = params["order"]
+        nbiascontam = params["nbiascontam"]
+
+        if average not in ('mean', 'median'):
+            log.warning("Averaging method {} not known; using mean".
+                        format(average))
+            average = "mean"
+
+        for ad in adinputs:
+            # Use gireduce defaults if values aren't specified
+            detname = ad.detector_name(pretty=True)
+            if order is None:
+                order = 6 if detname == 'Hamamatsu' else 0
+            if nbiascontam is None:
+                nbiascontam = 5 if detname == 'e2vDD' else 4
+
+            osec_list = ad.overscan_section()
+            dsec_list = ad.data_section()
+            for ext, osec, dsec in zip(ad, osec_list, dsec_list):
+                x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
+                if x1 > dsec.x1:  # Bias on right
+                    x1 += nbiascontam
+                    x2 -=1
+                else:  # Bias on left
+                    x1 += 1
+                    x2 -= nbiascontam
+
+                if detname == 'Hamamatsu':
+                    log.fullinfo('Ignoring bottom 48 rows of {}'.
+                                 format(ad.filename))
+                    y1 = 48
+
+                row = np.arange(y1, y2)
+                data = getattr(np, average)(ext.data[y1:y2, x1:x2], axis=1)
+                mask = np.array([False] * len(data))
+
+                for iter in range(niterate+1):
+                    bias_init = models.Chebyshev1D(degree=order,
+                                                   c0=np.median(data[~mask]))
+                    fit_f = fitting.LinearLSQFitter()
+                    bias = fit_f(bias_init, row[~mask], data[~mask])
+                    residuals = data - bias(row)
+                    sigma = np.std(residuals[~mask])
+                    mask = np.where(np.logical_or(residuals>hi_rej*sigma,
+                                    residuals<-lo_rej*sigma), True, False)
+
+                # using "-=" won't change from int to float
+                ext.data = ext.data - np.tile(bias(np.arange(0, ext.data.shape[0])),
+                                             (ext.data.shape[1],1)).T
+                ext.hdr.set('OVERSCAN', np.mean(bias(row)),
+                            self.keyword_comments['OVERSCAN'])
+
+            # Timestamp, and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+
+        return adinputs
+
     def tileArrays(self, adinputs=None, **params):
         """
         This tiles the GMOS detectors together
