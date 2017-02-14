@@ -50,7 +50,9 @@ class PrimitiveMapper(Mapper):
 
             if self.tags.issuperset(pclass.tagset):
                 isect = pclass.tagset
-                matched_set = (isect, pclass) if isect > matched_set[0] else matched_set
+                l1 = len(isect)
+                l2 = len(matched_set[0])
+                matched_set = (isect, pclass) if l1 > l2 else matched_set
             else:
                 continue
 
