@@ -22,7 +22,7 @@ class ParametersCCD(ParametersBASE):
         "bias"              : None,
     }
     subtractOverscan = {
-        "suffix"            : "_overscanCorrected",
+        "suffix"            : "_overscanSubtracted",
         "average"           : "mean",
         "niterate"          : 2,
         "high_reject"       : 3.0,
