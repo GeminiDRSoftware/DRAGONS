@@ -220,7 +220,8 @@ class GMOS(Gemini, CCD):
     
     def subtractOverscan(self, adinputs=None, **params):
         """
-        Subtract the overscan level from the image.
+        Subtract the overscan level from the image by fitting a polynomial
+        to the overscan region.
 
         Parameters
         ----------
@@ -259,6 +260,12 @@ class GMOS(Gemini, CCD):
             average = "mean"
 
         for ad in adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by subtractOverscan".
+                            format(ad.filename))
+                continue
+
             # Use gireduce defaults if values aren't specified
             detname = ad.detector_name(pretty=True)
             if order is None:
@@ -272,7 +279,7 @@ class GMOS(Gemini, CCD):
                 x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
                 if x1 > dsec.x1:  # Bias on right
                     x1 += nbiascontam
-                    x2 -=1
+                    x2 -= 1
                 else:  # Bias on left
                     x1 += 1
                     x2 -= nbiascontam
@@ -299,8 +306,12 @@ class GMOS(Gemini, CCD):
                 # using "-=" won't change from int to float
                 ext.data = ext.data - np.tile(bias(np.arange(0, ext.data.shape[0])),
                                              (ext.data.shape[1],1)).T
+
+                ext.hdr.set('OVERSEC', '[{}:{},{}:{}]'.format(x1+1,x2,y1+1,y2),
+                            self.keyword_comments['OVERSEC'])
                 ext.hdr.set('OVERSCAN', np.mean(bias(row)),
                             self.keyword_comments['OVERSCAN'])
+                ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
 
             # Timestamp, and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
