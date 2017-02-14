@@ -201,7 +201,7 @@ class Standardize(PrimitivesBASE):
 
             for ext, illum_ext in zip(ad, final_illum):
                 # Ensure we're only adding the unilluminated bit
-                iext = np.where(illum_ext > 0, DQ.unilluminated,
+                iext = np.where(illum_ext.data > 0, DQ.unilluminated,
                                 0).astype(dq_dtype)
                 ext.mask = iext if ext.mask is None else ext.mask | iext
 
