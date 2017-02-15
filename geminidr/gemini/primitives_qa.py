@@ -730,6 +730,9 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
     info = ''
     warning = ''
 
+    if limit_dict is None:
+        return QAstatus(None, reqband, warning, info)
+
     if quant is None or quant.value is None:
         qaband = None
     else:
@@ -813,11 +816,11 @@ def _bg_report(ad, bg_count, bunit, bg_mag, qastatus):
     if bg_mag.value is not None:
         body.append(('Mag / sq arcsec in {}:'.format(ad.filter_name(pretty=True)),
                      '{:.2f} +/- {:.2f}'.format(bg_mag.value, bg_mag.std)))
-    else:
-        body.append(('(BG band could not be determined)', ''))
     if qastatus.band:
         body.append(('BG band:', 'BG{} ({})'.format('Any' if qastatus.band==100
                                         else qastatus.band, qastatus.info)))
+    else:
+        body.append(('(BG band could not be determined)', ''))
 
     if qastatus.req:
         body.append(('Requested BG:', 'BG{}'.format('Any' if qastatus.req==100
