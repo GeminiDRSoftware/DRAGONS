@@ -143,20 +143,20 @@ class NearIR(PrimitivesBASE):
 
         for ad in adinputs:
             if 'GCAL_IR_ON' in ad.tags:
-                log.stdinfo("{} is a lamp-on flat".format(ad.data_label()))
+                log.stdinfo("{} is a lamp-on flat".format(ad.filename))
                 lampon_list.append(ad)
             elif 'GCAL_IR_OFF' in ad.tags:
-                log.stdinfo("{} is a lamp-off flat".format(ad.data_label()))
+                log.stdinfo("{} is a lamp-off flat".format(ad.filename))
                 lampoff_list.append(ad)
             elif ('Domeflat OFF' in ad.phu.get('OBJECT')):
-                log.stdinfo("{} is a lamp-off domeflat".format(ad.data_label()))
+                log.stdinfo("{} is a lamp-off domeflat".format(ad.filename))
                 lampoff_list.append(ad)
             elif ('Domeflat' in ad.phu.get('OBJECT')):
-                log.stdinfo("{} is a lamp-on domeflat".format(ad.data_label()))
+                log.stdinfo("{} is a lamp-on domeflat".format(ad.filename))
                 lampon_list.append(ad)                
             else:
                 log.warning("Cannot determine lamp-on/off for {}".
-                            format(ad.data_label()))
+                            format(ad.filename))
 
         self.streams.update({"lampOn" : lampon_list, "lampOff": lampoff_list})
         return adinputs
@@ -224,10 +224,8 @@ class NearIR(PrimitivesBASE):
                             'Using first file only.')
             lampon = lampon_list[0]
             lampoff = lampoff_list[0]
-            log.stdinfo("Lamp ON is:  {} {}".format(lampon.data_label(),
-                                                    lampon.filename))
-            log.stdinfo("Lamp OFF is: {} {}".format(lampoff.data_label(),
-                                                    lampoff.filename))
+            log.stdinfo("Lamp ON is:  {}".format(lampon.filename))
+            log.stdinfo("Lamp OFF is: {}".format(lampoff.filename))
             lampon.subtract(lampoff)
             lampon.filename = gt.filename_updater(lampon, suffix="lampOnOff")
             del self.streams['lampOn'], self.streams['lampOff']
