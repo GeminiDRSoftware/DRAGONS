@@ -151,6 +151,7 @@ class Visualize(PrimitivesBASE):
             # Get the data we're going to display. TODO Replace extname with attr?
             data = getattr(ad, {'SCI':'data', 'DQ':'mask',
                                 'VAR':'variance'}[extname], None)
+            dqdata = ad.mask
             if data is None:
                 log.warning("No data to display in {}[{}]".format(ad.filename,
                                                                   extname))
@@ -167,7 +168,6 @@ class Visualize(PrimitivesBASE):
                 if threshold != 'auto':
                     satmask = data > float(threshold)
                 else:
-                    dqdata = ad.mask
                     if dqdata is None:
                         log.warning("No DQ plane found; cannot make "
                                     "threshold mask")
@@ -192,6 +192,7 @@ class Visualize(PrimitivesBASE):
 
             try:
                 lnd.display(data, name=name, frame=frame, zscale=zscale,
+                            bpm=None if extname=='DQ' else dqdata,
                             quiet=True, masks=masks, mask_colors=mask_colors)
             except IOError:
                 log.warning("ds9 not found; cannot display input")
@@ -233,8 +234,8 @@ class _localNumDisplay(nd.NumDisplay):
     TODO: Can it be an array of booleans, the same size as the data?
     """
     def display(self, pix, name=None, bufname=None, z1=None, z2=None,
-                transform=None, zscale=False, contrast=0.25, scale=None,
-                masks=None, mask_colors=None,
+                transform=None, bpm=None, zscale=False, contrast=0.25,
+                scale=None, masks=None, mask_colors=None,
                 offset=None, frame=None, quiet=False):
 
         """ Displays byte-scaled (UInt8) n to XIMTOOL device.
@@ -262,7 +263,13 @@ class _localNumDisplay(nd.NumDisplay):
                 if not quiet:
                     log.fullinfo("transform disallowed when zscale=True")
                 transform = None
-            z1, z2 = nd.zscale.zscale(pix, contrast=contrast)
+            if bpm is None:
+                z1, z2 = nd.zscale.zscale(pix, contrast=contrast)
+            else:
+                goodpix = pix[bpm==0]
+                sq_side = int(np.sqrt(len(goodpix)))
+                goodpix = goodpix[:sq_side**2].reshape(sq_side, sq_side)
+                z1, z2 = nd.zscale.zscale(goodpix, contrast=contrast)
 
         self.set(frame=frame, z1=z1, z2=z2,
                 transform=transform, scale=scale, offset=offset)
