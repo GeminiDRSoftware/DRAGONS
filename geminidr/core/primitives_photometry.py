@@ -315,7 +315,8 @@ def _match_objcat_refcat(ad):
     # which can then be used to constrain the other extensions. The problem
     # is we don't know how many matches we'll get until we do it, and that's
     # slow, so use OBJCAT length as a proxy.
-    objcat_lengths = [len(ext.OBJCAT) for ext in ad]
+    objcat_lengths = [len(ext.OBJCAT) if hasattr(ext,'OBJCAT') else 0
+                      for ext in ad]
     objcat_order = np.argsort(objcat_lengths)[::-1]
 
     pixscale = ad.pixel_scale()
@@ -325,9 +326,13 @@ def _match_objcat_refcat(ad):
     yoffsets = []
 
     for index in objcat_order:
-        objcat = ad[index].OBJCAT
-        objcat_len = len(objcat)
         extver = ad[index].hdr['EXTVER']
+        try:
+            objcat = ad[index].OBJCAT
+        except AttributeError:
+            log.stdinfo('No OBJCAT in {}:{}'.format(ad.filename, extver))
+            continue
+        objcat_len = len(objcat)
         xx = objcat['X_IMAGE']
         yy = objcat['Y_IMAGE']
 
