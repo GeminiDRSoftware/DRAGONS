@@ -17,6 +17,12 @@ class ParametersF2Image(ParametersF2, ParametersImage, ParametersPhotometry):
         "max_skies"         : None,
         "use_all"           : False,
     }
+    detectSources = {
+        "suffix"                : "_sourcesDetected",
+        "mask"                  : True,
+        "replace_flags"         : 249,
+        "set_saturation"        : False,
+    }
     makeLampFlat = {}
     stackSkyFrames = {
         "suffix"            : "_skyStacked",

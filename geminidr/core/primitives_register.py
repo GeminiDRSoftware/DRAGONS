@@ -444,13 +444,17 @@ class Register(PrimitivesBASE):
                                  "extension for {}:{}".format(ad.filename,
                                                               extver))
                     objcat['X_WORLD'], objcat['Y_WORLD'] = ext_wcs.all_pix2world(
-                        objcat['X_IMAGE'], objcat['Y_WORLD'], 1)
+                        objcat['X_IMAGE'], objcat['Y_IMAGE'], 1)
 
             if failed_extver:
                 ok_extver = [extver for extver in ad.hdr['EXTVER']
                              if extver not in failed_extver]
-                log.stdinfo("Updated WCS for {} extver {}. Extver {} failed."
+                if ok_extver:
+                    log.stdinfo("Updated WCS for {} extver {}. Extver {} failed."
                             .format(ad.filename, ok_extver, failed_extver))
+                else:
+                    log.warning("WCS update failed in all extensions of {}".
+                                format(ad.filename))
             else:
                 log.stdinfo("Updated WCS for all extvers in {}.".
                             format(ad.filename))
