@@ -561,7 +561,7 @@ class QA(PrimitivesBASE):
                     if not is_ao:
                         iq = fwhm
                     else:
-                        if len(src) > 0 and {'GSAOI', 'IMAGE'}.issubset(ad.tags):
+                        if strehl.value is not None and {'GSAOI', 'IMAGE'}.issubset(ad.tags):
                             iq = _gsaoi_iq_estimate(ad, fwhm, strehl)
                         else:
                             iq = Measurement(ao_seeing, None, 0)
