@@ -3,6 +3,9 @@ Recipes available to data with tags ['GMOS', 'NODANDSHUFFLE']
 Default is "reduce".
 """
 recipe_tags = set(['GMOS', 'NODANDSHUFFLE'])
+# once we have LS, MOS, and IFU recipes, we might need the following set
+# instead to maximize the match.
+# recipe_tags = {'GMOS', 'MOS', 'IFU', 'LS', 'NODANDSHUFFLE'}
 
 def reduce(p):
     """
