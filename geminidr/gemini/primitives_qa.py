@@ -278,7 +278,12 @@ class QA(PrimitivesBASE):
             for ext, npz in zip(ad, nom_phot_zpt):
                 extver = ext.hdr['EXTVER']
                 ext_info = {}
-                objcat = ext.OBJCAT
+                try:
+                    objcat = ext.OBJCAT
+                except AttributeError:
+                    log.warning("No OBJCAT in {}:{}".format(ad.filename,extver))
+                    all_zp.append(Measurement(None, None, 0))
+                    continue
 
                 # Incrementally cull the catalog: remove sources without mags
                 good_obj = objcat[~np.logical_or(objcat['MAG_AUTO'] == -999,
