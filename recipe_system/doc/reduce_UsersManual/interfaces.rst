@@ -1,5 +1,7 @@
-.. interfaces:
+.. interfaces.rst
 .. include discuss
+
+.. _interfaces:
 
 Interfaces
 ==========
@@ -7,11 +9,12 @@ Interfaces
 Introduction
 ------------
 
-The Recipe System provides a command line interface and an API. Both
-allow users to configure and launch a Recipe System processing pipeline (a
-'recipe') on one or more input datasets. Control of the Recipe System on the
-``reduce`` command line is provided by a variety of options and switches. All
-options and switches can be accessed and controlled through the API.
+The Recipe System provides a command line interface and an application
+programming interface (API). Both allow users to configure and launch a
+Recipe System processing pipeline (a 'recipe') on one or more input datasets.
+Control of the Recipe System on the ``reduce`` command line is provided by a
+variety of options and switches. All options and switches can be accessed and
+controlled through the API.
 
 This chapter will first present details of the command line interface,
 ``reduce``, including an extended discussion of :ref:`atfile`. This is followed
@@ -31,26 +34,47 @@ further description and discussion of certain non-trivial options. ::
 
   _____________________________ Gemini Observatory ____________________________
   ____________________ Recipe Processing Management System ____________________
-  __________________ recipeSystem2 Release alpha (new_hope) __________________
+  ______________________ Recipe System Release2.0 (beta) ______________________
 
   positional arguments:
     fitsfile              fitsfile [fitsfile ...]
 
-  optional arguments:
-    -h, --help            show this help message and exit
-    -v, --version         show program's version number and exit
-    -d, --displayflags    display all parsed option flags and exit.
-    --context CONTEXT     Use <context> for recipe selection.
-    --logmode LOGMODE     log mode: 'standard', 'console', 'quiet', 'debug','null'.
-    --logfile LOGFILE     name of log (default is 'reduce.log')
-    --loglevel LOGLEVEL   Set the verbose level for console logging.
-    -p USERPARAM [USERPARAM ...], --param USERPARAM [USERPARAM ...]
-                          Set a parameter from the command line.
-    -r RECIPENAME, --recipe RECIPENAME 
-                          Specify a recipe by name.
-    --suffix SUFFIX       Add SUFFIX to filenames at end of reduction.
-    --upload_metrics      Send QA metrics to fitsstore. Default is False.
-    --user_cal USER_CAL   Specify user supplied calibrations.
+ optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+  -d , --displayflags   display all parsed option flags and exit.
+  --context CONTEXT     Use <context> for recipe selection and primitives
+                        sensitive to context. Eg., --context QA
+  --logfile LOGFILE     name of log (default is 'reduce.log')
+  --loglevel LOGLEVEL   Set the verbose level for console logging; (critical,
+                        error, warning, status, stdinfo, fullinfo, debug)
+  --logmode LOGMODE     Set log mode: 'standard', 'console', 'quiet', 'debug',
+                        or 'null'.
+  -p USERPARAM [USERPARAM ...], --param USERPARAM [USERPARAM ...]
+                        Set a parameter from the command line. The form '-p
+                        par=val' sets a parameter such that all primitives
+                        with that defined parameter will 'see' it. The form:
+                        '-p primitivename:par=val', sets the parameter only
+                        for 'primitivename'. Separate par/val pairs by
+                        whitespace: (eg. '-p par1=val1 par2=val2')
+  -r RECIPENAME, --recipe RECIPENAME
+                        Specify a recipe by name. Users can request non-
+                        default system recipe functions by their simple names,
+                        e.g., -r qaStack, OR may specify their own recipe file
+                        and recipe function. A user defined recipe function
+                        must be 'dotted' with the recipe file. E.g., '-r
+                        /path/to/recipes/recipefile.recipe_function' For a
+                        recipe file in the current working directory (cwd),
+                        only the file name is needed, as in, '-r
+                        recipefile.recipe_function' The fact that the recipe
+                        function is dotted with the recipe file name implies
+                        that multiple user defined recipe functions can be
+                        defined in a single file.
+  --suffix SUFFIX       Add 'suffix' to filenames at end of reduction; strip
+                        all other suffixes marked by '_'.
+  --upload_metrics      Send QA metrics to fitsstore. Default is False.
+  --user_cal USER_CAL   Specify user supplied calibrations for calibration
+                        types. Eg., --user_cal gsTest_arc.fits
 
 The [options] are described in the following sections.
 
@@ -65,33 +89,31 @@ Informational switches
 **-d, --displayflags**
     Display all parsed option flags and exit.
 
-    When specified, this switch will present the user with a table of all 
-    parsed arguments and then exit without running. This allows the user to 
-    check that the configuration is as intended. The table provides a convenient
-    view of all passed and default values. Unless a user has specified a 
-    recipe (-r, --recipe), 'recipename' indicates 'None' because at this point, 
-    the Recipe System has not yet been engaged and a default recipe not yet
-    determined.
-
+    When specified, this switch presents a table of all parsed arguments and then
+    exits. The table provides a convenient view of all passed and default values.
+    When not specified, 'recipename' indicates 'None' because at this point the
+    Recipe System has not been invoked and a default recipe not yet determined.
     Eg.,::
 
        $ reduce -d --logmode console fitsfile.fits
 
-       --------------------   switches, vars, vals  ------------------
+       --------------------   switches, vars, vals  --------------------
 
-       Literals			var 'dest'	Value
-       ---------------------------------------------------------------
-       ['-d', '--displayflags']       :: displayflags    :: True
-       ['--context']                  :: context         :: None
-       ['--logfile']                  :: logfile         :: reduce.log
-       ['--loglevel']                 :: loglevel        :: stdinfo
-       ['--logmode']                  :: logmode         :: console
-       ['-p', '--param']              :: userparam       :: None
-       ['-r', '--recipe']             :: recipename      :: None
-       ['--suffix']                   :: suffix          :: None
-       ['--upload_metrics']           :: upmetrics       :: False
-       ['--user_cal']                 :: user_cal        :: None
-	--------------------------------------------------------------
+       Literals                    var 'dest'                  Value
+       -----------------------------------------------------------------
+       ['-d', '--displayflags']    :: displayflags             :: True
+       ['-p', '--param']           :: userparam                :: None
+       ['--logmode']               :: logmode                  :: console
+       ['--context']               :: context                  :: ['qa']
+       ['-r', '--recipe']          :: recipename               :: None
+       ['--suffix']                :: suffix                   :: None
+       ['--loglevel']              :: loglevel                 :: stdinfo
+       ['--user_cal']              :: user_cal                 :: None
+       ['--logfile']               :: logfile                  :: reduce.log
+       ['--upload_metrics']        :: upmetrics                :: False
+       -----------------------------------------------------------------
+
+       Input fits file(s):	fitsfile.fits
 
 .. _options:
 
@@ -144,8 +166,8 @@ Configuration Switches, Options
 
 **-r <RECIPENAME>, --recipe <RECIPENAME>**
     Specify an explicit recipe to be used rather than internally determined by
-    a dataset's <ASTROTYPE>. Default is None and later determined by the Recipe 
-    System based on the AstroDataType.
+    a dataset's tags. Default is None and later determined by the Recipe 
+    System based on a dataset's tag set and the recipe context.
 
 **--suffix <SUFFIX>**
     Add 'suffix' to output filenames at end of reduction.
@@ -156,7 +178,7 @@ Configuration Switches, Options
 **--user_cal <USER_CAL [USER_CAL ...]>**
     The option allows users to provide their own calibrations to ``reduce``.
     Add a calibration to User Calibration Service. 
-    '--override_cal CAL_PATH'
+    '--user_cal CAL_PATH'
     Eg.,
 
     ``--user_cal wcal/gsTest_arc.fits``
@@ -176,27 +198,27 @@ For example::
 
   $ reduce --user_cal FOO_bias.fits <dataset.fits>
 
-Such a command for complex processing of data is possible because AstroData 
-and the Recipe System do all the necessary work in determining how the data are to 
+Such a command for complex processing of data is possible because the Recipe
+System does all the necessary work in determining how the data are to 
 be processed, which is critcially based upon the determination of the `tag set` 
 that applies to that data.
 
-Without any user-specified recipe (-r --recipe), the default recipe is 
-``qaReduce``, which is defined for various AstroData tag sets and currently used 
-during summit operations. Unless passed a explicit recipe (-r --recipename), 
+Without any user-specified recipe (-r --recipe), the default recipe is
+``reduce_nostack``, which is defined for various AstroData tag sets and currently
+used for summit operations. Unless passed a explicit recipe (-r --recipename),
 the Recipe System uses the astrodata tag set and context to locate the appropriate
-recipe to run. 
+recipe to run.
 
-The recipe libraries for a GMOS_IMAGE, are defined under ::
+The recipe libraries for a GMOS_IMAGE, are defined under::
 
   GMOS.recipes.QA
 
 and the recipe system will search available recipe libraries for a match. Naming
 of recipe library module(s) is arbitrary. If all defaults are picked up, this 
-results in the ``qaReduce`` recipe function being selected and which specifies 
+results in the ``reduce_nostack`` recipe function being selected and which specifies 
 that the following primitives are called on the data ::
 
- def qaReduce(p):
+ def reduce_nostack(p):
      p.prepare()
      p.addDQ()
      p.addVAR(read_noise=True)
@@ -216,7 +238,7 @@ that the following primitives are called on the data ::
      p.measureIQ(display=True))
      p.measureBG()
      p.measureCCAndAstrometry()
-     p.addToList(purpose=forStack)
+     p.addToList(purpose='forStack')
 
 The point here is not to overwhelm readers with a stack of primitive names, but 
 to present both the default pipeline processing that the above simple ``reduce`` 

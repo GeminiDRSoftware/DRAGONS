@@ -1,4 +1,5 @@
 .. demo:
+.. include intro
 
 *************
 `reduce` demo
@@ -23,12 +24,12 @@ gemini_python package.  Unpack the data package somewhere convenient::
 
    tar xvzf gemini_python_datapkg-X1.tar.gz
 
-In there, you will find a subdirectory named ``data_for_reduce_demo``.  Those are
+In there, you will find a subdirectory named ``data_for_reduce_demo``. Those are
 the data we will use here.  You will also find an empty directory called 
-``playground``.  This is your playground. The instructions in this demo assume that 
-you are running the ``reduce`` command from that directory.  There is no requirements
-to run ``reduce`` from that directory, but if you want to follow the demo to the
-letter, this is where you should be for all the paths to work.
+``playground``.  This is your playground. The instructions in this demo assume
+that you are running the ``reduce`` command from that directory.  There is no
+requirements to run ``reduce`` from that directory, but if you want to follow
+the demo to the letter, this is where you should be for all the paths to work.
 
 Introduction to the Demo
 ------------------------
