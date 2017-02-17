@@ -1,4 +1,5 @@
 .. demo:
+.. include intro
 
 *************
 `reduce` demo
@@ -14,8 +15,8 @@ First install Ureka, which can be obtained at http://ssb.stsci.edu/ureka/.
 The second step is to install ``gemini_python`` as described in 
 :ref:`Section 2 - Installation <config>`.  
 Please do make sure that the command `reduce` is in your ``PATH`` and that 
-``PYTHONPATH`` includes the location where the modules ``astrodata``, ``astrodata_FITS``, 
-``astrodata_Gemini``, and ``gempy`` are installed.
+``PYTHONPATH`` includes the location where the modules ``astrodata``, the 
+``recipe_system``, and ``gempy`` are installed.
 
 The demo data is distributed separately.  You can find the demo data package 
 ``gemini_python_datapkg-X1.tar.gz`` on the Gemini website where you found the 
@@ -23,12 +24,12 @@ gemini_python package.  Unpack the data package somewhere convenient::
 
    tar xvzf gemini_python_datapkg-X1.tar.gz
 
-In there, you will find a subdirectory named ``data_for_reduce_demo``.  Those are
+In there, you will find a subdirectory named ``data_for_reduce_demo``. Those are
 the data we will use here.  You will also find an empty directory called 
-``playground``.  This is your playground. The instructions in this demo assume that 
-you are running the ``reduce`` command from that directory.  There is no requirements
-to run ``reduce`` from that directory, but if you want to follow the demo to the
-letter, this is where you should be for all the paths to work.
+``playground``.  This is your playground. The instructions in this demo assume
+that you are running the ``reduce`` command from that directory.  There is no
+requirements to run ``reduce`` from that directory, but if you want to follow
+the demo to the letter, this is where you should be for all the paths to work.
 
 Introduction to the Demo
 ------------------------
@@ -58,25 +59,25 @@ If we were not to override the recipe selection, the system would automatically
 select the QA recipe.  The Demo recipe is more representative of a standard 
 Quick-Look reduction with stacking, hence probably more interesting to the reader.
 
-The standard recipe to process GMOS biases is named ``recipe.makeProcessedBias`` 
-and contains these instructions::
+The standard recipe to process GMOS biases is named ``makeProcessedBias`` 
+and contains the instruction set::
 
    # This recipe performs the standardization and corrections needed to convert 
    # the raw input bias images into a single stacked bias image. This output 
    # processed bias is stored on disk using storeProcessedBias and has a name 
    # equal to the name of the first input bias image with "_bias.fits" appended.
    
-   prepare
-   addDQ
-   addVAR(read_noise=True)
-   overscanCorrect
-   addToList(purpose="forStack")
-   getList(purpose="forStack")
-   stackFrames
-   storeProcessedBias
+   p.prepare()
+   p.addDQ()
+   p.addVAR(read_noise=True)
+   p.overscanCorrect()
+   p.addToList(purpose="forStack")
+   p.getList(purpose="forStack")
+   p.stackFrames()
+   p.storeProcessedBias()
 
 The standard recipe to process GMOS twilight flats is named 
-``recipe.makeProcessedFlat.GMOS_IMAGE`` and contains these instructions::
+``makeProcessedFlat`` and contains the instruction set::
 
    # This recipe performs the standardization and corrections needed to convert 
    # the raw input flat images into a single stacked and normalized flat image. 
@@ -84,45 +85,45 @@ The standard recipe to process GMOS twilight flats is named
    # has a name equal to the name of the first input flat image with "_flat.fits" 
    # appended.
    
-   prepare
-   addDQ
-   addVAR(read_noise=True)
-   display
-   overscanCorrect
-   biasCorrect
-   ADUToElectrons
-   addVAR(poisson_noise=True)
-   addToList(purpose="forStack")
-   getList(purpose="forStack")
-   stackFlats
-   normalizeFlat
-   storeProcessedFlat
+   p.prepare()
+   p.addDQ()
+   p.addVAR(read_noise=True)
+   p.display()
+   p.overscanCorrect()
+   p.biasCorrect()
+   p.ADUToElectrons()
+   p.addVAR(poisson_noise=True)
+   p.addToList(purpose="forStack")
+   p.getList(purpose="forStack")
+   p.stackFlats()
+   p.normalizeFlat()
+   p.storeProcessedFlat()
 
-The Demo recipe is named ``recipe.reduceDemo`` and contains these instructions::
+The Demo recipe is named ``reduceDemo`` and contains the instruction set::
 
-   # recipe.reduceDemo
+   # reduceDemo
    
-   prepare
-   addDQ
-   addVAR(read_noise=True)
-   overscanCorrect
-   biasCorrect
-   ADUToElectrons
-   addVAR(poisson_noise=True)
-   flatCorrect
-   makeFringe
-   fringeCorrect
-   mosaicDetectors
-   detectSources
-   addToList(purpose=forStack)
-   getList(purpose=forStack)
-   alignAndStack
-   detectSources
-   measureIQ
+   p.prepare()
+   p.addDQ()
+   p.addVAR(read_noise=True)
+   p.overscanCorrect()
+   p.biasCorrect()
+   p.ADUToElectrons()
+   p.addVAR(poisson_noise=True)
+   p.flatCorrect()
+   p.makeFringe()
+   p.fringeCorrect()
+   p.mosaicDetectors()
+   p.detectSources()
+   p.addToList(purpose=forStack)
+   p.getList(purpose=forStack)
+   p.alignAndStack()
+   p.detectSources()
+   p.measureIQ()
 
 For the curious, the standard bias and flat recipes are found in 
-``astrodata_Gemini/RECIPES_Gemini/`` and the demo recipe is in 
-``astrodata_Gemini/RECIPES_Gemini/demos/``.  You do not really need that information
+``???`` and the demo recipe is in 
+``???demos/``.  You do not really need that information
 as the system will find them on its own.
 
 The Demo
@@ -148,7 +149,7 @@ create the list. ::
 
    cd <your_path>/gemini_python_datapkg-X1/playground
    
-   typewalk --types GMOS_BIAS --dir ../data_for_reduce_demo -o bias.list
+   typewalk --types GMOS BIAS --dir ../data_for_reduce_demo -o bias.list
    
    reduce @bias.list
 
@@ -183,8 +184,7 @@ specified on the command line.
 For the flats, we do not really need a list, we can use wild cards::
 
    reduce ../data_for_reduce_demo/N20120123*.fits \
-      --override_cal processed_bias:N20120202S0955_bias.fits \
-      -p clobber=True
+      --user_cal N20120202S0955_bias.fits -p clobber=True;
 
 This creates the processed flat, ``N20120123S0123_flat.fits``.  The output suffix
 ``_flat`` is the indictor that this is a processed flat.  The processed flat is also
@@ -206,17 +206,15 @@ instead of using the standard QA recipe, we will use the Demo recipe.  Again,
 we will specify the processed calibrations, bias and flat, we wish to use. ::
 
    reduce ../data_for_reduce_demo/N20120203S028?.fits \
-      --override_cal processed_bias:N20120202S0955_bias.fits \
-                     processed_flat:N20120123S0123_flat.fits \
-      -r reduceDemo \
-      -p clobber=True
+      --user_cal N20120202S0955_bias.fits N20120123S0123_flat.fits \
+      -r reduceDemo -p clobber=True
 
 The demo data was obtained with the z' filter, therefore the images contain fringing.
 The ``makeFringe`` and ``fringeCorrect`` primitives are filter-aware, they will do 
 something only when the data is from a filter that produces fringing, like the z' 
 filter.  The processed fringe that is created is stored with the other processed 
-calibrations in ``./calibrations/storedcals/`` and it is named ``N20120203S0281_fringe.fits``.
-The ``_fringe`` suffix indicates a processed fringe.
+calibrations in ``./calibrations/storedcals/`` and it is named 
+``N20120203S0281_fringe.fits``. The ``_fringe`` suffix indicates a processed fringe.
 
 The last primitive in the recipe is ``measureIQ`` which is one of the QA metrics
 primitives used at night by the QA pipeline.  The primitive selects stars in

@@ -15,8 +15,120 @@ filter_wavelengths = {
 
 # Database of GMOS CCD amplifier GAIN and READNOISE properties
 gmosampsGain = {
+    # Database of GMOS CCD amplifier GAIN properties
+    # after 207-03-15
+    # Columns below are given as:
+    # READOUT, GAINSTATE, AMPNAME : GAIN
+    # GMOS-N: Hamamatsu CCDs
+    # AMPS 1-4 (CCD1)
+    ("slow", "low", "BI13-20-4k-1, 1"): 1.000,
+    ("slow", "high", "BI13-20-4k-1, 1"): 1.000,
+    ("fast", "high", "BI13-20-4k-1, 1"): 1.000,
+    ("fast", "low", "BI13-20-4k-1, 1"): 1.000,
+    ("slow", "low", "BI13-20-4k-1, 2"): 1.000,
+    ("slow", "high", "BI13-20-4k-1, 2"): 1.000,
+    ("fast", "high", "BI13-20-4k-1, 2"): 1.000,
+    ("fast", "low", "BI13-20-4k-1, 2"): 1.000,
+    ("slow", "low", "BI13-20-4k-1, 3"): 1.000,
+    ("slow", "high", "BI13-20-4k-1, 3"): 1.000,
+    ("fast", "high", "BI13-20-4k-1, 3"): 1.000,
+    ("fast", "low", "BI13-20-4k-1, 3"): 1.000,
+    ("slow", "low", "BI13-20-4k-1, 4"): 1.000,
+    ("slow", "high", "BI13-20-4k-1, 4"): 1.000,
+    ("fast", "high", "BI13-20-4k-1, 4"): 1.000,
+    ("fast", "low", "BI13-20-4k-1, 4"): 1.000,
+    # AMPS 5-8 (CCD2)
+    ("slow", "low", "BI12-09-4k-2, 1"): 1.000,
+    ("slow", "high", "BI12-09-4k-2, 1"): 1.000,
+    ("fast", "high", "BI12-09-4k-2, 1"): 1.000,
+    ("fast", "low", "BI12-09-4k-2, 1"): 1.000,
+    ("slow", "low", "BI12-09-4k-2, 2"): 1.000,
+    ("slow", "high", "BI12-09-4k-2, 2"): 1.000,
+    ("fast", "high", "BI12-09-4k-2, 2"): 1.000,
+    ("fast", "low", "BI12-09-4k-2, 2"): 1.000,
+    ("slow", "low", "BI12-09-4k-2, 3"): 1.000,
+    ("slow", "high", "BI12-09-4k-2, 3"): 1.000,
+    ("fast", "high", "BI12-09-4k-2, 3"): 1.000,
+    ("fast", "low", "BI12-09-4k-2, 3"): 1.000,
+    ("slow", "low", "BI12-09-4k-2, 4"): 1.000,
+    ("slow", "high", "BI12-09-4k-2, 4"): 1.000,
+    ("fast", "high", "BI12-09-4k-2, 4"): 1.000,
+    ("fast", "low", "BI12-09-4k-2, 4"): 1.000,
+    # AMPS 9-12 (CCD3)
+    ("slow", "low", "BI13-18-4k-2, 1"): 1.000,
+    ("slow", "high", "BI13-18-4k-2, 1"): 1.000,
+    ("fast", "high", "BI13-18-4k-2, 1"): 1.000,
+    ("fast", "low", "BI13-18-4k-2, 1"): 1.000,
+    ("slow", "low", "BI13-18-4k-2, 2"): 1.000,
+    ("slow", "high", "BI13-18-4k-2, 2"): 1.000,
+    ("fast", "high", "BI13-18-4k-2, 2"): 1.000,
+    ("fast", "low", "BI13-18-4k-2, 2"): 1.000,
+    ("slow", "low", "BI13-18-4k-2, 3"): 1.000,
+    ("slow", "high", "BI13-18-4k-2, 3"): 1.000,
+    ("fast", "high", "BI13-18-4k-2, 3"): 1.000,
+    ("fast", "low", "BI13-18-4k-2, 3"): 1.000,
+    ("slow", "low", "BI13-18-4k-2, 4"): 1.000,
+    ("slow", "high", "BI13-18-4k-2, 4"): 1.000,
+    ("fast", "high", "BI13-18-4k-2, 4"): 1.000,
+    ("fast", "low", "BI13-18-4k-2, 4"): 1.000,
+
+        # GMOS-S Hamamatsu CCDs (new E video boards, 2015)
+        #AMPS 1-4 (CCD1)
+        ("slow", "low",  "BI5-36-4k-2, 1") : 1.852,
+        ("slow", "high", "BI5-36-4k-2, 1") : 1.000,
+        ("fast", "high", "BI5-36-4k-2, 1") : 5.240,
+        ("fast", "low",  "BI5-36-4k-2, 1") : 1.566,
+        ("slow", "low",  "BI5-36-4k-2, 2") : 1.878,
+        ("slow", "high", "BI5-36-4k-2, 2") : 1.000,
+        ("fast", "high", "BI5-36-4k-2, 2") : 5.330,
+        ("fast", "low",  "BI5-36-4k-2, 2") : 1.592,
+        ("slow", "low",  "BI5-36-4k-2, 3") : 1.874,
+        ("slow", "high", "BI5-36-4k-2, 3") : 1.000,
+        ("fast", "high", "BI5-36-4k-2, 3") : 5.300,
+        ("fast", "low",  "BI5-36-4k-2, 3") : 1.593,
+        ("slow", "low",  "BI5-36-4k-2, 4") : 1.834,
+        ("slow", "high", "BI5-36-4k-2, 4") : 1.000,
+        ("fast", "high", "BI5-36-4k-2, 4") : 5.183,
+        ("fast", "low",  "BI5-36-4k-2, 4") : 1.556,
+        #AMPS 5-8 (CCD2)
+        ("slow", "low",  "BI11-33-4k-1, 1") : 1.878,
+        ("slow", "high", "BI11-33-4k-1, 1") : 1.000,
+        ("fast", "high", "BI11-33-4k-1, 1") : 5.334,
+        ("fast", "low",  "BI11-33-4k-1, 1") : 1.613,
+        ("slow", "low",  "BI11-33-4k-1, 2") : 1.840,
+        ("slow", "high", "BI11-33-4k-1, 2") : 1.000,
+        ("fast", "high", "BI11-33-4k-1, 2") : 5.225,
+        ("fast", "low",  "BI11-33-4k-1, 2") : 1.582,
+        ("slow", "low",  "BI11-33-4k-1, 3") : 1.933,
+        ("slow", "high", "BI11-33-4k-1, 3") : 1.000,
+        ("fast", "high", "BI11-33-4k-1, 3") : 5.459,
+        ("fast", "low",  "BI11-33-4k-1, 3") : 1.648,
+        ("slow", "low",  "BI11-33-4k-1, 4") : 1.908,
+        ("slow", "high", "BI11-33-4k-1, 4") : 1.000,
+        ("fast", "high", "BI11-33-4k-1, 4") : 5.407,
+        ("fast", "low",  "BI11-33-4k-1, 4") : 1.634,
+         #AMPS 9-12 (CCD3)
+        ("slow", "low",  "BI12-34-4k-1, 1") : 1.652,
+        ("slow", "high", "BI12-34-4k-1, 1") : 1.000,
+        ("fast", "high", "BI12-34-4k-1, 1") : 4.828,
+        ("fast", "low",  "BI12-34-4k-1, 1") : 1.445,
+        ("slow", "low",  "BI12-34-4k-1, 2") : 1.761,
+        ("slow", "high", "BI12-34-4k-1, 2") : 1.000,
+        ("fast", "high", "BI12-34-4k-1, 2") : 5.129,
+        ("fast", "low",  "BI12-34-4k-1, 2") : 1.545,
+        ("slow", "low",  "BI12-34-4k-1, 3") : 1.724,
+        ("slow", "high", "BI12-34-4k-1, 3") : 1.000,
+        ("fast", "high", "BI12-34-4k-1, 3") : 4.894,
+        ("fast", "low",  "BI12-34-4k-1, 3") : 1.478,
+        ("slow", "low",  "BI12-34-4k-1, 4") : 1.813,
+        ("slow", "high", "BI12-34-4k-1, 4") : 1.000,
+        ("fast", "high", "BI12-34-4k-1, 4") : 5.120,
+        ("fast", "low",  "BI12-34-4k-1, 4") : 1.549
+    }
+
+gmosampsGainBefore20170315 = {
         # Database of GMOS CCD amplifier GAIN properties
-        # after 2015-08-26
+        # after 2015-08-26 and before 2017-03-15
         # Columns below are given as:
         # READOUT, GAINSTATE, AMPNAME : GAIN
         # GMOS-N:
@@ -100,6 +212,7 @@ gmosampsGain = {
         ("fast", "high", "BI12-34-4k-1, 4") : 5.120,
         ("fast", "low",  "BI12-34-4k-1, 4") : 1.549
     }
+
 
 gmosampsGainBefore20150826 = {
         # Database of GMOS CCD amplifier GAIN properties
@@ -246,7 +359,7 @@ gmosampsGainBefore20150826 = {
         ("slow", "low",  "BI12-34-4k-1, 4") : 1.613,
         ("slow", "high", "BI12-34-4k-1, 4") : 1.000,
         ("fast", "high", "BI12-34-4k-1, 4") : 4.588,
-        ("fast", "low",  "BI12-34-4k-1, 4") : 1.424,   
+        ("fast", "low",  "BI12-34-4k-1, 4") : 1.424,
          #AMPS 9-12 (CCD3)
          #Repeated entries for CCD3 without the last comma
         ("slow", "low",  "BI12-34-4k-1 1") : 1.519,
@@ -264,9 +377,9 @@ gmosampsGainBefore20150826 = {
         ("slow", "low",  "BI12-34-4k-1 4") : 1.613,
         ("slow", "high", "BI12-34-4k-1 4") : 1.000,
         ("fast", "high", "BI12-34-4k-1 4") : 4.588,
-        ("fast", "low",  "BI12-34-4k-1 4") : 1.424   
+        ("fast", "low",  "BI12-34-4k-1 4") : 1.424
     }
-    
+
 gmosampsGainBefore20060831 = {
         # Database of GMOS CCD amplifier GAIN properties
         # before 2006-08-31
@@ -286,7 +399,7 @@ gmosampsGainBefore20060831 = {
         ("slow", "high", "EEV 9273-20-03, left")  : 4.841,
         ("fast", "high", "EEV 9273-20-03, left")  : 5.397,
         ("fast", "low",  "EEV 9273-20-03, left")  : 2.560,
-        # EEV CCDs secondary amps 
+        # EEV CCDs secondary amps
         ("slow", "low",  "EEV 9273-16-03, left")  : 2.012,
         ("slow", "high", "EEV 9273-16-03, left")  : 4.247,
         ("fast", "high", "EEV 9273-16-03, left")  : 4.629,
@@ -299,7 +412,7 @@ gmosampsGainBefore20060831 = {
         ("slow", "high", "EEV 9273-20-03, right") : 4.779,
         ("fast", "high", "EEV 9273-20-03, right") : 5.354,
         ("fast", "low",  "EEV 9273-20-03, right") : 2.526,
-        # GMOS-S: New Gain/RN/Bias values (2006oct25) for 
+        # GMOS-S: New Gain/RN/Bias values (2006oct25) for
         # EEV CCDs best amps
         ("slow", "low",  "EEV 8056-20-03, left")  : 1.940,
         ("slow", "high", "EEV 8056-20-03, left")  : 4.100,
@@ -338,8 +451,119 @@ gmosampsGainBefore20060831 = {
     }
 
 gmosampsRdnoise = {
+    # Database of GMOS CCD amplifier READNOISE properties
+    # after 2017-03-15
+    # Columns below are given as:
+    # READOUT, GAINSTATE, AMPNAME : READNOISE (in electrons)
+    # GMOS-N: Hamamatsu CCDs
+    ("slow", "low", "BI13-20-4k-1, 1"): 0.00,
+    ("slow", "high", "BI13-20-4k-1, 1"): 0.00,
+    ("fast", "high", "BI13-20-4k-1, 1"): 0.00,
+    ("fast", "low", "BI13-20-4k-1, 1"): 0.00,
+    ("slow", "low", "BI13-20-4k-1, 2"): 0.00,
+    ("slow", "high", "BI13-20-4k-1, 2"): 0.00,
+    ("fast", "high", "BI13-20-4k-1, 2"): 0.00,
+    ("fast", "low", "BI13-20-4k-1, 2"): 0.00,
+    ("slow", "low", "BI13-20-4k-1, 3"): 0.00,
+    ("slow", "high", "BI13-20-4k-1, 3"): 0.00,
+    ("fast", "high", "BI13-20-4k-1, 3"): 0.00,
+    ("fast", "low", "BI13-20-4k-1, 3"): 0.00,
+    ("slow", "low", "BI13-20-4k-1, 4"): 0.00,
+    ("slow", "high", "BI13-20-4k-1, 4"): 0.00,
+    ("fast", "high", "BI13-20-4k-1, 4"): 0.00,
+    ("fast", "low", "BI13-20-4k-1, 4"): 0.00,
+    # AMPS 8-5 (CCD2)
+    ("slow", "low", "BI12-09-4k-2, 1"): 0.00,
+    ("slow", "high", "BI12-09-4k-2, 1"): 0.00,
+    ("fast", "high", "BI12-09-4k-2, 1"): 0.00,
+    ("fast", "low", "BI12-09-4k-2, 1"): 0.00,
+    ("slow", "low", "BI12-09-4k-2, 2"): 0.00,
+    ("slow", "high", "BI12-09-4k-2, 2"): 0.00,
+    ("fast", "high", "BI12-09-4k-2, 2"): 0.00,
+    ("fast", "low", "BI12-09-4k-2, 2"): 0.00,
+    ("slow", "low", "BI12-09-4k-2, 3"): 0.00,
+    ("slow", "high", "BI12-09-4k-2, 3"): 0.00,
+    ("fast", "high", "BI12-09-4k-2, 3"): 0.00,
+    ("fast", "low", "BI12-09-4k-2, 3"): 0.00,
+    ("slow", "low", "BI12-09-4k-2, 4"): 0.00,
+    ("slow", "high", "BI12-09-4k-2, 4"): 0.00,
+    ("fast", "high", "BI12-09-4k-2, 4"): 0.00,
+    ("fast", "low", "BI12-09-4k-2, 4"): 0.00,
+    # AMPS 12-9 (CCD3)
+    ("slow", "low", "BI13-18-4k-2, 1"): 0.00,
+    ("slow", "high", "BI13-18-4k-2, 1"): 0.00,
+    ("fast", "high", "BI13-18-4k-2, 1"): 0.00,
+    ("fast", "low", "BI13-18-4k-2, 1"): 0.00,
+    ("slow", "low", "BI13-18-4k-2, 2"): 0.00,
+    ("slow", "high", "BI13-18-4k-2, 2"): 0.00,
+    ("fast", "high", "BI13-18-4k-2, 2"): 0.00,
+    ("fast", "low", "BI13-18-4k-2, 2"): 0.00,
+    ("slow", "low", "BI13-18-4k-2, 3"): 0.00,
+    ("slow", "high", "BI13-18-4k-2, 3"): 0.00,
+    ("fast", "high", "BI13-18-4k-2, 3"): 0.00,
+    ("fast", "low", "BI13-18-4k-2, 3"): 0.00,
+    ("slow", "low", "BI13-18-4k-2, 4"): 0.00,
+    ("slow", "high", "BI13-18-4k-2, 4"): 0.00,
+    ("fast", "high", "BI13-18-4k-2, 4"): 0.00,
+    ("fast", "low", "BI13-18-4k-2, 4"): 0.00,
+
+    # GMOS-S Hamamatsu CCDs (new E video boards, 2015)
+        #AMPS 4-1 (CCD1)
+        ("slow", "low",  "BI5-36-4k-2, 1") : 4.21,
+        ("slow", "high", "BI5-36-4k-2, 1") : 0.00,
+        ("fast", "high", "BI5-36-4k-2, 1") : 8.93,
+        ("fast", "low",  "BI5-36-4k-2, 1") : 6.68,
+        ("slow", "low",  "BI5-36-4k-2, 2") : 4.24,
+        ("slow", "high", "BI5-36-4k-2, 2") : 0.00,
+        ("fast", "high", "BI5-36-4k-2, 2") : 9.13,
+        ("fast", "low",  "BI5-36-4k-2, 2") : 7.10,
+        ("slow", "low",  "BI5-36-4k-2, 3") : 4.28,
+        ("slow", "high", "BI5-36-4k-2, 3") : 0.00,
+        ("fast", "high", "BI5-36-4k-2, 3") : 8.85,
+        ("fast", "low",  "BI5-36-4k-2, 3") : 6.35,
+        ("slow", "low",  "BI5-36-4k-2, 4") : 4.04,
+        ("slow", "high", "BI5-36-4k-2, 4") : 0.00,
+        ("fast", "high", "BI5-36-4k-2, 4") : 8.07,
+        ("fast", "low",  "BI5-36-4k-2, 4") : 5.49,
+        #AMPS 8-5 (CCD2)
+        ("slow", "low",  "BI11-33-4k-1, 1") : 4.29,
+        ("slow", "high", "BI11-33-4k-1, 1") : 0.00,
+        ("fast", "high", "BI11-33-4k-1, 1") : 8.35,
+        ("fast", "low",  "BI11-33-4k-1, 1") : 5.19,
+        ("slow", "low",  "BI11-33-4k-1, 2") : 4.07,
+        ("slow", "high", "BI11-33-4k-1, 2") : 0.00,
+        ("fast", "high", "BI11-33-4k-1, 2") : 8.59,
+        ("fast", "low",  "BI11-33-4k-1, 2") : 6.14,
+        ("slow", "low",  "BI11-33-4k-1, 3") : 4.24,
+        ("slow", "high", "BI11-33-4k-1, 3") : 0.00,
+        ("fast", "high", "BI11-33-4k-1, 3") : 8.62,
+        ("fast", "low",  "BI11-33-4k-1, 3") : 7.38,
+        ("slow", "low",  "BI11-33-4k-1, 4") : 3.90,
+        ("slow", "high", "BI11-33-4k-1, 4") : 0.00,
+        ("fast", "high", "BI11-33-4k-1, 4") : 8.02,
+        ("fast", "low",  "BI11-33-4k-1, 4") : 5.77,
+        #AMPS 12-9 (CCD3)
+        ("slow", "low",  "BI12-34-4k-1, 1") : 3.53,
+        ("slow", "high", "BI12-34-4k-1, 1") : 0.00,
+        ("fast", "high", "BI12-34-4k-1, 1") : 7.94,
+        ("fast", "low",  "BI12-34-4k-1, 1") : 6.36,
+        ("slow", "low",  "BI12-34-4k-1, 2") : 3.72,
+        ("slow", "high", "BI12-34-4k-1, 2") : 0.00,
+        ("fast", "high", "BI12-34-4k-1, 2") : 8.30,
+        ("fast", "low",  "BI12-34-4k-1, 2") : 6.80,
+        ("slow", "low",  "BI12-34-4k-1, 3") : 3.61,
+        ("slow", "high", "BI12-34-4k-1, 3") : 0.00,
+        ("fast", "high", "BI12-34-4k-1, 3") : 7.99,
+        ("fast", "low",  "BI12-34-4k-1, 3") : 7.88,
+        ("slow", "low",  "BI12-34-4k-1, 4") : 4.15,
+        ("slow", "high", "BI12-34-4k-1, 4") : 0.00,
+        ("fast", "high", "BI12-34-4k-1, 4") : 9.34,
+        ("fast", "low",  "BI12-34-4k-1, 4") : 7.72
+    }
+
+gmosampsRdnoiseBefore20170315 = {
         # Database of GMOS CCD amplifier READNOISE properties
-        # after 2015-08-26
+        # after 2015-08-26 and before 2017-03-15
         # Columns below are given as:
         # READOUT, GAINSTATE, AMPNAME : READNOISE (in electrons)
         # GMOS-N:
@@ -481,7 +705,7 @@ gmosampsRdnoiseBefore20150826 = {
         ("slow", "high", "EEV 9273-20-03, right") : 5.0,
         ("fast", "high", "EEV 9273-20-03, right") : 8.0,
         ("fast", "low",  "EEV 9273-20-03, right") : 4.7,
-        # GMOS-S: 
+        # GMOS-S:
         # EEV best amps
         ("slow", "low",  "EEV 8056-20-03, left")  : 3.20,
         ("slow", "high", "EEV 8056-20-03, left")  : 4.20,
@@ -660,8 +884,121 @@ gmosampsRdnoiseBefore20060831 = {
     }
 
 gmosampsBias = {
+    # Database of GMOS CCD amplifier BIAS properties
+    # after 2017-03-15
+    # Columns below are given as:
+    # READOUT, GAINSTATE, AMPNAME : BIAS
+    # GMOS-N: Hamamatsu CCDs
+    # AMPS 4-1 (CCD1)
+    ("slow", "low", "BI13-20-4k-1, 1"): 0.,
+    ("slow", "high", "BI13-20-4k-1, 1"): 0.,
+    ("fast", "high", "BI13-20-4k-1, 1"): 0.,
+    ("fast", "low", "BI13-20-4k-1, 1"): 0.,
+    ("slow", "low", "BI13-20-4k-1, 2"): 0.,
+    ("slow", "high", "BI13-20-4k-1, 2"): 0.,
+    ("fast", "high", "BI13-20-4k-1, 2"): 0.,
+    ("fast", "low", "BI13-20-4k-1, 2"): 0.,
+    ("slow", "low", "BI13-20-4k-1, 3"): 0.,
+    ("slow", "high", "BI13-20-4k-1, 3"): 0.,
+    ("fast", "high", "BI13-20-4k-1, 3"): 0.,
+    ("fast", "low", "BI13-20-4k-1, 3"): 0.,
+    ("slow", "low", "BI13-20-4k-1, 4"): 0.,
+    ("slow", "high", "BI13-20-4k-1, 4"): 0.,
+    ("fast", "high", "BI13-20-4k-1, 4"): 0.,
+    ("fast", "low", "BI13-20-4k-1, 4"): 0.,
+    # AMPS 8-5 (CCD2)
+    ("slow", "low", "BI12-09-4k-2, 1"): 0.,
+    ("slow", "high", "BI12-09-4k-2, 1"): 0.,
+    ("fast", "high", "BI12-09-4k-2, 1"): 0.,
+    ("fast", "low", "BI12-09-4k-2, 1"): 0.,
+    ("slow", "low", "BI12-09-4k-2, 2"): 0.,
+    ("slow", "high", "BI12-09-4k-2, 2"): 0.,
+    ("fast", "high", "BI12-09-4k-2, 2"): 0.,
+    ("fast", "low", "BI12-09-4k-2, 2"): 0.,
+    ("slow", "low", "BI12-09-4k-2, 3"): 0.,
+    ("slow", "high", "BI12-09-4k-2, 3"): 0.,
+    ("fast", "high", "BI12-09-4k-2, 3"): 0.,
+    ("fast", "low", "BI12-09-4k-2, 3"): 0.,
+    ("slow", "low", "BI12-09-4k-2, 4"): 0.,
+    ("slow", "high", "BI12-09-4k-2, 4"): 0.,
+    ("fast", "high", "BI12-09-4k-2, 4"): 0.,
+    ("fast", "low", "BI12-09-4k-2, 4"): 0.,
+    # AMPS 12-9 (CCD3)
+    ("slow", "low", "BI13-18-4k-2, 1"): 0.,
+    ("slow", "high", "BI13-18-4k-2, 1"): 0.,
+    ("fast", "high", "BI13-18-4k-2, 1"): 0.,
+    ("fast", "low", "BI13-18-4k-2, 1"): 0.,
+    ("slow", "low", "BI13-18-4k-2, 2"): 0.,
+    ("slow", "high", "BI13-18-4k-2, 2"): 0.,
+    ("fast", "high", "BI13-18-4k-2, 2"): 0.,
+    ("fast", "low", "BI13-18-4k-2, 2"): 0.,
+    ("slow", "low", "BI13-18-4k-2, 3"): 0.,
+    ("slow", "high", "BI13-18-4k-2, 3"): 0.,
+    ("fast", "high", "BI13-18-4k-2, 3"): 0.,
+    ("fast", "low", "BI13-18-4k-2, 3"): 0.,
+    ("slow", "low", "BI13-18-4k-2, 4"): 0.,
+    ("slow", "high", "BI13-18-4k-2, 4"): 0.,
+    ("fast", "high", "BI13-18-4k-2, 4"): 0.,
+    ("fast", "low", "BI13-18-4k-2, 4"): 0.,
+
+    # GMOS-S Hamamatsu CCDs (new E video boards, 2015)
+        #AMPS 4-1 (CCD1)
+        ("slow", "low",  "BI5-36-4k-2, 1") : 500.,
+        ("slow", "high", "BI5-36-4k-2, 1") : 0.,
+        ("fast", "high", "BI5-36-4k-2, 1") : 2811.,
+        ("fast", "low",  "BI5-36-4k-2, 1") : 819.,
+        ("slow", "low",  "BI5-36-4k-2, 2") : 897.,
+        ("slow", "high", "BI5-36-4k-2, 2") : 0.,
+        ("fast", "high", "BI5-36-4k-2, 2") : 2854.,
+        ("fast", "low",  "BI5-36-4k-2, 2") : 1040.,
+        ("slow", "low",  "BI5-36-4k-2, 3") : 633.,
+        ("slow", "high", "BI5-36-4k-2, 3") : 0.,
+        ("fast", "high", "BI5-36-4k-2, 3") : 2932.,
+        ("fast", "low",  "BI5-36-4k-2, 3") : 856.,
+        ("slow", "low",  "BI5-36-4k-2, 4") : 730.,
+        ("slow", "high", "BI5-36-4k-2, 4") : 0.,
+        ("fast", "high", "BI5-36-4k-2, 4") : 2909.,
+        ("fast", "low",  "BI5-36-4k-2, 4") : 841.,
+        #AMPS 8-5 (CCD2)
+        ("slow", "low",  "BI11-33-4k-1, 1") : 990.,
+        ("slow", "high", "BI11-33-4k-1, 1") : 0.,
+        ("fast", "high", "BI11-33-4k-1, 1") : 3334.,
+        ("fast", "low",  "BI11-33-4k-1, 1") : 2682.,
+        ("slow", "low",  "BI11-33-4k-1, 2") : 760.,
+        ("slow", "high", "BI11-33-4k-1, 2") : 0.,
+        ("fast", "high", "BI11-33-4k-1, 2") : 3272.,
+        ("fast", "low",  "BI11-33-4k-1, 2") : 2551.,
+        ("slow", "low",  "BI11-33-4k-1, 3") : 495.,
+        ("slow", "high", "BI11-33-4k-1, 3") : 0.,
+        ("fast", "high", "BI11-33-4k-1, 3") : 3091.,
+        ("fast", "low",  "BI11-33-4k-1, 3") : 2114.,
+        ("slow", "low",  "BI11-33-4k-1, 4") : 905.,
+        ("slow", "high", "BI11-33-4k-1, 4") : 0.,
+        ("fast", "high", "BI11-33-4k-1, 4") : 3252.,
+        ("fast", "low",  "BI11-33-4k-1, 4") : 2172.,
+        #AMPS 12-9 (CCD3)
+        ("slow", "low",  "BI12-34-4k-1, 1") : 795.,
+        ("slow", "high", "BI12-34-4k-1, 1") : 0.,
+        ("fast", "high", "BI12-34-4k-1, 1") : 3078.,
+        ("fast", "low",  "BI12-34-4k-1, 1") : 1856.,
+        ("slow", "low",  "BI12-34-4k-1, 2") : 470.,
+        ("slow", "high", "BI12-34-4k-1, 2") : 0.,
+        ("fast", "high", "BI12-34-4k-1, 2") : 3078.,
+        ("fast", "low",  "BI12-34-4k-1, 2") : 1322.,
+        ("slow", "low",  "BI12-34-4k-1, 3") : 525.,
+        ("slow", "high", "BI12-34-4k-1, 3") : 0.,
+        ("fast", "high", "BI12-34-4k-1, 3") : 3003.,
+        ("fast", "low",  "BI12-34-4k-1, 3") : 1445.,
+        ("slow", "low",  "BI12-34-4k-1, 4") : 230.,
+        ("slow", "high", "BI12-34-4k-1, 4") : 0.,
+        ("fast", "high", "BI12-34-4k-1, 4") : 3058.,
+        ("fast", "low",  "BI12-34-4k-1, 4") : 893.
+    }
+
+gmosampsBiasBefore20170315 = {
         # Database of GMOS CCD amplifier BIAS properties
-        # after 2015-08-26
+        # after 2015-08-26 and before 20170315
+        #  (This is when the new GMOS-N Hamamatsu CCDs were installed.
         # Columns below are given as:
         # READOUT, GAINSTATE, AMPNAME : BIAS
         # GMOS-N:
@@ -744,6 +1081,7 @@ gmosampsBias = {
         ("fast", "high", "BI12-34-4k-1, 4") : 3058.,
         ("fast", "low",  "BI12-34-4k-1, 4") : 893.
     }
+
 
 gmosampsBiasBefore20150826 = {
         # Database of GMOS CCD amplifier BIAS properties
@@ -838,7 +1176,7 @@ gmosampsBiasBefore20150826 = {
         ("slow", "low",  "EEV 2037-06-03, right") : 572.,
         ("slow", "high", "EEV 2037-06-03, right") : 492.,
         ("fast", "high", "EEV 2037-06-03, right") : 377.,
-        ("fast", "low",  "EEV 2037-06-03, right") : 448., 
+        ("fast", "low",  "EEV 2037-06-03, right") : 448.,
         # GMOS-S Hamamatsu CCDs
         #AMPS 4-1 (CCD1)
         ("slow", "low",  "BI5-36-4k-2, 1") : 3218.,
@@ -931,7 +1269,7 @@ gmosampsBiasBefore20060831 = {
         ("slow", "high", "EEV 9273-20-03, left")  : 295.,
         ("fast", "high", "EEV 9273-20-03, left")  : 224.,
         ("fast", "low",  "EEV 9273-20-03, left")  : 332.,
-        # EEV CCDs secondary amps 
+        # EEV CCDs secondary amps
         ("slow", "low",  "EEV 9273-16-03, left")  : 485.,
         ("slow", "high", "EEV 9273-16-03, left")  : 404.,
         ("fast", "high", "EEV 9273-16-03, left")  : 283.,
@@ -944,7 +1282,7 @@ gmosampsBiasBefore20060831 = {
         ("slow", "high", "EEV 9273-20-03, right") : 673.,
         ("fast", "high", "EEV 9273-20-03, right") : 570.,
         ("fast", "low",  "EEV 9273-20-03, right") : 635.,
-        # GMOS-S: New Gain/RN/Bias values (2006oct25) for 
+        # GMOS-S: New Gain/RN/Bias values (2006oct25) for
         # EEV CCDs best amps
         ("slow", "low",  "EEV 8056-20-03, left")  : 602.,
         ("slow", "high", "EEV 8056-20-03, left")  : 547.,
@@ -1050,6 +1388,34 @@ nominal_zeropoints = {
     ('e2v DD ML2AR CCD42-90-1-F43 10031-18-04', "z") : 27.656,  # 0.076
     ('e2v 10031-23-05,10031-01-03,10031-18-04', "z") : 27.656,  # 0.076
 
+    # GMOS-N Hamamatsu CCDs
+    # Values provided by ?? on ??
+    #
+    # CCDr = BI13-20-4k-1
+    # CCDg = BI12-09-4k-2
+    # CCDb = BI13-18-4k-2
+    ('BI13-20-4k-1', 'u'): 24.000,  # 0.000,
+    ('BI12-09-4k-2', 'u'): 24.000,  # 0.000,
+    ('BI13-18-4k-2', 'u'): 24.000,  # 0.000,
+    ('BI13-20-4k-1,BI12-09-4k-2,BI13-18-4k-2', 'u'): 24.00,  # 0.00
+    ('BI13-20-4k-1', 'g'): 28.000,  # 0.000,
+    ('BI12-09-4k-2', 'g'): 28.000,  # 0.00,
+    ('BI13-18-4k-2', 'g'): 28.000,  # 0.000,
+    ('BI13-20-4k-1,BI12-09-4k-2,BI13-18-4k-2', 'g'): 28.00,  # 0.00
+    ('BI13-20-4k-1', 'r'): 28.000,  # 0.000,
+    ('BI12-09-4k-2', 'r'): 28.000,  # 0.000,
+    ('BI13-18-4k-2', 'r'): 28.000,  # 0.000,
+    ('BI13-20-4k-1,BI12-09-4k-2,BI13-18-4k-2', 'r'): 28.00,  # 0.00
+    ('BI13-20-4k-1', 'i'): 28.000,  # 0.000,
+    ('BI12-09-4k-2', 'i'): 28.000,  # 0.000,
+    ('BI13-18-4k-2', 'i'): 28.000,  # 0.000,
+    ('BI13-20-4k-1,BI12-09-4k-2,BI13-18-4k-2', 'i'): 28.00,  # 0.00
+    ('BI13-20-4k-1', 'z'): 28.000,  # 0.000,
+    ('BI12-09-4k-2', 'z'): 28.000,  # 0.000,
+    ('BI13-18-4k-2', 'z'): 28.000,  # 0.000,
+    ('BI13-20-4k-1,BI12-09-4k-2,BI13-18-4k-2', 'z'): 28.00,  # 0.00,
+
+
     #
     # GMOS-S
     # Updated values using mean of 2014-01 values from website above.
@@ -1121,7 +1487,7 @@ gmosPixelScales = {
     # e2v CCDs
     ("GMOS-N", "SDSU II e2v DD CCD42-90") : 0.0727,
     # Hamamatsu CCDs
-    ("GMOS-N", "S10892") : 0.0727,
+    ("GMOS-N", "S10892-N") : 0.0727,
 
     # GMOS-S:
     # EEV CCDs
@@ -1140,26 +1506,26 @@ gmosRoiSettings = {
     "Full Frame" : [
         # EEV / e2vDD CCDs
         (1, 6144, 1, 4608),
-        # Hamamatsu GMOS-S
+        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?
         (1, 6144, 1, 4224)
         ],
     "CCD2" :[
         # EEV / e2vDD CCDs
         (2049, 4096, 1, 4608),
-        # Hamamatsu GMOS-S
+        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?
         (2049, 4096, 1, 4224)
     ],
     "Central Spectrum" : [
         # This got adjusted by 1 pixel sometime circa 2010
         (1, 6144, 1793, 2816),
         (1, 6144, 1792, 2815),
-        # Hamamatsu GMOS-S
+        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?
         (1, 6144, 1625, 2648)
     ],
     "Central Stamp" : [
         # EEV and e2vDD CCDs
         (2923, 3222, 2155, 2454),
-        # GMOS-S Hamamatsu CCDs
+        # GMOS-S Hamamatsu CCDs  !!KL!! and GMOS-N?
         (2923, 3222, 1987, 2286)
     ]
 }
@@ -1214,6 +1580,19 @@ gmosThresholds = {
     "BI12-34-4k-1, 1": 99539.4,
     "BI12-34-4k-1, 2": 98963.6,
     "BI12-34-4k-1, 3": 98813.4,
-    "BI12-34-4k-1, 4": 105683.0
+    "BI12-34-4k-1, 4": 105683.0,
+    # GMOS-N Hamamatsu CCDs  !!KL!!
+    "BI13-20-4k-1, 1": 99999,
+    "BI13-20-4k-1, 2": 99999,
+    "BI13-20-4k-1, 3": 99999,
+    "BI13-20-4k-1, 4": 99999,
+    "BI12-09-4k-2, 1": 99999,
+    "BI12-09-4k-2, 2": 99999,
+    "BI12-09-4k-2, 3": 99999,
+    "BI12-09-4k-2, 4": 99999,
+    "BI13-18-4k-2, 1": 99999,
+    "BI13-18-4k-2, 2": 99999,
+    "BI13-18-4k-2, 3": 99999,
+    "BI13-18-4k-2, 4": 99999,
 }
 

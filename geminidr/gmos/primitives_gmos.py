@@ -77,7 +77,7 @@ class GMOS(Gemini, CCD):
                 log.stdinfo("No changes will be made to {}, since it "
                             "contains only one extension".format(ad.filename))
                 continue
-            
+
             # Save keywords for restoration after gmosaic
             bunit = set(ad.hdr.get('BUNIT'))
             if len(bunit) > 1:
@@ -165,15 +165,15 @@ class GMOS(Gemini, CCD):
                             "standardizeInstrumentHeaders".format(ad.filename))
                 adoutputs.append(ad)
                 continue
-            
+
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are specific to GMOS.
             log.status("Updating keywords that are specific to GMOS")
 
             ##M Some of the header keywords are wrong for certain types of
             ##M Hamamatsu data. This is temporary fix until GMOS-S DC is fixed
-            if ad.detector_name(pretty=True) == "Hamamatsu":
-                log.status("Fixing headers for Hamamatsu data")
+            if ad.detector_name(pretty=True) == "Hamamatsu-S":
+                log.status("Fixing headers for GMOS-S Hamamatsu data")
                 # Image extension headers appear to be correct - MS 2014-10-01
                 #     correct_image_extensions=Flase
                 # As does the DATE-OBS but as this seemed to break even after
@@ -210,14 +210,14 @@ class GMOS(Gemini, CCD):
                                         estimate='qa' in self.context)
             for ext, bias in zip(ad, bias_level):
                 ext.hdr.set('RAWBIAS', bias, self.keyword_comments['RAWBIAS'])
-            
+
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
             adoutputs.append(ad)
         return adoutputs
-    
+
     def subtractOverscan(self, adinputs=None, **params):
         """
         Subtract the overscan level from the image by fitting a polynomial
@@ -269,7 +269,7 @@ class GMOS(Gemini, CCD):
             # Use gireduce defaults if values aren't specified
             detname = ad.detector_name(pretty=True)
             if order is None:
-                order = 6 if detname == 'Hamamatsu' else 0
+                order = 6 if detname.startswith('Hamamatsu') else 0
             if nbiascontam is None:
                 nbiascontam = 5 if detname == 'e2vDD' else 4
 
@@ -284,7 +284,7 @@ class GMOS(Gemini, CCD):
                     x1 += 1
                     x2 -= nbiascontam
 
-                if detname == 'Hamamatsu':
+                if detname.startswith('Hamamatsu'):
                     log.fullinfo('Ignoring bottom 48 rows of {}'.
                                  format(ad.filename))
                     y1 = 48
@@ -514,11 +514,11 @@ class GMOS(Gemini, CCD):
                     adoutput = gt.tile_objcat(adinput=ad, adoutput=adoutput,
                                               ext_mapping=ccd_map,
                                               sx_dict=self.sx_dict)
-                    
+
                 # Attach MDF if it exists
                 if hasattr(ad, 'MDF'):
                     adoutput.MDF = ad.MDF
-            
+
             # Timestamp and update filename
             gt.mark_history(adoutput, primname=self.myself(),
                             keyword=timestamp_key)
@@ -566,7 +566,7 @@ def _obtain_arraygap(adinput=None):
     detectors and returns it after correcting for binning.
     """
     det_type = adinput.phu.get('DETTYPE')
-    
+
     # Obtain the array gap value and fix for any binning
     arraygap = int(gmosArrayGaps[det_type] / adinput.detector_x_bin())
     return arraygap

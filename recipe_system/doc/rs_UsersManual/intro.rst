@@ -6,22 +6,30 @@
 Introduction
 ************
 
-This document is version 2.0(beta) of the Recipe System Users Manual. Subsequent
-to this introduction, this document will provide a high-level overview of the
-Recipe System (Chapter 2, :ref:`overview`), followed by a detailed presentation
-of the interfaces available on the system.
+This document is version 2.0 (beta) of the Recipe System Users Manual.
+Primarily, this document presents detailed information and discussion
+regarding the Recipe System command line interface, ``reduce``, and the
+programmatic interface on the underlying class, ``Reduce``.
 
-The Recipe System provides the command line tool, ``reduce``. This application 
-allows users to invoke the Gemini Recipe System from the command line to perform
-complex data processing and reduction on one or more astronomical datasets with
-a minimal set of parameters when default processing is requested.
+Subsequent to this introduction, and in order to give users/readers a general
+sense of the Recipe Systmem, this document provides a brief, high-level
+overview of the Recipe System (Chapter 2, :ref:`overview`), which is then
+followed by a detailed presentation of the above mentioned interfaces in
+Chapter 3, :ref:`interfaces`.
+
+It is expected that most users will be exposed to the Recipe System through
+the ``reduce`` command line tool. The ``reduce`` application allows users to
+invoke the Gemini Recipe System from the command line to perform complex data
+processing and reduction on one or more astronomical datasets with a minimal
+set of parameters when default processing is requested. As this document details,
+``reduce`` provides a number of options and command line switches that allow
+users to control the processing of their data.
 
 This document will further describe usage of the Recipe System's application
 programming interface (API). Details and information about the ``astrodata``
 package, the Recipe System, and/or the data processing involved in data
 reduction are beyond the scope of this document and will only be engaged when
 directly pertinent to the operations of the Recipe System.
-
 
 Installation
 ============
@@ -34,7 +42,12 @@ Installation
    install this package (see http://python-future.org).
 
 The ``astrodata`` package has several dependencies like ``numpy``, ``astropy``,
-and others. All dependencies of ``gemini_python`` and ``astrodata`` are provided
+and others.
+
+.. todo:: The following section will need updating with reference to
+   Anaconda/astroconda, once package naming and org. is finalized.
+
+All dependencies of ``gemini_python`` and ``astrodata`` are provided
 by the Ureka package, and users are highly encouraged to install and use this
 very useful package. It is an easy and, perhaps, best way to get everything you
 need and then some. Ureka is available at http://ssb.stsci.edu/ureka/.
@@ -130,10 +143,12 @@ In tcsh, you will need to run ``rehash`` to pick the new executables written to
 Test the installation
 ---------------------
 
-Start up the python interpreter and import astrodata::
+Start up the python interpreter and import astrodata and the gemini_instruments
+packages::
 
    $ python
    >>> import astrodata
+   >>> import gemini_instruments
 
 Next, return to the command line and test that ``reduce`` is reachable 
 and runs. There may be some delay as package modules are byte compiled::
@@ -142,9 +157,12 @@ and runs. There may be some delay as package modules are byte compiled::
 
 or ::
 
-   $ reduce [--help]
+   $ reduce --help
 
 This will print the reduce help to the screen.
+
+.. todo:: Update the following section for example "test_one". Currently,
+   there is no defined recipe or primitive "test_one".
 
 If users have Gemini fits files available, they can test that the Recipe System
 is functioning as expected with a test recipe provided by the astrodata_Gemini

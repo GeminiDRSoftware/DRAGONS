@@ -229,7 +229,8 @@ class AstroDataGmos(AstroDataGemini):
             pretty_detname_dict = {
                 "SDSU II CCD": "EEV",
                 "SDSU II e2v DD CCD42-90": "e2vDD",
-                "S10892": "Hamamatsu",
+                "S10892": "Hamamatsu-S",
+                "S10892-N": "Hamamatsu-N"
                 }
             return pretty_detname_dict.get(self.phu.get('DETTYPE'))
         else:
@@ -454,8 +455,10 @@ class AstroDataGmos(AstroDataGemini):
         if ut_date is None:
             return None  # converted to list by decorator if needed
 
-        if ut_date >= date(2015, 8, 26):
+        if ut_date >= date(2017, 3, 15):
             gain_dict = lookup.gmosampsGain
+        elif ut_date >= date(2015, 8, 26):
+            gain_dict = lookup.gmosampsGainBefore20170315
         elif ut_date >= date(2006, 8, 31):
             gain_dict = lookup.gmosampsGainBefore20150826
         else:
@@ -752,7 +755,8 @@ class AstroDataGmos(AstroDataGemini):
         """
         # Get the right mapping (detector-dependent)
         det_key = 'Hamamatsu' if \
-            self.detector_name(pretty=True) == 'Hamamatsu' else 'default'
+            self.detector_name(pretty=True).startswith('Hamamatsu') \
+            else 'default'
         mode_dict = lookup.read_mode_map.get(det_key)
         mode_key = (self.gain_setting(), self.read_speed_setting())
         return mode_dict.get(mode_key)
@@ -777,8 +781,10 @@ class AstroDataGmos(AstroDataGemini):
             if ut_date is None:
                 return None  # converted to list by decorator if needed
 
-            if ut_date >= date(2015, 8, 26):
+            if ut_date > date(2017, 3, 15):
                 rn_dict = lookup.gmosampsRdnoise
+            elif ut_date >= date(2015, 8, 26):
+                rn_dict = lookup.gmosampsRdnoiseBefore20170315
             elif ut_date >= date(2006, 8, 31):
                 rn_dict = lookup.gmosampsRdnoiseBefore20150826
             else:
@@ -812,7 +818,7 @@ class AstroDataGmos(AstroDataGemini):
         except KeyError:
             return None
         detector = self.detector_name(pretty=True)
-        if detector == 'Hamamatsu':
+        if detector.startswith('Hamamatsu'):
             return 'slow' if ampinteg > 8000 else 'fast'
         else:
             return'slow' if ampinteg > 2000 else 'fast'

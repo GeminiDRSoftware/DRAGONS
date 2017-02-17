@@ -1,6 +1,7 @@
-.. interfaces:
+.. interfaces.rst
 .. include discuss
 
+.. _interfaces:
 
 Interfaces
 ==========
@@ -8,25 +9,72 @@ Interfaces
 Introduction
 ------------
 
-The ``reduce`` application provides a command line interface and an API, both
-of which can configure and launch a Recipe System processing pipeline (a 'recipe')
-on the input dataset. Control of ``reduce`` and the Recipe System is provided 
-by a variety of options and switches. Of course, all options and switches 
-can be accessed and controlled through the API.
+The Recipe System provides a command line interface and an application
+programming interface (API). Both allow users to configure and launch a
+Recipe System processing pipeline (a 'recipe') on one or more input datasets.
+Control of the Recipe System on the ``reduce`` command line is provided by a
+variety of options and switches. All options and switches can be accessed and
+controlled through the API.
 
+This chapter will first present details of the command line interface,
+``reduce``, including an extended discussion of :ref:`atfile`. This is followed
+by a detailed presentation on the Recipe System's :ref:`api`.
 
-Command line interface
-----------------------
+Command line interface, ``reduce``
+----------------------------------
 
 We begin with the command line help provided by ``reduce --help``, followed by 
-further description and discussion of certain non-trivial options that require 
-detailed explanation. ::
+further description and discussion of certain non-trivial options. ::
 
-  usage: reduce [options] fitsfile [fitsfile ...]
+  usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--logfile LOGFILE]
+              [--loglevel LOGLEVEL] [--logmode LOGMODE]
+              [-p USERPARAM [USERPARAM ...]] [-r RECIPENAME] [--suffix SUFFIX]
+              [--upload_metrics] [--user_cal USER_CAL]
+              fitsfile [fitsfile ...]
 
-positional arguments::
+  _____________________________ Gemini Observatory ____________________________
+  ____________________ Recipe Processing Management System ____________________
+  ______________________ Recipe System Release2.0 (beta) ______________________
 
-  fitsfile [fitsfile ...]
+  positional arguments:
+    fitsfile              fitsfile [fitsfile ...]
+
+ optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+  -d , --displayflags   display all parsed option flags and exit.
+  --context CONTEXT     Use <context> for recipe selection and primitives
+                        sensitive to context. Eg., --context QA
+  --logfile LOGFILE     name of log (default is 'reduce.log')
+  --loglevel LOGLEVEL   Set the verbose level for console logging; (critical,
+                        error, warning, status, stdinfo, fullinfo, debug)
+  --logmode LOGMODE     Set log mode: 'standard', 'console', 'quiet', 'debug',
+                        or 'null'.
+  -p USERPARAM [USERPARAM ...], --param USERPARAM [USERPARAM ...]
+                        Set a parameter from the command line. The form '-p
+                        par=val' sets a parameter such that all primitives
+                        with that defined parameter will 'see' it. The form:
+                        '-p primitivename:par=val', sets the parameter only
+                        for 'primitivename'. Separate par/val pairs by
+                        whitespace: (eg. '-p par1=val1 par2=val2')
+  -r RECIPENAME, --recipe RECIPENAME
+                        Specify a recipe by name. Users can request non-
+                        default system recipe functions by their simple names,
+                        e.g., -r qaStack, OR may specify their own recipe file
+                        and recipe function. A user defined recipe function
+                        must be 'dotted' with the recipe file. E.g., '-r
+                        /path/to/recipes/recipefile.recipe_function' For a
+                        recipe file in the current working directory (cwd),
+                        only the file name is needed, as in, '-r
+                        recipefile.recipe_function' The fact that the recipe
+                        function is dotted with the recipe file name implies
+                        that multiple user defined recipe functions can be
+                        defined in a single file.
+  --suffix SUFFIX       Add 'suffix' to filenames at end of reduction; strip
+                        all other suffixes marked by '_'.
+  --upload_metrics      Send QA metrics to fitsstore. Default is False.
+  --user_cal USER_CAL   Specify user supplied calibrations for calibration
+                        types. Eg., --user_cal gsTest_arc.fits
 
 The [options] are described in the following sections.
 
@@ -41,70 +89,39 @@ Informational switches
 **-d, --displayflags**
     Display all parsed option flags and exit.
 
-    When specified, this switch will present the user with a table of all 
-    parsed arguments and then exit without running. This allows the user to 
-    check that the configuration is as intended. The table provides a convenient
-    view of all passed and default values. Unless a user has specified a 
-    recipe (-r, --recipe), 'recipename' indicates 'None' because at this point, 
-    the Recipe System has not yet been engaged and a default recipe not yet
-    determined.
-
+    When specified, this switch presents a table of all parsed arguments and then
+    exits. The table provides a convenient view of all passed and default values.
+    When not specified, 'recipename' indicates 'None' because at this point the
+    Recipe System has not been invoked and a default recipe not yet determined.
     Eg.,::
 
        $ reduce -d --logmode console fitsfile.fits
-       
+
        --------------------   switches, vars, vals  --------------------
-       
-       Literals			var 'dest'		Value
+
+       Literals                    var 'dest'                  Value
        -----------------------------------------------------------------
-       ['--invoked'] 	        :: invoked 		:: False
-       ['--addprimset'] 	:: primsetname 		:: None
-       ['-d', '--displayflags'] :: displayflags 	:: True
-       ['-p', '--param'] 	:: userparam 		:: None
-       ['--logmode'] 		:: logmode 		:: ['console']
-       ['-r', '--recipe'] 	:: recipename 		:: None
-       ['--throw_descriptor_exceptions'] :: throwDescriptorExceptions :: False
-       ['--logfile'] 		:: logfile 		:: reduce.log
-       ['-t', '--astrotype'] 	:: astrotype 		:: None
-       ['--override_cal'] 	:: user_cals 		:: None
-       ['--context'] 		:: running_contexts 	:: None
-       ['--calmgr'] 		:: cal_mgr 		:: None
-       ['--suffix'] 		:: suffix 		:: None
-       ['--loglevel'] 		:: loglevel 		:: stdinfo
+       ['-d', '--displayflags']    :: displayflags             :: True
+       ['-p', '--param']           :: userparam                :: None
+       ['--logmode']               :: logmode                  :: console
+       ['--context']               :: context                  :: ['qa']
+       ['-r', '--recipe']          :: recipename               :: None
+       ['--suffix']                :: suffix                   :: None
+       ['--loglevel']              :: loglevel                 :: stdinfo
+       ['--user_cal']              :: user_cal                 :: None
+       ['--logfile']               :: logfile                  :: reduce.log
+       ['--upload_metrics']        :: upmetrics                :: False
        -----------------------------------------------------------------
-       
+
        Input fits file(s):	fitsfile.fits
 
 .. _options:
 
 Configuration Switches, Options
 +++++++++++++++++++++++++++++++
-**--addprimset <PRIMSETNAME>** 
-    Add this path to user-supplied primitives for reduction. eg., path to a 
-    primitives module.
-
-**--calmgr <CAL_MGR>**
-    This is a URL specifying a calibration manager service. A calibration manager 
-    overides Recipe System table. Not available outside Gemini operations.
-
-**--context <RUNNING_CONTEXTS>**
-    Use <RUNNING_CONTEXTS> for primitives sensitive to context. Eg., 
-    ``--context QA``. When not specified, the context defaults to 'QA'. 
-
-**--invoked**
-    Boolean indicating that reduce was invoked by the control center.
-
-**--logmode <LOGMODE>**
-    Set logging mode. One of
-
-    * standard
-    * console
-    * quiet
-    * debug
-    * null
-
-    where 'console' writes only to screen and 'quiet' writes only to the log
-    file. Default is 'standard'.
+**--context <CONTEXT>**
+    Use <CONTEXT> for recipe selection and for primitives sensitive to context. 
+    Eg., ``--context QA``. When not specified, the context defaults to 'QA'. 
 
 **--logfile <LOGFILE>**
     Set the log file name. Default is 'reduce.log' in the current directory.
@@ -122,23 +139,26 @@ Configuration Switches, Options
 
     Default setting is 'stdinfo.'
 
-**--override_cal <USER_CALS [USER_CALS ...]>**
-    The option allows users to provide their own calibrations to ``reduce``.
-    Add a calibration to User Calibration Service. 
-    '--override_cal CALTYPE:CAL_PATH'
-    Eg.,
+**--logmode <LOGMODE>**
+    Set logging mode. One of
 
-    ``--override_cal processed_arc:wcal/gsTest_arc.fits``
+    * standard
+    * console
+    * quiet
+    * debug
+    * null
+
+    where 'console' writes only to screen and 'quiet' writes only to the log
+    file. Default is 'standard'.
 
 **-p <USERPARAM [USERPARAM ...]>, --param <USERPARAM [USERPARAM ...]>**
     Set a primitive parameter from the command line. The form '-p par=val' sets 
     the parameter in the reduction context such that all primitives will 'see' it.
     The form
 
-    ``-p ASTROTYPE:primitivename:par=val``
+    ``-p primitivename:par=val``
 
-    sets the parameter such that it applies only when the current reduction type 
-    (type of current reference image) is 'ASTROTYPE' and the primitive is 
+    sets the parameter such that it applies only when the primitive is 
     'primitivename'. Separate parameter-value pairs by whitespace: 
     (eg. '-p par1=val1 par2=val2')
 
@@ -146,20 +166,22 @@ Configuration Switches, Options
 
 **-r <RECIPENAME>, --recipe <RECIPENAME>**
     Specify an explicit recipe to be used rather than internally determined by
-    a dataset's <ASTROTYPE>. Default is None and later determined by the Recipe 
-    System based on the AstroDataType.
-
-**-t <ASTROTYPE>, --astrotype <ASTROTYPE>**
-    Run a recipe based on this AstroDataType, which overrides default type or 
-    begins without initial input. Eg., recipes that begin with primitives that 
-    acquire data. ``reduce`` default is None and determined internally.
+    a dataset's tags. Default is None and later determined by the Recipe 
+    System based on a dataset's tag set and the recipe context.
 
 **--suffix <SUFFIX>**
     Add 'suffix' to output filenames at end of reduction.
 
-**--throw_descriptor_exceptions**
-    Boolean indicating descriptor exceptions are to be raised. This is a 
-    development switch.
+**--upload_metrics**
+    Send QA metrics to fitsstore. Default is False.
+
+**--user_cal <USER_CAL [USER_CAL ...]>**
+    The option allows users to provide their own calibrations to ``reduce``.
+    Add a calibration to User Calibration Service. 
+    '--user_cal CAL_PATH'
+    Eg.,
+
+    ``--user_cal wcal/gsTest_arc.fits``
 
 Nominal Usage
 +++++++++++++
@@ -170,46 +192,53 @@ The minimal call for reduce can be ::
 While this minimal call is available at the Gemini Observatory (see Sec. 
 :ref:`fitsstore`), if a calibration service is unavailable to the user -- 
 likely true for most users -- users should call ``reduce`` on a specified 
-dataset by providing calibration files with the  --overrride_cal option. 
+dataset by providing calibration files with the  --user_cal option. 
 
 For example::
 
-  $ reduce --override_cal processed_bias:FOO_bias.fits <dataset.fits>
+  $ reduce --user_cal FOO_bias.fits <dataset.fits>
 
-Such a command for complex processing of data is possible because AstroData 
-and the Recipe System do all the necessary work in determining how the data are to 
-be processed, which is critcially based upon the determination of the `typeset` 
+Such a command for complex processing of data is possible because the Recipe
+System does all the necessary work in determining how the data are to 
+be processed, which is critcially based upon the determination of the `tag set` 
 that applies to that data.
 
-Without any user-specified recipe (-r --recipe), the default recipe is 
-``qaReduce``, which is defined for various AstroDataTypes and currently used 
-during summit operations. The Recipe System uses a combination of index, 
-AstroDataTypes, and recipe naming convention to identify the appropriate 
-recipe to run. 
+Without any user-specified recipe (-r --recipe), the default recipe is
+``reduce_nostack``, which is defined for various AstroData tag sets and currently
+used for summit operations. Unless passed a explicit recipe (-r --recipename),
+the Recipe System uses the astrodata tag set and context to locate the appropriate
+recipe to run.
 
-The ``qaReduce`` recipe for a GMOS_IMAGE, named ``recipe.qaReduce.GMOS_IMAGE``, 
-specifies that the following primitives are called on the data ::
+The recipe libraries for a GMOS_IMAGE, are defined under::
 
- prepare
- addDQ
- addVAR
- detectSources
- measureIQ
- measureBG
- measureCCAndAstrometry
- overscanCorrect
- biasCorrect
- ADUToElectrons
- addVAR
- flatCorrect
- mosaicDetectors
- makeFringe
- fringeCorrect
- detectSources
- measureIQ
- measureBG
- measureCCAndAstrometry
- addToList
+  GMOS.recipes.QA
+
+and the recipe system will search available recipe libraries for a match. Naming
+of recipe library module(s) is arbitrary. If all defaults are picked up, this 
+results in the ``reduce_nostack`` recipe function being selected and which specifies 
+that the following primitives are called on the data ::
+
+ def reduce_nostack(p):
+     p.prepare()
+     p.addDQ()
+     p.addVAR(read_noise=True)
+     p.detectSources()
+     p.measureIQ(display=True))
+     p.measureBG()
+     p.measureCCAndAstrometry()
+     p.overscanCorrect()
+     p.biasCorrect()
+     p.ADUToElectrons()
+     p.addVAR(poisson_noise=True)
+     p.flatCorrect()
+     p.mosaicDetectors()
+     p.makeFringe()
+     p.fringeCorrect()
+     p.detectSources()
+     p.measureIQ(display=True))
+     p.measureBG()
+     p.measureCCAndAstrometry()
+     p.addToList(purpose='forStack')
 
 The point here is not to overwhelm readers with a stack of primitive names, but 
 to present both the default pipeline processing that the above simple ``reduce`` 
@@ -244,13 +273,14 @@ Eg.::
 
   $ reduce -p par1=val1 par2=val2 [par3=val3 ... ] <fitsfile1.fits>
 
-For example, some photometry primitives perform source detection on an image. 
-The 'detection threshold' has a defined default, but a user may alter this 
-parameter default to change the source detection behaviour::
+User-specified parameter values can be focused on one primitive. For example, 
+if a parameter applies to more than one primitive, for example, the parameter, 
+``threshold``, the user can explicitly direct a new parameter value to a 
+particular primitive. The 'detection threshold' has a defined default, but a 
+user may alter this parameter default to change the source detection behaviour::
 
-  $ reduce -p threshold=4.5 <fitsfile.fits>
+  $ reduce -p detectSources:threshold=4.5 <fitsfile.fits>
 
-.. dev of parameter viewer ..
 
 .. _atfile:
 
@@ -272,8 +302,8 @@ Essentially, an @file is some or all of the command line and parsed identically.
 To illustrate the convenience provided by an '@file', let us begin with an 
 example `reduce` command line that has a number of arguments::
 
-  $ reduce -p GMOS_IMAGE:contextReport:tpar=100 GMOS_IMAGE:contextReport:report_inputs=True 
-    -r recipe.ArgsTest --context qa S20130616S0019.fits N20100311S0090.fits
+  $ reduce -p detectSources:threshold=4.5 tpar=100 -r recipe.ArgsTest --context SQ 
+    S20130616S0019.fits N20100311S0090.fits
 
 Ungainly, to be sure. Here, two (2) `user parameters` are being specified 
 with **-p**, a `recipe` with **-r**, and a `context` argument is specified 
@@ -283,23 +313,23 @@ to be **qa** . This can be wrapped in a plain text @file called
    S20130616S0019.fits
    N20100311S0090.fits
    --param
-   GMOS_IMAGE:contextReport:tpar=100
-   GMOS_IMAGE:contextReport:report_inputs=True
+   tpar=100
+   detectSources:threshold=4.5
    -r recipe.ArgsTests
-   --context qa
+   --context sq
 
 This then turns the previous reduce command line into something a little more 
 `keyboard friendly`::
 
   $ reduce @reduce_args.par
 
-The order of these arguments is irrelevant. The parser will figure out what is 
-what. The above file could be thus written like::
+The order of these arguments is irrelevant. The above file could be thus written 
+like::
 
   -r recipe.ArgsTests
   --param
-  GMOS_IMAGE:contextReport:tpar=100
-  GMOS_IMAGE:contextReport:report_inputs=True
+  tpar=100
+  detectSources:threshold=4.5
   --context qa
   S20130616S0019.fits
   N20100311S0090.fits
@@ -313,18 +343,16 @@ Here's a more readable version of the file from the previous example
 using comments and tabulation::
 
     # reduce parameter file
-    # yyyy-mm-dd
     # GDPSG 
-    
+
     # Spec the recipe
     -r 
         recipe.ArgsTests  # test recipe
     
     # primitive parameters here
-    # These are 'untyped', i.e. global
     --param
         tpar=100
-        report_inputs=True
+        detectSources:threshold=4.5
     
     --context 
         qa                # QA context
@@ -339,22 +367,18 @@ users may check by adding the **-d** flag::
   
   --------------------   switches, vars, vals  --------------------
 
-  Literals			var 'dest'		Value
+  Literals		     var 'dest'		Value
   -----------------------------------------------------------------
-  ['--invoked'] 		:: invoked 		:: False
-  ['--addprimset'] 		:: primsetname 		:: None
-  ['-d', '--displayflags'] 	:: displayflags 	:: True
-  ['-p', '--param'] 		:: userparam 		:: ['tpar=100', 'report_inputs=True']
-  ['--logmode'] 		:: logmode 		:: standard
-  ['-r', '--recipe'] 		:: recipename 		:: ['recipe.ArgTests']
-  ['--throw_descriptor_exceptions'] :: throwDescriptorExceptions 	:: False
-  ['--logfile'] 		:: logfile 		:: reduce.log
-  ['-t', '--astrotype'] 	:: astrotype 		:: None
-  ['--override_cal'] 		:: user_cals 		:: None
-  ['--context'] 		:: running_contexts 	:: ['QA']
-  ['--calmgr'] 			:: cal_mgr 		:: None
-  ['--suffix'] 			:: suffix 		:: None
-  ['--loglevel'] 		:: loglevel 		:: stdinfo
+  ['--invoked'] 	     :: invoked 	:: False
+  ['-d', '--displayflags']   :: displayflags 	:: True
+  ['-p', '--param'] 	     :: userparam 	:: ['tpar=100', 'detectSources:threshold=4.5']
+  ['--logmode'] 	     :: logmode 	:: standard
+  ['-r', '--recipe'] 	     :: recipename 	:: ['recipe.ArgTests']
+  ['--logfile'] 	     :: logfile 	:: reduce.log
+  ['--user_cal'] 	     :: user_cal 	:: None
+  ['--context'] 	     :: context         :: ['QA']
+  ['--suffix'] 		     :: suffix 		:: None
+  ['--loglevel'] 	     :: loglevel 	:: stdinfo
   -----------------------------------------------------------------
 
   Input fits file(s):	S20130616S0019.fits
@@ -380,12 +404,9 @@ We can indicate that this file is to be consumed with the prefix character
   
   @fitsfiles       # file with fits files
   
-  # AstroDataType
-  -t GMOS_IMAGE
-  
   # primitive parameters.  
   --param
-      report_inputs=True
+      detectSources:threshold=4.5
       tpar=99
       FOO=BAR
 
@@ -421,12 +442,9 @@ while parfile holds all other specifications::
   # reduce test parameter file
   # GDPSG
   
-  # AstroDataType
-  -t GMOS_IMAGE
-  
   # primitive parameters.
   --param 
-      report_inputs=True
+      detectSources:threshold=4.5
       tpar=99            # This is a test parameter
       FOO=BAR            # This is a test parameter
   
@@ -464,9 +482,8 @@ Eg. 1)  Accumulate a new parameter::
   
   parsed options:
   ---------------
-  AstroDataType: GMOS_IMAGE
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-  Parameters:    tpar=100, report_inputs=True, FOO=BARSOOM
+  Parameters:    tpar=100, detectSources:threshold=4.5, FOO=BARSOOM
   RECIPE:        recipe.ArgsTest
 
 Eg. 2) Override a parameter in the @file::
@@ -475,9 +492,8 @@ Eg. 2) Override a parameter in the @file::
   
   parsed options:
   ---------------
-  AstroDataType: GMOS_IMAGE
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-  Parameters:    tpar=99, report_inputs=True
+  Parameters:    tpar=99, detectSources:threshold=4.5
   RECIPE:        recipe.ArgsTest
 
 Eg. 3) Override the recipe::
@@ -486,9 +502,8 @@ Eg. 3) Override the recipe::
   
   parsed options:
   ---------------
-  AstroDataType: GMOS_IMAGE
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-  Parameters:    tpar=100, report_inputs=True
+  Parameters:    tpar=100, detectSources:threshold=4.5
   RECIPE:        recipe.FOO
 
 Eg. 4) Override a recipe and specify another fits file. The file names in 
@@ -498,11 +513,11 @@ the @file will be ignored::
   
   parsed options:
   ---------------
-  AstroDataType: GMOS_IMAGE
   FITS files:    ['test_data/N20100311S0090_1.fits']
-  Parameters:    tpar=100, report_inputs=True
+  Parameters:    tpar=100, detectSources:threshold=4.5
   RECIPE:        recipe.FOO
 
+.. _api:
 
 Application Programming Interface (API)
 ---------------------------------------
@@ -574,7 +589,7 @@ prior to calling the ``runr()`` method.
 
 To use ``logutils``, import, configure, and get it::
 
-  from astrodata.utils import logutils
+  from gempy.utils import logutils
   logutils.config()
   log = logutils.get_logger(__name__)
 
@@ -622,7 +637,7 @@ function, or pass other values directly to ``config()``. This is precisely what
 Appendix :ref:`Class Reduce: Settable properties and attributes <props>` for 
 allowable and default values of these and other options.
 
->>> from astrodata.utils import logutils
+>>> from gempy.utils import logutils
 >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
                     console_lvl=reduce.loglevel)
 
@@ -638,7 +653,7 @@ called. The following brings the examples above into one "end-to-end" use of
 Reduce and logutils::
 
   >>> from recipe_system.reduction.coreReduce import Reduce
-  >>> from astrodata.utils import logutils
+  >>> from gempy.utils import logutils
   >>> reduce = Reduce()
   >>> reduce.files.append('S20130616S0019.fits')
   >>> reduce.recipename = 'recipe.MyRecipe'
@@ -659,7 +674,7 @@ with a different dataset or options.
 Eg.,::
 
  >>> from recipe_system.reduction.coreReduce import Reduce
- >>> from astrodata.utils import logutils
+ >>> from gempy.utils import logutils
  >>> reduce = Reduce()
  >>> reduce.files.append('S20130616S0019.fits')
  >>> reduce.recipename = 'recipe.MyRecipe'
