@@ -128,7 +128,7 @@ class NearIR(PrimitivesBASE):
 
     def separateLampOff(self, adinputs=None, **params):
         """
-        This primitive is intended to run on gcal imaging flats. 
+        This primitive is intended to run on gcal imaging flats.
         It goes through the input list and figures out which ones are lamp-on
         and which ones are lamp-off, and pushes these to two streams.
         It can also cope with domeflats if their type is specified in the
@@ -153,7 +153,7 @@ class NearIR(PrimitivesBASE):
                 lampoff_list.append(ad)
             elif ('Domeflat' in ad.phu.get('OBJECT')):
                 log.stdinfo("{} is a lamp-on domeflat".format(ad.filename))
-                lampon_list.append(ad)                
+                lampon_list.append(ad)
             else:
                 log.warning("Cannot determine lamp-on/off for {}".
                             format(ad.filename))
@@ -237,8 +237,7 @@ class NearIR(PrimitivesBASE):
                 log.warning("Returning stacked lamp on flats")
                 return lampon_list
             elif len(lampoff_list) > 0:
-                log.warning("Returning stacked lamp off flats")
-                return lampoff_list
+                return []
             else:
                 log.warning("Something is not right, no flats were accessible.")
                 return []
