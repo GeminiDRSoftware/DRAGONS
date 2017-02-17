@@ -82,7 +82,7 @@ provided by the ``astrodata`` data abstraction.
 
 .. _schematic:
 
-.. figure:: RecipeSystem2.jpg
+.. figure:: images/RecipeSystem2.jpg
 
    Schematic Diagram of the Recipe System.
 
