@@ -21,7 +21,7 @@ def get_bias_level(adinput=None, estimate=True):
     # checks on oberving band / type (e.g., OPTICAL / IR) and have this
     # function call an appropriate function. This is in place due to the call
     # to the function from the primitives_qa module - MS 2014-05-14 see
-    # Trac #683 
+    # Trac #683
     __ALLOWED_TYPES__ = ["GMOS"]
     if not set(__ALLOWED_TYPES__).issubset(adinput.tags):
         msg = "{0}.{1} only works for {2} data".format(__name__,
@@ -68,7 +68,7 @@ def _get_bias_level(adinput=None):
             nbiascontam = 4
         elif detector_name == "e2vDD":
             nbiascontam = 5
-        elif detector_name == "Hamamatsu":
+        elif detector_name.startswith("Hamamatsu"):
             nbiascontam = 4
         else:
             nbiascontam = 4
@@ -96,7 +96,7 @@ def _get_bias_level(adinput=None):
             bias_level = bias_level[0]
     else:
         bias_level = _get_bias_level_estimate(adinput=adinput)
-    
+
     return bias_level
 
 def _get_bias_level_estimate(adinput=None):
@@ -117,8 +117,10 @@ def _get_bias_level_estimate(adinput=None):
     # otherwise use the LUT value. To avoid slow slicing later, get the LUT
     # values now, even if we're not going to need them
     ut_date = adinput.ut_date()
-    if ut_date >= date(2015, 8, 26):
+    if ut_date >= date(2017, 3, 15):
         bias_dict = lookup.gmosampsBias
+    elif ut_date >= date(2015, 8, 26):
+        bias_dict = lookup.gmosampsBiasBefore20170315
     elif ut_date >= date(2006, 8, 31):
         bias_dict = lookup.gmosampsBiasBefore20150826
     else:
