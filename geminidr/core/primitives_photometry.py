@@ -172,6 +172,7 @@ class Photometry(PrimitivesBASE):
                     sex_task = SExtractorETI([ext], sexpars,
                                     mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
+                    # An OBJCAT is *always* attached, even if no sources found
                     seeing_estimate = _estimate_seeing(ext.OBJCAT)
 
                 # Re-run with seeing estimate (no point re-running if we
@@ -315,7 +316,7 @@ def _match_objcat_refcat(ad):
     # which can then be used to constrain the other extensions. The problem
     # is we don't know how many matches we'll get until we do it, and that's
     # slow, so use OBJCAT length as a proxy.
-    objcat_lengths = [len(ext.OBJCAT) if hasattr(ext,'OBJCAT') else 0
+    objcat_lengths = [len(ext.OBJCAT) if hasattr(ext, 'OBJCAT') else 0
                       for ext in ad]
     objcat_order = np.argsort(objcat_lengths)[::-1]
 
