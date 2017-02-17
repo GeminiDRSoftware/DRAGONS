@@ -541,27 +541,32 @@ class Preprocess(PrimitivesBASE):
             # so use regular maths
             log.status("Applying nonlinearity correction to {}".
                        format(ad.filename))
-            for ext, coeffs in zip(ad, nonlin_coeffs):
+            bunit_list = ext.hdr.get("BUNIT", 'ADU')
+            for ext, bunit, coeffs in zip(ad, bunit_list, nonlin_coeffs):
                 log.status("   nonlinearity correction for EXTVER {} is {:s}".
                            format(ext.hdr['EXTVER'], coeffs))
                 pixel_data = np.zeros_like(ext.data)
+
+                # Convert back to ADU per exposure if coadds have been summed
+                # or if the data have been converted to electrons
+                conv_factor = 1 if bunit.upper() == 'ADU' else ext.gain()
+                if ext.is_coadds_summed():
+                    conv_factor *= ext.coadds()
                 for n in range(len(coeffs), 0, -1):
                     pixel_data += coeffs[n-1]
-                    pixel_data *= ext.data
+                    pixel_data *= ext.data / conv_factor
+                pixel_data *= conv_factor
                 # Try to do something useful with the VAR plane, if it exists
                 # Since the data are fairly pristine, VAR will simply be the
                 # Poisson noise (divided by gain if in ADU, divided by COADDS
                 # if the coadds are averaged), possibly plus read-noise**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
+                conv_factor = ext.gain() if bunit.upper() == 'ADU' else 1
+                if not ext.is_coadds_summed():
+                    conv_factor *= ext.coadds()
                 if ext.variance is not None:
-                    div_factor = 1
-                    bunit  = ext.hdr.get("BUNIT", 'ADU')
-                    if bunit.upper() == 'ADU':
-                        div_factor *= ext.gain().as_pytype()
-                    if not ext.is_coadds_summed().as_pytype():
-                        div_factor *= ext.coadds().as_pytype()
-                    ext.variance += (pixel_data - ext.data) / div_factor
+                    ext.variance += (pixel_data - ext.data) / conv_factor
                 # Now update the SCI extension
                 ext.data = pixel_data
 
