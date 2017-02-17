@@ -25,6 +25,7 @@ def makeProcessedFlat(p):
 
     p.prepare()
     p.addDQ()
+    p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(read_noise=True, poisson_noise=True)
     p.addToList(purpose='forFlat')
