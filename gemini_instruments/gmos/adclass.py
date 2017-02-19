@@ -201,7 +201,12 @@ class AstroDataGmos(AstroDataGemini):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters.
             output_units = "meters"
-        central_wavelength = self.phu.get('CENTWAVE', -1)
+
+        # Keywords should be the same, but CENTWAVE was only added post-2007
+        try:
+            central_wavelength = self.phu['CENTWAVE']
+        except KeyError:
+            central_wavelength = self.phu.get('GRWLEN', -1)
 
         if central_wavelength < 0.0:
             return None
