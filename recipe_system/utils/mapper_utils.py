@@ -30,7 +30,7 @@ from packageConfig import PackageConfig
 # ------------------------------------------------------------------------------
 def find_user_recipe(dashr):
     """
-    Function recieves the value of the reduce [-r, --recipe] flag, if passed.
+    Function receives the value of the reduce [-r, --recipe] flag, if passed.
     This will be a path to a recipe file and a dotted recipe name, which
     exists as a function in the recipe file. A properly specified user
     recipe shall contain one, and only one, dot operator.
@@ -168,7 +168,7 @@ def _generate_recipe_modules(pkg, context, recipedir=RECIPEMARKER):
     pkg_importer = pkgutil.ImpImporter(pkg)
     for pkgname, ispkg in pkg_importer.iter_modules():
         if ispkg and pkgname == recipedir:
-            break 
+            break
         else:
             continue
 
@@ -186,7 +186,7 @@ def _get_tagged_recipes(pkgname, context):
 
 def retrieve_recipe(adtags, pkgname, rname, context):
     """
-    Caller passes a recipe name, set of AstroData tags, the instrument package 
+    Caller passes a recipe name, set of AstroData tags, the instrument package
     name and a "context". Currently, this is defined as either "QA" or "SQ".
 
     :parameter rname:  name of requested recipe.
@@ -199,8 +199,8 @@ def retrieve_recipe(adtags, pkgname, rname, context):
     :parameter pkgname: An instrument package under GeminiDR.
     :type pkgname:     <str>, E.g., "GMOS"
 
-    :parameter context: the context for recipe selection. 
-    :type context:      <str> 
+    :parameter context: the context for recipe selection.
+    :type context:      <str>
 
     :returns: tuple including the best tag set match and the primitive class
               that provided the match.
@@ -245,7 +245,7 @@ def _get_tagged_primitives(pkgname):
         for atrname in dir(mod):
             if atrname.startswith('_'):        # no prive, no magic
                 continue
-                
+
             atr = getattr(mod, atrname)
             if isclass(atr) and hasattr(atr, 'tagset'):
                 yield atr

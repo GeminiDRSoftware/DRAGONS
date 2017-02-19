@@ -67,7 +67,7 @@ def server_time():
         local_site = 'gemini-south'
     else:
         local_site = 'remote'
-                    
+
     time_dict = {"local_site": local_site,
                  "tzname"    : time.tzname[0],
                  "lt_now"    : lt_now,
@@ -144,10 +144,10 @@ def current_op_timestamp():
 def fstore_get(timestamp):
     """
     Open a url on fitsstore/qaforgui/ with the passed timestamp.
-    timestamp is in epoch seconds, which is converted here to a 
+    timestamp is in epoch seconds, which is converted here to a
     YMD string for the URL.  Return a list of dicts of qa metrics data.
 
-    N.B. A timestamp that evaluates to False (0, None) will request everything 
+    N.B. A timestamp that evaluates to False (0, None) will request everything
     from fitsstore. This could be huge. Be careful passing no timestamp!
 
     parameters: <float>, time in epoch seconds
@@ -159,7 +159,7 @@ def fstore_get(timestamp):
     if not timestamp:
         furl         = os.path.join(fitsstore_qa)
         store_handle = urllib.request.urlopen(furl)
-        qa_data      = json.loads(store_handle.read())   
+        qa_data      = json.loads(store_handle.read())
     else:
         date_query    = stamp_to_opday(timestamp)
         furl          = os.path.join(fitsstore_qa, date_query)
@@ -254,7 +254,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 return
 
             # ------------------------------------------------------------------
-            # The vast majority of HTTP client GET requests will be on the 
+            # The vast majority of HTTP client GET requests will be on the
             # cmdqueue service. Handle first.
             if parms["path"].startswith("/cmdqueue.json"):
                 self._handle_cmdqueue_json(events, parms)
@@ -281,7 +281,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     if not os.path.exists(logfile):
                         msg = "Log file not available"
                     else:
-                        f = open(logfile, "r")      
+                        f = open(logfile, "r")
                         msg = f.read()
                         f.close()
                 else:
@@ -315,7 +315,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         return
     # -------------------------------------------------------------------------
     # privitized handling cmdqueue.json requests
-    
+
     def _handle_cmdqueue_json(self, events, parms):
         """Handle HTTP client GET requests on service: cmdqueue.json
         """
@@ -339,7 +339,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         else:
             fromtime = 0
 
-        # event_list = [] implies a new adcc. Request current op day 
+        # event_list = [] implies a new adcc. Request current op day
         # metrics from fitsstore.
 
         if not events.event_list:
@@ -372,14 +372,14 @@ class ADCCHandler(BaseHTTPRequestHandler):
             if verbosity:
                 self.log_message(msg_form, "Requested metrics on ... " +
                                  stamp_to_opday(fromtime), info_code, size)
-                                
+
             tdic = fstore_get(fromtime)
             if verbosity:
                 self.log_message(msg_form, "Received " + str(len(tdic)) +
                                     " events from fitsstore.", info_code, size)
-            
+
             # Append the last timestamp from the event_list. This is done
-            # to trigger the client to pinging the adcc from the last 
+            # to trigger the client to pinging the adcc from the last
             # recorded event.
             tdic.insert(0, {"msgtype": "cmdqueue.request", "timestamp": time.time()})
             tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
@@ -391,7 +391,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.log_message(msg_form, "Future events not known.", fail_code, size)
 
         return
-            
+
 
 
 class MTHTTPServer(ThreadingMixIn, HTTPServer):
@@ -419,7 +419,7 @@ def startInterfaceServer(*args, **informers):
         if r:
             server.handle_request()
 
-    print("http_proxy: recieved signal 'clear'. Shutting down proxy server ...")
+    print("http_proxy: received signal 'clear'. Shutting down proxy server ...")
     server.socket.close()
     return
 
