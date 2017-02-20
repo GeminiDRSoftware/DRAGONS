@@ -65,42 +65,65 @@ Quick-Look reduction with stacking, hence probably more interesting to the reade
 The standard recipe to process GMOS biases is named ``makeProcessedBias`` 
 and contains the instruction set::
 
-   # This recipe performs the standardization and corrections needed to convert 
-   # the raw input bias images into a single stacked bias image. This output 
-   # processed bias is stored on disk using storeProcessedBias and has a name 
-   # equal to the name of the first input bias image with "_bias.fits" appended.
-   
-   p.prepare()
-   p.addDQ()
-   p.addVAR(read_noise=True)
-   p.overscanCorrect()
-   p.addToList(purpose="forStack")
-   p.getList(purpose="forStack")
-   p.stackFrames()
-   p.storeProcessedBias()
+ recipe_tags = set(['GMOS', 'CAL', 'BIAS'])
+ def makeProcessedBias(p):
+     """
+     This recipe performs the standardization and corrections needed to convert
+     the raw input bias images into a single stacked bias image. This output
+     processed bias is stored on disk using storeProcessedBias and has a name
+     equal to the name of the first input bias image with "_bias.fits" appended.
 
-The standard recipe to process GMOS twilight flats is named 
-``makeProcessedFlat`` and contains the instruction set::
+     Parameters
+     ----------
+     p : PrimitivesCORE object
+         A primitive set matching the recipe_tags.
 
-   # This recipe performs the standardization and corrections needed to convert 
-   # the raw input flat images into a single stacked and normalized flat image. 
-   # This output processed flat is stored on disk using storeProcessedFlat and 
-   # has a name equal to the name of the first input flat image with "_flat.fits" 
-   # appended.
-   
-   p.prepare()
-   p.addDQ()
-   p.addVAR(read_noise=True)
-   p.display()
-   p.overscanCorrect()
-   p.biasCorrect()
-   p.ADUToElectrons()
-   p.addVAR(poisson_noise=True)
-   p.addToList(purpose="forStack")
-   p.getList(purpose="forStack")
-   p.stackFlats()
-   p.normalizeFlat()
-   p.storeProcessedFlat()
+     """
+     p.prepare()
+     p.addDQ()
+     p.addVAR(read_noise=True)
+     p.overscanCorrect()
+     p.addToList(purpose="forStack")
+     p.getList(purpose="forStack")
+     p.stackFrames()
+     p.storeProcessedBias()
+     return
+
+The standard recipe to process GMOS twilight flats is named ``makeProcessedFlat``
+and contains the instruction set::
+
+ recipe_tags = set(['GMOS', 'IMAGE', 'CAL', 'FLAT'])
+ def makeProcessedFlat(p):
+     """
+     This recipe performs the standardization and corrections needed to
+     convert the raw input flat images into a single stacked and normalized
+     flat image.  This output processed flat is stored on disk using
+     storeProcessedFlat and has a name equal to the name of the first input
+     flat image with "_flat.fits" appended.
+
+     Parameters
+     ----------
+     p : PrimitivesCORE object
+         A primitive set matching the recipe_tags.
+
+     """
+     p.prepare()
+     p.addDQ()
+     p.addVAR(read_noise=True)
+     p.display()
+     p.overscanCorrect()
+     p.biasCorrect()
+     p.ADUToElectrons()
+     p.addVAR(poisson_noise=True)
+     p.addToList(purpose="forStack")
+     p.getList(purpose="forStack")
+     p.stackFlats()
+     p.normalizeFlat()
+     p.storeProcessedFlat()
+     return
+
+.. todo::
+   The new recipe libraries have no ``reduceDemo`` recipe. 
 
 The Demo recipe is named ``reduceDemo`` and contains the instruction set::
 
@@ -182,7 +205,7 @@ line.  For information only, internally the QA pipeline at the summit uses a
 central calibration server and the most appropriate processed calibrations available
 are selected and retrieved automatically.  We hope to be able to offer a "local",
 end-user version of this system in the future.  For now, calibrations must be 
-specified on the command line. 
+specified on the command line.
 
 For the flats, we do not really need a list, we can use wild cards::
 
