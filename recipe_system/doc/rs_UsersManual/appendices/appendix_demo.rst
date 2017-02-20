@@ -9,6 +9,8 @@ Original demo author: Kathleen Labrie, October 2014
 
 Setting up
 ----------
+.. todo::
+   Update here for Anaconda/astroconda.
 
 First install Ureka, which can be obtained at http://ssb.stsci.edu/ureka/.
 
@@ -46,7 +48,8 @@ QA recipe and the demo recipe, is that the demo recipe does stack the data, whil
 the stacking is turned off in the QA context.
 
 The demo recipe is essentially a Quick Look recipe.  It is NOT valid for Science
-Quality.  Remember that what you are using is a QA pipeline, not a Science pipeline.
+Quality.  Remember that what you are using is a QA pipeline, not a Science
+pipeline.
 
 The Recipes
 -----------
@@ -141,30 +144,30 @@ The first step is to create the processed bias.  We are using the standard
 recipe.  The system will recognize the inputs as GMOS biases and call the
 appropriate recipe automatically. 
 
-The biases were taken on different dates
-around the time of the science observations.  For convenience, we will use
-a file with the list of datasets as input instead of listing all the input
-datasets individually.  We will use a tool named ``typewalk`` to painlessly
-create the list. ::
+The biases were taken on different dates around the time of the science
+observations.  For convenience, we will use a file with the list of datasets
+as input instead of listing all the input datasets individually.  We will use the
+tool, ``typewalk``, to painlessly create the list. ::
 
    cd <your_path>/gemini_python_datapkg-X1/playground
    
-   typewalk --types GMOS BIAS --dir ../data_for_reduce_demo -o bias.list
+   typewalk --tags GMOS BIAS --dir ../data_for_reduce_demo -o bias.list
    
    reduce @bias.list
 
-This creates the processed bias, ``N20120202S0955_bias.fits``.  The output suffix 
-``_bias`` is the indicator that this is a processed bias.  All processed calibrations 
-are also stored in ``./calibrations/storedcals/`` for safe keeping.
+This creates the processed bias, ``N20120202S0955_bias.fits``.  The output
+suffix ``_bias`` is the indicator that this is a processed bias.  All processed
+calibrations are cached in ``./calibrations/``.
 
 If you wish to see what the processed bias looks like::
 
    reduce N20120202S0955_bias.fits -r display
 
-*Note: This will issue an error about the file already existing.  Ignore it.
-The explanation of what is going on is beyond the scope of this demo.  We 
-will fix this, eventually.  Remember that this is a release of software meant
-for internal use; there are still plenty of issues to be resolved.*
+.. note::
+   This will issue an error about the file already existing.  Ignore it.
+   The explanation of what is going on is beyond the scope of this demo.  We 
+   will fix this, eventually.  Remember that this is a release of software meant
+   for internal use; there are still plenty of issues to be resolved.*
 
 The Processed Flat
 ^^^^^^^^^^^^^^^^^^
@@ -187,8 +190,8 @@ For the flats, we do not really need a list, we can use wild cards::
       --user_cal N20120202S0955_bias.fits -p clobber=True;
 
 This creates the processed flat, ``N20120123S0123_flat.fits``.  The output suffix
-``_flat`` is the indictor that this is a processed flat.  The processed flat is also
-stored in ``./calibrations/storedcals/`` for safe keeping.
+``_flat`` is the indictor that this is a processed flat.  The processed flat is
+also cached in ``./calibrations/``.
 
 The ``clobber`` parameter is set to True to allow the system to overwrite the final
 output.  By default, the system refuses to overwrite an output file.
@@ -213,8 +216,8 @@ The demo data was obtained with the z' filter, therefore the images contain frin
 The ``makeFringe`` and ``fringeCorrect`` primitives are filter-aware, they will do 
 something only when the data is from a filter that produces fringing, like the z' 
 filter.  The processed fringe that is created is stored with the other processed 
-calibrations in ``./calibrations/storedcals/`` and it is named 
-``N20120203S0281_fringe.fits``. The ``_fringe`` suffix indicates a processed fringe.
+calibrations in ``./calibrations/`` and it is named ``N20120203S0281_fringe.fits``.
+The ``_fringe`` suffix indicates a processed fringe.
 
 The last primitive in the recipe is ``measureIQ`` which is one of the QA metrics
 primitives used at night by the QA pipeline.  The primitive selects stars in
@@ -241,10 +244,4 @@ and files will be deleted.
 Limitations
 -----------
 
-The X1 version of the RecipeSystem has not been vetted for Science Quality.
-Use ONLY for quick look purposes.
-
-The RecipeSystem currently does not handle memory usage in a very smart way.
-The number of files one can pass on to ``reduce`` is directly limited by the 
-memory of the user's computer.  This demo ran successfully on a Mac laptop
-with 4 GB of memory.
+[ `Limitations of the new Recipe System 2.0 are still being determined.` ]

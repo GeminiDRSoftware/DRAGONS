@@ -19,12 +19,13 @@ the instance. Use the type specified in the type column.)::
  -------------------------------------------------------
  displayflags           <type 'bool'>        False
  files                  <type 'list'>        []
- context                <type 'str'>         None
+ context                <type 'list'>        ['qa']
  logfile                <type 'str'>         'reduce.log'
  loglevel               <type 'str'>         'stdinfo'
  logmode                <type 'str'>         'standard'
  recipename             <type 'str'>         None
  suffix                 <type 'str'>         None
+ upmetrics              <type 'bool'>        False
  user_cal               <type 'str'>         None
  userparam              <type 'list'>        None
 
