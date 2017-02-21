@@ -121,10 +121,12 @@ def calibration_search(rq, return_xml=False):
         calRQ = urllib2.Request(rqurl)
         u = urllib2.urlopen(calRQ, postdata)
         response = u.read()
-    except urllib2.HTTPError, error:
-        calserv_msg = error.read()
-        traceback.print_exc()
-        return (None, calserv_msg)
+    except urllib2.HTTPError as err:
+        log.error(str(err))
+        return (None, str(err))
+    except urllib2.URLError as err:
+        log.error(str(err))
+        return (None, str(err))
 
     if return_xml:
         return (None, response)
