@@ -12,15 +12,15 @@ Observatory's ``gemini_python`` data reduction package. The Recipe System is a
 framework that supports configurable data processing pipelines, i.e.,
 "recipes," and which can accommodate processing pipelines for arbitrary
 dataset types. The Recipe System is written to introspectively exploit features
-of "instrument packages" by effecting arbitrage on specific attributes of defined
-recipes and primitives comprising such packages.
+of "instrument packages" by effecting arbitrage on specific attributes of
+defined recipes and primitives comprising such packages. Gemini Observatory has
+developed a suite of these recipes and primitives, which can be found in the
+``gemini_python`` package, ``geminidr``.
 
-Gemini Observatory has developed a suite of recipes and primitives that can be
-found in the ``gemini_python`` package, ``geminidr``. The Recipe System offers
-dynamic flow control and automatically executes options regarding processing and
-calibration. These decisions are based on the pixel and the metadata properties
-of the dataset at "decision nodes" in processing and on the context in which the
-processing is being carried out.
+The Recipe System offers dynamic flow control and automatically executes options
+regarding processing and calibration. These decisions are based on the pixel and
+the metadata properties of the dataset at "decision nodes" in processing and on
+the context in which the processing is being carried out.
 
 In conjunction with the development of the Recipe System, Gemini Observatory has
 also developed the new ``astrodata`` (v2.0), which works with instrument packages

@@ -131,7 +131,7 @@ def buildParser(version):
                         nargs="*", action=UnitaryArgumentAction,
                         help="Specify user supplied calibrations for "
                         "calibration types. "
-                        "Eg., --user_cal processed_arc:gsTest_arc.fits")
+                        "Eg., --user_cal gsTest_arc.fits")
 
     return parser
 
