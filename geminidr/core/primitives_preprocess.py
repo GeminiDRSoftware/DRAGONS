@@ -1048,6 +1048,12 @@ class Preprocess(PrimitivesBASE):
                             "AstroData object {}".
                             format(ad_sky.filename, ad_sci.filename))
                 ad_sci.subtract(ad_sky)
+
+                # Timestamp and update filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.filename = gt.filename_updater(adinput=ad,
+                                            suffix=params["suffix"], strip=True)
+
             else:
                 log.warning("No changes will be made to {}, since no "
                             "appropriate sky could be retrieved".
@@ -1059,8 +1065,8 @@ class Preprocess(PrimitivesBASE):
 
         # Add the appropriate time stamp to the PHU and update the filename
         # of the science and sky AstroData objects 
-        adinputs = gt.finalise_adinput(adinput=adinputs,
-                    timestamp_key=timestamp_key, suffix=params["suffix"])
+        #adinputs = gt.finalise_adinput(adinput=adinputs,
+        #            timestamp_key=timestamp_key, suffix=params["suffix"])
         return adinputs
 
     def subtractSkyBackground(self, adinputs=None, **params):
