@@ -954,7 +954,7 @@ def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
 
     if zfwhm.value:
         stdmsg = '{:.3f} +/- {:.3f} arcsec'.format(zfwhm.value, zfwhm.std) if \
-            zfwhm.std else '(AO) {:.3f} arcsec'.format(zfwhm.value)
+            zfwhm.std is not None else '(AO) {:.3f} arcsec'.format(zfwhm.value)
         body.append(('Zenith-corrected FWHM (AM {:.2f}):'.format(ad.airmass()),
                      stdmsg))
 

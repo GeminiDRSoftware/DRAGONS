@@ -13,7 +13,7 @@ class Reduce {} provides one (1) public method:
 
     runr()
 
-which calls on the mapper classes and passes the recieved data to them.
+which calls on the mapper classes and passes the received data to them.
 
 """.format(_version)
 # ---------------------------- Package Import ----------------------------------
@@ -45,8 +45,8 @@ log = logutils.get_logger(__name__)
 class Reduce(object):
     """
     The Reduce class encapsulates the core processing to be done by reduce.
-    __init__ may receive one (1) parameter, nominally, an argparse Namespace 
-    instance. However, this object type is not required, but only that any 
+    __init__ may receive one (1) parameter, nominally, an argparse Namespace
+    instance. However, this object type is not required, but only that any
     passed object *must* present an equivalent interface to that of an
     <argparse.Namespace> instance, i.e. a duck type.
 
@@ -57,7 +57,7 @@ class Reduce(object):
     def __init__(self, sys_args=None):
         """
         :parameter sys_args: optional argparse.Namespace instance
-        :type sys_args: <Nameapace> 
+        :type sys_args: <Nameapace>
 
         :return: ReduceNH instance
         :rtype: <ReduceNH>
@@ -85,7 +85,7 @@ class Reduce(object):
 
         :parameters: <void>
 
-        :returns: exit code 
+        :returns: exit code
         :rtype: <int>
 
         @TODO !!!!!!!!!
@@ -176,7 +176,7 @@ class Reduce(object):
     def _check_files(self, ffiles):
         """
         Sanity check on submitted files.
-        
+
         :parameter ffiles: list of passed FITS files.
         :type ffiles: <list>
 
@@ -219,12 +219,12 @@ class Reduce(object):
     def _convert_inputs(self, inputs):
         """
         Convert files into AstroData objects.
-        
+
         :parameter inputs: list of FITS file names
         :type inputs: <list>
 
         :return: list of AstroData objects
-        :rtype: <list> 
+        :rtype: <list>
 
         """
         allinputs = []
@@ -250,8 +250,8 @@ class Reduce(object):
 
     def _confirm_args(self):
         """
-        Confirm that the first executable frame in the call stack is a reduce 
-        command line. This asserts that a nominal reduce parser, as returned by 
+        Confirm that the first executable frame in the call stack is a reduce
+        command line. This asserts that a nominal reduce parser, as returned by
         buildParser() function, is an equivalent Namespace object to that
         of an 'args' key in the stack's 'f_locals' namespace. If the Namespace
         objects are not equal, reduce is not calling this class.
@@ -261,7 +261,7 @@ class Reduce(object):
         :returns: Value of whether 'reduce' or some other executable is
                   instantiating this class.
         :rtype: <bool>
- 
+
         """
         is_reduce = False
         exe_path = sys.argv[0]
