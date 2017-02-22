@@ -128,10 +128,10 @@ def buildParser(version):
                         "Eg., --upload_metrics")
 
     parser.add_argument("--user_cal", dest='user_cal', default=None,
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs="*", action=CalibrationAction,
                         help="Specify user supplied calibrations for "
                         "calibration types. "
-                        "Eg., --user_cal gsTest_arc.fits")
+                        "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
     return parser
 
