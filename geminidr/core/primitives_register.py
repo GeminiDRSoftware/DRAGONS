@@ -424,12 +424,12 @@ class Register(PrimitivesBASE):
                 log.fullinfo("CD: "+repr(ext_wcs.wcs.cd))
 
                 for ax in range(1,3):
-                    ad.hdr.set('CRPIX{}'.format(ax), ext_wcs.wcs.crpix[ax-1],
+                    ext.hdr.set('CRPIX{}'.format(ax), ext_wcs.wcs.crpix[ax-1],
                         comment=self.keyword_comments["CRPIX{}".format(ax)])
-                    ad.hdr.set('CRVAL{}'.format(ax), ext_wcs.wcs.crval[ax-1],
+                    ext.hdr.set('CRVAL{}'.format(ax), ext_wcs.wcs.crval[ax-1],
                         comment=self.keyword_comments["CRVAL{}".format(ax)])
                     for ax2 in range(1,3):
-                        ad.hdr.set('CD{}_{}'.format(ax,ax2),
+                        ext.hdr.set('CD{}_{}'.format(ax,ax2),
                                    ext_wcs.wcs.cd[ax-1,ax2-1],
                                     comment=self.keyword_comments["CD{}_{}".
                                    format(ax,ax2)])
