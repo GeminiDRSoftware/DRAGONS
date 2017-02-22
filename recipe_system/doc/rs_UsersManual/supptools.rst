@@ -35,9 +35,9 @@ and cloud cover (measured atmospheric extinction).
 Neither the Recipe System nor the primitives require the ``adcc`` to be
 running, but if an ``adcc`` instance is alive, then the metrics will be reported
 to the service. The ``adcc`` provides an interactive graphical interface and
-renders metric "events" in real time. Regardless of whether an ``adcc`` is running,
-metrics events are always and directly reported to the :ref:`fitsstore` and stored
-in the fitsstore metrics database.
+renders metric "events" in real time. Metrics events are also directly reported
+to the :ref:`fitsstore` and stored in the fitsstore metrics database when the
+``reduce`` option, ``--upload_metrics``, is specified.
 
 The ``adcc`` is started with the command of the same name, and one may request
 the help (or the manpage), in order to see the possible controllers supplied::
