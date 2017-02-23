@@ -118,16 +118,17 @@ PACKAGE_DATA = {}
 # sextractor files in geminidr/gemini/lookups/source_detection
 gemdrdir = re.compile('geminidr/')
 PACKAGE_DATA['geminidr'] = []
-for root, dirs, files in os.walk(os.path.join('geminidr', 'gemini',
-                                              'lookups', 'source_detection')):
-    files = [f for f in files if not f.endswith('.pyc')]
-    # remove the 'geminidr/' part of the file paths, then add to the DATA
-    PACKAGE_DATA['geminidr'].extend(
-        map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
-    )
+instruments = ['gemini', 'f2', 'gmos', 'gnirs', 'gsaoi', 'niri']
+for inst in instruments:
+    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
+                                                  'lookups', 'source_detection')):
+        files = [f for f in files if not f.endswith('.pyc')]
+        # remove the 'geminidr/' part of the file paths, then add to the DATA
+        PACKAGE_DATA['geminidr'].extend(
+            map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
+        )
 
 # BPMs and MDFs throughout the geminidr package
-instruments = ['f2', 'gmos', 'gnirs', 'gsaoi', 'niri']
 for inst in instruments:
     for root, dirs, files in os.walk(os.path.join('geminidr', inst,
                                                   'lookups', 'BPM')):
