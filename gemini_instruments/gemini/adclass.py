@@ -801,7 +801,9 @@ class AstroDataGemini(AstroDataFits):
         if pretty:
             filter_comps = []
             for fn in (f1, f2):
-                if "open" not in fn.lower() and "Clear" not in fn:
+                # Not interested in clear or neutral density filters
+                if not ("open" in fn.lower() or "Clear" in fn or
+                            fn.lower().startswith('nd')):
                     filter_comps.append(fn)
             if not filter_comps:
                 filter_comps.append("open")
