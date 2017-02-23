@@ -14,7 +14,7 @@ import gemini_instruments
 
 from gempy.gemini import eti
 from gempy.gemini import gemini_tools as gt
-from gempy.scripts.gmoss_fix_headers import correct_headers
+#from gempy.scripts.gmoss_fix_headers import correct_headers
 
 from geminidr.core import CCD
 from ..gemini.primitives_gemini import Gemini
@@ -179,8 +179,8 @@ class GMOS(Gemini, CCD):
                 # As does the DATE-OBS but as this seemed to break even after
                 # apparently being fixed, still perform this check. - MS
                 hdulist = ad.to_hdulist()
-                correct_headers(hdulist, logger=log,
-                                correct_image_extensions=False)
+#                correct_headers(hdulist, logger=log,
+#                                correct_image_extensions=False)
                 # When we create the new AD object, it needs to retain the
                 # filename information
                 orig_path = ad.path
