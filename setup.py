@@ -1,0 +1,205 @@
+#!/usr/bin/env python
+
+"""
+Setup script for gemini_python
+
+In this package:
+    astrodata
+    gemini_instruments
+    geminidr
+    gempy
+    recipe_system
+
+Usage:
+    python setup.py install --prefix=/astro/iraf/URlocal-v1.5.2/pkgs/gemini_python-v2.0.0
+    python setup.py
+"""
+
+import os
+import os.path
+import re
+
+
+from distutils.core import setup
+
+PACKAGENAME = 'gemini_python'
+
+# PACKAGES and PACKAGE_DIRS
+ASTRODATA_MODULES = ['astrodata']
+
+GEMINI_INST_MODULES = ['gemini_instruments',
+                       'gemini_instruments.bhros',
+                       'gemini_instruments.f2',
+                       'gemini_instruments.gemini',
+                       'gemini_instruments.gmos',
+                       'gemini_instruments.gnirs',
+                       'gemini_instruments.gpi',
+                       'gemini_instruments.graces',
+                       'gemini_instruments.gsaoi',
+                       'gemini_instruments.michelle',
+                       'gemini_instruments.nici',
+                       'gemini_instruments.nifs',
+                       'gemini_instruments.niri',
+                       'gemini_instruments.phoenix',
+                       'gemini_instruments.trecs',
+                       ]
+
+GEMINIDR_MODULES = ['geminidr',
+                    'geminidr.core',
+                    'geminidr.f2',
+                    'geminidr.f2.lookups',
+                    'geminidr.f2.recipes.qa',
+                    'geminidr.f2.recipes.sq',
+                    'geminidr.gemini',
+                    'geminidr.gemini.lookups',
+                    'geminidr.gemini.lookups.source_detection',
+                    'geminidr.gmos',
+                    'geminidr.gmos.lookups',
+                    'geminidr.gmos.recipes.qa',
+                    'geminidr.gmos.recipes.sq',
+                    'geminidr.gnirs',
+                    'geminidr.gnirs.lookups',
+                    'geminidr.gnirs.recipes.qa',
+                    'geminidr.gnirs.recipes.sq',
+                    'geminidr.gsaoi',
+                    'geminidr.gsaoi.lookups',
+                    'geminidr.gsaoi.recipes.qa',
+                    'geminidr.gsaoi.recipes.sq',
+                    'geminidr.niri',
+                    'geminidr.niri.lookups',
+                    'geminidr.niri.recipes.qa',
+                    'geminidr.niri.recipes.sq',
+                    ]
+
+GEMPY_MODULES = ['gempy',
+                 'gempy.adlibrary',
+                 'gempy.eti_core',
+                 'gempy.gemini',
+                 'gempy.gemini.eti',
+                 'gempy.library',
+                 'gempy.mosaic',
+                 'gempy.utils',
+                 ]
+
+RS_MODULES = ['recipe_system',
+              'recipe_system.adcc',
+              'recipe_system.adcc.servers',
+              'recipe_system.cal_service',
+              'recipe_system.mappers',
+              'recipe_system.reduction',
+              'recipe_system.utils',
+              ]
+
+SUBMODULES = []
+SUBMODULES.extend(ASTRODATA_MODULES)
+SUBMODULES.extend(GEMINI_INST_MODULES)
+SUBMODULES.extend(GEMINIDR_MODULES)
+SUBMODULES.extend(GEMPY_MODULES)
+SUBMODULES.extend(RS_MODULES)
+
+PACKAGES = []
+PACKAGES.extend(SUBMODULES)
+PACKAGE_DIRS = {}
+PACKAGE_DIRS[''] = '.'
+
+# PACKAGE_DATA
+PACKAGE_DATA = {}
+
+# BPMs, MDFs, gemini LUT source_detection
+
+# sextractor files in geminidr/gemini/lookups/source_detection
+gemdrdir = re.compile('geminidr/')
+PACKAGE_DATA['geminidr'] = []
+for root, dirs, files in os.walk(os.path.join('geminidr', 'gemini',
+                                              'lookups', 'source_detection')):
+    files = [f for f in files if not f.endswith('.pyc')]
+    # remove the 'geminidr/' part of the file paths, then add to the DATA
+    PACKAGE_DATA['geminidr'].extend(
+        map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
+    )
+
+# BPMs and MDFs throughout the geminidr package
+instruments = ['f2', 'gmos', 'gnirs', 'gsaoi', 'niri']
+for inst in instruments:
+    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
+                                                  'lookups', 'BPM')):
+        files = [f for f in files if not f.endswith('.pyc')]
+        if len(files) > 0:
+            #remove the 'geminidr/' part, add to DATA
+            PACKAGE_DATA['geminidr'].extend(
+                map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
+            )
+    for root, dirs, files in os.walk(os.path.join('geminidr', inst,
+                                                  'lookups', 'MDF')):
+        files = [f for f in files if not f.endswith('.pyc')]
+        if len(files) > 0:
+            #remove the 'geminidr/' part, add to DATA
+            PACKAGE_DATA['geminidr'].extend(
+                map((lambda f: os.path.join(gemdrdir.sub('', root), f)), files)
+            )
+
+# GUI
+rsdir = re.compile('recipe_system/')
+PACKAGE_DATA['recipe_system'] = []
+for root, dirs, files in os.walk(os.path.join('recipe_system', 'adcc',
+                                              'client')):
+    # remove the 'recipe_system/' part, add to DATA
+    PACKAGE_DATA['recipe_system'].extend(
+        map((lambda f: os.path.join(rsdir.sub('', root), f)), files)
+    )
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# For packaging, need to add tests and docs
+#    (also see the 'sdist' section in the
+#     old setup.py.  handles symlinks)
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+DATA_FILES = []
+
+# SCRIPTS
+RS_SCRIPTS = [ os.path.join('recipe_system', 'scripts', 'adcc'),
+               os.path.join('recipe_system', 'scripts', 'reduce'),
+               os.path.join('recipe_system', 'scripts', 'superclean'),
+             ]
+
+GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'fwhm_histogram'),
+                  os.path.join('gempy', 'scripts', 'gmoss_fix_HAM_BPMs.py'),
+                  os.path.join('gempy', 'scripts', 'gmoss_fix_headers.py'),
+                  os.path.join('gempy', 'scripts', 'mosaicFactory.py'),
+                  os.path.join('gempy', 'scripts', 'pipeline2iraf'),
+                  os.path.join('gempy', 'scripts', 'profile_all_obj'),
+                  os.path.join('gempy', 'scripts', 'psf_plot'),
+                  os.path.join('gempy', 'scripts', 'showd'),
+                  os.path.join('gempy', 'scripts', 'swapper'),
+                  os.path.join('gempy', 'scripts', 'typewalk'),
+                  os.path.join('gempy', 'scripts', 'zp_histogram'),
+                ]
+
+SCRIPTS = []
+SCRIPTS.extend(RS_SCRIPTS)
+SCRIPTS.extend(GEMPY_SCRIPTS)
+
+EXTENSIONS = None
+
+setup ( name='gemini_python',
+        version='2.0.0',
+        description='Gemini Data Processing Python Package',
+        author='Gemini Data Processing Software Group',
+        author_email='sus_inquiries@gemini.edu',
+        url='http://www.gemini.edu',
+        maintainer='Science User Support Department',
+        packages=PACKAGES,
+        package_dir=PACKAGE_DIRS,
+        package_data=PACKAGE_DATA,
+        data_files=DATA_FILES,
+        scripts=SCRIPTS,
+        ext_modules=EXTENSIONS,
+        classifiers=[
+            'Development Status :: Beta',
+            'Intended Audience :: Gemini Ops',
+            'Operating System :: Linux :: CentOS',
+            'Programming Language :: Python',
+            'Topic :: Gemini',
+            'Topic :: Data Reduction',
+            'Topic :: Astronomy',
+        ]
+      )
