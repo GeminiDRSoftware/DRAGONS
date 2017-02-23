@@ -2,7 +2,7 @@ from collections import namedtuple
 
 # Data structures used by this module
 
-NonLinCoeffs = namedtuple("NonLinCoeffs", "max_counts time_delta, gamma, eta")
+NonLinCoeffs = namedtuple("NonLinCoeffs", "max_counts time_delta gamma eta")
 
 filter_wavelengths = {
     'Jcon(1065)'   : 1.0650,
