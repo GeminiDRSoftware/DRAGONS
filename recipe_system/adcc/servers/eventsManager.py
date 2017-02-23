@@ -27,7 +27,7 @@ class EventsManager(object):
         # images are combined for all extensions
 
         raw_rgx = re.compile(r'tmp\d+gemcombine[NS]\d{8}S\d{4}\.fits\[SCI,\d+\]')
-        raw_list = ad[1].hdr.get('IMCMB***')
+        raw_list = ad[0].hdr.get('IMCMB***')
         if raw_list:
             stack_list = []
             for item in raw_list:
