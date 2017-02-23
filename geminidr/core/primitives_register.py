@@ -135,7 +135,8 @@ class Register(PrimitivesBASE):
         log.stdinfo("Reference image: "+ref_image.filename)
         adoutputs = [ref_image]
 
-        if len(ref_image[0].OBJCAT) < min_sources and method=='sources':
+        if not hasattr(ref_image[0], 'OBJCAT') or (len(ref_image[0].OBJCAT)
+                                        < min_sources and method=='sources'):
             log.warning("Insufficient objects found in reference image.")
             if fallback is None:
                 log.warning("WCS can only be corrected indirectly and "
@@ -161,7 +162,10 @@ class Register(PrimitivesBASE):
         # sources in the reference and input images
         else:
             for ad in adinputs[1:]:
-                nobj = len(ad[0].OBJCAT)
+                try:
+                    nobj = len(ad[0].OBJCAT)
+                except AttributeError:
+                    nobj = 0
                 if nobj == 0:
                     log.warning("No objects found in {}".format(ad.filename))
                     if fallback == 'header':
