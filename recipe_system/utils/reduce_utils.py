@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from argparse import HelpFormatter
 
 from .reduceActions import PosArgAction
-from .reduceActions import BooleanAction 
+from .reduceActions import BooleanAction
 from .reduceActions import ParameterAction
 from .reduceActions import CalibrationAction
 from .reduceActions import UnitaryArgumentAction
@@ -54,9 +54,9 @@ def buildParser(version):
     parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " +
                                   "_"*28 + "\n" + "_"*20 +
                                   " Recipe Processing Management System " +
-                                  "_"*20 + "\n" + "_"*22 + 
-                                  " Recipe System Release"+version+" "+"_"*22, 
-                                  prog="reduce", 
+                                  "_"*20 + "\n" + "_"*22 +
+                                  " Recipe System Release"+version+" "+"_"*22,
+                                  prog="reduce",
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
 
@@ -80,7 +80,7 @@ def buildParser(version):
                         nargs="*", action=UnitaryArgumentAction,
                         help="name of log (default is 'reduce.log')")
 
-    parser.add_argument("--loglevel", dest="loglevel", default="stdinfo", 
+    parser.add_argument("--loglevel", dest="loglevel", default="stdinfo",
                         nargs="*", action=UnitaryArgumentAction,
                         help="Set the verbose level for console "
                         "logging; (critical, error, warning, status, stdinfo, "
@@ -136,8 +136,8 @@ def buildParser(version):
     return parser
 
 # --------------------------- Emulation functions ------------------------------
-# The functions below encapsulate ArgumentParser access to option strings and 
-# matches them to 'dest' attributes and attribute values. There is no public 
+# The functions below encapsulate ArgumentParser access to option strings and
+# matches them to 'dest' attributes and attribute values. There is no public
 # interface as with OptionParser.has_option() and OptionParser.get_option() for
 # testing and getting option flags.
 
@@ -199,7 +199,7 @@ def show_parser_options(parser, args):
             elif len(all_option_flags) == 2:
                 print "\t", all_option_flags, "\t"*2+"::", dvar, "\t\t::", val
                 continue
-            else: 
+            else:
                 print "\t", all_option_flags, "\t"*2+"::", dvar, "\t\t::", val
     print "\t"+"-"*65+"\n"
     return
@@ -207,10 +207,10 @@ def show_parser_options(parser, args):
 # ------------------------------------------------------------------------------
 def set_btypes(userparams):
     """
-    All cmd line args are delivered as strings. Find any user parameters that 
+    All cmd line args are delivered as strings. Find any user parameters that
     should be other python types and set them to those actual corresponding types.
 
-    I.e., 
+    I.e.,
 
         'None'  --> None
         'True'  --> True
@@ -255,7 +255,7 @@ def normalize_args(args):
 
     if isinstance(args.recipename, list):
         args.recipename = args.recipename[0]
-    # if isinstance(args.context, list):     # v2.0, context is now a list 
+    # if isinstance(args.context, list):     # v2.0, context is now a list
     #     args.context = args.context[0]
     if isinstance(args.loglevel, list):
         args.loglevel = args.loglevel[0]
@@ -280,7 +280,7 @@ def normalize_context(context):
 
     A passed None defaults to 'qa'.
 
-    :parameter context: context argument recieved by the reduce command line.
+    :parameter context: context argument received by the reduce command line.
     :type context: <list>
 
     :return: list of coerced or defaulted context values.

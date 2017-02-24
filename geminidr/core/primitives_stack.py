@@ -208,13 +208,16 @@ class Stack(PrimitivesBASE):
 
         # The associateSky primitive creates an attribute with the information
         # associating the sky frames to the science frames
-        sky_dict = self.sky_dict
+        try:
+            sky_dict = self.sky_dict
+        except AttributeError:
+            sky_dict = {}
 
         for ad_sci in adinputs:
             # Retrieve the list of sky AstroData objects associated with the
             # input science AstroData object
             origname = ad_sci.phu.get('ORIGNAME')
-            if sky_dict and (origname in sky_dict):
+            if origname in sky_dict:
                 ad_sky_list = sky_dict[origname]
 
                 if not ad_sky_list:

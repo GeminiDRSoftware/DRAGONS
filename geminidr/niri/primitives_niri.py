@@ -111,9 +111,9 @@ class NIRI(Gemini, NearIR):
                 log.fullinfo("The mean value of the corrected pixel data in "
                         "{} is {:.8f}".format(ext.filename, corrected_mean_value))
             
-            # Correct the exposure time by adding coeff1 * coadds
-            total_exptime = total_exptime + coeffs.time_delta * coadds
-            log.fullinfo("The true total exposure time = {}".format(total_exptime))
+                # Correct the exposure time by adding coeff1 * coadds
+                total_exptime = total_exptime + coeffs.time_delta * coadds
+                log.fullinfo("The true total exposure time = {}".format(total_exptime))
             
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
