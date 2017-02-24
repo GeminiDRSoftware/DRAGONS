@@ -236,6 +236,7 @@ class Photometry(PrimitivesBASE):
             else:
                 log.stdinfo("No OBJCAT found in input, so no comparison to "
                         "reference sources will be performed")
+                adoutputs.append(ad)
                 continue
 
             if hasattr(ad, 'REFCAT'):

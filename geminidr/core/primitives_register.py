@@ -135,7 +135,8 @@ class Register(PrimitivesBASE):
         log.stdinfo("Reference image: "+ref_image.filename)
         adoutputs = [ref_image]
 
-        if len(ref_image[0].OBJCAT) < min_sources and method=='sources':
+        if not hasattr(ref_image[0], 'OBJCAT') or (len(ref_image[0].OBJCAT)
+                                        < min_sources and method=='sources'):
             log.warning("Insufficient objects found in reference image.")
             if fallback is None:
                 log.warning("WCS can only be corrected indirectly and "
@@ -161,7 +162,10 @@ class Register(PrimitivesBASE):
         # sources in the reference and input images
         else:
             for ad in adinputs[1:]:
-                nobj = len(ad[0].OBJCAT)
+                try:
+                    nobj = len(ad[0].OBJCAT)
+                except AttributeError:
+                    nobj = 0
                 if nobj == 0:
                     log.warning("No objects found in {}".format(ad.filename))
                     if fallback == 'header':
@@ -424,12 +428,12 @@ class Register(PrimitivesBASE):
                 log.fullinfo("CD: "+repr(ext_wcs.wcs.cd))
 
                 for ax in range(1,3):
-                    ad.hdr.set('CRPIX{}'.format(ax), ext_wcs.wcs.crpix[ax-1],
+                    ext.hdr.set('CRPIX{}'.format(ax), ext_wcs.wcs.crpix[ax-1],
                         comment=self.keyword_comments["CRPIX{}".format(ax)])
-                    ad.hdr.set('CRVAL{}'.format(ax), ext_wcs.wcs.crval[ax-1],
+                    ext.hdr.set('CRVAL{}'.format(ax), ext_wcs.wcs.crval[ax-1],
                         comment=self.keyword_comments["CRVAL{}".format(ax)])
                     for ax2 in range(1,3):
-                        ad.hdr.set('CD{}_{}'.format(ax,ax2),
+                        ext.hdr.set('CD{}_{}'.format(ax,ax2),
                                    ext_wcs.wcs.cd[ax-1,ax2-1],
                                     comment=self.keyword_comments["CD{}_{}".
                                    format(ax,ax2)])
