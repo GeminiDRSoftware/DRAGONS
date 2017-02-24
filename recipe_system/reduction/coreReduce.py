@@ -21,6 +21,7 @@ import os
 import sys
 import inspect
 import signal
+from types import StringType
 
 import astrodata
 import gemini_instruments
@@ -71,13 +72,27 @@ class Reduce(object):
             args = buildParser(_version).parse_args([])
 
         self.adinputs = None
-        self.files   = args.files
-        self.uparms  = set_btypes(args.userparam)
-        self.ucals   = args.user_cal
-        self.context = args.context
-        self.suffix  = args.suffix
+        self._context = args.context
+        self.files    = args.files
+        self.uparms   = set_btypes(args.userparam)
+        self.ucals    = args.user_cal
+        self.suffix   = args.suffix
         self.upload_metrics = args.upmetrics
         self.urecipe = args.recipename if args.recipename else 'default'
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, ctx):
+        if ctx is None:
+            self._context = ['qa']         # Set default 'qa' [later, 'sq']
+        elif isinstance(ctx, StringType):
+            self._context = [seg.lower().strip() for seg in ctx.split(',')]
+        elif isinstance(ctx, list):
+            self._context = ctx
+        return
 
     def runr(self):
         """
