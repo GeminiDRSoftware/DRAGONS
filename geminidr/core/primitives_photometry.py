@@ -6,16 +6,18 @@
 import numpy as np
 from astropy.wcs import WCS
 from astropy.stats import sigma_clip
+from astropy.modeling import models
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
-from gempy.library import astrotools as at
 from gempy.gemini.eti.sextractoreti import SExtractorETI
 from gempy.utils import logutils
 from geminidr.gemini.lookups import color_corrections
 
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
+
+from gempy.library.newmatch import LandscapeFitter, CatalogMatcher, match_coords
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -272,12 +274,7 @@ def _match_objcat_refcat(ad):
     adinput: AstroData
         input image for OBJCAT-REFCAT matching
     """
-    import matplotlib.pyplot as plt
-
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
-    debug = False
 
     filter_name = ad.filter_name(pretty=True)
     colterm_dict = color_corrections.colorTerms
@@ -299,19 +296,6 @@ def _match_objcat_refcat(ad):
                     format(ad.filename))
         return ad
 
-    # Plotting for debugging purposes
-    if debug:
-        if 'GSAOI' in ad.tags:
-            plotcols = 2
-            plotrows = 2
-        else:
-            plotcols = len(ad)
-            plotrows = 1
-        fig, axarr = plt.subplots(plotrows, plotcols, sharex=True,
-                    sharey=True, figsize=(10,10), squeeze=False)
-        axarr[0,0].set_xlim(0,ad[0].data.shape[1])
-        axarr[0,0].set_ylim(0,ad[0].data.shape[0])
-
     # Try to be clever here, and work on the extension with the highest
     # number of matches first, as this will give the most reliable offsets.
     # which can then be used to constrain the other extensions. The problem
@@ -322,10 +306,11 @@ def _match_objcat_refcat(ad):
     objcat_order = np.argsort(objcat_lengths)[::-1]
 
     pixscale = ad.pixel_scale()
-    initial = 10.0/pixscale # Search box size
-    final = 1.0/pixscale # Matching radius
-    xoffsets = []
-    yoffsets = []
+    initial = 10.0/pixscale  # Search box size
+    final = 1.0/pixscale     # Matching radius
+
+    initial_transform = models.Shift(0.0) & models.Shift(0.0)
+    working_model = (0, initial_transform)
 
     for index in objcat_order:
         extver = ad[index].hdr['EXTVER']
@@ -335,103 +320,71 @@ def _match_objcat_refcat(ad):
             log.stdinfo('No OBJCAT in {}:{}'.format(ad.filename, extver))
             continue
         objcat_len = len(objcat)
-        xx = objcat['X_IMAGE']
-        yy = objcat['Y_IMAGE']
 
         # The coordinates of the reference sources are corrected
         # to pixel positions using the WCS of the object frame
         wcs = WCS(ad.header[index+1])
-        sx, sy = wcs.all_world2pix(refcat['RAJ2000'],
-                                   refcat['DEJ2000'], 1)
-        sx_orig = np.copy(sx)
-        sy_orig = np.copy(sy)
-        # Reduce the search radius if we've found a match
-        # on a previous extension
-        if xoffsets:
-            sx += np.mean(xoffsets)
-            sy += np.mean(yoffsets)
+        xref, yref = wcs.all_world2pix(refcat['RAJ2000'],
+                                       refcat['DEJ2000'], 1)
+
+        # Reduce the search radius if we've previously found a match
+        m_init = working_model[1]
+        if working_model[0]:
             initial = 2.5/pixscale
 
-        # Here's CJS at work.
         # First: estimate number of reference sources in field
-        # Do better using actual size of illuminated field
-        num_ref_sources = np.sum(np.all((sx>-initial,
-            sx<ad[index].data.shape[1]+initial,
-            sy>-initial,
-            sy<ad[index].data.shape[0]+initial),
-            axis=0))
-        # How many objects do we want to try to match?
+        # Inverse map ref coords->image plane and see how many are in field
+        xx, yy = m_init.inverse(xref, yref)
+        num_ref_sources = np.sum(np.all((xx>=0, xx<ad[index].data.shape[1],
+            yy>=0, yy<ad[index].data.shape[0]), axis=0))
+
+        # How many objects do we want to try to match? Keep brightest ones only
         if objcat_len > 2*num_ref_sources:
             keep_num = max(int(1.5*num_ref_sources),
                            min(10,objcat_len))
         else:
             keep_num = objcat_len
-        # Now sort the object catalogue -- MUST NOT alter order
-        sorted_indices = np.argsort(np.where(
-                objcat['NIMAFLAGS_ISO']>
-                0.5*objcat['ISOAREA_IMAGE'],
-                999,objcat['MAG_AUTO']))[:keep_num]
+        sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
+        xin, yin = objcat['X_IMAGE'][sorted_idx], objcat['Y_IMAGE'][sorted_idx]
 
-        (oi, ri) = at.match_cxy(xx[sorted_indices],sx,
-                    yy[sorted_indices],sy,
-                    first_pass=initial, delta=final, log=log)
+        # Brute-force grid search using an image landscape
+        fit_it = LandscapeFitter()
+        m_init.offset_0.bounds = (m_init.offset_0-initial, m_init.offset_0+initial)
+        m_init.offset_1.bounds = (m_init.offset_1-initial, m_init.offset_1+initial)
+        ref_coords = (xref, yref)
+        m = fit_it(m_init, xin, yin, ref_coords, sigma=10.0)
+        print m
+
+        # More precise minimization using pairwise calculations
+        fit_it = CatalogMatcher()
+        m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead')
+        print m_final
+
+        # Match sources; use the full OBJCAT but give preferential treatment to
+        # the objects used in the alignment
+        xin, yin = objcat['X_IMAGE'], objcat['Y_IMAGE']
+        matched = match_coords(m_final(xin, yin), ref_coords, radius=final,
+                               priority=sorted_idx)
+        num_matched = sum(m>0 for m in matched)
         log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
-                    format(len(oi), extver))
-        # If this is a "good" match, save it
-        if len(oi) > 2:
-            xoffsets.append(np.median(xx[sorted_indices[oi]] - sx_orig[ri]))
-            yoffsets.append(np.median(yy[sorted_indices[oi]] - sy_orig[ri]))
+                    format(num_matched, extver))
+        # If this is a "better" match, save it
+        if not working_model or num_matched > max(working_model[0], 2):
+            working_model = (num_matched, m_final)
 
         # Loop through the reference list updating the refid in the objcat
         # and the refmag, if we can
-        for i in range(len(oi)):
-            real_index = sorted_indices[oi[i]]
-            objcat['REF_NUMBER'][real_index] = refcat['Id'][ri[i]]
-            # CJS: I'm not 100% sure about assigning the wcs.sky2pix
-            # values here, in case the WCS is poor
-            tempx, tempy = wcs.all_world2pix(refcat['RAJ2000'][ri[i]],
-                                             refcat['DEJ2000'][ri[i]], 1)
-            #objcat['REF_X'][real_index] = tempx
-            #objcat['REF_Y'][real_index] = tempy
-
-            # Assign the magnitude
-            if formulae:
-                mag, mag_err = _calculate_magnitude(formulae, refcat, ri[i])
-                objcat['REF_MAG'][real_index] = mag
-                objcat['REF_MAG_ERR'][real_index] = mag_err
-
-        if debug:
-            # Show the fit
-            if 'GSAOI' in ad.types:
-                plotpos = ((4-extver) // 2, (extver % 3) % 2)
-            else:
-                plotpos = (0,extver-1)
-            if len(oi):
-                dx = np.median(xx[sorted_indices[oi]] - sx[ri])
-                dy = np.median(yy[sorted_indices[oi]] - sy[ri])
-            else:
-                dx = 0
-                dy = 0
-            # bright OBJCAT sources
-            axarr[plotpos].scatter(xx[sorted_indices], yy[sorted_indices], s=50, c='w')
-            # all REFCAT sources, original positions
-            axarr[plotpos].scatter(sx_orig, sy_orig, s=30, c='k', marker='+')
-            # all REFCAT sources shifted
-            axarr[plotpos].scatter(sx+dx, sy+dy, s=30, c='r', marker='+')
-            # matched REFCAT sources shifted
-            axarr[plotpos].scatter(sx[ri]+dx, sy[ri]+dy, s=30, c='r', marker='s')
-            for i in range(len(sx)):
-                if i in ri:
-                    axarr[plotpos].plot([sx_orig[i],sx[i]+dx],[sy_orig[i],sy[i]+dy], 'r')
-                else:
-                    axarr[plotpos].plot([sx_orig[i],sx[i]+dx],[sy_orig[i],sy[i]+dy], 'k--')
-
-    if debug:
-        plt.show()
+        for i, m in enumerate(matched):
+            if m > 0:
+                objcat['REF_NUMBER'][i] = refcat['Id'][m]
+                # Assign the magnitude
+                if formulae:
+                    mag, mag_err = _calculate_magnitude(formulae, refcat, matched[i])
+                    objcat['REF_MAG'][i] = mag
+                    objcat['REF_MAG_ERR'][i] = mag_err
     return ad
 
 def _calculate_magnitude(formulae, refcat, indx):
-    
     # This is a bit ugly: we want to iterate over formulae so we must
     # nest a single formula into a list
     if type(formulae[0]) is not list:
