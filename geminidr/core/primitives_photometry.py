@@ -7,6 +7,7 @@ import numpy as np
 from astropy.wcs import WCS
 from astropy.stats import sigma_clip
 from astropy.modeling import models
+from datetime import datetime
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -306,7 +307,7 @@ def _match_objcat_refcat(ad):
     objcat_order = np.argsort(objcat_lengths)[::-1]
 
     pixscale = ad.pixel_scale()
-    initial = 10.0/pixscale  # Search box size
+    initial = 15.0/pixscale  # Search box size
     final = 1.0/pixscale     # Matching radius
 
     initial_transform = models.Shift(0.0) & models.Shift(0.0)
@@ -348,17 +349,20 @@ def _match_objcat_refcat(ad):
         xin, yin = objcat['X_IMAGE'][sorted_idx], objcat['Y_IMAGE'][sorted_idx]
 
         # Brute-force grid search using an image landscape
+        start = datetime.now()
         fit_it = LandscapeFitter()
         m_init.offset_0.bounds = (m_init.offset_0-initial, m_init.offset_0+initial)
         m_init.offset_1.bounds = (m_init.offset_1-initial, m_init.offset_1+initial)
         ref_coords = (xref, yref)
         m = fit_it(m_init, xin, yin, ref_coords, sigma=10.0)
-        print m
+        log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
+                                format((datetime.now()-start).total_seconds())))
 
         # More precise minimization using pairwise calculations
         fit_it = CatalogMatcher()
-        m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead')
-        print m_final
+        m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead', tol=1e-2)
+        log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
+                                format((datetime.now()-start).total_seconds())))
 
         # Match sources; use the full OBJCAT but give preferential treatment to
         # the objects used in the alignment
@@ -383,6 +387,12 @@ def _match_objcat_refcat(ad):
                     objcat['REF_MAG'][i] = mag
                     objcat['REF_MAG_ERR'][i] = mag_err
     return ad
+
+def _show_model(m, intro=""):
+    model_str = "\n{}\n".format(intro) if intro else "\n"
+    for name, value in zip(m.param_names, m.parameters):
+        model_str += "{}: {}\n".format(name, value)
+    return model_str
 
 def _calculate_magnitude(formulae, refcat, indx):
     # This is a bit ugly: we want to iterate over formulae so we must

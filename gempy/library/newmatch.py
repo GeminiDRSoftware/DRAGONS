@@ -23,7 +23,7 @@ def match_coords(incoords, refcoords, radius=2.0, priority=[]):
                 break
         else:
             # No first_allowed so take the first one
-            if inidx:
+            if len(inidx):
                 matched[inidx[0]] = i
     return matched
 
