@@ -18,7 +18,7 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
 
-from gempy.library.newmatch import LandscapeFitter, CatalogMatcher, match_coords
+from gempy.library.newmatch import BruteLandscapeFitter, LandscapeFitter, match_sources, find_offsets
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -348,18 +348,23 @@ def _match_objcat_refcat(ad):
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
         xin, yin = objcat['X_IMAGE'][sorted_idx], objcat['Y_IMAGE'][sorted_idx]
 
-        # Brute-force grid search using an image landscape
         start = datetime.now()
-        fit_it = LandscapeFitter()
-        m_init.offset_0.bounds = (m_init.offset_0-initial, m_init.offset_0+initial)
-        m_init.offset_1.bounds = (m_init.offset_1-initial, m_init.offset_1+initial)
+        xoff, yoff = find_offsets(xin, yin, xref, yref,
+                                  range=(-initial,initial), sigma=10.0)
+        m = models.Shift(xoff) & models.Shift(yoff)
+
+        # Brute-force grid search using an image landscape
+        #fit_it = BruteLandscapeFitter()
+        #m_init.offset_0.bounds = (m_init.offset_0-initial, m_init.offset_0+initial)
+        #m_init.offset_1.bounds = (m_init.offset_1-initial, m_init.offset_1+initial)
         ref_coords = (xref, yref)
-        m = fit_it(m_init, xin, yin, ref_coords, sigma=10.0)
+        #m = fit_it(m_init, xin, yin, ref_coords, sigma=10.0)
+
         log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
                                 format((datetime.now()-start).total_seconds())))
 
         # More precise minimization using pairwise calculations
-        fit_it = CatalogMatcher()
+        fit_it = LandscapeFitter()
         m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead', tol=1e-2)
         log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
                                 format((datetime.now()-start).total_seconds())))
@@ -367,7 +372,7 @@ def _match_objcat_refcat(ad):
         # Match sources; use the full OBJCAT but give preferential treatment to
         # the objects used in the alignment
         xin, yin = objcat['X_IMAGE'], objcat['Y_IMAGE']
-        matched = match_coords(m_final(xin, yin), ref_coords, radius=final,
+        matched = match_sources(m_final(xin, yin), ref_coords, radius=final,
                                priority=sorted_idx)
         num_matched = sum(m>0 for m in matched)
         log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
