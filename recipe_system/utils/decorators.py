@@ -80,6 +80,23 @@ def userpar_override(pname, args, upars):
             parset.update({key: val})
     return parset
 
+def set_logging(pname):
+   global LOGINDENT
+   stat_msg = "PRIMITVE: {}".format(pname)
+   LOGINDENT += 1
+   logutils.update_indent(LOGINDENT)
+   stat_msg = "PRIMITVE: {}".format(pname)
+   log.status(stat_msg)
+   log.status("-" * len(stat_msg))
+   return
+
+def unset_logging():
+   global LOGINDENT
+   log.status(".")
+   LOGINDENT -= 1
+   logutils.update_indent(LOGINDENT)
+   return    
+
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
     @wraps(wrapped)
@@ -101,9 +118,6 @@ def make_class_wrapper(wrapped):
 def parameter_override(fn):
     @wraps(fn)
     def gn(*args, **kwargs):
-        global LOGINDENT
-        LOGINDENT += 1
-        logutils.update_indent(LOGINDENT)
         pobj = args[0]
         pname = fn.__name__
         # Start with parameters listed in the function definition
@@ -115,10 +129,7 @@ def parameter_override(fn):
                       pobj.user_params))
         # Override with values in the function call
         params.update(kwargs)
-
-        stat_msg = "PRIMITVE: {}".format(pname)
-        log.status(stat_msg)
-        log.status("-" * len(stat_msg))
+        set_logging(pname)
         if len(args) == 1 and 'adinputs' not in params:
             # Use appropriate stream inputs
             instream = params.get('instream', params.get('stream', 'main'))
@@ -130,9 +141,7 @@ def parameter_override(fn):
         else:
             ret_value = fn(*args, **params)
 
-        log.status(".")
-        LOGINDENT -= 1
-        logutils.update_indent(LOGINDENT)
+        unset_logging()
         return ret_value
     # Make dict of default values (ignore args[0]='self', args[1]='adinputs')
     argspec = inspect.getargspec(fn)
