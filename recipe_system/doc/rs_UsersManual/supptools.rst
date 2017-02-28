@@ -66,7 +66,7 @@ quality and weather related metrics that are passed to the adcc as message event
 Users wishing to use the adcc to monitor QA metrics need to simply open a web
 browser on the service's URL.
 
-.. figure:: images/adcc_dark_metrics.png
+.. figure:: images/adcc_light_metrics.png
 
    Snapshot of the Nighttime Metrics GUI, using the "dark" theme and displaying
    the metrics retrieved from fitsstore for operational day 20170209.
