@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+import sys
+import argparse
+
+from astropy.io import fits
+
+from gempy.gemini import hdr_fixing as hdrfix
+
+VERSION = '0.1.0'
+
+SHORT_DESCRIPTION = 'Fix GMOS-N Ham CCD header commissioning and ' \
+                    'early data.'
+
+def parse_args(command_line_args):
+    """
+    Parse command line arguments.
+
+    Parameters
+    ----------
+    command_line_args : list
+
+    Returns
+    -------
+
+    """
+
+    parser = argparse.ArgumentParser(description=SHORT_DESCRIPTION)
+    parser.add_argument('files', type=str, nargs="*",
+                        help="Input files to fix in place.")
+    parser.add_argument("--dryrun", dest="dryrun",
+                        action='store_true', default=False,
+                        help='Show changes but do not apply them.')
+    parser.add_argument('-v', '--verbose', dest='verbose',
+                        action='store_true', default=False,
+                        help='Toggle on the verbose mode.')
+    parser.add_argument('--debug', dest='debug',
+                        action='store_true', default=False,
+                        help='Toggle on the debug message.')
+
+    args = parser.parse_args(command_line_args)
+
+    if args.debug:
+        args.verbose = True
+        print(args)
+
+    if args.dryrun:
+        args.verbose = True
+
+    return args
+
+# --------------
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+
+    args = parse_args(sys.argv[1:])
+
+    if args.dryrun:
+        readmode = "readonly"
+    else:
+        readmode = "update"
+
+    for filename in args.files:
+        hdulist = fits.open(filename, mode=readmode)
+        updated = hdrfix.gmosn_ham_fixes(hdulist, args.verbose)
+        if updated and not args.dryrun:
+            hdulist.flush()
+        hdulist.close()
+
+if __name__ == '__main__':
+    sys.exit(main())
