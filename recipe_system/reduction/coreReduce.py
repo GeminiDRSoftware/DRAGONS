@@ -179,12 +179,22 @@ class Reduce(object):
                 return xstat
         else:
             self._logheader(recipe)
-            recipe(p)
+            try:
+                recipe(p)
+            except KeyboardInterrupt:
+                log.error("Caught KeyboardInterrupt (^C) signal")
+                xstat = signal.SIGINT
+            except Exception as err:
+                log.error("runr() caught an unhandled exception.")
+                log.error(str(err))
+                xstat = signal.SIGABRT
 
-        # Write block
-        # Only write files at this point if self.adinputs filenames have changed
-        # from .orig_filename, or if --suffix has been provided.
-
+        self._write_final(p.streams['main'])
+        if xstat != 0:
+            msg = "reduce instance aborted."
+        else:
+            msg = "\nreduce completed successfully."
+        log.stdinfo(str(msg))
         return xstat
 
     # -------------------------------- prive -----------------------------------
@@ -286,7 +296,10 @@ class Reduce(object):
             for local, value in list(cstack[-1][0].f_locals.items()):
                 if local == 'args':
                     try:
-                        assert list(value.__dict__.keys()) == list(red_namespace.__dict__.keys())
+                        assert(
+                            list(value.__dict__.keys()) == 
+                            list(red_namespace.__dict__.keys())
+                        )
                         is_reduce = True
                     except AssertionError:
                         log.stdinfo("A non-reduce command line was detected.")
@@ -304,4 +317,36 @@ class Reduce(object):
         log.status("="*80)
         log.status(logstring)
         log.status("="*80)
+        return
+
+    def _write_final(self, outputs):
+        """
+        Write final outputs. Write only if filename is not == orig_filename, or
+        if there is a user suffix (self.suffix)
+
+        Parameters:
+        -----------
+            outputs: List of AstroData objects
+            type: <list>
+
+        Return:
+        -------
+            type: <void>
+
+        """
+        outstr = "Wrote {} in output directory"
+        def _sname(name):
+            head, tail = os.path.splitext(name)
+            ohead = head.split("_")[0]
+            newname = ohead + self.suffix + tail
+            return newname
+
+        for ad in outputs:
+            if self.suffix:
+                username = _sname(ad.orig_filename)
+                ad.write(username, clobber=True)
+                log.stdinfo(outstr.format(username))
+            elif ad.filename != ad.orig_filename:
+                ad.write(clobber=True)
+                log.stdinfo(outstr.format(ad.filename))
         return
