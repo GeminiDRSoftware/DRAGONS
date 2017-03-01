@@ -307,7 +307,7 @@ def _match_objcat_refcat(ad):
     objcat_order = np.argsort(objcat_lengths)[::-1]
 
     pixscale = ad.pixel_scale()
-    initial = 15.0/pixscale  # Search box size
+    initial = (15.0 if ad.instrument()=='GNIRS' else 5.0)/pixscale  # Search box size
     final = 1.0/pixscale     # Matching radius
 
     initial_transform = models.Shift(0.0) & models.Shift(0.0)
@@ -330,48 +330,60 @@ def _match_objcat_refcat(ad):
 
         # Reduce the search radius if we've previously found a match
         m_init = working_model[1]
-        if working_model[0]:
-            initial = 2.5/pixscale
+        #if working_model[0]:
+        #    initial = 2.5/pixscale
 
         # First: estimate number of reference sources in field
         # Inverse map ref coords->image plane and see how many are in field
         xx, yy = m_init.inverse(xref, yref)
-        num_ref_sources = np.sum(np.all((xx>=0, xx<ad[index].data.shape[1],
-            yy>=0, yy<ad[index].data.shape[0]), axis=0))
+        in_field = np.all((xx>=-initial, xx<ad[index].data.shape[1]+initial,
+            yy>=-initial, yy<ad[index].data.shape[0]+initial), axis=0)
+        num_ref_sources = np.sum(in_field)
 
         # How many objects do we want to try to match? Keep brightest ones only
         if objcat_len > 2*num_ref_sources:
-            keep_num = max(int(1.5*num_ref_sources),
-                           min(10,objcat_len))
+            keep_num = max(int(1.5*num_ref_sources), min(10,objcat_len))
         else:
             keep_num = objcat_len
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
         xin, yin = objcat['X_IMAGE'][sorted_idx], objcat['Y_IMAGE'][sorted_idx]
 
+        log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
+                    format(extver, num_ref_sources, keep_num))
+
+        # This is faster than the brute-force approach for moderate source numbers
         start = datetime.now()
-        xoff, yoff = find_offsets(xin, yin, xref, yref,
-                                  range=(-initial,initial), sigma=10.0)
-        m = models.Shift(xoff) & models.Shift(yoff)
+        #xoff, yoff = find_offsets(xin, yin, xref[in_field], yref[in_field],
+        #                          range=(-initial,initial), sigma=10.0)
+        #m = models.Shift(xoff) & models.Shift(yoff)
+        #log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
+        #                        format((datetime.now()-start).total_seconds())))
 
         # Brute-force grid search using an image landscape
-        #fit_it = BruteLandscapeFitter()
-        #m_init.offset_0.bounds = (m_init.offset_0-initial, m_init.offset_0+initial)
-        #m_init.offset_1.bounds = (m_init.offset_1-initial, m_init.offset_1+initial)
-        ref_coords = (xref, yref)
-        #m = fit_it(m_init, xin, yin, ref_coords, sigma=10.0)
+        fit_it = BruteLandscapeFitter()
+        m_init.offset_0.bounds = (m_init.offset_0-initial, m_init.offset_0+initial)
+        m_init.offset_1.bounds = (m_init.offset_1-initial, m_init.offset_1+initial)
+        ref_coords = (xref[in_field], yref[in_field])
+        m = fit_it(m_init, xin, yin, ref_coords, sigma=10.0)
 
         log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
                                 format((datetime.now()-start).total_seconds())))
 
+        m.offset_0.bounds = (None, None)
+        m.offset_1.bounds = (None, None)
         # More precise minimization using pairwise calculations
         fit_it = LandscapeFitter()
-        m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead', tol=1e-2)
+        # We don't care about how much the function value changes (ftol), only
+        # that the position is robust (xtol)
+        m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead',
+                         options={'xtol': 0.25, 'ftol': 100.0})
         log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
                                 format((datetime.now()-start).total_seconds())))
 
         # Match sources; use the full OBJCAT but give preferential treatment to
         # the objects used in the alignment
         xin, yin = objcat['X_IMAGE'], objcat['Y_IMAGE']
+        ref_coords = (xref, yref)
         matched = match_sources(m_final(xin, yin), ref_coords, radius=final,
                                priority=sorted_idx)
         num_matched = sum(m>0 for m in matched)
@@ -402,7 +414,7 @@ def _show_model(m, intro=""):
 def _calculate_magnitude(formulae, refcat, indx):
     # This is a bit ugly: we want to iterate over formulae so we must
     # nest a single formula into a list
-    if type(formulae[0]) is not list:
+    if not isinstance(formulae[0], list):
         formulae = [formulae]
 
     mags = []

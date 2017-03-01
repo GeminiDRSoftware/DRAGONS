@@ -4,6 +4,7 @@ from astropy.modeling.fitting import (_validate_model,
                                       _model_to_fit_params, Fitter,
                                       _convert_input)
 from scipy import optimize, spatial
+from datetime import datetime
 
 def match_sources(incoords, refcoords, radius=2.0, priority=[]):
     """
@@ -70,7 +71,7 @@ def _landstat(landscape, updated_model, x, y):
                                      and iy<landscape.shape[0]])
     return -sum  # to minimize
 
-def _stat(ref_coords, updated_model, sigma, maxsig, x, y):
+def _stat(tree, updated_model, x, y, sigma, maxsig):
     """
     Compute the statistic for transforming coordinates onto a set of reference
     coordinates. This uses mathematical calulations and is not pixellated like
@@ -78,16 +79,16 @@ def _stat(ref_coords, updated_model, sigma, maxsig, x, y):
 
     Parameters
     ----------
-    ref_coords: 2xN array
-        coordinates of objects in the reference plane
+    tree: KDTree
+        a KDTree made from the reference coordinates
     updated_model: Model
         transformation (input -> reference) being investigated
+    x, y: float arrays
+        input x, y coordinates
     sigma: float
         standard deviation of Gaussian (in pixels) used to represent each source
     maxsig: float
         maximum number of standard deviations of Gaussian extent
-    x, y: float arrays
-        input x, y coordinates
 
     Returns
     -------
@@ -96,13 +97,11 @@ def _stat(ref_coords, updated_model, sigma, maxsig, x, y):
     """
     f = 0.5/(sigma*sigma)
     maxsep = maxsig*sigma
-    sum = 0.0
-    xref, yref = ref_coords
     xt, yt = updated_model(x, y)
-    for x, y in zip(xt, yt):
-        sum += np.sum([np.exp(-f*((x-xr)*(x-xr)+(y-yr)*(y-yr)))
-                       for xr, yr in zip(xref, yref)
-                       if abs(x-xr)<maxsep and abs(y-yr)<maxsep])
+    start = datetime.now()
+    dist, idx = tree.query(zip(xt, yt), k=5, distance_upper_bound=maxsep)
+    sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
+    print (datetime.now()-start).total_seconds(), updated_model.offset_0.value, updated_model.offset_1.value, sum
     return -sum  # to minimize
 
 class LandscapeFitter(Fitter):
@@ -115,14 +114,30 @@ class LandscapeFitter(Fitter):
         super(LandscapeFitter, self).__init__(optimize.minimize,
                                              statistic=_stat)
 
-    def __call__(self, model, x, y, ref_coords, sigma=5.0, maxsig=5.0,
+    def __call__(self, model, x, y, ref_coords, sigma=5.0, maxsig=4.0,
                  **kwargs):
         model_copy = _validate_model(model, ['bounds'])
-        farg = (model_copy, sigma, maxsig) +_convert_input(x, y, ref_coords)
+        tree = spatial.cKDTree(zip(*ref_coords))
+        # avoid _convert_input since tree can't be coerced to a float
+        farg = (model_copy, x, y, sigma, maxsig, tree)
         p0, _ = _model_to_fit_params(model_copy)
+
+        # Starting simplex step size is set to be 5% of parameter values
+        # Need to ensure this is larger than the convergence tolerance
+        # so move the initial values away from zero if necessary
+        try:
+            xtol = kwargs['options']['xtol']
+        except KeyError:
+            pass
+        else:
+            for p in model_copy.param_names:
+                pval = getattr(model_copy, p).value
+                if abs(pval) < xtol / 0.05:
+                    getattr(model_copy, p).value = np.sign(pval) * xtol / 0.049
+
         result = self._opt_method(self.objective_function, p0, farg,
                                   **kwargs)
-        fitted_params = result.x
+        fitted_params = result['x']
         _fitter_to_model_params(model_copy, fitted_params)
         return model_copy
 
@@ -169,7 +184,7 @@ class BruteLandscapeFitter(Fitter):
                 print(my1, my2, mx1, mx2)
         return landscape
 
-    def __call__(self, model, x, y, ref_coords, sigma=5.0, maxsig=5.0,
+    def __call__(self, model, x, y, ref_coords, sigma=5.0, maxsig=4.0,
                  **kwargs):
         model_copy = _validate_model(model, ['bounds'])
         landscape = self.mklandscape(ref_coords, sigma, maxsig,
@@ -178,7 +193,7 @@ class BruteLandscapeFitter(Fitter):
         p0, _ = _model_to_fit_params(model_copy)
 
         # TODO: Use the name of the parameter to infer the step size
-        ranges = [slice(*(model_copy.bounds[p]+(sigma,)))
+        ranges = [slice(*(model_copy.bounds[p]+(min(sigma, 0.1*np.diff(model_copy.bounds[p])[0]),)))
                   for p in model_copy.param_names]
         fitted_params = self._opt_method(self.objective_function,
                                          ranges, farg, finish=None, **kwargs)
