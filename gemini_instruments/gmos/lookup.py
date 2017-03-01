@@ -16,7 +16,7 @@ filter_wavelengths = {
 # Database of GMOS CCD amplifier GAIN and READNOISE properties
 gmosampsGain = {
     # Database of GMOS CCD amplifier GAIN properties
-    # after 207-03-15
+    # after 2017-02-24
     # Columns below are given as:
     # READOUT, GAINSTATE, AMPNAME : GAIN
     # GMOS-N: Hamamatsu CCDs
@@ -126,9 +126,9 @@ gmosampsGain = {
         ("fast", "low",  "BI12-34-4k-1, 4") : 1.549
     }
 
-gmosampsGainBefore20170315 = {
+gmosampsGainBefore20170224 = {
         # Database of GMOS CCD amplifier GAIN properties
-        # after 2015-08-26 and before 2017-03-15
+        # after 2015-08-26 and before 2017-02-24
         # Columns below are given as:
         # READOUT, GAINSTATE, AMPNAME : GAIN
         # GMOS-N:
@@ -452,7 +452,7 @@ gmosampsGainBefore20060831 = {
 
 gmosampsRdnoise = {
     # Database of GMOS CCD amplifier READNOISE properties
-    # after 2017-03-15
+    # after 2017-02-24
     # Columns below are given as:
     # READOUT, GAINSTATE, AMPNAME : READNOISE (in electrons)
     # GMOS-N: Hamamatsu CCDs
@@ -561,9 +561,9 @@ gmosampsRdnoise = {
         ("fast", "low",  "BI12-34-4k-1, 4") : 7.72
     }
 
-gmosampsRdnoiseBefore20170315 = {
+gmosampsRdnoiseBefore20170224 = {
         # Database of GMOS CCD amplifier READNOISE properties
-        # after 2015-08-26 and before 2017-03-15
+        # after 2015-08-26 and before 2017-02-24
         # Columns below are given as:
         # READOUT, GAINSTATE, AMPNAME : READNOISE (in electrons)
         # GMOS-N:
@@ -885,7 +885,7 @@ gmosampsRdnoiseBefore20060831 = {
 
 gmosampsBias = {
     # Database of GMOS CCD amplifier BIAS properties
-    # after 2017-03-15
+    # after 2017-02-24
     # Columns below are given as:
     # READOUT, GAINSTATE, AMPNAME : BIAS
     # GMOS-N: Hamamatsu CCDs
@@ -995,9 +995,9 @@ gmosampsBias = {
         ("fast", "low",  "BI12-34-4k-1, 4") : 893.
     }
 
-gmosampsBiasBefore20170315 = {
+gmosampsBiasBefore20170224 = {
         # Database of GMOS CCD amplifier BIAS properties
-        # after 2015-08-26 and before 20170315
+        # after 2015-08-26 and before 2017-02-24
         #  (This is when the new GMOS-N Hamamatsu CCDs were installed.
         # Columns below are given as:
         # READOUT, GAINSTATE, AMPNAME : BIAS
@@ -1506,13 +1506,13 @@ gmosRoiSettings = {
     "Full Frame" : [
         # EEV / e2vDD CCDs
         (1, 6144, 1, 4608),
-        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?
+        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?  Looks okay.
         (1, 6144, 1, 4224)
         ],
     "CCD2" :[
         # EEV / e2vDD CCDs
         (2049, 4096, 1, 4608),
-        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?
+        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?  Looks okay.
         (2049, 4096, 1, 4224)
     ],
     "Central Spectrum" : [
@@ -1525,7 +1525,7 @@ gmosRoiSettings = {
     "Central Stamp" : [
         # EEV and e2vDD CCDs
         (2923, 3222, 2155, 2454),
-        # GMOS-S Hamamatsu CCDs  !!KL!! and GMOS-N?
+        # GMOS-S Hamamatsu CCDs  !!KL!! and GMOS-N?  Looks okay.
         (2923, 3222, 1987, 2286)
     ]
 }
