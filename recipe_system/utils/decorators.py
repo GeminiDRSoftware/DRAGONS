@@ -82,7 +82,6 @@ def userpar_override(pname, args, upars):
 
 def set_logging(pname):
    global LOGINDENT
-   stat_msg = "PRIMITVE: {}".format(pname)
    LOGINDENT += 1
    logutils.update_indent(LOGINDENT)
    stat_msg = "PRIMITVE: {}".format(pname)
