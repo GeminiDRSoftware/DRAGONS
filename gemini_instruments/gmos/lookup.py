@@ -1485,9 +1485,9 @@ gmosPixelScales = {
     # EEV CCDs
     ("GMOS-N", "SDSU II CCD") : 0.0727,
     # e2v CCDs
-    ("GMOS-N", "SDSU II e2v DD CCD42-90") : 0.0727,
+    ("GMOS-N", "SDSU II e2v DD CCD42-90") : 0.07288,
     # Hamamatsu CCDs
-    ("GMOS-N", "S10892-N") : 0.0727,
+    ("GMOS-N", "S10892-N") : 0.0807,
 
     # GMOS-S:
     # EEV CCDs
