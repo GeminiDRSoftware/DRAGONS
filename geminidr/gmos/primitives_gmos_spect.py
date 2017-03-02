@@ -90,7 +90,7 @@ class GMOSSpect(GMOS, Spect):
             ratios = np.array([1.*a/b for a in range(1,6) for b in range(1,6)])
             # Here we have to account for the EEV->Hamamatsu change
             # (I've future-proofed this for the same event on GMOS-N)
-            ratios = np.append(ratios,[ratios*0.73/0.8,ratios*0.727/0.8])
+            ratios = np.append(ratios,[ratios*0.73/0.8,ratios*0.727/0.807])
             nearest_ratio = ratios[np.argmin(abs(mdf_pix_scale /
                                                  image_pix_scale - ratios))]
             # -1 because python is zero-indexed (see +1 later)
