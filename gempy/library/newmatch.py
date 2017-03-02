@@ -65,10 +65,10 @@ def _landstat(landscape, updated_model, x, y):
         statistic representing quality of fit to be minimized
     """
     xt, yt = updated_model(x, y)
-    sum = np.sum([landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
-                                                    (yt-0.5).astype(int))
+    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
+                                                   (yt-0.5).astype(int))
                   if ix>=0 and iy>=0 and ix<landscape.shape[1]
-                                     and iy<landscape.shape[0]])
+                                     and iy<landscape.shape[0])
     return -sum  # to minimize
 
 def _stat(tree, updated_model, x, y, sigma, maxsig):
@@ -98,29 +98,25 @@ def _stat(tree, updated_model, x, y, sigma, maxsig):
     f = 0.5/(sigma*sigma)
     maxsep = maxsig*sigma
     xt, yt = updated_model(x, y)
-    start = datetime.now()
+    #start = datetime.now()
     dist, idx = tree.query(zip(xt, yt), k=5, distance_upper_bound=maxsep)
     sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
-    print (datetime.now()-start).total_seconds(), updated_model.offset_0.value, updated_model.offset_1.value, sum
+    #print (datetime.now()-start).total_seconds(), updated_model.offset_0.value, updated_model.offset_1.value, sum
     return -sum  # to minimize
 
-class LandscapeFitter(Fitter):
+class KDTreeFitter(Fitter):
     """
     Fitter class that uses minimization (the method can be passed as a
     parameter to the instance) to determine the transformation to map a set
     of input coordinates to a set of reference coordinates.
     """
     def __init__(self):
-        super(LandscapeFitter, self).__init__(optimize.minimize,
+        super(KDTreeFitter, self).__init__(optimize.minimize,
                                              statistic=_stat)
 
     def __call__(self, model, x, y, ref_coords, sigma=5.0, maxsig=4.0,
                  **kwargs):
         model_copy = _validate_model(model, ['bounds'])
-        tree = spatial.cKDTree(zip(*ref_coords))
-        # avoid _convert_input since tree can't be coerced to a float
-        farg = (model_copy, x, y, sigma, maxsig, tree)
-        p0, _ = _model_to_fit_params(model_copy)
 
         # Starting simplex step size is set to be 5% of parameter values
         # Need to ensure this is larger than the convergence tolerance
@@ -134,6 +130,11 @@ class LandscapeFitter(Fitter):
                 pval = getattr(model_copy, p).value
                 if abs(pval) < xtol / 0.05:
                     getattr(model_copy, p).value = np.sign(pval) * xtol / 0.049
+
+        tree = spatial.cKDTree(zip(*ref_coords))
+        # avoid _convert_input since tree can't be coerced to a float
+        farg = (model_copy, x, y, sigma, maxsig, tree)
+        p0, _ = _model_to_fit_params(model_copy)
 
         result = self._opt_method(self.objective_function, p0, farg,
                                   **kwargs)
@@ -195,6 +196,7 @@ class BruteLandscapeFitter(Fitter):
         # TODO: Use the name of the parameter to infer the step size
         ranges = [slice(*(model_copy.bounds[p]+(min(sigma, 0.1*np.diff(model_copy.bounds[p])[0]),)))
                   for p in model_copy.param_names]
+
         fitted_params = self._opt_method(self.objective_function,
                                          ranges, farg, finish=None, **kwargs)
         _fitter_to_model_params(model_copy, fitted_params)

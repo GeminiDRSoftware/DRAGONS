@@ -18,7 +18,7 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
 
-from gempy.library.newmatch import BruteLandscapeFitter, LandscapeFitter, match_sources, find_offsets
+from gempy.library.newmatch import BruteLandscapeFitter, KDTreeFitter, match_sources, find_offsets
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -372,11 +372,11 @@ def _match_objcat_refcat(ad):
         m.offset_0.bounds = (None, None)
         m.offset_1.bounds = (None, None)
         # More precise minimization using pairwise calculations
-        fit_it = LandscapeFitter()
+        fit_it = KDTreeFitter()
         # We don't care about how much the function value changes (ftol), only
         # that the position is robust (xtol)
         m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead',
-                         options={'xtol': 0.25, 'ftol': 100.0})
+                         options={'xtol': 0.2, 'ftol': 100.0})
         log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
                                 format((datetime.now()-start).total_seconds())))
 
