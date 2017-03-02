@@ -6,6 +6,8 @@ from astropy.modeling.fitting import (_validate_model,
 from scipy import optimize, spatial
 from datetime import datetime
 
+from ..utils import logutils
+
 def match_sources(incoords, refcoords, radius=2.0, priority=[]):
     """
     Match two sets of sources that are on the same reference frame. In general
@@ -201,6 +203,71 @@ class BruteLandscapeFitter(Fitter):
                                          ranges, farg, finish=None, **kwargs)
         _fitter_to_model_params(model_copy, fitted_params)
         return model_copy
+
+def find_mapping(model, xin, yin, xref, yref, initial=50.0, sigma=10.0,
+                 tolerance=0.2, verbose=True):
+    """
+    Determine the transformation needed to match an input catalogue to a
+    reference catalogue, via a two-step process. First, a brute-force grid
+    search is performed, and then a simplex minimization.
+
+    Parameters
+    ----------
+    model: Model
+        initial guess of the transformation
+    xin, yin: arrays of floats
+        input coordinates
+    xref, yref: arrays of floats
+        reference coordinates
+    initial: float
+        half-width of search box for a translation (in units of source coords)
+    sigma: float
+        "radius of influence" for each reference source
+    tolerance: float
+        absolute accuracy required for solution
+
+    Returns
+    -------
+    Model: a new mapping transformation
+    """
+    log = logutils.get_logger(__name__)
+    start = datetime.now()
+    #xoff, yoff = find_offsets(xin, yin, xref[in_field], yref[in_field],
+    #                          range=(-initial,initial), sigma=10.0)
+    #m = models.Shift(xoff) & models.Shift(yoff)
+    #log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
+    #                        format((datetime.now()-start).total_seconds())))
+
+    # Brute-force grid search using an image landscape
+    fit_it = BruteLandscapeFitter()
+    model.offset_0.bounds = (model.offset_0-initial, model.offset_0+initial)
+    model.offset_1.bounds = (model.offset_1-initial, model.offset_1+initial)
+    ref_coords = (xref, yref)
+    m = fit_it(model, xin, yin, ref_coords, sigma=sigma)
+
+    if verbose:
+        log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
+                            format((datetime.now()-start).total_seconds())))
+
+    m.offset_0.bounds = (None, None)
+    m.offset_1.bounds = (None, None)
+    # More precise minimization using pairwise calculations
+    fit_it = KDTreeFitter()
+    # We don't care about how much the function value changes (ftol), only
+    # that the position is robust (xtol)
+    m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead',
+                     options={'xtol': tolerance, 'ftol': 100.0})
+
+    if verbose:
+        log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
+                            format((datetime.now()-start).total_seconds())))
+    return m_final
+
+def _show_model(m, intro=""):
+    model_str = "{}\n".format(intro) if intro else ""
+    for name, value in zip(m.param_names, m.parameters):
+        model_str += "{}: {}\n".format(name, value)
+    return model_str
 
 def find_offsets(xin, yin, xref, yref, range=(-300,300), subpix=1,
                  sigma=10.0, maxsig=4.0):

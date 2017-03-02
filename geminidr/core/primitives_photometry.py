@@ -18,7 +18,7 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
 
-from gempy.library.newmatch import BruteLandscapeFitter, KDTreeFitter, match_sources, find_offsets
+from gempy.library.newmatch import find_mapping, match_sources
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -336,8 +336,11 @@ def _match_objcat_refcat(ad):
         # First: estimate number of reference sources in field
         # Inverse map ref coords->image plane and see how many are in field
         xx, yy = m_init.inverse(xref, yref)
-        in_field = np.all((xx>=-initial, xx<ad[index].data.shape[1]+initial,
-            yy>=-initial, yy<ad[index].data.shape[0]+initial), axis=0)
+        x1, y1 = 0, 0
+        y2, x2 = ad[index].data.shape
+        # Could tweak y1, y2 here for GNIRS
+        in_field = np.all((xx>x1-initial, xx<x2+initial, yy>y1-initial,
+                           yy<y2+initial), axis=0)
         num_ref_sources = np.sum(in_field)
 
         # How many objects do we want to try to match? Keep brightest ones only
@@ -351,34 +354,8 @@ def _match_objcat_refcat(ad):
         log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
                     format(extver, num_ref_sources, keep_num))
 
-        # This is faster than the brute-force approach for moderate source numbers
-        start = datetime.now()
-        #xoff, yoff = find_offsets(xin, yin, xref[in_field], yref[in_field],
-        #                          range=(-initial,initial), sigma=10.0)
-        #m = models.Shift(xoff) & models.Shift(yoff)
-        #log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
-        #                        format((datetime.now()-start).total_seconds())))
-
-        # Brute-force grid search using an image landscape
-        fit_it = BruteLandscapeFitter()
-        m_init.offset_0.bounds = (m_init.offset_0-initial, m_init.offset_0+initial)
-        m_init.offset_1.bounds = (m_init.offset_1-initial, m_init.offset_1+initial)
-        ref_coords = (xref[in_field], yref[in_field])
-        m = fit_it(m_init, xin, yin, ref_coords, sigma=10.0)
-
-        log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
-                                format((datetime.now()-start).total_seconds())))
-
-        m.offset_0.bounds = (None, None)
-        m.offset_1.bounds = (None, None)
-        # More precise minimization using pairwise calculations
-        fit_it = KDTreeFitter()
-        # We don't care about how much the function value changes (ftol), only
-        # that the position is robust (xtol)
-        m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead',
-                         options={'xtol': 0.2, 'ftol': 100.0})
-        log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
-                                format((datetime.now()-start).total_seconds())))
+        m_final = find_mapping(m_init, xin, yin, xref[in_field], yref[in_field],
+                                 initial=initial)
 
         # Match sources; use the full OBJCAT but give preferential treatment to
         # the objects used in the alignment
@@ -404,12 +381,6 @@ def _match_objcat_refcat(ad):
                     objcat['REF_MAG'][i] = mag
                     objcat['REF_MAG_ERR'][i] = mag_err
     return ad
-
-def _show_model(m, intro=""):
-    model_str = "\n{}\n".format(intro) if intro else "\n"
-    for name, value in zip(m.param_names, m.parameters):
-        model_str += "{}: {}\n".format(name, value)
-    return model_str
 
 def _calculate_magnitude(formulae, refcat, indx):
     # This is a bit ugly: we want to iterate over formulae so we must
