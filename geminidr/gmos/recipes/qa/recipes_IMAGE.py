@@ -42,6 +42,7 @@ def reduce(p):
     p.measureIQ(display=True)
     p.measureBG()
     p.measureCCAndAstrometry(correct_wcs=True)
+    p.writeOutputs()
     return
 
 
@@ -77,11 +78,12 @@ def reduce_nostack(p):
     p.measureBG()
     p.measureCCAndAstrometry()
     p.addToList(purpose='forStack')
+    p.writeOutputs()
     return
 
 # we have to use the nostack version for qap because stacking is too slow.
 # KL: is this still true with gemini_python 2.0?
-# KRA: unknown yet. 
+# KRA: unknown yet.
 default = reduce_nostack
 
 def stack(p):
@@ -105,6 +107,7 @@ def stack(p):
     p.measureIQ(display=True)
     p.measureBG()
     p.measureCCAndAstrometry(correct_wcs=True)
+    p.writeOutputs()
     return
 
 def makeProcessedFringe(p):
@@ -136,4 +139,5 @@ def makeProcessedFringe(p):
     p.getList(purpose="forFringe")
     p.makeFringeFrame()
     p.storeProcessedFringe()
+    p.writeOutputs()
     return
