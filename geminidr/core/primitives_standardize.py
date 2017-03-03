@@ -640,7 +640,7 @@ def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
             poisson_array = (ext.data if ext.is_coadds_summed() else
                              ext.data / ext.coadds())
             if bunit.upper() == 'ADU':
-                poisson_array /= gain
+                poisson_array = poisson_array / gain
             log.fullinfo('Calculating the Poisson noise component of '
                          'the variance in {}'.format(bunit))
             var_array += np.where(poisson_array > 0, poisson_array, 0)
