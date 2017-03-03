@@ -373,11 +373,14 @@ def _match_objcat_refcat(ad, context='qa'):
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
         xin, yin = objcat['X_IMAGE'][sorted_idx], objcat['Y_IMAGE'][sorted_idx]
 
-        log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
-                    format(extver, num_ref_sources, keep_num))
-
-        m_final = find_mapping(m_init, xin, yin, xref[in_field], yref[in_field],
-                                 initial=initial)
+        if num_ref_sources > 0:
+            log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
+                        format(extver, num_ref_sources, keep_num))
+            m_final = find_mapping(m_init, xin, yin, xref[in_field], yref[in_field],
+                                   initial=initial)
+        else:
+            log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
+            continue
 
         # Match sources; use the full OBJCAT but give preferential treatment to
         # the objects used in the alignment
