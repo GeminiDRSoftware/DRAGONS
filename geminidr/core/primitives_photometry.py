@@ -112,7 +112,7 @@ class Photometry(PrimitivesBASE):
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
                 if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                    ad = _match_objcat_refcat(ad)
+                    ad = _match_objcat_refcat(ad, self.context)
                 else:
                     log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
 
@@ -258,7 +258,7 @@ class Photometry(PrimitivesBASE):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-def _match_objcat_refcat(ad):
+def _match_objcat_refcat(ad, context='qa'):
     """
     Match the sources in the objcats against those in the corresponding
     refcat. Update the refid column in the objcat with the Id of the 
@@ -309,6 +309,7 @@ def _match_objcat_refcat(ad):
     pixscale = ad.pixel_scale()
     initial = (15.0 if ad.instrument()=='GNIRS' else 5.0)/pixscale  # Search box size
     final = 1.0/pixscale     # Matching radius
+    max_ref_sources = 100 if 'qa' in context else None  # Don't need more than this many
 
     initial_transform = models.Shift(0.0) & models.Shift(0.0)
     working_model = (0, initial_transform)
@@ -330,8 +331,8 @@ def _match_objcat_refcat(ad):
 
         # Reduce the search radius if we've previously found a match
         m_init = working_model[1]
-        #if working_model[0]:
-        #    initial = 2.5/pixscale
+        if working_model[0]:
+            initial = 2.5/pixscale
 
         # First: estimate number of reference sources in field
         # Inverse map ref coords->image plane and see how many are in field
@@ -343,9 +344,30 @@ def _match_objcat_refcat(ad):
                            yy<y2+initial), axis=0)
         num_ref_sources = np.sum(in_field)
 
+        # We probably don't need zillions of REFCAT sources
+        if max_ref_sources and num_ref_sources > max_ref_sources:
+            # imag and kmag are typically the deepest catalogues
+            if 'imag' in refcat.colnames:
+                magcol = 'imag'
+            elif 'kmag' in refcat.colnames:
+                magcol = 'kmag'
+            else:
+                try:
+                    magcol = [c for c in refcat.colnames if 'mag' in c.lower()
+                              and not 'err' in c.lower()][0]
+                except:
+                    magcol = None
+                    log.stdinfo('Cannot find a magnitude column to cull REFCAT')
+            if magcol:
+                sorted_args = np.argsort(refcat[magcol])
+                in_field = sorted_args[in_field[sorted_args]][:max_ref_sources]
+                log.stdinfo('Culling REFCAT based on {} for speed'.format(magcol))
+                # in_field is now a list of indices, not a boolean array
+                num_ref_sources = len(in_field)
+
         # How many objects do we want to try to match? Keep brightest ones only
         if objcat_len > 2*num_ref_sources:
-            keep_num = max(int(1.5*num_ref_sources), min(10,objcat_len))
+            keep_num = max(int(2.0*num_ref_sources), min(10,objcat_len))
         else:
             keep_num = objcat_len
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
