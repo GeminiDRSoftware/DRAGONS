@@ -27,6 +27,7 @@ def reduce(p):
     p.makeFringe()
     p.fringeCorrect()
     p.alignAndStack()
+    p.writeOutputs()
     return
 
 default = reduce

@@ -40,6 +40,7 @@ def reduce(p):
     p.detectSources()
     p.measureIQ(display=True)
     p.measureCCAndAstrometry()
+    p.writeOutputs()
     return
 
 
@@ -74,6 +75,7 @@ def reduce_nostack(p):
     p.detectSources()
     p.measureIQ(display=True)
     p.measureCCAndAstrometry()
+    p.writeOutputs()
     return
 
 # The nostack version is used because stacking was too slow for QAP.

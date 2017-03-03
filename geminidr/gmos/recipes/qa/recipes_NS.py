@@ -28,6 +28,7 @@ def reduce(p):
     p.findAcquisitionSlits()
     p.skyCorrectNodAndShuffle()
     p.measureIQ(display=True)
+    p.writeOutputs()
     return
 
 default = reduce
