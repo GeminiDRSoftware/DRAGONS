@@ -100,10 +100,10 @@ def _stat(tree, updated_model, x, y, sigma, maxsig):
     f = 0.5/(sigma*sigma)
     maxsep = maxsig*sigma
     xt, yt = updated_model(x, y)
-    #start = datetime.now()
+    start = datetime.now()
     dist, idx = tree.query(zip(xt, yt), k=5, distance_upper_bound=maxsep)
     sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
-    #print (datetime.now()-start).total_seconds(), updated_model.offset_0.value, updated_model.offset_1.value, sum
+    #print (datetime.now()-start).total_seconds(), updated_model.parameters, sum
     return -sum  # to minimize
 
 class KDTreeFitter(Fitter):
@@ -130,7 +130,7 @@ class KDTreeFitter(Fitter):
         else:
             for p in model_copy.param_names:
                 pval = getattr(model_copy, p).value
-                if abs(pval) < xtol / 0.05:
+                if abs(pval) < xtol / 0.05 and 'offset' in p:
                     getattr(model_copy, p).value = np.sign(pval) * xtol / 0.049
 
         tree = spatial.cKDTree(zip(*ref_coords))
@@ -155,6 +155,26 @@ class BruteLandscapeFitter(Fitter):
                                               statistic=_landstat)
 
     def mklandscape(self, coords, sigma, maxsig, landshape):
+        """
+        Populates an array with Gaussian mountains at specified coordinates.
+        Used to allow rapid goodness-of-fit calculations for cross-correlation.
+
+        Parameters
+        ----------
+        coords: 2xN float array
+            coordinates of sources
+        sigma: float
+            standard deviation of Gaussian in pixels
+        maxsig: float
+            extent (in standard deviations) of each Gaussian
+        landshape: 2-tuple
+            shape of array
+
+        Returns
+        -------
+        float array:
+            the "landscape", populated by "mountains"
+        """
         landscape = np.zeros(landshape)
         lysize, lxsize = landscape.shape
         hw = int(maxsig * sigma)
@@ -240,8 +260,13 @@ def find_mapping(model, xin, yin, xref, yref, initial=50.0, sigma=10.0,
 
     # Brute-force grid search using an image landscape
     fit_it = BruteLandscapeFitter()
-    model.offset_0.bounds = (model.offset_0-initial, model.offset_0+initial)
-    model.offset_1.bounds = (model.offset_1-initial, model.offset_1+initial)
+    for p in model.param_names:
+        pval = getattr(model, p).value
+        if 'offset' in p:
+            getattr(model, p).bounds = (pval-initial, pval+initial)
+        elif 'factor' in p:
+            getattr(model, p).bounds = (pval*0.95, pval*1.05)
+
     ref_coords = (xref, yref)
     m = fit_it(model, xin, yin, ref_coords, sigma=sigma)
 
@@ -249,8 +274,8 @@ def find_mapping(model, xin, yin, xref, yref, initial=50.0, sigma=10.0,
         log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
                             format((datetime.now()-start).total_seconds())))
 
-    m.offset_0.bounds = (None, None)
-    m.offset_1.bounds = (None, None)
+    for p in m.param_names:
+        getattr(m, p).bounds = (None, None)
     # More precise minimization using pairwise calculations
     fit_it = KDTreeFitter()
     # We don't care about how much the function value changes (ftol), only

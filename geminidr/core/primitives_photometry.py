@@ -6,7 +6,7 @@
 import numpy as np
 from astropy.wcs import WCS
 from astropy.stats import sigma_clip
-from astropy.modeling import models
+from astropy.modeling import models, FittableModel, Parameter
 from datetime import datetime
 
 from gempy.gemini import gemini_tools as gt
@@ -107,7 +107,7 @@ class Photometry(PrimitivesBASE):
             else:
                 log.stdinfo("Found {} reference catalog sources for {}".
                             format(len(refcat), ad.filename))
-                ad.REFCAT = refcat
+                #ad.REFCAT = refcat
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
@@ -258,6 +258,18 @@ class Photometry(PrimitivesBASE):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
+class Scale2D(FittableModel):
+    """2D scaling"""
+    inputs = ('x', 'y')
+    outputs = ('x', 'y')
+    factor = Parameter()
+    @property
+    def inverse(self):
+        return self.__class__(factor = 1.0/self.factor)
+    @staticmethod
+    def evaluate(x, y, factor):
+        return x*factor, y*factor
+
 def _match_objcat_refcat(ad, context='qa'):
     """
     Match the sources in the objcats against those in the corresponding
@@ -311,7 +323,7 @@ def _match_objcat_refcat(ad, context='qa'):
     final = 1.0/pixscale     # Matching radius
     max_ref_sources = 100 if 'qa' in context else None  # Don't need more than this many
 
-    initial_transform = models.Shift(0.0) & models.Shift(0.0)
+    initial_transform = Scale2D(1.0) | (models.Shift(0.0) & models.Shift(0.0))
     working_model = (0, initial_transform)
 
     for index in objcat_order:
@@ -354,7 +366,8 @@ def _match_objcat_refcat(ad, context='qa'):
             else:
                 try:
                     magcol = [c for c in refcat.colnames if 'mag' in c.lower()
-                              and not 'err' in c.lower()][0]
+                              and not 'image' in c.lower()  # "mag" in "image"!
+                              and not 'err' in c .lower()][0]
                 except:
                     magcol = None
                     log.stdinfo('Cannot find a magnitude column to cull REFCAT')
@@ -367,7 +380,7 @@ def _match_objcat_refcat(ad, context='qa'):
 
         # How many objects do we want to try to match? Keep brightest ones only
         if objcat_len > 2*num_ref_sources:
-            keep_num = max(int(2.0*num_ref_sources), min(10,objcat_len))
+            keep_num = max(2*num_ref_sources, min(10,objcat_len))
         else:
             keep_num = objcat_len
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
@@ -377,7 +390,7 @@ def _match_objcat_refcat(ad, context='qa'):
             log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
                         format(extver, num_ref_sources, keep_num))
             m_final = find_mapping(m_init, xin, yin, xref[in_field], yref[in_field],
-                                   initial=initial)
+                                   initial=initial, tolerance=0.2)
         else:
             log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
             continue
