@@ -865,6 +865,10 @@ class AstroDataGmos(AstroDataGemini):
 
         # Get estimated bias levels from LUT
         bias_levels = get_bias_level(self, estimate=True)
+        if bias_levels is None:
+            bias_levels = [0.0] * len(self)
+        else:
+            bias_levels = [b if b is not None else 0 for b in bias_levels]
 
         adc_limit = 65535
         # Get the limit that could be processed without hitting the ADC limit

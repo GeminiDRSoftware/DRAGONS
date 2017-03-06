@@ -110,9 +110,10 @@ class QA(PrimitivesBASE):
                     log.fullinfo("EXTVER {}: Raw BG level = {:.3f}".
                                  format(extver, bg_count.value))
                     if bias_level is not None:
-                        bg_count = _arith(bg_count, 'sub', bias_level[i])
-                        log.fullinfo("          Bias-subtracted BG level = "
-                                     "{:.3f}".format(bg_count.value))
+                        if bias_level[i] is not None:
+                            bg_count = _arith(bg_count, 'sub', bias_level[i])
+                            log.fullinfo("          Bias-subtracted BG level "
+                                     "= {:.3f}".format(bg_count.value))
 
                 # Put Measurement into the list in place of 3 values
                 bg_list[i] = bg_count
