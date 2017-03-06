@@ -15,6 +15,7 @@ import gemini_instruments
 from gempy.gemini import eti
 from gempy.gemini import gemini_tools as gt
 #from gempy.scripts.gmoss_fix_headers import correct_headers
+from gempy.gemini import hdr_fixing as hdrfix
 
 from geminidr.core import CCD
 from ..gemini.primitives_gemini import Gemini
@@ -172,20 +173,33 @@ class GMOS(Gemini, CCD):
 
             ##M Some of the header keywords are wrong for certain types of
             ##M Hamamatsu data. This is temporary fix until GMOS-S DC is fixed
-            if ad.detector_name(pretty=True) == "Hamamatsu-S":
-                log.status("Fixing headers for GMOS-S Hamamatsu data")
-                # Image extension headers appear to be correct - MS 2014-10-01
-                #     correct_image_extensions=Flase
-                # As does the DATE-OBS but as this seemed to break even after
-                # apparently being fixed, still perform this check. - MS
+#             if ad.detector_name(pretty=True) == "Hamamatsu-S":
+#                 log.status("Fixing headers for GMOS-S Hamamatsu data")
+#                 # Image extension headers appear to be correct - MS 2014-10-01
+#                 #     correct_image_extensions=Flase
+#                 # As does the DATE-OBS but as this seemed to break even after
+#                 # apparently being fixed, still perform this check. - MS
+#                 hdulist = ad.to_hdulist()
+# #                correct_headers(hdulist, logger=log,
+# #                                correct_image_extensions=False)
+#                 # When we create the new AD object, it needs to retain the
+#                 # filename information
+#                 orig_path = ad.path
+#                 ad = astrodata.open(hdulist)
+#                 ad.path = orig_path
+
+            # KL Commissioning GMOS-N Hamamatsu.  Headers are not fully
+            # KL settled yet.
+            if ad.detector_name(pretty=True) == "Hamamatsu-N":
+                log.status("Fixing headers for GMOS-N Hamamatsu data")
                 hdulist = ad.to_hdulist()
-#                correct_headers(hdulist, logger=log,
-#                                correct_image_extensions=False)
-                # When we create the new AD object, it needs to retain the
+                updated = hdrfix.gmosn_ham_fixes(hdulist, verbose=False)
+                # When we create a new AD object, it needs to retain the
                 # filename information
-                orig_path = ad.path
-                ad = astrodata.open(hdulist)
-                ad.path = orig_path
+                if updated:
+                    orig_path = ad.path
+                    ad = astrodata.open(hdulist)
+                    ad.path = orig_path
 
             # Update keywords in the image extensions. The descriptors return
             # the true values on unprepared data.
