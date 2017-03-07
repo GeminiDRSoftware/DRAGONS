@@ -223,7 +223,9 @@ class GMOS(Gemini, CCD):
             bias_level = get_bias_level(adinput=ad,
                                         estimate='qa' in self.context)
             for ext, bias in zip(ad, bias_level):
-                ext.hdr.set('RAWBIAS', bias, self.keyword_comments['RAWBIAS'])
+                if bias is not None:
+                    ext.hdr.set('RAWBIAS', bias,
+                                self.keyword_comments['RAWBIAS'])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
