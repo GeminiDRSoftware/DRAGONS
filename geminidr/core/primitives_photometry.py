@@ -16,7 +16,7 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
 
-from gempy.library.newmatch import align_catalogs, match_sources
+from gempy.library.newmatch import match_catalogs
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -326,10 +326,16 @@ def _match_objcat_refcat(ad, context='qa'):
         xref, yref = wcs.all_world2pix(refcat['RAJ2000'],
                                        refcat['DEJ2000'], 1)
 
-        # Reduce the search radius if we've previously found a match
+        # Reduce the search space if we've previously found a match
+        # TODO: This code is more generic than it needs to be now (the model
+        # only has unfixed offsets) but less generic than it will need to be
+        # if a rotation or magnification is added)
         m_init = working_model[1]
-        if working_model[0]:
-            initial = 2.5/pixscale
+        if m_init:
+            initial = 2.5 / pixscale
+            for param in [getattr(m_init, p) for p in m_init.param_names]:
+                if not param.fixed:
+                    param.bounds = (param.value-initial, param.value+initial)
 
         # First: estimate number of reference sources in field
         # Inverse map ref coords->image plane and see how many are in field
@@ -369,29 +375,23 @@ def _match_objcat_refcat(ad, context='qa'):
         else:
             keep_num = objcat_len
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
-        xin, yin = objcat['X_IMAGE'][sorted_idx], objcat['Y_IMAGE'][sorted_idx]
 
         if num_ref_sources > 0:
             log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
                         format(extver, num_ref_sources, keep_num))
-            m_final = align_catalogs(xin, yin, xref[in_field], yref[in_field],
-                                     model_guess = working_model[1],
-                                   translation_range=50, magnification_range=0.01,
-                                     tolerance=0.1)
+            matched, m_final = match_catalogs(objcat['X_IMAGE'], objcat['Y_IMAGE'],
+                                xref, yref, use_in=sorted_idx, use_ref=in_field,
+                                model_guess=working_model[1], translation_range=initial,
+                                tolerance=0.1, match_radius=final)
         else:
             log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
             continue
 
-        # Match sources; use the full OBJCAT but give preferential treatment to
-        # the objects used in the alignment
-        xin, yin = objcat['X_IMAGE'], objcat['Y_IMAGE']
-        ref_coords = (xref, yref)
-        matched = match_sources(m_final(xin, yin), ref_coords, radius=final,
-                               priority=sorted_idx)
         num_matched = sum(m>0 for m in matched)
         log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
                     format(num_matched, extver))
         # If this is a "better" match, save it
+        # TODO? Some sort of averaging of models?
         if num_matched > max(working_model[0], 2):
             working_model = (num_matched, m_final)
 

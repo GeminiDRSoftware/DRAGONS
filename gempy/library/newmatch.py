@@ -74,44 +74,6 @@ class Rotate2D(FittableModel):
         x.shape = y.shape = orig_shape
         return x, y
 
-def match_sources(incoords, refcoords, radius=2.0, priority=[]):
-    """
-    Match two sets of sources that are on the same reference frame. In general
-    the closest match will be used, but there can be a priority list that will
-    take precedence.
-
-    Parameters
-    ----------
-    incoords: 2xN array
-        input source coords (transformed to reference frame)
-    refcoords: 2xM array
-        reference source coords
-    radius:
-        maximum separation for a match
-    priority: list of ints
-        items in incoords that should have priority, even if a closer
-        match is found
-
-    Returns
-    -------
-    int array of length N:
-        index of matched sources in the reference list (-1 means no match)
-    """
-    matched = np.full((len(incoords[0]),), -1, dtype=int)
-    tree = spatial.cKDTree(zip(*refcoords))
-    dist, idx = tree.query(zip(*incoords), distance_upper_bound=radius)
-    for i in range(len(refcoords[0])):
-        inidx = np.where(idx==i)[0][np.argsort(dist[np.where(idx==i)])]
-        for ii in inidx:
-            if ii in priority:
-                matched[ii] = i
-                break
-        else:
-            # No first_allowed so take the first one
-            if len(inidx):
-                matched[inidx[0]] = i
-    return matched
-
 def _landstat(landscape, updated_model, x, y):
     """
     Compute the statistic for transforming coordinates onto an existing
@@ -196,8 +158,9 @@ class KDTreeFitter(Fitter):
         else:
             for p in model_copy.param_names:
                 pval = getattr(model_copy, p).value
-                if abs(pval) < xtol / 0.05 and 'offset' in p:
-                    getattr(model_copy, p).value = np.sign(pval) * xtol / 0.049
+                if abs(pval) < 20*xtol and 'offset' in p:
+                    getattr(model_copy, p).value = 20*xtol if pval == 0 \
+                        else (np.sign(pval) * 20*xtol)
 
         tree = spatial.cKDTree(zip(*ref_coords))
         # avoid _convert_input since tree can't be coerced to a float
@@ -322,8 +285,8 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
     Model: the best-fitting mapping from xin -> xout
     """
     log = logutils.get_logger(__name__)
-
     start = datetime.now()
+
     # Since optimize.brute can't handle "fixed" parameters, we have to unfix
     # them and control things by setting the bounds to a zero-width interval
     for p in model.param_names:
@@ -453,17 +416,18 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
         initial model guess (overrides the next parameters)
     translation: 2-tuple of floats
         initial translation guess
-    translation_range: value, 2-tuple or 2x2-tuple
+    translation_range: None, value, 2-tuple or 2x2-tuple
+        None => fixed
         value => search range from initial guess (same for x and y)
         2-tuple => search limits (same for x and y)
         2x2-tuple => search limits for x and y
     rotation: float
         initial rotation guess (degrees)
-    rotation_range: float or 2-tuple
+    rotation_range: None, float, or 2-tuple
         extent of search space for rotation
     magnification: float
         initial magnification factor
-    magnification_range: float or 2-tuple
+    magnification_range: None, float, or 2-tuple
         extent of search space for magnification
     tolerance: float
         accuracy required for final result
@@ -495,7 +459,7 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
             elif r1 is not None:
                 return value, (value-r1, value+r1)
             else:
-                return None, None
+                return value, None
         elif r1 is not None:
             if r2 is None:
                 return 0.0, (-r1, r1)
@@ -523,16 +487,22 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
         else:
             xvalue, xrange = _get_value_and_range(xoff, translation_range)
             yvalue, yrange = _get_value_and_range(yoff, translation_range)
-        if xvalue is None or xrange is None or yvalue is None or yrange is None:
+        if xvalue is None or yvalue is None:
             trans_model = None
         else:
             trans_model = Shift2D(xvalue, yvalue)
-            trans_model.x_offset.bounds = xrange
-            trans_model.y_offset.bounds = yrange
+            if xrange is None:
+                trans_model.x_offset.fixed = True
+            else:
+                trans_model.x_offset.bounds = xrange
+            if yrange is None:
+                trans_model.y_offset.fixed = True
+            else:
+                trans_model.y_offset.bounds = yrange
 
         # Set up rotation part of the model
         rvalue, rrange = _get_value_and_range(rotation, rotation_range)
-        if rvalue is None or rrange is None:
+        if rvalue is None:
             rot_model = None
         else:
             # Getting the rotation wrong by da (degrees) will cause a shift of
@@ -540,11 +510,14 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
             # da=tolerance*57.3/pixel_range
             rot_scaling = pixel_range / 57.3
             rot_model = Rotate2D(rvalue*rot_scaling, param_scale=rot_scaling)
-            rot_model.angle.bounds = tuple(x*rot_scaling for x in rrange)
+            if rrange is None:
+                rot_model.angle.fixed = True
+            else:
+                rot_model.angle.bounds = tuple(x*rot_scaling for x in rrange)
 
         # Set up magnification part of the model
         mvalue, mrange = _get_value_and_range(magnification, magnification_range)
-        if mvalue is None or mrange is None:
+        if mvalue is None:
             mag_model = None
         else:
             # Getting the magnification wrong by dm will cause a shift of
@@ -552,7 +525,10 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
             # dm=tolerance/pixel_range
             mag_scaling = pixel_range
             mag_model = Scale2D(mvalue*mag_scaling, param_scale=mag_scaling)
-            mag_model.factor.bounds = tuple(x*mag_scaling for x in mrange)
+            if mrange is None:
+                mag_model.factor.fixed = True
+            else:
+                mag_model.factor.bounds = tuple(x*mag_scaling for x in mrange)
 
         # Make the compound model
         if rot_model is None and mag_model is None:
@@ -637,3 +613,106 @@ def find_offsets(xin, yin, xref, yref, range=(-300,300), subpix=1,
     y = float(y-cpix) / subpix
     x = float(x-cpix) / subpix
     return x, y
+
+def match_sources(incoords, refcoords, radius=2.0, priority=[]):
+    """
+    Match two sets of sources that are on the same reference frame. In general
+    the closest match will be used, but there can be a priority list that will
+    take precedence.
+
+    Parameters
+    ----------
+    incoords: 2xN array
+        input source coords (transformed to reference frame)
+    refcoords: 2xM array
+        reference source coords
+    radius:
+        maximum separation for a match
+    priority: list of ints
+        items in incoords that should have priority, even if a closer
+        match is found
+
+    Returns
+    -------
+    int array of length N:
+        index of matched sources in the reference list (-1 means no match)
+    """
+    matched = np.full((len(incoords[0]),), -1, dtype=int)
+    tree = spatial.cKDTree(zip(*refcoords))
+    dist, idx = tree.query(zip(*incoords), distance_upper_bound=radius)
+    for i in range(len(refcoords[0])):
+        inidx = np.where(idx==i)[0][np.argsort(dist[np.where(idx==i)])]
+        for ii in inidx:
+            if ii in priority:
+                matched[ii] = i
+                break
+        else:
+            # No first_allowed so take the first one
+            if len(inidx):
+                matched[inidx[0]] = i
+    return matched
+
+def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
+                   model_guess=None, translation=(0.0,0.0),
+                   translation_range=None, rotation=0.0,
+                   rotation_range=None, magnification=1.0,
+                   magnification_range=None, tolerance=0.1,
+                   center_of_field=None, simplex=True, match_radius=1.0):
+    """
+    Aligns catalogs with align_catalogs(), and then matches sources with
+    match_sources()
+
+    Parameters
+    ----------
+    xin, yin: float arrays
+        input coordinates
+    xref, yref: float arrays
+        reference coordinates to map and match to
+    use_in: list/None
+        only use these input sources for matching (None => all)
+    use_ref: list/None
+        only use these reference sources for matching (None => all)
+    model_guess: Model
+        initial model guess (overrides the next parameters)
+    translation: 2-tuple of floats
+        initial translation guess
+    translation_range: value, 2-tuple or 2x2-tuple
+        value => search range from initial guess (same for x and y)
+        2-tuple => search limits (same for x and y)
+        2x2-tuple => search limits for x and y
+    rotation: float
+        initial rotation guess (degrees)
+    rotation_range: float or 2-tuple
+        extent of search space for rotation
+    magnification: float
+        initial magnification factor
+    magnification_range: float or 2-tuple
+        extent of search space for magnification
+    tolerance: float
+        accuracy required for final result
+    center_of_field: 2-tuple
+        rotation and magnification have no effect at this location
+         (if None, uses middle of xin,yin ranges)
+    simplex: boolean
+        use a single brute-force iteration and then a simplex?
+
+    Returns
+    -------
+    int array of length N:
+        index of matched sources in the reference list (-1 means no match)
+    Model:
+        best-fitting alignment model
+    """
+    if use_in is None:
+        use_in = list(range(len(xin)))
+    if use_ref is None:
+        use_ref = list(range(len(xref)))
+    model = align_catalogs(xin[use_in], yin[use_in], xref[use_ref], yref[use_ref],
+                           model_guess=model_guess, translation=translation,
+                           translation_range=translation_range, rotation=rotation,
+                           rotation_range=rotation_range, magnification=magnification,
+                           magnification_range=magnification_range, tolerance=tolerance,
+                           center_of_field=center_of_field, simplex=simplex)
+    matched = match_sources(model(xin, yin), (xref, yref), radius=match_radius,
+                               priority=use_in)
+    return matched, model
