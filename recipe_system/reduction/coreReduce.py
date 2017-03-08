@@ -75,7 +75,7 @@ class Reduce(object):
         self._context = args.context
         self.files    = args.files
         self.uparms   = set_btypes(args.userparam)
-        self.ucals    = args.user_cal
+        self.ucals    = self._normalize_ucals(args.user_cal)
         self.suffix   = args.suffix
         self.upload_metrics = args.upmetrics
         self.urecipe = args.recipename if args.recipename else 'default'
@@ -318,6 +318,65 @@ class Reduce(object):
         log.status(logstring)
         log.status("="*80)
         return
+
+    def _normalize_ucals(self, cals):
+        """
+        When a user passes a --user_cal argument of the form,
+
+            --user_cal processed_bias:/path/to/foo.fits
+
+        The parser produces a user calibrations list like,
+
+            ['processed_bias:/path/to/foo.fits']
+
+        This list would pass to the Reduce __init__ as such, but, this function
+        will translate and apply all user cals to all passed files.
+
+        {(ad.data_label(), 'processed_bias'): '/path/to/foo.fits'}
+
+        This dictionary is of the same form as the calibrations dictionary for
+        retrieved and stored calibrations.
+
+        User calibrations always take precedence over nominal calibration
+        retrieval. User calibrations are not cached because they are not
+        retrieved from fitsstore and are presumably on disk.
+
+        Parameters:
+        ----------
+            cals: a list of strings like, 'caltype:calfilepath'
+            type: <list>
+
+        Returns:
+        -------
+            normalz: a dictionary of the cal types applied to input files.
+            type:  <dict>
+
+        E.g.,
+
+        {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
+
+        """
+        normalz = {}
+        if cals is None:
+            return normalz
+
+        for cal in cals:
+            ctype, cpath = cal.split(":")
+            scal, stype = ctype.split("_")
+            caltags = set([scal.upper(), stype.upper()])
+            cad = astrodata.open(cpath)
+            try:
+                assert caltags.issubset(cad.tags)
+            except AssertionError:
+                errmsg = "Calibration type {}\ndoes not match file {}"
+                raise TypeError(errmsg.format(ctype, cpath))
+
+            for f in self.files:
+                ad = astrodata.open(f)
+                normalz.update({(ad.data_label(), ctype): cpath})
+
+        return normalz
+
 
     def _write_final(self, outputs):
         """
