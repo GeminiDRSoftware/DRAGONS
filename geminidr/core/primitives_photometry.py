@@ -6,8 +6,6 @@
 import numpy as np
 from astropy.wcs import WCS
 from astropy.stats import sigma_clip
-from astropy.modeling import models, FittableModel, Parameter
-from datetime import datetime
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -18,7 +16,7 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
 
-from gempy.library.newmatch import find_mapping, match_sources
+from gempy.library.newmatch import align_catalogs, match_sources
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -107,7 +105,7 @@ class Photometry(PrimitivesBASE):
             else:
                 log.stdinfo("Found {} reference catalog sources for {}".
                             format(len(refcat), ad.filename))
-                #ad.REFCAT = refcat
+                ad.REFCAT = refcat
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
@@ -258,18 +256,6 @@ class Photometry(PrimitivesBASE):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-class Scale2D(FittableModel):
-    """2D scaling"""
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
-    factor = Parameter()
-    @property
-    def inverse(self):
-        return self.__class__(factor = 1.0/self.factor)
-    @staticmethod
-    def evaluate(x, y, factor):
-        return x*factor, y*factor
-
 def _match_objcat_refcat(ad, context='qa'):
     """
     Match the sources in the objcats against those in the corresponding
@@ -323,8 +309,7 @@ def _match_objcat_refcat(ad, context='qa'):
     final = 1.0/pixscale     # Matching radius
     max_ref_sources = 100 if 'qa' in context else None  # Don't need more than this many
 
-    initial_transform = Scale2D(1.0) | (models.Shift(0.0) & models.Shift(0.0))
-    working_model = (0, initial_transform)
+    working_model = (0, None)
 
     for index in objcat_order:
         extver = ad[index].hdr['EXTVER']
@@ -348,7 +333,7 @@ def _match_objcat_refcat(ad, context='qa'):
 
         # First: estimate number of reference sources in field
         # Inverse map ref coords->image plane and see how many are in field
-        xx, yy = m_init.inverse(xref, yref)
+        xx, yy = m_init.inverse(xref, yref) if m_init else (xref, yref)
         x1, y1 = 0, 0
         y2, x2 = ad[index].data.shape
         # Could tweak y1, y2 here for GNIRS
@@ -389,8 +374,10 @@ def _match_objcat_refcat(ad, context='qa'):
         if num_ref_sources > 0:
             log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
                         format(extver, num_ref_sources, keep_num))
-            m_final = find_mapping(m_init, xin, yin, xref[in_field], yref[in_field],
-                                   initial=initial, tolerance=0.2)
+            m_final = align_catalogs(xin, yin, xref[in_field], yref[in_field],
+                                     model_guess = working_model[1],
+                                   translation_range=50, magnification_range=0.01,
+                                     tolerance=0.1)
         else:
             log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
             continue
@@ -405,7 +392,7 @@ def _match_objcat_refcat(ad, context='qa'):
         log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
                     format(num_matched, extver))
         # If this is a "better" match, save it
-        if not working_model or num_matched > max(working_model[0], 2):
+        if num_matched > max(working_model[0], 2):
             working_model = (num_matched, m_final)
 
         # Loop through the reference list updating the refid in the objcat

@@ -1,12 +1,78 @@
 import numpy as np
+import math
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter,
                                       _convert_input)
+from astropy.modeling import models, FittableModel, Parameter
+
 from scipy import optimize, spatial
 from datetime import datetime
 
 from ..utils import logutils
+
+class Shift2D(FittableModel):
+    """2D translation"""
+    inputs = ('x', 'y')
+    outputs = ('x', 'y')
+    x_offset = Parameter(default=0.0)
+    y_offset = Parameter(default=0.0)
+
+    @property
+    def inverse(self):
+        inv = self.copy()
+        inv.x_offset = -self.x_offset
+        inv.y_offset = -self.y_offset
+        return inv
+
+    @staticmethod
+    def evaluate(x, y, x_offset, y_offset):
+        return x+x_offset, y+y_offset
+
+class Scale2D(FittableModel):
+    """2D scaling"""
+    def __init__(self, factor, param_scale=1.0, **kwargs):
+        self._param_scale = param_scale
+        super(Scale2D, self).__init__(factor, **kwargs)
+
+    inputs = ('x', 'y')
+    outputs = ('x', 'y')
+    factor = Parameter(default=1.0)
+
+    @property
+    def inverse(self):
+        inv = self.copy()
+        inv.factor = self._param_scale**2/self.factor
+        return inv
+
+    def evaluate(self, x, y, factor):
+        return x*factor/self._param_scale, y*factor/self._param_scale
+
+class Rotate2D(FittableModel):
+    """Rotation; Rotation2D isn't fittable"""
+    def __init__(self, factor, param_scale=1.0, **kwargs):
+        self._param_scale = param_scale
+        super(Rotate2D, self).__init__(factor, **kwargs)
+
+    inputs = ('x', 'y')
+    outputs = ('x', 'y')
+    angle = Parameter(default=0.0, getter=np.rad2deg, setter=np.deg2rad)
+
+    @property
+    def inverse(self):
+        inv = self.copy()
+        inv.angle = -self.angle
+        return inv
+
+    def evaluate(self, x, y, angle):
+        if x.shape != y.shape:
+            raise ValueError("Expected input arrays to have the same shape")
+        orig_shape = x.shape or (1,)
+        inarr = np.array([x.flatten(), y.flatten()])
+        s, c = math.sin(angle/self._param_scale), math.cos(angle/self._param_scale)
+        x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
+        x.shape = y.shape = orig_shape
+        return x, y
 
 def match_sources(incoords, refcoords, radius=2.0, priority=[]):
     """
@@ -116,9 +182,9 @@ class KDTreeFitter(Fitter):
         super(KDTreeFitter, self).__init__(optimize.minimize,
                                              statistic=_stat)
 
-    def __call__(self, model, x, y, ref_coords, sigma=5.0, maxsig=4.0,
+    def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
                  **kwargs):
-        model_copy = _validate_model(model, ['bounds'])
+        model_copy = _validate_model(model, ['bounds', 'fixed'])
 
         # Starting simplex step size is set to be 5% of parameter values
         # Need to ensure this is larger than the convergence tolerance
@@ -135,6 +201,7 @@ class KDTreeFitter(Fitter):
 
         tree = spatial.cKDTree(zip(*ref_coords))
         # avoid _convert_input since tree can't be coerced to a float
+        x, y = in_coords
         farg = (model_copy, x, y, sigma, maxsig, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
@@ -207,92 +274,319 @@ class BruteLandscapeFitter(Fitter):
                 print(my1, my2, mx1, mx2)
         return landscape
 
-    def __call__(self, model, x, y, ref_coords, sigma=5.0, maxsig=4.0,
+    def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
                  **kwargs):
         model_copy = _validate_model(model, ['bounds'])
+        x, y = in_coords
         landscape = self.mklandscape(ref_coords, sigma, maxsig,
                                     (int(np.max(y)),int(np.max(x))))
         farg = (model_copy,) + _convert_input(x, y, landscape)
         p0, _ = _model_to_fit_params(model_copy)
 
         # TODO: Use the name of the parameter to infer the step size
-        ranges = [slice(*(model_copy.bounds[p]+(min(sigma, 0.1*np.diff(model_copy.bounds[p])[0]),)))
+        ranges = [slice(*(model_copy.bounds[p]+(min(0.5*sigma, 0.1*np.diff(model_copy.bounds[p])[0]),)))
+                  if np.diff(model_copy.bounds[p])[0] > 0 else model_copy.bounds[p]
                   for p in model_copy.param_names]
-
-        fitted_params = self._opt_method(self.objective_function,
-                                         ranges, farg, finish=None, **kwargs)
+        # Ns=1 limits the fitting along an axis where the range is not a slice
+        # object: this is those were the bounds are equal (i.e. fixed param)
+        fitted_params = self._opt_method(self.objective_function, ranges,
+                                         farg, Ns=1, finish=None, **kwargs)
         _fitter_to_model_params(model_copy, fitted_params)
         return model_copy
 
-def find_mapping(model, xin, yin, xref, yref, initial=50.0, sigma=10.0,
-                 tolerance=0.2, verbose=True):
+def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
+                           verbose=True):
     """
-    Determine the transformation needed to match an input catalogue to a
-    reference catalogue, via a two-step process. First, a brute-force grid
-    search is performed, and then a simplex minimization.
+    Finds the best-fitting mapping to convert from xin to xout, using a
+    two-step approach by first doing a brute-force scan of parameter space,
+    and then doing simplex fitting from this starting position.
+    Handles a fixed parameter by setting the bounds equal to the value.
 
     Parameters
     ----------
-    model: Model
-        initial guess of the transformation
-    xin, yin: arrays of floats
+    model: FittableModel
+        initial model guess
+    xin: array-like
         input coordinates
-    xref, yref: arrays of floats
-        reference coordinates
-    initial: float
-        half-width of search box for a translation (in units of source coords)
+    xout: array-like
+        coordinates to fit to
     sigma: float
-        "radius of influence" for each reference source
+        size of the mountains for the BruteLandscapeFitter
     tolerance: float
-        absolute accuracy required for solution
+        accuracy of parameters in final answer
+    verbose: boolean
+        output model and time info?
 
     Returns
     -------
-    Model: a new mapping transformation
+    Model: the best-fitting mapping from xin -> xout
     """
     log = logutils.get_logger(__name__)
+
     start = datetime.now()
-    #xoff, yoff = find_offsets(xin, yin, xref[in_field], yref[in_field],
-    #                          range=(-initial,initial), sigma=10.0)
-    #m = models.Shift(xoff) & models.Shift(yoff)
-    #log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
-    #                        format((datetime.now()-start).total_seconds())))
+    # Since optimize.brute can't handle "fixed" parameters, we have to unfix
+    # them and control things by setting the bounds to a zero-width interval
+    for p in model.param_names:
+        pval = getattr(model, p).value
+        if getattr(model, p).fixed:
+            getattr(model, p).bounds = (pval, pval)
+            getattr(model, p).fixed = False
 
     # Brute-force grid search using an image landscape
     fit_it = BruteLandscapeFitter()
-    for p in model.param_names:
-        pval = getattr(model, p).value
-        if 'offset' in p:
-            getattr(model, p).bounds = (pval-initial, pval+initial)
-        elif 'factor' in p:
-            getattr(model, p).bounds = (pval*0.95, pval*1.05)
-
-    ref_coords = (xref, yref)
-    m = fit_it(model, xin, yin, ref_coords, sigma=sigma)
-
+    m = fit_it(model, xin, xout, sigma=sigma)
     if verbose:
         log.stdinfo(_show_model(m, "Coarse model in {:.2f} seconds".
-                            format((datetime.now()-start).total_seconds())))
+                                format((datetime.now() - start).total_seconds())))
 
+    # Re-fix parameters in the intermediate model, if they were fixed
+    # in the original model
     for p in m.param_names:
-        getattr(m, p).bounds = (None, None)
+        if np.diff(getattr(model, p).bounds)[0] == 0:
+            getattr(m, p).fixed = True
+
     # More precise minimization using pairwise calculations
     fit_it = KDTreeFitter()
     # We don't care about how much the function value changes (ftol), only
     # that the position is robust (xtol)
-    m_final = fit_it(m, xin, yin, ref_coords, method='Nelder-Mead',
+    final_model = fit_it(m, xin, xout, method='Nelder-Mead',
                      options={'xtol': tolerance, 'ftol': 100.0})
-
     if verbose:
-        log.stdinfo(_show_model(m_final, "Final model in {:.2f} seconds".
-                            format((datetime.now()-start).total_seconds())))
-    return m_final
+        log.stdinfo(_show_model(final_model, "Final model in {:.2f} seconds".
+                                format((datetime.now() - start).total_seconds())))
+    return final_model
 
-def _show_model(m, intro=""):
+def fit_brute_repeatedly(model, xin, xout, sigma=5.0, tolerance=0.001,
+                           reduction=0.5, verbose=True):
+    """
+    Finds the best-fitting mapping to convert from xin to xout, using repeated
+    brute-force fitting over decreasing regions of parameter space
+
+    Parameters
+    ----------
+    model: FittableModel
+        initial model guess
+    xin: array-like
+        input coordinates
+    xout: array-like
+        coordinates to fit to
+    sigma: float
+        size of the mountains for the BruteLandscapeFitter
+    tolerance: float
+        accuracy of parameters in final answer
+    reduction: float
+        factor by which to reduce search size at each step
+    verbose: boolean
+        output model and time info?
+
+    Returns
+    -------
+    Model: the best-fitting mapping from xin -> xout
+    """
+    log = logutils.get_logger(__name__)
+
+    start = datetime.now()
+    # Since optimize.brute can't handle "fixed" parameters, we have to unfix
+    # them and control things by setting the bounds to a zero-width interval
+    for p in model.param_names:
+        param = getattr(model, p)
+        if param.fixed:
+            param.bounds = (param.value, param.value)
+            param.fixed = False
+
+    ranges = np.array([np.diff(getattr(model, p).bounds)[0]
+                       for p in model.param_names])
+    m = model.copy()
+    while np.max(ranges) > tolerance:
+        # Brute-force grid search using an image landscape
+        fit_it = BruteLandscapeFitter()
+        m = fit_it(m, xin, xout, sigma=sigma)
+        if verbose:
+            log.stdinfo(_show_model(m, "Model in {:.2f} seconds".
+                        format((datetime.now() - start).total_seconds())))
+        ranges = reduction * ranges
+        for p, range in zip(m.param_names, ranges):
+            param = getattr(m, p)
+            param.bounds = (param.value-0.5*range, param.value+0.5*range)
+
+    return m
+
+def _show_model(model, intro=""):
+    """Provide formatted output of a (possibly compound) transformation"""
     model_str = "{}\n".format(intro) if intro else ""
-    for name, value in zip(m.param_names, m.parameters):
-        model_str += "{}: {}\n".format(name, value)
+    try:
+        iterator = iter(model)
+    except TypeError:
+        iterator = [model]
+    # We don't want to show the centering model (or its inverse), and we want
+    # to scale the model parameters to their internally-stored values
+    for m in iterator:
+        if m.name != 'Centering':
+            pscale = m._param_scale if hasattr(m, '_param_scale') else 1.0
+            for name, value in zip(m.param_names, m.parameters):
+                model_str += "{}: {}\n".format(name, value/pscale)
     return model_str
+
+
+def align_catalogs(xin, yin, xref, yref, model_guess=None,
+                   translation=(0.0,0.0), translation_range=None,
+                   rotation=0.0, rotation_range=None,
+                   magnification=1.0, magnification_range=None,
+                   tolerance=0.1, center_of_field=None, simplex=True):
+    """
+    Generic interface for a 2D catalog match. Either an initial model guess
+    is provided, or a model will be created using a combination of
+    translation, rotation, and magnification, as requested. Only those
+    transformations for which a *range* is specified will be used. In order
+    to keep the translation close to zero, the rotation and magnification
+    are performed around the centre of the field, which can either be provided
+    -- as (x,y) in 1-based pixels -- or will be determined from the mid-range
+    of the x and y input coordinates.
+
+    Parameters
+    ----------
+    xin, yin: float arrays
+        input coordinates
+    xref, yref: float arrays
+        reference coordinates to map and match to
+    model_guess: Model
+        initial model guess (overrides the next parameters)
+    translation: 2-tuple of floats
+        initial translation guess
+    translation_range: value, 2-tuple or 2x2-tuple
+        value => search range from initial guess (same for x and y)
+        2-tuple => search limits (same for x and y)
+        2x2-tuple => search limits for x and y
+    rotation: float
+        initial rotation guess (degrees)
+    rotation_range: float or 2-tuple
+        extent of search space for rotation
+    magnification: float
+        initial magnification factor
+    magnification_range: float or 2-tuple
+        extent of search space for magnification
+    tolerance: float
+        accuracy required for final result
+    center_of_field: 2-tuple
+        rotation and magnification have no effect at this location
+         (if None, uses middle of xin,yin ranges)
+    simplex: boolean
+        use a single brute-force iteration and then a simplex?
+
+    Returns
+    -------
+    Model: a model that maps (xin,yin) to (xref,yref)
+    """
+    def _get_value_and_range(value, range):
+        """Converts inputs to a central value and a range tuple"""
+        try:
+            r1, r2 = range
+        except TypeError:
+            r1, r2 = range, None
+        except ValueError:
+            r1, r2 = None, None
+        if value is not None:
+            if r1 is not None and r2 is not None:
+                if r1 <= value <= r2:
+                    return value, (r1, r2)
+                else:
+                    extent = 0.5*abs(r2-r1)
+                    return value, (value-extent, value+extent)
+            elif r1 is not None:
+                return value, (value-r1, value+r1)
+            else:
+                return None, None
+        elif r1 is not None:
+            if r2 is None:
+                return 0.0, (-r1, r1)
+            else:
+                return 0.5*(r1+r2), (r1, r2)
+        else:
+            return None, None
+
+    log = logutils.get_logger(__name__)
+    if model_guess is None:
+        # Some useful numbers for later
+        x1, x2 = np.min(xin), np.max(xin)
+        y1, y2 = np.min(yin), np.max(yin)
+        pixel_range = 0.5*max(x2-x1, y2-y1)
+
+        # Set up translation part of the model
+        if hasattr(translation, '__len__'):
+            xoff, yoff = translation
+        else:
+            xoff, yoff = translation, translation
+        trange = np.array(translation_range)
+        if len(trange.shape) == 2:
+            xvalue, xrange = _get_value_and_range(xoff, trange[0])
+            yvalue, yrange = _get_value_and_range(yoff, trange[1])
+        else:
+            xvalue, xrange = _get_value_and_range(xoff, translation_range)
+            yvalue, yrange = _get_value_and_range(yoff, translation_range)
+        if xvalue is None or xrange is None or yvalue is None or yrange is None:
+            trans_model = None
+        else:
+            trans_model = Shift2D(xvalue, yvalue)
+            trans_model.x_offset.bounds = xrange
+            trans_model.y_offset.bounds = yrange
+
+        # Set up rotation part of the model
+        rvalue, rrange = _get_value_and_range(rotation, rotation_range)
+        if rvalue is None or rrange is None:
+            rot_model = None
+        else:
+            # Getting the rotation wrong by da (degrees) will cause a shift of
+            # da/57.3*pixel_range at the edge of the data, so we want
+            # da=tolerance*57.3/pixel_range
+            rot_scaling = pixel_range / 57.3
+            rot_model = Rotate2D(rvalue*rot_scaling, param_scale=rot_scaling)
+            rot_model.angle.bounds = tuple(x*rot_scaling for x in rrange)
+
+        # Set up magnification part of the model
+        mvalue, mrange = _get_value_and_range(magnification, magnification_range)
+        if mvalue is None or mrange is None:
+            mag_model = None
+        else:
+            # Getting the magnification wrong by dm will cause a shift of
+            # dm*pixel_range at the edge of the data, so we want
+            # dm=tolerance/pixel_range
+            mag_scaling = pixel_range
+            mag_model = Scale2D(mvalue*mag_scaling, param_scale=mag_scaling)
+            mag_model.factor.bounds = tuple(x*mag_scaling for x in mrange)
+
+        # Make the compound model
+        if rot_model is None and mag_model is None:
+            if trans_model is None:
+                return models.Identity(2)  # Nothing to do
+            else:
+                init_model = trans_model  # Don't need center of field
+        else:
+            if center_of_field is None:
+                center_of_field = (0.5 * (x1 + x2), 0.5 * (y1 + y2))
+                log.debug('No center of field given, using x={:.2f} '
+                          'y={:.2f}'.format(*center_of_field))
+            restore = Shift2D(*center_of_field).rename('Centering')
+            restore.x_offset.fixed = True
+            restore.y_offset.fixed = True
+
+            init_model = restore.inverse
+            if trans_model is not None:
+                init_model |= trans_model
+            if rot_model is not None:
+                init_model |= rot_model
+            if mag_model is not None:
+                init_model |= mag_model
+            init_model |= restore
+    elif model_guess.fittable:
+        init_model = model_guess
+    else:
+        log.warning('The transformation is not fittable!')
+        return models.Identity(2)
+
+    fit_function = fit_brute_then_simplex if simplex else fit_brute_repeatedly
+    final_model = fit_function(init_model, (xin, yin), (xref, yref),
+                               sigma=10.0, tolerance=tolerance)
+    return final_model
 
 def find_offsets(xin, yin, xref, yref, range=(-300,300), subpix=1,
                  sigma=10.0, maxsig=4.0):
