@@ -1050,9 +1050,10 @@ class Preprocess(PrimitivesBASE):
                 ad_sci.subtract(ad_sky)
 
                 # Timestamp and update filename
-                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                ad.filename = gt.filename_updater(adinput=ad,
-                                            suffix=params["suffix"], strip=True)
+                gt.mark_history(ad_sci, primname=self.myself(),
+                                keyword=timestamp_key)
+                ad_sci.filename = gt.filename_updater(adinput=ad_sci,
+                                        suffix=params["suffix"], strip=True)
 
             else:
                 log.warning("No changes will be made to {}, since no "
