@@ -392,9 +392,9 @@ def _show_model(model, intro=""):
 
 
 def align_catalogs(xin, yin, xref, yref, model_guess=None,
-                   translation=(0.0,0.0), translation_range=None,
-                   rotation=0.0, rotation_range=None,
-                   magnification=1.0, magnification_range=None,
+                   translation=None, translation_range=None,
+                   rotation=None, rotation_range=None,
+                   magnification=None, magnification_range=None,
                    tolerance=0.1, center_of_field=None, simplex=True):
     """
     Generic interface for a 2D catalog match. Either an initial model guess
@@ -653,9 +653,9 @@ def match_sources(incoords, refcoords, radius=2.0, priority=[]):
     return matched
 
 def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
-                   model_guess=None, translation=(0.0,0.0),
-                   translation_range=None, rotation=0.0,
-                   rotation_range=None, magnification=1.0,
+                   model_guess=None, translation=None,
+                   translation_range=None, rotation=None,
+                   rotation_range=None, magnification=None,
                    magnification_range=None, tolerance=0.1,
                    center_of_field=None, simplex=True, match_radius=1.0):
     """
