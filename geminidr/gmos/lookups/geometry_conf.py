@@ -24,8 +24,8 @@ gap_dict_unbin = {(0,0):(0,0), (1,0):(37,0), (2,0):(37,0)}
 hamgap_dict_bin = {(0,0):(0,0), (1,0):(60,0), (2,0):(60,0)}
 hamgap_dict_unbin = {(0,0):(0,0), (1,0):(61,0), (2,0):(61,0)}
 
-gmosn-hamgap_dict_bin = {(0,0):(0,0), (1,0):(66,0), (2,0):(66,0)}
-gmosn-hamgap_dict_unbin = {(0,0):(0,0), (1,0):(67,0), (2,0):(67,0)}
+gmosn_hamgap_dict_bin = {(0,0):(0,0), (1,0):(66,0), (2,0):(66,0)}
+gmosn_hamgap_dict_unbin = {(0,0):(0,0), (1,0):(67,0), (2,0):(67,0)}
 
 # NOTE: The gap sets used for GMOS-N Hamamatsu may not be correct, as the
 # keys below are simply using the gap sets for the old CCDs.
