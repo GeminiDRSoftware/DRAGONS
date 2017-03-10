@@ -2,7 +2,7 @@
 #                                                                reduce_utils.py
 # ------------------------------------------------------------------------------
 # Utility function library for reduce and the Reduce class.
-__version__ = "2.0.0"
+__version__ = "2.0.0 (beta)"
 # ------------------------------------------------------------------------------
 from argparse import ArgumentParser
 from argparse import HelpFormatter

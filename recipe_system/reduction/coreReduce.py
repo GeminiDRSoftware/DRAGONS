@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 from builtins import str
 from builtins import object
-_version = '2.0 (beta)'
+_version = '2.0.0 (beta)'
 # ------------------------------------------------------------------------------
 """
 class Reduce {} provides one (1) public method:
