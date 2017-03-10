@@ -25,7 +25,7 @@ def findexe(exe):
 
     >>> findexe('autoredux')
     [98684]
-    >>> findexe.findexe('emacs')
+    >>> findexe('emacs')
     [41273, 55557]
 
     """
