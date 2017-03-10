@@ -25,8 +25,8 @@ def findexe(exe):
 
     >>> findexe('autoredux')
     [98684]
-    >>> findexe('python')
-    [16644, 43756, 82326, 88852, 98684]
+    >>> findexe.findexe('emacs')
+    [41273, 55557]
 
     """
     pids = []
