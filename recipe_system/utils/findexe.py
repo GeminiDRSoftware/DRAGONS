@@ -21,6 +21,13 @@ def findexe(exe):
         pids: a list of extant pids found running 'exe'
         type: <list>
 
+    E.g., find autoredux,
+
+    >>> findexe('autoredux')
+    [98684]
+    >>> findexe('python')
+    [16644, 43756, 82326, 88852, 98684]
+
     """
     pids = []
     for proc in psutil.process_iter():
