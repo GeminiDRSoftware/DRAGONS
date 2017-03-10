@@ -226,10 +226,14 @@ def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, s
         # required output shape to hold all data
         cenoff = []
         out_shape = []
+        ref_offset = []
+        print all_corners
         for axis in range(naxis):
             # get output shape from corner values
             cvals = [corner[axis] for ic in all_corners for corner in ic]
+            print cvals
             out_shape.append(int(max(cvals)-min(cvals)+1))
+            ref_offset.append(min(min(cvals), ref_shape[axis]-max(cvals)))
 
             # if just shifting, need to set centering shift
             # for reference image from offsets already calculated
@@ -239,16 +243,12 @@ def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, s
                 # (in case it's already centered)
                 svals.append(0.0)
                 cenoff.append(-int(max(svals)))
+            else:
+                cenoff.append(np.rint(min(min(cvals),
+                                          ref_shape[axis]-max(cvals))))
 
         out_shape = tuple(out_shape)
         log.fullinfo("New output shape: "+repr(out_shape))
-
-        # if not shifting, get offset required to center reference image
-        # from the size of the image
-        if interpolator:
-            incen = [0.5*(axlen-1) for axlen in ref_shape]
-            outcen = [0.5*(axlen-1) for axlen in out_shape]
-            cenoff = np.rint(incen) - np.rint(outcen)
     return cenoff, out_shape
 
 def _build_area_keys(corners):
