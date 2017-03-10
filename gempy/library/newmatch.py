@@ -247,9 +247,10 @@ class BruteLandscapeFitter(Fitter):
         p0, _ = _model_to_fit_params(model_copy)
 
         # TODO: Use the name of the parameter to infer the step size
-        ranges = [slice(*(model_copy.bounds[p]+(min(0.5*sigma, 0.1*np.diff(model_copy.bounds[p])[0]),)))
-                  if np.diff(model_copy.bounds[p])[0] > 0 else model_copy.bounds[p]
-                  for p in model_copy.param_names]
+        bounds = [model_copy.bounds[p] for p in model_copy.param_names]
+        ranges = [slice(*(b[p]+(min(0.5*sigma, 0.1*np.diff(b[p])[0]),)))
+                  if b[p] is not None and np.diff(b[p])[0] > 0
+                  else b[p] for b in bounds]
         # Ns=1 limits the fitting along an axis where the range is not a slice
         # object: this is those were the bounds are equal (i.e. fixed param)
         fitted_params = self._opt_method(self.objective_function, ranges,
