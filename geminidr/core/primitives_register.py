@@ -8,11 +8,14 @@ import numpy as np
 import scipy.optimize
 from astropy.wcs import WCS
 from astropy import table
+from astropy.modeling import models
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.library import astrotools as at
 from gempy.utils import logutils
+
+from gempy.library.newmatch import match_catalogs, align_images_from_wcs
 
 from geminidr import PrimitivesBASE
 from .parameters_register import ParametersRegister
@@ -133,7 +136,6 @@ class Register(PrimitivesBASE):
         # Use first image in list as reference
         ref_image = adinputs[0]
         log.stdinfo("Reference image: "+ref_image.filename)
-        adoutputs = [ref_image]
 
         if not hasattr(ref_image[0], 'OBJCAT') or (len(ref_image[0].OBJCAT)
                                         < min_sources and method=='sources'):
@@ -152,11 +154,8 @@ class Register(PrimitivesBASE):
         # use indirect alignment for all images at once
         if method == "header":
             log.stdinfo("Using WCS specified in header for alignment")
-            reg_ad = _header_align(ref_image, adinputs[1:],
-                                   self.keyword_comments)
-
-            # Not sure this is needed as everything has been done in-place
-            adoutputs.extend(reg_ad)
+            for ad in adinputs[1:]:
+                _create_wcs_from_offsets(ad, ref_image)
 
         # otherwise try to do direct alignment for each image by correlating
         # sources in the reference and input images
@@ -171,39 +170,35 @@ class Register(PrimitivesBASE):
                     if fallback == 'header':
                         log.warning("Only attempting indirect WCS alignment, "
                                     "via {} mapping".format(fallback))
-                        adoutput = _header_align(ref_image, [ad],
-                                                 self.keyword_comments)
+                        _create_wcs_from_offsets(ad, ref_image)
+                        #adoutput = _header_align(ref_image, [ad],
+                        #                         self.keyword_comments)
                     else:
                         log.warning("WCS can only be corrected indirectly "
                             "and fallback=None. Not attempting WCS correction "
                             "for ".format(ad.filename))
-                        adoutputs.append(ad)
-                        continue
                 else:
                     log.fullinfo("Number of objects in image {}: {}".format(
                                  ad.filename, nobj))
                     log.fullinfo("Cross-correlating sources in {}, {}".
                                  format(ref_image.filename, ad.filename))
 
+                    # GNIRS WCS is dubious, so update WCS by using the ref
+                    # image's WCS and the telescope offsets
+                    if ad.instrument() == 'GNIRS' and not use_wcs:
+                        _create_wcs_from_offsets(ad, ref_image)
+
+                    if not use_wcs:
+                        log.warning("Parameter 'use_wcs' is False.")
+                        log.warning("Using source correlation anyway.")
                     firstpasspix = first_pass / ad.pixel_scale()
-                    is_gnirs = 'GNIRS' in ad.tags
-                    if is_gnirs and not use_wcs:
-                        try:
-                            obj_list = _correlate_sources_offsets(ref_image, ad,
-                                                         firstPass=firstpasspix,
-                                                         min_sources=min_sources,
-                                                         cull_sources=cull_sources)
-                        except ImportError as msg:
-                            log.warning("{}: No object list.".format(msg))
-                            obj_list = [[],[]]
-                    else:
-                        if not use_wcs:
-                            log.warning("Parameter 'use_wcs' is False.")
-                            log.warning("Using source correlation anyway.")
-                        obj_list = _correlate_sources(ref_image, ad,
-                                                      firstPass=firstpasspix,
-                                                      min_sources=min_sources,
-                                                      cull_sources=cull_sources)
+
+                    # Calculate the offsets quickly using only a translation
+                    obj_list, transform = align_images_from_wcs(ad, ref_image,
+                            first_pass=firstpasspix, min_sources=min_sources,
+                            cull_sources=cull_sources, full_wcs=False,
+                            rotate=False, scale=False, tolerance=0.1,
+                            return_matches=True)
 
                     n_corr = len(obj_list[0])
                     if n_corr==0:
@@ -211,23 +206,24 @@ class Register(PrimitivesBASE):
                         if fallback=='header':
                             log.warning("Only attempting indirect WCS "
                                 "alignment, via {} mapping".format(fallback))
-                            adoutput = _header_align(ref_image, ad,
-                                                     self.keyword_comments)
+                            _create_wcs_from_offsets(ad, ref_image)
+                            #adoutput = _header_align(ref_image, ad,
+                            #                         self.keyword_comments)
                         else:
                             log.warning("WCS can only be corrected indirectly "
                                 "and fallback=None. Not attempting WCS "
                                 "correction for ".format(ad.filename))
-                            adoutputs.append(ad)
-                            continue
                     else:
                         log.fullinfo("Number of correlated sources: {}".
                                      format(n_corr))
                         log.stdinfo("{}: Using source correlation for "
                                     "alignment".format(ad.filename))
+                        x_offset = transform.x_offset.value
+                        y_offset = transform.y_offset.value
 
                         # Check the fit geometry depending on the
                         # number of objects
-                        if n_corr == 1:
+                        if n_corr < 5:
                             log.warning("Too few objects. Setting "
                                         "rotate=False, scale=False")
                             rotate=False
@@ -238,20 +234,33 @@ class Register(PrimitivesBASE):
                                      format("-"*31))
                         for ref, img in zip(*obj_list):
                             log.fullinfo("  {:7.2f} {:7.2f} {:7.2f} {:7.2f}".
-                                          format(ref[0], ref[1], *img))
+                                        format(ref[0], ref[1], *img))
                         log.fullinfo("")
 
-                        adoutput = _align_wcs(ref_image, [ad], [obj_list],
-                                        rotate=rotate, scale=scale,
-                                        keyword_comments=self.keyword_comments)
-                adoutputs.extend(adoutput)
+                        # Determine a more accurate fit, and get the WCS
+                        wcs = align_images_from_wcs(ad, ref_image,
+                                    initial_shift=(x_offset, y_offset),
+                                    first_pass=0.2*firstpasspix,
+                                    cull_sources=cull_sources, full_wcs=True,
+                                    rotate=rotate, scale=scale, tolerance=0.01,
+                                    return_matches=False).wcs()
+                        for ax in (1, 2):
+                            ad.hdr.set('CRPIX{}'.format(ax), wcs.wcs.crpix[ax-1],
+                                comment=self.keyword_comments["CRPIX{}".format(ax)])
+                            ad.hdr.set('CRVAL{}'.format(ax), wcs.wcs.crval[ax-1],
+                                comment=self.keyword_comments["CRVAL{}".format(ax)])
+                            for ax2 in (1, 2):
+                                ad.hdr.set('CD{}_{}'.format(ax, ax2),
+                                           wcs.wcs.cd[ax-1, ax2-1],
+                                           comment=self.keyword_comments["CD{}_{}".
+                                           format(ax, ax2)])
 
         # Timestamp and update filenames
-        for ad in adoutputs:
+        for ad in adinputs:
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                             strip=True)
-        return adoutputs
+        return adinputs
     
     def determineAstrometricSolution(self, adinputs=None, **params):
         """
@@ -427,12 +436,12 @@ class Register(PrimitivesBASE):
                 log.fullinfo("CRPIX: "+repr(ext_wcs.wcs.crpix))
                 log.fullinfo("CD: "+repr(ext_wcs.wcs.cd))
 
-                for ax in range(1,3):
+                for ax in (1, 2):
                     ext.hdr.set('CRPIX{}'.format(ax), ext_wcs.wcs.crpix[ax-1],
                         comment=self.keyword_comments["CRPIX{}".format(ax)])
                     ext.hdr.set('CRVAL{}'.format(ax), ext_wcs.wcs.crval[ax-1],
                         comment=self.keyword_comments["CRVAL{}".format(ax)])
-                    for ax2 in range(1,3):
+                    for ax2 in (1, 2):
                         ext.hdr.set('CD{}_{}'.format(ax,ax2),
                                    ext_wcs.wcs.cd[ax-1,ax2-1],
                                     comment=self.keyword_comments["CD{}_{}".
@@ -526,13 +535,16 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, min_sources=1,
     ra2, dec2 = WCS(ad2.header[1]).all_pix2world(x2,y2, 1)
     conv_x2, conv_y2 = WCS(ad1.header[1]).all_world2pix(ra2, dec2,1)
     
-    # find matches
-    ind1,ind2 = at.match_cxy(x1,conv_x2, y1,conv_y2,
-                             first_pass=firstPass, delta=delta, log=log)
+    # map input positions (in reference frame) to reference positions
+    matched, transform = match_catalogs(conv_x2, conv_y2, x1, y1,
+                                        translation_range=firstPass,
+                                        match_radius=0.2*firstPass)
 
+    ind2 = np.where(matched>=0)
+    ind1 = matched[ind2]
     obj_list = [[],[]] if len(ind1)<1 else [list(zip(x1[ind1], y1[ind1])),
                                             list(zip(x2[ind2], y2[ind2]))]
-    return obj_list
+    return obj_list, transform
 
 def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1, cull_sources=False):
     """
@@ -632,6 +644,110 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
     obj_list = [[],[]] if len(ind1)<1 else [list(zip(x1[ind1], y1[ind1])),
                                             list(zip(x2[ind2], y2[ind2]))]
     return obj_list
+
+
+def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
+    """
+    This function uses the POFFSET, QOFFSET, and PA header keywords to create
+    a new WCS for an image. Its primary role is for GNIRS.
+
+    Parameters
+    ----------
+    adinput: AstroData
+        The input image whose WCS needs to be rewritten
+    adreference: AstroData
+        The reference image with a trustworthy WCS
+    center_of_rotation: 2-tuple
+        Location of rotation center (x, y)
+    """
+    log = logutils.get_logger(__name__)
+    log.stdinfo("Updating WCS of {} based on {}".format(adinput.filename,
+                                                        adref.filename))
+
+    try:
+        poffset1 = adref.phu['POFFSET']
+        qoffset1 = adref.phu['QOFFSET']
+        poffset2 = adinput.phu['POFFSET']
+        qoffset2 = adinput.phu['QOFFSET']
+        pixscale = adref.pixel_scale()
+        pa1 = adref.phu['PA']
+        pa2 = adinput.phu['PA']
+    except KeyError:
+        log.warning("Cannot obtain necessary offsets from headers "
+                    "so no change will be made")
+        return
+
+    xdiff = -1.0 * (qoffset1 - qoffset2) / pixscale
+    ydiff = (poffset1 - poffset2) / pixscale
+
+
+    # Will need to have some sort of LUT here eventually. But for now...
+    if center_of_rotation is None:
+        center_of_rotation = (630.0, 520.0) if (adref.instrument() ==
+            'GNIRS') else tuple(0.5*x for x in adref[0].data.shape[::-1])
+
+    wcsref = WCS(adref.header[1])
+    ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
+                                     center_of_rotation[1], 1)
+    adinput.hdr['CRVAL1'] = ra0
+    adinput.hdr['CRVAL2'] = dec0
+    adinput.hdr['CRPIX1'] = center_of_rotation[0] - xdiff
+    adinput.hdr['CRPIX2'] = center_of_rotation[1] - ydiff
+    cd = models.Rotation2D(angle=pa1-pa2)(*wcsref.wcs.cd)
+    adinput.hdr['CD1_1'] = cd[0][0]
+    adinput.hdr['CD1_2'] = cd[0][1]
+    adinput.hdr['CD2_1'] = cd[1][0]
+    adinput.hdr['CD2_2'] = cd[1][1]
+    return
+
+def _apply_model_to_wcs(adinput, transform=None, keyword_comments=None):
+    """
+    This function modifies the WCS of input images according to astropy
+    Models that describe how to map the input image pixels to their
+    correct location, i.e., an input pixel (x,y) should have the world
+    coordinates WCS(m(x,y)), where m is the transformation model.
+
+    Parameters
+    ----------
+    adinput: list of AD objects
+        input images for WCS to be modified
+    transform: list of Models
+        transformations (in pixel space)
+    keyword_comments: dict
+        the comment for each FITS keyword
+
+    Returns
+    -------
+    list of ADs: modified AD instances
+    """
+    if len(transform) != len(adinput):
+        raise IOError("List of models have the same number of "
+                      "elements as adinput")
+
+    for ad, model in zip(adinput, transform):
+        crpix1 = ad.hdr['CRPIX1'][0]
+        crpix2 = ad.hdr['CRPIX2'][0]
+        newcrpix = model.inverse(crpix1, crpix2)
+
+        # Determine total magnification and rotation from all relevant
+        # model components
+        magnification = np.multiply.reduce([getattr(model, p).value
+                            for p in model.param_names if 'factor' in p])
+        rotation = np.add.reduce([getattr(model, p).value
+                            for p in model.param_names if 'angle' in p])
+
+        cdmatrix = [[ad.hdr['CD{}_{}'.format(i,j)][0] / magnification
+                     for j in 1, 2] for i in 1, 2]
+        print cdmatrix
+        m = models.Rotation2D(-rotation)
+        newcdmatrix = m(*cdmatrix)
+        for ax in 1, 2:
+            ad.hdr.set('CRPIX{}'.format(ax), newcrpix[ax-1],
+                       comment=keyword_comments["CRVAL{}".format(ax)])
+            for ax2 in 1, 2:
+                ad.hdr.set('CD{}_{}'.format(ax, ax2), newcdmatrix[ax-1][ax2-1],
+                           comment=keyword_comments['CD{}_{}'.format(ax, ax2)])
+    return adinput
 
 def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
                keyword_comments=None):

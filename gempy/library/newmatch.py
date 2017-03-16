@@ -5,11 +5,66 @@ from astropy.modeling.fitting import (_validate_model,
                                       _model_to_fit_params, Fitter,
                                       _convert_input)
 from astropy.modeling import models, FittableModel, Parameter
+from astropy.wcs import WCS
 
 from scipy import optimize, spatial
 from datetime import datetime
 
+from gempy.gemini import gemini_tools as gt
 from ..utils import logutils
+
+class CallableWCS(FittableModel):
+    """
+    Wrapper to make an astropy.WCS object act like an astropy.modeling.Model
+    object, including having an inverse.
+    """
+    def __init__(self, wcs, x_offset=0.0, y_offset=0.0, factor=1.0, angle=0.0,
+                 direction=1, factor_scale=1.0, angle_scale=1.0, **kwargs):
+        self._wcs = wcs.deepcopy()
+        self._direction = direction
+        self._factor_scale = factor_scale
+        self._angle_scale = angle_scale
+        super(CallableWCS, self).__init__(x_offset, y_offset, factor, angle,
+                                          **kwargs)
+
+    inputs = ('x','y')
+    outputs = ('x','y')
+    x_offset = Parameter()
+    y_offset = Parameter()
+    factor = Parameter()
+    angle = Parameter()
+
+    def evaluate(self, x, y, x_offset, y_offset, factor, angle):
+        # x_offset and y_offset are actually arrays in the Model
+        temp_wcs = self.wcs(x_offset[0], y_offset[0], factor, angle)
+        return temp_wcs.all_pix2world(x, y, 1) if self._direction>0 \
+            else temp_wcs.all_world2pix(x, y, 1)
+
+    @property
+    def inverse(self):
+        inv = self.copy()
+        inv._direction = -self._direction
+        return inv
+
+    def wcs(self, x_offset=None, y_offset=None, factor=None, angle=None):
+        """Return the WCS modified by the translation/scaling/rotation"""
+        wcs = self._wcs.deepcopy()
+        if x_offset is None:
+            x_offset = self.x_offset.value
+        if y_offset is None:
+            y_offset = self.y_offset.value
+        if angle is None:
+            angle = self.angle.value
+        if factor is None:
+            factor = self.factor.value
+        wcs.wcs.crpix += np.array([x_offset, y_offset])
+        if factor != self._factor_scale:
+            wcs.wcs.cd *= factor / self._factor_scale
+        if angle != 0.0:
+            m = models.Rotation2D(angle / self._angle_scale)
+            wcs.wcs.cd = m(*wcs.wcs.cd)
+        return wcs
+
 
 class Shift2D(FittableModel):
     """2D translation"""
@@ -31,8 +86,8 @@ class Shift2D(FittableModel):
 
 class Scale2D(FittableModel):
     """2D scaling"""
-    def __init__(self, factor, param_scale=1.0, **kwargs):
-        self._param_scale = param_scale
+    def __init__(self, factor, factor_scale=1.0, **kwargs):
+        self._factor_scale = factor_scale
         super(Scale2D, self).__init__(factor, **kwargs)
 
     inputs = ('x', 'y')
@@ -42,16 +97,16 @@ class Scale2D(FittableModel):
     @property
     def inverse(self):
         inv = self.copy()
-        inv.factor = self._param_scale**2/self.factor
+        inv.factor = self._factor_scale**2/self.factor
         return inv
 
     def evaluate(self, x, y, factor):
-        return x*factor/self._param_scale, y*factor/self._param_scale
+        return x*factor/self._factor_scale, y*factor/self._factor_scale
 
 class Rotate2D(FittableModel):
     """Rotation; Rotation2D isn't fittable"""
-    def __init__(self, factor, param_scale=1.0, **kwargs):
-        self._param_scale = param_scale
+    def __init__(self, factor, angle_scale=1.0, **kwargs):
+        self._angle_scale = angle_scale
         super(Rotate2D, self).__init__(factor, **kwargs)
 
     inputs = ('x', 'y')
@@ -69,7 +124,7 @@ class Rotate2D(FittableModel):
             raise ValueError("Expected input arrays to have the same shape")
         orig_shape = x.shape or (1,)
         inarr = np.array([x.flatten(), y.flatten()])
-        s, c = math.sin(angle/self._param_scale), math.cos(angle/self._param_scale)
+        s, c = math.sin(angle/self._angle_scale), math.cos(angle/self._angle_scale)
         x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
         x.shape = y.shape = orig_shape
         return x, y
@@ -99,6 +154,7 @@ def _landstat(landscape, updated_model, x, y):
                                                    (yt-0.5).astype(int))
                   if ix>=0 and iy>=0 and ix<landscape.shape[1]
                                      and iy<landscape.shape[0])
+    #print updated_model.x_offset.value, updated_model.y_offset.value, sum
     return -sum  # to minimize
 
 def _stat(tree, updated_model, x, y, sigma, maxsig):
@@ -241,16 +297,28 @@ class BruteLandscapeFitter(Fitter):
                  **kwargs):
         model_copy = _validate_model(model, ['bounds'])
         x, y = in_coords
+        xref, yref = ref_coords
+        xmax = max(np.max(x), np.max(xref))
+        ymax = max(np.max(y), np.max(yref))
         landscape = self.mklandscape(ref_coords, sigma, maxsig,
-                                    (int(np.max(y)),int(np.max(x))))
+                                    (int(ymax),int(xmax)))
         farg = (model_copy,) + _convert_input(x, y, landscape)
         p0, _ = _model_to_fit_params(model_copy)
 
         # TODO: Use the name of the parameter to infer the step size
-        bounds = [model_copy.bounds[p] for p in model_copy.param_names]
-        ranges = [slice(*(b[p]+(min(0.5*sigma, 0.1*np.diff(b[p])[0]),)))
-                  if b[p] is not None and np.diff(b[p])[0] > 0
-                  else b[p] for b in bounds]
+        ranges = []
+        for p in model_copy.param_names:
+            bounds = model_copy.bounds[p]
+            try:
+                diff = np.diff(bounds)[0]
+            except TypeError:
+                pass
+            else:
+                if diff > 0:
+                    ranges.append(slice(*(bounds+(min(0.5*sigma, 0.1*diff),))))
+                    continue
+            ranges.append((getattr(model_copy, p).value,) * 2)
+
         # Ns=1 limits the fitting along an axis where the range is not a slice
         # object: this is those were the bounds are equal (i.e. fixed param)
         fitted_params = self._opt_method(self.objective_function, ranges,
@@ -259,7 +327,7 @@ class BruteLandscapeFitter(Fitter):
         return model_copy
 
 def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
-                           verbose=True):
+                           release=False, verbose=True):
     """
     Finds the best-fitting mapping to convert from xin to xout, using a
     two-step approach by first doing a brute-force scan of parameter space,
@@ -278,6 +346,8 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
         size of the mountains for the BruteLandscapeFitter
     tolerance: float
         accuracy of parameters in final answer
+    release: boolean
+        undo the parameter bounds for the simplex fit?
     verbose: boolean
         output model and time info?
 
@@ -306,8 +376,14 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
     # Re-fix parameters in the intermediate model, if they were fixed
     # in the original model
     for p in m.param_names:
-        if np.diff(getattr(model, p).bounds)[0] == 0:
-            getattr(m, p).fixed = True
+        try:
+            if np.diff(getattr(model, p).bounds)[0] == 0:
+                getattr(m, p).fixed = True
+                continue
+        except TypeError:
+            pass
+        if release:
+            getattr(m, p).bounds = (None, None)
 
     # More precise minimization using pairwise calculations
     fit_it = KDTreeFitter()
@@ -386,8 +462,8 @@ def _show_model(model, intro=""):
     # to scale the model parameters to their internally-stored values
     for m in iterator:
         if m.name != 'Centering':
-            pscale = m._param_scale if hasattr(m, '_param_scale') else 1.0
             for name, value in zip(m.param_names, m.parameters):
+                pscale = getattr(m, '_{}_scale'.format(name), 1.0)
                 model_str += "{}: {}\n".format(name, value/pscale)
     return model_str
 
@@ -470,6 +546,7 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
             return None, None
 
     log = logutils.get_logger(__name__)
+    print 'Hello ', model_guess
     if model_guess is None:
         # Some useful numbers for later
         x1, x2 = np.min(xin), np.max(xin)
@@ -510,7 +587,7 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
             # da/57.3*pixel_range at the edge of the data, so we want
             # da=tolerance*57.3/pixel_range
             rot_scaling = pixel_range / 57.3
-            rot_model = Rotate2D(rvalue*rot_scaling, param_scale=rot_scaling)
+            rot_model = Rotate2D(rvalue*rot_scaling, angle_scale=rot_scaling)
             if rrange is None:
                 rot_model.angle.fixed = True
             else:
@@ -525,7 +602,7 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
             # dm*pixel_range at the edge of the data, so we want
             # dm=tolerance/pixel_range
             mag_scaling = pixel_range
-            mag_model = Scale2D(mvalue*mag_scaling, param_scale=mag_scaling)
+            mag_model = Scale2D(mvalue*mag_scaling, factor_scale=mag_scaling)
             if mrange is None:
                 mag_model.factor.fixed = True
             else:
@@ -708,6 +785,7 @@ def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
         use_in = list(range(len(xin)))
     if use_ref is None:
         use_ref = list(range(len(xref)))
+
     model = align_catalogs(xin[use_in], yin[use_in], xref[use_ref], yref[use_ref],
                            model_guess=model_guess, translation=translation,
                            translation_range=translation_range, rotation=rotation,
@@ -717,3 +795,116 @@ def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
     matched = match_sources(model(xin, yin), (xref, yref), radius=match_radius,
                                priority=use_in)
     return matched, model
+
+def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
+                          initial_shift = (0,0),
+                          min_sources=1, rotate=False, scale=False,
+                          full_wcs=False, tolerance=0.1, return_matches=False):
+    """
+    This function takes two images (an input image, and a reference image) and
+    works out the modifications needed to the WCS of the input images so that
+    the world coordinates of its OBJCAT sources match the world coordinates of
+    the OBJCAT sources in the reference image. This is done by modifying the
+    WCS of the input image and mapping the reference image sources to pixels
+    in the input image via the reference image WCS (fixed) and the input image
+    WCS. As such, in the nomenclature of the fitting routines, the pixel
+    positions of the input image's OBJCAT become the "reference" sources,
+    while the converted positions of the reference image's OBJCAT are the
+    "input" sources.
+
+    Parameters
+    ----------
+    adinput: AstroData
+        input AD whose pixel shift is requested
+    adref: AstroData
+        reference AD image
+    first_pass: float
+        size of search box (in arcseconds)
+    cull_sources: bool
+        limit matched sources to "good" (i.e., stellar) objects
+    min_sources: int
+        minimum number of sources to use for cross-correlation, depending on the
+        instrument used
+    rotate: bool
+        add a rotation to the alignment transform?
+    scale: bool
+        add a magnification to the alignment transform?
+    full_wcs: bool
+        use recomputed WCS at each iteration, rather than modify the positions
+        in pixel space?
+    tolerance: float
+        matching requirement (in pixels)
+    return_matches: bool
+        return a list of matched objects?
+
+    Returns
+    -------
+    matches: 2 lists
+        OBJCAT sources in input and reference that are matched
+    WCS: new WCS for input image
+    """
+    log = logutils.get_logger(__name__)
+    if len(adinput) * len(adref) != 1:
+        log.warning('Can only match single-extension images')
+        return None
+    if not (hasattr(adinput[0], 'OBJCAT') and hasattr(adref[0], 'OBJCAT')):
+        log.warning('Both input images must have object catalogs')
+        return None
+
+    if cull_sources:
+        good_src1 = gt.clip_sources(adinput)[0]
+        good_src2 = gt.clip_sources(adref)[0]
+        if len(good_src1) < min_sources or len(good_src2) < min_sources:
+            log.warning("Too few sources in culled list, using full set "
+                        "of sources")
+            x1, y1 = adinput[0].OBJCAT['X_IMAGE'], adinput[0].OBJCAT['Y_IMAGE']
+            x2, y2 = adref[0].OBJCAT['X_IMAGE'], adref[0].OBJCAT['Y_IMAGE']
+        else:
+            x1, y1 = good_src1["x"], good_src1["y"]
+            x2, y2 = good_src2["x"], good_src2["y"]
+    else:
+        x1, y1 = adinput[0].OBJCAT['X_IMAGE'], adinput[0].OBJCAT['Y_IMAGE']
+        x2, y2 = adref[0].OBJCAT['X_IMAGE'], adref[0].OBJCAT['Y_IMAGE']
+
+    # convert reference positions to sky coordinates
+    ra2, dec2 = WCS(adref.header[1]).all_pix2world(x2, y2, 1)
+
+    func = match_catalogs if return_matches else align_catalogs
+
+    if full_wcs:
+        transform = CallableWCS(WCS(adinput.header[1]), direction=-1)
+        x_offset, y_offset = initial_shift
+        transform.x_offset = x_offset
+        transform.y_offset = y_offset
+        transform.x_offset.bounds = (x_offset-first_pass, x_offset+first_pass)
+        transform.y_offset.bounds = (y_offset-first_pass, y_offset+first_pass)
+        if rotate:
+            transform.angle.bounds = (-5.0, 5.0)
+        else:
+            transform.angle.fixed = True
+        if scale:
+            transform.factor.bounds = (0.95, 1.05)
+        else:
+            transform.factor.fixed = True
+
+        # map input positions (in reference frame) to reference positions
+        func_ret = func(ra2, dec2, x1, y1, model_guess=transform,
+                        tolerance=tolerance)
+    else:
+        x2a, y2a = WCS(adinput.header[1]).all_world2pix(ra2, dec2, 1)
+        func_ret = func(x2a, y2a, x1, y1, model_guess=None,
+                        translation=initial_shift,
+                        translation_range=first_pass,
+                        rotation_range=5.0 if rotate else None,
+                        magnification_range=0.05 if scale else None,
+                        tolerance=tolerance)
+
+    if return_matches:
+        matched, transform = func_ret
+        ind2 = np.where(matched >= 0)
+        ind1 = matched[ind2]
+        obj_list = [[], []] if len(ind1) < 1 else [list(zip(x1[ind1], y1[ind1])),
+                                                   list(zip(x2[ind2], y2[ind2]))]
+        return obj_list, transform
+    else:
+        return func_ret
