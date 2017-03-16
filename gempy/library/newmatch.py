@@ -546,7 +546,6 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
             return None, None
 
     log = logutils.get_logger(__name__)
-    print 'Hello ', model_guess
     if model_guess is None:
         # Some useful numbers for later
         x1, x2 = np.min(xin), np.max(xin)
@@ -797,9 +796,9 @@ def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
     return matched, model
 
 def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
-                          initial_shift = (0,0),
-                          min_sources=1, rotate=False, scale=False,
-                          full_wcs=False, tolerance=0.1, return_matches=False):
+                          initial_shift = (0,0), min_sources=1, rotate=False,
+                          scale=False, full_wcs=False, refine=False,
+                          tolerance=0.1, return_matches=False):
     """
     This function takes two images (an input image, and a reference image) and
     works out the modifications needed to the WCS of the input images so that
@@ -832,6 +831,9 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
     full_wcs: bool
         use recomputed WCS at each iteration, rather than modify the positions
         in pixel space?
+    refine: bool
+        only do a simplex fit to refine an existing transformation?
+        (requires full_wcs=True). Also ignores return_matches
     tolerance: float
         matching requirement (in pixels)
     return_matches: bool
@@ -876,20 +878,29 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
         x_offset, y_offset = initial_shift
         transform.x_offset = x_offset
         transform.y_offset = y_offset
-        transform.x_offset.bounds = (x_offset-first_pass, x_offset+first_pass)
-        transform.y_offset.bounds = (y_offset-first_pass, y_offset+first_pass)
-        if rotate:
-            transform.angle.bounds = (-5.0, 5.0)
-        else:
-            transform.angle.fixed = True
-        if scale:
-            transform.factor.bounds = (0.95, 1.05)
-        else:
-            transform.factor.fixed = True
 
-        # map input positions (in reference frame) to reference positions
-        func_ret = func(ra2, dec2, x1, y1, model_guess=transform,
-                        tolerance=tolerance)
+        if refine:
+            fit_it = KDTreeFitter()
+            final_model = fit_it(transform, (ra2, dec2), (x1, y1),
+                                 method='Nelder-Mead',
+                                 options={'xtol': tolerance, 'ftol': 100.0})
+            log.stdinfo(_show_model(final_model, 'Refined transformation'))
+            return final_model
+        else:
+            transform.x_offset.bounds = (x_offset-first_pass, x_offset+first_pass)
+            transform.y_offset.bounds = (y_offset-first_pass, y_offset+first_pass)
+            if rotate:
+                transform.angle.bounds = (-5.0, 5.0)
+            else:
+                transform.angle.fixed = True
+            if scale:
+                transform.factor.bounds = (0.95, 1.05)
+            else:
+                transform.factor.fixed = True
+
+            # map input positions (in reference frame) to reference positions
+            func_ret = func(ra2, dec2, x1, y1, model_guess=transform,
+                            tolerance=tolerance)
     else:
         x2a, y2a = WCS(adinput.header[1]).all_world2pix(ra2, dec2, 1)
         func_ret = func(x2a, y2a, x1, y1, model_guess=None,

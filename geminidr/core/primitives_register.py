@@ -240,7 +240,7 @@ class Register(PrimitivesBASE):
                         # Determine a more accurate fit, and get the WCS
                         wcs = align_images_from_wcs(ad, ref_image,
                                     initial_shift=(x_offset, y_offset),
-                                    first_pass=0.2*firstpasspix,
+                                    first_pass=0.2*firstpasspix, refine=True,
                                     cull_sources=cull_sources, full_wcs=True,
                                     rotate=rotate, scale=scale, tolerance=0.01,
                                     return_matches=False).wcs()

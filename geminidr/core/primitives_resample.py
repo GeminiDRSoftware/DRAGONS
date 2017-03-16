@@ -305,12 +305,12 @@ def _composite_transformation_matrix(ad, out_wcs, keyword_comments):
     log.fullinfo("Transformation matrix:\n"+repr(matrix))
     log.fullinfo("Updating WCS to match reference WCS")
 
-    for ax in range(1,3):
+    for ax in (1, 2):
         ad.hdr.set('CRPIX{}'.format(ax), out_wcs.wcs.crpix[ax-1],
                    comment=keyword_comments["CRPIX{}".format(ax)])
         ad.hdr.set('CRVAL{}'.format(ax), out_wcs.wcs.crval[ax-1],
                     comment=keyword_comments["CRVAL{}".format(ax)])
-        for ax2 in range(1,3):
+        for ax2 in (1, 2):
             ad.hdr.set('CD{}_{}'.format(ax,ax2), out_wcs.wcs.cd[ax-1,ax2-1],
                        comment=keyword_comments["CD{}_{}".format(ax,ax2)])
 
