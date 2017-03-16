@@ -16,7 +16,7 @@ from geminidr.gemini.lookups import color_corrections
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
 
-from gempy.library.newmatch import match_catalogs
+from gempy.library.newmatch import match_catalogs, CallableWCS
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -376,13 +376,25 @@ def _match_objcat_refcat(ad, context='qa'):
             keep_num = objcat_len
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
 
+        m = CallableWCS(wcs, direction=-1)
+        m.x_offset.bounds = (-initial, initial)
+        m.y_offset.bounds = (-initial, initial)
+        m.factor.fixed = True
+        m.angle.fixed = True
+        #working_model = (0, m)
+
         if num_ref_sources > 0:
             log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
                         format(extver, num_ref_sources, keep_num))
             matched, m_final = match_catalogs(objcat['X_IMAGE'], objcat['Y_IMAGE'],
-                                xref, yref, use_in=sorted_idx, use_ref=in_field,
-                                model_guess=working_model[1], translation_range=initial,
-                                tolerance=0.1, match_radius=final)
+                                              xref, yref, use_in=sorted_idx, use_ref=in_field,
+                                              model_guess=working_model[1], translation_range=initial,
+                                              tolerance=0.1, match_radius=final)
+            #xref, yref = ad.REFCAT['RAJ2000'], ad.REFCAT['DEJ2000']
+            #matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
+            #                                  use_in=in_field, use_ref=sorted_idx,
+            #                                  model_guess=working_model[1], translation_range=initial,
+            #                                  tolerance=0.1, match_radius=final)
         else:
             log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
             continue
@@ -398,11 +410,11 @@ def _match_objcat_refcat(ad, context='qa'):
         # Loop through the reference list updating the refid in the objcat
         # and the refmag, if we can
         for i, m in enumerate(matched):
-            if m > 0:
+            if m >= 0:
                 objcat['REF_NUMBER'][i] = refcat['Id'][m]
                 # Assign the magnitude
                 if formulae:
-                    mag, mag_err = _calculate_magnitude(formulae, refcat, matched[i])
+                    mag, mag_err = _calculate_magnitude(formulae, refcat, m)
                     objcat['REF_MAG'][i] = mag
                     objcat['REF_MAG_ERR'][i] = mag_err
     return ad
