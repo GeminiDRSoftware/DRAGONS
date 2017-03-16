@@ -66,7 +66,7 @@ class Resample(PrimitivesBASE):
         In order not to lose any data, the output image arrays (including the
         reference image's) are expanded with respect to the input image arrays.
         The science and variance data arrays are padded with zeros; the DQ
-        plane is padded with ones.
+        plane is padded with 16s.
         
         The WCS keywords in the headers of the output images are updated
         to reflect the transformation.
@@ -110,18 +110,18 @@ class Resample(PrimitivesBASE):
         corner_values = _transform_corners(adinputs[1:], all_corners, ref_wcs,
                                            interpolator)
         all_corners, xy_img_corners, shifts = corner_values
-        cenoff, out_shape = _shifts_and_shapes(all_corners, ref_shape, naxis,
+        refoff, out_shape = _shifts_and_shapes(all_corners, ref_shape, naxis,
                                                interpolator, trim_data, shifts)
-        ref_corners = [(corner[1] - cenoff[1] + 1, corner[0] - cenoff[0] + 1) # x,y
+        ref_corners = [(corner[1] - refoff[1] + 1, corner[0] - refoff[0] + 1) # x,y
                        for corner in ref_corners]
         area_keys = _build_area_keys(ref_corners)
 
-        ref_image.hdr.set('CRPIX1', ref_wcs.wcs.crpix[0]-cenoff[1],
+        ref_image.hdr.set('CRPIX1', ref_wcs.wcs.crpix[0]-refoff[1],
                           self.keyword_comments["CRPIX1"])
-        ref_image.hdr.set('CRPIX2', ref_wcs.wcs.crpix[1]-cenoff[0],
+        ref_image.hdr.set('CRPIX2', ref_wcs.wcs.crpix[1]-refoff[0],
                           self.keyword_comments["CRPIX2"])
         padding = tuple((int(-cen),out-int(ref-cen)) for cen, out, ref in
-                        zip(cenoff, out_shape, ref_shape))
+                        zip(refoff, out_shape, ref_shape))
         _pad_image(ref_image, padding)
 
         for key in area_keys:
@@ -212,9 +212,13 @@ def _transform_corners(ads, all_corners, ref_wcs, interpolator):
     return all_corners, xy_img_corners, shifts
 
 def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, shifts):
+    """
+    all_corners are locations (y,x) of all 4 corners of the reference image in the
+    pixel space of each image
+    """
     log = logutils.get_logger(__name__)
     if trim_data:
-        cenoff=[0]*naxis
+        refoff=[0]*naxis
         out_shape = ref_shape
         log.fullinfo("Trimming data to size of reference image")
     else:
@@ -224,16 +228,13 @@ def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, s
 
         # Otherwise, use the corners of the images to get the minimum
         # required output shape to hold all data
-        cenoff = []
         out_shape = []
-        ref_offset = []
-        print all_corners
+        refoff = []
         for axis in range(naxis):
             # get output shape from corner values
             cvals = [corner[axis] for ic in all_corners for corner in ic]
-            print cvals
             out_shape.append(int(max(cvals)-min(cvals)+1))
-            ref_offset.append(min(min(cvals), ref_shape[axis]-max(cvals)))
+            refoff.append(-max(0, int(max(cvals) - ref_shape[axis] + 1)))
 
             # if just shifting, need to set centering shift
             # for reference image from offsets already calculated
@@ -242,14 +243,18 @@ def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, s
                 # include a 0 shift for the reference image
                 # (in case it's already centered)
                 svals.append(0.0)
-                cenoff.append(-int(max(svals)))
-            else:
-                cenoff.append(np.rint(min(min(cvals),
-                                          ref_shape[axis]-max(cvals))))
+                refoff.append(-int(max(svals)))
 
         out_shape = tuple(out_shape)
         log.fullinfo("New output shape: "+repr(out_shape))
-    return cenoff, out_shape
+
+        # if not shifting, get offset required to center reference image
+        # from the size of the image
+        #if interpolator:
+        #    incen = [0.5*(axlen-1) for axlen in ref_shape]
+        #    outcen = [0.5*(axlen-1) for axlen in out_shape]
+        #    cenoff = np.rint(incen) - np.rint(outcen)
+    return refoff, out_shape
 
 def _build_area_keys(corners):
     log = logutils.get_logger(__name__)
