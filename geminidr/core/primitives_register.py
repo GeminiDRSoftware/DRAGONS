@@ -137,8 +137,8 @@ class Register(PrimitivesBASE):
         ref_image = adinputs[0]
         log.stdinfo("Reference image: "+ref_image.filename)
 
-        if not hasattr(ref_image[0], 'OBJCAT') or (len(ref_image[0].OBJCAT)
-                                        < min_sources and method=='sources'):
+        if (not hasattr(ref_image[0], 'OBJCAT') or len(ref_image[0].OBJCAT)
+                                        < min_sources) and method=='sources':
             log.warning("Insufficient objects found in reference image.")
             if fallback is None:
                 log.warning("WCS can only be corrected indirectly and "
@@ -150,12 +150,13 @@ class Register(PrimitivesBASE):
                             "via {} mapping".format(fallback))
                 method = fallback
 
+        adoutputs = [ref_image]
         # If no OBJCAT/no sources in reference image, or user choice,
         # use indirect alignment for all images at once
         if method == "header":
             log.stdinfo("Using WCS specified in header for alignment")
             for ad in adinputs[1:]:
-                _create_wcs_from_offsets(ad, ref_image)
+                adoutputs.append(_create_wcs_from_offsets(ad, ref_image))
 
         # otherwise try to do direct alignment for each image by correlating
         # sources in the reference and input images
@@ -170,7 +171,7 @@ class Register(PrimitivesBASE):
                     if fallback == 'header':
                         log.warning("Only attempting indirect WCS alignment, "
                                     "via {} mapping".format(fallback))
-                        _create_wcs_from_offsets(ad, ref_image)
+                        ad = _create_wcs_from_offsets(ad, ref_image)
                         #adoutput = _header_align(ref_image, [ad],
                         #                         self.keyword_comments)
                     else:
@@ -186,7 +187,7 @@ class Register(PrimitivesBASE):
                     # GNIRS WCS is dubious, so update WCS by using the ref
                     # image's WCS and the telescope offsets
                     if ad.instrument() == 'GNIRS' and not use_wcs:
-                        _create_wcs_from_offsets(ad, ref_image)
+                        ad = _create_wcs_from_offsets(ad, ref_image)
 
                     if not use_wcs:
                         log.warning("Parameter 'use_wcs' is False.")
@@ -254,13 +255,14 @@ class Register(PrimitivesBASE):
                                            wcs.wcs.cd[ax-1, ax2-1],
                                            comment=self.keyword_comments["CD{}_{}".
                                            format(ax, ax2)])
+                adoutputs.append(ad)
 
         # Timestamp and update filenames
-        for ad in adinputs:
+        for ad in adoutputs:
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                             strip=True)
-        return adinputs
+        return adoutputs
     
     def determineAstrometricSolution(self, adinputs=None, **params):
         """
@@ -649,7 +651,9 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
 def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     """
     This function uses the POFFSET, QOFFSET, and PA header keywords to create
-    a new WCS for an image. Its primary role is for GNIRS.
+    a new WCS for an image. Its primary role is for GNIRS. For ease, it works
+    out the (RA,DEC) of the centre of rotation in the reference image and
+    determines where in the input image this is.
 
     Parameters
     ----------
@@ -661,9 +665,13 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
         Location of rotation center (x, y)
     """
     log = logutils.get_logger(__name__)
+    if len(adinput) != len(adref):
+        log.warning("Number of extensions in input files are different. "
+                    "Cannot correct WCS.")
+        return
+
     log.stdinfo("Updating WCS of {} based on {}".format(adinput.filename,
                                                         adref.filename))
-
     try:
         poffset1 = adref.phu['POFFSET']
         qoffset1 = adref.phu['QOFFSET']
@@ -677,28 +685,62 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
                     "so no change will be made")
         return
 
-    xdiff = -1.0 * (qoffset1 - qoffset2) / pixscale
-    ydiff = (poffset1 - poffset2) / pixscale
+    try:
+        bottom_port = adref.phu['INPORT'] == 1
+    except KeyError:
+        bottom_port = False  # probably!
 
+    # This logic has been taken from GACQ with most instances checked
+    if 'NIRI' in adref.tags:
+        xoffset = poffset2 - poffset1
+        yoffset = qoffset1 - qoffset2
+        if bottom_port and not adref.is_ao():
+            xoffset = -xoffset
+    elif 'GNIRS' in adref.tags:
+        xoffset = qoffset2 - qoffset1
+        yoffset = poffset1 - poffset2
+        if bottom_port and not adref.is_ao():
+            xoffset = -xoffset
+    elif 'F2' in adref.tags:
+        xoffset = qoffset1 - qoffset2
+        yoffset = poffset1 - poffset2
+        if bottom_port:
+            yoffset = -yoffset
+    elif 'TRECS' in adref.tags:
+        xoffset = poffset2 - poffset1
+        yoffset = qoffset1 - qoffset2
+    else:
+        xoffset = poffset2 - poffset1
+        yoffset = qoffset2 - qoffset1
+        if bottom_port:
+            if adref.instrument() == 'GMOS-S':
+                yoffset = -yoffset
+            else:
+                xoffset = -xoffset
+    xdiff = xoffset / pixscale
+    ydiff = yoffset / pixscale
 
-    # Will need to have some sort of LUT here eventually. But for now...
-    if center_of_rotation is None:
-        center_of_rotation = (630.0, 520.0) if (adref.instrument() ==
-            'GNIRS') else tuple(0.5*x for x in adref[0].data.shape[::-1])
+    # We expect mosaicked inputs but there's no reason why this couldn't
+    # work for all extensions in an image
+    for extin, extref in zip(adinput, adref):
+        # Will need to have some sort of LUT here eventually. But for now...
+        if center_of_rotation is None:
+            center_of_rotation = (630.0, 520.0) if 'GNIRS' in adref.tags \
+                else tuple(0.5*x for x in extref.data.shape[::-1])
 
-    wcsref = WCS(adref.header[1])
-    ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
-                                     center_of_rotation[1], 1)
-    adinput.hdr['CRVAL1'] = ra0
-    adinput.hdr['CRVAL2'] = dec0
-    adinput.hdr['CRPIX1'] = center_of_rotation[0] - xdiff
-    adinput.hdr['CRPIX2'] = center_of_rotation[1] - ydiff
-    cd = models.Rotation2D(angle=pa1-pa2)(*wcsref.wcs.cd)
-    adinput.hdr['CD1_1'] = cd[0][0]
-    adinput.hdr['CD1_2'] = cd[0][1]
-    adinput.hdr['CD2_1'] = cd[1][0]
-    adinput.hdr['CD2_2'] = cd[1][1]
-    return
+        wcsref = WCS(extref.header[1])
+        ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
+                                         center_of_rotation[1], 1)
+        extin.hdr['CRVAL1'] = float(ra0)
+        extin.hdr['CRVAL2'] = float(dec0)
+        extin.hdr['CRPIX1'] = center_of_rotation[0] + xdiff
+        extin.hdr['CRPIX2'] = center_of_rotation[1] + ydiff
+        cd = models.Rotation2D(angle=pa1-pa2)(*wcsref.wcs.cd)
+        extin.hdr['CD1_1'] = cd[0][0]
+        extin.hdr['CD1_2'] = cd[0][1]
+        extin.hdr['CD2_1'] = cd[1][0]
+        extin.hdr['CD2_2'] = cd[1][1]
+    return adinput
 
 def _apply_model_to_wcs(adinput, transform=None, keyword_comments=None):
     """
