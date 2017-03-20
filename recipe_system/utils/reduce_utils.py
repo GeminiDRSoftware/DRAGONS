@@ -1,5 +1,14 @@
+#
+#                                                                reduce_utils.py
+# ------------------------------------------------------------------------------
+# Utility function library for reduce and the Reduce class.
+__version__ = "2.0.0 (beta)"
+# ------------------------------------------------------------------------------
 from argparse import ArgumentParser
 from argparse import HelpFormatter
+
+import astrodata
+import gemini_instruments
 
 from .reduceActions import PosArgAction
 from .reduceActions import BooleanAction
@@ -128,10 +137,10 @@ def buildParser(version):
                         "Eg., --upload_metrics")
 
     parser.add_argument("--user_cal", dest='user_cal', default=None,
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs="*", action=CalibrationAction,
                         help="Specify user supplied calibrations for "
                         "calibration types. "
-                        "Eg., --user_cal gsTest_arc.fits")
+                        "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
     return parser
 
@@ -297,3 +306,76 @@ def normalize_context(context):
 
     splitc = context if len(context) > 1 else context[0].split(',')
     return [c.lower() for c in splitc]
+
+def normalize_ucals(files, cals):
+    """
+    When a user passes a --user_cal argument of the form,
+
+    --user_cal processed_bias:/path/to/foo.fits
+
+    The parser produces a user calibrations list like,
+
+    ['processed_bias:/path/to/foo.fits']
+
+    This list would pass to the Reduce __init__ as such, but, this function
+    will translate and apply all user cals to all passed files.
+
+    {(ad.data_label(), 'processed_bias'): '/path/to/foo.fits'}
+
+    This dictionary is of the same form as the calibrations dictionary for
+    retrieved and stored calibrations.
+
+    User calibrations always take precedence over nominal calibration
+    retrieval. User calibrations are not cached because they are not
+    retrieved from fitsstore and are presumably on disk.
+
+    Parameters:
+    ----------
+        cals: a list of strings like, 'caltype:calfilepath'
+        type: <list>
+
+    Returns:
+    -------
+        normalz: a dictionary of the cal types applied to input files.
+        type:  <dict>
+
+    E.g., a returned dict,
+
+    {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
+
+    """
+    def _site(tags):
+        site = None
+        if "SOUTH" in tags:
+            site = 'GS'
+        elif "NORTH" in tags:
+            site = 'GN'
+        else:
+            emsg = "Site cannot be determined."
+            raise TypeError(emsg)
+        return site
+
+    normalz = {}
+    if cals is None:
+        return normalz
+
+    for cal in cals:
+        ctype, cpath = cal.split(":")
+        scal, stype = ctype.split("_")
+        caltags = set([scal.upper(), stype.upper()])
+        cad = astrodata.open(cpath)
+        try:
+            assert caltags.issubset(cad.tags)
+        except AssertionError:
+            errmsg = "Calibration type {}\ndoes not match file {}"
+            raise TypeError(errmsg.format(ctype, cpath))
+
+        for f in files:
+            ad = astrodata.open(f)
+            if _site(cad.tags) != _site(ad.tags):
+                emsg = "Calibration {} does not match site of observation {}"
+                raise TypeError(emsg.format(cad.filename, ad.filename))
+
+            normalz.update({(ad.data_label(), ctype): cpath})
+
+    return normalz

@@ -4,12 +4,10 @@
 #                                                        recipe_system.reduction
 #                                                               reduceActions.py
 # ------------------------------------------------------------------------------
-# $Id$
+__version__  = '2.0.0 (beta)'
 # ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]  # Changed by swapper, 22 May 2014
-__version_date__ = '$Date$'[7:-3]
-# ------------------------------------------------------------------------------
-"""This module provides a number "action" classes, subclassed from the
+"""
+This module provides a number "action" classes, subclassed from the
 argparse.Action class. These classes only override the __call__() method. This 
 actions class library supplies ad hoc functionality to DPDG requirements on the
 reduce command line interface.

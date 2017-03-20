@@ -40,6 +40,7 @@ def reduce(p):
     p.detectSources()
     p.measureIQ(display=True)
     p.measureCCAndAstrometry()
+    p.writeOutputs()
     return
 
 default = reduce

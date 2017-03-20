@@ -178,6 +178,10 @@ htmlhelp_basename = 'RecipeSystemUsersManual'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
+# This will remove blank pages.
+'classoptions': ',openany,oneside',
+'babel': '\\usepackage[english]{babel}',
+
 # The paper size ('letterpaper' or 'a4paper').
 #'papersize': 'letterpaper',
 
@@ -198,7 +202,9 @@ latex_documents = [
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
+#latex_logo = 'images/gemini_banner_poster.jpeg'
+#latex_logo = 'images/black_gem.png'
+latex_logo = 'images/GeminiLogo_new_2014.jpg'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.

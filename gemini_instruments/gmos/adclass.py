@@ -459,10 +459,10 @@ class AstroDataGmos(AstroDataGemini):
         if ut_date is None:
             return None  # converted to list by decorator if needed
 
-        if ut_date >= date(2017, 3, 15):
+        if ut_date >= date(2017, 2, 24):
             gain_dict = lookup.gmosampsGain
         elif ut_date >= date(2015, 8, 26):
-            gain_dict = lookup.gmosampsGainBefore20170315
+            gain_dict = lookup.gmosampsGainBefore20170224
         elif ut_date >= date(2006, 8, 31):
             gain_dict = lookup.gmosampsGainBefore20150826
         else:
@@ -785,10 +785,10 @@ class AstroDataGmos(AstroDataGemini):
             if ut_date is None:
                 return None  # converted to list by decorator if needed
 
-            if ut_date > date(2017, 3, 15):
+            if ut_date > date(2017, 2, 24):
                 rn_dict = lookup.gmosampsRdnoise
             elif ut_date >= date(2015, 8, 26):
-                rn_dict = lookup.gmosampsRdnoiseBefore20170315
+                rn_dict = lookup.gmosampsRdnoiseBefore20170224
             elif ut_date >= date(2006, 8, 31):
                 rn_dict = lookup.gmosampsRdnoiseBefore20150826
             else:
@@ -864,6 +864,11 @@ class AstroDataGmos(AstroDataGemini):
 
         # Get estimated bias levels from LUT
         bias_levels = get_bias_level(self, estimate=True)
+        if bias_levels is None:
+            bias_levels = 0.0 if self.is_single else [0.0] * len(self)
+        else:
+            if not self.is_single:
+                bias_levels = [b if b is not None else 0 for b in bias_levels]
 
         adc_limit = 65535
         # Get the limit that could be processed without hitting the ADC limit
