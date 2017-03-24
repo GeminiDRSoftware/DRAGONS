@@ -21,7 +21,9 @@ from threading import Thread
 from recipe_system.adcc.servers import http_proxy
 from recipe_system.adcc.servers import eventsManager
 
-from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
+from recipe_system.config import globalConf
+from recipe_system.config import STANDARD_REDUCTION_CONF
+from recipe_system.utils.findexe import findexe
 # ------------------------------------------------------------------------------
 def get_adcc_dir(dirtitle="adcc"):
     dotadcc = {"adcc": ".adcc"}
@@ -55,16 +57,14 @@ class ADCC(with_metaclass(Singleton, object)):
             self.verbose   = args.verbosity
             self.web       = None
 
-    def _check_adcc(self):
-        curpid = os.getpid()
-        running = []
-        for line in os.popen("ps ax | grep adcc | grep -v grep"):
-            fields = line.split()
-            pid = fields[0]
-            if int(pid) != int(curpid):
-                print("adcclib: adcc process {} running.".format(pid))
-                running.append(pid)
-        return running
+    def _check_adcc(self, cpid):
+        adccproc = findexe('adcc')
+        msg = "adcclib: adcc process {} running."
+        for i in range(len(adccproc)):
+            if adccproc[i] == cpid:
+                null = adccproc.pop(i)
+        x = [print(msg.format(p)) for p in adccproc]
+        return adccproc
 
     def _check_kill_adcc(self, pids):
         for pid in pids:
@@ -80,17 +80,25 @@ class ADCC(with_metaclass(Singleton, object)):
         return
 
     def _handle_locks(self):
+        curpid = os.getpid()
         adccdir = get_adcc_dir()
         lockf = os.path.join(adccdir, self.racefile)
         lfile = True if os.path.exists(lockf) else False
-        pids = self._check_adcc()
+        pids = self._check_adcc(curpid)
+        msgs = {
+            'lockrun': "adcclib: adcc running and lockfile detected.",
+            'portrun': "adcclib: adcc running on port {}",
+            'norun'  : "adcclib: No adcc running but lockfile found.",
+            'rupted' : "adcclib: adcc config appears corrupted. Clearing ..."
+        }
+
         if pids and lfile:
-            sys.exit("adcclib: adcc running and lockfile detected.")
+            sys.exit(msgs['lockrun'])
         elif pids and not lfile:
-            sys.exit("adcclib: adcc running on port {}".format(self.http_port))
+            sys.exit(msgs['portrun'].format(self.http_port))
         elif lfile and not pids:
-            print("adcclib: No adcc running but lockfile found.")
-            print("adcclib: adcc configuration appears to be corrupted. Clearing ...")
+            print(msgs['norun'])
+            print(msgs['rupted'])
             os.unlink(lockf)
         return
 

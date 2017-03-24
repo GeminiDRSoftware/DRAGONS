@@ -6,5 +6,5 @@ gmosArrayGaps = {
     # GMOS-S Hamamatsu
     "S10892" : 61,
     # GMOS-N Hamamatsu
-    "S10892-N" : 61,
+    "S10892-N" : 67,
 }

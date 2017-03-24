@@ -5,8 +5,6 @@
 Utility functions for Mappers.
 
     find_user_recipe  -- searches for a user specified recipe, if any.
-    configure_pkg()   -- returns a PackageConfig object.
-    get_config_file() -- looks for a $GEMINIDR env var
     dictify()         -- list of user parameters -> dictionary
     dotpath()         -- build a python import path or GeminiDR packages.
 
@@ -24,8 +22,6 @@ import pkgutil
 
 from inspect import isclass
 from importlib import import_module
-
-from packageConfig import PackageConfig
 
 # ------------------------------------------------------------------------------
 def find_user_recipe(dashr):
@@ -70,23 +66,6 @@ def find_user_recipe(dashr):
 
     return recipefn
 
-def configure_pkg():
-    cfgfile = get_config_file()
-    pkg_conf = PackageConfig()
-    pkg_conf.configure_pkg(cfgfile)
-    return pkg_conf
-
-def get_config_file():
-    """
-    Find a GeminiDR package config file, pkg.cfg.
-    Examines env var $GEMINIDR.
-
-    """
-    config_path = os.environ.get('GEMINIDR')
-    default_cfg = 'pkg.cfg'
-    config_file = os.path.join(config_path, default_cfg)
-    return config_file
-
 def dictify(parset):
     """
     Converts a list of tuples, nominally a set of user parameters passed via
@@ -120,8 +99,6 @@ def dotpath(*args):
 
     """
     return os.extsep.join(args)
-
-
 
 # ------------------------------------------------------------------------------
 # public functions

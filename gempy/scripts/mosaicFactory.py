@@ -36,7 +36,9 @@ Mosaicked FITS images are written to cwd(), like
 inputImage.fits --> inputImage_mosaic.fits
 
 """
+from __future__ import print_function
 # ------------------------------------------------------------------------------
+from builtins import object
 __version__ = "0.1"
 # ------------------------------------------------------------------------------
 import os
@@ -93,24 +95,24 @@ class MosaicFactory(object):
         for in_fits in infiles:
             out_fits = self._set_out_fits(in_fits)
                 
-            print ptime(),"\tWorking on ...", os.path.split(in_fits)[1]
+            print(ptime(),"\tWorking on ...", os.path.split(in_fits)[1])
             ad = astrodata.open(in_fits)
             
-            print ptime(),"\tAstroData object built"
-            print ptime(),"\tWorking on type:", self._check_tags(ad.tags)
-            print ptime(),"\tConstructing MosaicAD instance ..."
+            print(ptime(),"\tAstroData object built")
+            print(ptime(),"\tWorking on type:", self._check_tags(ad.tags))
+            print(ptime(),"\tConstructing MosaicAD instance ...")
             mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
 
-            print ptime(),"\tMaking mosaic ..."
+            print(ptime(),"\tMaking mosaic ...")
             mos.mosaic_image_data()
 
-            print ptime(), "\tConverting data ..."
+            print(ptime(), "\tConverting data ...")
             adout = mos.as_astrodata()
 
-            print ptime(),"\tWriting file ..."
+            print(ptime(),"\tWriting file ...")
             adout.write(out_fits)
 
-            print ptime(),"\tMosaic fits image written:", out_fits
+            print(ptime(),"\tMosaic fits image written:", out_fits)
         return
 
     def _check_tags(self, tlist):

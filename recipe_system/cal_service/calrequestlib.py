@@ -5,6 +5,8 @@ import hashlib
 import requests
 
 from requests.exceptions import HTTPError
+from requests.exceptions import Timeout
+from requests.exceptions import ConnectionError
 
 from os import mkdir
 from os.path import basename, exists
@@ -35,7 +37,7 @@ descriptor_list = ['amp_read_area', 'camera', 'central_wavelength', 'coadds',
                    'ut_datetime', 'read_mode', 'well_depth_setting']
 # ------------------------------------------------------------------------------
 def get_request(url, filename):
-    r = requests.get(url)
+    r = requests.get(url, timeout=10.0)
     r.raise_for_status()
     with open(filename, 'wb') as fd:
         for chunk in r.iter_content(chunk_size=128):
@@ -217,6 +219,14 @@ def process_cal_requests(cal_requests):
                     log.error(errstr)
                     log.error(str(err))
                     continue
+                except ConnectionError as err:
+                    log.error("Unable to connect to url {}".format(url))
+                    log.error(str(err))
+                    continue
+                except Timout as terr:
+                    log.error("Request timed out.")
+                    log.error(str(terr))
+                    continue
 
         log.status("Making request for {}".format(calurl))
         fname = split(calurl)[1]
@@ -225,6 +235,12 @@ def process_cal_requests(cal_requests):
             calname = get_request(calurl, calname)
         except HTTPError as err:
             log.error(str(err))
+        except ConnectionError as err:
+            log.error("Unable to connect to url {}".format(url))
+            log.error(str(err))
+        except Timout as terr:
+            log.error("Request timed out.")
+            log.error(str(terr))
         else:
             # hash compare
             download_mdf5 = generate_md5_digest(calname)

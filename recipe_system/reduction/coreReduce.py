@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 from builtins import str
 from builtins import object
-_version = '2.0 (beta)'
+_version = '2.0.0 (beta)'
 # ------------------------------------------------------------------------------
 """
 class Reduce {} provides one (1) public method:
@@ -21,6 +21,7 @@ import os
 import sys
 import inspect
 import signal
+from types import StringType
 
 import astrodata
 import gemini_instruments
@@ -34,6 +35,7 @@ from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
 
 from recipe_system.utils.reduce_utils import buildParser
+from recipe_system.utils.reduce_utils import normalize_ucals
 from recipe_system.utils.reduce_utils import set_btypes
 
 from recipe_system.mappers.recipeMapper import RecipeMapper
@@ -71,13 +73,27 @@ class Reduce(object):
             args = buildParser(_version).parse_args([])
 
         self.adinputs = None
-        self.files   = args.files
-        self.uparms  = set_btypes(args.userparam)
-        self.ucals   = args.user_cal
-        self.context = args.context
-        self.suffix  = args.suffix
+        self._context = args.context
+        self.files    = args.files
+        self.suffix   = args.suffix
+        self.ucals    = normalize_ucals(args.files, args.user_cal)
+        self.uparms   = set_btypes(args.userparam)
         self.upload_metrics = args.upmetrics
         self.urecipe = args.recipename if args.recipename else 'default'
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, ctx):
+        if ctx is None:
+            self._context = ['qa']         # Set default 'qa' [later, 'sq']
+        elif isinstance(ctx, StringType):
+            self._context = [seg.lower().strip() for seg in ctx.split(',')]
+        elif isinstance(ctx, list):
+            self._context = ctx
+        return
 
     def runr(self):
         """
@@ -164,12 +180,22 @@ class Reduce(object):
                 return xstat
         else:
             self._logheader(recipe)
-            recipe(p)
+            try:
+                recipe(p)
+            except KeyboardInterrupt:
+                log.error("Caught KeyboardInterrupt (^C) signal")
+                xstat = signal.SIGINT
+            except Exception as err:
+                log.error("runr() caught an unhandled exception.")
+                log.error(str(err))
+                xstat = signal.SIGABRT
 
-        # Write block
-        # Only write files at this point if self.adinputs filenames have changed
-        # from .orig_filename, or if --suffix has been provided.
-
+        self._write_final(p.streams['main'])
+        if xstat != 0:
+            msg = "reduce instance aborted."
+        else:
+            msg = "\nreduce completed successfully."
+        log.stdinfo(str(msg))
         return xstat
 
     # -------------------------------- prive -----------------------------------
@@ -271,7 +297,10 @@ class Reduce(object):
             for local, value in list(cstack[-1][0].f_locals.items()):
                 if local == 'args':
                     try:
-                        assert list(value.__dict__.keys()) == list(red_namespace.__dict__.keys())
+                        assert(
+                            list(value.__dict__.keys()) == 
+                            list(red_namespace.__dict__.keys())
+                        )
                         is_reduce = True
                     except AssertionError:
                         log.stdinfo("A non-reduce command line was detected.")
@@ -289,4 +318,36 @@ class Reduce(object):
         log.status("="*80)
         log.status(logstring)
         log.status("="*80)
+        return
+
+    def _write_final(self, outputs):
+        """
+        Write final outputs. Write only if filename is not == orig_filename, or
+        if there is a user suffix (self.suffix)
+
+        Parameters:
+        -----------
+            outputs: List of AstroData objects
+            type: <list>
+
+        Return:
+        -------
+            type: <void>
+
+        """
+        outstr = "Wrote {} in output directory"
+        def _sname(name):
+            head, tail = os.path.splitext(name)
+            ohead = head.split("_")[0]
+            newname = ohead + self.suffix + tail
+            return newname
+
+        for ad in outputs:
+            if self.suffix:
+                username = _sname(ad.orig_filename)
+                ad.write(username, clobber=True)
+                log.stdinfo(outstr.format(username))
+            elif ad.filename != ad.orig_filename:
+                ad.write(clobber=True)
+                log.stdinfo(outstr.format(ad.filename))
         return
