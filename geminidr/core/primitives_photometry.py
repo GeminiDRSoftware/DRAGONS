@@ -611,14 +611,11 @@ def _profile_sources(ad, seeing_estimate=None):
         e50d_list = []
         newmax_list = []
         for i in range(0, len(objcat)):
-            xc = catx[i]
-            yc = caty[i]
+            xc = catx[i] - 0.5
+            yc = caty[i] - 0.5
             bg = catbg[i]
             tf = cattotalflux[i]
             mf = catmaxflux[i]
-            
-            xc -= 0.5
-            yc -= 0.5
 
             # Check that there's enough room for a stamp
             sz = stamp_size
@@ -656,33 +653,14 @@ def _profile_sources(ad, seeing_estimate=None):
             radsq = rpr[sort_order]
             flux = rpv[sort_order]
 
-            # Find the first 10 points below the half-flux
-            # Average the radius of the first point below and
-            # the last point above the half-flux
-            halfflux = mf / 2.0
+            # Count pixels above half flux and circularize this area
+            # Do one iteration in case there's a neighbouring object
             hwhmsq = np.sum(flux>halfflux)/np.pi
             hwhm = np.sqrt(np.sum(flux[radsq<1.5*hwhmsq]>halfflux)/np.pi)
-            #below = np.where(flux<=halfflux)[0]
-            #if below.size>0:
-            #    if len(below)>=10:
-            #        first_below = below[0:10]
-            #    else:
-            #        first_below = below
-            #    inner = radius[first_below[0]]
-            #    if first_below[0]>0:
-            #        min = first_below[0]-1
-            #    else:
-            #        min = first_below[0]
-            #    nearest_r = radius[min:first_below[-1]]
-            #    nearest_f = flux[min:first_below[-1]]
-            #    possible_outer = nearest_r[nearest_f>=halfflux]
-            #    if possible_outer.size>0:
-            #        outer = np.max(possible_outer)
-            #        hwhm = 0.5 * (inner + outer)
-            #    else:
-            #        hwhm = None
-            #else:
-            #    hwhm = None
+            if hwhm < stamp_size:
+                fwhm_list.append(2*hwhm)
+            else:
+                fwhm_list.append(-999)
 
             # Find the first radius that encircles half the total flux
             sumflux = np.cumsum(flux)
@@ -693,10 +671,6 @@ def _profile_sources(ad, seeing_estimate=None):
             else:
                 e50d_list.append(-999)
 
-            if hwhm is not None:
-                fwhm_list.append(hwhm*2.0)
-            else:
-                fwhm_list.append(-999)
             newmax_list.append(mf)
 
         objcat["PROFILE_FWHM"][:] = np.array(fwhm_list)
