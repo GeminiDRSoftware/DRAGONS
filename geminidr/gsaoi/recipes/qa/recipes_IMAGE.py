@@ -34,7 +34,7 @@ def reduce_nostack(p):
     p.detectSources()
     p.measureIQ(display=True)
     p.measureCCAndAstrometry()
-    p.writeOutputs(p)
+    p.writeOutputs()
     return
 
 # The nostack version is used because stacking of GSAOI is time consuming.
