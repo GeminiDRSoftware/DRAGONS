@@ -371,7 +371,7 @@ class QA(PrimitivesBASE):
 
             # Only if we've managed to measure at least one zeropoint
             if any(zp.value for zp in all_zp):
-                avg_cloud = _stats(all_cloud, weights=None)
+                avg_cloud = _stats(all_cloud, weights='variance')
                 qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=False)
 
                 comments = _cc_report(ad, all_zp, avg_cloud, qastatus)
