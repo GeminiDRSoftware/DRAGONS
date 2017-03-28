@@ -655,6 +655,7 @@ def _profile_sources(ad, seeing_estimate=None):
 
             # Count pixels above half flux and circularize this area
             # Do one iteration in case there's a neighbouring object
+            halfflux = 0.5 * mf
             hwhmsq = np.sum(flux>halfflux)/np.pi
             hwhm = np.sqrt(np.sum(flux[radsq<1.5*hwhmsq]>halfflux)/np.pi)
             if hwhm < stamp_size:
