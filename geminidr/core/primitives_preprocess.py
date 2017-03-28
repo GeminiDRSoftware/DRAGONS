@@ -540,15 +540,15 @@ class Preprocess(PrimitivesBASE):
             # so use regular maths
             log.status("Applying nonlinearity correction to {}".
                        format(ad.filename))
-            bunit_list = ext.hdr.get("BUNIT", 'ADU')
-            for ext, bunit, coeffs in zip(ad, bunit_list, nonlin_coeffs):
+            for ext, coeffs in zip(ad, nonlin_coeffs):
                 log.status("   nonlinearity correction for EXTVER {} is {:s}".
                            format(ext.hdr['EXTVER'], coeffs))
                 pixel_data = np.zeros_like(ext.data)
 
                 # Convert back to ADU per exposure if coadds have been summed
                 # or if the data have been converted to electrons
-                conv_factor = 1 if bunit.upper() == 'ADU' else ext.gain()
+                bunit = ext.hdr.get("BUNIT", 'ADU').upper()
+                conv_factor = 1 if bunit == 'ADU' else ext.gain()
                 if ext.is_coadds_summed():
                     conv_factor *= ext.coadds()
                 for n in range(len(coeffs), 0, -1):
@@ -561,7 +561,7 @@ class Preprocess(PrimitivesBASE):
                 # if the coadds are averaged), possibly plus read-noise**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
-                conv_factor = ext.gain() if bunit.upper() == 'ADU' else 1
+                conv_factor = ext.gain() if bunit == 'ADU' else 1
                 if not ext.is_coadds_summed():
                     conv_factor *= ext.coadds()
                 if ext.variance is not None:
@@ -1047,6 +1047,13 @@ class Preprocess(PrimitivesBASE):
                             "AstroData object {}".
                             format(ad_sky.filename, ad_sci.filename))
                 ad_sci.subtract(ad_sky)
+
+                # Timestamp and update filename
+                gt.mark_history(ad_sci, primname=self.myself(),
+                                keyword=timestamp_key)
+                ad_sci.filename = gt.filename_updater(adinput=ad_sci,
+                                        suffix=params["suffix"], strip=True)
+
             else:
                 log.warning("No changes will be made to {}, since no "
                             "appropriate sky could be retrieved".
@@ -1058,8 +1065,8 @@ class Preprocess(PrimitivesBASE):
 
         # Add the appropriate time stamp to the PHU and update the filename
         # of the science and sky AstroData objects 
-        adinputs = gt.finalise_adinput(adinput=adinputs,
-                    timestamp_key=timestamp_key, suffix=params["suffix"])
+        #adinputs = gt.finalise_adinput(adinput=adinputs,
+        #            timestamp_key=timestamp_key, suffix=params["suffix"])
         return adinputs
 
     def subtractSkyBackground(self, adinputs=None, **params):
