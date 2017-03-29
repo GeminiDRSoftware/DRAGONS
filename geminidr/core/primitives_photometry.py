@@ -259,13 +259,21 @@ class Photometry(PrimitivesBASE):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-def _match_objcat_refcat(ad, context='qa'):
+def _match_objcat_refcat(ad, context='qa', full_wcs=None):
     """
     Match the sources in the objcats against those in the corresponding
     refcat. Update the refid column in the objcat with the Id of the 
     catalog entry in the refcat. Update the refmag column in the objcat
     with the magnitude of the corresponding source in the refcat in the
     band that the image is taken in.
+
+    Matching is always done in the pixel plane, since this allows us to
+    understand offsets better (no annoying cos(dec) terms). Therefore, if we
+    want to use an updated WCS to fit at every iteration, we must transform
+    the REFCAT coords to the OBJCAT and, rather awkwardly, the REFCAT becomes
+    the input and the OBJCAT the reference. For ease of coding, this direction
+    of fitting is kept even if we're just doing a simpler fitting where the
+    WCS transformation is only applied initially.
 
     CJS: Since this is only called here, and only on single AD, its ability
     to handle inputs lists has been removed. If it gets used elsewhere, it
@@ -275,6 +283,12 @@ def _match_objcat_refcat(ad, context='qa'):
     ----------
     adinput: AstroData
         input image for OBJCAT-REFCAT matching
+    context: str
+        if 'qa' then do some culling
+    full_wcs: bool (or None)
+        use an updated WCS for each matching iteration, rather than simply
+        applying pixel-based corrections to the initial mapping?
+        (None => not ('qa' in context))
     """
     log = logutils.get_logger(__name__)
 
@@ -311,8 +325,11 @@ def _match_objcat_refcat(ad, context='qa'):
     initial = (15.0 if ad.instrument()=='GNIRS' else 5.0)/pixscale  # Search box size
     final = 1.0/pixscale     # Matching radius
     max_ref_sources = 100 if 'qa' in context else None  # Don't need more than this many
+    if full_wcs is None:
+        full_wcs = not ('qa' in context)
+    full_wcs = True
 
-    working_model = (0, None)
+    best_model = (0, None)
 
     for index in objcat_order:
         extver = ad[index].hdr['EXTVER']
@@ -323,26 +340,43 @@ def _match_objcat_refcat(ad, context='qa'):
             continue
         objcat_len = len(objcat)
 
-        # The coordinates of the reference sources are corrected
-        # to pixel positions using the WCS of the object frame
+        # The reference coordinates are always (x,y) pixels in the OBJCAT
+        # Set up the input coordinates
         wcs = WCS(ad.header[index+1])
-        xref, yref = wcs.all_world2pix(refcat['RAJ2000'],
-                                       refcat['DEJ2000'], 1)
+        xref, yref = refcat['RAJ2000'], refcat['DEJ2000']
+        if not full_wcs:
+            xref, yref = wcs.all_world2pix(xref, yref, 1)
+
+        # Now set up the initial model
+        if full_wcs:
+            m_init = CallableWCS(wcs, direction=-1)
+            m_init.factor.fixed = True
+            m_init.angle.fixed = True
+            if best_model[1] is None:
+                m_init.x_offset.bounds = (-initial, initial)
+                m_init.y_offset.bounds = (-initial, initial)
+            else:
+                # Copy parameters from best model to this model
+                # TODO: if rotation/scaling are used, the factor_ will need to
+                # be copied
+                for p in best_model[1].param_names:
+                    setattr(m_init, p, getattr(best_model[1], p))
+        else:
+            m_init = best_model[1]
 
         # Reduce the search space if we've previously found a match
         # TODO: This code is more generic than it needs to be now (the model
         # only has unfixed offsets) but less generic than it will need to be
         # if a rotation or magnification is added)
-        m_init = working_model[1]
-        if m_init:
+        if best_model[1] is not None:
             initial = 2.5 / pixscale
             for param in [getattr(m_init, p) for p in m_init.param_names]:
-                if not param.fixed:
+                if 'offset' in param.name and not param.fixed:
                     param.bounds = (param.value-initial, param.value+initial)
 
         # First: estimate number of reference sources in field
         # Inverse map ref coords->image plane and see how many are in field
-        xx, yy = m_init.inverse(xref, yref) if m_init else (xref, yref)
+        xx, yy = m_init(xref, yref) if m_init else (xref, yref)
         x1, y1 = 0, 0
         y2, x2 = ad[index].data.shape
         # Could tweak y1, y2 here for GNIRS
@@ -379,25 +413,15 @@ def _match_objcat_refcat(ad, context='qa'):
             keep_num = objcat_len
         sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
 
-        m = CallableWCS(wcs, direction=-1)
-        m.x_offset.bounds = (-initial, initial)
-        m.y_offset.bounds = (-initial, initial)
-        m.factor.fixed = True
-        m.angle.fixed = True
-        #working_model = (0, m)
-
+        # Send all sources to the alignment/matching engine, indicating the ones to
+        # use for the alignment
         if num_ref_sources > 0:
-            log.stdinfo('Matching extver {} with {} REFCAT and {} OBJCAT sources'.
+            log.stdinfo('Aligning extver {} with {} REFCAT and {} OBJCAT sources'.
                         format(extver, num_ref_sources, keep_num))
-            matched, m_final = match_catalogs(objcat['X_IMAGE'], objcat['Y_IMAGE'],
-                                              xref, yref, use_in=sorted_idx, use_ref=in_field,
-                                              model_guess=working_model[1], translation_range=initial,
+            matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
+                                              use_in=in_field, use_ref=sorted_idx,
+                                              model_guess=m_init, translation_range=initial,
                                               tolerance=0.1, match_radius=final)
-            #xref, yref = ad.REFCAT['RAJ2000'], ad.REFCAT['DEJ2000']
-            #matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
-            #                                  use_in=in_field, use_ref=sorted_idx,
-            #                                  model_guess=working_model[1], translation_range=initial,
-            #                                  tolerance=0.1, match_radius=final)
         else:
             log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
             continue
@@ -407,19 +431,20 @@ def _match_objcat_refcat(ad, context='qa'):
                     format(num_matched, extver))
         # If this is a "better" match, save it
         # TODO? Some sort of averaging of models?
-        if num_matched > max(working_model[0], 2):
-            working_model = (num_matched, m_final)
+        if num_matched > max(best_model[0], 2):
+            best_model = (num_matched, m_final)
 
         # Loop through the reference list updating the refid in the objcat
-        # and the refmag, if we can
+        # and the refmag, if we can. Remember! matched is the reference (OBJCAT)
+        # source for the input (REFCAT) source
         for i, m in enumerate(matched):
             if m >= 0:
-                objcat['REF_NUMBER'][i] = refcat['Id'][m]
+                objcat['REF_NUMBER'][m] = refcat['Id'][i]
                 # Assign the magnitude
                 if formulae:
-                    mag, mag_err = _calculate_magnitude(formulae, refcat, m)
-                    objcat['REF_MAG'][i] = mag
-                    objcat['REF_MAG_ERR'][i] = mag_err
+                    mag, mag_err = _calculate_magnitude(formulae, refcat, i)
+                    objcat['REF_MAG'][m] = mag
+                    objcat['REF_MAG_ERR'][m] = mag_err
     return ad
 
 def _calculate_magnitude(formulae, refcat, indx):
