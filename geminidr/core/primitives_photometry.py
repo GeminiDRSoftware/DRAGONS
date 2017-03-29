@@ -6,6 +6,9 @@
 import numpy as np
 from astropy.wcs import WCS
 from astropy.stats import sigma_clip
+from astropy.table import Column
+
+from astrodata.fits import add_header_to_table
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -105,7 +108,14 @@ class Photometry(PrimitivesBASE):
             else:
                 log.stdinfo("Found {} reference catalog sources for {}".
                             format(len(refcat), ad.filename))
-                ad.REFCAT = refcat
+                filter_name = ad.filter_name(pretty=True)
+                colterm_dict = color_corrections.colorTerms
+                if filter_name in colterm_dict:
+                    formulae = colterm_dict[filter_name]
+                    ad.REFCAT = _calculate_magnitudes(refcat, formulae)
+                else:
+                    log.warning("Filter {} is not in catalogs - will not be able to flux "
+                                "calibrate".format(filter_name))
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
@@ -292,15 +302,6 @@ def _match_objcat_refcat(ad, context='qa', full_wcs=None):
     """
     log = logutils.get_logger(__name__)
 
-    filter_name = ad.filter_name(pretty=True)
-    colterm_dict = color_corrections.colorTerms
-    if filter_name in colterm_dict:
-        formulae = colterm_dict[filter_name]
-    else:
-        log.warning("Filter {} is not in catalogs - will not be able to flux "
-            "calibrate".format(filter_name))
-        formulae = []
-
     # If there are no refcats, don't try to go through them.
     try:
         refcat = ad.REFCAT
@@ -327,7 +328,6 @@ def _match_objcat_refcat(ad, context='qa', full_wcs=None):
     max_ref_sources = 100 if 'qa' in context else None  # Don't need more than this many
     if full_wcs is None:
         full_wcs = not ('qa' in context)
-    full_wcs = True
 
     best_model = (0, None)
 
@@ -441,65 +441,77 @@ def _match_objcat_refcat(ad, context='qa', full_wcs=None):
             if m >= 0:
                 objcat['REF_NUMBER'][m] = refcat['Id'][i]
                 # Assign the magnitude
-                if formulae:
-                    mag, mag_err = _calculate_magnitude(formulae, refcat, i)
-                    objcat['REF_MAG'][m] = mag
-                    objcat['REF_MAG_ERR'][m] = mag_err
+                objcat['REF_MAG'][m] = refcat['filtermag'][i]
+                objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
     return ad
 
-def _calculate_magnitude(formulae, refcat, indx):
+def _calculate_magnitudes(refcat, formulae):
+    # Create new columns for the magnitude (and error) in the image's filter
+    # We need to ensure the table's meta is updated.
+    # Would be simpler to do this when the REFCAT is added
+    dummy_data = [-999.0] * len(refcat)
+    refcat.add_column(Column(data=dummy_data, name='filtermag',
+                             dtype='f4', unit='mag'))
+    refcat.add_column(Column(data=dummy_data, name='filtermag_err',
+                             dtype='f4', unit='mag'))
+    hdr = refcat.meta['header']
+    hdr.update(add_header_to_table(refcat))
+    refcat.meta['header'] = hdr
+    if not formulae:
+        return refcat
+
     # This is a bit ugly: we want to iterate over formulae so we must
     # nest a single formula into a list
     if not isinstance(formulae[0], list):
         formulae = [formulae]
 
-    mags = []
-    mag_errs = []
-    for formula in formulae:
-        mag = 0.0
-        mag_err_sq = 0.0
-        for term in formula:
-            # single filter
-            if type(term) is str:
-                if term+'mag' in refcat.columns:
-                    mag += refcat[term+'mag'][indx]
-                    mag_err_sq += refcat[term+'mag_err'][indx]**2
-                else:
-                    # Will ensure this magnitude is not used
-                    mag = np.nan
-            # constant (with uncertainty)
-            elif len(term) == 2:
-                mag += float(term[0])
-                mag_err_sq += float(term[1])**2
-            # color term (factor, uncertainty, color)
-            elif len(term) == 3:
-                filters = term[2].split('-')
-                if len(filters)==2 and np.all([f+'mag' in refcat.columns
-                                               for f in filters]):
-                    col = refcat[filters[0]+'mag'][indx] - \
-                        refcat[filters[1]+'mag'][indx]
-                    mag += float(term[0])*col
-                    dmagsq = refcat[filters[0]+'mag_err'][indx]**2 + \
-                        refcat[filters[1]+'mag_err'][indx]**2
-                    # When adding a (H-K) color term, often H is a 95% upper limit
-                    # If so, we can only return an upper limit, but we need to
-                    # account for the uncertainty in K-band 
-                    if np.isnan(dmagsq):
-                        mag -= 1.645*np.sqrt(mag_err_sq)
-                    mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
-                        (float(term[0])*col)**2
-                else:
-                    mag = np.nan        # Only consider this if values are sensible
-        if not np.isnan(mag):
-            mags.append(mag)
-            mag_errs.append(np.sqrt(mag_err_sq))
-    
-    # Take the value with the smallest uncertainty (NaN = large uncertainty)
-    if mags:
-        lowest = np.argmin(np.where(np.isnan(mag_errs),999,mag_errs))
-        return mags[lowest], mag_errs[lowest]
-    else:
-        return -999, -999
+    for row in refcat:
+        mags = []
+        mag_errs = []
+        for formula in formulae:
+            mag = 0.0
+            mag_err_sq = 0.0
+            for term in formula:
+                # single filter
+                if type(term) is str:
+                    if term+'mag' in refcat.columns:
+                        mag += row[term+'mag']
+                        mag_err_sq += row[term+'mag_err']**2
+                    else:
+                        # Will ensure this magnitude is not used
+                        mag = np.nan
+                # constant (with uncertainty)
+                elif len(term) == 2:
+                    mag += float(term[0])
+                    mag_err_sq += float(term[1])**2
+                # color term (factor, uncertainty, color)
+                elif len(term) == 3:
+                    filters = term[2].split('-')
+                    if len(filters)==2 and np.all([f+'mag' in refcat.columns
+                                                   for f in filters]):
+                        col = row[filters[0]+'mag'] - row[filters[1]+'mag']
+                        mag += float(term[0])*col
+                        dmagsq = row[filters[0]+'mag_err']**2 + \
+                            row[filters[1]+'mag_err']**2
+                        # When adding a (H-K) color term, often H is a 95% upper limit
+                        # If so, we can only return an upper limit, but we need to
+                        # account for the uncertainty in K-band
+                        if np.isnan(dmagsq):
+                            mag -= 1.645*np.sqrt(mag_err_sq)
+                        mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
+                            (float(term[0])*col)**2
+                    else:
+                        mag = np.nan        # Only consider this if values are sensible
+            if not np.isnan(mag):
+                mags.append(mag)
+                mag_errs.append(np.sqrt(mag_err_sq))
+
+        # Take the value with the smallest uncertainty (NaN = large uncertainty)
+        if mags:
+            lowest = np.argmin(np.where(np.isnan(mag_errs),999,mag_errs))
+            row['filtermag'] = mags[lowest]
+            row['filtermag_err'] = mag_errs[lowest]
+    return refcat
 
 def _estimate_seeing(objcat):
     """
