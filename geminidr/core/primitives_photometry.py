@@ -4,7 +4,6 @@
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
 import numpy as np
-from astropy.wcs import WCS
 from astropy.stats import sigma_clip
 from astropy.table import Column
 
@@ -13,13 +12,10 @@ from astrodata.fits import add_header_to_table
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
 from gempy.gemini.eti.sextractoreti import SExtractorETI
-from gempy.utils import logutils
 from geminidr.gemini.lookups import color_corrections
 
 from geminidr import PrimitivesBASE
 from .parameters_photometry import ParametersPhotometry
-
-from gempy.library.newmatch import match_catalogs, CallableWCS
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -119,10 +115,10 @@ class Photometry(PrimitivesBASE):
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
-                if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                    ad = _match_objcat_refcat(ad, self.context)
-                else:
-                    log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
+                #if any(hasattr(ext, 'OBJCAT') for ext in ad):
+                #    ad = _match_objcat_refcat(ad, self.context)
+                #else:
+                #    log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -268,182 +264,6 @@ class Photometry(PrimitivesBASE):
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-
-def _match_objcat_refcat(ad, context='qa', full_wcs=None):
-    """
-    Match the sources in the objcats against those in the corresponding
-    refcat. Update the refid column in the objcat with the Id of the 
-    catalog entry in the refcat. Update the refmag column in the objcat
-    with the magnitude of the corresponding source in the refcat in the
-    band that the image is taken in.
-
-    Matching is always done in the pixel plane, since this allows us to
-    understand offsets better (no annoying cos(dec) terms). Therefore, if we
-    want to use an updated WCS to fit at every iteration, we must transform
-    the REFCAT coords to the OBJCAT and, rather awkwardly, the REFCAT becomes
-    the input and the OBJCAT the reference. For ease of coding, this direction
-    of fitting is kept even if we're just doing a simpler fitting where the
-    WCS transformation is only applied initially.
-
-    CJS: Since this is only called here, and only on single AD, its ability
-    to handle inputs lists has been removed. If it gets used elsewhere, it
-    should be moved to gemini_tools and make use of @accept_single_adinput
-
-    Parameters
-    ----------
-    adinput: AstroData
-        input image for OBJCAT-REFCAT matching
-    context: str
-        if 'qa' then do some culling
-    full_wcs: bool (or None)
-        use an updated WCS for each matching iteration, rather than simply
-        applying pixel-based corrections to the initial mapping?
-        (None => not ('qa' in context))
-    """
-    log = logutils.get_logger(__name__)
-
-    # If there are no refcats, don't try to go through them.
-    try:
-        refcat = ad.REFCAT
-    except AttributeError:
-        log.warning("No REFCAT present - cannot match to OBJCAT")
-        return ad
-    if not any(hasattr(ext, 'OBJCAT') for ext in ad):
-        log.warning("No OBJCATs in {} - cannot match to REFCAT".
-                    format(ad.filename))
-        return ad
-
-    # Try to be clever here, and work on the extension with the highest
-    # number of matches first, as this will give the most reliable offsets.
-    # which can then be used to constrain the other extensions. The problem
-    # is we don't know how many matches we'll get until we do it, and that's
-    # slow, so use OBJCAT length as a proxy.
-    objcat_lengths = [len(ext.OBJCAT) if hasattr(ext, 'OBJCAT') else 0
-                      for ext in ad]
-    objcat_order = np.argsort(objcat_lengths)[::-1]
-
-    pixscale = ad.pixel_scale()
-    initial = (15.0 if ad.instrument()=='GNIRS' else 5.0)/pixscale  # Search box size
-    final = 1.0/pixscale     # Matching radius
-    max_ref_sources = 100 if 'qa' in context else None  # Don't need more than this many
-    if full_wcs is None:
-        full_wcs = not ('qa' in context)
-
-    best_model = (0, None)
-
-    for index in objcat_order:
-        extver = ad[index].hdr['EXTVER']
-        try:
-            objcat = ad[index].OBJCAT
-        except AttributeError:
-            log.stdinfo('No OBJCAT in {}:{}'.format(ad.filename, extver))
-            continue
-        objcat_len = len(objcat)
-
-        # The reference coordinates are always (x,y) pixels in the OBJCAT
-        # Set up the input coordinates
-        wcs = WCS(ad.header[index+1])
-        xref, yref = refcat['RAJ2000'], refcat['DEJ2000']
-        if not full_wcs:
-            xref, yref = wcs.all_world2pix(xref, yref, 1)
-
-        # Now set up the initial model
-        if full_wcs:
-            m_init = CallableWCS(wcs, direction=-1)
-            m_init.factor.fixed = True
-            m_init.angle.fixed = True
-            if best_model[1] is None:
-                m_init.x_offset.bounds = (-initial, initial)
-                m_init.y_offset.bounds = (-initial, initial)
-            else:
-                # Copy parameters from best model to this model
-                # TODO: if rotation/scaling are used, the factor_ will need to
-                # be copied
-                for p in best_model[1].param_names:
-                    setattr(m_init, p, getattr(best_model[1], p))
-        else:
-            m_init = best_model[1]
-
-        # Reduce the search space if we've previously found a match
-        # TODO: This code is more generic than it needs to be now (the model
-        # only has unfixed offsets) but less generic than it will need to be
-        # if a rotation or magnification is added)
-        if best_model[1] is not None:
-            initial = 2.5 / pixscale
-            for param in [getattr(m_init, p) for p in m_init.param_names]:
-                if 'offset' in param.name and not param.fixed:
-                    param.bounds = (param.value-initial, param.value+initial)
-
-        # First: estimate number of reference sources in field
-        # Inverse map ref coords->image plane and see how many are in field
-        xx, yy = m_init(xref, yref) if m_init else (xref, yref)
-        x1, y1 = 0, 0
-        y2, x2 = ad[index].data.shape
-        # Could tweak y1, y2 here for GNIRS
-        in_field = np.all((xx>x1-initial, xx<x2+initial, yy>y1-initial,
-                           yy<y2+initial), axis=0)
-        num_ref_sources = np.sum(in_field)
-
-        # We probably don't need zillions of REFCAT sources
-        if max_ref_sources and num_ref_sources > max_ref_sources:
-            # imag and kmag are typically the deepest catalogues
-            if 'imag' in refcat.colnames:
-                magcol = 'imag'
-            elif 'kmag' in refcat.colnames:
-                magcol = 'kmag'
-            else:
-                try:
-                    magcol = [c for c in refcat.colnames if 'mag' in c.lower()
-                              and not 'image' in c.lower()  # "mag" in "image"!
-                              and not 'err' in c .lower()][0]
-                except:
-                    magcol = None
-                    log.stdinfo('Cannot find a magnitude column to cull REFCAT')
-            if magcol:
-                sorted_args = np.argsort(refcat[magcol])
-                in_field = sorted_args[in_field[sorted_args]][:max_ref_sources]
-                log.stdinfo('Culling REFCAT based on {} for speed'.format(magcol))
-                # in_field is now a list of indices, not a boolean array
-                num_ref_sources = len(in_field)
-
-        # How many objects do we want to try to match? Keep brightest ones only
-        if objcat_len > 2*num_ref_sources:
-            keep_num = max(2*num_ref_sources, min(10,objcat_len))
-        else:
-            keep_num = objcat_len
-        sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
-
-        # Send all sources to the alignment/matching engine, indicating the ones to
-        # use for the alignment
-        if num_ref_sources > 0:
-            log.stdinfo('Aligning extver {} with {} REFCAT and {} OBJCAT sources'.
-                        format(extver, num_ref_sources, keep_num))
-            matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
-                                              use_in=in_field, use_ref=sorted_idx,
-                                              model_guess=m_init, translation_range=initial,
-                                              tolerance=0.1, match_radius=final)
-        else:
-            log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
-            continue
-
-        num_matched = sum(m>0 for m in matched)
-        log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
-                    format(num_matched, extver))
-        # If this is a "better" match, save it
-        # TODO? Some sort of averaging of models?
-        if num_matched > max(best_model[0], 2):
-            best_model = (num_matched, m_final)
-
-        # Loop through the reference list updating the refid in the objcat
-        # and the refmag, if we can. Remember! matched is the reference (OBJCAT)
-        # source for the input (REFCAT) source
-        for i, m in enumerate(matched):
-            if m >= 0:
-                objcat['REF_NUMBER'][m] = refcat['Id'][i]
-                # Assign the magnitude
-                objcat['REF_MAG'][m] = refcat['filtermag'][i]
-                objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
-    return ad
 
 def _calculate_magnitudes(refcat, formulae):
     # Create new columns for the magnitude (and error) in the image's filter

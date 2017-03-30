@@ -5,17 +5,14 @@
 # ------------------------------------------------------------------------------
 import math
 import numpy as np
-import scipy.optimize
 from astropy.wcs import WCS
-from astropy import table
 from astropy.modeling import models
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
-from gempy.library import astrotools as at
 from gempy.utils import logutils
 
-from gempy.library.newmatch import match_catalogs, align_images_from_wcs
+from gempy.library.newmatch import match_catalogs, align_images_from_wcs, CallableWCS
 
 from geminidr import PrimitivesBASE
 from .parameters_register import ParametersRegister
@@ -245,16 +242,7 @@ class Register(PrimitivesBASE):
                                     cull_sources=cull_sources, full_wcs=True,
                                     rotate=rotate, scale=scale, tolerance=0.01,
                                     return_matches=False).wcs()
-                        for ax in (1, 2):
-                            ad.hdr.set('CRPIX{}'.format(ax), wcs.wcs.crpix[ax-1],
-                                comment=self.keyword_comments["CRPIX{}".format(ax)])
-                            ad.hdr.set('CRVAL{}'.format(ax), wcs.wcs.crval[ax-1],
-                                comment=self.keyword_comments["CRVAL{}".format(ax)])
-                            for ax2 in (1, 2):
-                                ad.hdr.set('CD{}_{}'.format(ax, ax2),
-                                           wcs.wcs.cd[ax-1, ax2-1],
-                                           comment=self.keyword_comments["CD{}_{}".
-                                           format(ax, ax2)])
+                        _write_wcs_keywords(ad, wcs, self.keyword_comments)
                 adoutputs.append(ad)
 
         # Timestamp and update filenames
@@ -266,125 +254,212 @@ class Register(PrimitivesBASE):
     
     def determineAstrometricSolution(self, adinputs=None, **params):
         """
-        This primitive calculates the average astrometric offset between
-        the positions of sources in the reference catalog, and their
-        corresponding object in the object catalog.
-        It then reports the astrometric correction vector.
-        For now, this is limited to a translational offset only.
-        
-        The solution is stored in the wcs attribute of the primitivesClass. It
-        can be applied to the image headers by calling the updateWCS primitive.
+        This primitive determines how to modify the WCS of each image to
+        produce the best positional match between its sources (OBJCAT) and
+        the REFCAT.
 
         Parameters
         ----------
-        None
+        full_wcs: bool (or None)
+            use an updated WCS for each matching iteration, rather than simply
+            applying pixel-based corrections to the initial mapping?
+            (None => not ('qa' in context))
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        full_wcs = params["full_wcs"]
 
-        wcs_dict = {}
         for ad in adinputs:
-            wcs_dict[ad] = {}
-
-            # Can't do this if there's no REFCAT
+            # Check we have a REFCAT and at least one OBJCAT to match
             try:
                 refcat = ad.REFCAT
             except AttributeError:
                 log.warning("No REFCAT in {} - cannot calculate astrometry".
                             format(ad.filename))
                 continue
-
-            # Initialise lists to keep the total offsets in
-            all_delta_ra = []
-            all_delta_dec = []
+            if not any(hasattr(ext, 'OBJCAT') for ext in ad):
+                log.warning("No OBJCATs in {} - cannot match to REFCAT".
+                            format(ad.filename))
+                continue
 
             # List of values to report to FITSstore
             info_list = []
+            all_delta_ra = []
+            all_delta_dec = []
 
-            # Have to rename column to enable Table match
-            refcat.rename_column('Id', 'REF_NUMBER')
+            # Try to be clever here, and work on the extension with the
+            # highest number of matches first, as this will give the most
+            # reliable offsets, which can then be used to constrain the other
+            # extensions. The problem is we don't know how many matches we'll
+            # get until we do it, and that's slow, so use len(OBJCAT) as a proxy.
+            objcat_lengths = [len(ext.OBJCAT) if hasattr(ext, 'OBJCAT') else 0
+                              for ext in ad]
+            objcat_order = np.argsort(objcat_lengths)[::-1]
 
-            for ext in ad:
-                extver = ext.hdr['EXTVER']
+            pixscale = ad.pixel_scale()
+            initial = (15.0 if ad.instrument() == 'GNIRS' else 5.0) / pixscale  # Search box size
+            final = 1.0 / pixscale  # Matching radius
+            max_ref_sources = 100 if 'qa' in self.context else None  # Don't need more than this many
+            if full_wcs is None:
+                full_wcs = not ('qa' in self.context)
+
+            best_model = (0, None)
+
+            for index in objcat_order:
+                extver = ad[index].hdr['EXTVER']
                 try:
-                    objcat = ext.OBJCAT
+                    objcat = ad[index].OBJCAT
                 except AttributeError:
-                    log.warning("No OBJCAT in {}:{} - cannot calculate "
-                    "astrometry".format(ad.filename, extver))
+                    log.stdinfo('No OBJCAT in {}:{} -- cannot perform '
+                                'astrometry'.format(ad.filename, extver))
                     info_list.append({})
                     continue
+                objcat_len = len(objcat)
 
-                merged = table.join(objcat, refcat, keys='REF_NUMBER',
-                                    metadata_conflicts='silent')[
-                    'X_WORLD', 'Y_WORLD', 'RAJ2000', 'DEJ2000']
-                if len(merged) > 0:
-                    delta_ra = 3600 * (merged['RAJ2000'] -
-                                       merged['X_WORLD']).data
-                    delta_dec = 3600 * (merged['DEJ2000'] -
-                                        merged['Y_WORLD']).data
+                # The reference coordinates are always (x,y) pixels in the OBJCAT
+                # Set up the input coordinates
+                wcs = WCS(ad.header[index + 1])
+                xref, yref = refcat['RAJ2000'], refcat['DEJ2000']
+                if not full_wcs:
+                    xref, yref = wcs.all_world2pix(xref, yref, 1)
+
+                # Now set up the initial model
+                if full_wcs:
+                    m_init = CallableWCS(wcs, direction=-1)
+                    m_init.factor.fixed = True
+                    m_init.angle.fixed = True
+                    if best_model[1] is None:
+                        m_init.x_offset.bounds = (-initial, initial)
+                        m_init.y_offset.bounds = (-initial, initial)
+                    else:
+                        # Copy parameters from best model to this model
+                        # TODO: if rotation/scaling are used, the factor_ will need to
+                        # be copied
+                        for p in best_model[1].param_names:
+                            setattr(m_init, p, getattr(best_model[1], p))
                 else:
-                    log.fullinfo("No reference sources in {}:{}".format(
-                        ad.filename, extver))
-                    info_list.append({})
+                    m_init = best_model[1]
+
+                # Reduce the search space if we've previously found a match
+                # TODO: This code is more generic than it needs to be now (the model
+                # only has unfixed offsets) but less generic than it will need to be
+                # if a rotation or magnification is added)
+                if best_model[1] is not None:
+                    initial = 2.5 / pixscale
+                    for param in [getattr(m_init, p) for p in m_init.param_names]:
+                        if 'offset' in param.name and not param.fixed:
+                            param.bounds = (param.value - initial,
+                                            param.value + initial)
+
+                # First: estimate number of reference sources in field
+                # Inverse map ref coords->image plane and see how many are in field
+                xx, yy = m_init(xref, yref) if m_init else (xref, yref)
+                x1, y1 = 0, 0
+                y2, x2 = ad[index].data.shape
+                # Could tweak y1, y2 here for GNIRS
+                in_field = np.all((xx > x1 - initial, xx < x2 + initial,
+                                   yy > y1 - initial, yy < y2 + initial), axis=0)
+                num_ref_sources = np.sum(in_field)
+
+                # We probably don't need zillions of REFCAT sources
+                if max_ref_sources and num_ref_sources > max_ref_sources:
+                    try:
+                        ref_mags = refcat['filtermag']
+                    except KeyError:
+                        log.stdinfo('Cannot find a magnitude column to cull REFCAT')
+                    else:
+                        in_field &= (ref_mags > -99)
+                        num_ref_sources = np.sum(in_field)
+                        if num_ref_sources > max_ref_sources:
+                            sorted_args = np.argsort(ref_mags)
+                            in_field = sorted_args[in_field[sorted_args]][:max_ref_sources]
+                            log.stdinfo('Using only {} brightest REFCAT sources '
+                                        'for speed'.format(max_ref_sources))
+                            # in_field is now a list of indices, not a boolean array
+                            num_ref_sources = len(in_field)
+
+                # How many objects do we want to try to match? Keep brightest ones only
+                if objcat_len > 2 * num_ref_sources:
+                    keep_num = max(2 * num_ref_sources, min(10, objcat_len))
+                else:
+                    keep_num = objcat_len
+                sorted_idx = np.argsort(objcat['MAG_AUTO'])[:keep_num]
+
+                # Send all sources to the alignment/matching engine, indicating the ones to
+                # use for the alignment
+                if num_ref_sources > 0:
+                    log.stdinfo('Aligning extver {} with {} REFCAT and {} OBJCAT sources'.
+                                format(extver, num_ref_sources, keep_num))
+                    matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
+                                                      use_in=in_field, use_ref=sorted_idx,
+                                                      model_guess=m_init, translation_range=initial,
+                                                      tolerance=0.1, match_radius=final)
+                else:
+                    log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
                     continue
 
-                # Report the mean and standard deviation of the offsets:
-                ra_mean = np.mean(delta_ra)
-                ra_sigma = np.std(delta_ra)
-                dec_mean = np.mean(delta_dec)
-                dec_sigma = np.std(delta_dec)
-                ra_median = np.median(delta_ra)
-                dec_median = np.median(delta_dec)
-                all_delta_ra.extend(delta_ra)
-                all_delta_dec.extend(delta_dec)
+                num_matched = np.sum(matched >= 0)
+                log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
+                            format(num_matched, extver))
+                # If this is a "better" match, save it
+                # TODO? Some sort of averaging of models?
+                if num_matched > max(best_model[0], 2):
+                    best_model = (num_matched, m_final)
 
-                # These aren't *real* arcseconds in RA of course!
-                log.fullinfo("Astrometric Offset between for EXTVER {} is:".
-                             format(extver))
-                log.fullinfo("RA:  {:.2f} +/- {:.2f} arcsec".format(ra_mean,
-                                                                    ra_sigma))
-                log.fullinfo("Dec: {:.2f} +/- {:.2f} arcsec".format(dec_mean,
-                                                                    dec_sigma))
-                log.fullinfo("Median Offset is: {:.2f}, {:.2f} arcsec".
-                             format(ra_median, dec_median))
+                if num_matched > 0:
+                    # Update WCS in the header and OBJCAT (X_WORLD, Y_WORLD)
+                    if full_wcs:
+                        new_wcs = m_final.wcs()
+                    else:
+                        kwargs = dict(zip(m_final.param_names, m_final.parameters))
+                        new_wcs = CallableWCS(wcs).wcs(**kwargs)
+                    _write_wcs_keywords(ext, new_wcs, self.keyword_comments)
+                    objcat['X_WORLD'], objcat['Y_WORLD'] = new_wcs.all_pix2world(
+                        objcat['X_IMAGE'], objcat['Y_IMAGE'], 1)
 
-                # Store it in the fitsstore info_dict
-                info_list.append({"dra":ra_mean, "dra_std":ra_sigma,
-                                  "ddec":dec_mean, "ddec_std":dec_sigma,
-                                  "nsamples":len(delta_ra)})
+                    # Sky coordinates of original CRPIX location with old
+                    # and new WCS (easier than using the transform)
+                    ra0, dec0 = wcs.all_pix2world([wcs.wcs.crpix], 1)[0]
+                    ra1, dec1 = new_wcs.all_pix2world([wcs.wcs.crpix], 1)[0]
+                    cosdec = math.cos(math.radians(dec0))
+                    delta_ra = 3600 * (ra1-ra0) * cosdec
+                    delta_dec = 3600 * (dec1-dec0)
+                    all_delta_ra.append(delta_ra)
+                    all_delta_dec.append(delta_dec)
 
-                # Store the changes in a WCS object so they
-                # can be applied by the updateWCS primitive if desired
-                wcs = WCS(ext.header[1])
-                wcs.wcs.crval = np.array([wcs.wcs.crval[0]+ra_median/3600.,
-                                          wcs.wcs.crval[1]+dec_median/3600.])
-                wcs_dict[ad][extver] = wcs
+                    # Associate REFCAT properties with their OBJCAT
+                    # counterparts. Remember! matched is the reference
+                    # (OBJCAT) source for the input (REFCAT) source
+                    dra = []
+                    ddec = []
+                    for i, m in enumerate(matched):
+                        if m >= 0:
+                            objcat['REF_NUMBER'][m] = refcat['Id'][i]
+                            objcat['REF_MAG'][m] = refcat['filtermag'][i]
+                            objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
+                            dra.append(3600*(objcat['X_WORLD'][m] -
+                                             refcat['RAJ2000'][i]) * cosdec)
+                            ddec.append(2600*(objcat['Y_WORLD'][m] -
+                                              refcat['DEJ2000'][i]))
+                    dra_std = np.std(dra)
+                    ddec_std = np.std(ddec)
+                    log.fullinfo("WCS Updated for extver {}. Astrometric "
+                                 "offset is:".format(extver))
+                    log.fullinfo("RA:  {:.2f} +/- {:.2f} arcsec".
+                                 format(delta_ra, dra_std))
+                    log.fullinfo("Dec: {:.2f} +/- {:.2f} arcsec".
+                                 format(delta_dec, ddec_std))
+                    info_list.append({"dra": delta_ra, "dra_std": dra_std,
+                                      "ddec": delta_dec, "ddec_std": ddec_std,
+                                      "nsamples": num_matched})
+                else:
+                    log.stdinfo("Could not determine astrometric offset for "
+                                "{}:{}".format(ad.filename, extver))
+                    info_list.append({})
 
-            if all_delta_ra:
-                # Report the mean and standard deviation of all the offsets over all the sci extensions:
-                ra_mean = np.mean(all_delta_ra)
-                ra_sigma = np.std(all_delta_ra)
-                dec_mean = np.mean(all_delta_dec)
-                dec_sigma = np.std(all_delta_dec)
-
-                log.stdinfo("Mean Astrometric Offset for {}:".
-                            format(ad.filename))
-                log.stdinfo("     RA: {:.2f} +/- {:.2f}    Dec: {:.2f} +/- "
-                    "{:.2f}   arcsec".format(ra_mean, ra_sigma,
-                                             dec_mean, dec_sigma))
-            else:
-                log.stdinfo("Could not determine astrometric offset for {}".
-                            format(ad.filename))
-                
             # Report the measurement to the fitsstore
             fitsdict = qap.fitsstore_report(ad, "pe", info_list,
                         self.calurl_dict, self.context, self.upload_metrics)
-
-            # Re-rename the column back to its original name
-            refcat.rename_column('REF_NUMBER', 'Id')
-
-        # Store the WCS solution and return the (untouched) AD list
-        self.wcs = wcs_dict
         return adinputs
 
     def updateWCS(self, adinputs=None, **params):
@@ -483,170 +558,6 @@ class Register(PrimitivesBASE):
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-
-def _correlate_sources(ad1, ad2, delta=None, firstPass=10, min_sources=1,
-                       cull_sources=False):
-    """
-    This function takes sources from the OBJCAT extensions in two
-    images and attempts to correlate them, using the WCS encoded in the
-    headers as a first approximation. It returns a list of reference source 
-    positions and their correlated image source positions.
-    
-    :param ad1: reference image (one extension only)
-    :type ad1: AstroData instance
-    
-    :param ad2: input image (one extension only)
-    :type ad2: AstroData instance
-    
-    :param delta: maximum distance in pixels to allow a match. If
-                  left as None, it will attempt to find an appropriate
-                  number (recommended).
-    :type delta: float
-    
-    :param firstPass: estimated maximum distance between correlated
-                      sources. This distance represents the expected
-                      mismatch between the WCSs of the input images.
-    :type firstPass: float
-    
-    :param min_sources: minimum number of sources to use for cross-
-                        correlation, depending on the instrument used.
-    :type min_sources: int                    
-
-    :param cull_sources: flag to indicate whether to reject sources that
-                         are insufficiently star-like
-    :type cull_sources: bool
-    """
-    # If desired, select only the most star-like sources in the OBJCAT
-    log = logutils.get_logger(__name__)
-    if cull_sources:
-        good_src1 = gt.clip_sources(ad1)[0]
-        good_src2 = gt.clip_sources(ad2)[0]
-        if len(good_src1) < min_sources or len(good_src2) < min_sources:
-            log.warning("Too few sources in culled list, using full set "
-                        "of sources")
-            x1, y1 = ad1[0].OBJCAT['X_IMAGE'], ad1[0].OBJCAT['Y_IMAGE']
-            x2, y2 = ad2[0].OBJCAT['X_IMAGE'], ad2[0].OBJCAT['Y_IMAGE']
-        else:
-            x1, y1 = good_src1["x"], good_src1["y"]
-            x2, y2 = good_src2["x"], good_src2["y"]
-    else:
-        x1, y1 = ad1[0].OBJCAT['X_IMAGE'], ad1[0].OBJCAT['Y_IMAGE']
-        x2, y2 = ad2[0].OBJCAT['X_IMAGE'], ad2[0].OBJCAT['Y_IMAGE']
-
-    # convert image 2 data to sky coordinates and then to image 1 pixels
-    ra2, dec2 = WCS(ad2.header[1]).all_pix2world(x2,y2, 1)
-    conv_x2, conv_y2 = WCS(ad1.header[1]).all_world2pix(ra2, dec2,1)
-    
-    # map input positions (in reference frame) to reference positions
-    matched, transform = match_catalogs(conv_x2, conv_y2, x1, y1,
-                                        translation_range=firstPass,
-                                        match_radius=0.2*firstPass)
-
-    ind2 = np.where(matched>=0)
-    ind1 = matched[ind2]
-    obj_list = [[],[]] if len(ind1)<1 else [list(zip(x1[ind1], y1[ind1])),
-                                            list(zip(x2[ind2], y2[ind2]))]
-    return obj_list, transform
-
-def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1, cull_sources=False):
-    """
-    This function takes sources from the OBJCAT extensions in two
-    images and attempts to correlate them, using the offsets provided 
-    in the header as a first approximation. It returns a list of 
-    reference source positions and their correlated image source 
-    positions. This is currently GNIRS-specific.
-    
-    :param ad1: reference image
-    :type ad1: AstroData instance
-    
-    :param ad2: input image
-    :type ad2: AstroData instance
-    
-    :param delta: maximum distance in pixels to allow a match. If
-                  left as None, it will attempt to find an appropriate
-                  number (recommended).
-    :type delta: float
-    
-    :param firstPass: estimated maximum distance between correlated
-                      sources. This distance represents the expected
-                      mismatch between the header shifts of the input 
-                      images.
-    :type firstPass: float
-    
-    :param min_sources: minimum number of sources to use for cross-
-                        correlation, depending on the instrument used.
-    :type min_sources: int                    
-
-    :param cull_sources: flag to indicate whether to reject sources that
-                         are insufficiently star-like
-    :type cull_sources: bool
-    """
-    # If desired, select only the most star-like sources in the OBJCAT
-    log = logutils.get_logger(__name__)
-    if cull_sources:
-        good_src1 = gt.clip_sources(ad1)[0]
-        good_src2 = gt.clip_sources(ad2)[0]
-        if len(good_src1) < min_sources or len(good_src2) < min_sources:
-            log.warning("Too few sources in culled list, using full set "
-                        "of sources")
-            x1, y1 = ad1[0].OBJCAT['X_IMAGE'], ad1[0].OBJCAT['Y_IMAGE']
-            x2, y2 = ad2[0].OBJCAT['X_IMAGE'], ad2[0].OBJCAT['Y_IMAGE']
-        else:
-            x1, y1 = good_src1["x"], good_src1["y"]
-            x2, y2 = good_src2["x"], good_src2["y"]
-    else:
-        x1, y1 = ad1[0].OBJCAT['X_IMAGE'], ad1[0].OBJCAT['Y_IMAGE']
-        x2, y2 = ad2[0].OBJCAT['X_IMAGE'], ad2[0].OBJCAT['Y_IMAGE']
-
-    # Shift the catalog of image to be aligned using the header offsets.
-    # The instrument alignment angle should be used to check how to 
-    # use the offsets.
-    poffset1 = ad1.phu['POFFSET']
-    qoffset1 = ad1.phu['QOFFSET']
-    poffset2 = ad2.phu['POFFSET']
-    qoffset2 = ad2.phu['QOFFSET']
-    pixscale = ad1.pixel_scale()
-    xdiff = -1.0 * (qoffset1 - qoffset2) / pixscale
-    ydiff = (poffset1 - poffset2) / pixscale
-    
-    pa1 = ad1.phu['PA']
-    pa2 = ad2.phu['PA']
-    # Can only deal with rotations for GNIRS at the moment. This code
-    # will need to be totally rewritten to generalize it, so I'm going
-    # to do a quick and ugly refactor.
-    if abs(pa1 - pa2)<1.0 or ad1.instrument()!='GNIRS':
-        conv_x2 = [(item - xdiff) for item in x2]
-        conv_y2 = [(item - ydiff) for item in y2]
-        if abs(pa1 - pa2)<1.0:
-            log.fullinfo("Less than 1 degree of rotation between the frames, "
-                         "no rotation applied.")
-        else:
-            log.fullinfo("No frame center found for {}, no rotation can "
-                        "be applied.".format(ad2.filename))
-        log.fullinfo("dx = {} px, dy = {} px applied from the headers".
-                    format(xdiff, ydiff))
-    else:
-        theta = math.radians(pa1 - pa2)
-        centerx, centery = 630.0, 520.0 # grabbed from gnirsCenterDict
-        x2temp = [(item - xdiff - centerx) for item in x2]
-        y2temp = [(item - ydiff - centery) for item in y2]
-        x2trans = [((xt * math.cos(theta)) - (yt * math.sin(theta)))
-                   for xt, yt in zip(x2temp, y2temp)]
-        y2trans = [((xt * math.sin(theta)) + (yt * math.cos(theta)))
-                   for xt, yt in zip(x2temp, y2temp)]
-        conv_x2 = [(xt + centerx) for xt in x2trans]
-        conv_y2 = [(yt + centery) for yt in y2trans]
-        log.fullinfo("dx = {} px, dy = {} px, rotation = {} degrees "
-                    "applied from the headers".format(xdiff, ydiff, pa1 - pa2))
-
-    # find matches
-    ind1,ind2 = at.match_cxy(x1,conv_x2,y1,conv_y2,
-                             delta=delta, first_pass=firstPass, log=log)
-
-    obj_list = [[],[]] if len(ind1)<1 else [list(zip(x1[ind1], y1[ind1])),
-                                            list(zip(x2[ind2], y2[ind2]))]
-    return obj_list
-
 
 def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     """
@@ -785,158 +696,32 @@ def _apply_model_to_wcs(adinput, transform=None, keyword_comments=None):
         newcdmatrix = m(*cdmatrix)
         for ax in 1, 2:
             ad.hdr.set('CRPIX{}'.format(ax), newcrpix[ax-1],
-                       comment=keyword_comments["CRVAL{}".format(ax)])
+                       comment=keyword_comments["CRPIX{}".format(ax)])
             for ax2 in 1, 2:
                 ad.hdr.set('CD{}_{}'.format(ax, ax2), newcdmatrix[ax-1][ax2-1],
                            comment=keyword_comments['CD{}_{}'.format(ax, ax2)])
     return adinput
 
-def _align_wcs(ref_ad, adinput, objIns, rotate=False, scale=False,
-               keyword_comments=None):
+def _write_wcs_keywords(ad, wcs, keyword_comments):
     """
-    This function fits an input image's WCS to a reference image's WCS
-    by minimizing the difference in the input image frame between
-    reference points present in both images.
-    
-    :param ref_ad: reference image to register other images to. Must
-                      have only one SCI extension.
-    :type ref_ad: AstroData object
-    
-    :param adinput: images to register to reference image. Must have
-                  only one SCI extension.
-    :type adinput: list of AstroData objects
-    
-    :param objIns: list of object lists, one for each input image
-    :type objIns: list of output lists from _correlate_sources
-    
-    :param rotate: flag to indicate whether the input image WCSs should
-                   be allowed to rotate with respect to the reference image
-                   WCS
-    :type rotate: bool
-    
-    :param scale: flag to indicate whether the input image WCSs should
-                  be allowed to scale with respect to the reference image
-                  WCS. The same scale factor is applied to all dimensions.
-    :type scale: bool
+    Updates the FITS header WCS keywords, with comments. Will at some point
+    probably be superseded by the WCS.to_header() method
+
+    Parameters
+    ----------
+    ad: AstroData
+        the AD object (or slice) to have its WCS keywords modified in place
+    wcs: WCS
+        WCS object with the information
+    keyword_comments:
+        list of comments for the keywords
     """
-    log = logutils.get_logger(__name__)
-    if len(objIns) != len(adinput):
-        raise IOError("Argument objIns should have the same number of "
-                      "elements as adinput")
-
-    ref_wcs = WCS(ref_ad.header[1])
-    for ad, objIn in zip(adinput, objIns):
-        log.fullinfo("Adjusting WCS for {}".format(ad.filename))
-        ref_xy = np.array(objIn[0])
-        inp_xy = np.array(objIn[1])
-        inp_wcs = WCS(ad.header[1])
-        
-        # convert the reference coordinates to RA/Dec
-        ref_radec = ref_wcs.all_pix2world(ref_xy,1)
-
-        #TODO: redo this with astropy.modeling
-        # instantiate the alignment object used to fit input
-        # WCS to reference WCS
-        wcstweak = at.WCSTweak(inp_wcs, inp_xy, ref_radec, 
-                               rotate=rotate, scale=scale)
-        
-        # find optimum WCS shift and rotation with
-        # starting parameters: dRA, dDec = 0
-        # (and dTheta=0 if rotate=True, dMag=1 if scale=True)
-        update = False
-        if rotate and scale:
-            pars = [0,0,0,1]
-        elif rotate:
-            pars = [0,0,0]
-        elif scale:
-            pars = [0,0,1]
-        else:
-            pars = [0,0]
-        
-        import warnings
-        warnings.simplefilter("ignore")
-        new_pars, success = scipy.optimize.leastsq(wcstweak.calc_diff, pars,
-                                                   maxfev=1000)
-
-        if success <= 4:
-            update = True
-            if rotate and scale:
-                log.fullinfo("Best fit dRA, dDec, dTheta, dMag: {:.5f} {:5.f}"
-                             " {:.5f} {:.5f}".format(*new_pars))
-            elif rotate:
-                log.fullinfo("Best fit dRA, dDec, dTheta: {:.5f} {:.5f} "
-                             "{:.5f}".format(*new_pars))
-            elif scale:
-                log.fullinfo("Best fit dRA, dDec, dMag: {:.5f} {:.5f} "
-                             "{:.5f}".format(*new_pars))
-            else:
-                log.fullinfo("Best fit dRA, dDec: {:.5f} {:.5f}".format(
-                    *new_pars))
-        else:
-            log.warning("WCS alignment did not converge. Not updating WCS.")
-        
-        # update WCS in ad
-        if update:
-            log.fullinfo("Updating WCS in header")
-            for ax in range(1, 3):
-                ad.hdr.set('CRVAL{}'.format(ax), wcstweak.wcs.wcs.crval[ax-1],
-                           comment=keyword_comments["CRVAL{}".format(ax)])
-                for ax2 in range(1, 3):
-                    ad.hdr.set('CD{}_{}'.format(ax, ax2), wcstweak.wcs.wcs.cd[ax-1, ax2-1],
-                               comment=keyword_comments["CD{}_{}".format(ax, ax2)])
-    return adinput
-
-def _header_align(ref_ad, adinput, keyword_comments):
-    """
-    This function uses the POFFSET, QOFFSET and PA header keywords 
-    to get reference points to use in correcting an input WCS to
-    a reference WCS. This function allows for relative shifts between 
-    the images. Rotation and scaling will not be handled properly. 
-    
-    :param reference: reference image to register other images to. Must
-                      have only one SCI extension.
-    :type reference: AstroData object
-    
-    :param adinput: images to register to reference image. Must have
-                  only one SCI extension.
-    :type adinput: AstroData objects, either a single instance or a list
-    """
-    # get starting offsets from reference image (first one given)
-    log = logutils.get_logger(__name__)
-    ref_pixscale = ref_ad.pixel_scale()
-    ref_poff = ref_ad.phu['POFFSET'] / ref_pixscale
-    ref_qoff = ref_ad.phu['QOFFSET'] / ref_pixscale
-    ref_pa = ref_ad.phu['PA']
-    ref_theta = math.radians(ref_pa)
-    log.fullinfo("Pixel scale: {:.4}".format(ref_pixscale))
-
-    # Reference position is the center of the reference frame
-    data_shape = ref_ad[0].data.shape
-    ref_coord = [data_shape[1]/2,data_shape[0]/2]
-        
-    objIns = []
-    for ad in adinput:
-        pixscale = ad.pixel_scale()
-        poff = ad.phu['POFFSET'] / pixscale
-        qoff = ad.phu['QOFFSET'] / pixscale
-        pa = ad.phu['PA']
-        theta = math.radians(pa - ref_pa)
-        pdiff = poff - ref_poff
-        qdiff = qoff - ref_qoff
-        xoff = (pdiff * math.cos(theta)) + (qdiff * math.sin(theta))
-        yoff = (pdiff * math.sin(theta)) - (qdiff * math.cos(theta))
-        
-        img_x = ref_coord[0] - yoff
-        img_y = ref_coord[1] - xoff
-        
-        log.fullinfo("Reference coordinates: {:.1f} {:.1f}".format(*ref_coord))
-        log.fullinfo("For image {}:".format(ad.filename))
-        log.fullinfo("   Relative image offsets: {:.4f} {:.4f}".
-                     format(xoff, yoff))
-        log.fullinfo("   Coordinates to transform: {:.4f} {:.4f}".
-                     format(img_x, img_y))
-        objIns.append(np.array([[ref_coord],[[img_x,img_y]]]))
-
-    adoutput_list = _align_wcs(ref_ad, adinput, objIns,
-                rotate=False, scale=False, keyword_comments=keyword_comments)
-    return adoutput_list
+    for ax in 1, 2:
+        ad.hdr.set('CRPIX{}'.format(ax), wcs.wcs.crpix[ax-1],
+                   comment=keyword_comments["CRPIX{}".format(ax)])
+        ad.hdr.set('CRVAL{}'.format(ax), wcs.wcs.crval[ax-1],
+                   comment=keyword_comments["CRVAL{}".format(ax)])
+        for ax2 in 1, 2:
+            ad.hdr.set('CD{}_{}'.format(ax, ax2), wcs.wcs.cd[ax-1, ax2-1],
+                       comment=keyword_comments["CD{}_{}".format(ax, ax2)])
+    return

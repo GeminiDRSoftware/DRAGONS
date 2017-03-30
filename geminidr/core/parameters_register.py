@@ -19,6 +19,7 @@ class ParametersRegister(ParametersBASE):
     # ask it to correct the Astrometry
     determineAstrometricSolution = {
         "suffix"            : "_astrometryCorrected",
+        "full_wcs"          : None,
     }
     updateWCS = {
         "suffix"            : "_wcsUpdated",
