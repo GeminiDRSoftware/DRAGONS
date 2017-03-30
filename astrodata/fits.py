@@ -6,13 +6,14 @@ from copy import deepcopy
 from collections import namedtuple, OrderedDict
 import os
 from functools import partial, wraps
+import logging
 try:
     # Python 3
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
 
-from .core import *
+from .core import AstroData, DataProvider, astro_data_descriptor
 
 from astropy.io import fits
 from astropy.io.fits import HDUList, Header, DELAYED
@@ -27,6 +28,7 @@ from astropy.table import Table
 import numpy as np
 
 NO_DEFAULT = object()
+LOGGER = logging.getLogger('AstroData FITS')
 
 class KeywordCallableWrapper(object):
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
@@ -890,13 +892,20 @@ class FitsProvider(DataProvider):
 
     # NOTE: This one does not make reference to self at all. May as well
     #       move it out
-    def _process_table(self, table, name=None):
+    def _process_table(self, table, name=None, header=None):
         if isinstance(table, BinTableHDU):
             obj = Table(table.data, meta={'header': table.header})
+            if header is not None:
+                LOGGER.warning("Ignoring the additional header for the table object")
         elif isinstance(table, Table):
             obj = Table(table)
             if 'header' not in obj.meta:
-                obj.meta['header'] = header_for_table(obj)
+                if header is not None:
+                    obj.meta['header']
+                else:
+                    obj.meta['header'] = header_for_table(obj)
+            elif header is not None:
+                LOGGER.warning("Ignoring the additional header for the table object")
         else:
             raise ValueError("{} is not a recognized table type".format(table.__class__))
 
@@ -1211,7 +1220,7 @@ class FitsProvider(DataProvider):
             header['EXTVER'] = meta.get('ver', -1)
             meta['other_header'][name] = header
 
-    def _append_array(self, data, name=None, add_to=None):
+    def _append_array(self, data, name=None, header=None, add_to=None):
         def_ext = FitsProvider.default_extension
         # Top level:
         if add_to is None:
@@ -1222,12 +1231,20 @@ class FitsProvider(DataProvider):
             if name in {'DQ', 'VAR'}:
                 raise ValueError("'{}' need to be associated to a '{}' one".format(name, def_ext))
             else:
-                hname = name if name is not None else def_ext
-                hdu = ImageHDU(data)
+                if name is not None:
+                    hname = name
+                elif header is not None:
+                    hname = header.get('EXTNAME', def_ext)
+                else:
+                    hname = def_ext
+
+                hdu = ImageHDU(data, header = header)
                 hdu.header['EXTNAME'] = hname
-                ret = self._append_imagehdu(hdu, name=hname, add_to=None)
+                ret = self._append_imagehdu(hdu, name=hname, header=None, add_to=None)
         # Attaching to another extension
         else:
+            if header is not None:
+                LOGGER.warning("Attaching the array to an existing extension. Ignoring the header")
             if name is None:
                 raise ValueError("Can't append pixel planes to other objects without a name")
             elif name is def_ext:
@@ -1246,28 +1263,33 @@ class FitsProvider(DataProvider):
 
         return ret
 
-    def _append_imagehdu(self, unit, name, add_to, reset_ver=True):
+    def _append_imagehdu(self, unit, name, header, add_to, reset_ver=True):
+        if header is not None:
+            LOGGER.warning("Ignoring the additional header, as the ImageHDU instance comes with its own")
         if name in {'DQ', 'VAR'} or add_to is not None:
             return self._append_array(unit.data, name=name, add_to=add_to)
         else:
             nd = self._process_pixel_plane(unit, name=name, top_level=True, reset_ver=reset_ver)
-            return self._append_nddata(nd, name, add_to=None)
+            return self._append_nddata(nd, name, header, add_to=None)
 
-    def _append_raw_nddata(self, raw_nddata, name, add_to, reset_ver=True):
+    def _append_raw_nddata(self, raw_nddata, name, header, add_to, reset_ver=True):
         # We want to make sure that the instance we add is whatever we specify as
         # `NDDataObject`, instead of the random one that the user may pass
         top_level = add_to is None
         if not isinstance(raw_nddata, NDDataObject):
             raw_nddata = NDDataObject(raw_nddata)
-        processed_nddata = self._process_pixel_plane(raw_nddata, top_level=top_level, reset_ver=reset_ver)
-        return self._append_nddata(processed_nddata, name=name, add_to=add_to)
+        processed_nddata = self._process_pixel_plane(raw_nddata, top_level=top_level,
+                custom_header=header, reset_ver=reset_ver)
+        return self._append_nddata(processed_nddata, name=name, add_to=add_to, header=None)
 
-    def _append_nddata(self, new_nddata, name, add_to, reset_ver=True):
+    def _append_nddata(self, new_nddata, name, header, add_to, reset_ver=True):
         # 'name' is ignored. It's there just to comply with the
         # _append_XXX signature
         def_ext = FitsProvider.default_extension
         if add_to is not None:
             raise TypeError("You can only append NDData derived instances at the top level")
+        if header is not None:
+            LOGGER.warning("Ignoring the additional header for the NDData object")
 
         hd = new_nddata.meta['header']
         hname = hd.get('EXTNAME', def_ext)
@@ -1291,8 +1313,8 @@ class FitsProvider(DataProvider):
         self.header[n+1] = new_nddata.meta['header']
         self._nddata[n] = new_nddata
 
-    def _append_table(self, new_table, name, add_to, reset_ver=True):
-        tb = self._process_table(new_table, name)
+    def _append_table(self, new_table, name, header, add_to, reset_ver=True):
+        tb = self._process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME') if name is None else name
         if hname is None:
             raise ValueError("Can't attach a table without a name!")
@@ -1307,15 +1329,17 @@ class FitsProvider(DataProvider):
             add_to.meta['other'][hname] = tb
         return tb
 
-    def _append_astrodata(self, ad, name, add_to, reset_ver=True):
+    def _append_astrodata(self, ad, name, header, add_to, reset_ver=True):
         if not ad.is_single:
             raise ValueError("Cannot append AstroData instances that are not single slices")
         elif add_to is not None:
             raise ValueError("Cannot append an AstroData slice to another slice")
+        if header is not None:
+            LOGGER.warning("Appending an AstroData object. The provided header will be ignored")
 
-        return self._append_nddata(deepcopy(ad.nddata), name=None, add_to=None, reset_ver=True)
+        return self._append_nddata(deepcopy(ad.nddata), name=None, header=None, add_to=None, reset_ver=True)
 
-    def _append(self, ext, name=None, add_to=None, reset_ver=True):
+    def _append(self, ext, name=None, header=None, add_to=None, reset_ver=True):
         self._lazy_populate_object()
 
         dispatcher = (
@@ -1327,12 +1351,12 @@ class FitsProvider(DataProvider):
 
         for bases, method in dispatcher:
             if isinstance(ext, bases):
-                return method(ext, name=name, add_to=add_to, reset_ver=reset_ver)
+                return method(ext, name=name, header=header, add_to=add_to, reset_ver=reset_ver)
         else:
             # Assume that this is an array for a pixel plane
-            return self._append_array(ext, name=name, add_to=add_to)
+            return self._append_array(ext, name=name, header=header, add_to=add_to)
 
-    def append(self, ext, name=None, reset_ver=True):
+    def append(self, ext, name=None, header=None, reset_ver=True):
         # TODO: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, PrimaryHDU):
@@ -1340,7 +1364,7 @@ class FitsProvider(DataProvider):
 
         self._lazy_populate_object()
 
-        return self._append(ext, name=name, add_to=None, reset_ver=reset_ver)
+        return self._append(ext, name=name, header=header, add_to=None, reset_ver=reset_ver)
 
     def _extver_impl(self, nds=None):
         if nds is None:
