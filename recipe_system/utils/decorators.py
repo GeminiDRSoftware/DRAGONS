@@ -84,7 +84,7 @@ def set_logging(pname):
    global LOGINDENT
    LOGINDENT += 1
    logutils.update_indent(LOGINDENT)
-   stat_msg = "PRIMITVE: {}".format(pname)
+   stat_msg = "PRIMITIVE: {}".format(pname)
    log.status(stat_msg)
    log.status("-" * len(stat_msg))
    return

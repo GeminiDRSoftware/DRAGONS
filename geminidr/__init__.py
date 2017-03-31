@@ -40,7 +40,7 @@ from recipe_system.utils.decorators import parameter_override
 @parameter_override
 class PrimitivesBASE(object):
     """
-    This is the base class for all of primitives classes for the geminidr 
+    This is the base class for all of primitives classes for the geminidr
     primitive sets. __init__.py provides, or should provide, all attributes
     needed by subclasses.
 
@@ -71,7 +71,7 @@ class PrimitivesBASE(object):
         self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
-        self.sx_dict          = sextractor_dict.sx_dict
+        self.sx_dict          = sextractor_dict.sx_dict.copy()
         # Prepend paths to SExtractor input files now
         self.sx_dict.update({k:
                 os.path.join(os.path.dirname(sextractor_dict.__file__), v)

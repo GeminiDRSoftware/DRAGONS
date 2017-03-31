@@ -185,7 +185,10 @@ class Photometry(PrimitivesBASE):
                     sex_task = SExtractorETI([ext], sexpars,
                                     mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
-                    seeing_estimate = _estimate_seeing(ext.OBJCAT)
+                    # We don't want to replace an actual value with "None"
+                    temp_seeing_estimate = _estimate_seeing(ext.OBJCAT)
+                    if temp_seeing_estimate is not None:
+                        seeing_estimate = temp_seeing_estimate
 
                 # Although the OBJCAT has been added to the extension, it
                 # needs to be massaged into the necessary format
@@ -205,7 +208,7 @@ class Photometry(PrimitivesBASE):
             # Run some profiling code on the best sources to produce a
             # more IRAF-like FWHM number, adding two columns to the OBJCAT
             # (PROFILE_FWHM, PROFILE_EE50)
-            ad = _profile_sources(ad)
+            ad = _profile_sources(ad, seeing_estimate)
 
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -571,7 +574,7 @@ def _cull_objcat(ext):
     objcat['NUMBER'].data[:] = range(1, len(objcat)+1)
     return ext
 
-def _profile_sources(ad):
+def _profile_sources(ad, seeing_estimate=None):
     """
     FWHM (and encircled-energy) measurements of objects to be more IRAF-like.
     Finds the distance from the source center to the closest pixel whose flux
@@ -593,12 +596,14 @@ def _profile_sources(ad):
 
         catx = objcat["X_IMAGE"]
         caty = objcat["Y_IMAGE"]
-        catfwhm = objcat["FWHM_IMAGE"]
         catbg = objcat["BACKGROUND"]
         cattotalflux = objcat["FLUX_AUTO"]
         catmaxflux = objcat["FLUX_MAX"]
         data = ext.data
-        stamp_size = max(10,int(0.5/ext.pixel_scale()))
+        if seeing_estimate is None:
+            stamp_size = max(10,int(0.5/ext.pixel_scale()))
+        else:
+            stamp_size = max(10,int(1.2*seeing_estimate/ext.pixel_scale()))
         # Make a default grid to use for distance measurements
         dist = np.mgrid[-stamp_size:stamp_size,-stamp_size:stamp_size]+0.5
 
@@ -606,14 +611,11 @@ def _profile_sources(ad):
         e50d_list = []
         newmax_list = []
         for i in range(0, len(objcat)):
-            xc = catx[i]
-            yc = caty[i]
+            xc = catx[i] - 0.5
+            yc = caty[i] - 0.5
             bg = catbg[i]
             tf = cattotalflux[i]
             mf = catmaxflux[i]
-            
-            xc -= 0.5
-            yc -= 0.5
 
             # Check that there's enough room for a stamp
             sz = stamp_size
@@ -640,60 +642,36 @@ def _profile_sources(ad):
             shift_dist[1] += int(xc)-xc
     
             # Square root of the sum of the squares of the distances
-            rdist = np.sqrt(np.sum(shift_dist**2,axis=0))
+            rdistsq = np.sum(shift_dist**2,axis=0)
 
             # Radius and flux arrays for the radial profile
-            rpr = rdist.flatten()
+            rpr = rdistsq.flatten()
             rpv = stamp.flatten() - bg
     
             # Sort by the radius
             sort_order = np.argsort(rpr) 
-            radius = rpr[sort_order]
+            radsq = rpr[sort_order]
             flux = rpv[sort_order]
 
-            # Find the first 10 points below the half-flux
-            # Average the radius of the first point below and
-            # the last point above the half-flux
-            halfflux = mf / 2.0
-            below = np.where(flux<=halfflux)[0]
-            if below.size>0:
-                if len(below)>=10:
-                    first_below = below[0:10]
-                else:
-                    first_below = below
-                inner = radius[first_below[0]]
-                if first_below[0]>0:
-                    min = first_below[0]-1
-                else:
-                    min = first_below[0]
-                nearest_r = radius[min:first_below[-1]]
-                nearest_f = flux[min:first_below[-1]]
-                possible_outer = nearest_r[nearest_f>=halfflux]
-                if possible_outer.size>0:
-                    outer = np.max(possible_outer)
-                    hwhm = 0.5 * (inner + outer)
-                else:
-                    hwhm = None
+            # Count pixels above half flux and circularize this area
+            # Do one iteration in case there's a neighbouring object
+            halfflux = 0.5 * mf
+            hwhmsq = np.sum(flux>halfflux)/np.pi
+            hwhm = np.sqrt(np.sum(flux[radsq<1.5*hwhmsq]>halfflux)/np.pi)
+            if hwhm < stamp_size:
+                fwhm_list.append(2*hwhm)
             else:
-                hwhm = None
+                fwhm_list.append(-999)
 
             # Find the first radius that encircles half the total flux
             sumflux = np.cumsum(flux)
             halfflux = 0.5 * tf
             first_50pflux = np.where(sumflux>=halfflux)[0]
             if first_50pflux.size>0:
-                e50r = radius[first_50pflux[0]]
-            else:
-                e50r = None
-
-            if hwhm is not None:
-                fwhm_list.append(hwhm*2.0)
-            else:
-                fwhm_list.append(-999)
-            if e50r is not None:
-                e50d_list.append(e50r*2.0)
+                e50d_list.append(2*np.sqrt(radsq[first_50pflux[0]]))
             else:
                 e50d_list.append(-999)
+
             newmax_list.append(mf)
 
         objcat["PROFILE_FWHM"][:] = np.array(fwhm_list)
