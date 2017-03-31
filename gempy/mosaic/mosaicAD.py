@@ -40,22 +40,17 @@ class MosaicAD(Mosaic):
     merge_table_data   - Merges catalogs extension that are associated
                          with image extensions.
     mosaic_image_data  - Create a mosaic from extensions.
-    update_data        - Load image extensions from a different extension
-    make_associations  - Look for associations between image extension
-                         and bintables.
     get_data_list      - Return a list of image data for a given extname
                          extensions in the input AstroData object.
     update_wcs         - Update the WCS information in the output header.
     info               - Creates a dictionary with coordinates, amplifier
                          and block information.
-    set_mosaic_data    - Loads a dictionary with a numpy array for a given
-                         extension name. This is to replace or skip the
-                         creation of a mosaic.
 
     Attributes   (In addition to parent class attributes)
     ----------
-    log           - Logutils object
     ad            - Astrodata object
+    data_list     - a list of array sections from all extensions.
+    log           - Logutils object
     mosaic_data_array
                   - Dictionary of numpy arrays keyed by extension name.
 
@@ -274,17 +269,17 @@ class MosaicAD(Mosaic):
         return data_list 
 
     # --------------------------------------------------------------------------
-    def merge_tables(self, ref_wcs, tile, block=None, update_catalog_method='wcs'):
+    def merge_table_data(self,ref_wcs,tile,block=None,update_catalog_method='wcs'):
         """
-        Merges input BINTABLE extensions of the requested tab_extname. 
-        Merging is based on RA and DEC columns. The repeated RA, DEC
-        values in the output table are removed. The column names for 
-        pixel and equatorial coordinates are given in a dictionary 
-        with attribute name: column_names
+        Merges input BINTABLE extensions of the requested tab_extname. Merging
+        is based on RA and DEC columns. The repeated RA, DEC values in the output
+        table are removed. The column names for pixel and equatorial coordinates
+        are given in a dictionary with attribute name: column_names.
 
         Parameters
         ----------
-        tab_extname: Binary table extname
+        ref_wcs: reference WCS object.
+        type: WCS object.
 
         block: default is (None).
             Allows a specific block to be returned as the output mosaic. The tuple
