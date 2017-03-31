@@ -1238,8 +1238,8 @@ class FitsProvider(DataProvider):
                 ret = self._append_imagehdu(hdu, name=hname, header=None, add_to=None)
         # Attaching to another extension
         else:
-            if header is not None:
-                LOGGER.warning("Attaching the array to an existing extension. Ignoring the header")
+            if header is not None and name in {'DQ', 'VAR'}:
+                LOGGER.warning("The header is ignored for '{}' extensions".format(name))
             if name is None:
                 raise ValueError("Can't append pixel planes to other objects without a name")
             elif name is def_ext:
@@ -1253,7 +1253,7 @@ class FitsProvider(DataProvider):
                 add_to.uncertainty = std_un
                 ret = std_un
             else:
-                self._add_to_other(add_to, name, data)
+                self._add_to_other(add_to, name, data, header=header)
                 ret = data
 
         return ret
