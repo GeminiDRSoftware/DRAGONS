@@ -9,6 +9,8 @@ from astropy.table import Column
 
 from astrodata.fits import add_header_to_table
 
+from datetime import datetime
+
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
 from gempy.gemini.eti.sextractoreti import SExtractorETI
@@ -399,6 +401,7 @@ def _cull_objcat(ext):
     except AttributeError:
         return ext
 
+    all_numbers = objcat['NUMBER'].data
     # Remove sources of less than 20 pixels
     objcat.remove_rows(objcat['ISOAREA_IMAGE'] < 20)
     # Remove implausibly narrow sources
@@ -409,7 +412,7 @@ def _cull_objcat(ext):
         objcat.remove_rows(objcat['NIMAFLAGS_ISO'] > 0.95*objcat['ISOAREA_IMAGE'])
 
     # Create new OBJMASK with 1 only for unculled objects
-    # This is as fast as I can make it
+    # This is the np.in1d code but avoids unnecessary steps
     try:
         objmask1d = ext.OBJMASK.ravel()
     except AttributeError:
@@ -417,8 +420,15 @@ def _cull_objcat(ext):
     else:
         numbers = objcat['NUMBER'].data
         objmask_shape = ext.OBJMASK.shape
-        ext.OBJMASK = np.where(np.in1d(objmask1d, numbers), np.uint8(1),
+        ar = np.concatenate(([0], all_numbers, numbers))
+        order = ar.argsort(kind='mergesort')
+        sar = ar[order]
+        ret = np.empty(ar.shape, dtype=bool)
+        ret[order] = np.concatenate((sar[1:] == sar[:-1], [False]))
+        ext.OBJMASK = np.where(ret[objmask1d], np.uint8(1),
                                np.uint8(0)).reshape(objmask_shape)
+        #ext.OBJMASK = np.where(np.in1d(objmask1d, numbers), np.uint8(1),
+        #                    np.uint8(0)).reshape(objmask_shape)
 
     # Now renumber what's left sequentially
     objcat['NUMBER'].data[:] = range(1, len(objcat)+1)
