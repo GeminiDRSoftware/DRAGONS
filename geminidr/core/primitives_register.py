@@ -12,7 +12,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
-from gempy.library.newmatch import match_catalogs, align_images_from_wcs, CallableWCS
+from gempy.library.newmatch import match_catalogs, align_images_from_wcs, Pix2Sky
 
 from geminidr import PrimitivesBASE
 from .parameters_register import ParametersRegister
@@ -325,7 +325,7 @@ class Register(PrimitivesBASE):
 
                 # Now set up the initial model
                 if full_wcs:
-                    m_init = CallableWCS(wcs, direction=-1)
+                    m_init = Pix2Sky(wcs, direction=-1)
                     m_init.factor.fixed = True
                     m_init.angle.fixed = True
                     if best_model[1] is None:
@@ -393,7 +393,7 @@ class Register(PrimitivesBASE):
                     matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
                                                       use_in=in_field, use_ref=sorted_idx,
                                                       model_guess=m_init, translation_range=initial,
-                                                      tolerance=0.1, match_radius=final)
+                                                      tolerance=0.05, match_radius=final)
                 else:
                     log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
                     continue
@@ -409,10 +409,10 @@ class Register(PrimitivesBASE):
                 if num_matched > 0:
                     # Update WCS in the header and OBJCAT (X_WORLD, Y_WORLD)
                     if full_wcs:
-                        new_wcs = m_final.wcs()
+                        new_wcs = m_final.wcs
                     else:
                         kwargs = dict(zip(m_final.param_names, m_final.parameters))
-                        new_wcs = CallableWCS(wcs).wcs(**kwargs)
+                        new_wcs = Pix2Sky(wcs, **kwargs).wcs
                     _write_wcs_keywords(ext, new_wcs, self.keyword_comments)
                     objcat['X_WORLD'], objcat['Y_WORLD'] = new_wcs.all_pix2world(
                         objcat['X_IMAGE'], objcat['Y_IMAGE'], 1)

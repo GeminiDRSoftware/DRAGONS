@@ -13,7 +13,7 @@ from datetime import datetime
 from gempy.gemini import gemini_tools as gt
 from ..utils import logutils
 
-class CallableWCS(FittableModel):
+class Pix2Sky(FittableModel):
     """
     Wrapper to make an astropy.WCS object act like an astropy.modeling.Model
     object, including having an inverse.
@@ -24,8 +24,8 @@ class CallableWCS(FittableModel):
         self._direction = direction
         self._factor_scale = factor_scale
         self._angle_scale = angle_scale
-        super(CallableWCS, self).__init__(x_offset, y_offset, factor, angle,
-                                          **kwargs)
+        super(Pix2Sky, self).__init__(x_offset, y_offset, factor, angle,
+                                      **kwargs)
 
     inputs = ('x','y')
     outputs = ('x','y')
@@ -36,7 +36,8 @@ class CallableWCS(FittableModel):
 
     def evaluate(self, x, y, x_offset, y_offset, factor, angle):
         # x_offset and y_offset are actually arrays in the Model
-        temp_wcs = self.wcs(x_offset[0], y_offset[0], factor, angle)
+        #temp_wcs = self.wcs(x_offset[0], y_offset[0], factor, angle)
+        temp_wcs = self.wcs
         return temp_wcs.all_pix2world(x, y, 1) if self._direction>0 \
             else temp_wcs.all_world2pix(x, y, 1)
 
@@ -46,17 +47,14 @@ class CallableWCS(FittableModel):
         inv._direction = -self._direction
         return inv
 
-    def wcs(self, x_offset=None, y_offset=None, factor=None, angle=None):
+    @property
+    def wcs(self):
         """Return the WCS modified by the translation/scaling/rotation"""
         wcs = self._wcs.deepcopy()
-        if x_offset is None:
-            x_offset = self.x_offset.value
-        if y_offset is None:
-            y_offset = self.y_offset.value
-        if angle is None:
-            angle = self.angle.value
-        if factor is None:
-            factor = self.factor.value
+        x_offset = self.x_offset.value
+        y_offset = self.y_offset.value
+        angle = self.angle.value
+        factor = self.factor.value
         wcs.wcs.crpix += np.array([x_offset, y_offset])
         if factor != self._factor_scale:
             wcs.wcs.cd *= factor / self._factor_scale
@@ -874,7 +872,7 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
     func = match_catalogs if return_matches else align_catalogs
 
     if full_wcs:
-        transform = CallableWCS(WCS(adinput.header[1]), direction=-1)
+        transform = Pix2Sky(WCS(adinput.header[1]), direction=-1)
         x_offset, y_offset = initial_shift
         transform.x_offset = x_offset
         transform.y_offset = y_offset
