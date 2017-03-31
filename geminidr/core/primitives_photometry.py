@@ -399,7 +399,6 @@ def _cull_objcat(ext):
     except AttributeError:
         return ext
 
-    all_objects = objcat['NUMBER']
     # Remove sources of less than 20 pixels
     objcat.remove_rows(objcat['ISOAREA_IMAGE'] < 20)
     # Remove implausibly narrow sources
@@ -407,13 +406,19 @@ def _cull_objcat(ext):
     # Remove *really* bad sources. "Bad" pixels might be saturated, but the
     # source is still real, so be very conservative
     if 'NIMAFLAGS_ISO' in objcat.columns:
-        objcat.remove_rows(objcat['NIMAFLAGS_ISO'] > 0.9*objcat['ISOAREA_IMAGE'])
+        objcat.remove_rows(objcat['NIMAFLAGS_ISO'] > 0.95*objcat['ISOAREA_IMAGE'])
 
     # Create new OBJMASK with 1 only for unculled objects
-    if hasattr(ext, 'OBJMASK'):
+    # This is as fast as I can make it
+    try:
+        objmask1d = ext.OBJMASK.ravel()
+    except AttributeError:
+        pass
+    else:
+        numbers = objcat['NUMBER'].data
         objmask_shape = ext.OBJMASK.shape
-        ext.OBJMASK = np.where(np.in1d(ext.OBJMASK.ravel(), objcat['NUMBER']),
-                               1, 0).reshape(objmask_shape).astype(np.uint8)
+        ext.OBJMASK = np.where(np.in1d(objmask1d, numbers), np.uint8(1),
+                               np.uint8(0)).reshape(objmask_shape)
 
     # Now renumber what's left sequentially
     objcat['NUMBER'].data[:] = range(1, len(objcat)+1)
