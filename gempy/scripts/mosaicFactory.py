@@ -49,7 +49,7 @@ from argparse import ArgumentParser
 import astrodata
 import gemini_instruments
 
-from gempy.mosaic.mosaicAD import MosaicAD
+from gempy.mosaic.mosaicAD_hack import MosaicAD
 from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 # ------------------------------------------------------------------------------
@@ -57,14 +57,15 @@ def ptime():
     """
     parameters: <void>
     return:     <string>, ISO 8601 'now' timestamp
+
     """
     return datetime.isoformat(datetime.now())
-
 
 def buildNewParser(version=__version__):
     """
     parameters: <string>, defaulted optional version.
     return:     <instance>, ArgumentParser instance
+
     """
     parser = ArgumentParser(description="Auto mosaic builder.",
                             prog="mosaicFactory")
@@ -74,23 +75,22 @@ def buildNewParser(version=__version__):
                         help="infile1 [infile2 ...]")
     return parser
 
-
 def handleCLargs():
     """
     parameters: None
     return:     <instance>, Namespace instance.
+
     """
     parser = buildNewParser()
     args = parser.parse_args()
     return args
 
-
 class MosaicFactory(object):
-
     def auto_mosaic(self, infiles):
         """
         parameters: <list>, list of input filenames
         return:     <void>
+
         """
         for in_fits in infiles:
             out_fits = self._set_out_fits(in_fits)
@@ -140,6 +140,7 @@ class MosaicFactory(object):
         """
         parameters: <string>, filename
         return:     <string>, output filename
+
         """
         head, tail = os.path.split(in_fits)
         fnam, fext = os.path.splitext(tail)

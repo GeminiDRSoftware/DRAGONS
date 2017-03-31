@@ -14,61 +14,58 @@ from .mosaicGeometry import MosaicGeometry
 def gemini_mosaic_function(ad):
     """ 
     Default function returning data arrays and instrument geometry values. The
-    geometry values are constant which are set for each instrument and they are 
-    accesed using the Lookup dictionary. These dictionaries are named 
+    geometry values are constant which are set for each instrument and they are
+    accesed using the Lookup dictionary. These dictionaries are named
     'geometry_conf.py' for each instrument, currently GMOS and GSAOI.
         
-    *Input*
-    
+    Parameters
+    ----------
     :param ad: Astrodata Object
-    :type ad: <AstroData>
+    :type ad:  <AstroData>
 
-    :param ref_extname: Extension name to read data arrays from ad.
-    :type ref_extname: <str>, Default is 'SCI'.
+    Return
+    ------
+    type: <tuple>, (mosdata, geometry)
 
-    *Output*
+    mosdata:  Data object containing the following elements:
+
+        data_list: List of extension data ndarrays.
+        coords: Dictionary with coordinates describing each element
+                of data_list. The coordinates are tuples of the form
+                (x1,x2,y1,y2), width and height zero-based.
+        Example:
+
+            {'amp_mosaic_coord': detsecs, 'amp_block_coord': ccdsecs}
+
+        detsecs is a list of tuples.
     
-    **mosdata:**  Data object containing the following elements:
-    
-    :param data_list: List of extension data ndarrays.
+    geometry: Geometry object containing the following attributes:
+        gaps: (x_width,y_width) Tuple indicating the number of pixels
+               of separation between the detector chips.
 
-    :param coords: Dictionary with coordinates describing each element
-                   of data_list. The coordinates are tuples of the form 
-                   (x1,x2,y1,y2), width and height zero-based.
+        blocksize: (x_pixel, y_pixel). Size of a block (detector chip)
+        mosaic_grid: Mosaic grid tuple (nblocks_x,n_rows). Number of blocks
+                     in x-direction and the number of rows.
 
-    Example:
-        {'amp_mosaic_coord':detsecs,'amp_block_coord':ccdsecs} 
+        ref_block: reference block tuple (colum,row) (0-based). Tuple (0,0)
+                   refers to the lower left block in the mosaic.
 
-    detsecs is a list of tuples.
-    
-    **geometry:** Geometry object containing the following attributes:
-    
-    :param gaps: (x_width,y_width) Tuple indicating the number of pixels
-                 of separation between the detector chips.
-
-    :param blocksize: (x_pixel, y_pixel). Size of a block (detector chip)
-
-    :param mosaic_grid: Mosaic grid tuple (nblocks_x,n_rows). Number of blocks in
-                        x-direction and the number of rows.
-
-    :param ref_block: reference block tuple (colum,row) (0-based). Tuple (0,0)
-                      refers to the lower left block in the mosaic.
-
-    :param tranformation: Dictionary with key shift, rotation and magnification.
+        tranformation: Dictionary with key shift, rotation and magnification.
         shift: List of tuples (x_shift, y_shift) indicating the number of pixels 
                to shift each block with respect to the reference block.
 
         rotation: List of rotation values (degrees ) indicating the rotation of 
                   each block with respect to the reference block.
-         magnification: List of magnification factor for each block.
 
-    :param interpolator: ('linear'). Function name used to correct each block for
-                                     shift, rotation and magnification.
-        
+        magnification: List of magnification factor for each block.
+
+        interpolator: ('linear'). Function name used to correct each block
+                                  for shift, rotation and magnification.
+
     """
     if not 'GMOS' in ad.tags and not 'GSAOI' in ad.tags:
-        raise TypeError('Input file is not supported by MosaicAD: ',
-                            str(ad.filename),' Type:',str(ad.tags))
+        err = 'Unsupported dataset type: {} Type: {}'
+        raise TypeError(err.format(ad.filename, ad.tags))
 
     md = MosaicData()          # Creates an empty object
     md.data_list = []
@@ -122,12 +119,13 @@ def _set_geo_values(ad, ccdsecs, detsecs, binning):
 
     """
     geometry_module = 'geminidr.{}.lookups.geometry_conf'
-    lookup_tables = geometry_module.format(ad.instrument_name.lower())
+    instrument = "gmos" if "GMOS" in ad.instrument() else ad.instrument().lower()
+    lookup_tables = geometry_module.format(instrument)
     geotable = import_module(lookup_tables)
     
     # key elements for chip geometries
-    dettype      =  ad.phu['DETTYPE']
-    detector     =  ad.phu['DETECTOR']
+    dettype      =  ad.phu.get('DETTYPE')
+    detector     =  ad.phu.get('DETECTOR')
     instrument   = ad.instrument()
     x_bin, y_bin = binning
     if x_bin > 1 or y_bin > 1:

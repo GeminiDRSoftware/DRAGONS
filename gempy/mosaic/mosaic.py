@@ -163,8 +163,8 @@ class Mosaic(object):
 
     def set_default_geometry(self):
         """
-          We are here because the object MosaicGeometry instantiated
-          in Mosaic __init__ function is None.
+        We are here because the object MosaicGeometry instantiated
+        in Mosaic __init__ function is None.
 
         """
         if not hasattr(self, 'coords'):
@@ -287,45 +287,43 @@ class Mosaic(object):
         self.transform_objects = transform_objects
         return
 
-    def mosaic_image_data(self, tile=False, block=None, return_ROI=True,
-                          dq_data=False, jfactor=None):
-
+    def mosaic_image_data(self, block=None, dq_data=False, tile=False,
+                          return_ROI=True, jfactor=None):
         """
         Main method to layout the block of data in a mosaic grid.
         Correction for rotation, shifting and magnification is performed with
         respect to the reference block.
+
         A Mask is also created containing value zero for positions were
         there are pixel data and one for everywhere else -like gaps and
         areas of no-data due to shiftingr; for example, after transforming.
 
         Parameters
         ----------
+        block: Allows a specific block to be returned as the output mosaic.
+               The tuple notation is (col,row) (0-based), where (0,0) is the
+               lower left block. The blocks layout is given by the attribute
+               mosaic_grid.
+        type:  <tuple>, default: None
 
-        :param tile: If True, layout the block in the mosaic grid
-                     with no correction for rotation nor shift.
-                     Gaps are included.
-        :ptype tile: boolean, default: False
+        dq_data: If True, then the input data is transformed
+                 bit-plane by bit-plane. DQ is 8-bit planes so far.
+        type:    <bool>
 
-        :param block: Allows a specific block to be returned as the
-                      output mosaic. The tuple notation is (col,row)
-                      (zero-based) where (0,0) is the lower left block.
-                      The blocks layout is given by the attribute mosaic_grid.
-        :ptype block: Tuple, default: None
+        tile: Layout the block in the mosaic grid with no correction for
+              rotation nor shift. Gaps are included.
+        type: <bool>, default: False
 
-        :param return_ROI:
-                      Flag to use the minimum frame enclosing all the
-                      block_data elements.
-        :ptype return_ROI: Boolean, default: True
-        :ptype dq_data: (bool). If True, then the input data is transformed
-                        bit-plane by bit-plane. DQ is 8-bit planes so far.
-        :param jfactor: Factor to multiply transformed block to conserve flux.
+        return_ROI: Use the minimum frame enclosing all the block_data elements.
+        type:       <bool>, default: True
 
-        Output
+        jfactor: Factor to multiply transformed block to conserve flux.
+        type:    <list>
+
+        Return
         ------
-
         :return: An ndarray with the mosaiic. The Mask created is available
                  as an attribute with name 'mask'.
-
 
         """
         self.return_ROI = return_ROI
@@ -457,7 +455,7 @@ class Mosaic(object):
             ry1 = min(ry1, y1)
             ry2 = max(ry2, y2)
         if return_ROI:
-            outdata = outdata[ry1:ry2, rx1:rx2]      # Crop data
+            outdata = outdata[ry1:ry2, rx1:rx2]        # Crop data
             self.mask = self.mask[ry1:ry2, rx1:rx2]    # Crop masks
 
         del block_data      # We no longer need this list in memory

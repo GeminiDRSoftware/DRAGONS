@@ -38,7 +38,7 @@ gaps = {
     ('GMOS-N', 'SDSU II CCD', 'GMOS + Red1',            'unbinned'): gap_dict_bin,
     ('GMOS-N', 'SDSU II CCD', 'GMOS + e2v DD CCD42-90', 'unbinned'): gap_dict_unbin,
     ('GMOS-N', 'SDSU II e2v DD CCD42-90', 'GMOS + e2v DD CCD42-90', 'unbinned'): gap_dict_unbin,
-    ('GMOS-N', 'S10892-N',    'GMOS-N + Hamamatsu',     'unbinned'): gmosn-hamgap_dict_unbin,
+    ('GMOS-N', 'S10892-N',    'GMOS-N + Hamamatsu',     'unbinned'): gmosn_hamgap_dict_unbin,
 
     ('GMOS-S', 'SDSU II CCD', 'GMOS + Blue1 + new CCD1', 'unbinned'): gap_dict_unbin,
     ('GMOS-S', 'SDSU II CCD', 'GMOS + Blue1',            'unbinned'): gap_dict_unbin,
@@ -47,12 +47,11 @@ gaps = {
     ('GMOS-N', 'SDSU II CCD', 'GMOS + e2v DD CCD42-90', 'binned'): gap_dict_bin,
     ('GMOS-N', 'SDSU II CCD', 'GMOS + Red1',            'binned'): gap_dict_bin,
     ('GMOS-N', 'SDSU II e2v DD CCD42-90', 'GMOS + e2v DD CCD42-90', 'binned'): gap_dict_bin,
-    ('GMOS-N', 'S10892-N',    'GMOS-N + Hamamatsu',     'binned'): gmosn-hamgap_dict_unbin,
+    ('GMOS-N', 'S10892-N',    'GMOS-N + Hamamatsu',     'binned'): gmosn_hamgap_dict_unbin,
 
     ('GMOS-S', 'SDSU II CCD', 'GMOS + Blue1 + new CCD1', 'binned'): gap_dict_bin,
     ('GMOS-S', 'SDSU II CCD', 'GMOS + Blue1',            'binned'): gap_dict_bin,
     ('GMOS-S', 'S10892',      'GMOS + Hamamatsu_new',    'binned'): hamgap_dict_bin
-
 }
 
 gaps_tile = gaps
@@ -88,9 +87,11 @@ rotation = {    # unbinned
 
     # Hamamatsu
     ('GMOS-N','S10892-N','GMOS-N + Hamamatsu','unbinned'): (-0.004, 0.0, -0.00537),
-    ('GMOS-S','S10892','GMOS + Hamamatsu_new','unbinned'):    (0.,0.,0.)
-}
+    ('GMOS-N','S10892-N','GMOS-N + Hamamatsu','binned'):   (-0.004, 0.0, -0.00537),
 
+    ('GMOS-S','S10892','GMOS + Hamamatsu_new','unbinned'): (0.,0.,0.),
+    ('GMOS-S','S10892','GMOS + Hamamatsu_new','binned'):   (0.,0.,0.)
+}
 
 chip_gaps = {
     ('GMOS-S','SDSU II CCD','GMOS + Blue1','unbinned'): [(2046, 2086, 1, 4608), (4133, 4176, 1, 4608)],
