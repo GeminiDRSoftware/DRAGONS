@@ -241,7 +241,7 @@ class Register(PrimitivesBASE):
                                     first_pass=0.2*firstpasspix, refine=True,
                                     cull_sources=cull_sources, full_wcs=True,
                                     rotate=rotate, scale=scale, tolerance=0.01,
-                                    return_matches=False).wcs()
+                                    return_matches=False).wcs
                         _write_wcs_keywords(ad, wcs, self.keyword_comments)
                 adoutputs.append(ad)
 

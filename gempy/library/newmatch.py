@@ -22,8 +22,8 @@ class Pix2Sky(FittableModel):
                  direction=1, factor_scale=1.0, angle_scale=1.0, **kwargs):
         self._wcs = wcs.deepcopy()
         self._direction = direction
-        self._factor_scale = factor_scale
-        self._angle_scale = angle_scale
+        self._factor_scale = float(factor_scale)
+        self._angle_scale = float(angle_scale)
         super(Pix2Sky, self).__init__(x_offset, y_offset, factor, angle,
                                       **kwargs)
 
@@ -872,10 +872,16 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
     func = match_catalogs if return_matches else align_catalogs
 
     if full_wcs:
-        transform = Pix2Sky(WCS(adinput.header[1]), direction=-1)
+        # Set up the (inverse) Pix2Sky transform with appropriate scalings
+        pixel_range = max(adinput[0].data.shape)
+        transform = Pix2Sky(WCS(adinput.header[1]), factor=pixel_range,
+                            factor_scale=pixel_range, angle=0.0,
+                            angle_scale=pixel_range/57.3, direction=-1)
         x_offset, y_offset = initial_shift
         transform.x_offset = x_offset
         transform.y_offset = y_offset
+        transform.angle.fixed = not rotate
+        transform.factor.fixed = not scale
 
         if refine:
             fit_it = KDTreeFitter()
@@ -888,13 +894,11 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
             transform.x_offset.bounds = (x_offset-first_pass, x_offset+first_pass)
             transform.y_offset.bounds = (y_offset-first_pass, y_offset+first_pass)
             if rotate:
-                transform.angle.bounds = (-5.0, 5.0)
-            else:
-                transform.angle.fixed = True
+                # 5.73 degrees
+                transform.angle.bounds = (-0.1*pixel_range, 0.1*pixel_range)
             if scale:
-                transform.factor.bounds = (0.95, 1.05)
-            else:
-                transform.factor.fixed = True
+                # 5% scaling
+                transform.factor.bounds = (0.95*pixel_range, 1.05*pixel_range)
 
             # map input positions (in reference frame) to reference positions
             func_ret = func(ra2, dec2, x1, y1, model_guess=transform,
