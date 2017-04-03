@@ -173,10 +173,11 @@ class MosaicAD(Mosaic):
         adout.phu.set_comment('TILED', 'True: tiled; False: Image Mosaicked')
 
         # ------ Create mosaic ndarrays, update the output WCS, create an 
-        #        AstroData object and append to the output list. 
+        #        AstroData object and append to the output list.
         # Mosaic the IMAGE extensions now
         mosarray = self.mosaic_image_data(block=block, tile=tile,
                                           return_ROI=return_ROI)
+
         # Create the mosaic FITS header using the reference extn header.
         header = self.mosaic_header(mosarray.shape, block, tile)
 
@@ -186,7 +187,7 @@ class MosaicAD(Mosaic):
         ref_wcs = wcs.WCS(header)
 
         # Setup output AD 
-        new_ext = AstroData(data=mosarray, header=header)
+        new_ext = adout.append(data=mosarray, header=header)
 
         # Reset extver to 1.
         new_ext.rename_ext(name=extn, ver=1)
@@ -267,48 +268,6 @@ class MosaicAD(Mosaic):
             xsec = ex.data_section()
             data_list.append(ex.data[xsec.y1: xsec.y2, xsec.x1: xsec.x2])
         return data_list 
-
-    # --------------------------------------------------------------------------
-    def merge_table_data(self,ref_wcs,tile,block=None,update_catalog_method='wcs'):
-        """
-        Merges input BINTABLE extensions of the requested tab_extname. Merging
-        is based on RA and DEC columns. The repeated RA, DEC values in the output
-        table are removed. The column names for pixel and equatorial coordinates
-        are given in a dictionary with attribute name: column_names.
-
-        Parameters
-        ----------
-        ref_wcs: reference WCS object.
-        type: WCS object.
-
-        block: default is (None).
-            Allows a specific block to be returned as the output mosaic. The tuple
-            notation is (col,row) (0-based) where (0,0) is the lower left block.
-            This is position of the reference block w/r to mosaic_grid.
-        type: <tuple> Default is None
-
-        update_catalog_method:
-            If 'wcs' use the reference extension header WCS to recalculate the x,y
-            values. If 'transform', apply the linear equations using to correct
-            the x,y values in each block.
-        type: <str>
-
-        Return
-        ------
-        adout: merged output BINTABLE of the requested tab_extname BINTABLE
-            extension.
-
-        """
-        if block:
-            if not isinstance(block, tuple):
-                raise ValueError('Block number is not a tuple.')
-            merge_extvers = self.data_index_per_block[block]
-
-        #  Merge the bintables containing source catalogs.
-        adout = self.merge_catalogs(ref_wcs, tile, merge_extvers,
-                                    update_catalog_method, 
-                                    transform_pars=self.geometry.transformation)
-        return adout
 
     # --------------------------------------------------------------------------
     def mosaic_image_data(self, block=None, tile=False, return_ROI=True):
@@ -491,8 +450,8 @@ class MosaicAD(Mosaic):
 
         NOTE: Names used here so far: *OBJCAT:* Object catalog extension name
 
-        *Input:*
-
+        Parameters
+        ----------
         :param ref_wcs: wcs object containing the WCS from the output header.
         :param merge_extvers: List of extvers to merge from the tab_extname
         :param tab_extname: Binary table extension name to be merge over all
@@ -690,6 +649,50 @@ class MosaicAD(Mosaic):
         adoutput_list.append(adout)
 
         return adoutput_list
+
+    # --------------------------------------------------------------------------
+    def merge_table_data(self,ref_wcs,tile,block=None,update_catalog_method='wcs'):
+        """
+        Merges input BINTABLE extensions of the requested tab_extname. Merging
+        is based on RA and DEC columns. The repeated RA, DEC values in the output
+        table are removed. The column names for pixel and equatorial coordinates
+        are given in a dictionary with attribute name: column_names.
+
+        Parameters
+        ----------
+        ref_wcs: reference WCS object.
+        type:    <WCS object>
+
+        block:
+            Allows a specific block to be returned as the output mosaic.
+            The tuple notation is (col,row) (0-based) where (0,0) is the lower
+            left block. This is position of the reference block w/r to
+            mosaic_grid.
+        type: <2-tuple>, Default is None
+
+        update_catalog_method:
+            If 'wcs' use the reference extension header WCS to recalculate the x,y
+            values. If 'transform', apply the linear equations using to correct
+            the x,y values in each block.
+        type: <str>
+
+        Return
+        ------
+        adout: merged output BINTABLE of the requested tab_extname BINTABLE
+            extension.
+
+        """
+        if block:
+            if not isinstance(block, tuple):
+                raise ValueError('Block number is not a tuple.')
+
+            merge_extvers = self.data_index_per_block[block]
+
+        #  Merge the bintables containing source catalogs.
+        adout = self.merge_catalogs(ref_wcs, tile, merge_extvers,
+                                    update_catalog_method, 
+                                    transform_pars=self.geometry.transformation)
+        return adout
 
     # --------------------------------------------------------------------------
     def update_crpix(self, wcs, tile):
