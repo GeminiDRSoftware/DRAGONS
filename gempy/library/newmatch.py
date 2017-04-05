@@ -461,8 +461,9 @@ def _show_model(model, intro=""):
     for m in iterator:
         if m.name != 'Centering':
             for name, value in zip(m.param_names, m.parameters):
-                pscale = getattr(m, '_{}_scale'.format(name), 1.0)
-                model_str += "{}: {}\n".format(name, value/pscale)
+                if not getattr(m, name).fixed:
+                    pscale = getattr(m, '_{}_scale'.format(name), 1.0)
+                    model_str += "{}: {}\n".format(name, value/pscale)
     return model_str
 
 
