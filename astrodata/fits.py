@@ -634,9 +634,9 @@ class FitsProvider(DataProvider):
         dp = FitsProvider()
         dp._header = [deepcopy(self._header[0])]
         for n in mapping:
-            dp.append(self._nddata[n])
+            dp.append(deepcopy(self._nddata[n]))
         for t in self._tables.values():
-            dp.append(t)
+            dp.append(deepcopy(t))
 
         return dp
 
