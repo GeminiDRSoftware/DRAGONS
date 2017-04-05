@@ -377,7 +377,7 @@ class GMOS(Gemini, CCD):
             # Gap width comes from a lookup table
             gap_height = int(ad[0].data.shape[0])
             gap_width = _obtain_arraygap(ad)
-            chip_gap = np.zeros((gap_height,gap_width))
+            chip_gap = np.zeros((gap_height,gap_width), dtype=ad[0].data.dtype)
 
             # Get the correct order of the extensions by sorting on
             # the first element in detector section
@@ -535,6 +535,7 @@ class GMOS(Gemini, CCD):
                 if hasattr(ad, 'MDF'):
                     adoutput.MDF = ad.MDF
 
+            print adoutput[0].data.dtype, adoutput[0].mask.dtype, adoutput[0].variance.dtype
             # Timestamp and update filename
             gt.mark_history(adoutput, primname=self.myself(),
                             keyword=timestamp_key)
