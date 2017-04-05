@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
+from datetime import datetime
 
 try:
     from stsci import numdisplay as nd
@@ -135,25 +136,25 @@ class Visualize(PrimitivesBASE):
 
         # Each extension is an individual display item (if the data have been
         # tiled, then there'll only be one extension per AD, of course)
-        for ad, overlay in zip(*gt.make_lists([ext for ad in p.streams['main']
-                                               for ext in ad], params['overlay'])):
+        for ext, overlay in zip(*gt.make_lists([extn for ad in p.streams['main']
+                                            for extn in ad], params['overlay'])):
             if frame > 16:
                 log.warning("Too many images; only the first 16 are displayed")
                 break
 
-            if len(ad) > 1:
+            if len(ext) > 1:
                 raise IOError("Found {} extensions for {}[{}]; exactly 1 is "
-                              "required".format(len(ad), ad.filename, extname))
+                              "required".format(len(ext), ext.filename, extname))
 
             # Squeeze the data to remove any empty dimensions (eg, raw F2 data)
-            ad.operate(np.squeeze)
+            ext.operate(np.squeeze)
 
             # Get the data we're going to display. TODO Replace extname with attr?
-            data = getattr(ad, {'SCI':'data', 'DQ':'mask',
+            data = getattr(ext, {'SCI':'data', 'DQ':'mask',
                                 'VAR':'variance'}[extname], None)
-            dqdata = ad.mask
+            dqdata = ext.mask
             if data is None:
-                log.warning("No data to display in {}[{}]".format(ad.filename,
+                log.warning("No data to display in {}[{}]".format(ext.filename,
                                                                   extname))
                 continue
 
@@ -184,11 +185,11 @@ class Visualize(PrimitivesBASE):
 
             # Define the display name
             if tile and extname=='SCI':
-                name = ad.filename
+                name = ext.filename
             elif tile:
-                name = '{}({})'.format(ad.filename, extname)
+                name = '{}({})'.format(ext.filename, extname)
             else:
-                name = '{}({},{})'.format(ad.filename, extname, ad.hdr.EXTVER)
+                name = '{}({},{})'.format(ext.filename, extname, ext.hdr.EXTVER)
 
             try:
                 lnd.display(data, name=name, frame=frame, zscale=zscale,
@@ -200,14 +201,11 @@ class Visualize(PrimitivesBASE):
             frame += 1
 
             # Print from statistics for flats
-            if extname=='SCI' and {'GMOS', 'IMAGE', 'FLAT'}.issubset(ad.tags):
-                good_data = np.ma.masked_array(ad.data, mask=ad.mask)
-                mean = np.ma.mean(good_data)
-                median = np.ma.median(good_data)
-                # Bug in numpy v1.9 where ma.median returns an array
-                if isinstance(median, np.ndarray):
-                    median = median[0]
-                log.stdinfo("Twilight flat counts for {}:".format(ad.filename))
+            if extname=='SCI' and {'GMOS', 'IMAGE', 'FLAT'}.issubset(ext.tags):
+                good_data = data[dqdata==0] if dqdata is not None else data
+                mean = np.mean(good_data)
+                median = np.median(good_data)
+                log.stdinfo("Twilight flat counts for {}:".format(ext.filename))
                 log.stdinfo("    Mean value:   {:.0f}".format(mean))
                 log.stdinfo("    Median value: {:.0f}".format(median))
         return adinputs
