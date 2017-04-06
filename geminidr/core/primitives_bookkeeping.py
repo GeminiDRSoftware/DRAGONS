@@ -59,6 +59,27 @@ class Bookkeeping(PrimitivesBASE):
         caches.save_cache(self.stacks, caches.stkindfile)
         return adinputs
 
+    def clearAllStreams(self, adinputs=None, **params):
+        """
+        This primitive clears all streams (except "main") by setting them
+        to empty lists.
+        """
+        log = self.log
+        for stream in self.streams.keys():
+            if stream != 'main':
+                log.fullinfo('Clearing stream {}'.format(stream))
+                self.streams[stream] = []
+        return adinputs
+
+    def clearStream(self, adinputs=None, **params):
+        """
+        This primitive clears a stream by returning an empty list, which the
+        decorator then pushes into the stream.
+        """
+        log = self.log
+        log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
+        return []
+
     def getList(self, adinputs=None, **params):
         """
         This primitive will check the files in the stack lists are on disk,

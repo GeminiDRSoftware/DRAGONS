@@ -535,7 +535,6 @@ class GMOS(Gemini, CCD):
                 if hasattr(ad, 'MDF'):
                     adoutput.MDF = ad.MDF
 
-            print adoutput[0].data.dtype, adoutput[0].mask.dtype, adoutput[0].variance.dtype
             # Timestamp and update filename
             gt.mark_history(adoutput, primname=self.myself(),
                             keyword=timestamp_key)
