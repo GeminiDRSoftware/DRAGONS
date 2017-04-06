@@ -37,7 +37,7 @@ class Visualize(PrimitivesBASE):
         """
         Displays an image on the ds9 display, using multiple frames if
         there are multiple extensions. Saturated pixels can be displayed
-        in red, and overlays can also be shown
+        in red, and overlays can also be shown.
 
         Parameters
         ----------
@@ -71,36 +71,40 @@ class Visualize(PrimitivesBASE):
         extname = params['extname']
         tile = params['tile']
         zscale = params['zscale']
+        overlays = params['overlay']
+        frame = params['frame'] if params['frame'] else 1
+        overlay_index = 0
+        lnd = _localNumDisplay()
 
-        # We may be manipulating the data significantly, so the best option
-        # is to create a new PrimitivesClass instance and work with that
-        p = self.__class__([deepcopy(ad) for ad in adinputs], context=self.context)
+        for ad in adinputs:
+            # Allows elegant break from nested loops
+            if frame > 16:
+                log.warning("Too many images; only the first 16 are displayed")
+                break
 
-        # Threshold and bias make sense only for SCI extension
-        if extname != 'SCI':
-            threshold = None
-            remove_bias = False
-        elif threshold == 'None':
-            threshold = None
-        elif threshold == 'auto':
-            mosaicked = [(ad.phu.get(self.timestamp_keys["mosaicDetectors"])
-                          is not None) or
-                         (ad.phu.get(self.timestamp_keys["tileArrays"])
-                          is not None) for ad in p.streams['main']]
-            has_dq = [all(ext.mask is not None for ext in ad)
-                      for ad in p.streams['main']]
-            if not all(has_dq):
-                if any([m and not d for m,d in zip(mosaicked, has_dq)]):
-                    log.warning("Cannot add DQ to mosaicked data; no "
-                                "threshold mask will be applied")
-                    threshold = None
-                else:
-                    # At least one input lacks DQ; these inputs have not been
-                    # mosaicked. addDQ will no-op any previously dqAdded input
-                    p.addDQ()
+            # Threshold and bias make sense only for SCI extension
+            if extname != 'SCI':
+                threshold = None
+                remove_bias = False
+            elif threshold == 'None':
+                threshold = None
+            elif threshold == 'auto':
+                mosaicked = ((ad.phu.get(self.timestamp_keys["mosaicDetectors"])
+                              is not None) or
+                             (ad.phu.get(self.timestamp_keys["tileArrays"])
+                              is not None))
+                has_dq = all([ext.mask is not None for ext in ad])
+                if not has_dq:
+                    if mosaicked:
+                        log.warning("Cannot add DQ to mosaicked data; no "
+                                    "threshold mask will be applied to "
+                                    "{}".format(ad.filename))
+                        threshold = None
+                    else:
+                        # addDQ operates in place so deepcopy to preserve input
+                        ad = self.addDQ([deepcopy(ad)])[0]
 
-        if remove_bias:
-            for ad in p.streams['main']:
+            if remove_bias:
                 if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
                     any(ad.hdr.get('OVERSCAN'))):
                     log.fullinfo("Bias level has already been removed from "
@@ -114,102 +118,103 @@ class Visualize(PrimitivesBASE):
                         bias_level = None
 
                     if bias_level is not None:
+                        ad = deepcopy(ad)  # Leave original untouched!
                         log.stdinfo("Subtracting approximate bias level from "
                                     "{} for display".format(ad.filename))
                         log.fullinfo("Bias levels used: {}".format(str(bias_level)))
                         for ext, bias in zip(ad, bias_level):
-                            ext.subtract(bias if bias is not None else 0)
+                            ext.subtract(np.float32(bias) if bias is not None
+                                         else 0)
                     else:
                         log.warning("Bias level not found for {}; approximate "
                                     "bias will not be removed".format(ad.filename))
 
-        # Check whether data needs to be tiled before displaying
-        # Otherwise, flatten all desired extensions into a single list
-        if tile:
-            if any(len(ad)>1 for ad in p.streams['main']):
+            # Check whether data needs to be tiled before displaying
+            # Otherwise, flatten all desired extensions into a single list
+            if tile and len(ad) > 1:
                 log.fullinfo("Tiling extensions together before displaying")
-                p.tileArrays(tile_all=True)
+                ad = self.tileArrays([ad], tile_all=True)[0]
 
-        frame = params['frame'] if params['frame'] else 1
-        lnd = _localNumDisplay()
+            # Each extension is an individual display item (if the data have been
+            # tiled, then there'll only be one extension per AD, of course)
+            for ext in ad:
+                if frame > 16:
+                    break
 
-        # Each extension is an individual display item (if the data have been
-        # tiled, then there'll only be one extension per AD, of course)
-        for ad, overlay in zip(*gt.make_lists([ext for ad in p.streams['main']
-                                               for ext in ad], params['overlay'])):
-            if frame > 16:
-                log.warning("Too many images; only the first 16 are displayed")
-                break
+                # Squeeze the data to remove any empty dimensions (eg, raw F2 data)
+                ext.operate(np.squeeze)
 
-            if len(ad) > 1:
-                raise IOError("Found {} extensions for {}[{}]; exactly 1 is "
-                              "required".format(len(ad), ad.filename, extname))
+                # Get the data we're going to display. TODO Replace extname with attr?
+                data = getattr(ext, {'SCI':'data', 'DQ':'mask',
+                                    'VAR':'variance'}[extname], None)
+                dqdata = ext.mask
+                if data is None:
+                    log.warning("No data to display in {}[{}]".format(ext.filename,
+                                                                      extname))
+                    continue
 
-            # Squeeze the data to remove any empty dimensions (eg, raw F2 data)
-            ad.operate(np.squeeze)
+                # One-dimensional data (ie, extracted spectra)
+                if len(data.shape) == 1:
+                    continue
 
-            # Get the data we're going to display. TODO Replace extname with attr?
-            data = getattr(ad, {'SCI':'data', 'DQ':'mask',
-                                'VAR':'variance'}[extname], None)
-            dqdata = ad.mask
-            if data is None:
-                log.warning("No data to display in {}[{}]".format(ad.filename,
-                                                                  extname))
-                continue
-
-            # One-dimensional data (ie, extracted spectra)
-            if len(data.shape) == 1:
-                continue
-
-            # Make threshold mask if desired
-            masks = []
-            mask_colors = []
-            if threshold is not None:
-                if threshold != 'auto':
-                    satmask = data > float(threshold)
-                else:
-                    if dqdata is None:
-                        log.warning("No DQ plane found; cannot make "
-                                    "threshold mask")
-                        satmask = None
+                # Make threshold mask if desired
+                masks = []
+                mask_colors = []
+                if threshold is not None:
+                    if threshold != 'auto':
+                        satmask = data > float(threshold)
                     else:
-                        satmask = (dqdata & (DQ.non_linear | DQ.saturated)) > 0
-                if satmask is not None:
-                    masks.append(satmask)
-                    mask_colors.append(204)
+                        if dqdata is None:
+                            log.warning("No DQ plane found; cannot make "
+                                        "threshold mask")
+                            satmask = None
+                        else:
+                            satmask = (dqdata & (DQ.non_linear | DQ.saturated)) > 0
+                    if satmask is not None:
+                        masks.append(satmask)
+                        mask_colors.append(204)
 
-            if overlay:
-                masks.append(overlay)
-                mask_colors.append(206)
+                if overlays:
+                    # Could be single overlay, or list. Replicate behaviour of
+                    # gt.make_lists (which we can't use because we haven't
+                    # made a complete list of displayed extensions at the start
+                    # in order to avoid memory bloat)
+                    try:
+                        overlay = overlays[overlay_index]
+                    except TypeError:
+                        overlay = overlays
+                    except IndexError:
+                        if len(overlays) == 1:
+                            overlay = overlays[0]
+                    masks.append(overlay)
+                    mask_colors.append(206)
 
-            # Define the display name
-            if tile and extname=='SCI':
-                name = ad.filename
-            elif tile:
-                name = '{}({})'.format(ad.filename, extname)
-            else:
-                name = '{}({},{})'.format(ad.filename, extname, ad.hdr.EXTVER)
+                # Define the display name
+                if tile and extname=='SCI':
+                    name = ext.filename
+                elif tile:
+                    name = '{}({})'.format(ext.filename, extname)
+                else:
+                    name = '{}({},{})'.format(ext.filename, extname, ext.hdr.EXTVER)
 
-            try:
-                lnd.display(data, name=name, frame=frame, zscale=zscale,
-                            bpm=None if extname=='DQ' else dqdata,
-                            quiet=True, masks=masks, mask_colors=mask_colors)
-            except IOError:
-                log.warning("ds9 not found; cannot display input")
+                try:
+                    lnd.display(data, name=name, frame=frame, zscale=zscale,
+                                bpm=None if extname=='DQ' else dqdata,
+                                quiet=True, masks=masks, mask_colors=mask_colors)
+                except IOError:
+                    log.warning("ds9 not found; cannot display input")
 
-            frame += 1
+                frame += 1
 
-            # Print from statistics for flats
-            if extname=='SCI' and {'GMOS', 'IMAGE', 'FLAT'}.issubset(ad.tags):
-                good_data = np.ma.masked_array(ad.data, mask=ad.mask)
-                mean = np.ma.mean(good_data)
-                median = np.ma.median(good_data)
-                # Bug in numpy v1.9 where ma.median returns an array
-                if isinstance(median, np.ndarray):
-                    median = median[0]
-                log.stdinfo("Twilight flat counts for {}:".format(ad.filename))
-                log.stdinfo("    Mean value:   {:.0f}".format(mean))
-                log.stdinfo("    Median value: {:.0f}".format(median))
+                # Print from statistics for flats
+                if extname=='SCI' and {'GMOS', 'IMAGE', 'FLAT'}.issubset(ext.tags):
+                    good_data = data[dqdata==0] if dqdata is not None else data
+                    mean = np.mean(good_data)
+                    median = np.median(good_data)
+                    log.stdinfo("Twilight flat counts for {}:".format(ext.filename))
+                    log.stdinfo("    Mean value:   {:.0f}".format(mean))
+                    log.stdinfo("    Median value: {:.0f}".format(median))
+
         return adinputs
 
     def mosaicDetectors(self, adinputs=None, **params):

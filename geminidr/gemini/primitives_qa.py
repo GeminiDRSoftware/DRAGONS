@@ -464,7 +464,7 @@ class QA(PrimitivesBASE):
                             log.fullinfo("Bias levels used: {}".
                                          format(bias_level))
                             for ext, bias in zip(adiq, bias_level):
-                                ext.subtract(bias)
+                                ext.subtract(np.float32(bias))
 
                 log.fullinfo("Tiling extensions together in order to compile "
                              "IQ data from all extensions")
