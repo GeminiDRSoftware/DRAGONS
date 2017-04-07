@@ -45,7 +45,7 @@ def reduce(p):
     p.determineAstrometricSolution()
     p.measureIQ(display=True)
     p.measureBG()
-    p.measureCC(correct_wcs=True)
+    p.measureCC()
     p.writeOutputs()
     return
 
@@ -114,7 +114,7 @@ def stack(p):
     p.measureIQ(display=True)
     p.measureBG()
     p.determineAstrometricSolution()
-    p.measureCC(correct_wcs=True)
+    p.measureCC()
     p.writeOutputs()
     return
 
