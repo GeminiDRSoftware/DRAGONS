@@ -27,7 +27,9 @@ def reduce(p):
     p.detectSources()
     p.measureIQ(display=True)
     p.measureBG()
-    p.measureCCAndAstrometry()
+    p.addReferenceCatalog()
+    p.determineAstrometricSolution()
+    p.measureCC()
     p.addToList(purpose='forSky')
     p.getList(purpose='forSky')
     p.makeSky()
@@ -36,7 +38,8 @@ def reduce(p):
     p.applyDQPlane()
     p.detectSources()
     p.measureIQ(display=True)
-    p.measureCCAndAstrometry()
+    p.determineAstrometricSolution()
+    p.measureCC()
     p.writeOutputs()
     return
 
