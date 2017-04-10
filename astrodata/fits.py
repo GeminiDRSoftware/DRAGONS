@@ -7,6 +7,7 @@ from collections import namedtuple, OrderedDict
 import os
 from functools import partial, wraps
 import logging
+import warnings
 try:
     # Python 3
     from itertools import zip_longest
@@ -163,12 +164,15 @@ class FitsKeywordManipulator(object):
             _inner_set_comment(self._headers[0])
 
     def __getattr__(self, key):
+        warnings.warn("Access to cards through attribute name is deprecated and will be removed in the future", DeprecationWarning)
         return self[key]
 
     def __setattr__(self, key, value):
+        warnings.warn("Setting card values through attribute name is deprecated and will be removed in the future", DeprecationWarning)
         self[key] = value
 
     def __delattr__(self, key):
+        warnings.warn("Removing cards through attribute name is deprecated and will be removed in the future", DeprecationWarning)
         del self[key]
 
     def __contains__(self, key):
