@@ -272,9 +272,13 @@ class _localNumDisplay(nd.NumDisplay):
                 z1, z2 = nd.zscale.zscale(pix, contrast=contrast)
             else:
                 goodpix = pix[bpm==0]
-                sq_side = int(np.sqrt(len(goodpix)))
-                goodpix = goodpix[:sq_side**2].reshape(sq_side, sq_side)
-                z1, z2 = nd.zscale.zscale(goodpix, contrast=contrast)
+                # Ignore the mask unless a decent number of pixels are "good"
+                if len(goodpix) >= 0.01 * np.multiply(*pix.shape):
+                    sq_side = int(np.sqrt(len(goodpix)))
+                    goodpix = goodpix[:sq_side**2].reshape(sq_side, sq_side)
+                    z1, z2 = nd.zscale.zscale(goodpix, contrast=contrast)
+                else:
+                    z1, z2 = nd.zscale.zscale(pix, contrast=contrast)
 
         self.set(frame=frame, z1=z1, z2=z2,
                 transform=transform, scale=scale, offset=offset)
