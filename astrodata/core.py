@@ -941,6 +941,37 @@ class AstroData(object):
                 ext.variance = operator(ext.variance, *args, **kwargs)
 
     def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
+        """
+        Sets the .data, and optionally .mask and .variance attributes of a
+        single-extension AstroData slice. This function will optionally
+        check whether these attributes have the same shape.
+        
+        Parameters
+        ----------
+        data : ndarray
+            The array to assign to the .data attribute ("SCI")
+
+        mask : ndarray, optional
+            The array to assign to the .mask attribute ("DQ")
+
+        variance: ndarray, optional
+            The array to assign to the .variance attribute ("VAR")
+
+        check: bool
+            If set, then the function will check that the mask and variance
+            arrays have the same shape as the data array
+
+        Raises
+        -------
+        TypeError
+            if an attempt is made to set the .mask or .variance attributes
+            with something other than an array
+
+        ValueError
+            if the .mask or .variance attributes don't have the same shape as
+            .data, OR if this is called on an AD instance that isn't a single
+            extension slice
+        """
         if not self.is_single:
             raise ValueError("Trying to reset a non-sliced AstroData object")
 

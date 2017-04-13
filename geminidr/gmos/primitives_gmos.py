@@ -377,7 +377,7 @@ class GMOS(Gemini, CCD):
             # Gap width comes from a lookup table
             gap_height = int(ad[0].data.shape[0])
             gap_width = _obtain_arraygap(ad)
-            chip_gap = np.zeros((gap_height,gap_width))
+            chip_gap = np.zeros((gap_height,gap_width), dtype=ad[0].data.dtype)
 
             # Get the correct order of the extensions by sorting on
             # the first element in detector section
