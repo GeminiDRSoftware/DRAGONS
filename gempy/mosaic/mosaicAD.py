@@ -6,17 +6,17 @@
 import numpy as np
 import astropy.wcs as wcs
 
+from astropy.io import fits
 from copy import copy
 
 import astrodata
 import gemini_instruments
 
-from astropy.io import fits
 from gempy.utils import logutils
 from .mosaic import Mosaic
 
 # ------------------------------------------------------------------------------
-__version__ = "2.0.0"
+__version__ = "2.0.0 (beta)"
 # ------------------------------------------------------------------------------
 class MosaicAD(Mosaic):
     """
@@ -76,8 +76,7 @@ class MosaicAD(Mosaic):
         'REFCAT': (None, None, 'RAJ2000', 'DEJ2000')
     }
 
-    def __init__(self, ad, mosaic_ad_function, column_names=def_columns,
-                 dq_planes=False):
+    def __init__(self, ad, mosaic_ad_function, column_names=def_columns):
         """
         Parameters
         ----------
@@ -107,12 +106,6 @@ class MosaicAD(Mosaic):
                                'REFCAT': (None, None, 'RaRef', 'DecRef')}
         :type column_names: <dict>
 
-        :param dq_planes:
-              Boolean flag to transform bit_plane by bit_plane for rotation,
-              shifting and scaling. At this the algorithmm has bad performance.
-              Default is False.
-        :type dq_planes: <bool>
-
         """
         self.ad = ad
         if len(ad) < 2:
@@ -123,14 +116,15 @@ class MosaicAD(Mosaic):
         mosaic_data, geometry = mosaic_ad_function(ad)
         Mosaic.__init__(self, mosaic_data, geometry)
         self.column_names = column_names
-        self.dq_planes = dq_planes      # Transform bit_plane by bit_plane
         self.jfactor = []               # Jacobians applied to interpolated pixels.
         self.calculate_jfactor()        # Fill the jfactor vector with the
                                         # jacobian of transformation matrix.
+        self.mosaic_shape = None        # Shape of the mosaicked output frame.
+                                        # Set in as_astrodata().
 
     # --------------------------------------------------------------------------
-    def as_astrodata(self,block=None,tile=False,return_associated_bintables=True, 
-                     return_ROI=True, update_catalog_method='wcs'):
+    def as_astrodata(self, block=None, tile=False, dodq=False, return_ROI=True,
+                     update_with='wcs'):
         """
         Returns an AstroData object  containing by default the mosaiced
         IMAGE extensions, the merged associated BINTABLEs and all other
@@ -138,60 +132,87 @@ class MosaicAD(Mosaic):
         the headers of the IMAGE extensions and any pixel coordinates in
         BINTABLEs will be updated appropriately.
 
-        :param tile: (boolean). If True, the mosaics returned are not
-                     corrected for shifting and rotation.
+        Parameters
+        ----------
+        tile: Mosaics returned are not corrected for shifting and rotation.
+        type: <bool> Default is False.
 
-        :param block: See description below in method 'mosaic_image_data'.
+        block: Return a specific block as the output mosaic as (col, row). 
+              (0,0) lower left. 
+        type: <2-tuple> Default is None.
 
-        :param return_ROI: (True). Returns the minimum frame size calculated
-        from the location of the amplifiers in a given block. If False uses
-        the blocksize value.
+        return_ROI: Returns the minimum frame size calculated from the location
+                    of the amplifiers in a given block. If False, uses the
+                    blocksize value.
+        type: <bool> Default is True
 
-        :param return_associated_bintables: (True). If a bintable is associated
-        to the ref_extname then is returned as a merged table in the
-        output AD.  If False, they are not returned in the output AD.
-
-        :param return_non_associations: (True). Specifies whether to return
-        extensions that are not deemed to be associated with the ref_extname.
-
-        :param update_catalog_method: ('wcs').  Specifies if the X
-        and Y pixel coordinates of any source positions in the BINTABLEs
-        are to be recalculated using the output WCS and the sources R.A.
-        and Dec. values within the table. If set to 'transform' the updated X
-        and Y pixel coordinates will be determined using the transformations
-        used to mosaic the pixel data. In the case of tiling, a shift is
-        technically being applied and therefore update_catalog_method='wcs'
-        should be set internally (Not yet implemented).
-
-        :type update_catalog_method: <str>, values can be 'wcs', 'transform'
+        update_with: Specifies if the X,Y pixel coordinates of any
+                    source positions in the BINTABLEs are to be recalculated using
+                    the output WCS and the sources RA and Dec values within the
+                    table. If set to 'transform' the updated X,Y pixel coordinates
+                    will be determined using the transformations used to mosaic the
+                    pixel data. In the case of tiling, a shift is technically being
+                    applied and therefore update_with='wcs' should be set
+                    internally (not yet implemented).
+        type: <str> Supported values are 'wcs', 'transform'. Default is 'wcs'.
 
         """
-        # Create mosaics of all image data in ad, merge bintables if they are
-        # associated with the image extensions and 
-        adout = astrodata.create(self.ad.header[0])
+        adout = astrodata.create(self.ad[0].header[0])
         adout.phu.set('TILED', ['FALSE', 'TRUE'][tile])
         adout.phu.set_comment('TILED', 'True: tiled; False: Image Mosaicked')
 
-        # ------ Create mosaic ndarrays, update the output WCS, create an 
-        #        AstroData object and append to the output list.
-        # Mosaic the IMAGE extensions now
-        mosarray = self.mosaic_image_data(block=block, tile=tile,
-                                          return_ROI=return_ROI)
+        # Create mosaics of all image extensions in ad. Merge associated bintables.
+        # image array attributes mosaicked: 'data', 'variance', 'mask', 'OBJMASK'.
+        # 'data':
 
-        # Create the mosaic FITS header using the reference extn header.
-        header = self.mosaic_header(mosarray.shape, block, tile)
+        # SCI
+        self.data_list = self.get_data_list('data')
+        if not self.data_list:
+            emsg = "MosaicAD received a dataset with no data: {}"
+            self.log.error(emsg.format(self.ad.filename))
+            raise IOError("No science data found on file {}".format(self.ad.filename))
+        else:
+            darray = self.mosaic_image_data(block=block,return_ROI=return_ROI,tile=tile)
+            self.mosaic_shape = darray.shape
+            header = self.mosaic_header(darray.shape, block, tile)
+            adout.append(darray, header=header)
 
-        # Generate WCS object to be used in the merging the object
-        # catalog table for updating the objects pixel coordinates
-        # w/r to the new crpix1,2.
+        # VAR
+        varray = None
+        self.data_list = self.get_data_list('variance')
+        if not self.data_list:
+            self.log.stdinfo("No VAR array on {} ".format(self.ad.filename))
+        else:
+            varray = self.mosaic_image_data(block=block,return_ROI=return_ROI,tile=tile)
+
+        # DQ
+        marray = None
+        self.data_list = self.get_data_list('mask')
+        if not self.data_list:
+            self.log.stdinfo("No DQ array on {} ".format(self.ad.filename))
+        else:
+            marray= self.mosaic_image_data(block=block,return_ROI=return_ROI,
+                                           tile=tile, dq_data=True)
+
+        adout[0].reset(data=darray, variance=varray, mask=marray)
+
+        # Handle extras ...
+        self.data_list = self.get_data_list('OBJMASK')
+        if not self.data_list:
+            self.log.stdinfo("No OBJMASK on {} ".format(self.ad.filename))
+        else:
+            adout[0].OBJMASK = self.mosaic_image_data(block=block, return_ROI=return_ROI,
+                                                      tile=tile, dq_data=True)
+
+        # Generate WCS object to be used in the merging the object catalog table or
+        # updating the objects pixel coordinates w.r.t. to the new crpix1,2.
         ref_wcs = wcs.WCS(header)
 
-        # Setup output AD 
-        new_ext = adout.append(data=mosarray, header=header)
-
-        # Reset extver to 1.
-        new_ext.rename_ext(name=extn, ver=1)
-        adout.append(new_ext)
+        # table extensions
+        # for ex in ad:
+        #     if hasattr(ex, 'OBJCAT'):
+        #         ntab = self.merge_table_data(ref_wcs, tile, block=block,
+        #                                      update_with=update_with)
 
         return adout
 
@@ -248,29 +269,37 @@ class MosaicAD(Mosaic):
             self.jfactor.append(matrix_det)
 
     # --------------------------------------------------------------------------
-    def get_data_list(self):
+    def get_data_list(self, attr):
         """
-        This could have been written as, 
-
-            data_list = [ext.data[xsec.y1:xsec.y2, xsec.x1:xsec.x2] for 
-                         ext, xsec in zip(ad, ad.data_section())]
-
-        Pursuaded by arguments against code opacity, it is not.
+        Parameters
+        ----------
+        attr: Attribute of the member self.ad. This attribute is one of a number
+              of image ndarrays that may be present on the instance of 'self.ad',
+              and will be one of,
+                  'data', 'mask', 'variance', 'OBJMASK'.
+        type: <str>
 
         Return
         ------
-        data_list: a list of actual data array sections for each extension.
+        data_list: a list of actual array sections from 'attr'.
         type: <list>
 
         """
         data_list = []
         for ex in self.ad:
             xsec = ex.data_section()
-            data_list.append(ex.data[xsec.y1: xsec.y2, xsec.x1: xsec.x2])
-        return data_list 
+            if hasattr(ex, attr):
+                darray = getattr(ex, attr)
+            else:
+                darray = None
+
+            if darray is not None:
+                data_list.append(darray[xsec.y1: xsec.y2, xsec.x1: xsec.x2])
+
+        return data_list
 
     # --------------------------------------------------------------------------
-    def mosaic_image_data(self, block=None, tile=False, return_ROI=True):
+    def mosaic_image_data(self,block=None,dq_data=False,tile=False,return_ROI=True):
         """
         Creates the output mosaic ndarray of the requested IMAGE extension.
 
@@ -291,19 +320,17 @@ class MosaicAD(Mosaic):
                     value. Default is True.
         type: <bool>
 
+        dq_data: Handle data in self.data_list as bit-planes.
+        type: <bool>
+
         Return:
         ------
         out: An ndarray of the mosaiced data.
         type: <ndarray>
 
         """
-        dq_data = False
-        self.data_list = self.get_data_list()
-        if self.ad.mask.count('DQ') > 0 and self.dq_planes:
-            dq_data = True
-
-        out = Mosaic.mosaic_image_data(self, block=block, dq_data=dq_data, tile=tile,
-                                       return_ROI=return_ROI, jfactor=self.jfactor)
+        out = Mosaic.mosaic_image_data(self,block=block,dq_data=dq_data,tile=tile,
+                                       jfactor=self.jfactor,return_ROI=return_ROI)
         return out
  
     # --------------------------------------------------------------------------
@@ -398,51 +425,31 @@ class MosaicAD(Mosaic):
         interpolator (type: string) -
             The interpolator function name in use when transforming the blocks.
 
-        reference_extname (type: string) -
-            The value of the EXTNAME header keyword use as reference.
-            This is the output EXTNAME in the output mosaic FITS header.
-
-        reference_extver (type: int) -
-            The value of the EXTVER header keyword use as reference. Use this WCS
-            information to generate the updated output mosaic FITS header.
-
         reference_block - The block number containing the reference amplifier
 
         """
-        geo = self.geometry
-        # Set up a dictionary 
         info = {}
-
         info['filename'] = self.ad.filename
-        # amp_mosaic_coord:  same as DETSECS
+        # amp_mosaic_coord ==  DETSECS
         info['amp_mosaic_coord'] = self.coords['amp_mosaic_coord']
-        # amp_block_coord: same as CCDSECS
-        info['amp_block_coord'] = self.coords['amp_block_coord']
-        info['reference_extname'] = self.ref_extname
-        info['reference_block'] = geo.ref_block
-        amps_per_block = self._amps_per_block
-        info['amps_per_block'] = amps_per_block
-        ref_block_number = (geo.ref_block[0] +
-                              geo.ref_block[1]*geo.mosaic_grid[0])
-        if amps_per_block == 1:
-           ref_extver = ref_block_number
-        else:
-           ref_extver = amps_per_block*(ref_block_number - 1) + 1
 
-        info['reference_extver']=ref_extver
-        nx,ny = self.blocksize
-        info['interpolator'] = geo.interpolator
-        if geo.interpolator not in ['linear','nearest']:
-            info['spline_order'] = geo.spline_order
+        # amp_block_coord == CCDSECS
+        info['amp_block_coord'] = self.coords['amp_block_coord']
+        info['amps_per_block']  = self._amps_per_block
 
         # out data.data in (x,y) order
-        amp_shape = [k.data.shape[::-1] for k in self.ad[self.ref_extname]]
-        info['amps_shape_no_trimming'] = amp_shape
+        info['amps_shape_no_trimming'] = [k.data.shape[::-1] for k in self.ad]
+
+        geo = self.geometry
+        info['interpolator']    = geo.interpolator
+        info['reference_block'] = geo.ref_block
+        if geo.interpolator not in ['linear', 'nearest']:
+            info['spline_order'] = geo.spline_order
+
         return info
 
     # --------------------------------------------------------------------------
-    def merge_catalogs(self, ref_wcs, tile, merge_extvers, tab_extname, 
-                        recalculate_xy='wcs',transform_pars=None):
+    def merge_catalogs(self,ref_wcs,tile,recalculate_xy='wcs',transform_pars=None):
         """
         This function merges together separate bintable extensions (tab_extname),
         converts the pixel coordinates to the reference extension WCS
@@ -452,17 +459,21 @@ class MosaicAD(Mosaic):
 
         Parameters
         ----------
-        :param ref_wcs: wcs object containing the WCS from the output header.
-        :param merge_extvers: List of extvers to merge from the tab_extname
-        :param tab_extname: Binary table extension name to be merge over all
-                            its ext_ver's.
-        :param transform_pars: Dictionary  with rotation angle, translation
-                               and magnification.
-        :param recalculate_xy: Use reference extension WCS to recalculate the
-                               pixel coordinates. If value is 'transform' use
-                               the tranformation linear equations.
-        :type recalculate_xy: (string, default: 'wcs').
-                              Allow values: ('wcs', 'transform')
+        ref_wcs: wcs object containing the WCS from the output header.
+        type: <WCS object>
+
+        transform_pars: Dictionary with rotation angle, translation, and magnification.
+        type: <dict>
+
+        recalculate_xy: Use reference extension WCS to recalculate the pixel
+                        coordinates. If value is 'transform' use the tranformation
+                        linear equations.
+        type: <str> Supported values: 'wcs'; 'transform'. Default: 'wcs'
+
+        Return
+        ------
+        adoutput_list: A list of merged catalogs.
+        type: <list>
 
         Note
         ----
@@ -476,23 +487,17 @@ class MosaicAD(Mosaic):
         A: Angle in radians.
 
         """
-        column_names = self.column_names
         adoutput_list = []
+        column_names = self.column_names
         col_names = None
         col_fmts = None
         col_data = {}      # Dictionary to hold column data from all extensions
         newdata = {}
-        
-        # Get column names from column_names dictionary
-        # EXAMPLE:
-        #   column_names = {
-        #      'OBJCAT': ('X_IMAGE', 'Y_IMAGE', 'X_WORLD', 'Y_WORLD'),
-        #      'REFCAT': (None, None, 'RAJ2000', 'DEJ2000')
-        #   }
-        for key in column_names:
-            if key == tab_extname:
-               Xcolname, Ycolname = column_names[key][:2]
-               ra_colname, dec_colname = column_names[key][2:4]
+        for ext in self.ad:
+            for key in self.column_names:
+                if hasattr(ext, key):
+                    Xcolname, Ycolname = self.column_names[key][:2]
+                    ra_colname, dec_colname = self.column_names[key][2:4]
 
         # Get catalog data for the extension numbers in merge_extvers list.
         do_transform = (recalculate_xy == 'transform') and (Xcolname != None)
@@ -509,7 +514,7 @@ class MosaicAD(Mosaic):
             if inp_catalog.data is None:
                 continue
 
-            if len(inp_catalog.data)==0:
+            if len(inp_catalog.data) == 0:
                 continue
 
             catalog_data = True
@@ -651,7 +656,7 @@ class MosaicAD(Mosaic):
         return adoutput_list
 
     # --------------------------------------------------------------------------
-    def merge_table_data(self,ref_wcs,tile,block=None,update_catalog_method='wcs'):
+    def merge_table_data(self, ref_wcs, tile, block=None, update_with='wcs'):
         """
         Merges input BINTABLE extensions of the requested tab_extname. Merging
         is based on RA and DEC columns. The repeated RA, DEC values in the output
@@ -670,7 +675,7 @@ class MosaicAD(Mosaic):
             mosaic_grid.
         type: <2-tuple>, Default is None
 
-        update_catalog_method:
+        update_with:
             If 'wcs' use the reference extension header WCS to recalculate the x,y
             values. If 'transform', apply the linear equations using to correct
             the x,y values in each block.
@@ -683,14 +688,10 @@ class MosaicAD(Mosaic):
 
         """
         if block:
-            if not isinstance(block, tuple):
-                raise ValueError('Block number is not a tuple.')
-
             merge_extvers = self.data_index_per_block[block]
 
         #  Merge the bintables containing source catalogs.
-        adout = self.merge_catalogs(ref_wcs, tile, merge_extvers,
-                                    update_catalog_method, 
+        adout = self.merge_catalogs(ref_wcs, tile, update_with,
                                     transform_pars=self.geometry.transformation)
         return adout
 

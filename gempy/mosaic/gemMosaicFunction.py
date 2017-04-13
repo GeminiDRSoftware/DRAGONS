@@ -177,5 +177,4 @@ def _set_geo_values(ad, ccdsecs, detsecs, binning):
                'gap_dict': gap_dict,
     }
 
-    return geodict   
-
+    return geodict
