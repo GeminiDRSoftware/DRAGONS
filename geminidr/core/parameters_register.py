@@ -21,6 +21,3 @@ class ParametersRegister(ParametersBASE):
         "suffix"            : "_astrometryCorrected",
         "full_wcs"          : None,
     }
-    updateWCS = {
-        "suffix"            : "_wcsUpdated",
-    }
