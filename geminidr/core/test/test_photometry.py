@@ -70,8 +70,3 @@ class TestPhotometry:
         p = GMOSImage([ad])
         ad = p.detectSources([ad], suffix='_refcatAdded')[0]
         assert ad_compare(ad, filename)
-
-    def test_measureCCAndAstrometry(self):
-        # Not sure this is needed since it basically calls three other
-        # primitives that should have their own unit tests
-        pass

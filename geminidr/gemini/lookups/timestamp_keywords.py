@@ -65,6 +65,5 @@ timestamp_keys = {
     "tileArrays": "TILEARRY",
     "trimOverscan": "TRIMOVER",
     "traceFootprints": "TRACEFP",
-    "updateWCS": "UPDATWCS",
     "validateData": "VALDATA",
     }

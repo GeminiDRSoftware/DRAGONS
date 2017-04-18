@@ -15,8 +15,3 @@ class ParametersPhotometry(ParametersBASE):
         "replace_flags"         : 249,
         "set_saturation"        : False,
     }
-    measureCCAndAstrometry = {
-        "suffix"                : "_ccAndAstrometryMeasured",
-        "correct_wcs"           : False,
-    }
-

@@ -1809,8 +1809,8 @@ class AstroDataGemini(AstroDataFits):
         ra, dec = float(result[0]), float(result[1])
 
         # TODO: This isn't in old Gemini descriptors. Should it be?
-        if 'NON_SIDEREAL' in self.tags:
-            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+        #if 'NON_SIDEREAL' in self.tags:
+        #    ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
 
         return (ra, dec)
 
