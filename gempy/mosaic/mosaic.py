@@ -7,6 +7,7 @@ import numpy as np
 
 from .mosaicGeometry import MosaicGeometry
 from .transformation import Transformation
+from .transformation import DQMap
 
 # ------------------------------------------------------------------------------
 class Mosaic(object):
@@ -146,12 +147,6 @@ class Mosaic(object):
         # Boolean to set min area enclosing all data_list elements in mosaic.
         self.return_ROI = True
 
-        # Mask array for the resulting mosaic. 0: good data, 1: no-data
-        self.mask = None
-
-        # Hidden flag: False when the mask for the reference extension is made.
-        self.__do_mask = True
-
         # When set by set_transformations it is a dictionary with keys (col,row)
         # of the mosaic block location.
         self.transform_objects = None
@@ -279,16 +274,23 @@ class Mosaic(object):
             # order can be reset if needed.
             trf = Transformation(rot[indx][0], shift[indx], mag[indx], 
                                  order=order, as_iraf=self.as_iraf)
+            trf.offset = shift[indx]
 
             # Add a key to the dictionary with value the object.
             transform_objects[col, row] = trf
 
         # Reset the attribute
+        # for t in transform_objects:
+        #     print "T-numbers::"
+        #     print "==========="
+        #     print t.offset, t.matrix, t.order
+        #     print
+        #     print
         self.transform_objects = transform_objects
         return
 
-    def mosaic_image_data(self, block=None, dq_data=False, tile=False,
-                          return_ROI=True, jfactor=None):
+    def mosaic_image_data(self, block=None, dq_data=False, jfactor=None,
+                          tile=False, return_ROI=True):
         """
         Main method to layout the block of data in a mosaic grid.
         Correction for rotation, shifting and magnification is performed with
@@ -352,63 +354,53 @@ class Mosaic(object):
             gap_mode = 'tile_gaps'
         else:
             gap_mode = 'transform_gaps'
-
-            # -- Set up the transform_object dictionary
             self.set_transformations()
 
         gaps = geo.gap_dict[gap_mode]
-
-        # Get the maximum value for x_gap and y_gap to
-        # determine the maximum mosaic size
-        #
         gap_values = gaps.values()
         max_xgap = max([g[0] for g in gap_values])
         max_ygap = max([g[1] for g in gap_values])
 
-        # This is the entire mosaic area.
-        # Number of pixels in x and in y.
-
+        # This is the entire mosaic area, pixels in x and in y.
         mos_data = self.mosaic_data       # MosaicData object
         self.block_mosaic_coord = mos_data.block_mosaic_coord
         max_x = 0
         for coords in self.block_mosaic_coord.values():
             max_x = max(max_x, coords[0], coords[1])
+
         mosaic_nx = max_x + max_xgap*(nblocksx-1)
         mosaic_ny = max(v[3] for k, v in self.block_mosaic_coord.items()) + \
                     max_ygap*(nblocksy-1)
 
-        # Form a dictionary of blocks from the data_list.
-        # The keys are tuples (column,row)
-        #
+        # Form a dictionary of blocks from the data_list, keys are tuples
+        # (column,row)
         block_data = self.get_blocks()
 
-        # If we have ROI, not all blocks in the block_data list
-        # are defined.
-        #
+        # If we have ROI, not all blocks in the block_data list are defined.
         # Get the 1st defined block_data element.
         def_key = block_data.keys()[0]
 
         # Setup mosaic output array. Same datatype as block_data's
         outtype = block_data[def_key].dtype
         outdata = np.zeros((mosaic_ny, mosaic_nx), dtype=outtype)
-
-        # Create the output mask. We do not create another one for
-        # this self (instance).
-        if self.__do_mask:
-            self.mask = np.ones((mosaic_ny, mosaic_nx), dtype=np.int8)
+        outdata += DQMap['no_data']
 
         # ------- Paste each block (after transforming if tile=False)
         #         into the output mosaic array considering the gaps.
 
-        # Initialize coordinates of the box to contain
-        # all the blocks.
+        # Initialize coordinates of the box to contain all blocks.
         rx1 = mosaic_nx
         rx2 = 0
         ry1 = mosaic_ny
         ry2 = 0
 
-        bszx, bszy = blocksize_x, blocksize_y
+        kwargs = {'matrix': None,                   # set by call on transform()
+                  'offset': (0.,0.),
+                  'order' : None,                   # set by call on transform()
+                  'output_shape': None
+        }
 
+        bszx, bszy = blocksize_x, blocksize_y
         for col, row in block_data:
             data = block_data[col, row]
             if not tile:
@@ -416,29 +408,18 @@ class Mosaic(object):
                 trans_obj = self.transform_objects[col, row]
                 if dq_data:
                     trans_obj.set_dq_data()
-                data = trans_obj.transform(data)
+
+                data = trans_obj.transform(data, **kwargs)
                 # Divide by the jacobian to conserve flux
                 indx = col + row*nblocksx
                 data = data / jfactor[indx]
 
             # Get the block corner coordinates plus gaps wrt to mosaic origin
             x_gap, y_gap = gaps[(col, row)]
-            my1, my2, mx1, mx2 = \
-                self._get_block_corners(bszx, bszy, col, row, x_gap, y_gap)
-
-            if dq_data:
-                # When transforming DQ data, we set the no-data values
-                # -resulting from the shifting or rotation areas, to Nans
-                # Set the nodata value (nans) to zero
-                gnan = np.where(np.isnan(data))
-                data[gnan] = 0
+            my1,my2,mx1,mx2 = self._get_block_corners(bszx,bszy,col,row,x_gap,y_gap)
 
             # Position block_data in the output mosaic ndarray.
             outdata[my1:my2, mx1:mx2] = data
-
-            if self.__do_mask:
-            # -- mask ndarray values are zero for pixel data, one for no-data.
-                self.mask[my1:my2, mx1:mx2] = np.where(data == 0, 1, 0)
 
             # ------ ROI
             # Coordinates of the current block including gaps w/r to the mosaic
@@ -454,14 +435,12 @@ class Mosaic(object):
             rx2 = max(rx2, x2)
             ry1 = min(ry1, y1)
             ry2 = max(ry2, y2)
+
         if return_ROI:
             outdata = outdata[ry1:ry2, rx1:rx2]        # Crop data
-            self.mask = self.mask[ry1:ry2, rx1:rx2]    # Crop masks
 
         del block_data      # We no longer need this list in memory
-        # mask is already done. Reset the flag to not do another for any
-        # other extension.
-        self.__do_mask = False
+        # mask is already done.
 
         return outdata
 

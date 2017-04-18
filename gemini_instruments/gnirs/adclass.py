@@ -209,8 +209,13 @@ class AstroDataGnirs(AstroDataGemini):
         str
             The name of the focal plane mask with or without the component ID.
         """
-        slit = self.slit(stripID=stripID, pretty=pretty).replace('Acquisition', 'Acq')
-        decker = self.decker(stripID=stripID, pretty=pretty).replace('Acquisition', 'Acq')
+        try:
+            slit = self.slit(stripID=stripID,
+                             pretty=pretty).replace('Acquisition', 'Acq')
+            decker = self.decker(stripID=stripID,
+                                 pretty=pretty).replace('Acquisition', 'Acq')
+        except AttributeError:  # either slit or decker is None
+            return None
 
         # Default fpm value
         fpm = "{}&{}".format(slit, decker)

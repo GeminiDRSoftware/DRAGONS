@@ -37,9 +37,9 @@ inputImage.fits --> inputImage_mosaic.fits
 
 """
 from __future__ import print_function
-# ------------------------------------------------------------------------------
 from builtins import object
-__version__ = "0.1"
+# ------------------------------------------------------------------------------
+__version__ = "2.0.0 (beta)"
 # ------------------------------------------------------------------------------
 import os
 import sys
@@ -49,9 +49,13 @@ from argparse import ArgumentParser
 import astrodata
 import gemini_instruments
 
-from gempy.mosaic.mosaicAD_hack import MosaicAD
+from gempy.mosaic.mosaicAD import MosaicAD
 from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
+from gempy.utils import logutils
+
+# ------------------------------------------------------------------------------
+log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 def ptime():
     """
@@ -94,25 +98,22 @@ class MosaicFactory(object):
         """
         for in_fits in infiles:
             out_fits = self._set_out_fits(in_fits)
-                
-            print(ptime(),"\tWorking on ...", os.path.split(in_fits)[1])
+            log.stdinfo("{}, {}".format("MosaicFactory", __version__))
+            log.stdinfo("\tWorking on ...", os.path.split(in_fits)[1])
             ad = astrodata.open(in_fits)
-            
-            print(ptime(),"\tAstroData object built")
-            print(ptime(),"\tWorking on type:", self._check_tags(ad.tags))
-            print(ptime(),"\tConstructing MosaicAD instance ...")
+
+            log.stdinfo("\tAstroData object built")
+            log.stdinfo("\tWorking on type:", self._check_tags(ad.tags))
+            log.stdinfo("\tConstructing MosaicAD instance ...")
             mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
 
-            print(ptime(),"\tMaking mosaic ...")
-            mos.mosaic_image_data()
-
-            print(ptime(), "\tConverting data ...")
+            log.stdinfo("\tMaking mosaic, converting data ...")
             adout = mos.as_astrodata()
 
-            print(ptime(),"\tWriting file ...")
+            log.stdinfo("\tWriting file ...")
             adout.write(out_fits)
+            log.stdinfo("\tMosaic fits image written:", out_fits)
 
-            print(ptime(),"\tMosaic fits image written:", out_fits)
         return
 
     def _check_tags(self, tlist):
