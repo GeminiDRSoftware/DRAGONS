@@ -394,61 +394,6 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
                                 format((datetime.now() - start).total_seconds())))
     return final_model
 
-def fit_brute_repeatedly(model, xin, xout, sigma=5.0, tolerance=0.001,
-                           reduction=0.5, verbose=True):
-    """
-    Finds the best-fitting mapping to convert from xin to xout, using repeated
-    brute-force fitting over decreasing regions of parameter space
-
-    Parameters
-    ----------
-    model: FittableModel
-        initial model guess
-    xin: array-like
-        input coordinates
-    xout: array-like
-        coordinates to fit to
-    sigma: float
-        size of the mountains for the BruteLandscapeFitter
-    tolerance: float
-        accuracy of parameters in final answer
-    reduction: float
-        factor by which to reduce search size at each step
-    verbose: boolean
-        output model and time info?
-
-    Returns
-    -------
-    Model: the best-fitting mapping from xin -> xout
-    """
-    log = logutils.get_logger(__name__)
-
-    start = datetime.now()
-    # Since optimize.brute can't handle "fixed" parameters, we have to unfix
-    # them and control things by setting the bounds to a zero-width interval
-    for p in model.param_names:
-        param = getattr(model, p)
-        if param.fixed:
-            param.bounds = (param.value, param.value)
-            param.fixed = False
-
-    ranges = np.array([np.diff(getattr(model, p).bounds)[0]
-                       for p in model.param_names])
-    m = model.copy()
-    while np.max(ranges) > tolerance:
-        # Brute-force grid search using an image landscape
-        fit_it = BruteLandscapeFitter()
-        m = fit_it(m, xin, xout, sigma=sigma)
-        if verbose:
-            log.stdinfo(_show_model(m, "Model in {:.2f} seconds".
-                        format((datetime.now() - start).total_seconds())))
-        ranges = reduction * ranges
-        for p, range in zip(m.param_names, ranges):
-            param = getattr(m, p)
-            param.bounds = (param.value-0.5*range, param.value+0.5*range)
-
-    return m
-
 def _show_model(model, intro=""):
     """Provide formatted output of a (possibly compound) transformation"""
     model_str = "{}\n".format(intro) if intro else ""
@@ -471,7 +416,7 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
                    translation=None, translation_range=None,
                    rotation=None, rotation_range=None,
                    magnification=None, magnification_range=None,
-                   tolerance=0.1, center_of_field=None, simplex=True):
+                   tolerance=0.1, center_of_field=None):
     """
     Generic interface for a 2D catalog match. Either an initial model guess
     is provided, or a model will be created using a combination of
@@ -510,8 +455,6 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
     center_of_field: 2-tuple
         rotation and magnification have no effect at this location
          (if None, uses middle of xin,yin ranges)
-    simplex: boolean
-        use a single brute-force iteration and then a simplex?
 
     Returns
     -------
@@ -635,60 +578,9 @@ def align_catalogs(xin, yin, xref, yref, model_guess=None,
         log.warning('The transformation is not fittable!')
         return models.Identity(2)
 
-    fit_function = fit_brute_then_simplex if simplex else fit_brute_repeatedly
-    final_model = fit_function(init_model, (xin, yin), (xref, yref),
+    final_model = fit_brute_then_simplex(init_model, (xin, yin), (xref, yref),
                                sigma=10.0, tolerance=tolerance)
     return final_model
-
-def find_offsets(xin, yin, xref, yref, range=(-300,300), subpix=1,
-                 sigma=10.0, maxsig=4.0):
-    """
-    Identify the translational offsets that map (xin, yin) to (xref, yref)
-    by cross-correlation
-
-    Parameters
-    ----------
-    xin, yin: float array
-        Input coordinates
-    xref, yref: float array
-        Reference coordinates
-    range: int, int
-        range over which to search for offsets
-    subpix: int
-        factor by which to subdivide input pixels
-    sigma: float
-        rms of Gaussian mountain in input pixels
-    maxsig: float
-        size of Gaussian mountain in standard deviations
-
-    Returns
-    -------
-    int, int
-        x and y offsets
-    """
-    hw = int(maxsig * sigma * subpix)
-    xgrid, ygrid = np.mgrid[0:hw * 2 + 1, 0:hw * 2 + 1]
-    rsq = (ygrid - hw) ** 2 + (xgrid - hw) ** 2
-    midrange = 0.5*(range[0]+range[1])
-    cpix = int((midrange - range[0]) * subpix)
-    size = cpix * 2 + 1
-    landscape = np.zeros((size, size))
-    mountain = np.exp(-0.5 * rsq / (sigma * sigma))
-    xoff = np.array([xr-xi for xr in xref for xi in xin])
-    yoff = np.array([yr-yi for yr in yref for yi in yin])
-
-    x1 = (subpix*(xoff-midrange) + cpix - hw).astype(int)
-    x2 = x1 + hw*2+1
-    y1 = (subpix*(yoff-midrange) + cpix - hw).astype(int)
-    y2 = y1 + hw*2+1
-    for xx1, xx2, yy1, yy2 in zip(x1, x2, y1, y2):
-        if xx1>=0 and xx2<size and yy1>=0 and yy2<size:
-            landscape[yy1:yy2, xx1:xx2] += mountain
-
-    y, x = np.unravel_index(np.argmax(landscape), landscape.shape)
-    y = float(y-cpix) / subpix
-    x = float(x-cpix) / subpix
-    return x, y
 
 def match_sources(incoords, refcoords, radius=2.0, priority=[]):
     """
@@ -733,7 +625,7 @@ def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
                    translation_range=None, rotation=None,
                    rotation_range=None, magnification=None,
                    magnification_range=None, tolerance=0.1,
-                   center_of_field=None, simplex=True, match_radius=1.0):
+                   center_of_field=None, match_radius=1.0):
     """
     Aligns catalogs with align_catalogs(), and then matches sources with
     match_sources()
@@ -769,8 +661,6 @@ def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
     center_of_field: 2-tuple
         rotation and magnification have no effect at this location
          (if None, uses middle of xin,yin ranges)
-    simplex: boolean
-        use a single brute-force iteration and then a simplex?
 
     Returns
     -------
@@ -789,7 +679,7 @@ def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
                            translation_range=translation_range, rotation=rotation,
                            rotation_range=rotation_range, magnification=magnification,
                            magnification_range=magnification_range, tolerance=tolerance,
-                           center_of_field=center_of_field, simplex=simplex)
+                           center_of_field=center_of_field)
     matched = match_sources(model(xin, yin), (xref, yref), radius=match_radius,
                                priority=use_in)
     return matched, model
