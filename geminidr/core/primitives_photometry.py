@@ -226,43 +226,6 @@ class Photometry(PrimitivesBASE):
             adoutputs.append(ad)
         return adoutputs
 
-    def measureCCAndAstrometry(self, adinputs=None, **params):
-        """
-        This primitive does several things. For every input image with an
-        OBJCAT, it will try to add a REFCAT. If successful, it will then
-        measure the CC, determine the astrometric solution and, if requested,
-        update the WCS in the image header.
-
-        Parameters
-        ----------
-        update_wcs: bool
-            Update the WCS in the header after OBJCAT-REFCAT matching?
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        adoutputs = []
-        for ad in adinputs:
-            if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                ad = self.addReferenceCatalog([ad])[0]
-            else:
-                log.stdinfo("No OBJCAT found in input, so no comparison to "
-                        "reference sources will be performed")
-                adoutputs.append(ad)
-                continue
-
-            if hasattr(ad, 'REFCAT'):
-                ad = self.measureCC([ad])[0]
-                ad = self.determineAstrometricSolution([ad])[0]
-            else:
-                log.stdinfo("No reference sources found; no comparison "
-                            "will be performed")
-            adoutputs.append(ad)
-
-        if params["correct_wcs"]:
-            adoutputs = self.updateWCS(adoutputs)
-        return adoutputs
-
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
