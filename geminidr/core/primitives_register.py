@@ -12,7 +12,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.gemini import qap_tools as qap
 from gempy.utils import logutils
 
-from gempy.library.newmatch import match_catalogs, align_images_from_wcs, Pix2Sky
+from gempy.library.matching import match_catalogs, align_images_from_wcs, Pix2Sky
 
 from geminidr import PrimitivesBASE
 from .parameters_register import ParametersRegister
