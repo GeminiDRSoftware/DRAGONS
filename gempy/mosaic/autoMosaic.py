@@ -2,7 +2,7 @@
 #
 #                                                                  gemini_python
 #
-#                                                               mosaicFactory.py
+#                                                                  autoMosaic.py
 # ------------------------------------------------------------------------------
 """
 This module provides the AutoMosaic class and command line interface to

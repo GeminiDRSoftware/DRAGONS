@@ -5,7 +5,7 @@
 #                                                                  automosaic.py
 # ------------------------------------------------------------------------------
 """
-usage: mosaic [-h] [-d] [-t] [-v] [infiles [infiles ...]]
+usage: automosaic [-h] [-d] [-t] [-v] [infiles [infiles ...]]
 
 Auto mosaic builder.
 
@@ -31,7 +31,7 @@ import os
 import sys
 from argparse import ArgumentParser
 
-from gempy.mosaic.mosaicFactory import AutoMosaic
+from gempy.mosaic.autoMosaic import AutoMosaic
 
 # ------------------------------------------------------------------------------
 def buildNewParser(version=__version__):
@@ -41,7 +41,7 @@ def buildNewParser(version=__version__):
 
     """
     parser = ArgumentParser(description="Auto mosaic builder.",
-                            prog="mosaicFactory")
+                            prog="automosaic")
     parser.add_argument("-d", "--nodq", dest='nodq', action="store_true",
                         help="Do not ransform DQ bit planes.")
     parser.add_argument("-t", "--tile", dest='tile', action="store_true",
