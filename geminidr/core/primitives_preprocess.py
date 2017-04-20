@@ -584,11 +584,16 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+        scale: str
+            type of scaling to use. Must be a numpy function
+        separate_ext: bool
+            Scale each extension individually?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        separate_ext = params["separate_ext"]
         operator = getattr(np, params["scale"], None)
         if not callable(operator):
             log.warning("Operator {} not found, defaulting to median".
@@ -601,19 +606,28 @@ class Preprocess(PrimitivesBASE):
                             "already been processed by normalizeFlat".
                             format(ad.filename))
                 continue
-            
-            for ext in ad:
-                # Normalise the input AstroData object. Calculate the
-                # "average" value of the science extension
-                if ext.mask is None:
-                    scaling = operator(ext.data).astype(np.float64)
-                else:
-                    scaling = operator(ext.data[ext.mask==0]).astype(np.float64)
-                # Divide the science extension by the median value
-                # VAR is taken care of automatically
-                log.fullinfo("Normalizing {} EXTVER {} by dividing by {:.2f} ".
-                             format(ad.filename, ext.hdr['EXTVER'], scaling))
-                ext /= scaling
+
+            if separate_ext:
+                for ext in ad:
+                    # Normalise the input AstroData object. Calculate the
+                    # "average" value of the science extension
+                    if ext.mask is None:
+                        scaling = operator(ext.data).astype(np.float32)
+                    else:
+                        scaling = operator(ext.data[ext.mask==0]).astype(np.float32)
+                    # Divide the science extension by the median value
+                    # VAR is taken care of automatically
+                    log.fullinfo("Normalizing {} EXTVER {} by dividing by {:.2f}".
+                                 format(ad.filename, ext.hdr['EXTVER'], scaling))
+                    ext /= scaling
+            else:
+                # Combine pixels from all extensions, using DQ if present
+                scaling = operator(np.concatenate([(ext.data.ravel()
+                        if ext.mask is None else ext.data[ext.mask==0].ravel())
+                                            for ext in ad])).astype(np.float32)
+                log.fullinfo("Normalizing {} by dividing by {:.2f}".
+                            format(ad.filename, scaling))
+                ad /= scaling
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
