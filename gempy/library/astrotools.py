@@ -326,17 +326,6 @@ class WCSTweak:
         diff = self.inp - new_ref
         return diff
 
-def match_coords(xin, xref, yin, yref):
-
-    # Turn to numpy arrays
-    xin, xref, yin, yref = map(np.asarray, (xin, xref, yin, yref))
-    if len(xin) == 0:
-        return None
-
-
-
-    return
-
 def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
     """
     Match reference positions (sx,sy) with those of the

@@ -165,6 +165,8 @@ class AstroDataNiri(AstroDataGemini):
             assert data_section == data_section[::-1], \
                 "Multiple extensions with different data_sections"
             data_section = data_section[0]
+        elif data_section is None:
+            return None
 
         x1, x2, y1, y2 = data_section
         # Check for a sensibly-sized square
@@ -334,7 +336,7 @@ class AstroDataNiri(AstroDataGemini):
         filter_name = self.filter_name(pretty=True)
         camera = self.camera()
         # Explicit: if BUNIT is missing, assume data are in ADU
-        bunit = self.hdr.get('BUNIT', 'adu')
+        bunit = self.hdr.get('BUNIT', 'adu').lower()
         zpt = lookup.nominal_zeropoints.get((filter_name, camera))
 
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
@@ -342,11 +344,11 @@ class AstroDataNiri(AstroDataGemini):
         if self.is_single:
             try:
                 return zpt - (
-                    2.5 * math.log10(gain) if bunit.lower() == 'adu' else 0)
+                    2.5 * math.log10(gain) if bunit == 'adu' else 0)
             except TypeError:
                 return None
         else:
-            return [zpt - (2.5 * math.log10(g) if b.lower() == 'adu' else 0)
+            return [zpt - (2.5 * math.log10(g) if b == 'adu' else 0)
                    if zpt and g else None
                    for g, b in zip(gain, bunit)]
 
@@ -385,9 +387,9 @@ class AstroDataNiri(AstroDataGemini):
         sat_level = self.saturation_level()
         linear_limit = lookup.array_properties['linearlimit']
         if isinstance(sat_level, list):
-            return [int(linear_limit * s) for s in sat_level]
+            return [(int(linear_limit * s) if s else None) for s in sat_level]
         else:
-            return int(linear_limit * sat_level)
+            return int(linear_limit * sat_level) if sat_level else None
 
     @astro_data_descriptor
     def pupil_mask(self, stripID=False, pretty=False):

@@ -73,8 +73,8 @@ class Standardize(PrimitivesBASE):
                 log.fullinfo("Using {} as BPM".format(bpm.filename))
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
-                final_bpm = clip_method(ad, bpm, 'bpm', dq_dtype,
-                                        self.keyword_comments)
+                final_bpm = clip_method(ad, aux=bpm, aux_type='bpm',
+                    return_dtype=dq_dtype, keyword_comments=self.keyword_comments)
 
             for ext, bpm_ext in zip(ad, final_bpm):
                 extver = ext.hdr['EXTVER']

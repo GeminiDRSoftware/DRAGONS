@@ -4,14 +4,16 @@
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
 import numpy as np
-from astropy.wcs import WCS
 from astropy.stats import sigma_clip
+from astropy.table import Column
+
+from astrodata.fits import add_header_to_table
+
+from datetime import datetime
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
-from gempy.library import astrotools as at
 from gempy.gemini.eti.sextractoreti import SExtractorETI
-from gempy.utils import logutils
 from geminidr.gemini.lookups import color_corrections
 
 from geminidr import PrimitivesBASE
@@ -104,14 +106,21 @@ class Photometry(PrimitivesBASE):
             else:
                 log.stdinfo("Found {} reference catalog sources for {}".
                             format(len(refcat), ad.filename))
-                ad.REFCAT = refcat
+                filter_name = ad.filter_name(pretty=True)
+                colterm_dict = color_corrections.colorTerms
+                if filter_name in colterm_dict:
+                    formulae = colterm_dict[filter_name]
+                    ad.REFCAT = _calculate_magnitudes(refcat, formulae)
+                else:
+                    log.warning("Filter {} is not in catalogs - will not be able to flux "
+                                "calibrate".format(filter_name))
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
-                if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                    ad = _match_objcat_refcat(ad)
-                else:
-                    log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
+                #if any(hasattr(ext, 'OBJCAT') for ext in ad):
+                #    ad = _match_objcat_refcat(ad, self.context)
+                #else:
+                #    log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -217,276 +226,77 @@ class Photometry(PrimitivesBASE):
             adoutputs.append(ad)
         return adoutputs
 
-    def measureCCAndAstrometry(self, adinputs=None, **params):
-        """
-        This primitive does several things. For every input image with an
-        OBJCAT, it will try to add a REFCAT. If successful, it will then
-        measure the CC, determine the astrometric solution and, if requested,
-        update the WCS in the image header.
-
-        Parameters
-        ----------
-        update_wcs: bool
-            Update the WCS in the header after OBJCAT-REFCAT matching?
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        adoutputs = []
-        for ad in adinputs:
-            if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                ad = self.addReferenceCatalog([ad])[0]
-            else:
-                log.stdinfo("No OBJCAT found in input, so no comparison to "
-                        "reference sources will be performed")
-                adoutputs.append(ad)
-                continue
-
-            if hasattr(ad, 'REFCAT'):
-                ad = self.measureCC([ad])[0]
-                ad = self.determineAstrometricSolution([ad])[0]
-            else:
-                log.stdinfo("No reference sources found; no comparison "
-                            "will be performed")
-            adoutputs.append(ad)
-
-        if params["correct_wcs"]:
-            adoutputs = self.updateWCS(adoutputs)
-        return adoutputs
-
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-def _match_objcat_refcat(ad):
-    """
-    Match the sources in the objcats against those in the corresponding
-    refcat. Update the refid column in the objcat with the Id of the 
-    catalog entry in the refcat. Update the refmag column in the objcat
-    with the magnitude of the corresponding source in the refcat in the
-    band that the image is taken in.
+def _calculate_magnitudes(refcat, formulae):
+    # Create new columns for the magnitude (and error) in the image's filter
+    # We need to ensure the table's meta is updated.
+    # Would be simpler to do this when the REFCAT is added
+    dummy_data = [-999.0] * len(refcat)
+    refcat.add_column(Column(data=dummy_data, name='filtermag',
+                             dtype='f4', unit='mag'))
+    refcat.add_column(Column(data=dummy_data, name='filtermag_err',
+                             dtype='f4', unit='mag'))
+    hdr = refcat.meta['header']
+    hdr.update(add_header_to_table(refcat))
+    refcat.meta['header'] = hdr
+    if not formulae:
+        return refcat
 
-    CJS: Since this is only called here, and only on single AD, its ability
-    to handle inputs lists has been removed. If it gets used elsewhere, it
-    should be moved to gemini_tools and make use of @accept_single_adinput
-
-    Parameters
-    ----------
-    adinput: AstroData
-        input image for OBJCAT-REFCAT matching
-    """
-    import matplotlib.pyplot as plt
-
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
-    log = logutils.get_logger(__name__)
-    debug = False
-
-    filter_name = ad.filter_name(pretty=True)
-    colterm_dict = color_corrections.colorTerms
-    if filter_name in colterm_dict:
-        formulae = colterm_dict[filter_name]
-    else:
-        log.warning("Filter {} is not in catalogs - will not be able to flux "
-            "calibrate".format(filter_name))
-        formulae = []
-
-    # If there are no refcats, don't try to go through them.
-    try:
-        refcat = ad.REFCAT
-    except AttributeError:
-        log.warning("No REFCAT present - cannot match to OBJCAT")
-        return ad
-    if not any(hasattr(ext, 'OBJCAT') for ext in ad):
-        log.warning("No OBJCATs in {} - cannot match to REFCAT".
-                    format(ad.filename))
-        return ad
-
-    # Plotting for debugging purposes
-    if debug:
-        if 'GSAOI' in ad.tags:
-            plotcols = 2
-            plotrows = 2
-        else:
-            plotcols = len(ad)
-            plotrows = 1
-        fig, axarr = plt.subplots(plotrows, plotcols, sharex=True,
-                    sharey=True, figsize=(10,10), squeeze=False)
-        axarr[0,0].set_xlim(0,ad[0].data.shape[1])
-        axarr[0,0].set_ylim(0,ad[0].data.shape[0])
-
-    # Try to be clever here, and work on the extension with the highest
-    # number of matches first, as this will give the most reliable offsets.
-    # which can then be used to constrain the other extensions. The problem
-    # is we don't know how many matches we'll get until we do it, and that's
-    # slow, so use OBJCAT length as a proxy.
-    objcat_lengths = [len(ext.OBJCAT) if hasattr(ext, 'OBJCAT') else 0
-                      for ext in ad]
-    objcat_order = np.argsort(objcat_lengths)[::-1]
-
-    pixscale = ad.pixel_scale()
-    initial = 10.0/pixscale # Search box size
-    final = 1.0/pixscale # Matching radius
-    xoffsets = []
-    yoffsets = []
-
-    for index in objcat_order:
-        extver = ad[index].hdr['EXTVER']
-        try:
-            objcat = ad[index].OBJCAT
-        except AttributeError:
-            log.stdinfo('No OBJCAT in {}:{}'.format(ad.filename, extver))
-            continue
-        objcat_len = len(objcat)
-        xx = objcat['X_IMAGE']
-        yy = objcat['Y_IMAGE']
-
-        # The coordinates of the reference sources are corrected
-        # to pixel positions using the WCS of the object frame
-        wcs = WCS(ad.header[index+1])
-        sx, sy = wcs.all_world2pix(refcat['RAJ2000'],
-                                   refcat['DEJ2000'], 1)
-        sx_orig = np.copy(sx)
-        sy_orig = np.copy(sy)
-        # Reduce the search radius if we've found a match
-        # on a previous extension
-        if xoffsets:
-            sx += np.mean(xoffsets)
-            sy += np.mean(yoffsets)
-            initial = 2.5/pixscale
-
-        # Here's CJS at work.
-        # First: estimate number of reference sources in field
-        # Do better using actual size of illuminated field
-        num_ref_sources = np.sum(np.all((sx>-initial,
-            sx<ad[index].data.shape[1]+initial,
-            sy>-initial,
-            sy<ad[index].data.shape[0]+initial),
-            axis=0))
-        # How many objects do we want to try to match?
-        if objcat_len > 2*num_ref_sources:
-            keep_num = max(int(1.5*num_ref_sources),
-                           min(10,objcat_len))
-        else:
-            keep_num = objcat_len
-        # Now sort the object catalogue -- MUST NOT alter order
-        sorted_indices = np.argsort(np.where(
-                objcat['NIMAFLAGS_ISO']>
-                0.5*objcat['ISOAREA_IMAGE'],
-                999,objcat['MAG_AUTO']))[:keep_num]
-
-        (oi, ri) = at.match_cxy(xx[sorted_indices],sx,
-                    yy[sorted_indices],sy,
-                    first_pass=initial, delta=final, log=log)
-        log.stdinfo("Matched {} objects in OBJCAT:{} against REFCAT".
-                    format(len(oi), extver))
-        # If this is a "good" match, save it
-        if len(oi) > 2:
-            xoffsets.append(np.median(xx[sorted_indices[oi]] - sx_orig[ri]))
-            yoffsets.append(np.median(yy[sorted_indices[oi]] - sy_orig[ri]))
-
-        # Loop through the reference list updating the refid in the objcat
-        # and the refmag, if we can
-        for i in range(len(oi)):
-            real_index = sorted_indices[oi[i]]
-            objcat['REF_NUMBER'][real_index] = refcat['Id'][ri[i]]
-            # CJS: I'm not 100% sure about assigning the wcs.sky2pix
-            # values here, in case the WCS is poor
-            tempx, tempy = wcs.all_world2pix(refcat['RAJ2000'][ri[i]],
-                                             refcat['DEJ2000'][ri[i]], 1)
-            #objcat['REF_X'][real_index] = tempx
-            #objcat['REF_Y'][real_index] = tempy
-
-            # Assign the magnitude
-            if formulae:
-                mag, mag_err = _calculate_magnitude(formulae, refcat, ri[i])
-                objcat['REF_MAG'][real_index] = mag
-                objcat['REF_MAG_ERR'][real_index] = mag_err
-
-        if debug:
-            # Show the fit
-            if 'GSAOI' in ad.types:
-                plotpos = ((4-extver) // 2, (extver % 3) % 2)
-            else:
-                plotpos = (0,extver-1)
-            if len(oi):
-                dx = np.median(xx[sorted_indices[oi]] - sx[ri])
-                dy = np.median(yy[sorted_indices[oi]] - sy[ri])
-            else:
-                dx = 0
-                dy = 0
-            # bright OBJCAT sources
-            axarr[plotpos].scatter(xx[sorted_indices], yy[sorted_indices], s=50, c='w')
-            # all REFCAT sources, original positions
-            axarr[plotpos].scatter(sx_orig, sy_orig, s=30, c='k', marker='+')
-            # all REFCAT sources shifted
-            axarr[plotpos].scatter(sx+dx, sy+dy, s=30, c='r', marker='+')
-            # matched REFCAT sources shifted
-            axarr[plotpos].scatter(sx[ri]+dx, sy[ri]+dy, s=30, c='r', marker='s')
-            for i in range(len(sx)):
-                if i in ri:
-                    axarr[plotpos].plot([sx_orig[i],sx[i]+dx],[sy_orig[i],sy[i]+dy], 'r')
-                else:
-                    axarr[plotpos].plot([sx_orig[i],sx[i]+dx],[sy_orig[i],sy[i]+dy], 'k--')
-
-    if debug:
-        plt.show()
-    return ad
-
-def _calculate_magnitude(formulae, refcat, indx):
-    
     # This is a bit ugly: we want to iterate over formulae so we must
     # nest a single formula into a list
-    if type(formulae[0]) is not list:
+    if not isinstance(formulae[0], list):
         formulae = [formulae]
 
-    mags = []
-    mag_errs = []
-    for formula in formulae:
-        mag = 0.0
-        mag_err_sq = 0.0
-        for term in formula:
-            # single filter
-            if type(term) is str:
-                if term+'mag' in refcat.columns:
-                    mag += refcat[term+'mag'][indx]
-                    mag_err_sq += refcat[term+'mag_err'][indx]**2
-                else:
-                    # Will ensure this magnitude is not used
-                    mag = np.nan
-            # constant (with uncertainty)
-            elif len(term) == 2:
-                mag += float(term[0])
-                mag_err_sq += float(term[1])**2
-            # color term (factor, uncertainty, color)
-            elif len(term) == 3:
-                filters = term[2].split('-')
-                if len(filters)==2 and np.all([f+'mag' in refcat.columns
-                                               for f in filters]):
-                    col = refcat[filters[0]+'mag'][indx] - \
-                        refcat[filters[1]+'mag'][indx]
-                    mag += float(term[0])*col
-                    dmagsq = refcat[filters[0]+'mag_err'][indx]**2 + \
-                        refcat[filters[1]+'mag_err'][indx]**2
-                    # When adding a (H-K) color term, often H is a 95% upper limit
-                    # If so, we can only return an upper limit, but we need to
-                    # account for the uncertainty in K-band 
-                    if np.isnan(dmagsq):
-                        mag -= 1.645*np.sqrt(mag_err_sq)
-                    mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
-                        (float(term[0])*col)**2
-                else:
-                    mag = np.nan        # Only consider this if values are sensible
-        if not np.isnan(mag):
-            mags.append(mag)
-            mag_errs.append(np.sqrt(mag_err_sq))
-    
-    # Take the value with the smallest uncertainty (NaN = large uncertainty)
-    if mags:
-        lowest = np.argmin(np.where(np.isnan(mag_errs),999,mag_errs))
-        return mags[lowest], mag_errs[lowest]
-    else:
-        return -999, -999
+    for row in refcat:
+        mags = []
+        mag_errs = []
+        for formula in formulae:
+            mag = 0.0
+            mag_err_sq = 0.0
+            for term in formula:
+                # single filter
+                if type(term) is str:
+                    if term+'mag' in refcat.columns:
+                        mag += row[term+'mag']
+                        mag_err_sq += row[term+'mag_err']**2
+                    else:
+                        # Will ensure this magnitude is not used
+                        mag = np.nan
+                # constant (with uncertainty)
+                elif len(term) == 2:
+                    mag += float(term[0])
+                    mag_err_sq += float(term[1])**2
+                # color term (factor, uncertainty, color)
+                elif len(term) == 3:
+                    filters = term[2].split('-')
+                    if len(filters)==2 and np.all([f+'mag' in refcat.columns
+                                                   for f in filters]):
+                        col = row[filters[0]+'mag'] - row[filters[1]+'mag']
+                        mag += float(term[0])*col
+                        dmagsq = row[filters[0]+'mag_err']**2 + \
+                            row[filters[1]+'mag_err']**2
+                        # When adding a (H-K) color term, often H is a 95% upper limit
+                        # If so, we can only return an upper limit, but we need to
+                        # account for the uncertainty in K-band
+                        if np.isnan(dmagsq):
+                            mag -= 1.645*np.sqrt(mag_err_sq)
+                        mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
+                            (float(term[0])*col)**2
+                    else:
+                        mag = np.nan        # Only consider this if values are sensible
+            if not np.isnan(mag):
+                mags.append(mag)
+                mag_errs.append(np.sqrt(mag_err_sq))
+
+        # Take the value with the smallest uncertainty (NaN = large uncertainty)
+        if mags:
+            lowest = np.argmin(np.where(np.isnan(mag_errs),999,mag_errs))
+            row['filtermag'] = mags[lowest]
+            row['filtermag_err'] = mag_errs[lowest]
+    return refcat
 
 def _estimate_seeing(objcat):
     """
@@ -554,7 +364,7 @@ def _cull_objcat(ext):
     except AttributeError:
         return ext
 
-    all_objects = objcat['NUMBER']
+    all_numbers = objcat['NUMBER'].data
     # Remove sources of less than 20 pixels
     objcat.remove_rows(objcat['ISOAREA_IMAGE'] < 20)
     # Remove implausibly narrow sources
@@ -562,13 +372,26 @@ def _cull_objcat(ext):
     # Remove *really* bad sources. "Bad" pixels might be saturated, but the
     # source is still real, so be very conservative
     if 'NIMAFLAGS_ISO' in objcat.columns:
-        objcat.remove_rows(objcat['NIMAFLAGS_ISO'] > 0.9*objcat['ISOAREA_IMAGE'])
+        objcat.remove_rows(objcat['NIMAFLAGS_ISO'] > 0.95*objcat['ISOAREA_IMAGE'])
 
     # Create new OBJMASK with 1 only for unculled objects
-    if hasattr(ext, 'OBJMASK'):
+    # This is the np.in1d code but avoids unnecessary steps
+    try:
+        objmask1d = ext.OBJMASK.ravel()
+    except AttributeError:
+        pass
+    else:
+        numbers = objcat['NUMBER'].data
         objmask_shape = ext.OBJMASK.shape
-        ext.OBJMASK = np.where(np.in1d(ext.OBJMASK.ravel(), objcat['NUMBER']),
-                               1, 0).reshape(objmask_shape).astype(np.uint8)
+        ar = np.concatenate(([0], all_numbers, numbers))
+        order = ar.argsort(kind='mergesort')
+        sar = ar[order]
+        ret = np.empty(ar.shape, dtype=bool)
+        ret[order] = np.concatenate((sar[1:] == sar[:-1], [False]))
+        ext.OBJMASK = np.where(ret[objmask1d], np.uint8(1),
+                               np.uint8(0)).reshape(objmask_shape)
+        #ext.OBJMASK = np.where(np.in1d(objmask1d, numbers), np.uint8(1),
+        #                    np.uint8(0)).reshape(objmask_shape)
 
     # Now renumber what's left sequentially
     objcat['NUMBER'].data[:] = range(1, len(objcat)+1)

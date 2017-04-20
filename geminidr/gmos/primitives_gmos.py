@@ -137,8 +137,8 @@ class GMOS(Gemini, CCD):
             ad_out.hdr.set("CCDNAME", ad.detector_name(),
                               comment=self.keyword_comments["CCDNAME"])
 
-            # TODO: Old code complained about mask being float32 and having
-            # negative values that needed fixing. Doesn't seem to be true
+            if hasattr(ad, 'REFCAT'):
+                ad_out.REFCAT = deepcopy(ad.REFCAT)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad_out)
