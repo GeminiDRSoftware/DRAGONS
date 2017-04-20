@@ -126,20 +126,22 @@ class MosaicAD(Mosaic):
     def as_astrodata(self, block=None, tile=False, dodq=False, return_ROI=True,
                      update_with='wcs'):
         """
-        Returns an AstroData object  containing by default the mosaiced
-        IMAGE extensions, the merged associated BINTABLEs and all other
-        non-associated extensions of any other type. WCS information in
-        the headers of the IMAGE extensions and any pixel coordinates in
-        BINTABLEs will be updated appropriately.
+        Returns an AstroData object  containing by default the mosaiced IMAGE
+        extensions, the merged associated BINTABLEs. WCS information in headers
+        of the IMAGE extensions and any pixel coordinates in BINTABLEs will be
+        updated appropriately.
 
         Parameters
         ----------
-        tile: Mosaics returned are not corrected for shifting and rotation.
-        type: <bool> Default is False.
-
         block: Return a specific block as the output mosaic as (col, row). 
               (0,0) lower left. 
         type: <2-tuple> Default is None.
+
+        tile: Tile rather than transform data blocks.
+        type: <bool> Default is False.
+
+        dodq: Process DQ bit planes.
+        type: <bool> Default is False.
 
         return_ROI: Returns the minimum frame size calculated from the location
                     of the amplifiers in a given block. If False, uses the
@@ -163,8 +165,6 @@ class MosaicAD(Mosaic):
 
         # Create mosaics of all image extensions in ad. Merge associated bintables.
         # image array attributes mosaicked: 'data', 'variance', 'mask', 'OBJMASK'.
-        # 'data':
-
         # SCI
         self.data_list = self.get_data_list('data')
         if not self.data_list:
