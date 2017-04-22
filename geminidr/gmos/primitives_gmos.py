@@ -291,6 +291,7 @@ class GMOS(Gemini, CCD):
 
             osec_list = ad.overscan_section()
             dsec_list = ad.data_section()
+            ybinning = ad.detector_y_bin()
             for ext, osec, dsec in zip(ad, osec_list, dsec_list):
                 x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
                 if x1 > dsec.x1:  # Bias on right
@@ -303,7 +304,7 @@ class GMOS(Gemini, CCD):
                 if detname.startswith('Hamamatsu'):
                     log.fullinfo('Ignoring bottom 48 rows of {}'.
                                  format(ad.filename))
-                    y1 = 48
+                    y1 = max(y1, 48 // ybinning)
 
                 row = np.arange(y1, y2)
                 data = getattr(np, average)(ext.data[y1:y2, x1:x2], axis=1)
