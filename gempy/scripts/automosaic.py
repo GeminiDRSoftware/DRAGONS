@@ -14,7 +14,7 @@ positional arguments:
 
 optional arguments:
   -h, --help     show this help message and exit
-  -d, --dodq     Transform DQ bit planes.
+  -n, --nodq     Do not transform DQ bit planes.
   -t, --tile     Tile data only.
   -v, --version  show program's version number and exit
 
@@ -42,8 +42,8 @@ def buildNewParser(version=__version__):
     """
     parser = ArgumentParser(description="Auto mosaic builder.",
                             prog="automosaic")
-    parser.add_argument("-d", "--nodq", dest='nodq', action="store_true",
-                        help="Do not ransform DQ bit planes.")
+    parser.add_argument("-i", "--image", dest='img', action="store_true",
+                        help="Tranform image (SCI) data only.")
     parser.add_argument("-t", "--tile", dest='tile', action="store_true",
                         help="Tile data only.")
     parser.add_argument("-v", "--version", action="version",
@@ -67,4 +67,4 @@ def handleCLargs():
 if __name__ == '__main__':
     args = handleCLargs()
     mos_factory = AutoMosaic(args)
-    mos_factory.auto_mosaic()
+    sys.exit(mos_factory.auto_mosaic())

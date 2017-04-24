@@ -123,7 +123,7 @@ class MosaicAD(Mosaic):
                                         # Set in as_astrodata().
 
     # --------------------------------------------------------------------------
-    def as_astrodata(self, block=None, tile=False, dodq=False, return_ROI=True,
+    def as_astrodata(self, block=None, tile=False, doimg=False, return_ROI=True,
                      update_with='wcs'):
         """
         Returns an AstroData object  containing by default the mosaiced IMAGE
@@ -140,7 +140,8 @@ class MosaicAD(Mosaic):
         tile: Tile rather than transform data blocks.
         type: <bool> Default is False.
 
-        dodq: Process DQ bit planes.
+        doimg: Process image data only. I.e., mosaic all extensions where
+               extname === 'SCI'.
         type: <bool> Default is False.
 
         return_ROI: Returns the minimum frame size calculated from the location
@@ -179,34 +180,45 @@ class MosaicAD(Mosaic):
 
         # VAR
         varray = None
-        self.data_list = self.get_data_list('variance')
-        if not self.data_list:
-            self.log.stdinfo("No VAR array on {} ".format(self.ad.filename))
-        else:
-            varray = self.mosaic_image_data(block=block,return_ROI=return_ROI,tile=tile)
+        if not doimg:
+            self.data_list = self.get_data_list('variance')
+            if not self.data_list:
+                self.log.stdinfo("No VAR array on {} ".format(self.ad.filename))
+            else:
+                varray = self.mosaic_image_data(block=block,return_ROI=return_ROI,
+                                                tile=tile)
 
         # DQ
         marray = None
-        self.data_list = self.get_data_list('mask')
-        if not self.data_list:
-            self.log.stdinfo("No DQ array on {} ".format(self.ad.filename))
-        else:
-            marray= self.mosaic_image_data(block=block,return_ROI=return_ROI,
-                                           tile=tile, dq_data=True)
+        if not doimg:
+            self.data_list = self.get_data_list('mask')
+            if not self.data_list:
+                self.log.stdinfo("No DQ array on {} ".format(self.ad.filename))
+            else:
+                marray= self.mosaic_image_data(block=block,return_ROI=return_ROI,
+                                               tile=tile, dq_data=True)
 
         adout[0].reset(data=darray, variance=varray, mask=marray)
 
         # Handle extras ...
-        self.data_list = self.get_data_list('OBJMASK')
-        if not self.data_list:
-            self.log.stdinfo("No OBJMASK on {} ".format(self.ad.filename))
-        else:
-            adout[0].OBJMASK = self.mosaic_image_data(block=block, return_ROI=return_ROI,
-                                                      tile=tile, dq_data=True)
+        if not doimg:
+            self.data_list = self.get_data_list('OBJMASK')
+            if not self.data_list:
+                self.log.stdinfo("No OBJMASK on {} ".format(self.ad.filename))
+            else:
+                adout[0].OBJMASK = self.mosaic_image_data(block=block,
+                                                          return_ROI=return_ROI,
+                                                          tile=tile, dq_data=True)
 
+
+        #
+        # PENDING DECISION ON WHETHER CATALOGS SHALL BE MERGED OR REMADE AFTER
+        # MOSAIC. (kra, 24-04-2017).
+        #
         # Generate WCS object to be used in the merging the object catalog table or
         # updating the objects pixel coordinates w.r.t. to the new crpix1,2.
-        ref_wcs = wcs.WCS(header)
+
+        #ref_wcs = wcs.WCS(header)
 
         # table extensions
         # for ex in ad:

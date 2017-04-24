@@ -50,7 +50,7 @@ class AutoMosaic(object):
 
         """
         self.files = args.infiles
-        self.nodq = args.nodq
+        self.img = args.img
         self.tile = args.tile
 
     def auto_mosaic(self):
@@ -66,7 +66,7 @@ class AutoMosaic(object):
             mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
 
             log.stdinfo("\tMaking mosaic, converting data ...")
-            adout = mos.as_astrodata(tile=self.tile, dodq=self.nodq)
+            adout = mos.as_astrodata(tile=self.tile, doimg=self.img)
 
             log.stdinfo("\tWriting file ...")
             adout.write(out_fits)
