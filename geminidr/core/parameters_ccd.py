@@ -27,6 +27,7 @@ class ParametersCCD(ParametersBASE):
         "niterate"          : 2,
         "high_reject"       : 3.0,
         "low_reject"        : 3.0,
+        "fit_spline"        : True,
         "nbiascontam"       : None,
         "order"             : None,
     }

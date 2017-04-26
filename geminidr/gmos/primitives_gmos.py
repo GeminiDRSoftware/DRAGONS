@@ -11,6 +11,8 @@ from astropy.modeling import models, fitting
 
 import astrodata
 import gemini_instruments
+import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline as Spline
 
 from gempy.gemini import eti
 from gempy.gemini import gemini_tools as gt
@@ -268,6 +270,7 @@ class GMOS(Gemini, CCD):
         lo_rej = params["low_reject"]
         hi_rej = params["high_reject"]
         order = params["order"]
+        fit_spline = params["fit_spline"]
         nbiascontam = params["nbiascontam"]
 
         if average not in ('mean', 'median'):
@@ -284,7 +287,7 @@ class GMOS(Gemini, CCD):
 
             # Use gireduce defaults if values aren't specified
             detname = ad.detector_name(pretty=True)
-            if order is None:
+            if order is None and not fit_spline:
                 order = 6 if detname.startswith('Hamamatsu') else 0
             if nbiascontam is None:
                 nbiascontam = 5 if detname == 'e2vDD' else 4
@@ -309,17 +312,33 @@ class GMOS(Gemini, CCD):
                 row = np.arange(y1, y2)
                 data = getattr(np, average)(ext.data[y1:y2, x1:x2], axis=1)
                 mask = np.array([False] * len(data))
+                # Weights are used to determine number of spline pieces
+                # should be the estimate of the mean
+                wt = np.sqrt(x2-x1-1) / ext.read_noise()
+                if ext.hdr.get('BUNIT', 'adu').lower() == 'adu':
+                    wt *= ext.gain()
 
                 for iter in range(niterate+1):
-                    bias_init = models.Chebyshev1D(degree=order,
-                                                   c0=np.median(data[~mask]))
-                    fit_f = fitting.LinearLSQFitter()
-                    bias = fit_f(bias_init, row[~mask], data[~mask])
+                    if fit_spline:
+                        if order > 1:
+                            knots = np.linspace(row[0], row[-1], order+1)[1:-1]
+                            bias = Spline(row[~mask], data[~mask], knots)
+                        else:
+                            bias = UnivariateSpline(row[~mask], data[~mask],
+                                                    w=[wt]*np.sum(~mask))
+                    else:
+                        bias_init = models.Chebyshev1D(degree=order,
+                                                       c0=np.median(data[~mask]))
+                        fit_f = fitting.LinearLSQFitter()
+                        bias = fit_f(bias_init, row[~mask], data[~mask])
                     residuals = data - bias(row)
                     sigma = np.std(residuals[~mask])
-                    mask = np.where(np.logical_or(residuals>hi_rej*sigma,
-                                    residuals<-lo_rej*sigma), True, False)
+                    mask = np.where(np.logical_or(residuals > hi_rej*sigma
+                                    if hi_rej is not None else False,
+                                    residuals < -lo_rej*sigma
+                                    if lo_rej is not None else False), True, False)
 
+                print wt, bias.get_knots()
                 # using "-=" won't change from int to float
                 ext.data = ext.data - np.tile(bias(np.arange(0, ext.data.shape[0])),
                                         (ext.data.shape[1],1)).T.astype(np.float32)
@@ -329,6 +348,10 @@ class GMOS(Gemini, CCD):
                 ext.hdr.set('OVERSCAN', np.mean(bias(row)),
                             self.keyword_comments['OVERSCAN'])
                 ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
+
+                plt.plot(row, data)
+                plt.plot(row, bias(row))
+                plt.show()
 
             # Timestamp, and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
