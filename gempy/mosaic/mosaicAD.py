@@ -141,7 +141,7 @@ class MosaicAD(Mosaic):
         type: <bool> Default is False.
 
         doimg: Process image data only. I.e., mosaic all extensions where
-               extname === 'SCI'.
+               extname == 'SCI'.
         type: <bool> Default is False.
 
         return_ROI: Returns the minimum frame size calculated from the location
@@ -217,7 +217,6 @@ class MosaicAD(Mosaic):
         #
         # Generate WCS object to be used in the merging the object catalog table or
         # updating the objects pixel coordinates w.r.t. to the new crpix1,2.
-
         #ref_wcs = wcs.WCS(header)
 
         # table extensions
@@ -473,6 +472,9 @@ class MosaicAD(Mosaic):
         ----------
         ref_wcs: wcs object containing the WCS from the output header.
         type: <WCS object>
+
+        tile: Tile or transform catalog data. tile=False will transform the catalogs.
+        type: <bool>
 
         transform_pars: Dictionary with rotation angle, translation, and magnification.
         type: <dict>
