@@ -10,10 +10,10 @@ class ParametersCCD(ParametersBASE):
     }
     overscanCorrect = {
         "suffix"            : "_overscanCorrected",
-        "average"           : "mean",
         "niterate"          : 2,
         "high_reject"       : 3.0,
         "low_reject"        : 3.0,
+        "fit_spline"        : True,
         "nbiascontam"       : None,
         "order"             : None,
     }
@@ -23,7 +23,6 @@ class ParametersCCD(ParametersBASE):
     }
     subtractOverscan = {
         "suffix"            : "_overscanSubtracted",
-        "average"           : "mean",
         "niterate"          : 2,
         "high_reject"       : 3.0,
         "low_reject"        : 3.0,

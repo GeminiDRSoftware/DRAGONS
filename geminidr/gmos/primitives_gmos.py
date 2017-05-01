@@ -11,8 +11,7 @@ from astropy.modeling import models, fitting
 
 import astrodata
 import gemini_instruments
-import matplotlib.pyplot as plt
-from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline as Spline
+from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline
 
 from gempy.gemini import eti
 from gempy.gemini import gemini_tools as gt
@@ -245,8 +244,6 @@ class GMOS(Gemini, CCD):
         ----------
         suffix: str
             suffix to be added to output files
-        average: str ("mean"/"median")
-            function for averaging in short direction
         niterate: int
             number of rejection iterations
         high_reject: float
@@ -257,15 +254,16 @@ class GMOS(Gemini, CCD):
             comma-separated list of IRAF-style overscan sections
         nbiascontam: int/None
             number of columns adjacent to the illuminated region to reject
+        fit_spline: bool
+            fit a piecewise cubic spline rather than polynomial?
         order: int
-            order of Chebyshev fit/None
+            order of Chebyshev fit or spline/None
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
-        average = params["average"]
         niterate = params["niterate"]
         lo_rej = params["low_reject"]
         hi_rej = params["high_reject"]
@@ -273,10 +271,14 @@ class GMOS(Gemini, CCD):
         fit_spline = params["fit_spline"]
         nbiascontam = params["nbiascontam"]
 
-        if average not in ('mean', 'median'):
-            log.warning("Averaging method {} not known; using mean".
-                        format(average))
-            average = "mean"
+        if lo_rej < 0:
+            log.warning("Low rejection threshold set to invalid value {}. "
+                        "Ignorning.")
+            lo_rej = None
+        if hi_rej < 0:
+            log.warning("High rejection threshold set to invalid value {}. "
+                        "Ignorning.")
+            hi_rej = None
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -310,19 +312,36 @@ class GMOS(Gemini, CCD):
                     y1 = max(y1, 48 // ybinning)
 
                 row = np.arange(y1, y2)
-                data = getattr(np, average)(ext.data[y1:y2, x1:x2], axis=1)
-                mask = np.array([False] * len(data))
+                data = np.mean(ext.data[y1:y2, x1:x2], axis=1)
                 # Weights are used to determine number of spline pieces
                 # should be the estimate of the mean
                 wt = np.sqrt(x2-x1-1) / ext.read_noise()
                 if ext.hdr.get('BUNIT', 'adu').lower() == 'adu':
                     wt *= ext.gain()
 
+                # The UnivariateSpline will make reduced-chi^2=1 so it will
+                # fit bad rows. Need to mask these before starting, so use a
+                # running median. Probably a good starting point for all fits.
+                medboxsize = 2  # really 2n+1 = 5
+                medarray = np.full((medboxsize*2+1, y2-y1), np.nan)
+                for i in range(-medboxsize, medboxsize+1):
+                    mx1 = max(i, 0)
+                    mx2 = min(y2-y1, y2-y1+i)
+                    medarray[medboxsize+i, mx1:mx2] = data[:mx2-mx1]
+                residuals = data - np.ma.median(np.ma.masked_where(np.isnan(medarray),
+                                                medarray), axis=0)
+                sigma = np.sqrt(x2-x1+1) / wt  # read noise
+                mask = np.where(np.logical_or(residuals > hi_rej * sigma
+                                if hi_rej is not None else False,
+                                residuals < -lo_rej * sigma
+                                if lo_rej is not None else False), True, False)
+
                 for iter in range(niterate+1):
                     if fit_spline:
-                        if order > 1:
+                        if order:
+                            # Equally-spaced knots (like IRAF)
                             knots = np.linspace(row[0], row[-1], order+1)[1:-1]
-                            bias = Spline(row[~mask], data[~mask], knots)
+                            bias = LSQUnivariateSpline(row[~mask], data[~mask], knots)
                         else:
                             bias = UnivariateSpline(row[~mask], data[~mask],
                                                     w=[wt]*np.sum(~mask))
@@ -338,7 +357,6 @@ class GMOS(Gemini, CCD):
                                     residuals < -lo_rej*sigma
                                     if lo_rej is not None else False), True, False)
 
-                print wt, bias.get_knots()
                 # using "-=" won't change from int to float
                 ext.data = ext.data - np.tile(bias(np.arange(0, ext.data.shape[0])),
                                         (ext.data.shape[1],1)).T.astype(np.float32)
@@ -348,10 +366,6 @@ class GMOS(Gemini, CCD):
                 ext.hdr.set('OVERSCAN', np.mean(bias(row)),
                             self.keyword_comments['OVERSCAN'])
                 ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
-
-                plt.plot(row, data)
-                plt.plot(row, bias(row))
-                plt.show()
 
             # Timestamp, and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
