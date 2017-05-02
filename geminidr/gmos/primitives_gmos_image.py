@@ -292,7 +292,7 @@ class GMOSImage(GMOS, Image, Photometry):
                          "statistics".format(xborder, data.shape[1] - xborder,
                                              yborder, data.shape[0] - yborder))
             stat_region = data[yborder:-yborder, xborder:-xborder]
-            mean = np.mean(stat_region, dtype=np.float64)
+            mean = np.mean(stat_region)
 
             # Set reference level to the first image's mean
             if ref_mean is None:
