@@ -2,6 +2,7 @@ import os
 from os.path import abspath, basename, dirname, isdir
 import warnings
 from collections import namedtuple
+import sys
 
 from sqlalchemy.exc import SAWarning, OperationalError
 from gemini_calmgr import fits_storage_config as fsc
@@ -46,6 +47,7 @@ DEFAULT_DB_NAME = 'cal_manager.db'
 
 ERROR_CANT_WIPE = 0
 ERROR_CANT_CREATE = 1
+ERROR_CANT_READ = 2
 
 FileData = namedtuple('FileData', 'name path')
 
@@ -170,7 +172,7 @@ class LocalManager(object):
 
         Parameters
         ----------
-        rq : dict
+        rq : CalibrationRequest
             Contains the search criteria, including instrument, descriptors,
             etc.
         fullResult : bool
@@ -191,17 +193,13 @@ class LocalManager(object):
         """
         from datetime import datetime
 
-        print "\n@ppu074: calibration_search() ..."
-
-        caltype = rq["caltype"]
-        descripts = rq["descriptors"]
-        types = rq["types"]
+        caltype = rq.caltype
+        descripts = rq.descriptors
+        types = rq.tags
 
         if "ut_datetime" in descripts:
             utc = descripts["ut_datetime"]
-            pyutc = datetime.strptime(utc.value, "%Y%m%dT%H:%M:%S")
-            print "@ppu079: OBS UT Date Time:", pyutc
-            descripts.update({"ut_datetime":pyutc})
+            descripts.update({"ut_datetime":utc})
 
         for (type_, desc) in extra_descript.items():
             descripts[desc] = type_ in types
@@ -229,31 +227,15 @@ class LocalManager(object):
 
                 return ('file://{}'.format(path), cal.diskfile.data_md5)
 
-        # sent_nones = "No Nones Set" if not nones else ", ".join(nones)
-        # preerr = RESPONSESTR % { "sequence": pformat(sequence),
-        #                          "response": response.strip(),
-        #                          "nones"   : sent_nones }
-
-        # try:
-        #     dom = minidom.parseString(response)
-        #     calel = dom.getElementsByTagName("calibration")
-        #     calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
-        #     calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
-        # except IndexError:
-        #     print "No url for calibration in response, calibration not found"
-        #     return (None, preerr)
-        # except:
-        #     return (None, preerr)
-
-        #print "prs70:", calurlel.data
-
-        #@@TODO: test only 
-        # print "@ppu165: ", repr(calurlel.data)
-        # return (calurl, calurlmd5)
+        return (None, "Could not find a proper calibration in the local database")
 
     def list_files(self):
         File, DiskFile = file.File, diskfile.DiskFile
 
-        query = self.session.query(File.name, DiskFile.path).join(DiskFile)
-        for res in query.order_by(File.name):
-            yield FileData(res[0], res[1])
+        try:
+            query = self.session.query(File.name, DiskFile.path).join(DiskFile)
+            for res in query.order_by(File.name):
+                yield FileData(res[0], res[1])
+        except OperationalError:
+            message = "There was an error when trying to read from the database."
+            raise LocalManagerError(ERROR_CANT_READ, message)

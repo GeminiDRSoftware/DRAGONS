@@ -90,7 +90,7 @@ class Converter(object):
 
     def from_config_file(self, section, key):
         try:
-            return self._type_to_cp[(section, key)](section, key)
+            return self._type_to_cp[self._trans[(section, key)]](section, key)
         except KeyError:
             return self._type_to_cp.get((None, key), self._cp_default)(section, key)
 

@@ -142,6 +142,10 @@ def buildParser(version):
                         "calibration types. "
                         "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
+    parser.add_argument("--local_db", dest='local_db_dir', default=None,
+                        help="Point to a directory where the local database "
+                        "for calibration association can be found. Default "
+                        "is to look it up in the config file (if there's any")
     return parser
 
 # --------------------------- Emulation functions ------------------------------
