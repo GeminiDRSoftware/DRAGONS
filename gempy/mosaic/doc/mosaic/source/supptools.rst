@@ -3,6 +3,8 @@
 Supplemental tools
 ******************
 
+.. _auto_mos:
+
 automosaic
 ==========
 

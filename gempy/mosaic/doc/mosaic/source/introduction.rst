@@ -1,3 +1,5 @@
+.. include supptools
+
 .. _Introduction:
 
 Introduction
@@ -105,9 +107,9 @@ Create a mosaic with MosaicAD class.
    # Use it with on or more files:
    automosaic S20170427*.fits
 
-``automosaic`` is a convenience command line interface that allows users to pass
-their FITS data to Mosaic/MosaicAD directly from the command line. ``automosaic``
-is detailed in 
+The ``automosaic`` script is a convenience tool that allows users to pass FITS 
+data to Mosaic/MosaicAD directly from the command line. ``automosaic`` is detailed 
+in :ref:`Supplemental Tools <auto_mos>`.
 
 .. _primitives:
 
@@ -162,7 +164,7 @@ Glossary
 **MosaicData**
   Python class with functions to verify input data lists. The object created 
   with this class is required as input to create a Mosaic object. For more 
-  details see :ref:`MosaicData example <help_mdata>`
+  details see :ref:`MosaicData example <help_mdata>`.
 
 **MosaicGeometry**
   Python class with functions to verify the input data ndarrays geometry 
