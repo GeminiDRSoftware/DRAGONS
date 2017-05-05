@@ -15,6 +15,7 @@ Mosaic Reference Guide
    :maxdepth: 2
 
    introduction
+   glossary
    mosaicAD
    mosaic
    examples

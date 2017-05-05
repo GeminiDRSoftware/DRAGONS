@@ -438,9 +438,8 @@ respect to the reference block.
 
 .. _mos_base_example:
 
-Example 9: Creates a mosaic using base class Mosaic.
-------------------------------------------------------------
-
+Example 9: Create a mosaic using base class Mosaic
+---------------------------------------------------
 
 Use the *data_object* from Example 6 and *geometry_object* from Example 7 to 
 instantiate a Mosaic object.  We print the shape of the output mosaic and 
@@ -498,7 +497,7 @@ of this example is to show the usage of the Mosaic method ``transform()``.
 
  geo_dict = {
    'transformation': { (0,0)    (1,0)     (0,1)     (1,1)  # tuples repr blocks:
-   'shift':         [(0.,0.), (-10,20), (-10,20), (0,0)],
+   'shift':          [ (0.,0.), (-10,20), (-10,20), (0,0)],
    'rotation':       (0.0,     0.0,       45.0,    45.0),
    'magnification':  (1.0,     1.0,        1.0,     0.5),
                     },

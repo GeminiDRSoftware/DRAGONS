@@ -8,11 +8,11 @@ Supplemental tools
 automosaic
 ==========
 
-The gemini_python.gempy mosaic package provides the command line tool, 
-``automosaic``, which provides a quick and convenient way to create mosaics of 
-multi-chip devices. ``automosaic`` provides two (2) options that users can use to 
-somewhat "tune" the mosaic output as they like. Help is available on the executable 
-with the usual --help flag. A manual page (manpage) is also provided.
+The gemini_python ``mosaic`` package (``gempy.mosaic``) provides the executable
+script, ``automosaic``, which provides a quick and convenient way to create mosaics 
+of multi-chip devices. ``automosaic`` provides two (2) options that users can use 
+to somewhat "tune" the mosaic output as they like. Help is available on the 
+executable with the usual --help flag. A manual page (manpage) is also provided.
 
 Usage::
 

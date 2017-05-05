@@ -3,19 +3,28 @@
 .. _Introduction:
 
 Introduction
-------------
+============
 
 .. _what_is:
 
-**What is Mosaic**
+What is Mosaic
+--------------
 
-Through out this document the word *mosaic* has the following meanings:
+**Mosaic** is a pure Python implementation of the gemini_iraf task, `gmosaic`.
+Of course, this implementation provides programmatic access to **mosaic**  
+interfaces for other packages to import and use the mosaic package. The 
+package resides (currently) in the `gemini_python` gempy package.
 
-- *Mosaic* is the Python software described in this document.
+Throughout this document the term *mosaic* will have the following meanings:
+
+- *mosaic* is the Python package described in this document.
 
 - A *mosaic* is the output ndarray resulting from running the *Mosaic* software.
 
-- *Mosaic* is a Python class name defined in this software.
+- *Mosaic* is a Python class name defined in this software. This class is
+  provided to serve as the base class for subclasses implementing Mosaic under
+  different contexts. In the case of the `mosaic` package, **MosaicAD** is 
+  subclassed on **Mosaic** and supports working with AstroData objects.
 
 **What is the Mosaic class**
 
@@ -30,15 +39,17 @@ Through out this document the word *mosaic* has the following meanings:
 
 .. _mos_installation:
 
-**Mosaic scripts availability**
+Mosaic scripts availability
+---------------------------
 
-Mosaic scripts are in the Gemini_python distribution, hence you need to have 
-the distribution available in your machine to use Mosaic.
+Mosaic scripts are in the `gemini_python` distribution, hence you need to have 
+the distribution available on your machine to use Mosaic.
 
 For users inside the Gemini firewall the software installed in the gemini_python
 *gempy* directory which need to be imported before running mosaic.
 
-**What is the MosaicAD class**
+What is the MosaicAD class
+--------------------------
 
 - MosaicAD is a subclass of Mosaic to provide easy support of Gemini astronomical
   data by using the AstroData layer class, allowing instrument-agnostic access to 
@@ -50,17 +61,19 @@ For users inside the Gemini firewall the software installed in the gemini_python
 
 .. _user_help:
 
-**Getting Help**
+Getting Help
+------------
 
 If you experience problems running Mosaic please contact the
 Gemini `Helpdesk <http://www.gemini.edu/sciops/helpdesk/?q=sciops/helpdesk>`_ 
 (under gemini IRAF/Python).
 
-**Quick Example**
+Quick Example
+-------------
 
 Create a mosaic with MosaicAD class.
 
-- This example assumes you have gemini-python installed in your system.
+- The `gemini-python` package is installed on your system.
 
 - Start your favorite Python shell
 
@@ -70,9 +83,7 @@ Create a mosaic with MosaicAD class.
    import gemini_instruments
    from gempy.mosaic.mosaicAD import MosaicAD
 
-   # This is a user function available for your use,
-   # it supports GMOS and GSAOI data
-   #
+   # This is a user function available and supports GMOS and GSAOI data
    from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 - Use *astrodata.open()* to open a FITS file ::
@@ -80,8 +91,8 @@ Create a mosaic with MosaicAD class.
     ad = astrodata.open('S20170427S0064.fits')
 
 - Create a *MosaicAD* Class object.
-  Notice that the user function *gemini_mosaic_function* supports only GMOS 
-  and GSAOI data at this time. ::
+  The user function *gemini_mosaic_function* currently supports only GMOS and 
+  GSAOI data at this time. ::
 
     mo = MosaicAD(ad,mosaic_ad_function=gemini_mosaic_function)
    
@@ -102,23 +113,28 @@ Create a mosaic with MosaicAD class.
 
    display(mosaic_array)
 
-- Running automosaic in your favorite Unix shell. ::
 
-   # Use it with on or more files:
+The `mosaic` package also provides a command line tool called ``automosaic.`` 
+This script is a convenience tool that allows users to pass FITS data to 
+Mosaic/MosaicAD directly from the command line. It provides access to a subset 
+of `mosaic` options. 
+
+E.g.,
+
+Running automosaic in your favorite Unix shell. ::
+
+   # Use it with one or more files:
    automosaic S20170427*.fits
 
-The ``automosaic`` script is a convenience tool that allows users to pass FITS 
-data to Mosaic/MosaicAD directly from the command line. ``automosaic`` is detailed 
-in :ref:`Supplemental Tools <auto_mos>`.
+`automosaic` is detailed  in :ref:`Supplemental Tools <auto_mos>`.
 
 .. _primitives:
 
 Mosaic in Primitives
 --------------------
 
-.. todo::
+.. todo:: (Update required for current or future primitive names.)
 
-(Update required for current primitive names.)
 The primitive **mosaicADdetectors** in the module *primitives_GEMINI.py* handles 
 GMOS and GSAOI images. The parameter 'tile' default value is False, but it can be 
 change via the 'reduce par' option. 
@@ -130,77 +146,3 @@ Example ::
   reduce -r mosaicad -p tile=True S20170427S0064.fits
 
   # where 'mosaicad' refers to a recipe name in the RECIPES_Gemini directory
-
-.. _mos_glossary:
-
-Glossary
-------------
-
-**Astrodata**
-  Python class that serves as an active abstraction for a dataset or a group of 
-  datasets
-
-**amplifier**
-  In the context of the Mosaic class, amplifier is the ndarray containing the 
-  data from any element in the input data list. From the MosaicAD class is the 
-  amount of data from one FITS IMAGE extension limited by the image section 
-  from the header keyword DATASEC.
-
-**array**
-  An array describes the individual component that detect photons within an 
-  instrument; eg, a CCD or an infrared array.
-
-.. _block_def:
-
-**block**
-  Is an ndarray containing one or more amplifier data.
-
-**mask**
-  Ndarray of the same shape (ny,nx); i.e. number of pixels in y and x, as the 
-  output mosaic but with zero as the pixel value for image data and 1 as 
-  non-image data in the output mosaic. Example of non-image data are the gaps 
-  between the blocks and the areas of no data resulting from transformation.
-
-**MosaicData**
-  Python class with functions to verify input data lists. The object created 
-  with this class is required as input to create a Mosaic object. For more 
-  details see :ref:`MosaicData example <help_mdata>`.
-
-**MosaicGeometry**
-  Python class with functions to verify the input data ndarrays geometry 
-  properties values and the geometry of the output mosaic. Some of these 
-  values are rotation, shifting and magnification, and are used to transform 
-  the blocks to match the reference block geometry. For more details see 
-  :ref:`MosaicGeometry example <help_mgeo_example>`.  
-
-**Mosaic**
-  Python base class with low level functionality to generate a mosaic from 
-  MosaicData and MosaicGeometry object inputs. Depending on the amount of 
-  input geometry values supplied when creating the MosaicGeometry, the user 
-  can generate a mosaic with or without transforming blocks. This class object 
-  also contains a mask as an attribute.
-
-**MosaicAD**
-  Python derived class of Mosaic. Together with the Astrodata input object, 
-  this class offers functionality to output an Astrodata object containing 
-  one or more mosaics and/or merged catalogs in binary tables which are 
-  :ref:`associated <mos_associated>` with the mosaics.
-
-.. _why_ndarray:
-
-**ndarray**
-  Is a Numpy (python package for numerical computation) array of values.
-  The term is used in here to make a difference with the CCD array.
-
-**reference block**
-  Is a 1-based tuple (column_number, row_number) with respect to the lower 
-  left origin (1,1), it notes the reference block to which the transformation 
-  values are given. These values are given in the geometry dictionary with key 
-  *transformation*.
-
-.. _mos_transf:
-
-**transformation**
-  The act of applying interpolation to a block to correct for rotation, shifting 
-  and magnification with respect to the reference block.
-
