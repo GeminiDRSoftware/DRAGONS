@@ -1426,17 +1426,10 @@ def fits_ext_comp_key(ext):
     return ret
 
 class FitsLoader(object):
-    @staticmethod
-    def provider_for_hdulist(hdulist):
-        """
-        Returns an instance of the appropriate DataProvider class,
-        according to the HDUList object
-        """
+    def __init__(self, cls = FitsProvider):
+        self._cls = cls
 
-        return FitsProvider()
-
-    @staticmethod
-    def _prepare_hdulist(hdulist):
+    def _prepare_hdulist(self, hdulist):
         new_list = []
         highest_ver = 0
         recognized = set()
@@ -1458,7 +1451,7 @@ class FitsLoader(object):
             elif isinstance(unit, ImageHDU):
                 highest_ver += 1
                 if 'EXTNAME' not in unit.header:
-                    unit.header['EXTNAME'] = (FitsProvider.default_extension, 'Added by AstroData')
+                    unit.header['EXTNAME'] = (self._cls.default_extension, 'Added by AstroData')
                 if unit.header.get('EXTVER') in (-1, None):
                     unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
@@ -1467,26 +1460,38 @@ class FitsLoader(object):
 
         return HDUList(sorted(new_list, key=fits_ext_comp_key))
 
-    @staticmethod
-    def from_path(path):
+    def from_path(self, path):
         hdulist = fits.open(path, memmap=True, do_not_scale_image_data=True)
-        hdulist = FitsLoader._prepare_hdulist(hdulist)
-        provider = FitsLoader.provider_for_hdulist(hdulist)
+        hdulist = self._prepare_hdulist(hdulist)
+        provider = self._cls()
         provider.path = path
         provider._set_headers(hdulist)
         # Note: we don't call _reset_members, to allow for lazy loading...
 
         return provider
 
-    @staticmethod
-    def from_hdulist(hdulist, path=None):
-        provider = FitsLoader.provider_for_hdulist(hdulist)
+    def from_hdulist(self, hdulist, path=None):
+        provider = self._cls()
         provider.path = path
         provider._hdulist = hdulist
         provider._set_headers(hdulist)
         provider._reset_members(hdulist)
 
         return provider
+
+    def load(self, source):
+        """
+        Takes either a string (with the path to a file) or an HDUList as input, and
+        tries to return a populated FitsProvider (or descendant) instance.
+
+        It will raise exceptions if the file is not found, or if there is no match
+        for the HDUList, among the registered AstroData classes.
+        """
+        if isinstance(source, (str, bytes)):
+            return self.from_path(source)
+        else:
+            # NOTE: This should be tested against the appropriate class.
+            return self.from_hdulist(source)
 
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
@@ -1498,6 +1503,16 @@ class AstroDataFits(AstroData):
         'telescope': 'TELESCOP',
         'ut_date': 'DATE-OBS'
     }
+
+    @classmethod
+    def load(cls, source):
+        """
+        Implementation of the abstract method `load`.
+
+        It takes an `HDUList` and returns a fully instantiated `AstroData` instance.
+        """
+
+        return cls(FitsLoader(FitsProvider).load(source))
 
     def _keyword_for(self, name):
         """

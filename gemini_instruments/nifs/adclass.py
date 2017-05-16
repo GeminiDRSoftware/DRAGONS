@@ -18,8 +18,8 @@ class AstroDataNifs(AstroDataGemini):
                           focal_plane_mask = 'APERTURE',
                           observation_epoch = 'EPOCH')
     @staticmethod
-    def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME', '').upper() == 'NIFS'
+    def _matches_data(source):
+        return source[0].header.get('INSTRUME', '').upper() == 'NIFS'
 
     @astro_data_tag
     def _tag_instrument(self):

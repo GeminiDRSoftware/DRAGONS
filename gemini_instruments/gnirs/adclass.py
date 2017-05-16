@@ -17,8 +17,8 @@ class AstroDataGnirs(AstroDataGemini):
                           )
 
     @staticmethod
-    def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME', '').upper() == 'GNIRS'
+    def _matches_data(source):
+        return source[0].header.get('INSTRUME', '').upper() == 'GNIRS'
 
     @astro_data_tag
     def _tag_instrument(self):

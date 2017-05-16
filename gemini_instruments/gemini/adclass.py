@@ -98,8 +98,8 @@ class AstroDataGemini(AstroDataFits):
     __keyword_dict = gemini_keyword_names
 
     @staticmethod
-    def _matches_data(data_provider):
-        obs = data_provider.header[0].get('OBSERVAT', '').upper()
+    def _matches_data(source):
+        obs = source[0].header.get('OBSERVAT', '').upper()
         # This covers variants like 'Gemini-North', 'Gemini North', etc.
         return obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
 

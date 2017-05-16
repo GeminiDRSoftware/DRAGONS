@@ -854,6 +854,17 @@ class AstroData(object):
     multiply = __imul__
     divide = __idiv__
 
+    # This method needs to be implemented as classmethod
+    @abstractmethod
+    def load(cls, source):
+        """
+        Class method that returns an instance of this same class, properly initialized
+        with a `DataProvider` that can deal with the object passed as `source`
+
+        This method is abstract and has to be implemented by derived classes.
+        """
+        pass
+
     def append(self, extension, name=None, *args, **kw):
         """
         Adds a new top-level extension to the provider. Please, read the the concrete
