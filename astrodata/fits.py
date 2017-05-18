@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+from future.utils import PY3
+
 from builtins import object
 from abc import abstractmethod
 from copy import deepcopy
@@ -1071,7 +1073,7 @@ class FitsProvider(DataProvider):
             self._resetting = True
             try:
                 if self.path:
-                    hdulist = FitsLoader._prepare_hdulist(fits.open(self.path))
+                    hdulist = FitsLoader._prepare_hdulist(fits.open(self.path), self.default_extension)
                 else:
                     hdulist = self._hdulist
                 # Make sure that we have an HDUList to work with. Maybe we're creating
@@ -1429,7 +1431,8 @@ class FitsLoader(object):
     def __init__(self, cls = FitsProvider):
         self._cls = cls
 
-    def _prepare_hdulist(self, hdulist):
+    @staticmethod
+    def _prepare_hdulist(hdulist, default_extension='SCI'):
         new_list = []
         highest_ver = 0
         recognized = set()
@@ -1451,7 +1454,7 @@ class FitsLoader(object):
             elif isinstance(unit, ImageHDU):
                 highest_ver += 1
                 if 'EXTNAME' not in unit.header:
-                    unit.header['EXTNAME'] = (self._cls.default_extension, 'Added by AstroData')
+                    unit.header['EXTNAME'] = (default_extension, 'Added by AstroData')
                 if unit.header.get('EXTVER') in (-1, None):
                     unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
@@ -1469,7 +1472,6 @@ class FitsLoader(object):
         # Note: we don't call _reset_members, to allow for lazy loading...
 
         return provider
-
     def from_hdulist(self, hdulist, path=None):
         provider = self._cls()
         provider.path = path
@@ -1487,7 +1489,7 @@ class FitsLoader(object):
         It will raise exceptions if the file is not found, or if there is no match
         for the HDUList, among the registered AstroData classes.
         """
-        if isinstance(source, (str, bytes)):
+        if isinstance(source, (str if PY3 else basestring)):
             return self.from_path(source)
         else:
             # NOTE: This should be tested against the appropriate class.
