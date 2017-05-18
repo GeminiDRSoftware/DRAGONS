@@ -116,10 +116,12 @@ class FlClean(GmosaicParam):
     def __init__(self, inputs=None, params=None, ad=None):
         log.debug("FlClean __init__")
         GmosaicParam.__init__(self, inputs, params)
-        if ad.detector_name(pretty=True) == 'Hamamatsu-N':
-            self.fl_clean = iraf.no
-        else:
-            self.fl_clean = iraf.yes
+        self.fl_clean = iraf.yes
+        # this should not be needed anymore now that BPMs exist.
+        # if ad.detector_name(pretty=True) == 'Hamamatsu-N':
+        #     self.fl_clean = iraf.no
+        # else:
+        #     self.fl_clean = iraf.yes
 
     def prepare(self):
         log.debug("FlClean prepare()")
