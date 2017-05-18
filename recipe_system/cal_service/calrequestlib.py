@@ -223,7 +223,7 @@ def process_cal_requests(cal_requests):
                     log.error("Unable to connect to url {}".format(url))
                     log.error(str(err))
                     continue
-                except Timout as terr:
+                except Timeout as terr:
                     log.error("Request timed out.")
                     log.error(str(terr))
                     continue
@@ -238,7 +238,7 @@ def process_cal_requests(cal_requests):
         except ConnectionError as err:
             log.error("Unable to connect to url {}".format(url))
             log.error(str(err))
-        except Timout as terr:
+        except Timeout as terr:
             log.error("Request timed out.")
             log.error(str(terr))
         else:
