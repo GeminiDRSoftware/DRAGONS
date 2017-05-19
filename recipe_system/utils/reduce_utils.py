@@ -124,7 +124,11 @@ def buildParser(version):
                         "'-r recipefile.recipe_function' "
                         "The fact that the recipe function is dotted with the "
                         "recipe file name implies that multiple user defined "
-                        "recipe functions can be defined in a single file." )
+                        "recipe functions can be defined in a single file. "
+                        "Readers should understand that these recipe files "
+                        "shall behave as python modules and should be named "
+                        "accordingly. I.e., in the example above, 'recipefile'"
+                        "is a python module named,  'recipefile.py' ")
 
     parser.add_argument("--suffix", dest='suffix', default=None,
                         nargs="*", action=UnitaryArgumentAction,
