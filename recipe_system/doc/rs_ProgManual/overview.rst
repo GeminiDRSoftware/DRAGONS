@@ -9,13 +9,13 @@ Overview
 
 The Gemini Recipe System is a pure python package provided by the Gemini
 Observatory's ``gemini_python`` data reduction package. The Recipe System is a
-framework that supports configurable data processing pipelines, i.e.,
-"recipes," and which can accommodate processing pipelines for arbitrary
-dataset types. The Recipe System is written to introspectively exploit features
-of "instrument packages" by effecting arbitrage on specific attributes of
-defined recipes and primitives comprising such packages. Gemini Observatory has
-developed a suite of these recipes and primitives, which can be found in the
-``gemini_python`` package, ``geminidr``.
+framework that supports configurable data processing pipelines, i.e., "recipes," 
+and which can accommodate processing pipelines for arbitrary dataset types. The 
+Recipe System is written to introspectively exploit features of "instrument 
+packages" by effecting arbitrage on specific attributes of defined recipes and 
+primitives comprising such packages. Gemini Observatory has developed a suite of 
+these recipes and primitives, which can be found in the ``gemini_python`` package, 
+``geminidr``.
 
 The Recipe System offers dynamic flow control and automatically executes options
 regarding processing and calibration. These decisions are based on the pixel and
@@ -28,7 +28,7 @@ defined in ``gemini_instruments``. This package provides the definitions for the
 abstractions of Gemini Observatory astronomical observations. Indeed, "AstroData"
 objects and their interfaces provide a common grammar by which the Recipe System
 and the instrument packages identify and work with astronomical datasets. For
-further information and discussion of ``astrodata`` and it's interface, see the
+further information and discussion of ``astrodata`` and its interface, see the
 `Astrodata User's Manual` (:ref:`related`; Document ID:
 PIPE-USER-106_AstrodataUserManual)
 
@@ -50,9 +50,9 @@ Reference Documents
   - `RecipeSystem v2.0 Design Note`, Doc. ID: PIPE-DESIGN-104_RS2.0DesignNote,
     Anderson, K.R., Gemini Observatory, 2017, DPSGdocuments/.
 
-  - `Recipe System Programmer’s Manual`, Doc. ID: PIPE-USER-108_RSProgManual,
+  - `Recipe System v2.0 Programmer’s Manual`, Doc. ID: PIPE-USER-109_RSUsersManual,
     Anderson, K.R., Gemini Observatory, 2017, 
-    gemini_python/recipe_system/doc/rs_ProgManual/.
+    gemini_python/recipe_system/doc/rs_UsersManual/.
 
 .. _related:
 
@@ -67,7 +67,7 @@ Related Documents
 
 Outline of the Recipe System
 ============================
-The following is an outline of the Recipe System, it's command line interface,
+The following is an outline of the Recipe System, its command line interface,
 ``reduce``, and the system's relationship with instrument packages. A brief
 description of each segment of :ref:`schematic` follows.
 
@@ -108,7 +108,7 @@ directly called::
 options to the recipe mappers, which, in turn, use these values to locate and
 indentify applicable primitive classes and recipes. For most users, ``reduce``
 will be the common way to process datasets with the Recipe System. It is this
-command line tool and it's underlying class, ``Reduce``, which are described in
+command line tool and its underlying class, ``Reduce``, which are described in
 vigorous detail in Chapter 3, :ref:`interfaces`.
 
 Mappers

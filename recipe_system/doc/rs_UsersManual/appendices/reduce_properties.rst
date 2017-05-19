@@ -32,24 +32,24 @@ the instance. Use the type specified in the type column.)::
 Examples
 --------
 
-Setting attributes on a Reduce object::
+Setting attributes on a Reduce instance::
 
- >>> reduce = ReduceNH()
- >>> reduce.logfile = "my_reduction.log"
- >>> reduce.recipe = "recipe.my_recipe"
- >>> reduce.files = ['UVW.fits', 'XYZ.fits']
+ >>> myreduce = Reduce()
+ >>> myreduce.logfile = "my_reduction.log"
+ >>> myreduce.recipe = "recipe.my_recipe"
+ >>> myreduce.files = ['UVW.fits', 'XYZ.fits']
 
 Or in other pythonic ways::
 
  >>> file_list = ['FOO.fits', 'BAR.fits']
- >>> reduce.files.extend(file_list)
- >>> reduce.files
+ >>> myreduce.files.extend(file_list)
+ >>> myreduce.files
  ['UVW.fits', 'XYZ.fits', 'FOO.fits', 'BAR.fits']
 
 Users wishing to pass primtive parameters to the recipe_system need only set
-the one (1) attribute, ``userparam``, on the Reduce instance::
+the one attribute, ``userparam``, on the Reduce instance::
 
- >>> reduce.userparam = ['clobber=True']
+ >>> myreduce.userparam = ['clobber=True']
 
 This is the API equivalent to the command line option::
 
@@ -58,7 +58,7 @@ This is the API equivalent to the command line option::
 For muliple primitive parameters, the 'userparam' attribute is a list of 
 'par=val' strings, as in::
 
- >>> reduce.userparam = [ 'par1=val1', 'par2=val2', ... ]
+ >>> myreduce.userparam = [ 'par1=val1', 'par2=val2', ... ]
 
 Example function
 ----------------
@@ -112,6 +112,6 @@ files). Here, each list of ``procfiles`` is then passed to the internal
     if conditions_are_met:
         reduce_conditions_are_met(procfiles)
 
-Readers will see here that calling ``reduce_conditions_are_met()`` without the
-``control_options`` parameter will result in the ``running_contexts`` attribute 
-being set to ``'qa'``.
+Calling ``reduce_conditions_are_met()`` without the ``control_options`` 
+parameter will result in the ``context`` attribute being set to ``'qa'``.
+

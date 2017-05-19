@@ -1,31 +1,66 @@
-.. interfaces.rst
+.. howto.rst
 .. include discuss
 
-.. _interfaces:
+.. _howto:
 
-Interfaces
-==========
+How to Use It
+=============
 
 Introduction
 ------------
 
-The Recipe System provides a command line interface and an application
-programming interface (API). Both allow users to configure and launch a
-Recipe System processing pipeline (a 'recipe') on one or more input datasets.
-Control of the Recipe System on the ``reduce`` command line is provided by a
-variety of options and switches. All options and switches can be accessed and
-controlled through the API.
+The ``reduce`` command is the Recipe System command line interface. The Recipe
+System also provides an application programming interface (API), whereby users
+and developers can programmatically invoke ``Reduce`` and set parameters on an 
+instance of that class.
 
-This chapter will first present details of the command line interface,
-``reduce``, including an extended discussion of :ref:`atfile`. This is followed
-by a detailed presentation on the Recipe System's :ref:`api`.
+Both interfaces allow users to configure and launch a Recipe System processing 
+pipeline (a 'recipe') on one or more input datasets. Control of the Recipe System 
+on the ``reduce`` command line is provided by a variety of options and switches. 
+All options and switches can be accessed and controlled through the API.
 
-Command line interface, ``reduce``
-----------------------------------
+The material presented below shall demonstrate that the ``reduce`` command is 
+quite sophisticated, providing a number of ways to pass arguments to the 
+``Reduce`` class. This chapter will first present details of the ``reduce`` 
+command line interface, including an extended discussion of :ref:`atfile`. This 
+is followed by a detailed presentation on the Recipe System's ``Reduce`` class and
+it's :ref:`api`.
 
-We begin with the command line help provided by ``reduce --help``, followed by 
-further description and discussion of certain non-trivial options. ::
+The ``reduce`` command
+----------------------
 
+Nominal Usage
++++++++++++++
+We begin with the example shown in the :ref:`Introduction <intro>`::
+
+  $ reduce S20161025S0111.fits
+
+With no command line parameters or other options, a default *context* of `'qa'` 
+is set and the default recipe for all instruments is `'reduce_nostack'`, defined 
+for various kinds of datasets and currently used for QAP summit operations. 
+*Unless* passed an explicit recipe (-r, --recipename) and/or context, 
+the Recipe System uses the dataset's astrodata `tags` (or `tagset`) and the 
+Recipe System default `context` to locate the appropriate recipe to run.
+
+Within the ``gemini_python` package, `qa` recipe libraries for a dataset tagged 
+as "GMOS" are defined in the ``geminidr`` package under::
+
+  gmos/recipes/qa
+
+As previously indicated, the command itself is deceptively simple considering 
+the processing that ensues. This simplicity is outward facing, which means 
+the complexity is "under the hood," as ``reduce`` and the ``Reduce`` class use 
+the ``astrodata`` abstraction to determine the recipes and primitive classes 
+appropriate to the dataset(s) presented.
+
+Command Options and Switches
+++++++++++++++++++++++++++++
+
+The ``reduce`` command help is provided by the ``--help`` option. This help is 
+also available as a manual page as (``man reduce``). Subsequently, further 
+description and discussion of certain non-trivial options is presented. ::
+
+  $ reduce --help
   usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--logfile LOGFILE]
               [--loglevel LOGLEVEL] [--logmode LOGMODE]
               [-p USERPARAM [USERPARAM ...]] [-r RECIPENAME] [--suffix SUFFIX]
@@ -165,9 +200,28 @@ Configuration Switches, Options
     See Sec. :ref:`userpars`, for more information on these values.
 
 **-r <RECIPENAME>, --recipe <RECIPENAME>**
-    Specify an explicit recipe to be used rather than internally determined by
-    a dataset's tags. Default is None and later determined by the Recipe 
-    System based on a dataset's tag set and the recipe context.
+    Specify a recipe by name. Users can request non-default system recipe 
+    functions by their simple names, e.g., ``-r qaStack``, OR may specify
+    their own recipe file and recipe function. A user defined recipe function 
+    must be 'dotted' with the recipe file.
+
+    E.g.
+    ::
+
+      -r /path/to/recipes/recipefile.recipe_function
+
+    For a recipe file in the current working directory (cwd), only the file name 
+    is needed
+    ::
+
+     -r recipefile.recipe_function
+
+    The fact that the recipe function is dotted with the recipe file name implies 
+    that multiple user defined recipe functions can be defined in a single file.
+
+    Readers should understand that these recipe files must be *python modules* 
+    and named accordingly. I.e., in the example above, 'recipefile' is a 
+    python module named, ``'recipefile.py'``
 
 **--suffix <SUFFIX>**
     Add 'suffix' to output filenames at end of reduction.
@@ -183,68 +237,6 @@ Configuration Switches, Options
 
     ``--user_cal wcal/gsTest_arc.fits``
 
-Nominal Usage
-+++++++++++++
-The minimal call for reduce can be ::
-
-   $ reduce <dataset.fits>
-
-While this minimal call is available at the Gemini Observatory (see Sec. 
-:ref:`fitsstore`), if a calibration service is unavailable to the user -- 
-likely true for most users -- users should call ``reduce`` on a specified 
-dataset by providing calibration files with the  --user_cal option. 
-
-For example::
-
-  $ reduce --user_cal FOO_bias.fits <dataset.fits>
-
-Such a command for complex processing of data is possible because the Recipe
-System does all the necessary work in determining how the data are to 
-be processed, which is critcially based upon the determination of the `tag set` 
-that applies to that data.
-
-Without any user-specified recipe (-r --recipe), the default recipe is
-``reduce_nostack``, which is defined for various AstroData tag sets and currently
-used for summit operations. Unless passed a explicit recipe (-r --recipename),
-the Recipe System uses the astrodata tag set and context to locate the appropriate
-recipe to run.
-
-The recipe libraries for a GMOS_IMAGE, are defined under::
-
-  GMOS.recipes.QA
-
-and the recipe system will search available recipe libraries for a match. Naming
-of recipe library module(s) is arbitrary. If all defaults are picked up, this 
-results in the ``reduce_nostack`` recipe function being selected and which specifies 
-that the following primitives are called on the data ::
-
- def reduce_nostack(p):
-     p.prepare()
-     p.addDQ()
-     p.addVAR(read_noise=True)
-     p.detectSources()
-     p.measureIQ(display=True))
-     p.measureBG()
-     p.measureCCAndAstrometry()
-     p.overscanCorrect()
-     p.biasCorrect()
-     p.ADUToElectrons()
-     p.addVAR(poisson_noise=True)
-     p.flatCorrect()
-     p.mosaicDetectors()
-     p.makeFringe()
-     p.fringeCorrect()
-     p.detectSources()
-     p.measureIQ(display=True))
-     p.measureBG()
-     p.measureCCAndAstrometry()
-     p.addToList(purpose='forStack')
-
-The point here is not to overwhelm readers with a stack of primitive names, but 
-to present both the default pipeline processing that the above simple ``reduce`` 
-command invokes and to demonstrate how much the ``reduce`` interface abstracts 
-away the complexity of the processing that is engaged with the simplicity of 
-commands.
 
 .. _userpars:
 
@@ -252,35 +244,35 @@ Overriding Primitive Parameters
 +++++++++++++++++++++++++++++++
 
 In some cases, users may wish to change the functional behaviour of certain 
-processing steps, i.e. change default behaviour of primitive 
-functions.
+processing steps, such as changing default parameters of primitive functions.
 
-Each primitive has a set of pre-defined parameters, which are used to control 
-functional behaviour of the primitive. Each defined parameter has a "user 
-override" token, which indicates that a particular parameter may be overridden 
-by the user. Users can adjust parameter values from the reduce command line with 
-the option,
+Each primitive has a set of system-defined parameters, which are used to control 
+functional behaviour of the primitive. Users can adjust parameter values from the 
+reduce command line with the option,
 
     **-p, --param**
 
-If permitted by the "user override" token, parameters and values specified 
-through the **-p, --param** option will `override` the defined 
-parameter default value and may alter default behaviour of the primitive 
-accessing this parameter. A user may pass several parameter-value pairs with 
-this option.
+Parameters and values specified through the **-p, --param** option will `override` 
+the parameter default value and may alter default behaviour of the 
+primitive accessing this parameter. A user may pass several parameter-value pairs 
+with this option.
 
 Eg.::
 
-  $ reduce -p par1=val1 par2=val2 [par3=val3 ... ] <fitsfile1.fits>
+  $ reduce -p operation=mean high_reject=4 low_reject=2 S20161025S0111.fits
 
 User-specified parameter values can be focused on one primitive. For example, 
-if a parameter applies to more than one primitive, for example, the parameter, 
-``threshold``, the user can explicitly direct a new parameter value to a 
-particular primitive. The 'detection threshold' has a defined default, but a 
-user may alter this parameter default to change the source detection behaviour::
+if a parameter applies to more than one primitive, like ``operation``, you can 
+explicitly direct a new parameter value to a particular primitive. The 'detection 
+threshold' has a defined default, but a user may alter this parameter default to 
+change the source detection behaviour::
 
-  $ reduce -p detectSources:threshold=4.5 <fitsfile.fits>
+ $ reduce -p stackFlats:operation=mean high_reject=4 low_reject=2 S20161025S0111.fits 
 
+How is this command line parsed? The ``operation`` parameter for the ``stackFlats``
+primitive function is set to ``mean``. All other primitives having an "operation"
+parameter are unaffected, while the ``high_reject`` and ``low_reject`` parameters
+remain unqualified and applicable to all primitive parameters with the same name.
 
 .. _atfile:
 
@@ -290,7 +282,18 @@ The @file facility
 The reduce command line interface supports what might be called an 'at-file' 
 facility (users and readers familiar with IRAF will recognize this facility). 
 This facility allows users to provide any and all command line options and flags 
-to ``reduce`` via in a single acsii text file.
+to ``reduce`` in an acsii text file and the example command in the previous section
+can be written into a file. Here, we write the following into a file called 
+``reduce_args.par``::
+
+  -p 
+  stackFlats:operation=mean 
+  high_reject=4 
+  low_reject=2
+
+And now the ``reduce`` command looks like, ::
+
+  $ reduce @reduce_args.par S20161025S0111.fits
 
 By passing an @file to ``reduce`` on the command line, users can encapsulate all 
 the options and positional arguments they might wish to specify in a single 
@@ -299,38 +302,41 @@ the options and positional arguments they might wish to specify in a single
 all arguments in the same manner as if they were specified on the command line.
 Essentially, an @file is some or all of the command line and parsed identically.
 
-To illustrate the convenience provided by an '@file', let us begin with an 
-example `reduce` command line that has a number of arguments::
+To further illustrate the convenience provided by an '@file', we'll continue 
+with an example `reduce` command line that has even more arguments. We will 
+also include new positional arguments, i.e., file names::
 
-  $ reduce -p detectSources:threshold=4.5 tpar=100 -r recipe.ArgsTest --context SQ 
-    S20130616S0019.fits N20100311S0090.fits
+  $ reduce -p stackFlats:operation=mean high_reject=4 low_reject=2 
+    -r recipe.ArgsTest --context SQ S20130616S0019.fits N20100311S0090.fits
 
 Ungainly, to be sure. Here, two (2) `user parameters` are being specified 
 with **-p**, a `recipe` with **-r**, and a `context` argument is specified 
-to be **qa** . This can be wrapped in a plain text @file called 
+to be **sq** . This can be wrapped in a plain text @file called, for example,
 `reduce_args.par`::
 
    S20130616S0019.fits
    N20100311S0090.fits
    --param
-   tpar=100
-   detectSources:threshold=4.5
+   stackFlats:operation=mean
+   high_reject=4
+   low_reject=2 
    -r recipe.ArgsTests
-   --context sq
+   --context SQ
 
 This then turns the previous reduce command line into something a little more 
 `keyboard friendly`::
 
   $ reduce @reduce_args.par
 
-The order of these arguments is irrelevant. The above file could be thus written 
-like::
+The order of arguments in an @file is irrelevant, as is the file's name. The above 
+file could be thus written like::
 
   -r recipe.ArgsTests
   --param
-  tpar=100
-  detectSources:threshold=4.5
-  --context qa
+  stackFlats:operation=mean
+  high_reject=4
+  low_reject=2 
+  --context SQ
   S20130616S0019.fits
   N20100311S0090.fits
 
@@ -347,16 +353,16 @@ using comments and tabulation::
 
     # Spec the recipe
     -r 
-        recipe.ArgsTests  # test recipe
+        recipe.ArgsTests         # test recipe
     
     # primitive parameters here
     --param
-        tpar=100
-        detectSources:threshold=4.5
-    
+        stackFlats:operation=mean
+	high_reject=4
+	low_reject=2 
     --context 
-        qa                # QA context
-    
+        qa                       # QA context
+
     S20130616S0019.fits
     N20100311S0090.fits
 
@@ -371,7 +377,8 @@ users may check by adding the **-d** flag::
   -----------------------------------------------------------------
   ['--invoked'] 	     :: invoked 	:: False
   ['-d', '--displayflags']   :: displayflags 	:: True
-  ['-p', '--param'] 	     :: userparam 	:: ['tpar=100', 'detectSources:threshold=4.5']
+  ['-p', '--param'] 	     :: userparam 	:: ['stackFlats:operation=mean', 
+                                                    'high_reject=4','low_reject=2']
   ['--logmode'] 	     :: logmode 	:: standard
   ['-r', '--recipe'] 	     :: recipename 	:: ['recipe.ArgTests']
   ['--logfile'] 	     :: logfile 	:: reduce.log
@@ -393,22 +400,23 @@ on the command line. For example, we may have another file containing a
 list of fits files, separating the command line flags from the positional 
 arguments.
 
-We have a plain text 'fitsfiles' containing the line::
+We have a plain text 'fitsfiles' file containing the line::
 
   test_data/S20130616S0019.fits
 
 We can indicate that this file is to be consumed with the prefix character 
-"@" as well. In this case, the 'reduce_args.par' file could thus appear::
+"@" as well. In this case, we'll name the @file 'parfile', and which could 
+be written as::
 
   # reduce test parameter file 
   
-  @fitsfiles       # file with fits files
-  
+  @fitsfiles             # file with fits files
+
   # primitive parameters.  
   --param
-      detectSources:threshold=4.5
-      tpar=99
-      FOO=BAR
+  stackFlats:operation=mean
+  high_reject=4
+  low_reject=2 
 
   # Spec the recipe
   -r recipe.ArgTests
@@ -444,19 +452,17 @@ while parfile holds all other specifications::
   
   # primitive parameters.
   --param 
-      detectSources:threshold=4.5
-      tpar=99            # This is a test parameter
-      FOO=BAR            # This is a test parameter
+    stackFlats:operation=mean
+    high_reject=4
+    low_reject=2 
   
   # Spec the recipe
   -r recipe.ArgTests
 
-The @file does not need to be located in the current directory.  Normal, 
-directory path syntax applies, for example::
+The @file does not need to be located in the current directory.  Normal directory 
+path syntax applies, for example::
 
    reduce @../../mydefaultparams @fitsfile
-   
-
 
 Overriding @file values
 +++++++++++++++++++++++
@@ -483,17 +489,17 @@ Eg. 1)  Accumulate a new parameter::
   parsed options:
   ---------------
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-  Parameters:    tpar=100, detectSources:threshold=4.5, FOO=BARSOOM
+  Parameters:    stackFlats:operation=mean, high_reject=4, low_reject=2, FOO=BARSOOM
   RECIPE:        recipe.ArgsTest
 
 Eg. 2) Override a parameter in the @file::
 
-  $ reduce @parfile --param tpar=99
+  $ reduce @parfile --param high_reject=5
   
   parsed options:
   ---------------
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-  Parameters:    tpar=99, detectSources:threshold=4.5
+  Parameters:    stackFlats:operation=mean, high_reject=5, low_reject=2
   RECIPE:        recipe.ArgsTest
 
 Eg. 3) Override the recipe::
@@ -503,7 +509,7 @@ Eg. 3) Override the recipe::
   parsed options:
   ---------------
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-  Parameters:    tpar=100, detectSources:threshold=4.5
+  Parameters:    stackFlats:operation=mean, high_reject=4, low_reject=2
   RECIPE:        recipe.FOO
 
 Eg. 4) Override a recipe and specify another fits file. The file names in 
@@ -514,63 +520,129 @@ the @file will be ignored::
   parsed options:
   ---------------
   FITS files:    ['test_data/N20100311S0090_1.fits']
-  Parameters:    tpar=100, detectSources:threshold=4.5
+  Parameters:    stackFlats:operation=mean, high_reject=4, low_reject=2
   RECIPE:        recipe.FOO
 
 .. _api:
 
 Application Programming Interface (API)
 ---------------------------------------
-.. note:: This section describes and discusses the programmatic interface
-	 available on the class Reduce.  This section is for advanced 
-	 users wishing to code using the ``Reduce`` class, rather than using 
-	 ``reduce`` at the command line.
+This section describes and discusses the programmatic interface available on the 
+class Reduce.  This section is for advanced users wishing to code using the 
+``Reduce`` class, rather than using ``reduce`` at the command line.
 
 The ``reduce`` application is essentially a skeleton script providing the 
 described command line interface. After parsing the command line, the script 
 then passes the parsed arguments to its main() function, which in turn calls 
 the Reduce() class constructor with "args". The Reduce class is scriptable by
-any user as the following discussion illustrates.
+users as the following discussion illustrates.
 
-
-Class Reduce, logging, and the runr() method
+Class Reduce, the runr() method, and logging
 ++++++++++++++++++++++++++++++++++++++++++++
 
 The Reduce class is defined under the ``gemini_python`` code base in the 
 ``recipe_system.reduction`` module, ``coreReduce.py``.
 
-The Reduce() class is importable and provides settable attributes and a callable 
+The Reduce class is importable and provides settable attributes and a callable 
 that can be used programmatically. Callers need not supply an "args" parameter 
 to the class initializer, i.e. __init__(). An instance of Reduce will have all 
 the same arguments as in a command line scenario, available as attributes on the 
-instance. Once an instance of Reduce() is instantiated and instance attributes 
-set as needed, there is one (1) method to call, **runr()**. This is the only 
+instance. Once an instance of Reduce is instantiated and instance attributes 
+set as needed, there is one public method to call, **runr()**. This is the only 
 public method on the class.
 
-Eg.,
+E.g.,
 
 >>> from recipe_system.reduction.coreReduce import Reduce
->>> reduce = Reduce()
->>> reduce.files
+>>> myreduce = Reduce()
+>>> myreduce.files
 []
->>> reduce.files.append('S20130616S0019.fits')
->>> reduce.files
+>>> myreduce.files.append('S20130616S0019.fits')
+>>> myreduce.files
 ['S20130616S0019.fits']
 
 Or callers may simply set the ``files`` attribute to be an existing list of files
 
 >>> fits_list = ['FOO.fits', 'BAR.fits']
->>> reduce.files = fits_list
+>>> myreduce.files = fits_list
 
-On the command line, users may specify a recipe with the ``-r`` [ ``--recipe`` ]
-flag. Programmatically, users directly set the recipe::
+On the command line, you can specify a recipe with the ``-r`` [ ``--recipe`` ]
+flag. Programmatically, callers set the recipe directly::
 
->>> reduce.recipename = 'recipe.MyRecipe'
+>>> myreduce.recipename = 'recipe.MyRecipe'
 
 All other properties and  attributes on the API may be set in standard pythonic 
-ways. See Appendix 
-:ref:`Class Reduce: Settable properties and attributes <props>` for further 
-discussion and more examples.
+ways. See Appendix :ref:`Class Reduce: Settable properties and attributes <props>` 
+for further discussion and more examples.
+
+Neither ``coreReduce`` nor the Reduce class initializes any logging activity. This is
+the responsibility of outside parties. Should you wish to log the processing steps 
+-- probably true -- you will have to initialize your own "logger". You are free to 
+provide your own logger, or you can use the fully defined logger provided in 
+*gemini_python*. It is recommended that you use this system logger, as the 
+``reduce`` command line options, and corresponding Reduce attributes, are tuned
+to use the *gemini_python* logger. You will see logger configuration calls in
+the examples below. For details on how to configure this logger, see 
+:ref:`Using the logger <logger>`.
+
+
+Call the runr() method
+^^^^^^^^^^^^^^^^^^^^^^
+
+Once you are satisfied that all attributes are set to the desired values, and 
+the logger is configured, the runr() method on the "reduce" instance may then be
+called. The following brings the examples above into one "end-to-end" use of 
+Reduce and logutils::
+
+  >>> from recipe_system.reduction.coreReduce import Reduce
+  >>> from gempy.utils import logutils
+  >>> reduce = Reduce()
+  >>> reduce.files.append('S20130616S0019.fits')
+  >>> reduce.recipename = 'recipe.MyRecipe'
+  >>> reduce.logfile = 'my_reduce_run.log'
+  >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
+                      console_lvl=reduce.loglevel)
+  >>> reduce.runr()
+  All submitted files appear valid
+  Starting Reduction on set #1 of 1
+  Processing dataset(s):
+  S20130616S0019.fits
+  ...
+
+Processing will then proceed in the usual manner. Astute readers will note that
+callers need not create more than one Reduce instance in order to call runr() 
+with a different dataset or options.
+
+Eg.,::
+
+ >>> from recipe_system.reduction.coreReduce import Reduce
+ >>> from gempy.utils import logutils
+ >>> reduce = Reduce()
+ >>> reduce.files.append('S20130616S0019.fits')
+ >>> reduce.recipename = 'recipe.MyRecipe'
+ >>> reduce.logfile = 'my_reduce_run.log'
+ >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
+                      console_lvl=reduce.loglevel)
+ >>> reduce.runr()
+   ...
+ reduce completed successfully.
+
+ >>> reduce.recipename = 'recipe.NewRecipe'
+ >>> reduce.files = ['newfile.fits']
+ >>> reduce.userparam = ['clobber=True']
+ >>> runr()
+
+Once an attribute is set on an instance, such as above with ``userparam``, it is
+always set on the instance. If, on another call of runr() the caller does not
+wish to have ``clobber=True``, simply reset the property::
+
+>>> reduce.userparam = []
+>>> runr()
+
+Readers may wish to examine the examples in Appendix 
+:ref:`Class Reduce: Settable properties and attributes <props>` 
+
+.. _logger:
 
 Using the logger
 ^^^^^^^^^^^^^^^^
@@ -643,60 +715,3 @@ allowable and default values of these and other options.
 
 .. note:: logutils.config() may be called mutliply, should callers, for example,
 	want to change logfile names for different calls on runr().
-
-Call the runr() method
-^^^^^^^^^^^^^^^^^^^^^^
-
-Once a user is satisfied that all attributes are set to the desired values, and 
-the logger is configured, the runr() method on the "reduce" instance may then be
-called. The following brings the examples above into one "end-to-end" use of 
-Reduce and logutils::
-
-  >>> from recipe_system.reduction.coreReduce import Reduce
-  >>> from gempy.utils import logutils
-  >>> reduce = Reduce()
-  >>> reduce.files.append('S20130616S0019.fits')
-  >>> reduce.recipename = 'recipe.MyRecipe'
-  >>> reduce.logfile = 'my_reduce_run.log'
-  >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
-                      console_lvl=reduce.loglevel)
-  >>> reduce.runr()
-  All submitted files appear valid
-  Starting Reduction on set #1 of 1
-  Processing dataset(s):
-  S20130616S0019.fits
-  ...
-
-Processing will then proceed in the usual manner. Astute readers will note that
-callers need not create more than one Reduce instance in order to call runr() 
-with a different dataset or options.
-
-Eg.,::
-
- >>> from recipe_system.reduction.coreReduce import Reduce
- >>> from gempy.utils import logutils
- >>> reduce = Reduce()
- >>> reduce.files.append('S20130616S0019.fits')
- >>> reduce.recipename = 'recipe.MyRecipe'
- >>> reduce.logfile = 'my_reduce_run.log'
- >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
-                      console_lvl=reduce.loglevel)
- >>> reduce.runr()
-   ...
- reduce completed successfully.
-
- >>> reduce.recipename = 'recipe.NewRecipe'
- >>> reduce.files = ['newfile.fits']
- >>> reduce.userparam = ['clobber=True']
- >>> runr()
-
-Once an attribute is set on an instance, such as above with ``userparam``, it is
-always set on the instance. If, on another call of runr() the caller does not
-wish to have ``clobber=True``, simply reset the property::
-
->>> reduce.userparam = []
->>> runr()
-
-
-Readers may wish to examine the examples in Appendix 
-:ref:`Class Reduce: Settable properties and attributes <props>` 
