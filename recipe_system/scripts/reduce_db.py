@@ -10,7 +10,7 @@ _version = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 
 
-from os.path import expanduser, isdir, exists
+from os.path import expanduser, isdir, exists, basename
 from argparse import ArgumentParser
 from functools import partial
 import sys
@@ -19,7 +19,7 @@ from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
 from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
 from recipe_system.cal_service.localmanager import LocalManager, LocalManagerError
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
-from recipe_system.cal_service.localmanager import ERROR_CANT_READ
+from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
 import traceback
 
 def buildArgumentParser():
@@ -27,6 +27,14 @@ def buildArgumentParser():
     sub = parser.add_subparsers(help="Sub-command help", dest='action')
 
     p_config = sub.add_parser('config', help="Display configuration info")
+
+    p_init = sub.add_parser('init', help="Create and initialize a new "
+                            "database.")
+    p_init.add_argument('-w', '--wipe', dest='wipe', action='store_true',
+                        help="Force the initialization of an already "
+                        "existing database.")
+
+    p_list = sub.add_parser('list', help="List calib files in the current database.")
 
     p_add = sub.add_parser('add', help="Add files to the calibration "
                            "database. One or more files or directories may "
@@ -38,15 +46,13 @@ def buildArgumentParser():
                        "explored recursively. Otherwise, only the first "
                        "level will be searched for FITS files.")
 
-    p_list = sub.add_parser('list', help="List calib files in the current database.")
+    p_remove = sub.add_parser('remove', help="Remove files from the "
+                              "calibration database. One or more files "
+                              "may be specified.")
+    p_remove.add_argument('files', metavar='filenames', nargs='+',
+                          help="FITS file names. Paths will be disregarded.")
 
-    p_wipe = sub.add_parser('init', help="Create and initialize a new "
-                            "database.")
-    p_wipe.add_argument('-w', '--wipe', dest='wipe', action='store_true',
-                        help="Force the initialization of an already "
-                        "existing database.")
-
-    for sp in (p_config, p_add, p_wipe, p_list):
+    for sp in (p_config, p_add, p_init, p_list, p_remove):
         sp.add_argument('-d', '--database', dest='db_path',
                         help="Path to the directory where the database file "
                         "can be found. Optional if the path is defined in a "
@@ -125,6 +131,15 @@ class Dispatcher(object):
                 return -1
 
         return 0
+
+    def _action_remove(self, args):
+        for path in args.files:
+            try:
+                self._mgr.remove_file(basename(path))
+                self._log("Removed {0}".format(path))
+            except LocalManagerError as e:
+                if e.error_type == ERROR_DIDNT_FIND:
+                    log(e.message, sys.stderr)
 
     def _action_init(self, args):
         try:
