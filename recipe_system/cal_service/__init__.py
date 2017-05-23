@@ -22,6 +22,36 @@ globalConf.update_exports({
 })
 # END Setting up the calibs section for config files
 
+def get_calconf():
+    try:
+        return globalConf[CONFIG_SECTION]
+    except KeyError:
+        # This will happen if CONFIG_SECTION has not been defined in any
+        # config file
+        pass
+
+def is_local():
+    try:
+        if get_calconf().standalone:
+           if not localmanager_available:
+                raise RuntimeError(
+                        "Local calibs manager has been chosen, but there "
+                        "are missing dependencies: {}".format(import_error))
+           return True
+    except AttributeError:
+        # This may happend if there's no calibration config section or, in
+        # case there is one, if either calconf.standalone or calconf.database_dir
+        # are not defined
+        pass
+    return False
+
+def handle_returns_factory():
+    return (
+        localmanager.handle_returns
+        if is_local() else
+        transport_request.handle_returns
+    )
+
 def cal_search_factory():
     """
     This function returns the proper calibration search function, depending on
@@ -31,26 +61,11 @@ def cal_search_factory():
     setup, or if the `[calibs]`.`standalone` option is turned off.
     """
 
-    ret = transport_request.calibration_search
-    try:
-        calconf = globalConf[CONFIG_SECTION]
-        if calconf.standalone:
-            if not localmanager_available:
-                raise RuntimeError(
-                        "Local calibs manager has been chosen, but there "
-                        "are missing dependencies: {}".format(import_error))
-            lm = localmanager.LocalManager(calconf.database_dir)
-            ret = lm.calibration_search
-    except KeyError:
-        # This will happen if CONFIG_SECTION has not been defined in any
-        # config file
-        pass
-    except AttributeError:
-        # This may happen if either calconf.standalone or
-        # calconf.database_dir are not defined
-        pass
-
-    return ret
+    return (
+        localmanager.LocalManager(get_calconf().database_dir).calibration_search
+        if is_local() else
+        transport_request.calibration_search
+    )
 
 class Calibrations(dict):
     def __init__(self, calindfile, *args, **kwargs):

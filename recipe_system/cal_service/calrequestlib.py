@@ -12,10 +12,8 @@ from urlparse import urlparse
 
 from gempy.utils import logutils
 
-from gemini_instruments.common import Section
-
 from .caches  import set_caches
-from recipe_system.cal_service import cal_search_factory
+from recipe_system.cal_service import cal_search_factory, handle_returns_factory
 from .file_getter import get_file_iterator, GetterError
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
@@ -108,11 +106,8 @@ def get_cal_requests(inputs, caltype):
 
     """
     options = {'central_wavelength': {'asMicrometers': True}}
-    def _handle_returns(dv):
-        if isinstance(dv, list) and isinstance(dv[0], Section):
-            return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
-        else:
-            return dv
+
+    _handle_returns = handle_returns_factory()
 
     rq_events = []
     for ad in inputs:

@@ -167,6 +167,7 @@ class LocalManager(object):
         try:
             ingest.ingest_file(self.session, filename, directory)
         except Exception as err:
+            self.session.rollback()
             self.remove_file(path)
             raise err
 
@@ -268,3 +269,6 @@ class LocalManager(object):
         except OperationalError:
             message = "There was an error when trying to read from the database."
             raise LocalManagerError(ERROR_CANT_READ, message)
+
+def handle_returns(dv):
+    return dv
