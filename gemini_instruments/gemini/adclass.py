@@ -950,10 +950,10 @@ class AstroDataGemini(AstroDataFits):
         datetime.datetime.time()
             Local time of the observation.
         """
-        local_time = self.phu.get(self._keyword_for('local_time'))
         try:
+            local_time = self.phu[self._keyword_for('local_time')]
             return dateutil.parser.parse(local_time).time()
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, KeyError):
             return None
 
     @astro_data_descriptor
