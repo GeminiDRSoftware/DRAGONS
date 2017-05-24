@@ -1099,8 +1099,7 @@ class FitsProvider(DataProvider):
 
     @property
     def ext_manipulator(self):
-        if len(self.header) < 2:
-            return None
+        assert len(self.header) > 1, "There are no SCI extensions"
         return FitsKeywordManipulator(self.header[1:], on_extensions=True)
 
     @force_load
