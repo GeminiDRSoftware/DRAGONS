@@ -20,9 +20,13 @@ def removeComponentID(instr):
     :param instr: the filter name
     :type instr: string
     :rtype: string
-    :return: the filter name with the component ID removed
+    :return: the filter name with the component ID removed, or `None` if the input is not a valid string
     """
-    m = re.match(r"(?P<filt>.*?)_G(.*?)", instr)
+    try:
+        m = re.match(r"(?P<filt>.*?)_G(.*?)", instr)
+    except TypeError:
+        return None
+
     if not m:
         # There was no "_G" in the input string. Return the input string
         ret_str = str(instr)

@@ -953,7 +953,7 @@ class AstroDataGemini(AstroDataFits):
         local_time = self.phu.get(self._keyword_for('local_time'))
         try:
             return dateutil.parser.parse(local_time).time()
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
     @astro_data_descriptor
@@ -1215,7 +1215,7 @@ class AstroDataGemini(AstroDataFits):
         str
             BG, background brightness, of the observation.
         """
-        return self._raw_to_percentile('raw_bg', self.phu['RAWBG'])
+        return self._raw_to_percentile('raw_bg', self.phu.get('RAWBG'))
 
     @astro_data_descriptor
     def raw_cc(self):
@@ -1227,7 +1227,7 @@ class AstroDataGemini(AstroDataFits):
         str
             CC, cloud coverage of the observation.
         """
-        return self._raw_to_percentile('raw_cc', self.phu['RAWCC'])
+        return self._raw_to_percentile('raw_cc', self.phu.get('RAWCC'))
 
     @astro_data_descriptor
     def raw_iq(self):
@@ -1239,7 +1239,7 @@ class AstroDataGemini(AstroDataFits):
         str
             IQ, image quality, of the observation.
         """
-        return self._raw_to_percentile('raw_iq', self.phu['RAWIQ'])
+        return self._raw_to_percentile('raw_iq', self.phu.get('RAWIQ'))
 
     @astro_data_descriptor
     def raw_wv(self):
@@ -1251,7 +1251,7 @@ class AstroDataGemini(AstroDataFits):
         str
             WV, water vapor, of the observation.
         """
-        return self._raw_to_percentile('raw_wv', self.phu['RAWWV'])
+        return self._raw_to_percentile('raw_wv', self.phu.get('RAWWV'))
 
     @astro_data_descriptor
     def read_mode(self):

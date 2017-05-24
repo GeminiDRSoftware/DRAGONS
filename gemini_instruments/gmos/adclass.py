@@ -8,7 +8,6 @@ from . import lookup
 from .. import gmu
 from ..gemini import AstroDataGemini
 
-
 class AstroDataGmos(AstroDataGemini):
 
     __keyword_dict = dict(array_name = 'AMPNAME',
@@ -356,8 +355,13 @@ class AstroDataGmos(AstroDataGemini):
         stripID |= pretty
         disperser = self.phu.get('GRATING')
         if stripID:
-            disperser = gmu.removeComponentID(disperser).strip('+') if pretty \
-                else gmu.removeComponentID(disperser)
+            disperser = gmu.removeComponentID(disperser)
+            if pretty:
+                try:
+                    disperser = disperser.strip('+')
+                except AttributeError:
+                    pass
+
         return disperser
 
     @astro_data_descriptor
@@ -924,7 +928,7 @@ class AstroDataGmos(AstroDataGemini):
             h = self[0].hdr
             crval = h['CRVAL1']
             ctype = h['CTYPE1']
-        except KeyError:
+        except (KeyError, IndexError):
             crval = self.phu.get('CRVAL1')
             ctype = self.phu.get('CTYPE1')
         return crval if ctype == 'RA---TAN' else None
@@ -945,7 +949,7 @@ class AstroDataGmos(AstroDataGemini):
             h = self[0].hdr
             crval = h['CRVAL2']
             ctype = h['CTYPE2']
-        except KeyError:
+        except (KeyError, IndexError):
             crval = self.phu.get('CRVAL2')
             ctype = self.phu.get('CTYPE2')
         return crval if ctype == 'DEC--TAN' else None
