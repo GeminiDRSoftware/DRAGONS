@@ -5,7 +5,7 @@
 #                                                                  automosaic.py
 # ------------------------------------------------------------------------------
 """
-usage: automosaic [-h] [-d] [-t] [-v] [infiles [infiles ...]]
+usage: automosaic [-h] [-i] [-t] [-v] [infiles [infiles ...]]
 
 Auto mosaic builder.
 
@@ -14,7 +14,7 @@ positional arguments:
 
 optional arguments:
   -h, --help     show this help message and exit
-  -n, --nodq     Do not transform DQ bit planes.
+  -i, --image    Tranform image (SCI) data only.
   -t, --tile     Tile data only.
   -v, --version  show program's version number and exit
 

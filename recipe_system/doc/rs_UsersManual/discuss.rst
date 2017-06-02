@@ -1,6 +1,5 @@
 .. discuss:
-.. include supptools
-.. include userenv
+.. include install
 
 Discussion
 ==========

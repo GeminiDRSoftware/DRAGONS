@@ -49,8 +49,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Recipe System Users Manual'
-copyright = u'2016, Kenneth Anderson'
+project = u'Reduce and Recipe System User Manual'
+copyright = u'Gemini Observatory (AURA), 2017'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -196,14 +196,14 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index-latex', 'RecipeSystemUsersManual.tex', u'Recipe System Users Manual',
+  ('index-latex', 'RecipeSystemUsersManual.tex', u'Reduce and Recipe System User Manual',
    u'Kenneth Anderson', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
 #latex_logo = 'images/gemini_banner_poster.jpeg'
-#latex_logo = 'images/black_gem.png'
+#latex_logo = 'images/gemini_logo_yob.png'
 latex_logo = 'images/GeminiLogo_new_2014.jpg'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
@@ -228,7 +228,7 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'recipesystemusersmanual', u'Recipe System Users Manual',
+    ('index', 'recipesystemusersmanual', u'Reduce and Recipe System User Manual',
      [u'Kenneth Anderson'], 1)
 ]
 
@@ -242,7 +242,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'RecipeSystemUsersManual', u'Recipe System Users Manual',
+  ('index', 'RecipeSystemUsersManual', u'Reduce and Recipe System User Manual',
    u'Kenneth Anderson', 'RecipeSystemUsersManual',
    'Recipe System and reduce "how to"', 'Miscellaneous'),
 ]

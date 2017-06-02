@@ -137,12 +137,15 @@ class Transformation(object):
         offset:     For affine transform, indicates the offset
                     into the array where the transform is applied.
 
-        interpolator: The interpolator function use, values are:
-                    'affine': (Default), uses ndimage.affine_tranform
-                            which uses a spline interpolator of order (order).
+        interpolator: Interpolator function to use, values are:
+
+                    'affine': Uses ndimage.affine_transform(), which uses a
+                              spline interpolator of order (order).
+
                     'map_coords': Uses ndimage.maps_coordinates using a
-                            spline interpolator of order (order)
-                    'dq_data': Uses the method transform_dq.
+                                  spline interpolator of order (order)
+
+                    'dq_data': Uses transform_8bit() or transform_16bit().
 
         order:      The order of the spline interpolator use in
                     ndimage.affine_transform and ndimage.maps_coordinates.
@@ -189,8 +192,8 @@ class Transformation(object):
         self.dq_data = False
         self.matrix  = np.array([[1, 0],[0, 1]])  # default ident matrix
         self.mode    = 'constant'
-        self.offset  = (0.,0.)                    # default offset is 0.
-        self.order   = min(5, max(order, 1))       # Spline order
+        self.offset  = shift
+        self.order   = min(5, max(order, 1))      # Spline order
 
 
     def affine_init(self, imagesize):
@@ -198,15 +201,14 @@ class Transformation(object):
           Set the affine_transformation function parameters:
           matrix and offset.
 
-          Input
-          -----
+          Parameters
+          ----------
             imagesize:
                 Tuple with image.shape values or (npixel_y, npixels_x).
                 These are used to put the center of rotation to the
                 center of the frame.
+
         """
-
-
         # Set rotation origin as the center of the image
         ycen, xcen     = np.asarray(imagesize) / 2.
         xmag, ymag     = self.params['magnification']
@@ -237,8 +239,8 @@ class Transformation(object):
         Front end method to the scipy.ndimage.affine_transform
         function.
 
-        Inputs
-        ------
+        Parameters
+        ----------
             Image: ndarray with image data.
             order:  Spline interpolator order. If 1 it use a linear
                     interpolation method, zero is the 'nearest' method.
@@ -282,8 +284,8 @@ class Transformation(object):
           For each (x,y) there is one (x_out,y_out) which
           are function of rotation, shift and/or magnification.
 
-          Input
-          -----
+          Parameters
+          ----------
             imagesize: The shape of the frame where the (x,y)
                        coordinates are taken from. It sets
                        the center of rotation.
@@ -321,8 +323,8 @@ class Transformation(object):
         """
         Front end to scipy.ndimage.map_cordinates function
 
-        Input
-        -----
+        Parameters
+        ----------
             Image: ndarray with image data.
             order:  Spline interpolator order. If 1 it use a linear
                     interpolation method, zero is the 'nearest' method.
@@ -360,21 +362,18 @@ class Transformation(object):
         return image
 
 
-    def transform(self, data, **kwargs):
+    def transform(self, data):
         """
           High level method to drive an already set transformation
           function. The default one is 'affine'
 
         """
-        kwargs.update({'matrix': self.matrix})
-        kwargs.update({'order' : self.order})
-        kwargs.update({'output_shape': data.shape})
         if self.affine:                         # Use affine_transform
             output = self.affine_transform(data)
         elif self.map_coords:                   # Use map_coordinates
             output = self.map_coordinates(data)
         elif self.dq_data:                      # DQ data use map_coordinates
-            output = self._transform_16bit(data, **kwargs)
+            output = self._transform_16bit(data)
         else:
             raise ValueError("Transform function not defined.")
 
@@ -512,7 +511,6 @@ class Transformation(object):
                 do_nans = True
  
             trans_mask = self.map_coordinates(mask, cval=cval)
-            del mask
 
             # Get the nans indices:
             if do_nans:
@@ -534,7 +532,7 @@ class Transformation(object):
 
         return outdata
 
-    def _transform_16bit(self, mask, **kwargs):
+    def _transform_16bit(self, mask):
         """
         Transform the DQ plane, bit by bit. Since np.unpackbits() only works
         on uint8 data, we have to do this by hand.
@@ -544,23 +542,15 @@ class Transformation(object):
         mask: A 16-bit mask to be transformed.
         type: <ndarray>
 
-        kwargs: dict providing
-                 'matrix',
-                 'offset',
-                 'order',
-                 'output_shape' - of the transformed array.
-
         """
-        trans_mask = np.zeros(kwargs['output_shape'], dtype=np.uint16)
+        trans_mask = np.zeros(mask.shape, dtype=np.uint16)
         for j in range(0, 16):
             bit = 2**j
             # Only transform bits that have a pixel set. But we always want
             # to do one transformation so we can pad the data with DQ.no_data
             if bit == DQMap['no_data'] or np.sum(mask & bit) > 0:
-                temp_mask = nd.affine_transform((mask & 2**j).astype(np.float32),
-                cval=DQMap['no_data'] if bit == DQMap['no_data'] else 0,**kwargs)
-
-                trans_mask += np.where(np.abs(temp_mask > 0.01*bit), bit,
-                                       0).astype(np.uint16)
+                cval=DQMap['no_data'] if bit == DQMap['no_data'] else 0
+                temp_mask = self.affine_transform((mask & 2**j).astype(np.float32), cval=cval)
+                trans_mask += np.where(np.abs(temp_mask > 0.01*bit), bit, 0).astype(np.uint16)
 
         return trans_mask

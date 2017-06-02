@@ -8,7 +8,7 @@ import psutil
 
 def findexe(exe):
     """
-    Function recieves an executable name, 'exe', as a string, and returns
+    Function receives an executable name, 'exe', as a string, and returns
     a list of pids that match the name.
 
     Parameters:

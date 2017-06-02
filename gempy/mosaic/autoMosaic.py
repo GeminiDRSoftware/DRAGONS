@@ -41,12 +41,12 @@ class AutoMosaic(object):
         """
         Parameters:
         -----------
-        args: list of input filenames
-        type: <list>
+        args: A argparse Namespace object or duck typed as one.
+        type: <Namespace>
 
         Returns:
         --------
-        <void>
+        <instance>
 
         """
         self.files = args.infiles

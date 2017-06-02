@@ -1,7 +1,6 @@
 .. supptools:
 .. include discuss
-.. include userenv
-.. include interfaces
+.. include howto
 
 Supplemental tools
 ==================
@@ -22,13 +21,13 @@ will work directly.
 adcc
 ----
 The application that has historically been known as the ``adcc``, the Automated
-Data Communication Center, is significantly scaled back from it's previous
+Data Communication Center, is significantly scaled back from its previous
 (v1.0) incarnation and now runs only as an HTTP server. The webservice provided
 by the ``adcc`` allows both the Recipe System and primitive functions to post
 data produced during data processing. These data comprise image quality and
 weather related metrics, passed to the web server in the form of messages
 encapsulating the metrics data. The metrics themselves are produced by
-three (3) specific primitive functions, ``measureIQ``, ``measuerBG``, and
+three specific primitive functions, ``measureIQ``, ``measuerBG``, and
 ``measureCC``, which respectively measure image quality, background level,
 and cloud cover (measured atmospheric extinction).
 
@@ -66,7 +65,7 @@ quality and weather related metrics that are passed to the adcc as message event
 Users wishing to use the adcc to monitor QA metrics need to simply open a web
 browser on the service's URL.
 
-.. figure:: images/adcc_light_metrics.png
+.. figure:: images/adcc_dark_metrics.png
 
    Snapshot of the Nighttime Metrics GUI, using the "dark" theme and displaying
    the metrics retrieved from fitsstore for operational day 20170209.

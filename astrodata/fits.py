@@ -1617,7 +1617,3 @@ class AstroDataFits(AstroData):
                 raise ValueError("{} is not an integer EXTVER".format(ver))
         except KeyError as e:
             raise IndexError("EXTVER {} not found".format(e.args[0]))
-
-# TODO: Remove this when we're sure that there are no external uses
-def write(filename, ad_object, clobber=False):
-    ad_object._dataprov.to_hdulist().writeto(filename, clobber=clobber)

@@ -170,10 +170,10 @@ RS_SCRIPTS = [ os.path.join('recipe_system', 'scripts', 'adcc'),
                os.path.join('recipe_system', 'scripts', 'superclean'),
              ]
 
-GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'fwhm_histogram'),
+GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'automosaic.py'),
+                  os.path.join('gempy', 'scripts', 'fwhm_histogram'),
                   os.path.join('gempy', 'scripts', 'gmoss_fix_HAM_BPMs.py'),
                   os.path.join('gempy', 'scripts', 'gmoss_fix_headers.py'),
-                  os.path.join('gempy', 'scripts', 'mosaicFactory.py'),
                   os.path.join('gempy', 'scripts', 'pipeline2iraf'),
                   os.path.join('gempy', 'scripts', 'profile_all_obj'),
                   os.path.join('gempy', 'scripts', 'psf_plot'),

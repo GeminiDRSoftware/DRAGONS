@@ -155,7 +155,7 @@ as the system will find them on its own.
 The Demo
 --------
 
-The images will be displayed at times.  Therefore, start ds9::
+Images will be displayed at times.  Therefore, start ds9::
 
    ds9 &
 
@@ -264,7 +264,3 @@ It is good practice to reset the RecipeSystem state when you are done::
 Your files will stay there, only some hidden RecipeSystem directories 
 and files will be deleted.
 
-Limitations
------------
-
-[ `Limitations of the new Recipe System 2.0 are still being determined.` ]
