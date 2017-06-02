@@ -40,7 +40,7 @@ class AstroDataFactory(object):
                     # Just ignore the error. Assume that it is a not supported format
                     # and go for the next opener
                     pass
-            raise AstroDataError("Not supported format for: {}".format(source))
+            raise AstroDataError("Not access, or not supported format for: {}".format(source))
         else:
             return source
 
