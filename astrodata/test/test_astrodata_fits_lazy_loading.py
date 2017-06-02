@@ -30,11 +30,11 @@ def test_for_length():
 
 def test_keyword_changes_preserved_on_lazy_loading():
     ad = from_test_data('GMOS/N20110826S0336.fits')
-    ad.phu.RAWIQ = 'Any'
-    del ad.phu.RAWCC
-    del ad[0].hdr.DATATYPE
+    ad.phu['RAWIQ'] = 'Any'
+    del ad.phu['RAWCC']
+    del ad[0].hdr['DATATYPE']
 
     ad._lazy_populate_object() # Force lazy load
-    assert ad.phu.RAWIQ == 'Any'
+    assert ad.phu['RAWIQ'] == 'Any'
     assert 'RAWCC' not in ad.phu
     assert 'DATATYPE' not in ad[0].hdr

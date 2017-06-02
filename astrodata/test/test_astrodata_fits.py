@@ -19,7 +19,7 @@ def test_iterate_over_extensions():
     ad = from_test_data('GMOS/N20110826S0336.fits')
     metadata = (('SCI', 1), ('SCI', 2), ('SCI', 3))
     for ext, md in zip(ad, metadata):
-        assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == md
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
 def test_slice_range():
     ad = from_test_data('GMOS/N20110826S0336.fits')
@@ -27,7 +27,7 @@ def test_slice_range():
     slc = ad[1:]
     assert len(slc) == 2
     for ext, md in zip(slc, metadata):
-        assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == md
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
 def test_slice_multiple():
     ad = from_test_data('GMOS/N20110826S0336.fits')
@@ -35,20 +35,20 @@ def test_slice_multiple():
     slc = ad[1, 2]
     assert len(slc) == 2
     for ext, md in zip(slc, metadata):
-        assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == md
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
 def test_slice_single():
     ad = from_test_data('GMOS/N20110826S0336.fits')
     metadata = ('SCI', 2)
     ext = ad[1]
     assert ext.is_single
-    assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == metadata
+    assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == metadata
 
 def test_iterate_over_single_slice():
     ad = from_test_data('GMOS/N20110826S0336.fits')
     metadata = ('SCI', 1)
     for ext in ad[0]:
-        assert (ext.hdr.EXTNAME, ext.hdr.EXTVER) == metadata
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == metadata
 
 def test_slice_negative():
     ad = from_test_data('GMOS/N20110826S0336.fits')
@@ -81,23 +81,28 @@ def test_remove_a_keyword_from_phu():
 
 def test_read_a_keyword_from_phu_deprecated():
     ad = from_test_data('GMOS/N20110826S0336.fits')
-    assert ad.phu.DETECTOR == 'GMOS + Red1'
+    with pytest.raises(AttributeError):
+        assert ad.phu.DETECTOR == 'GMOS + Red1'
 
 def test_read_a_keyword_from_hdr_deprecated():
     ad = from_test_data('GMOS/N20110826S0336.fits')
-    assert ad.hdr.CCDNAME == ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']
+    with pytest.raises(AttributeError):
+        assert ad.hdr.CCDNAME == ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']
 
 def test_set_a_keyword_on_phu_deprecated():
     ad = from_test_data('GMOS/N20110826S0336.fits')
-    ad.phu.DETECTOR = 'FooBar'
-    ad.phu.ARBTRARY = 'BarBaz'
-    assert ad.phu.DETECTOR == 'FooBar'
-    assert ad.phu.ARBTRARY == 'BarBaz'
+    with pytest.raises(AssertionError):
+        ad.phu.DETECTOR = 'FooBar'
+        ad.phu.ARBTRARY = 'BarBaz'
+        assert ad.phu.DETECTOR == 'FooBar'
+        assert ad.phu.ARBTRARY == 'BarBaz'
+        assert ad.phu['DETECTOR'] == 'FooBar'
 
 def test_remove_a_keyword_from_phu_deprecated():
     ad = from_test_data('GMOS/N20110826S0336.fits')
-    del ad.phu.DETECTOR
-    assert 'DETECTOR' not in ad.phu
+    with pytest.raises(AttributeError):
+        del ad.phu.DETECTOR
+        assert 'DETECTOR' not in ad.phu
 
 # Regression:
 

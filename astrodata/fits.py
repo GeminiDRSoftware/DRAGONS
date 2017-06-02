@@ -10,6 +10,7 @@ import os
 from functools import partial, wraps
 import logging
 import warnings
+
 try:
     # Python 3
     from itertools import zip_longest
@@ -50,34 +51,37 @@ class KeywordCallableWrapper(object):
             return self.coercion_fn(ret)
         return wrapper
 
-class FitsKeywordManipulator(object):
-    def __init__(self, headers, on_extensions=False, single=False):
-        self.__dict__.update({
-            "_headers": headers,
-            "_single": single,
-            "_on_ext": on_extensions
-        })
+class FitsHeaderCollection(object):
+    """
+    FitsHeaderCollection(headers)
 
-    def _ret_ext(self, values):
-        if self._single and len(self._headers) == 1:
-            return values[0]
-        else:
-            return values
+    This class provides group access to a list of PyFITS Header-like objects.
+    It exposes a number of methods (`set`, `get`, etc.) that operate over all
+    the headers at the same time.
 
-    @property
-    def keywords(self):
-        if self._on_ext:
-            return self._ret_ext([set(h.keys()) for h in self._headers])
-        else:
-            return set(self._headers[0].keys())
+    It can also be iterated.
+    """
+    def __init__(self, headers):
+        self.__headers = headers
 
-    def show(self):
-        if self._on_ext:
-            for n, header in enumerate(self._headers):
-                print("==== Header #{} ====".format(n))
-                print(repr(header))
-        else:
-            print(repr(self._headers[0]))
+    def __iter__(self):
+        for h in self.__headers:
+            yield h
+
+#    @property
+#    def keywords(self):
+#        if self._on_ext:
+#            return self._ret_ext([set(h.keys()) for h in self.__headers])
+#        else:
+#            return set(self.__headers[0].keys())
+#
+#    def show(self):
+#        if self._on_ext:
+#            for n, header in enumerate(self.__headers):
+#                print("==== Header #{} ====".format(n))
+#                print(repr(header))
+#        else:
+#            print(repr(self.__headers[0]))
 
     def __setitem__(self, key, value):
         if isinstance(value, tuple):
@@ -86,67 +90,52 @@ class FitsKeywordManipulator(object):
             self.set(key, value=value)
 
     def set(self, key, value=None, comment=None):
-        for header in self._headers:
+        for header in self.__headers:
             header.set(key, value=value, comment=comment)
 
     def __getitem__(self, key):
-        if self._on_ext:
-            raised = False
-            missing_at = []
-            ret = []
-            for n, header in enumerate(self._headers):
-                try:
-                    ret.append(header[key])
-                except KeyError:
-                    missing_at.append(n)
-                    ret.append(None)
-                    raised = True
-            if raised:
-                error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
-                error.missing_at = missing_at
-                error.values = ret
-                raise error
-            return self._ret_ext(ret)
-        else:
-            return self._headers[0][key]
+        raised = False
+        missing_at = []
+        ret = []
+        for n, header in enumerate(self.__headers):
+            try:
+                ret.append(header[key])
+            except KeyError:
+                missing_at.append(n)
+                ret.append(None)
+                raised = True
+        if raised:
+            error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
+            error.missing_at = missing_at
+            error.values = ret
+            raise error
+        return ret
 
     def get(self, key, default=None):
         try:
             return self[key]
         except KeyError as err:
-            if self._on_ext:
-                vals = err.values
-                for n in err.missing_at:
-                    vals[n] = default
-                return self._ret_ext(vals)
-            else:
-                return default
+            vals = err.values
+            for n in err.missing_at:
+                vals[n] = default
+            return vals
 
     def __delitem__(self, key):
         self.remove(key)
 
     def remove(self, key):
-        if self._on_ext:
-            deleted = 0
-            for header in self._headers:
-                try:
-                    del header[key]
-                    deleted = deleted + 1
-                except KeyError:
-                    pass
-            if not deleted:
-                raise KeyError("'{}' is not on any of the extensions".format(key))
-        else:
+        deleted = 0
+        for header in self.__headers:
             try:
-                del self._headers[0][key]
+                del header[key]
+                deleted = deleted + 1
             except KeyError:
-                raise KeyError("'{}' is not on the PHU".format(key))
+                pass
+        if not deleted:
+            raise KeyError("'{}' is not on any of the extensions".format(key))
 
     def get_comment(self, key):
-        if self._on_ext:
-            return self._ret_ext([header.comments[key] for header in self._headers])
-        else:
-            return self._headers[0].comments[key]
+        return [header.comments[key] for header in self.__headers]
 
     def set_comment(self, key, comment):
         def _inner_set_comment(header):
@@ -155,33 +144,15 @@ class FitsKeywordManipulator(object):
 
             header.set(key, comment=comment)
 
-        if self._on_ext:
-            for n, header in enumerate(self._headers):
-                try:
-                    _inner_set_comment(header)
-                except KeyError as err:
-                    err.message = err.message + " at header {}".format(n)
-                    raise
-        else:
-            _inner_set_comment(self._headers[0])
-
-    def __getattr__(self, key):
-        warnings.warn("Access to cards through attribute name is deprecated and will be removed in the future", DeprecationWarning)
-        return self[key]
-
-    def __setattr__(self, key, value):
-        warnings.warn("Setting card values through attribute name is deprecated and will be removed in the future", DeprecationWarning)
-        self[key] = value
-
-    def __delattr__(self, key):
-        warnings.warn("Removing cards through attribute name is deprecated and will be removed in the future", DeprecationWarning)
-        del self[key]
+        for n, header in enumerate(self.__headers):
+            try:
+                _inner_set_comment(header)
+            except KeyError as err:
+                err.message = err.message + " at header {}".format(n)
+                raise
 
     def __contains__(self, key):
-        if self._on_ext:
-            return any(tuple(key in h for h in self._headers))
-        else:
-            return key in self._headers[0]
+        return any(tuple(key in h for h in self.__headers))
 
 def new_imagehdu(data, header, name=None):
 # Assigning data in a delayed way, won't reset BZERO/BSCALE in the header,
@@ -469,10 +440,6 @@ class FitsProviderProxy(DataProvider):
         return self
 
     @property
-    def header(self):
-        return [self._provider._header[idx] for idx in [0] + [n+1 for n in self._mapping]]
-
-    @property
     def data(self):
         if self.is_single:
             return self._mapped_nddata(0).data
@@ -546,9 +513,13 @@ class FitsProviderProxy(DataProvider):
         else:
             return self._mapped_nddata(0)
 
-    @property
-    def ext_manipulator(self):
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True, single=self.is_single)
+    def hdr(self):
+        headers = [self._provider._header[idx] for idx in [n+1 for n in self._mapping]]
+
+        if self.is_single:
+            return headers[0]
+        else:
+            return FitsHeaderCollection(headers)
 
     def set_name(self, ext, name):
         self._provider.set_name(self._mapping[ext], name)
@@ -1024,10 +995,6 @@ class FitsProvider(DataProvider):
                 name = other.header['EXTNAME']
                 if name in self._tables:
                     continue
-    # TODO: Fix it
-    # NOTE: This happens with GPI. Let's leave it for later...
-    #            if other.header.get('EXTVER', -1) >= 0:
-    #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
                 added = self._append(other, name=name, reset_ver=False)
         finally:
             self._resetting = prev_reset
@@ -1063,10 +1030,6 @@ class FitsProvider(DataProvider):
     def orig_filename(self):
         return self._orig_filename
 
-    @property
-    def header(self):
-        return self._header
-
     def _lazy_populate_object(self):
         prev_reset = self._resetting
         if self._nddata is None:
@@ -1091,19 +1054,16 @@ class FitsProvider(DataProvider):
     def nddata(self):
         return self._nddata
 
-    @property
     def phu(self):
-        return self.header[0]
+        return self._header[0]
 
-    @property
-    def phu_manipulator(self):
-        return FitsKeywordManipulator(self.header[:1])
-
-    @property
-    def ext_manipulator(self):
-        if len(self.header) < 2:
+    def hdr(self, single=False):
+        if len(self._header) < 2:
             return None
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True)
+        if (single or self._single):
+            return self._header[1]
+        else:
+            return FitsHeaderCollection(self._header[1:])
 
     @force_load
     def set_name(self, ext, name):
@@ -1298,10 +1258,10 @@ class FitsProvider(DataProvider):
             try:
                 # If we're lazy-loading data, it may be that the header is already there. Check for existance first
                 # and do a sanity check to make sure that both header and the data will match positions
-                hdpos = self.header.index(hd) - 1
+                hdpos = self._header.index(hd) - 1
                 assert (hdpos == len(self._nddata)), "Appending new data with existing header, which does not match positions"
             except ValueError:
-                self.header.append(hd)
+                self._header.append(hd)
             if reset_ver:
                 self._reset_ver(new_nddata)
             self._nddata.append(new_nddata)
@@ -1311,7 +1271,7 @@ class FitsProvider(DataProvider):
         return new_nddata
 
     def _set_nddata(self, n, new_nddata):
-        self.header[n+1] = new_nddata.meta['header']
+        self._header[n+1] = new_nddata.meta['header']
         self._nddata[n] = new_nddata
 
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
@@ -1553,11 +1513,11 @@ class AstroDataFits(AstroData):
 
     @property
     def phu(self):
-        return self._dataprov.phu_manipulator
+        return self._dataprov.phu()
 
     @property
     def hdr(self):
-        return self._dataprov.ext_manipulator
+        return self._dataprov.hdr()
 
     def info(self):
         self._dataprov.info(self.tags)
