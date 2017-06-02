@@ -514,7 +514,7 @@ class FitsProviderProxy(DataProvider):
             return self._mapped_nddata(0)
 
     def hdr(self):
-        headers = [self._provider._header[idx] for idx in [n+1 for n in self._mapping]]
+        headers = [self._provider._ext_header(idx) for idx in self._mapping]
 
         if self.is_single:
             return headers[0]
@@ -559,14 +559,6 @@ class FitsProviderProxy(DataProvider):
     def info(self, tags):
         self._provider.info(tags, indices=self._mapping)
 
-def force_load(fn):
-    @wraps(fn)
-    def wrapper(self, *args, **kw):
-        # Force the loading of data, we may need it later
-        self._lazy_populate_object()
-        return fn(self, *args, **kw)
-    return wrapper
-
 class FitsProvider(DataProvider):
     default_extension = 'SCI'
     def __init__(self):
@@ -575,7 +567,7 @@ class FitsProvider(DataProvider):
         self.__dict__.update({
             '_sliced': False,
             '_single': False,
-            '_header': None,
+            '_phu': None,
             '_nddata': None,
             '_hdulist': None,
             '_path': None,
@@ -595,7 +587,7 @@ class FitsProvider(DataProvider):
 
     def __deepcopy__(self, memo):
         nfp = FitsProvider()
-        to_copy = ('_sliced', '_single', '_header', '_nddata', '_hdulist',
+        to_copy = ('_sliced', '_phu', '_single', '_nddata', '_hdulist',
                    '_path', '_orig_filename', '_tables', '_exposed',
                    '_resetting')
         for attr in to_copy:
@@ -603,13 +595,12 @@ class FitsProvider(DataProvider):
 
         return nfp
 
-    @force_load
     def _clone(self, mapping=None):
         if mapping is None:
             mapping = range(len(self))
 
         dp = FitsProvider()
-        dp._header = [deepcopy(self._header[0])]
+        dp._phu = deepcopy(self._phu)
         for n in mapping:
             dp.append(deepcopy(self._nddata[n]))
         for t in self._tables.values():
@@ -620,7 +611,6 @@ class FitsProvider(DataProvider):
     def is_settable(self, attr):
         return attr in self._fixed_settable or attr.isupper()
 
-    @force_load
     def _getattr_impl(self, attribute, nds):
         # Exposed objects are part of the normal object interface. We may have
         # just lazy-loaded them, and that's why we get here...
@@ -634,7 +624,6 @@ class FitsProvider(DataProvider):
 
         raise AttributeError("Not found")
 
-    @force_load
     def __getattr__(self, attribute):
         try:
             return self._getattr_impl(attribute, self._nddata)
@@ -660,7 +649,6 @@ class FitsProvider(DataProvider):
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
 
-    @force_load
     def __delattr__(self, attribute):
         # TODO: So far we're only deleting tables by name.
         #       Figure out what to do with aliases
@@ -671,7 +659,6 @@ class FitsProvider(DataProvider):
         except KeyError:
             raise AttributeError("'{}' is not a global table for this instance".format(attribute))
 
-    @force_load
     def _oper(self, operator, operand, indices=None):
         if indices is None:
             indices = tuple(range(len(self._nddata)))
@@ -810,7 +797,6 @@ class FitsProvider(DataProvider):
         self._lazy_populate_object()
         return self._exposed.copy()
 
-    @force_load
     def _slice(self, indices, multi=True):
         return FitsProviderProxy(self, indices, single=not multi)
 
@@ -818,54 +804,16 @@ class FitsProvider(DataProvider):
         for n in range(len(self)):
             yield self._slice((n,), multi=False)
 
-    @force_load
     def __getitem__(self, slc):
-        nitems = len(self._header) - 1 # The Primary HDU does not count
+        nitems = len(self._nddata)
         indices, multiple = normalize_indices(slc, nitems=nitems)
         return self._slice(indices, multi=multiple)
 
-    @force_load
     def __delitem__(self, idx):
-        nitems = len(self._header) - 1 # The Primary HDU does not count
-        if idx >= nitems or idx < (-nitems):
-            raise IndexError("Index out of range")
-
-        del self._header[idx + 1]
         del self._nddata[idx]
 
     def __len__(self):
-        self._lazy_populate_object()
         return len(self._nddata)
-
-#    def _set_headers(self, hdulist, update=True):
-#        new_headers = [hdulist[0].header] + [x.header for x in hdulist[1:] if
-#                                                (x.header.get('EXTNAME') in ('SCI', None))]
-#        # When update is True, self._header should NEVER be None, but check anyway
-#        if update and self._header is not None:
-#            assert len(self._header) == len(new_headers)
-#            self._header = [update_header(ha, hb) for (ha, hb) in zip(new_headers, self._header)]
-#        else:
-#            self._header = new_headers
-#        tables = [unit for unit in hdulist if isinstance(unit, BinTableHDU)]
-#        for table in tables:
-#            name = table.header.get('EXTNAME')
-#            if name == 'OBJCAT':
-#                continue
-#            self._tables[name] = None
-#            self._exposed.add(name)
-
-    def _set_headers(self, hdulist):
-        new_headers = [hdulist[0].header] + [x.header for x in hdulist[1:] if
-                                                (x.header.get('EXTNAME') in (FitsProvider.default_extension, None))]
-
-        self._header = new_headers
-        tables = [unit for unit in hdulist if isinstance(unit, BinTableHDU)]
-        for table in tables:
-            name = table.header.get('EXTNAME')
-            if name == 'OBJCAT':
-                continue
-            self._tables[name] = None
-            self._exposed.add(name)
 
     # NOTE: This one does not make reference to self at all. May as well
     #       move it out
@@ -959,32 +907,29 @@ class FitsProvider(DataProvider):
         self._resetting = True
         def_ext = FitsProvider.default_extension
         try:
+            # Initialize the object containers to a bare minimum
+            self._phu = hdulist[0].header
             self._tables = {}
+            self._nddata = []
+
             seen = set([hdulist[0]])
 
             skip_names = set([def_ext, 'REFCAT', 'MDF'])
 
-            def search_for_associated(ver):
-                return [x for x in hdulist
-                          if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
+            def associated_extensions(ver):
+                for unit in hdulist:
+                    header = unit.header
+                    if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
+                        yield unit
 
-            self._nddata = []
             sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == def_ext]
 
-            # We've loaded the SCI headers *beforehand*. Use those instead of the ones
-            # coming from the file. The user may have manipulated them by now.
-            for idx, unit in enumerate(sci_units, 1):
+            for idx, unit in enumerate(sci_units):
                 seen.add(unit)
-                prev_header = self._header[idx]
-                ver = prev_header.get('EXTVER', -1)
-                # Use the header that we had saved in memory as a template, no the
-                # one that came from disk
-                new_unit = ImageHDU(unit.data, prev_header)
-                # ImageHDU generates a new header instance! Replace it in the internal cache
-                self._header[idx] = new_unit.header
-                nd = self._append(new_unit, name=def_ext, reset_ver=False)
+                ver = unit.header.get('EXTVER', -1)
+                nd = self._append(unit, name=def_ext, reset_ver=False)
 
-                for extra_unit in search_for_associated(ver):
+                for extra_unit in associated_extensions(ver):
                     seen.add(extra_unit)
                     name = extra_unit.header.get('EXTNAME')
                     self._append(extra_unit, name=name, add_to=nd)
@@ -993,8 +938,6 @@ class FitsProvider(DataProvider):
                 if other in seen:
                     continue
                 name = other.header['EXTNAME']
-                if name in self._tables:
-                    continue
                 added = self._append(other, name=name, reset_ver=False)
         finally:
             self._resetting = prev_reset
@@ -1049,31 +992,34 @@ class FitsProvider(DataProvider):
             finally:
                 self._resetting = prev_reset
 
+    def _ext_header(self, obj):
+        if isinstance(obj, int):
+            # Assume that 'obj' is an index
+            obj = self.nddata[obj]
+        return obj.meta['header']
+
     @property
-    @force_load
     def nddata(self):
         return self._nddata
 
     def phu(self):
-        return self._header[0]
+        return self._phu
 
     def hdr(self, single=False):
-        if len(self._header) < 2:
+        if not self.nddata:
             return None
         if (single or self._single):
-            return self._header[1]
+            return self._ext_header(0)
         else:
-            return FitsHeaderCollection(self._header[1:])
+            return FitsHeaderCollection([self._ext_header(n) for n in self.nddata])
 
-    @force_load
     def set_name(self, ext, name):
         self._nddata[ext].meta['name'] = name
 
-    @force_load
     def to_hdulist(self):
 
         hlst = HDUList()
-        hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
+        hlst.append(PrimaryHDU(header=self.phu(), data=DELAYED))
 
         for ext in self._nddata:
             meta = ext.meta
@@ -1101,7 +1047,6 @@ class FitsProvider(DataProvider):
 
         return hlst
 
-    @force_load
     def table(self):
         return self._tables.copy()
 
@@ -1110,7 +1055,6 @@ class FitsProvider(DataProvider):
         return set(self._tables.keys())
 
     @property
-    @force_load
     def data(self):
         return [nd.data for nd in self._nddata]
 
@@ -1119,7 +1063,6 @@ class FitsProvider(DataProvider):
         raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
-    @force_load
     def uncertainty(self):
         return [nd.uncertainty for nd in self._nddata]
 
@@ -1128,7 +1071,6 @@ class FitsProvider(DataProvider):
         raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
-    @force_load
     def mask(self):
         return [nd.mask for nd in self._nddata]
 
@@ -1137,7 +1079,6 @@ class FitsProvider(DataProvider):
         raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
-    @force_load
     def variance(self):
         def variance_for(nd):
             if nd.uncertainty is not None:
@@ -1255,13 +1196,6 @@ class FitsProvider(DataProvider):
         hd = new_nddata.meta['header']
         hname = hd.get('EXTNAME', def_ext)
         if hname == def_ext:
-            try:
-                # If we're lazy-loading data, it may be that the header is already there. Check for existance first
-                # and do a sanity check to make sure that both header and the data will match positions
-                hdpos = self._header.index(hd) - 1
-                assert (hdpos == len(self._nddata)), "Appending new data with existing header, which does not match positions"
-            except ValueError:
-                self._header.append(hd)
             if reset_ver:
                 self._reset_ver(new_nddata)
             self._nddata.append(new_nddata)
@@ -1271,7 +1205,6 @@ class FitsProvider(DataProvider):
         return new_nddata
 
     def _set_nddata(self, n, new_nddata):
-        self._header[n+1] = new_nddata.meta['header']
         self._nddata[n] = new_nddata
 
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
@@ -1423,24 +1356,6 @@ class FitsLoader(object):
 
         return HDUList(sorted(new_list, key=fits_ext_comp_key))
 
-    def from_path(self, path):
-        hdulist = fits.open(path, memmap=True, do_not_scale_image_data=True)
-        hdulist = self._prepare_hdulist(hdulist)
-        provider = self._cls()
-        provider.path = path
-        provider._set_headers(hdulist)
-        # Note: we don't call _reset_members, to allow for lazy loading...
-
-        return provider
-    def from_hdulist(self, hdulist, path=None):
-        provider = self._cls()
-        provider.path = path
-        provider._hdulist = hdulist
-        provider._set_headers(hdulist)
-        provider._reset_members(hdulist)
-
-        return provider
-
     def load(self, source):
         """
         Takes either a string (with the path to a file) or an HDUList as input, and
@@ -1449,11 +1364,20 @@ class FitsLoader(object):
         It will raise exceptions if the file is not found, or if there is no match
         for the HDUList, among the registered AstroData classes.
         """
+
+        provider = self._cls()
+
         if isinstance(source, (str if PY3 else basestring)):
-            return self.from_path(source)
+            hdulist = fits.open(source, memmap=True, do_not_scale_image_data=True, mode='readonly')
+            provider.path = source
         else:
-            # NOTE: This should be tested against the appropriate class.
-            return self.from_hdulist(source)
+            hdulist = source
+            provider.path = None
+
+        hdulist = self._prepare_hdulist(hdulist)
+        provider._reset_members(hdulist)
+
+        return provider
 
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
