@@ -1,5 +1,5 @@
 import os
-from ..config import globalConf
+from ..config import globalConf, STANDARD_REDUCTION_CONF, DEFAULT_DIRECTORY
 from . import transport_request
 from . import caches
 
@@ -22,12 +22,32 @@ globalConf.update_exports({
 })
 # END Setting up the calibs section for config files
 
+def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
+    """
+    Load the configuration from the specified path to file
+    (or files), and initialize it with some defaults
+    """
+
+    globalConf.load(conf_path,
+            defaults = {
+                CONFIG_SECTION: {
+                    'standalone': False,
+                    'database_dir': DEFAULT_DIRECTORY
+                    }
+                })
+
+    return get_calconf()
+
+def update_calconf(items):
+    globalConf.update(CONFIG_SECTION, items)
+
 def get_calconf():
     try:
         return globalConf[CONFIG_SECTION]
     except KeyError:
         # This will happen if CONFIG_SECTION has not been defined in any
-        # config file
+        # config file, and no defaults have been set (shouldn't happen if
+        # the user has called 'load_calconf' before.
         pass
 
 def is_local():

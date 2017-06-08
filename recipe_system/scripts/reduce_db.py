@@ -16,7 +16,7 @@ from functools import partial
 import sys
 
 from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
-from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
+from recipe_system.cal_service import load_calconf, update_calconf, get_calconf
 from recipe_system.cal_service.localmanager import LocalManager, LocalManagerError
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
 from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
@@ -95,7 +95,7 @@ class Dispatcher(object):
         usage(self._parser, message)
 
     def _action_config(self, args):
-        conf = globalConf[CAL_CONFIG_SECTION]
+        conf = get_calconf()
         print("Using configuration file: {}".format(STANDARD_REDUCTION_CONF))
         print()
         print("The active database directory is:  {}".format(conf.database_dir))
@@ -177,18 +177,17 @@ if __name__ == '__main__':
     argp, subp = buildArgumentParser()
     args = argp.parse_args(sys.argv[1:])
 
-    globalConf.load(STANDARD_REDUCTION_CONF)
+    conf = load_calconf()
 
     # Override some options if the user has specified the path to
     # a database
     if args.db_path is not None:
-        globalConf.update(CAL_CONFIG_SECTION, dict(
+        update_calconf(dict(
             standalone=True,
             database_dir=args.db_path
         ))
 
     ret = -1
-    conf = globalConf[CAL_CONFIG_SECTION]
     try:
         if not conf.standalone:
             usage(argp, message="The database is not configured as standalone.")

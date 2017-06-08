@@ -24,6 +24,7 @@ from ConfigParser import SafeConfigParser
 from collections import defaultdict
 
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
+DEFAULT_DIRECTORY = '/tmp'
 
 class Section(object):
     """
@@ -122,7 +123,7 @@ class ConfigObject(object):
         """
         prev = self._sections[section].as_dict() if section in self._sections else {}
         prev.update(values)
-        self._sections[section] = Section(values)
+        self._sections[section] = Section(prev)
 
     def update_exports(self, expdict):
         """Updates the internal export table that will be used to share config
@@ -171,7 +172,9 @@ class ConfigObject(object):
 
         defaults : dict, optional
             If some options are not found, and you want to set up a default value,
-            specify them in here.
+            specify them in here. Every key in the dictionary is the name of a section
+            in the config file, and each element is another dictionary establishing
+            attribute-value pairs for that section.
 
         env_override : bool, optional
             If true, after loading values from the configuration files, the
@@ -183,16 +186,24 @@ class ConfigObject(object):
         if type(filenames) in types.StringTypes:
             filenames = (filenames,)
 
+        # Set the default values
+        if defaults is not None:
+            for section, sub_items in defaults.items():
+                current_section_conf = self._sections.get(section, Section({})).as_dict()
+                for key, value in sub_items.items():
+                    if key not in current_section_conf:
+                        current_section_conf[key] = value
+                self._sections[section] = Section(current_section_conf)
 
         cp = SafeConfigParser()
+
         cp.read(map(os.path.expanduser, filenames))
 
         translate = Converter(self._conv.copy(), cp)
 
+        # Coerce values and apply overrides
         for section in cp.sections():
             values = {}
-            if type(defaults) == dict:
-                values.update(defaults)
 
             for key in cp.options(section):
                 values[key] = translate.from_config_file(section, key)
