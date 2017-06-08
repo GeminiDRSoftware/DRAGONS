@@ -16,6 +16,8 @@ from .reduceActions import ParameterAction
 from .reduceActions import CalibrationAction
 from .reduceActions import UnitaryArgumentAction
 
+from ..cal_service import localmanager_available
+
 # ------------------------------------------------------------------------------
 class ReduceHelpFormatter(HelpFormatter):
     """
@@ -146,6 +148,11 @@ def buildParser(version):
                         "calibration types. "
                         "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
+    if localmanager_available:
+        parser.add_argument("--local_db", dest='local_db_dir', default=None,
+                            help="Point to a directory where the local database "
+                            "for calibration association can be found. Default "
+                            "is to look it up in the config file (if there's any")
     return parser
 
 # --------------------------- Emulation functions ------------------------------

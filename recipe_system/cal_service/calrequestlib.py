@@ -4,10 +4,6 @@
 import hashlib
 import requests
 
-from requests.exceptions import HTTPError
-from requests.exceptions import Timeout
-from requests.exceptions import ConnectionError
-
 from os import mkdir
 from os.path import basename, exists
 from os.path import join, split
@@ -16,10 +12,9 @@ from urlparse import urlparse
 
 from gempy.utils import logutils
 
-from gemini_instruments.common import Section
-
 from .caches  import set_caches
-from recipe_system.cal_service import cal_search_factory
+from recipe_system.cal_service import cal_search_factory, handle_returns_factory
+from .file_getter import get_file_iterator, GetterError
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
@@ -37,10 +32,9 @@ descriptor_list = ['amp_read_area', 'camera', 'central_wavelength', 'coadds',
                    'ut_datetime', 'read_mode', 'well_depth_setting']
 # ------------------------------------------------------------------------------
 def get_request(url, filename):
-    r = requests.get(url, timeout=10.0)
-    r.raise_for_status()
+    iterator = get_file_iterator(url)
     with open(filename, 'wb') as fd:
-        for chunk in r.iter_content(chunk_size=128):
+        for chunk in iterator:
             fd.write(chunk)
     return filename
 
@@ -112,11 +106,8 @@ def get_cal_requests(inputs, caltype):
 
     """
     options = {'central_wavelength': {'asMicrometers': True}}
-    def _handle_returns(dv):
-        if isinstance(dv, list) and isinstance(dv[0], Section):
-            return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
-        else:
-            return dv
+
+    _handle_returns = handle_returns_factory()
 
     rq_events = []
     for ad in inputs:
@@ -204,7 +195,6 @@ def process_cal_requests(cal_requests):
             if cached_md5 == calmd5:
                 log.stdinfo("Cached calibration {} matched.".format(cachename))
                 _add_cal_record(rq, cachename)
-                continue
             else:
                 log.stdinfo("File {} is cached but".format(calname))
                 log.stdinfo("md5 checksums DO NOT MATCH")
@@ -213,34 +203,19 @@ def process_cal_requests(cal_requests):
                 try:
                     calname = get_request(calurl, cachename)
                     _add_cal_record(rq, cachename)
-                    continue
-                except HTTPError as err:
-                    errstr = "Could not retrieve {}".format(calurl)
-                    log.error(errstr)
-                    log.error(str(err))
-                    continue
-                except ConnectionError as err:
-                    log.error("Unable to connect to url {}".format(url))
-                    log.error(str(err))
-                    continue
-                except Timout as terr:
-                    log.error("Request timed out.")
-                    log.error(str(terr))
-                    continue
+                except GetterError as err:
+                    for message in err.messages:
+                        log.error(message)
+            continue
 
         log.status("Making request for {}".format(calurl))
         fname = split(calurl)[1]
         calname = join(cachedir, fname)
         try:
             calname = get_request(calurl, calname)
-        except HTTPError as err:
-            log.error(str(err))
-        except ConnectionError as err:
-            log.error("Unable to connect to url {}".format(url))
-            log.error(str(err))
-        except Timout as terr:
-            log.error("Request timed out.")
-            log.error(str(terr))
+        except GetterError as err:
+            for message in err.messages:
+                log.error(message)
         else:
             # hash compare
             download_mdf5 = generate_md5_digest(calname)
