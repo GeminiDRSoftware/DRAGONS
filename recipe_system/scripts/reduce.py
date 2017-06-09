@@ -13,6 +13,7 @@ Prototype reduce (New Hope).
 
 """
 # ---------------------------- Package Import ----------------------------------
+import os
 import sys
 
 from gempy.utils import logutils
@@ -23,6 +24,9 @@ from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_args
 from recipe_system.utils.reduce_utils import normalize_context
 from recipe_system.utils.reduce_utils import show_parser_options
+
+from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
+from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
 
 # ------------------------------------------------------------------------------
 def main(args):
@@ -97,6 +101,8 @@ if __name__ == "__main__":
     version_report = _version
     parser = buildParser(version_report)
     args = parser.parse_args()
+
+    globalConf.load(STANDARD_REDUCTION_CONF)
     # Deal with argparse structures that are different than optparse
     args = normalize_args(args)
     args.context = normalize_context(args.context)
@@ -106,5 +112,12 @@ if __name__ == "__main__":
         for item in ["Input fits file(s):\t%s" % inf for inf in args.files]:
             print(item)
         sys.exit()
+
+    if args.local_db_dir is not None:
+        globalConf.update(CAL_CONFIG_SECTION, dict(
+                    standalone=True,
+                    database_dir=os.path.expanduser(args.local_db_dir)
+        ))
+    globalConf.export_section(CAL_CONFIG_SECTION)
 
     sys.exit(main(args))

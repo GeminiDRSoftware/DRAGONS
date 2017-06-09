@@ -2,12 +2,15 @@ import os
 from os.path import abspath, basename, dirname, isdir
 import warnings
 from collections import namedtuple
+import sys
 
 from sqlalchemy.exc import SAWarning, OperationalError
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 from gemini_calmgr import orm
+from gemini_calmgr.orm import NoResultFound
 from gemini_calmgr.orm import file
+from gemini_calmgr.orm import header
 from gemini_calmgr.orm import diskfile
 from gemini_calmgr.orm import preview
 from gemini_calmgr.cal import get_cal_object
@@ -46,6 +49,8 @@ DEFAULT_DB_NAME = 'cal_manager.db'
 
 ERROR_CANT_WIPE = 0
 ERROR_CANT_CREATE = 1
+ERROR_CANT_READ = 2
+ERROR_DIDNT_FIND = 3
 
 FileData = namedtuple('FileData', 'name path')
 
@@ -126,6 +131,28 @@ class LocalManager(object):
             message = "There was an error when trying to create the database. Please, check your path and permissions."
             raise LocalManagerError(ERROR_CANT_CREATE, message)
 
+    def remove_file(self, path):
+        directory = abspath(dirname(path))
+        filename = basename(path)
+
+        File, DiskFile, Header = file.File, diskfile.DiskFile, header.Header
+        objects_to_delete = []
+        try:
+            file_obj = self.session.query(File).filter(File.name == filename).one()
+            objects_to_delete.append(file_obj)
+        except NoResultFound:
+            raise LocalManagerError(ERROR_DIDNT_FIND,
+                                    "Could not find any {} file in the database".format(filename))
+        else:
+            diskfiles = self.session.query(DiskFile).filter(DiskFile.file_id == file_obj.id).all()
+            objects_to_delete.extend(diskfiles)
+            headers = []
+            for df_obj in diskfiles:
+                headers.extend(self.session.query(Header).filter(Header.diskfile_id == df_obj.id).all())
+            for obj in reversed(objects_to_delete):
+                self.session.delete(obj)
+            self.session.commit()
+
     def ingest_file(self, path):
         """Registers a file into the database
 
@@ -137,7 +164,12 @@ class LocalManager(object):
         directory = abspath(dirname(path))
         filename = basename(path)
 
-        ingest.ingest_file(self.session, filename, directory)
+        try:
+            ingest.ingest_file(self.session, filename, directory)
+        except Exception as err:
+            self.session.rollback()
+            self.remove_file(path)
+            raise err
 
     def ingest_directory(self, path, walk=False, log=None):
         """Registers into the database all FITS files under a directory
@@ -170,7 +202,7 @@ class LocalManager(object):
 
         Parameters
         ----------
-        rq : dict
+        rq : CalibrationRequest
             Contains the search criteria, including instrument, descriptors,
             etc.
         fullResult : bool
@@ -191,17 +223,13 @@ class LocalManager(object):
         """
         from datetime import datetime
 
-        print "\n@ppu074: calibration_search() ..."
-
-        caltype = rq["caltype"]
-        descripts = rq["descriptors"]
-        types = rq["types"]
+        caltype = rq.caltype
+        descripts = rq.descriptors
+        types = rq.tags
 
         if "ut_datetime" in descripts:
             utc = descripts["ut_datetime"]
-            pyutc = datetime.strptime(utc.value, "%Y%m%dT%H:%M:%S")
-            print "@ppu079: OBS UT Date Time:", pyutc
-            descripts.update({"ut_datetime":pyutc})
+            descripts.update({"ut_datetime":utc})
 
         for (type_, desc) in extra_descript.items():
             descripts[desc] = type_ in types
@@ -229,31 +257,18 @@ class LocalManager(object):
 
                 return ('file://{}'.format(path), cal.diskfile.data_md5)
 
-        # sent_nones = "No Nones Set" if not nones else ", ".join(nones)
-        # preerr = RESPONSESTR % { "sequence": pformat(sequence),
-        #                          "response": response.strip(),
-        #                          "nones"   : sent_nones }
-
-        # try:
-        #     dom = minidom.parseString(response)
-        #     calel = dom.getElementsByTagName("calibration")
-        #     calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
-        #     calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
-        # except IndexError:
-        #     print "No url for calibration in response, calibration not found"
-        #     return (None, preerr)
-        # except:
-        #     return (None, preerr)
-
-        #print "prs70:", calurlel.data
-
-        #@@TODO: test only 
-        # print "@ppu165: ", repr(calurlel.data)
-        # return (calurl, calurlmd5)
+        return (None, "Could not find a proper calibration in the local database")
 
     def list_files(self):
         File, DiskFile = file.File, diskfile.DiskFile
 
-        query = self.session.query(File.name, DiskFile.path).join(DiskFile)
-        for res in query.order_by(File.name):
-            yield FileData(res[0], res[1])
+        try:
+            query = self.session.query(File.name, DiskFile.path).join(DiskFile)
+            for res in query.order_by(File.name):
+                yield FileData(res[0], res[1])
+        except OperationalError:
+            message = "There was an error when trying to read from the database."
+            raise LocalManagerError(ERROR_CANT_READ, message)
+
+def handle_returns(dv):
+    return dv
