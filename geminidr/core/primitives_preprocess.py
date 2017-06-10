@@ -381,7 +381,7 @@ class Preprocess(PrimitivesBASE):
                     # Add the appropriate value to this extension
                     log.fullinfo("Background level is {:.0f} for {}:{}".
                                  format(bg, ad.filename, ext.hdr['EXTVER']))
-                    difference = ref - bg
+                    difference = np.float32(ref - bg)
                     log.fullinfo("Adding {:.0f} to match reference background "
                                      "level {:.0f}".format(difference, ref))
                     ext.add(difference)

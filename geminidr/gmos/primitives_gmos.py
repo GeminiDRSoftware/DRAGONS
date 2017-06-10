@@ -319,7 +319,7 @@ class GMOS(Gemini, CCD):
 
                 # using "-=" won't change from int to float
                 ext.data = ext.data - np.tile(bias(np.arange(0, ext.data.shape[0])),
-                                             (ext.data.shape[1],1)).T
+                                             (ext.data.shape[1],1)).T.astype(np.float32)
 
                 ext.hdr.set('OVERSEC', '[{}:{},{}:{}]'.format(x1+1,x2,y1+1,y2),
                             self.keyword_comments['OVERSEC'])
