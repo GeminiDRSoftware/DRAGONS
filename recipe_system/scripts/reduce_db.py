@@ -1,32 +1,40 @@
 #!/usr/bin/env python
 #
-#                                                                  gemini_python
-#
 #                                                                   reduce_db.py
 # ------------------------------------------------------------------------------
-# $Id$
+# reduce_db.py -- local calibration database management tool
 # ------------------------------------------------------------------------------
-__version__      = '$Rev$'[6:-1]
-__version_date__ = '$Date$'[7:-3]
-# ------------------------------------------------------------------------------
-# reduce_db.py -- calibration database management tool
-# ------------------------------------------------------------------------------
-_version = '0.1'
+from __future__ import print_function
+
+_version = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 
-from os.path import expanduser, isdir
+
+from os.path import expanduser, isdir, exists, basename
 from argparse import ArgumentParser
 from functools import partial
 import sys
 
 from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
-from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
+from recipe_system.cal_service import load_calconf, update_calconf, get_calconf
 from recipe_system.cal_service.localmanager import LocalManager, LocalManagerError
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
+from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
+import traceback
 
 def buildArgumentParser():
     parser = ArgumentParser(description="Calibration Database Management Tool")
     sub = parser.add_subparsers(help="Sub-command help", dest='action')
+
+    p_config = sub.add_parser('config', help="Display configuration info")
+
+    p_init = sub.add_parser('init', help="Create and initialize a new "
+                            "database.")
+    p_init.add_argument('-w', '--wipe', dest='wipe', action='store_true',
+                        help="Force the initialization of an already "
+                        "existing database.")
+
+    p_list = sub.add_parser('list', help="List calib files in the current database.")
 
     p_add = sub.add_parser('add', help="Add files to the calibration "
                            "database. One or more files or directories may "
@@ -38,15 +46,13 @@ def buildArgumentParser():
                        "explored recursively. Otherwise, only the first "
                        "level will be searched for FITS files.")
 
-    p_list = sub.add_parser('list', help="List calib files in the current database.")
+    p_remove = sub.add_parser('remove', help="Remove files from the "
+                              "calibration database. One or more files "
+                              "may be specified.")
+    p_remove.add_argument('files', metavar='filenames', nargs='+',
+                          help="FITS file names. Paths will be disregarded.")
 
-    p_wipe = sub.add_parser('init', help="Create and initialize a new "
-                            "database.")
-    p_wipe.add_argument('-w', '--wipe', dest='wipe', action='store_true',
-                        help="Force the initialization of an already "
-                        "existing database.")
-
-    for sp in (p_add, p_wipe, p_list):
+    for sp in (p_config, p_add, p_init, p_list, p_remove):
         sp.add_argument('-d', '--database', dest='db_path',
                         help="Path to the directory where the database file "
                         "can be found. Optional if the path is defined in a "
@@ -67,9 +73,9 @@ def log(message, stream, bold=False, add_newlines=0):
     if stream is not None:
         if bold:
             message = "\x1b[1m{0}\x1b[0m".format(message)
-        print >> stream, message
+        print(message, file=stream)
         if add_newlines > 0:
-            print >> stream, '\n' * add_newlines,
+            print('\n' * add_newlines, file=stream)
 
 class Dispatcher(object):
     def __init__(self, parser, manager, log):
@@ -88,6 +94,22 @@ class Dispatcher(object):
     def usage(self, message):
         usage(self._parser, message)
 
+    def _action_config(self, args):
+        conf = get_calconf()
+        print("Using configuration file: {}".format(STANDARD_REDUCTION_CONF))
+        print()
+        print("The active database directory is:  {}".format(conf.database_dir))
+        path = self._mgr._db_path
+        print("Thus the database file to be used: {}".format(path))
+        if not exists(path):
+            print("   NB: The database does not exist. Please initialize it.")
+            print("       (Read the help message about 'init' command)")
+        print()
+        if conf.standalone:
+            print("The 'standalone' flag is active, meaning that local calibrations will be used")
+        else:
+            print("The 'standalone' flag is not active, meaning that remote calibrations will be downloaded")
+
     def _action_add(self, args):
         for path in args.files:
             try:
@@ -104,10 +126,20 @@ class Dispatcher(object):
                     self._mgr.ingest_file(path)
                     self._log("Ingested {0}".format(path))
             except IOError as e:
-                print e
+                traceback.print_last()
+                print(e, file=sys.stderr)
                 return -1
 
         return 0
+
+    def _action_remove(self, args):
+        for path in args.files:
+            try:
+                self._mgr.remove_file(basename(path))
+                self._log("Removed {0}".format(path))
+            except LocalManagerError as e:
+                if e.error_type == ERROR_DIDNT_FIND:
+                    log(e.message, sys.stderr)
 
     def _action_init(self, args):
         try:
@@ -126,23 +158,36 @@ class Dispatcher(object):
         return 0
 
     def _action_list(self, args):
-        for file_data in self._mgr.list_files():
-            print "{:30} {}".format(file_data.name, file_data.path)
+        try:
+            total = 0
+            for file_data in self._mgr.list_files():
+                total += 1
+                print("{:30} {}".format(file_data.name, file_data.path))
+            if total == 0:
+                print("There are no files in the database")
+        except LocalManagerError as e:
+            if e.error_type == ERROR_CANT_READ:
+                self.usage(message="Could not read information from the database. "
+                           "Have you initialized it? (Use --help and read about 'init' command)")
+            else:
+                log(e.message, sys.stderr, bold=True)
+            return -1
 
 if __name__ == '__main__':
     argp, subp = buildArgumentParser()
     args = argp.parse_args(sys.argv[1:])
 
-    globalConf.load(STANDARD_REDUCTION_CONF)
+    conf = load_calconf()
 
+    # Override some options if the user has specified the path to
+    # a database
     if args.db_path is not None:
-        globalConf.update(CAL_CONFIG_SECTION, dict(
+        update_calconf(dict(
             standalone=True,
             database_dir=args.db_path
         ))
 
     ret = -1
-    conf = globalConf[CAL_CONFIG_SECTION]
     try:
         if not conf.standalone:
             usage(argp, message="The database is not configured as standalone.")
@@ -154,6 +199,7 @@ if __name__ == '__main__':
                               log=partial(log, stream=logstream))
             ret = disp.apply(act, args)
     except AttributeError as e:
+        raise
         usage(argp, message="The database location is undefined.")
 
     sys.exit(ret)
