@@ -16,6 +16,7 @@ Recipe System Users Manual
 
    intro
    overview
+   mappers
    interfaces
    ack
 
@@ -27,5 +28,6 @@ Appendix
    :maxdepth: 1
 
    appendices/glossary
+   appendices/primitives_catalog
 
 .. todolist::

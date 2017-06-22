@@ -185,10 +185,10 @@ class Reduce(object):
             except KeyboardInterrupt:
                 log.error("Caught KeyboardInterrupt (^C) signal")
                 xstat = signal.SIGINT
-            except Exception as err:
-                log.error("runr() caught an unhandled exception.")
-                log.error(str(err))
-                xstat = signal.SIGABRT
+            # except Exception as err:
+            #     log.error("runr() caught an unhandled exception.")
+            #     log.error(str(err))
+            #     xstat = signal.SIGABRT
 
         self._write_final(p.streams['main'])
         if xstat != 0:

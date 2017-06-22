@@ -1,4 +1,5 @@
-.. include discuss
+.. include overview
+.. include interfaces
 
 .. _intro:
 
@@ -6,21 +7,27 @@
 Introduction
 ************
 
-This document is version 2.0 (beta) of the Recipe System Programmer's Manual.
-Primarily, this document presents detailed information and discussion
-regarding the Recipe System and the programmatic interfaces on the underlying 
-classes, ``RecipeMapper`` and ``PrimitiveMapper``.
+This document is the Recipe System Programmer's Manual, which covers version 2.0
+(beta) of the *gemini_python* Recipe System. This document presents detailed 
+information and discussion about the programmatic interfaces on the system's 
+underlying classes, ``RecipeMapper`` and ``PrimitiveMapper``. This document 
+describes usage of the Recipe System's application programming interface (API).
 
-Subsequent to this introduction, this document provides a brief, high-level
-overview of the Recipe System (Chapter 2, :ref:`overview`), which is then
-followed by a detailed presentation of the above mentioned interfaces in
-Chapter 3, :ref:`interfaces`.
+Subsequent to this introduction, this document provides a high-level overview 
+of the Recipe System (:ref:`Chapter 2, Overview <overview>`), which is then 
+followed by an introduction to the mapper classes in 
+:ref:`Chapter 3, The Mappers <mapps>`. The document then presents the interfaces
+on the mapper classes and how to use them to retrieve the appropriate recipes 
+and primitives.
 
-This document will further describe usage of the Recipe System's application
-programming interface (API). Details and information about the ``astrodata``
-package, the Recipe System, and/or the data processing involved in data
-reduction are beyond the scope of this document and will only be engaged when
-directly pertinent to the operations of the Recipe System.
+This document provides instruction on how to write recipes the Recipe System 
+can recognise and use, how one can interactively run a recipe, step by step, 
+perform discovery on the data processed, and pass adjusted parameters to the 
+next step of a recipe.
+
+Details and information about the ``astrodata`` package and/or the data processing 
+involved in data reduction are beyond the scope of this document and will only be 
+engaged when directly pertinent to the operations of the Recipe System.
 
 Installation
 ============

@@ -42,8 +42,8 @@ for various kinds of datasets and currently used for QAP summit operations.
 the Recipe System uses the dataset's astrodata `tags` (or `tagset`) and the 
 Recipe System default `context` to locate the appropriate recipe to run.
 
-Within the ``gemini_python` package, `qa` recipe libraries for a dataset tagged 
-as "GMOS" are defined in the ``geminidr`` package under::
+Within the ``gemini_python`` package, `qa` recipe libraries for a dataset taken
+with GMOS are defined in the ``geminidr`` package under::
 
   gmos/recipes/qa
 
@@ -95,11 +95,12 @@ description and discussion of certain non-trivial options is presented. ::
   -r RECIPENAME, --recipe RECIPENAME
                         Specify a recipe by name. Users can request non-
                         default system recipe functions by their simple names,
-                        e.g., -r qaStack, OR may specify their own recipe file
-                        and recipe function. A user defined recipe function
-                        must be 'dotted' with the recipe file. E.g., '-r
-                        /path/to/recipes/recipefile.recipe_function' For a
-                        recipe file in the current working directory (cwd),
+                        e.g., -r qaStack, can request an explicit primitive 
+			function name, OR their own recipe file and recipe 
+			function. A user defined recipe function must be 
+			'dotted' with the recipe file. E.g.,
+			'-r /path/to/recipes/recipefile.recipe_function'.
+			For a recipe file in the current working directory,
                         only the file name is needed, as in, '-r
                         recipefile.recipe_function' The fact that the recipe
                         function is dotted with the recipe file name implies
@@ -222,6 +223,13 @@ Configuration Switches, Options
     Readers should understand that these recipe files must be *python modules* 
     and named accordingly. I.e., in the example above, 'recipefile' is a 
     python module named, ``'recipefile.py'``
+
+    Finally, the specified recipe can be an *actual primitive function name*::
+
+      -r display
+
+    and the Recipe System will display the dataset in an open and available 
+    viewer, such as ds9. 
 
 **--suffix <SUFFIX>**
     Add 'suffix' to output filenames at end of reduction.
@@ -504,7 +512,7 @@ Eg. 2) Override a parameter in the @file::
 
 Eg. 3) Override the recipe::
 
-  $ reduce @parfile -r=recipe.FOO
+  $ reduce @parfile -r recipe.FOO
   
   parsed options:
   ---------------
@@ -515,7 +523,7 @@ Eg. 3) Override the recipe::
 Eg. 4) Override a recipe and specify another fits file. The file names in 
 the @file will be ignored::
 
-  $ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
+  $ reduce @parfile -r recipe.FOO test_data/N20100311S0090_1.fits
   
   parsed options:
   ---------------
