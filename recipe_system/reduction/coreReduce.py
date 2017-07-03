@@ -6,6 +6,7 @@
 # ------------------------------------------------------------------------------
 from builtins import str
 from builtins import object
+# ------------------------------------------------------------------------------
 _version = '2.0.0 (beta)'
 # ------------------------------------------------------------------------------
 """
@@ -21,6 +22,7 @@ import os
 import sys
 import inspect
 import signal
+import traceback
 from types import StringType
 
 import astrodata
@@ -43,6 +45,9 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
+# ------------------------------------------------------------------------------
+def _log_traceback():
+    return traceback.format_exc(sys.exc_info()[-1])
 # ------------------------------------------------------------------------------
 class Reduce(object):
     """
@@ -185,10 +190,11 @@ class Reduce(object):
             except KeyboardInterrupt:
                 log.error("Caught KeyboardInterrupt (^C) signal")
                 xstat = signal.SIGINT
-            # except Exception as err:
-            #     log.error("runr() caught an unhandled exception.")
-            #     log.error(str(err))
-            #     xstat = signal.SIGABRT
+            except Exception as err:
+                log.error("runr() caught an unhandled exception.")
+                log.error(_log_traceback())
+                log.error(str(err))
+                xstat = signal.SIGABRT
 
         self._write_final(p.streams['main'])
         if xstat != 0:
@@ -344,7 +350,7 @@ class Reduce(object):
 
         for ad in outputs:
             if self.suffix:
-                username = _sname(ad.orig_filename)
+                username = _sname(ad.filename)
                 ad.write(username, clobber=True)
                 log.stdinfo(outstr.format(username))
             elif ad.filename != ad.orig_filename:

@@ -25,8 +25,10 @@ from recipe_system.utils.reduce_utils import normalize_args
 from recipe_system.utils.reduce_utils import normalize_context
 from recipe_system.utils.reduce_utils import show_parser_options
 
-from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
+from recipe_system.cal_service import localmanager_available
 from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
+
+from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
 
 # ------------------------------------------------------------------------------
 def main(args):
@@ -113,11 +115,12 @@ if __name__ == "__main__":
             print(item)
         sys.exit()
 
-    if args.local_db_dir is not None:
-        globalConf.update(CAL_CONFIG_SECTION, dict(
-                    standalone=True,
-                    database_dir=os.path.expanduser(args.local_db_dir)
-        ))
-    globalConf.export_section(CAL_CONFIG_SECTION)
+    if local_manager_available:
+        if args.local_db_dir is not None:
+            globalConf.update(CAL_CONFIG_SECTION, dict(
+                standalone=True,
+                database_dir=os.path.expanduser(args.local_db_dir)
+            ))
+        globalConf.export_section(CAL_CONFIG_SECTION)
 
     sys.exit(main(args))
