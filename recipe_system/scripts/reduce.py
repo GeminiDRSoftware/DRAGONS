@@ -121,6 +121,6 @@ if __name__ == "__main__":
                 standalone=True,
                 database_dir=os.path.expanduser(args.local_db_dir)
             ))
-        globalConf.export_section(CAL_CONFIG_SECTION)
+    globalConf.export_section(CAL_CONFIG_SECTION)
 
     sys.exit(main(args))
