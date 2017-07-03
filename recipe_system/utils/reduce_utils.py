@@ -202,8 +202,10 @@ def show_parser_options(parser, args):
             handled_flag_set.extend(all_option_flags)
             dvar = parser.__dict__['_option_string_actions'][opt].__dict__['dest']
             val = args.__dict__[dvar]
-            fmt = "\t{}".format(all_option_flags)
-            fmtf = fmt.ljust(33)+":: {} ".format(dvar).ljust(24)+":: {}".format(val)
+            fmt1 = "\t{}".format(all_option_flags)
+            fmt2 = ":: {} ".format(dvar)
+            fmt3 = ":: {}".format(val)
+            fmtf = fmt1.ljust(33) + fmt2.ljust(24) + fmt3
             print fmtf
     print "\t"+"-"*65+"\n"
     return
