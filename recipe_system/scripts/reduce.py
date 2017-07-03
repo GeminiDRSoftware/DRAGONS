@@ -115,7 +115,7 @@ if __name__ == "__main__":
             print(item)
         sys.exit()
 
-    if local_manager_available:
+    if localmanager_available:
         if args.local_db_dir is not None:
             globalConf.update(CAL_CONFIG_SECTION, dict(
                 standalone=True,
