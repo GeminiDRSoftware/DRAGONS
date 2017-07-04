@@ -5,6 +5,8 @@ from builtins import object
 import sys
 import importlib
 
+from types import StringType
+
 from ..utils.mapper_utils import dictify
 from ..utils.mapper_utils import dotpath
 from ..utils.mapper_utils import DRMARKER
@@ -55,7 +57,7 @@ class Mapper(object):
 
         """
         self.adinputs   = adinputs
-        self.context    = context
+        self._context   = context
         ainst = adinputs[0].instrument()
         self.pkg        = 'gmos' if "GMOS" in ainst else ainst.lower()
         self.dotpackage = dotpath(DRMARKER, self.pkg)
@@ -64,3 +66,18 @@ class Mapper(object):
         self.usercals   = usercals if usercals else {}
         self.userparams = dictify(uparms)
         self.upload_metrics = upload_metrics
+
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, ctx):
+        if ctx is None:
+            self._context = ['qa']         # Set default 'qa' [later, 'sq']
+        elif isinstance(ctx, StringType):
+            self._context = [seg.lower().strip() for seg in ctx.split(',')]
+        elif isinstance(ctx, list):
+            self._context = ctx
+        return
