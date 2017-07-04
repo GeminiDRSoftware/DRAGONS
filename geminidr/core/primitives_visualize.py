@@ -249,6 +249,7 @@ class Visualize(PrimitivesBASE):
                 item = 'GSAOI IMAGE'
             if not item:
                 raise TypeError("File is not a supported type.")
+            return item
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
