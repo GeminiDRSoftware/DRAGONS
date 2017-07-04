@@ -21,6 +21,12 @@ class ParametersVisualize(ParametersBASE):
         "interpolator"      : "linear",
 
     }
+    mosaicAD = {
+        "suffix"            : "_mosaicAD",
+        "tile"              : False,
+        "doimg"             : False,
+        "interpolator"      : "linear",
+    }
     tileArrays = {
         "suffix"            : "_tiled",
         "tile_all"          : False,
