@@ -21,7 +21,7 @@ class ParametersVisualize(ParametersBASE):
         "interpolator"      : "linear",
 
     }
-    mosaicAD = {
+    mosaicADdetectors = {
         "suffix"            : "_mosaicAD",
         "tile"              : False,
         "doimg"             : False,
