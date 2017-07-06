@@ -11,8 +11,11 @@ try:
 except ImportError:
     import numdisplay as nd
 
-from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
+from gempy.gemini import gemini_tools as gt
+
+from gempy.mosaic.mosaicAD import MosaicAD
+from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.gmos.pixel_functions import get_bias_level
@@ -219,6 +222,59 @@ class Visualize(PrimitivesBASE):
 
     def mosaicDetectors(self, adinputs=None, **params):
         return adinputs
+
+    def mosaicADdetectors(self, adinputs=None, **params):
+        """
+        This primitive will use the gempy MosaicAD class to mosaic the frames
+        of the input images.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files. Default is '_mosaicAD'
+        tile: bool
+            tile images instead of a proper mosaic. Default is False.
+        doimg: bool
+            mosaic only SCI image data. Default is False
+        interpolator: <str>
+            type of interpolation to use across chip gaps
+            ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
+
+        """
+        def _compat(tlist):
+            item = None
+            if "GMOS" in tlist and "IMAGE" in tlist:
+                item = 'GMOS IMAGE'
+            elif "GSAOI" in tlist and "IMAGE" in tlist:
+                item = 'GSAOI IMAGE'
+            if not item:
+                raise TypeError("File is not a supported type.")
+            return item
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        do_img = params['doimg']
+        suffix = params['suffix']
+        tile = params['tile']
+
+        adoutputs = []
+        for ad in adinputs:
+            log.stdinfo("\tMosaicAD Working on {}".format(_compat(ad.tags)))
+            log.stdinfo("\tConstructing MosaicAD instance ...")
+
+            mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
+
+            log.stdinfo("\tMaking mosaic, converting data ...")
+
+            ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
+
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.write(suffix=suffix)  # ??Do we want to write this out now??
+            adoutputs.append(ad_out)
+
+        return adoutputs
+
 
     def tileArrays(self, adinputs=None, **params):
         return adinputs

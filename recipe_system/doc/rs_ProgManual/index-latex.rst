@@ -16,12 +16,13 @@ Recipe System Users Manual
 
    intro
    overview
+   mappers
    interfaces
    ack
 
 .. raw:: latex
 
-   % Set up the appendix mode and modify the LaTeX toc behavior
+   % Set up appendix mode and modify LaTeX toc behavior
    \appendix
    \noappendicestocpagenum
    \addappheadtotoc
@@ -30,5 +31,6 @@ Recipe System Users Manual
    :maxdepth: 1
    
    appendices/glossary
+   appendices/primitives_catalog
    
 .. todolist::

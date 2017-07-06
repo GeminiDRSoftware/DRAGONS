@@ -71,12 +71,7 @@ class MosaicAD(Mosaic):
     parameter 'column_names'. (see __init__ for more details)
 
     """
-    def_columns = { 
-        'OBJCAT': ('X_IMAGE', 'Y_IMAGE', 'X_WORLD', 'Y_WORLD'),
-        'REFCAT': (None, None, 'RAJ2000', 'DEJ2000')
-    }
-
-    def __init__(self, ad, mosaic_ad_function, column_names=def_columns):
+    def __init__(self, ad, mosaic_ad_function):
         """
         Parameters
         ----------
@@ -115,7 +110,6 @@ class MosaicAD(Mosaic):
         # Execute the input geometry function.
         mosaic_data, geometry = mosaic_ad_function(ad)
         Mosaic.__init__(self, mosaic_data, geometry)
-        self.column_names = column_names
         self.jfactor = []               # Jacobians applied to interpolated pixels.
         self.calculate_jfactor()        # Fill the jfactor vector with the
                                         # jacobian of transformation matrix.
@@ -133,8 +127,8 @@ class MosaicAD(Mosaic):
 
         Parameters
         ----------
-        block: Return a specific block as the output mosaic as (col, row). 
-              (0,0) lower left. 
+        block: Return a specific block as the output mosaic as (col, row).
+              (0,0) lower left.
         type: <2-tuple> Default is None.
 
         tile: Tile rather than transform data blocks.
@@ -149,14 +143,14 @@ class MosaicAD(Mosaic):
                     blocksize value.
         type: <bool> Default is True
 
-        update_with: Specifies if the X,Y pixel coordinates of any
-                    source positions in the BINTABLEs are to be recalculated using
-                    the output WCS and the sources RA and Dec values within the
-                    table. If set to 'transform' the updated X,Y pixel coordinates
-                    will be determined using the transformations used to mosaic the
-                    pixel data. In the case of tiling, a shift is technically being
-                    applied and therefore update_with='wcs' should be set
-                    internally (not yet implemented).
+        update_with: Specifies if the X,Y pixel coordinates of any source
+                     positions in the BINTABLEs are to be recalculated
+                     using the output WCS and the sources RA and Dec values within
+                     the table. If set to 'transform' the updated X,Y pixel
+                     coordinates will be determined using the transformations used
+                     to mosaic the pixel data. In the case of tiling, a shift is
+                     technically being applied and therefore update_with='wcs'
+                     should be set internally (not yet implemented).
         type: <str> Supported values are 'wcs', 'transform'. Default is 'wcs'.
 
         """
@@ -209,21 +203,6 @@ class MosaicAD(Mosaic):
                 adout[0].OBJMASK = self.mosaic_image_data(block=block,
                                                           return_ROI=return_ROI,
                                                           tile=tile, dq_data=True)
-
-
-        #
-        # PENDING DECISION ON WHETHER CATALOGS SHALL BE MERGED OR REMADE AFTER
-        # MOSAIC. (kra, 24-04-2017).
-        #
-        # Generate WCS object to be used in the merging the object catalog table or
-        # updating the objects pixel coordinates w.r.t. to the new crpix1,2.
-        #ref_wcs = wcs.WCS(header)
-
-        # table extensions
-        # for ex in ad:
-        #     if hasattr(ex, 'OBJCAT'):
-        #         ntab = self.merge_table_data(ref_wcs, tile, block=block,
-        #                                      update_with=update_with)
 
         return adout
 
@@ -460,255 +439,6 @@ class MosaicAD(Mosaic):
         return info
 
     # --------------------------------------------------------------------------
-    def merge_catalogs(self,ref_wcs,tile,recalculate_xy='wcs',transform_pars=None):
-        """
-        This function merges together separate bintable extensions (tab_extname),
-        converts the pixel coordinates to the reference extension WCS
-        and remove duplicate entries based on RA and DEC.
-
-        NOTE: Names used here so far: *OBJCAT:* Object catalog extension name
-
-        Parameters
-        ----------
-        ref_wcs: wcs object containing the WCS from the output header.
-        type: <WCS object>
-
-        tile: Tile or transform catalog data. tile=False will transform the catalogs.
-        type: <bool>
-
-        transform_pars: Dictionary with rotation angle, translation, and magnification.
-        type: <dict>
-
-        recalculate_xy: Use reference extension WCS to recalculate the pixel
-                        coordinates. If value is 'transform' use the tranformation
-                        linear equations.
-        type: <str> Supported values: 'wcs'; 'transform'. Default: 'wcs'
-
-        Return
-        ------
-        adoutput_list: A list of merged catalogs.
-        type: <list>
-
-        Note
-        ----
-        For 'transform' mode these are the linear equations to use.
-
-        X_out = X * mx * cosA - Y * mx * sinA + mx * tx
-        Y_out = X * my * sinA + Y * my * cosA + my * ty
-
-        mx, my: magnification factors.
-        tx, ty: translation amount in pixels.
-        A: Angle in radians.
-
-        """
-        adoutput_list = []
-        column_names = self.column_names
-        col_names = None
-        col_fmts = None
-        col_data = {}      # Dictionary to hold column data from all extensions
-        newdata = {}
-        for ext in self.ad:
-            for key in self.column_names:
-                if hasattr(ext, key):
-                    Xcolname, Ycolname = self.column_names[key][:2]
-                    ra_colname, dec_colname = self.column_names[key][2:4]
-
-        # Get catalog data for the extension numbers in merge_extvers list.
-        do_transform = (recalculate_xy == 'transform') and (Xcolname != None)
-        if do_transform:
-            dict = self.data_index_per_block
-            nbx,nby=self.geometry.mosaic_grid
-
-        for extv in merge_extvers:
-            inp_catalog = self.ad[tab_extname,extv]
-            # Make sure there is data. 
-            if inp_catalog is None:
-                continue
-
-            if inp_catalog.data is None:
-                continue
-
-            if len(inp_catalog.data) == 0:
-                continue
-
-            catalog_data = True
-
-            # Get column names and formats for the first extv
-            # and copy the data into the dictionary.
-            if col_names is None:
-                col_names = inp_catalog.data.names
-                col_fmts = inp_catalog.data.formats
-                # fill out the dictionary
-                for name in col_names:
-                    col_data[name] = []
-
-                xx=[]; yy=[]
-
-            for name in col_names:
-                newdata[name] = inp_catalog.data.field(name)
-
-            # append data from each column to the dictionary. 
-            for name in col_names:
-                col_data[name] = np.append(col_data[name],newdata[name])
-
-            if do_transform:
-                # Get the block tuple where an amplifier (extv) is located.
-                block=[k for k, v in dict.iteritems() if extv-1 in v][0]
-                if (extv-1) in self.data_index_per_block[block]:
-                    # We might have more than one amplifier per block,
-                    # so offset all these xx,yy to block's lower left.
-                    x1,y1=[self.coords['amp_block_coord'][extv-1][k] for k in [0,2]]
-                    # add it to the xx,yy
-                    xx = np.append(xx,newdata[Xcolname]+x1)
-                    yy = np.append(yy,newdata[Ycolname]+y1)
-                    if extv%self._amps_per_block != 0:
-                       continue
-
-
-                # Turn tuples values (col,row) to index
-                bindx = block[0]+nbx*block[1]
-                nxx,nyy = self._transform_xy(bindx,xx,yy) 
-
-                # Now change the origin of the block's (nxx,nyy) set to the 
-                # mosaic lower left. We find the offset of the LF corner
-                # by adding the width and the gaps of all the block to 
-                # the left of the current block.
-                #  
-
-                if tile:
-                    gap_mode = 'tile_gaps'
-                else:
-                    gap_mode = 'transform_gaps'
-
-                gaps = self.geometry.gap_dict[gap_mode]
-                # The block size in pixels.
-                blksz_x,blksz_y = self.blocksize
-                col,row = block
-                # the sum of the gaps to the left of the current block
-                sgapx = sum([gaps[k,row][0] for k in range(col+1)])
-                # the sum of the gaps below of the current block
-                sgapy = sum([gaps[col,k][1] for k in range(row+1)])
-                ref_x1 = int(col*blksz_x + sgapx)
-                ref_x2 = ref_x1 + blksz_x
-                ref_y1 = int(row*blksz_y + sgapy)
-                ref_y2 = int(ref_y1 + blksz_y)
-
-                newdata[Xcolname] = nxx+ref_x1
-                newdata[Ycolname] = nyy+ref_y1
-                xx = []
-                yy = []
-
-        # Eliminate possible duplicates values in ra, dec columns
-        ra, raindx  = np.unique(col_data[ra_colname].round(decimals=7),
-                        return_index=True)
-        dec, decindx = np.unique(col_data[dec_colname].round(decimals=7),
-                        return_index=True)
-
-        # Duplicates are those with the same index in raindx and decindx lists.
-        # Look for elements with differents indices; to do this we need to sort
-        # the lists.
-        raindx.sort()
-        decindx.sort()
-
-        # See if the 2 arrays have the same length
-        ilen = min(len(raindx), len(decindx))
-
-        # Get the indices from the 2 lists of the same size
-        v, = np.where(raindx[:ilen] != decindx[:ilen])
-        if len(v) > 0:
-            # Filter the duplicates
-           try:
-               for name in col_names:
-                   col_data[name] = col_data[name][v]
-           except:
-               print 'ERRR:',len(v),name
-
-        # Now that we have the catalog data from all extensions in the dictionary,
-        # we calculate the new pixel position w/r to the reference WCS.
-        # Only an Object table contains X,Y column information. Reference catalog
-        # do not.
-        #
-        if (recalculate_xy == 'wcs') and (Xcolname != None):
-
-            xx = col_data[Xcolname]
-            yy = col_data[Ycolname]
-            ra = col_data[ra_colname]
-            dec = col_data[dec_colname]
-
-            # Get new pixel coordinates for all ra,dec in the dictionary.
-            # Use the input wcs object.
-            newx,newy = ref_wcs.wcs_sky2pix(ra,dec,1)
-
-            # Update pixel position in the dictionary to the new values.
-            col_data[Xcolname] = newx
-            col_data[Ycolname] = newy
-
-        # Create columns information
-        columns = {}
-        table_columns = []
-        for name,format in zip(col_names,col_fmts):
-            # Let add_catalog auto-number sources
-            if name=="NUMBER":
-                continue
-
-            # Define pyfits columns
-            data = columns.get(name, fits.Column(name=name,format=format,
-                            array=col_data[name]))
-            table_columns.append(data)
-
-        # Make the output table using pyfits functions
-        col_def = fits.ColDefs(table_columns)
-        tb_hdu = fits.new_table(col_def)
-
-        # Now make an AD object from this table
-        adout = AstroData(tb_hdu)
-        adout.rename_ext(tab_extname,1)
-
-        # Append to any other new table we might have
-        adoutput_list.append(adout)
-
-        return adoutput_list
-
-    # --------------------------------------------------------------------------
-    def merge_table_data(self, ref_wcs, tile, block=None, update_with='wcs'):
-        """
-        Merges input BINTABLE extensions of the requested tab_extname. Merging
-        is based on RA and DEC columns. The repeated RA, DEC values in the output
-        table are removed. The column names for pixel and equatorial coordinates
-        are given in a dictionary with attribute name: column_names.
-
-        Parameters
-        ----------
-        ref_wcs: reference WCS object.
-        type:    <WCS object>
-
-        block:
-            Allows a specific block to be returned as the output mosaic.
-            The tuple notation is (col,row) (0-based) where (0,0) is the lower
-            left block. This is position of the reference block w/r to
-            mosaic_grid.
-        type: <2-tuple>, Default is None
-
-        update_with:
-            If 'wcs' use the reference extension header WCS to recalculate the x,y
-            values. If 'transform', apply the linear equations using to correct
-            the x,y values in each block.
-        type: <str>
-
-        Return
-        ------
-        adout: merged output BINTABLE of the requested tab_extname BINTABLE
-            extension.
-
-        """
-        if block:
-            merge_extvers = self.data_index_per_block[block]
-
-        #  Merge the bintables containing source catalogs.
-        adout = self.merge_catalogs(ref_wcs, tile, update_with,
-                                    transform_pars=self.geometry.transformation)
-        return adout
-
     # --------------------------------------------------------------------------
     def update_crpix(self, wcs, tile):
         """

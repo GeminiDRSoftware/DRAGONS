@@ -149,10 +149,11 @@ def buildParser(version):
                         "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
     if localmanager_available:
-        parser.add_argument("--local_db", dest='local_db_dir', default=None,
+        parser.add_argument("--local_db_dir", dest='local_db_dir', default=None,
+                            nargs="*", action=UnitaryArgumentAction,
                             help="Point to a directory where the local database "
                             "for calibration association can be found. Default "
-                            "is to look it up in the config file (if there's any")
+                            "is to look it up in the config file (if any).")
     return parser
 
 # --------------------------- Emulation functions ------------------------------
@@ -201,26 +202,11 @@ def show_parser_options(parser, args):
             handled_flag_set.extend(all_option_flags)
             dvar = parser.__dict__['_option_string_actions'][opt].__dict__['dest']
             val = args.__dict__[dvar]
-            if len(all_option_flags) == 1 and len(dvar) == 3:
-                print "\t", all_option_flags, "\t"*3,"::", dvar, "\t\t\t::", val
-                continue
-            if len(all_option_flags) == 1 and (12 < len(dvar) < 17):
-                print "\t", all_option_flags, "\t"*3,"::", dvar, "\t::", val
-                continue
-            if len(all_option_flags) == 1 and len(all_option_flags[0]) > 24:
-                print "\t", all_option_flags, "::", dvar, "\t::", val
-                continue
-            elif len(all_option_flags) == 1 and len(all_option_flags[0]) < 11:
-                print "\t", all_option_flags, "\t"*3+"::", dvar, "\t\t::", val
-                continue
-            elif len(all_option_flags) == 2 and len(all_option_flags[1]) > 12:
-                print "\t", all_option_flags, "\t"+"::", dvar, "\t::", val
-                continue
-            elif len(all_option_flags) == 2:
-                print "\t", all_option_flags, "\t"*2+"::", dvar, "\t\t::", val
-                continue
-            else:
-                print "\t", all_option_flags, "\t"*2+"::", dvar, "\t\t::", val
+            fmt1 = "\t{}".format(all_option_flags)
+            fmt2 = ":: {} ".format(dvar)
+            fmt3 = ":: {}".format(val)
+            fmtf = fmt1.ljust(33) + fmt2.ljust(24) + fmt3
+            print fmtf
     print "\t"+"-"*65+"\n"
     return
 
@@ -275,8 +261,9 @@ def normalize_args(args):
 
     if isinstance(args.recipename, list):
         args.recipename = args.recipename[0]
-    # if isinstance(args.context, list):     # v2.0, context is now a list
-    #     args.context = args.context[0]
+    if localmanager_available:
+        if isinstance(args.local_db_dir, list):
+            args.local_db_dir = args.local_db_dir[0]
     if isinstance(args.loglevel, list):
         args.loglevel = args.loglevel[0]
     if isinstance(args.logmode, list):
