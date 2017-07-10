@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
+from os.path import splitext
 
 try:
     from stsci import numdisplay as nd
@@ -241,6 +242,12 @@ class Visualize(PrimitivesBASE):
             ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
 
         """
+        def _sname(name):
+            head, tail = splitext(name)
+            ohead = head.split("_")[0]
+            newname = ohead + params['suffix'] + tail
+            return newname
+
         def _compat(tlist):
             item = None
             if "GMOS" in tlist and "IMAGE" in tlist:
@@ -270,7 +277,6 @@ class Visualize(PrimitivesBASE):
             ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.write(suffix=suffix)  # ??Do we want to write this out now??
             adoutputs.append(ad_out)
 
         return adoutputs
