@@ -841,9 +841,9 @@ class AstroDataGmos(AstroDataGemini):
         list/float
             saturation level
         """
-        def _well_depth(amp, bin, gain, bunit):
+        def _well_depth(detector, amp, bin, gain, bunit):
             try:
-                return lookup.gmosThresholds[amp] * bin / (
+                return lookup.gmosThresholds[detector][amp] * bin / (
                     gain if 'electron' in bunit else 1)
             except KeyError:
                 return None
@@ -858,6 +858,7 @@ class AstroDataGmos(AstroDataGemini):
         overscan_levels = self.hdr.get('OVERSCAN')
 
         detname = self.detector_name(pretty=True)
+        detector = self.header[0]['DETECTOR']  # the only way to distinguish GMOS-S Ham pre/post video board work.
         xbin = self.detector_x_bin()
         ybin = self.detector_y_bin()
         bin_factor = xbin * ybin
@@ -890,13 +891,14 @@ class AstroDataGmos(AstroDataGemini):
                               for blev, bsub, g, bunit in
                               zip(bias_levels, bias_subtracted, gain, bunits)]
 
+
         # For old EEV data, or heavily-binned data, we're ADC-limited
         if detname == 'EEV' or bin_factor > 2:
             return processed_limit
         else:
             # Otherwise, we're limited by the electron well depths
             if self.is_single:
-                saturation = _well_depth(ampname, bin_factor, gain, bunits)
+                saturation = _well_depth(detector, ampname, bin_factor, gain, bunits)
                 if saturation is None:
                     saturation = processed_limit
                 else:
@@ -904,8 +906,14 @@ class AstroDataGmos(AstroDataGemini):
                     if saturation > processed_limit:
                         saturation = processed_limit
             else:
-                well_limit = [_well_depth(a, bin_factor, g, b)
+                print detector
+                print ampname, gain, bunits
+                print bin_factor
+                testlut = _well_depth(detector, ampname[0], bin_factor, gain[0], bunits[0])
+                print testlut
+                well_limit = [_well_depth(detector, a, bin_factor, g, b)
                               for a, g, b in zip(ampname, gain, bunits)]
+                print well_limit
                 saturation = [None if w is None else
                               min(w + blev if not bsub else 0, p)
                               for w, p, blev, bsub in zip(well_limit,
