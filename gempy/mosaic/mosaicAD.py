@@ -23,13 +23,10 @@ class MosaicAD(Mosaic):
     MosaicAD as a subclass of Mosaic extends its functionality by providing
     support for:
 
-    - Astrodata objects with more than one extension name; i.e. 'SCI',
-      'VAR', 'DQ'.
-    - Associating object catalogs in BINARY FITS extensions with
-      the image extensions.
-    - Creating output mosaics and merge tables in Astrodata objects.
-    - Updating the WCS information in the output Astrodata object
-      mosaic header.
+    - Astrodata objects with more than one extension name,
+      i.e., 'SCI', 'VAR', 'DQ'.
+    - Creating output mosaics in Astrodata objects.
+    - Updating the WCS information in the output Astrodata object mosaic header.
     - A user_function as a parameter to input data and geometric values
       of the individual data elements.
     - A user_function (already written) to support GMOS and GSAOI data.
@@ -37,9 +34,8 @@ class MosaicAD(Mosaic):
     Methods
     -------
     as_astrodata       - Output mosaics as AstroData objects.
-    merge_table_data   - Merges catalogs extension that are associated
-                         with image extensions.
     mosaic_image_data  - Create a mosaic from extensions.
+    mosaic_header      - Make a mosaic FITS header from reference extension header.
     get_data_list      - Return a list of image data for a given extname
                          extensions in the input AstroData object.
     update_wcs         - Update the WCS information in the output header.
@@ -60,15 +56,10 @@ class MosaicAD(Mosaic):
 
     * Instantiate an Astrodata object with a GMOS or GSAOI fits file.
 
-    * Import the function gemini_mosaic_function from the
-    gemMosaicFunction module. This function reads the FITS
-    extensions with amplifier data and create a list of ndarrays;
-    it also reads a dictionary of geometry values from a module
-    located in the Astrodata Lookup.
-
-    * If you want to merge object catalogs being associated to each
-    input image extension, then provide a dictionary name to the
-    parameter 'column_names'. (see __init__ for more details)
+    * Import the function gemini_mosaic_function from the gemMosaicFunction
+      module. This function reads the FITS extensions with amplifier data and
+      create a list of ndarrays; it also reads a dictionary of geometry values
+      from a module located in instrument lookups tables.
 
     """
     def __init__(self, ad, mosaic_ad_function):
@@ -90,16 +81,6 @@ class MosaicAD(Mosaic):
         :type mosaic_ad_function: <func>
               A required user function returning a MosaicData
               and a MosaicGeometry objects.
-
-        :param column_names:
-              Dictionary with bintable extension names that are associates
-              with input images. The extension name is the key with value
-              a tuple: (X_pixel_columnName, Y_pixel_columnName,
-              RA_degrees_columnName, DEC_degrees_columnName)
-              Example:
-               column_names = {'OBJCAT': ('Xpix', 'Ypix', 'RA', 'DEC'),
-                               'REFCAT': (None, None, 'RaRef', 'DecRef')}
-        :type column_names: <dict>
 
         """
         self.ad = ad
@@ -158,8 +139,9 @@ class MosaicAD(Mosaic):
         adout.phu.set('TILED', ['FALSE', 'TRUE'][tile])
         adout.phu.set_comment('TILED', 'True: tiled; False: Image Mosaicked')
 
-        # Create mosaics of all image extensions in ad. Merge associated bintables.
-        # image array attributes mosaicked: 'data', 'variance', 'mask', 'OBJMASK'.
+        # Create mosaics of all image extensions in ad
+        # image arrays mosaicked: 'data', 'variance', 'mask', 'OBJMASK'.
+
         # SCI
         self.data_list = self.get_data_list('data')
         if not self.data_list:
@@ -182,6 +164,10 @@ class MosaicAD(Mosaic):
                 varray = self.mosaic_image_data(block=block,return_ROI=return_ROI,
                                                 tile=tile)
 
+                # @TODO Not sure what to do with extention headers for VAR & DQ exts!
+                #self.mosaic_shape = varray.shape
+                #header = self.mosaic_header(varray.shape, block, tile)
+
         # DQ
         marray = None
         if not doimg:
@@ -191,6 +177,11 @@ class MosaicAD(Mosaic):
             else:
                 marray= self.mosaic_image_data(block=block,return_ROI=return_ROI,
                                                tile=tile, dq_data=True)
+
+                # @TODO Not sure what to do with extention headers for VAR & DQ exts!
+                #self.mosaic_shape = marray.shape
+                #header = self.mosaic_header(marray.shape, block, tile)
+
 
         adout[0].reset(data=darray, variance=varray, mask=marray)
 
