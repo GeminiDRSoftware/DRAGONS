@@ -96,79 +96,85 @@ class Stack(PrimitivesBASE):
         timestamp_key = self.timestamp_keys["stackFrames"]
         sfx = params["suffix"]
 
-        # Ensure that each input AstroData object has been prepared
-        for ad in adinputs:
-            if not "PREPARED" in ad.tags:
-                raise IOError("{} must be prepared" .format(ad.filename))
-
         if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
                         "input AstroData objects are required for stackFrames")
-        else:
-            # Determine the average gain from the input AstroData objects and
-            # add in quadrature the read noise
-            gains = [ad.gain() for ad in adinputs]
-            read_noises = [ad.read_noise() for ad in adinputs]
+            return adinputs
 
-            assert all(gain is not None for gain in gains), "Gain problem"
-            assert all(rn is not None for rn in read_noises), "RN problem"
+        # Ensure that each input AstroData object has been prepared
+        gains, read_noises = [], []
+        for ad in adinputs:
+            if not "PREPARED" in ad.tags:
+                raise IOError("{} must be prepared" .format(ad.filename))
+            else:
+                gains.append(ad.gain())
+                read_noises.append(ad.read_noise())
 
-            # Sum the values
-            nexts = len(gains[0])
-            gain_list = [np.mean([gain[i] for gain in gains])
-                         for i in range(nexts)]
-            read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
-                                         for i in range(nexts)]
+        # Determine the average gain from the input AstroData objects and
+        # add in quadrature the read noise
+        #gains = [ad.gain() for ad in adinputs]
+        #gains = [ad.hdr['GAIN'] for ad in adinputs]
+        #read_noises = [ad.read_noise() for ad in adinputs]
 
-            # Preserve the input dtype for the data quality extension
-            #dq_dtypes_list = []
-            #for ad in ad_input_list:
-            #    if ad[DQ]:
-            #        for ext in ad[DQ]:
-            #            dq_dtypes_list.append(ext.data.dtype)
+        assert all(gain is not None for gain in gains), "Gain problem"
+        assert all(rn is not None for rn in read_noises), "RN problem"
 
-            #if dq_dtypes_list:
-            #    unique_dq_dtypes = set(dq_dtypes_list)
-            #    unique_dq_dtypes_list = [dtype for dtype in unique_dq_dtypes]
-            #    if len(unique_dq_dtypes_list) == 1:
-            #        # The input data quality extensions have the same dtype
-            #        dq_dtype = unique_dq_dtypes_list[0]
-            #    elif len(unique_dq_dtypes_list) == 2:
-            #        dq_dtype = np.promote_types(unique_dq_dtypes_list[0],
-            #                                    unique_dq_dtypes_list[1])
-            #    else:
-            #        # The input data quality extensions have more than two
-            #        # different dtypes. Since np.promote_types only accepts two
-            #        # dtypes as input, for now, just use uint16 in this case
-            #        # (when gemcombine is replaced with a python function, the
-            #        # combining of the DQ extension can be handled correctly by
-            #        # numpy).
-            #        dq_dtype = np.dtype(np.uint16)
+        # Sum the values
+        nexts = len(gains[0])
+        gain_list = [np.mean([gain[i] for gain in gains])
+                     for i in range(nexts)]
+        read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
+                                     for i in range(nexts)]
 
-            # Instantiate ETI and then run the task
-            gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
-            ad = gemcombine_task.run()
+        # Preserve the input dtype for the data quality extension
+        #dq_dtypes_list = []
+        #for ad in ad_input_list:
+        #    if ad[DQ]:
+        #        for ext in ad[DQ]:
+        #            dq_dtypes_list.append(ext.data.dtype)
 
-            # Gemcombine sets the GAIN keyword to the sum of the gains;
-            # reset it to the average instead. Set the RDNOISE to the
-            # sum in quadrature of the input read noise. Set the keywords in
-            # the variance and data quality extensions to be the same as the
-            # science extensions.
-            for ext, gain, rn in zip(ad, gain_list, read_noise_list):
-                ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
-                ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
-            # Stick the first extension's values in the PHU
-            ad.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
-            ad.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
+        #if dq_dtypes_list:
+        #    unique_dq_dtypes = set(dq_dtypes_list)
+        #    unique_dq_dtypes_list = [dtype for dtype in unique_dq_dtypes]
+        #    if len(unique_dq_dtypes_list) == 1:
+        #        # The input data quality extensions have the same dtype
+        #        dq_dtype = unique_dq_dtypes_list[0]
+        #    elif len(unique_dq_dtypes_list) == 2:
+        #        dq_dtype = np.promote_types(unique_dq_dtypes_list[0],
+        #                                    unique_dq_dtypes_list[1])
+        #    else:
+        #        # The input data quality extensions have more than two
+        #        # different dtypes. Since np.promote_types only accepts two
+        #        # dtypes as input, for now, just use uint16 in this case
+        #        # (when gemcombine is replaced with a python function, the
+        #        # combining of the DQ extension can be handled correctly by
+        #        # numpy).
+        #        dq_dtype = np.dtype(np.uint16)
 
-            # Add suffix to datalabel to distinguish from the reference frame
-            ad.phu.set('DATALAB', "{}{}".format(ad.phu.DATALAB, sfx),
-                       self.keyword_comments['DATALAB'])
+        # Instantiate ETI and then run the task
+        gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
+        ad = gemcombine_task.run()
 
-            # Timestamp and update filename and prepare to return single output
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            adinputs = [ad]
+        # Gemcombine sets the GAIN keyword to the sum of the gains;
+        # reset it to the average instead. Set the RDNOISE to the
+        # sum in quadrature of the input read noise. Set the keywords in
+        # the variance and data quality extensions to be the same as the
+        # science extensions.
+        for ext, gain, rn in zip(ad, gain_list, read_noise_list):
+            ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
+            ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
+        # Stick the first extension's values in the PHU
+        ad.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
+        ad.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
+
+        # Add suffix to datalabel to distinguish from the reference frame
+        ad.phu.set('DATALAB', "{}{}".format(ad.phu.DATALAB, sfx),
+                   self.keyword_comments['DATALAB'])
+
+        # Timestamp and update filename and prepare to return single output
+        gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+        adinputs = [ad]
 
         return adinputs
 
