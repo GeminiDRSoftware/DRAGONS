@@ -1440,29 +1440,41 @@ class FitsLoader(object):
         highest_ver = 0
         recognized = set()
 
-        for n, unit in enumerate(hdulist):
-            ev = unit.header.get('EXTVER')
-            eh = unit.header.get('EXTNAME')
-            if ev not in (-1, None) and eh is not None:
-                highest_ver = max(highest_ver, unit.header['EXTVER'])
-            elif not isinstance(unit, PrimaryHDU):
-                continue
+        if len(hdulist) > 1:
+            # MEF file
+            for n, unit in enumerate(hdulist):
+                ev = unit.header.get('EXTVER')
+                eh = unit.header.get('EXTNAME')
+                if ev not in (-1, None) and eh is not None:
+                    highest_ver = max(highest_ver, unit.header['EXTVER'])
+                elif not isinstance(unit, PrimaryHDU):
+                    continue
 
-            new_list.append(unit)
-            recognized.add(unit)
+                new_list.append(unit)
+                recognized.add(unit)
 
-        for unit in hdulist:
-            if unit in recognized:
-                continue
-            elif isinstance(unit, ImageHDU):
-                highest_ver += 1
-                if 'EXTNAME' not in unit.header:
-                    unit.header['EXTNAME'] = (FitsProvider.default_extension, 'Added by AstroData')
-                if unit.header.get('EXTVER') in (-1, None):
-                    unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
+            for unit in hdulist:
+                if unit in recognized:
+                    continue
+                elif isinstance(unit, ImageHDU):
+                    highest_ver += 1
+                    if 'EXTNAME' not in unit.header:
+                        unit.header['EXTNAME'] = (FitsProvider.default_extension, 'Added by AstroData')
+                    if unit.header.get('EXTVER') in (-1, None):
+                        unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
-            new_list.append(unit)
-            recognized.add(unit)
+                new_list.append(unit)
+                recognized.add(unit)
+        else:
+            # Uh-oh, a single image FITS file
+            new_list.append(PrimaryHDU(header=hdulist[0].header))
+            image = ImageHDU(header=hdulist[0].header, data=hdulist[0].data)
+            for keyw in ('SIMPLE', 'EXTEND'):
+                if keyw in image.header:
+                    del image.header[keyw]
+            image.header['EXTNAME'] = (FitsProvider.default_extension, 'Added by AstroData')
+            image.header['EXTVER'] = (1, 'Added by AstroData')
+            new_list.append(image)
 
         return HDUList(sorted(new_list, key=fits_ext_comp_key))
 
