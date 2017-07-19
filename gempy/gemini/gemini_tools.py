@@ -1468,9 +1468,6 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
     Parameters
     ----------
     ad: AstroData
-        input image (NOT a list)
-    extver: int/None
-        if not None, use only this extension
     sampling: int
         1-in-n sampling factor
     value_only: bool
@@ -1481,13 +1478,10 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
     Returns
     -------
     list/value/tuple
-        if use_extver is set, returns a bg value or (bg, std) tuple; otherwise
+        if ad is single extension, returns a bg value or (bg, std) tuple; otherwise
         returns a list of such things
     """
-    try:
-        input_list = [ext for ext in ad]
-    except:
-        input_list = [ext]
+    input_list = [ad] if ad.is_single else [ext for ext in ad]
 
     output_list = []
     for ext in input_list:
@@ -1536,7 +1530,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         else:
             output_list.append((bg, bg_std, len(bg_data)))
 
-    return output_list
+    return output_list[0] if ad.is_single else output_list
 
 
 def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
