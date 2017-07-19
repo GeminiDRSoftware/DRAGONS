@@ -418,7 +418,7 @@ class GMOS(Gemini, CCD):
             # so they won't get tiled with science data
             log.fullinfo("Trimming data to data section:")
             old_shape = [ext.data.shape for ext in ad]
-            ad = gt.trim_to_data_section(ad,
+            ad = gt.trim_to_data_section(deepcopy(ad),
                                          keyword_comments=self.keyword_comments)
             new_shape = [ext.data.shape for ext in ad]
             changed = old_shape!=new_shape
