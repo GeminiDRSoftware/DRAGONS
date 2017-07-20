@@ -1500,7 +1500,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
                               np.percentile(bg_data, 15.87))
                 g_init = CumGauss1D(bg, bg_std)
                 fit_g = fitting.LevMarLSQFitter()
-                g = fit_g(g_init, bg, np.linspace(0.,1.,len(bg_data)+1)[1:])
+                g = fit_g(g_init, bg_data, np.linspace(0.,1.,len(bg_data)+1)[1:])
                 bg, bg_std = g.mean.value, abs(g.stddev.value)
                 #binsize = bg_std * 0.1
                 # Fit from -5 to +1 sigma
@@ -1650,7 +1650,6 @@ def obsmode_del(ad):
             if keyword in ad.phu:
                 ad.phu.remove(keyword)
     return ad
-    
 
 def parse_sextractor_param(param_file):
     """
@@ -2199,7 +2198,6 @@ def get_offset_dict(adinput=None):
     :rtype: dictionary
     :return: a dictionary whose keys are the AstroData instances and whose
         values are tuples of (POFFSET, QOFFSET).
-
     """
     offsets = {}
 
