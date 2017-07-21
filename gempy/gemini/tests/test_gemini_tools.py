@@ -150,19 +150,19 @@ class TestGeminiTools:
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                     'S20150110S0208_sourcesDetected.fits'))
         ret = gt.measure_bg_from_image(ad, sampling=1000)
-        correct = [(4769.6451962739029, 135.15673217773428, 4051),
-                   (4755.2097051531528, 139.58898356740355, 4141),
-                   (4795.2710757263212, 144.54896204033864, 4130),
-                   (4758.6914804861226, 136.653889361643, 4134)]
+        correct = [(4769.078849397978, 136.30732335464836, 4051),
+                   (4756.7707845272907, 138.45054591959072, 4141),
+                   (4797.0736783339098, 143.2131578397852, 4130),
+                   (4762.1949923200627, 136.64564601477898, 4134)]
         for rv, cv in zip(ret, correct):
             for a, b in zip(rv, cv):
-                assert abs(a - b) < 0.001, 'Problem with gaussfit=True'
+                assert abs(a - b) < 0.01, 'Problem with gaussfit=True'
         ret = gt.measure_bg_from_image(ad, sampling=100, gaussfit=False)
         correct = [(4766.5586, 118.92503, 38514), (4750.9131, 124.56567, 39535),
                    (4794.6167, 128.12645, 39309), (4757.0063, 121.23917, 39388)]
         for rv, cv in zip(ret, correct):
             for a, b in zip(rv, cv):
-                assert abs(a - b) < 0.001, 'Problem with gaussfit=False'
+                assert abs(a - b) < 0.01, 'Problem with gaussfit=False'
 
     def test_measure_bg_from_objcat(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
