@@ -8,6 +8,7 @@ import os
 from functools import partial, wraps
 import logging
 import warnings
+
 try:
     # Python 3
     from itertools import zip_longest
@@ -27,6 +28,8 @@ from astropy.nddata import NDData, NDDataRef as NDDataObject
 from astropy.nddata import StdDevUncertainty
 from astropy.table import Table
 import numpy as np
+
+warnings.simplefilter("always", DeprecationWarning)
 
 NO_DEFAULT = object()
 LOGGER = logging.getLogger('AstroData FITS')
