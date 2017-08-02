@@ -85,10 +85,10 @@ class TestPreprocess:
         p = NIRIImage(adinputs)
         p.separateSky()  # Difficult to construct this by hand
         p.associateSky()
-        filename_set = set([ad.phu.ORIGNAME for ad in adinputs])
+        filename_set = set([ad.phu['ORIGNAME'] for ad in adinputs])
         # Test here is that each science frame has all other frames as skies
         for k, v in p.sky_dict.items():
-            v = [ad.phu.ORIGNAME for ad in v]
+            v = [ad.phu['ORIGNAME'] for ad in v]
             assert len(v) == len(filenames) - 1
             assert set([k]+v) == filename_set
 
@@ -132,7 +132,7 @@ class TestPreprocess:
                                 'N20070913S0220_flat.fits')
         ad = astrodata.open(flat_file)
         ad.multiply(10.0)
-        del ad.phu.NORMLIZE  # Delete timestamp of previous processing
+        del ad.phu['NORMLIZE']  # Delete timestamp of previous processing
         p = NIRIImage([ad])
         ad = p.normalizeFlat(suffix='_flat', strip=True)[0]
         assert ad_compare(ad, flat_file)
@@ -158,7 +158,7 @@ class TestPreprocess:
     def test_subtractSkyBackground(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                 'N20070819S0104_flatCorrected.fits'))
-        ad.hdr.SKYLEVEL = 1000.0
+        ad.hdr['SKYLEVEL'] = 1000.0
         orig_data = ad[0].data.copy()
         p = NIRIImage([ad])
         ad = p.subtractSkyBackground()[0]
@@ -168,7 +168,7 @@ class TestPreprocess:
     def test_thresholdFlatfield(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                          'N20070913S0220_flat.fits'))
-        del ad.phu.TRHFLAT  # Delete timestamp of previous processing
+        del ad.phu['TRHFLAT']  # Delete timestamp of previous processing
         ad[0].data[100, 100] = 20.0
         p = NIRIImage([ad])
         ad = p.thresholdFlatfield()[0]

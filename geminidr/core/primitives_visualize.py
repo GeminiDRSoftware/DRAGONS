@@ -199,7 +199,8 @@ class Visualize(PrimitivesBASE):
                 elif tile:
                     name = '{}({})'.format(ext.filename, extname)
                 else:
-                    name = '{}({},{})'.format(ext.filename, extname, ext.hdr.EXTVER)
+                    name = '{}({},{})'.format(ext.filename, extname,
+                                              ext.hdr['EXTVER'])
 
                 try:
                     lnd.display(data, name=name, frame=frame, zscale=zscale,
