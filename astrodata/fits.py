@@ -8,6 +8,7 @@ import os
 from functools import partial, wraps
 import logging
 import warnings
+
 try:
     # Python 3
     from itertools import zip_longest
@@ -30,6 +31,11 @@ import numpy as np
 
 NO_DEFAULT = object()
 LOGGER = logging.getLogger('AstroData FITS')
+
+class AstroDataFitsDeprecationWarning(DeprecationWarning):
+    pass
+
+warnings.simplefilter("always", AstroDataFitsDeprecationWarning)
 
 class KeywordCallableWrapper(object):
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
@@ -164,15 +170,15 @@ class FitsKeywordManipulator(object):
             _inner_set_comment(self._headers[0])
 
     def __getattr__(self, key):
-        warnings.warn("Access to cards through attribute name is deprecated and will be removed in the future", DeprecationWarning)
+        warnings.warn("Access to cards through attribute name is deprecated and will be removed in the future", AstroDataFitsDeprecationWarning)
         return self[key]
 
     def __setattr__(self, key, value):
-        warnings.warn("Setting card values through attribute name is deprecated and will be removed in the future", DeprecationWarning)
+        warnings.warn("Setting card values through attribute name is deprecated and will be removed in the future", AstroDataFitsDeprecationWarning)
         self[key] = value
 
     def __delattr__(self, key):
-        warnings.warn("Removing cards through attribute name is deprecated and will be removed in the future", DeprecationWarning)
+        warnings.warn("Removing cards through attribute name is deprecated and will be removed in the future", AstroDataFitsDeprecationWarning)
         del self[key]
 
     def __contains__(self, key):

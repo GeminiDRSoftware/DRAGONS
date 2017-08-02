@@ -46,9 +46,9 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # Since we are only looking at the center position of the image relative
     # to the reference image, the PA of the image to be classified is 
     # sufficient (luckily!)
-    theta = math.radians(pos.phu.PA)
+    theta = math.radians(pos.phu['PA'])
     scale = pos.pixel_scale()
-    position = (pos.phu.POFFSET, pos.phu.QOFFSET)
+    position = (pos.phu['POFFSET'], pos.phu['QOFFSET'])
     deltap = (refpos[0] - position[0]) / scale
     deltaq = (refpos[1] - position[1]) / scale
     xshift = (deltap * math.cos(theta)) - (deltaq * math.sin(theta))
@@ -68,7 +68,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
                           format(ad.filename))
 
         # Finding the center of the illumination mask
-        center_illum = (illum_ad.phu.CENMASSX, illum_ad.phu.CENMASSY)
+        center_illum = (illum_ad.phu['CENMASSX'], illum_ad.phu['CENMASSY'])
         checkpos = (int(center_illum[0] + xshift),
                     int(center_illum[1] + yshift))
         

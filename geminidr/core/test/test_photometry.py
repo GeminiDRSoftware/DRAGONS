@@ -54,7 +54,7 @@ class TestPhotometry:
         ad = astrodata.open(filename)
         # Delete REFCAT and timestamp keyword so we can run again
         del ad.REFCAT
-        del ad.phu.ADDRECAT
+        del ad.phu['ADDRECAT']
         p = GMOSImage([ad])
         ad = p.addReferenceCatalog([ad])[0]
         assert ad_compare(ad, filename)
@@ -63,7 +63,7 @@ class TestPhotometry:
         filename = os.path.join(TESTDATAPATH, 'GMOS',
                                 'N20150624S0106_refcatAdded.fits')
         ad = astrodata.open(filename)
-        del ad.phu.DETECSRC
+        del ad.phu['DETECSRC']
         for ext in ad:
             del ext.OBJCAT
             del ext.OBJMASK

@@ -823,20 +823,20 @@ class Preprocess(PrimitivesBASE):
             adlist = group.list()
 #            obj = False; sky = False
             for ad in adlist:
-                ad.phu.EXPGROUP = num
+                ad.phu['EXPGROUP'] = num
 #                if ad.phu.get('OBJFRAME'): obj = True
 #                if ad.phu.get('SKYFRAME'): sky = True
 #                # if obj and sky: break  # no: need to record all group nums
 #            if obj:
 #                haveobj = True
 #                for ad in adlist:
-#                    ad.phu.OBJFRAME = 'TRUE'
+#                    ad.phu['OBJFRAME'] = 'TRUE'
 #            else:
 #                allobj = False
 #            if sky:
 #                havesky = True
 #                for ad in adlist:
-#                    ad.phu.SKYFRAME = 'TRUE'
+#                    ad.phu['SKYFRAME'] = 'TRUE'
 #            else:
 #                allsky = False
             # CJS: This reads more cleanly and should do the same thing
