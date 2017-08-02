@@ -102,19 +102,14 @@ class Stack(PrimitivesBASE):
             return adinputs
 
         # Ensure that each input AstroData object has been prepared
-        gains, read_noises = [], []
         for ad in adinputs:
             if not "PREPARED" in ad.tags:
                 raise IOError("{} must be prepared" .format(ad.filename))
-            else:
-                gains.append(ad.gain())
-                read_noises.append(ad.read_noise())
 
         # Determine the average gain from the input AstroData objects and
         # add in quadrature the read noise
-        #gains = [ad.gain() for ad in adinputs]
-        #gains = [ad.hdr['GAIN'] for ad in adinputs]
-        #read_noises = [ad.read_noise() for ad in adinputs]
+        gains = [ad.gain() for ad in adinputs]
+        read_noises = [ad.read_noise() for ad in adinputs]
 
         assert all(gain is not None for gain in gains), "Gain problem"
         assert all(rn is not None for rn in read_noises), "RN problem"
