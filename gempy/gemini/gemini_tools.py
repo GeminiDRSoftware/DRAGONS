@@ -1468,9 +1468,6 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
     Parameters
     ----------
     ad: AstroData
-        input image (NOT a list)
-    extver: int/None
-        if not None, use only this extension
     sampling: int
         1-in-n sampling factor
     value_only: bool
@@ -1481,13 +1478,10 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
     Returns
     -------
     list/value/tuple
-        if use_extver is set, returns a bg value or (bg, std) tuple; otherwise
+        if ad is single extension, returns a bg value or (bg, std) tuple; otherwise
         returns a list of such things
     """
-    try:
-        input_list = [ext for ext in ad]
-    except:
-        input_list = [ext]
+    input_list = [ad] if ad.is_single else [ext for ext in ad]
 
     output_list = []
     for ext in input_list:
@@ -1506,7 +1500,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
                               np.percentile(bg_data, 15.87))
                 g_init = CumGauss1D(bg, bg_std)
                 fit_g = fitting.LevMarLSQFitter()
-                g = fit_g(g_init, bg, np.linspace(0.,1.,len(bg_data)+1)[1:])
+                g = fit_g(g_init, bg_data, np.linspace(0.,1.,len(bg_data)+1)[1:])
                 bg, bg_std = g.mean.value, abs(g.stddev.value)
                 #binsize = bg_std * 0.1
                 # Fit from -5 to +1 sigma
@@ -1536,7 +1530,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         else:
             output_list.append((bg, bg_std, len(bg_data)))
 
-    return output_list
+    return output_list[0] if ad.is_single else output_list
 
 
 def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
@@ -1656,7 +1650,6 @@ def obsmode_del(ad):
             if keyword in ad.phu:
                 ad.phu.remove(keyword)
     return ad
-    
 
 def parse_sextractor_param(param_file):
     """
@@ -1800,20 +1793,21 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
     # Initialize the list of output AstroData objects
     adoutput_list = []
- 
+
     for ad in adinput:
+        # Get the keyword associated with the data_section descriptor
+        datasec_kw = ad._keyword_for('data_section')
+        oversec_kw = ad._keyword_for('overscan_section')
+
         for ext in ad:
             # Get data section as string and as a tuple
             datasecStr = ext.data_section(pretty=True)
-            dsl = ext.data_section()
-
-            # Get the keyword associated with the data_section descriptor
-            ds_kw = ext._keyword_for('data_section')
+            datasec = ext.data_section()
 
             # Check whether data need to be trimmed
             sci_shape = ext.data.shape
-            if (sci_shape[0]==dsl.y2 and sci_shape[1]==dsl.x2 and
-                dsl.x1==0 and dsl.y1==0):
+            if (sci_shape[0]==datasec.y2 and sci_shape[1]==datasec.x2 and
+                datasec.x1==0 and datasec.y1==0):
                 log.fullinfo('No changes will be made to {}[*,{}], since '
                              'the data section matches the data shape'.format(
                              ad.filename,ext.hdr['EXTVER']))
@@ -1824,23 +1818,28 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                          format(ad.filename, ext.hdr['EXTVER'], datasecStr))
 
             # Trim SCI, VAR, DQ to new section
-            ext.reset(ext.nddata[dsl.y1:dsl.y2,dsl.x1:dsl.x2])
+            ext.reset(ext.nddata[datasec.y1:datasec.y2,datasec.x1:datasec.x2])
             # And OBJMASK (if it exists)
             # TODO: should check more generally for any image extensions
             if hasattr(ext, 'OBJMASK'):
-                ext.OBJMASK = ext.OBJMASK[dsl.y1:dsl.y2,dsl.x1:dsl.x2]
+                ext.OBJMASK = ext.OBJMASK[datasec.y1:datasec.y2,
+                              datasec.x1:datasec.x2]
 
             # Update header keys to match new dimensions
-            newDataSecStr = '[1:{},1:{}]'.format(dsl.x2-dsl.x1, dsl.y2-dsl.y1)
-            ext.hdr.set('NAXIS1', dsl.x2-dsl.x1, keyword_comments['NAXIS1'])
-            ext.hdr.set('NAXIS2', dsl.y2-dsl.y1, keyword_comments['NAXIS2'])
-            ext.hdr.set(ds_kw, newDataSecStr, comment=keyword_comments[ds_kw])
+            newDataSecStr = '[1:{},1:{}]'.format(datasec.x2-datasec.x1,
+                                                 datasec.y2-datasec.y1)
+            ext.hdr.set('NAXIS1', datasec.x2-datasec.x1, keyword_comments['NAXIS1'])
+            ext.hdr.set('NAXIS2', datasec.y2-datasec.y1, keyword_comments['NAXIS2'])
+            ext.hdr.set(datasec_kw, newDataSecStr, comment=keyword_comments[datasec_kw])
             ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])
+            if oversec_kw in ext.hdr:
+                del ext.hdr[oversec_kw]
+
 
             # Update WCS reference pixel coordinate
             try:
-                crpix1 = ext.hdr['CRPIX1'] - dsl.x1
-                crpix2 = ext.hdr['CRPIX2'] - dsl.y1
+                crpix1 = ext.hdr['CRPIX1'] - datasec.x1
+                crpix2 = ext.hdr['CRPIX2'] - datasec.y1
             except:
                 log.warning("Could not access WCS keywords; using dummy "
                             "CRPIX1 and CRPIX2")
@@ -2199,7 +2198,6 @@ def get_offset_dict(adinput=None):
     :rtype: dictionary
     :return: a dictionary whose keys are the AstroData instances and whose
         values are tuples of (POFFSET, QOFFSET).
-
     """
     offsets = {}
 

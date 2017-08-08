@@ -82,7 +82,7 @@ class NIRI(Gemini, NearIR):
 
                 raw_pixel_data = ext.data / coadds
                 
-                raw_mean_value = np.mean(raw_pixel_data, dtype=np.float64)
+                raw_mean_value = np.mean(raw_pixel_data)
                 log.fullinfo("The mean value of the raw pixel data in " \
                              "{} is {:.8f}".format(ext.filename, raw_mean_value))
                 
@@ -107,7 +107,7 @@ class NIRI(Gemini, NearIR):
                 ext.multiply(exptime / (exptime + coeffs.time_delta))
                 
                 # Determine the mean of the corrected pixel data
-                corrected_mean_value = np.mean(ext.data, dtype=np.float64)
+                corrected_mean_value = np.mean(ext.data)
                 log.fullinfo("The mean value of the corrected pixel data in "
                         "{} is {:.8f}".format(ext.filename, corrected_mean_value))
             

@@ -906,14 +906,9 @@ class AstroDataGmos(AstroDataGemini):
                     if saturation > processed_limit:
                         saturation = processed_limit
             else:
-                print detector
-                print ampname, gain, bunits
-                print bin_factor
                 testlut = _well_depth(detector, ampname[0], bin_factor, gain[0], bunits[0])
-                print testlut
                 well_limit = [_well_depth(detector, a, bin_factor, g, b)
                               for a, g, b in zip(ampname, gain, bunits)]
-                print well_limit
                 saturation = [None if w is None else
                               min(w + blev if not bsub else 0, p)
                               for w, p, blev, bsub in zip(well_limit,

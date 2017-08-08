@@ -6,6 +6,7 @@
 import numpy as np
 from copy import deepcopy
 import scipy.ndimage as ndimage
+from astropy.wcs import WCS
 
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
@@ -13,6 +14,7 @@ from gempy.utils import logutils
 from geminidr.core import Image, Photometry
 from .primitives_gmos import GMOS
 from .parameters_gmos_image import ParametersGMOSImage
+from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -29,6 +31,141 @@ class GMOSImage(GMOS, Image, Photometry):
         super(GMOSImage, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersGMOSImage
 
+    def addOIWFSToDQ(self, adinputs=None, **params):
+        """
+        Flags pixels affected by the OIWFS on a GMOS image. It uses the
+        header information to determine the location of the guide star, and
+        basically "flood-fills" low-value pixels around it to give a first
+        estimate. This map is then grown pixel-by-pixel until the values of
+        the new pixels it covers stop increasing (indicating it's got to the
+        sky level). Extensions to the right of the one with the guide star
+        are handled by taking a starting point near the left-hand edge of the
+        extension, level with the location at which the probe met the right-
+        hand edge of the previous extension.
+        
+        This code assumes that data_section extends over all rows.
+        
+        Parameters
+        ----------
+        border: int
+            distance from edge to start flood fill
+        convergence: float
+            amount within which successive sky level measurements have to
+            agree during dilation phase for this phase to finish
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        border = 5  # Pixels in from edge where sky level is reliable
+        convergence = 2.0
+
+        for ad in adinputs:
+            wfs = ad.wavefront_sensor()
+            if wfs is None or 'OIWFS' not in wfs:
+                log.fullinfo('OIWFS not used for image {}.'.format(ad.filename))
+                continue
+
+            oira = ad.phu.get('OIARA')
+            oidec = ad.phu.get('OIADEC')
+            if oira is None or oidec is None:
+                log.warning('Cannot determine location of OI probe for {}.'
+                            'Continuing.'.format(ad.filename))
+                continue
+
+            # DQ planes must exist so the unilluminated region is flagged
+            if np.any([ext.mask is None for ext in ad]):
+                log.warning('No DQ plane for {}. Continuing.'.format(ad.filename))
+
+            # OIWFS comes in from the right, so we need to have the extensions
+            # sorted in order from left to right
+            ampsorder = list(np.argsort([detsec.x1
+                                         for detsec in ad.detector_section()]))
+            datasec_list = ad.data_section()
+            gs_index = -1
+            for index in ampsorder:
+                ext = ad[index]
+                wcs = WCS(ext.header[1])
+                x, y = wcs.all_world2pix([[oira, oidec]], 0)[0]
+                if x < datasec_list[index].x2 + 0.5:
+                    gs_index = index
+                    log.fullinfo('Guide star location found at ({:.2f},{:.2f})'
+                                 ' on EXTVER {}'.format(x, y, ext.hdr['EXTVER']))
+                    break
+            if gs_index == -1:
+                log.warning('Could not find OI probe location on any extensions.')
+                continue
+
+            # The OIWFS extends to the left of the actual star location, which
+            # might have it vignetting a part of an earlier extension. Also, it
+            # may be in a chip gap, which has the same effect
+            amp_index = ampsorder.index(gs_index)
+            if x < 50:
+                amp_index -= 1
+                x = (datasec_list[ampsorder[amp_index]].x2 -
+                     datasec_list[ampsorder[amp_index]].x1 - border)
+            else:
+                x -= datasec_list[ampsorder[amp_index]].x1
+
+            dilator = ndimage.morphology.generate_binary_structure(2, 1)
+            for index in ampsorder[amp_index:]:
+                datasec = datasec_list[index]
+                sky, skysig, _ = gt.measure_bg_from_image(ad[index])
+
+                # To avoid hassle with whether the overscan region is present
+                # or not and how adjacent extensions relate to each other,
+                # just deal with the data sections
+                data_region = ad[index].data[:, datasec.x1:datasec.x2]
+                mask_region = ad[index].mask[:, datasec.x1:datasec.x2]
+                x1 = max(int(x-border), border)
+                x2 = max(min(int(x+border), datasec.x2-datasec.x1), x1+border)
+                y1 = max(int(y-border), 0)
+                y2 = max(min(int(y+border), datasec.y2-datasec.y1), y1+border)
+                wfs_sky = np.median(data_region[y1:y2, x1:x2])
+                if wfs_sky > sky-convergence:
+                    log.warning('Cannot distinguish probe region from sky for '
+                                '{}'.format(ad.filename))
+                    break
+
+                # Flood-fill region around guide-star with all pixels fainter
+                # than this boundary value
+                boundary = sky - 0.2 * (sky-wfs_sky)
+                regions, nregions = ndimage.measurements.label(
+                    np.logical_and(data_region < boundary, mask_region==0))
+                wfs_region = regions[int(y+0.5), int(x+0.5)]
+                blocked = ndimage.morphology.binary_fill_holes(np.where(regions==wfs_region,
+                                                                        True, False))
+                this_mean_sky = wfs_sky
+                condition_met = False
+                while not condition_met:
+                    last_mean_sky = this_mean_sky
+                    new_blocked = ndimage.morphology.binary_dilation(blocked,
+                                                                     structure=dilator)
+                    this_mean_sky = np.median(ad[index].data[new_blocked ^ blocked])
+                    blocked = new_blocked
+                    if index <= gs_index:
+                        condition_met = (this_mean_sky - last_mean_sky < convergence)
+                    else:
+                        # Dilate until WFS width at left of image equals width at
+                        # right of previous extension image
+                        width = np.sum(blocked[:,0])
+                        condition_met = (y_width - width < 2) or index > 9
+
+                # Flag DQ pixels as unilluminated only if not flagged
+                # (to avoid problems with the edge extensions and/or saturation)
+                datasec_mask = ad[index].mask[:, datasec.x1:datasec.x2]
+                datasec_mask |= np.where(blocked, np.where(datasec_mask>0, 0,
+                                                        DQ.unilluminated), 0)
+
+                # Set up for next extension. If flood-fill hasn't reached
+                # right-hand edge of detector, stop.
+                column = blocked[:, -1]
+                y_width = np.sum(column)
+                if y_width == 0:
+                    break
+                y = np.mean(np.arange(datasec.y1, datasec.y2)[column])
+                x = border
+
+        return adinputs
+
     def fringeCorrect(self, adinputs=None, **params):
         """
         This uses a fringe frame to correct a GMOS image for fringing.
@@ -38,7 +175,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         CJS: During refactoring, I've changed the operation of this primitive.
         It used to no-op if *any* of the adinputs didn't need a correction but
-        it now makees an image-by-image decision
+        it now makes an image-by-image decision
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -292,7 +429,7 @@ class GMOSImage(GMOS, Image, Photometry):
                          "statistics".format(xborder, data.shape[1] - xborder,
                                              yborder, data.shape[0] - yborder))
             stat_region = data[yborder:-yborder, xborder:-xborder]
-            mean = np.mean(stat_region, dtype=np.float64)
+            mean = np.mean(stat_region)
 
             # Set reference level to the first image's mean
             if ref_mean is None:
