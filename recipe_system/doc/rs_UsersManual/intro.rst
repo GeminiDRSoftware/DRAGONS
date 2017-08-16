@@ -5,7 +5,7 @@
 ************
 Introduction
 ************
-The Recipe System is Gemini Observatory's new data processing software platform.
+The Recipe System is Gemini Observatory's data processing software platform.
 The Recipe System is designed as a framework that accommodates both stepwise,
 interactive data processing and automated data reduction pipelines.
 
@@ -38,7 +38,7 @@ the Recipe System infrastructure to naturally bring the following benefits:
  • A science-oriented data processing "recipe" system
  • Automated and dynamic data processing
  • Automatic propagation of associated data and metadata
- • History and provenance recording
+ • History, provenance, repeatability
  • Support for building smart pipelines
 
 As a quick example of how the Recipe System and ``AstroData`` work together, 
@@ -162,15 +162,16 @@ data to which this recipe library applies.
 Primitive
 ---------
 A primitive is a defined method on a primitive class. A primitive function 
-is generally contrived to be a "science-oriented" data processing step, though
-the Recipe System provides no requirement that this be true.
+is generally contrived to be a "science-oriented" data processing step, for
+example, "bias correction," though the Recipe System has no requirement
+that this be true.
 
 Primitive Class
 ---------------
 As defined under the *gemini_python* package, ``geminidr``, primitive classes 
 are a large set of hierarchical classes exhibiting inheritance from generic to
 specific. Because they are real data, datasets will always have some 
-instrument/mode specific set of *tags* that will see the Recipe System pick
+instrument/mode specific set of *tags* that will allow the Recipe System to pick
 instrument/mode specific primitive class. 
 
 Further Information
@@ -215,7 +216,6 @@ Related Documents
     Labrie, K., Gemini Observatory, 2017, astrodata/doc/ad_UserManual/.
 
 
-The Recipe System is Gemini’s new data processing software platform 
-for end-users reducing data on their desktop. However, the Recipe System 
-is also designed to form the heart of automated data reduction pipelines.
-
+The Recipe System is Gemini's data processing software platform for end-users
+reducing data on their computer. However, the Recipe System is also designed to 
+form the heart of automated data reduction pipelines.

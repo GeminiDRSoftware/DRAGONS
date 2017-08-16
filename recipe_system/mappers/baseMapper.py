@@ -9,7 +9,6 @@ from types import StringType
 
 from ..utils.mapper_utils import dictify
 from ..utils.mapper_utils import dotpath
-from ..utils.mapper_utils import DRMARKER
 # ------------------------------------------------------------------------------
 class Mapper(object):
     """
@@ -24,11 +23,15 @@ class Mapper(object):
     module and class attributes that match on a dataset's tags attribute.
 
     """
-    def __init__(self, adinputs, recipename='default', context=['qa'],
+    def __init__(self, adinputs, context=['qa'], drpkg='geminidr', recipename='default',
                  usercals=None, uparms=None, upload_metrics=False):
         """
         :parameter adinputs: list of AstroData objects.
         :type adinputs: <list>
+
+        :parameter drpkg: The data reduction package to map. Default is 'geminidr'.
+                          This package *must* be importable.
+        :type drpkg: <str>
 
         :parameter recipename: The recipe to use for processing. Passed by user 
                                with -r or set by caller. Else 'default' recipe.
@@ -60,7 +63,7 @@ class Mapper(object):
         self._context   = context
         ainst = adinputs[0].instrument()
         self.pkg        = 'gmos' if "GMOS" in ainst else ainst.lower()
-        self.dotpackage = dotpath(DRMARKER, self.pkg)
+        self.dotpackage = dotpath(drpkg, self.pkg)
         self.recipename = recipename
         self.tags       = adinputs[0].tags
         self.usercals   = usercals if usercals else {}
