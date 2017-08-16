@@ -80,9 +80,9 @@ description and discussion of certain non-trivial options is presented. ::
   -d , --displayflags   Display all parsed option flags and exit.
   --context CONTEXT     Use <context> for recipe selection and primitives
                         sensitive to context. Eg., --context QA.
-  --drpkg DRPKG         Specify an external data reduction (dr) package.The
+  --drpkg DRPKG         Specify another data reduction (dr) package. The
                         package must be importable either through sys.path or
-                        a user's PYTHONPATH. Default is 'geminidr'.
+                        a user's PYTHONPATH. Recipe System default is 'geminidr'.
                         E.g., --drpkg ghostdr.
   --logfile LOGFILE     Set name of log file (default is 'reduce.log').
   --loglevel LOGLEVEL   Set verbose level for console logging; (critical,
@@ -141,17 +141,17 @@ Informational switches
 
        Literals                    var 'dest'                  Value
        -----------------------------------------------------------------
-       ['-d', '--displayflags']    :: displayflags             :: True
-       ['-p', '--param']           :: userparam                :: None
-       ['--logmode']               :: logmode                  :: console
-       ['--drpkg']                 :: drpkg                    :: geminidr
-       ['--context']               :: context                  :: ['qa']
-       ['-r', '--recipe']          :: recipename               :: None
-       ['--suffix']                :: suffix                   :: None
-       ['--loglevel']              :: loglevel                 :: stdinfo
-       ['--user_cal']              :: user_cal                 :: None
-       ['--logfile']               :: logfile                  :: reduce.log
-       ['--upload_metrics']        :: upmetrics                :: False
+       ['-d', '--displayflags']    :: displayflags           :: True
+       ['-p', '--param']           :: userparam              :: None
+       ['--logmode']               :: logmode                :: console
+       ['--context']               :: context                :: ['qa']
+       ['-r', '--recipe']          :: recipename             :: None
+       ['--suffix']                :: suffix                 :: None
+       ['--loglevel']              :: loglevel               :: stdinfo
+       ['--drpkg']                 :: drpkg                  :: geminidr
+       ['--user_cal']              :: user_cal               :: None
+       ['--logfile']               :: logfile                :: reduce.log
+       ['--upload_metrics']        :: upmetrics              :: False
        -----------------------------------------------------------------
 
        Input fits file(s):	fitsfile.fits
@@ -162,7 +162,7 @@ Configuration Switches, Options
 +++++++++++++++++++++++++++++++
 **--context <CONTEXT>**
     Use <CONTEXT> for recipe selection and for primitives sensitive to context. 
-    Eg., ``--context QA``. When not specified, the context defaults to 'QA'. 
+    Eg., ``--context qa``. When not specified, the context defaults to 'qa'. 
 
 **--logfile <LOGFILE>**
     Set the log file name. Default is 'reduce.log' in the current directory.
@@ -191,6 +191,37 @@ Configuration Switches, Options
 
     where 'console' writes only to screen and 'quiet' writes only to the log
     file. Default is 'standard'.
+
+**--drpkg DRPKG**
+    Specify an external data reduction (dr) package. The package must be
+    importable either through sys.path or a user's PYTHONPATH.
+    Default is 'geminidr'.
+
+    E.g., ``--drpkg ghostdr``
+
+    When this option is specified, users will see the passed value for 
+    'drpkg'using the [-d --displayflags] option. For the example above::
+
+     $ reduce -d --drpkg ghostdr --logmode console fitsfile.fits
+
+        --------------------   switches, vars, vals  --------------------
+
+	  Literals			var 'dest'		Value
+	-----------------------------------------------------------------
+	['-d', '--displayflags']        :: displayflags       :: True
+	['-p', '--param']               :: userparam          :: None
+	['--logmode']                   :: logmode            :: console
+	['--context']                   :: context            :: ['qa']
+	['-r', '--recipe']              :: recipename         :: None
+	['--suffix']                    :: suffix             :: None
+	['--loglevel']                  :: loglevel           :: stdinfo
+	['--drpkg']                     :: drpkg              :: ghostdr
+	['--user_cal']                  :: user_cal           :: None
+	['--logfile']                   :: logfile            :: reduce.log
+	['--upload_metrics']            :: upmetrics          :: False
+	-----------------------------------------------------------------
+
+     Input fits file(s):	fitsfile.fits
 
 **-p <USERPARAM [USERPARAM ...]>, --param <USERPARAM [USERPARAM ...]>**
     Set a primitive parameter from the command line. The form '-p par=val' sets 
@@ -249,37 +280,6 @@ Configuration Switches, Options
     Eg.,
 
     ``--user_cal wcal/gsTest_arc.fits``
-
-**--drpkg DRPKG**
-    Specify an external data reduction (dr) package. The package must be
-    importable either through sys.path or a user's PYTHONPATH.
-    Default is 'geminidr'.
-
-    E.g., ``--drpkg ghostdr``
-
-    When this option is specified, users will see the passed value for 
-    'drpkg'using the [-d --displayflags] option. For the example above::
-
-     $ reduce -d --drpkg ghostdr --logmode console fitsfile.fits
-
-        --------------------   switches, vars, vals  --------------------
-
-	  Literals			var 'dest'		Value
-	-----------------------------------------------------------------
-	['-d', '--displayflags']        :: displayflags         :: True
-	['-p', '--param']               :: userparam            :: None
-	['--logmode']                   :: logmode              :: console
-	['--context']                   :: context              :: ['qa']
-	['-r', '--recipe']              :: recipename           :: None
-	['--suffix']                    :: suffix               :: None
-	['--loglevel']                  :: loglevel             :: stdinfo
-	['--drpkg']                     :: drpkg                :: ghostdr
-	['--user_cal']                  :: user_cal             :: None
-	['--logfile']                   :: logfile              :: reduce.log
-	['--upload_metrics']            :: upmetrics            :: False
-	-----------------------------------------------------------------
-
-     Input fits file(s):	fitsfile.fits
 
 
 .. _userpars:
