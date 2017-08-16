@@ -229,7 +229,7 @@ class Swap(object):
                                        'recipe_system/adcc/servers',
                                        'recipe_system/cal_service',
                                        'recipe_system/mappers',
-                                       'recipe_system/reduction'
+                                       'recipe_system/reduction',
                                        'recipe_system/scripts',
                                        'recipe_system/stacks',
                                        'recipe_system/utils',
