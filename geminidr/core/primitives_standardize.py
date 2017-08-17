@@ -492,7 +492,7 @@ class Standardize(PrimitivesBASE):
                                 format(ad.filename, xbin, ybin))
 
             valid_num_ext = params.get('num_exts')
-            if valid_num_ext is not None:
+            if valid_num_ext is None:
                 log.status("No validation required for {}".format(ad.filename))
             else:
                 if not isinstance(valid_num_ext, list):
