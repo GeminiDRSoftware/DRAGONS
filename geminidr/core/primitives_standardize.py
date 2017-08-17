@@ -491,9 +491,8 @@ class Standardize(PrimitivesBASE):
                     log.warning("Image {} is {} x {} binned data".
                                 format(ad.filename, xbin, ybin))
 
-            try:
-                valid_num_ext = params['num_exts']
-            except KeyError:
+            valid_num_ext = params.get('num_exts')
+            if valid_num_ext is not None:
                 log.status("No validation required for {}".format(ad.filename))
             else:
                 if not isinstance(valid_num_ext, list):
