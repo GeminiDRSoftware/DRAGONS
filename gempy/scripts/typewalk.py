@@ -85,7 +85,7 @@ def typewalk_argparser():
 
     parser.add_argument("--tags", dest="tags", nargs='+', default='all',
                       help= "Find datasets that match only these tag criteria. "
-                        "Eg., --types SOUTH GMOS IMAGE will report datasets "
+                        "Eg., --tags SOUTH GMOS IMAGE will report datasets "
                         "that are all tagged SOUTH *and* GMOS *and* IMAGE.")
 
     parser.add_argument("--xtags", dest="xtags", nargs='+', default=None,
