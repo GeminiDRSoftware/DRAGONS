@@ -243,12 +243,6 @@ class Visualize(PrimitivesBASE):
             ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
 
         """
-        def _sname(name):
-            head, tail = splitext(name)
-            ohead = head.split("_")[0]
-            newname = ohead + params['suffix'] + tail
-            return newname
-
         def _compat(tlist):
             item = None
             if "GMOS" in tlist and "IMAGE" in tlist:
@@ -278,6 +272,7 @@ class Visualize(PrimitivesBASE):
             ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.filename = gt.filename_updater(adinput=ad_out, suffix=suffix, strip=True)
             adoutputs.append(ad_out)
 
         return adoutputs

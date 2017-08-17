@@ -87,6 +87,13 @@ def buildParser(version):
                         help="Use <context> for recipe selection and "
                         " primitives sensitive to context. Eg., --context QA")
 
+    parser.add_argument("--drpkg", dest='drpkg', default='geminidr',
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Specify another data reduction (dr) package. "
+                        "The package must be importable either through sys.path "
+                        "or a user's PYTHONPATH. Recipe system default is "
+                        "'geminidr'. E.g., --drpkg ghostdr ")
+
     parser.add_argument("--logfile", dest="logfile", default="reduce.log",
                         nargs="*", action=UnitaryArgumentAction,
                         help="name of log (default is 'reduce.log')")
@@ -259,6 +266,8 @@ def normalize_args(args):
 
     """
 
+    if isinstance(args.drpkg, list):
+        args.drpkg = args.drpkg[0]
     if isinstance(args.recipename, list):
         args.recipename = args.recipename[0]
     if localmanager_available:

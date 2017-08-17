@@ -867,8 +867,9 @@ class FitsProvider(DataProvider):
         del self._nddata[idx]
 
     def __len__(self):
-        self._lazy_populate_object()
-        return len(self._nddata)
+#        self._lazy_populate_object()
+#        return len(self._nddata)
+        return len(self._header) - 1
 
 #    def _set_headers(self, hdulist, update=True):
 #        new_headers = [hdulist[0].header] + [x.header for x in hdulist[1:] if

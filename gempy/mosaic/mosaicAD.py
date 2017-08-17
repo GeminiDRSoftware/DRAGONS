@@ -135,7 +135,7 @@ class MosaicAD(Mosaic):
         type: <str> Supported values are 'wcs', 'transform'. Default is 'wcs'.
 
         """
-        adout = astrodata.create(self.ad[0].header[0])
+        adout = astrodata.create(self.ad.header[0])
         adout.phu.set('TILED', ['FALSE', 'TRUE'][tile])
         adout.phu.set_comment('TILED', 'True: tiled; False: Image Mosaicked')
 
@@ -221,7 +221,7 @@ class MosaicAD(Mosaic):
         """
         # If there is no WCS return 1 list of 1.s
         try:
-           ref_wcs = wcs.WCS(ad[0].header)
+           ref_wcs = wcs.WCS(self.ad.header[1])
         except:
            self.jfactor = [1.0] * len(self.ad)
            return
@@ -341,7 +341,7 @@ class MosaicAD(Mosaic):
         fmat1 = "[{}:{},{}:{}]"
         fmat2 = "[1:{},1:{}]"
 
-        mosaic_hd = self.ad[0].header[1].copy()              # SCI ext header.
+        mosaic_hd = self.ad.header[1].copy()              # SCI ext header.
         ref_block = self.geometry.ref_block  
         amps_per_block = self._amps_per_block
 

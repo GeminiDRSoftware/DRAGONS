@@ -79,6 +79,7 @@ class Reduce(object):
 
         self.adinputs = None
         self._context = args.context
+        self.drpkg    = args.drpkg
         self.files    = args.files
         self.suffix   = args.suffix
         self.ucals    = normalize_ucals(args.files, args.user_cal)
@@ -146,10 +147,12 @@ class Reduce(object):
             log.error(str(err))
             return xstat
 
-        rm = RecipeMapper(self.adinputs,recipename=self.urecipe,context=self.context)
+        rm = RecipeMapper(self.adinputs, context=self.context, drpkg=self.drpkg,
+                          recipename=self.urecipe)
 
-        pm = PrimitiveMapper(self.adinputs, context=self.context, usercals=self.ucals,
-                             uparms=self.uparms, upload_metrics=self.upload_metrics)
+        pm = PrimitiveMapper(self.adinputs, context=self.context, drpkg=self.drpkg,
+                             usercals=self.ucals, uparms=self.uparms,
+                             upload_metrics=self.upload_metrics)
 
         try:
             recipe = rm.get_applicable_recipe()

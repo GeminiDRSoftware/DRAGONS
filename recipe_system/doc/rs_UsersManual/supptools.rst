@@ -25,8 +25,8 @@ Data Communication Center, is significantly scaled back from its previous
 (v1.0) incarnation and now runs only as an HTTP server. The webservice provided
 by the ``adcc`` allows both the Recipe System and primitive functions to post
 data produced during data processing. These data comprise image quality and
-weather related metrics, passed to the web server in the form of messages
-encapsulating the metrics data. The metrics themselves are produced by
+observing condition metrics, passed to the web server in the form of messages
+encapsulating metrics data. The metrics themselves are produced by
 three specific primitive functions, ``measureIQ``, ``measuerBG``, and
 ``measureCC``, which respectively measure image quality, background level,
 and cloud cover (measured atmospheric extinction).

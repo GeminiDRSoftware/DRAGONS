@@ -47,10 +47,10 @@ with GMOS are defined in the ``geminidr`` package under::
 
   gmos/recipes/qa
 
-As previously indicated, the command itself is deceptively simple considering 
-the processing that ensues. This simplicity is outward facing, which means 
-the complexity is "under the hood," as ``reduce`` and the ``Reduce`` class use 
-the ``astrodata`` abstraction to determine the recipes and primitive classes 
+As previously indicated, the ``reduce`` command itself is deceptively simple
+considering the processing that ensues. This simplicity is outward facing, which
+means the complexity is "under the hood," as ``reduce`` and the ``Reduce`` class
+use the ``astrodata`` abstraction to determine the recipes and primitive classes
 appropriate to the dataset(s) presented.
 
 Command Options and Switches
@@ -61,8 +61,8 @@ also available as a manual page as (``man reduce``). Subsequently, further
 description and discussion of certain non-trivial options is presented. ::
 
   $ reduce --help
-  usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--logfile LOGFILE]
-              [--loglevel LOGLEVEL] [--logmode LOGMODE]
+  usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--drpkg DRPKG]
+              [--logfile LOGFILE] [--loglevel LOGLEVEL] [--logmode LOGMODE]
               [-p USERPARAM [USERPARAM ...]] [-r RECIPENAME] [--suffix SUFFIX]
               [--upload_metrics] [--user_cal USER_CAL]
               fitsfile [fitsfile ...]
@@ -75,14 +75,18 @@ description and discussion of certain non-trivial options is presented. ::
     fitsfile              fitsfile [fitsfile ...]
 
  optional arguments:
-  -h, --help            show this help message and exit
-  -v, --version         show program's version number and exit
-  -d , --displayflags   display all parsed option flags and exit.
+  -h, --help            Show this help message and exit.
+  -v, --version         Show program's version number and exit.
+  -d , --displayflags   Display all parsed option flags and exit.
   --context CONTEXT     Use <context> for recipe selection and primitives
-                        sensitive to context. Eg., --context QA
-  --logfile LOGFILE     name of log (default is 'reduce.log')
-  --loglevel LOGLEVEL   Set the verbose level for console logging; (critical,
-                        error, warning, status, stdinfo, fullinfo, debug)
+                        sensitive to context. Eg., --context QA.
+  --drpkg DRPKG         Specify another data reduction (dr) package. The
+                        package must be importable either through sys.path or
+                        a user's PYTHONPATH. Recipe System default is 'geminidr'.
+                        E.g., --drpkg ghostdr.
+  --logfile LOGFILE     Set name of log file (default is 'reduce.log').
+  --loglevel LOGLEVEL   Set verbose level for console logging; (critical,
+                        error, warning, status, stdinfo, fullinfo, debug).
   --logmode LOGMODE     Set log mode: 'standard', 'console', 'quiet', 'debug',
                         or 'null'.
   -p USERPARAM [USERPARAM ...], --param USERPARAM [USERPARAM ...]
@@ -91,7 +95,7 @@ description and discussion of certain non-trivial options is presented. ::
                         with that defined parameter will 'see' it. The form:
                         '-p primitivename:par=val', sets the parameter only
                         for 'primitivename'. Separate par/val pairs by
-                        whitespace: (eg. '-p par1=val1 par2=val2')
+                        whitespace: (eg. '-p par1=val1 par2=val2').
   -r RECIPENAME, --recipe RECIPENAME
                         Specify a recipe by name. Users can request non-
                         default system recipe functions by their simple names,
@@ -108,9 +112,9 @@ description and discussion of certain non-trivial options is presented. ::
                         defined in a single file.
   --suffix SUFFIX       Add 'suffix' to filenames at end of reduction; strip
                         all other suffixes marked by '_'.
-  --upload_metrics      Send QA metrics to fitsstore. Default is False.
+  --upload_metrics      Send QA metrics to the metrics db. Default is False.
   --user_cal USER_CAL   Specify user supplied calibrations for calibration
-                        types. Eg., --user_cal gsTest_arc.fits
+                        types. Eg., --user_cal gsTest_arc.fits .
 
 The [options] are described in the following sections.
 
@@ -137,16 +141,17 @@ Informational switches
 
        Literals                    var 'dest'                  Value
        -----------------------------------------------------------------
-       ['-d', '--displayflags']    :: displayflags             :: True
-       ['-p', '--param']           :: userparam                :: None
-       ['--logmode']               :: logmode                  :: console
-       ['--context']               :: context                  :: ['qa']
-       ['-r', '--recipe']          :: recipename               :: None
-       ['--suffix']                :: suffix                   :: None
-       ['--loglevel']              :: loglevel                 :: stdinfo
-       ['--user_cal']              :: user_cal                 :: None
-       ['--logfile']               :: logfile                  :: reduce.log
-       ['--upload_metrics']        :: upmetrics                :: False
+       ['-d', '--displayflags']    :: displayflags           :: True
+       ['-p', '--param']           :: userparam              :: None
+       ['--logmode']               :: logmode                :: console
+       ['--context']               :: context                :: ['qa']
+       ['-r', '--recipe']          :: recipename             :: None
+       ['--suffix']                :: suffix                 :: None
+       ['--loglevel']              :: loglevel               :: stdinfo
+       ['--drpkg']                 :: drpkg                  :: geminidr
+       ['--user_cal']              :: user_cal               :: None
+       ['--logfile']               :: logfile                :: reduce.log
+       ['--upload_metrics']        :: upmetrics              :: False
        -----------------------------------------------------------------
 
        Input fits file(s):	fitsfile.fits
@@ -157,7 +162,7 @@ Configuration Switches, Options
 +++++++++++++++++++++++++++++++
 **--context <CONTEXT>**
     Use <CONTEXT> for recipe selection and for primitives sensitive to context. 
-    Eg., ``--context QA``. When not specified, the context defaults to 'QA'. 
+    Eg., ``--context qa``. When not specified, the context defaults to 'qa'. 
 
 **--logfile <LOGFILE>**
     Set the log file name. Default is 'reduce.log' in the current directory.
@@ -186,6 +191,37 @@ Configuration Switches, Options
 
     where 'console' writes only to screen and 'quiet' writes only to the log
     file. Default is 'standard'.
+
+**--drpkg DRPKG**
+    Specify an external data reduction (dr) package. The package must be
+    importable either through sys.path or a user's PYTHONPATH.
+    Default is 'geminidr'.
+
+    E.g., ``--drpkg ghostdr``
+
+    When this option is specified, users will see the passed value for 
+    'drpkg'using the [-d --displayflags] option. For the example above::
+
+     $ reduce -d --drpkg ghostdr --logmode console fitsfile.fits
+
+        --------------------   switches, vars, vals  --------------------
+
+	  Literals			var 'dest'		Value
+	-----------------------------------------------------------------
+	['-d', '--displayflags']        :: displayflags       :: True
+	['-p', '--param']               :: userparam          :: None
+	['--logmode']                   :: logmode            :: console
+	['--context']                   :: context            :: ['qa']
+	['-r', '--recipe']              :: recipename         :: None
+	['--suffix']                    :: suffix             :: None
+	['--loglevel']                  :: loglevel           :: stdinfo
+	['--drpkg']                     :: drpkg              :: ghostdr
+	['--user_cal']                  :: user_cal           :: None
+	['--logfile']                   :: logfile            :: reduce.log
+	['--upload_metrics']            :: upmetrics          :: False
+	-----------------------------------------------------------------
+
+     Input fits file(s):	fitsfile.fits
 
 **-p <USERPARAM [USERPARAM ...]>, --param <USERPARAM [USERPARAM ...]>**
     Set a primitive parameter from the command line. The form '-p par=val' sets 
@@ -381,20 +417,22 @@ users may check by adding the **-d** flag::
   
   --------------------   switches, vars, vals  --------------------
 
-  Literals		     var 'dest'		Value
+  Literals			var 'dest'		Value
   -----------------------------------------------------------------
-  ['--invoked'] 	     :: invoked 	:: False
-  ['-d', '--displayflags']   :: displayflags 	:: True
-  ['-p', '--param'] 	     :: userparam 	:: ['stackFlats:operation=mean', 
-                                                    'high_reject=4','low_reject=2']
-  ['--logmode'] 	     :: logmode 	:: standard
-  ['-r', '--recipe'] 	     :: recipename 	:: ['recipe.ArgTests']
-  ['--logfile'] 	     :: logfile 	:: reduce.log
-  ['--user_cal'] 	     :: user_cal 	:: None
-  ['--context'] 	     :: context         :: ['QA']
-  ['--suffix'] 		     :: suffix 		:: None
-  ['--loglevel'] 	     :: loglevel 	:: stdinfo
+  ['-d', '--displayflags']      :: displayflags      :: True
+  ['-p', '--param']             :: userparam         :: ['stackFlats:operation=mean',
+                                                       'high_reject=4','low_reject=2']
+  ['--logmode']                 :: logmode           :: standard
+  ['--context']                 :: context           :: ['qa']
+  ['-r', '--recipe']            :: recipename        :: recipe.ArgsTests
+  ['--suffix']                  :: suffix            :: None
+  ['--loglevel']                :: loglevel          :: stdinfo
+  ['--drpkg']                   :: drpkg             :: geminidr
+  ['--user_cal']                :: user_cal          :: None
+  ['--logfile']                 :: logfile           :: reduce.log
+  ['--upload_metrics']          :: upmetrics         :: False
   -----------------------------------------------------------------
+  
 
   Input fits file(s):	S20130616S0019.fits
   Input fits file(s):	N20100311S0090.fits

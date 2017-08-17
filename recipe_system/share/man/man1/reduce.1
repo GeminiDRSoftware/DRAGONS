@@ -7,6 +7,7 @@ reduce \- Recipe Processing Management System, v2.0, command line interface (cli
 [\fB\-v\fR]
 [\fB\-d\fR]
 [\fB\--context\fR CONTEXT]
+[\fB\--drpkg\fR DRPKG]
 [\fB\--logmode\fR LOGMODE]
 [\fB\--logfile\fR LOGFILE]
 [\fB\--loglevel\fR LOGLEVEL]
@@ -40,7 +41,8 @@ display all parsed option flags and exit.
 \fB\--context\fR CONTEXT
 Use
 .B CONTEXT
-for recipe selection and primitives sensitive to context. Current values supported are 
+for recipe selection and primitives sensitive to context. Current values
+supported are
 .B QA 
 and 
 .B SQ
@@ -48,9 +50,20 @@ and
 .B QA
 )
 .RS
-Eg.,
+E.g.,
 .RS
 \fB\-\-context\fR QA
+.RE
+.RE
+.TP
+\fB\-\-drpkg\fR DRPKG
+Specify another data reduction (dr) package. The package must be
+importable either through sys.path or a user's PYTHONPATH.
+Default is 'geminidr'.
+.RS
+E.g.,
+.RS
+\fB\-\-drpkg\fR ghostdr
 .RE
 .RE
 .TP 
@@ -62,7 +75,7 @@ Name of log file (default is
 \fB\--loglevel\fR LOGLEVEL
 Set the verbose level for console logging. One of
 .RS
-.B critical, error, warning, status, stdinfo, fullinfo, debug 
+.B critical, error, warning, status, stdinfo, fullinfo, debug
 (default is 
 .B stdinfo
 )
@@ -75,10 +88,10 @@ Set log mode. One of \fB\ standard, console, quiet, debug, or null\fR
 .RE
 .TP 
 \fB\-p\fR USERPARAM [USERPARAM ...], \fB\--param\fR USERPARAM [USERPARAM ...]
-Set a primitive parameter from the command line. The form, 
+Set a primitive parameter from the command line. The form,
 .B -p par=val
-sets a parameter such that all primitives with that defined parameter will 'see' it. 
-The form:  
+sets a parameter such that all primitives with that defined parameter will
+'see' it.  The form:
 \fB\-p primitivename:par=val\fR, focuses the parameter only for 'primitivename'.
 Separate par/val pairs by whitespace:
 .RS
@@ -86,29 +99,29 @@ E.g., \fB\-p\fR par1=val1 par2=val2).
 .RE
 .TP
 \fB\-r\fR RECIPENAME, \fB\--recipe\fR RECIPENAME
-Specify a recipe by name. Users can request non-default system recipe functions by 
-their simple names, e.g., 
+Specify a recipe by name. Users can request non-default system recipe
+functions by their simple names, e.g.,
 .B -r qaStack 
-OR may specify their own recipe file and recipe function. A user defined recipe 
-function must be 'dotted' with the recipe file.
+OR may specify their own recipe file and recipe function. A user defined
+recipe function must be 'dotted' with the recipe file.
 .RS
 E.g.,  
 .RS
 \fB\-r\fR /path/to/recipes/recipefile.recipe_function
 .RE
 
-For a recipe file in the current working directory (cwd), only the file name is 
-needed, as in,
+For a recipe file in the current working directory (cwd), only the file name
+is needed, as in,
 
 .RS
 \fB\-r\fR recipefile.recipe_function
 .RE
 
-The fact that the recipe function is dotted with the recipe file name implies that 
-multiple user defined recipe functions can be defined in a single file.
+The fact that the recipe function is dotted with the recipe file name implies
+that multiple user defined recipe functions can be defined in a single file.
 
-Readers should understand that these recipe files shall behave as python modules and 
-should be named accordingly. I.e., in the example above, 
+Readers should understand that these recipe files shall behave as python
+modules and should be named accordingly. I.e., in the example above,
 .B 'recipefile' 
 is a python module named, 
 .B 'recipefile.py'
@@ -126,9 +139,10 @@ Use this switch to send QA metrics to fitsstore. Default is \fBFalse\fR.
 \fB\-\-user_cal\fR USER_CAL
 Specify user supplied calibrations for calibration types.
 .RS
-Eg.,
+E.g.,
 .RS 
 \fB\-\-user_cal\fR processed_arc:gsTest_arc.fits
+.RE
 .RE
 
 .SH ENVIRONMENT
@@ -136,8 +150,8 @@ Recommend Anaconda 4.2.0, Astropy 1.2.1. (Ureka 1.5.2 should also work
 for awhile.)
 
 .SH BUGS
-Missing option to allow a user to provide a user-defined primitive class, 
-\fB\-\-user_primitives\fR (TBD).
+--user_cal Currently, this option is not enabled pending critical
+implementation decision. (kra, 14-08-17)
 
 .SH SEE ALSO 
 .I typewalk(1)
