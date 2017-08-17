@@ -180,69 +180,65 @@ class CalibDB(PrimitivesBASE):
                     log.stdinfo(msg.format(os.path.basename(ad.filename)))
         return adinputs
 
+    def markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
+                          primname=None, keyword=None):
+        """
+        Updates filenames, datalabels (if asked) and adds header keyword
+        prior to storing AD objects as calibrations
+        """
+        for ad in adinputs:
+            if suffix:
+                ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
+                                                  strip=True)
+            if update_datalab:
+                _update_datalab(ad, suffix, self.keyword_comments)
+            gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
+        return adinputs
+
     def storeProcessedArc(self, adinputs=None, **params):
         caltype = 'processed_arc'
-        log = self.log
         sfx = params["suffix"]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            _update_datalab(ad, sfx, self.keyword_comments)            
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCARC")
-
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+                                    primname=self.myself(), keyword="PROCARC")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
     def storeProcessedBias(self, adinputs=None, **params):
         caltype = 'processed_bias'
-        log = self.log
         sfx = params["suffix"]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            _update_datalab(ad, sfx, self.keyword_comments)            
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCBIAS")
-        
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+                                    primname=self.myself(), keyword="PROCBIAS")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
     def storeBPM(self, adinputs=None, **params):
         caltype = 'bpm'
-        log = self.log
         sfx = '_bpm'
-        log.debug(gt.uog_message("primitive", self.myself(), "starting"))
-        for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword="BPM")
-
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+                    primname=self.myself(), update_datalab=False, keyword="BPM")
         self.storeCalibration(adinputs, caltype)
         return adinputs
 
     def storeProcessedDark(self, adinputs=None, **params):
         caltype = 'processed_dark'
-        log = self.log
         sfx = params["suffix"]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            _update_datalab(ad, sfx, self.keyword_comments)            
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCDARK")
-        
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+                                    primname=self.myself(), keyword="PROCDARK")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
-    
+
     def storeProcessedFlat(self, adinputs=None, **params):
         caltype = 'processed_flat'
-        log = self.log
         sfx = params["suffix"]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            _update_datalab(ad, sfx, self.keyword_comments)            
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFLAT")
-
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+                                    primname=self.myself(), keyword="PROCFLAT")
         self.storeCalibration(adinputs, caltype=caltype)
-        return adinputs       
+        return adinputs
     
     def storeProcessedFringe(self, adinputs=None, **params):
         caltype = 'processed_fringe'
