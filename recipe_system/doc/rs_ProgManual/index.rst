@@ -18,6 +18,7 @@ Recipe System Users Manual
    overview
    mappers
    interfaces
+   drpkg
    ack
 
 Appendix

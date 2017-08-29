@@ -15,11 +15,12 @@ The Mappers
 ----
 
 In a nominal pipeline context, the mappers receive input data and parameters from 
-the ``Reduce`` class, either through the ``reduce`` command or the class API. This 
+the ``Reduce`` class, either through the ``reduce`` command or the class's API. This
 document describes how to import and use the mapper classes programmatically. The 
 mapper classes are the main component of the Recipe System and serve as arbiters 
 between the input data and parameters and the instrument packages defined
-in ``geminidr``.
+by the ``drpkg`` parameter. This parameter defaults to ``geminidr``, which is the
+Gemini Observatory's data reduction ('dr') package under *gemini_python*.
 
 The mapper classes implement search/match/capture algorithms optimized for the 
 instrument packages defined in ``geminidr`` under a *gemini_python* installation. 
@@ -73,10 +74,20 @@ PrimitiveMapper (in ``recipe_system.mappers.primitiveMapper``) is subclassed on
 Mapper. PrimitiveMapper implements the primitive search algorithm and provides one 
 (1) public method on the class: ``get_applicable_primitives()``.
 
- **Class PrimitiveMapper** `(adinputs, recipename='default', context=['sq'], usercals=None, uparms=None, upload_metrics=False)`
+ **Class PrimitiveMapper** `(adinputs, context=['sq'], drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload_metrics=False)`
 
    adinputs
      A `list` of input AstroData objects (required).
+   context
+     A `list` of all passed contexts. This defines which recipe set to use but
+     may also contain other string literals, which are passed on to primitives
+     that may interpret certain string elements for their own purposes.
+     Default is ['sq']. The context parameter is discussed in greater detail in
+     the next chapter in :ref:`Selecting Recipes with RecipeMapper <rselect>`.
+   drpkg
+     A `string` indicating the name of the data reduction package to map. Default
+     is 'geminidr'. The package *must* be importable and should provide instrument
+     packages of the same form as defined under *geminidr*.
    recipename
      A `string` indicating the recipe to use for processing. ``recipename`` may
      be a system or external recipe name, as passed by a ``reduce`` command with 
@@ -85,12 +96,6 @@ Mapper. PrimitiveMapper implements the primitive search algorithm and provides o
      'default', which may be an actual function or a reference to a named recipe 
      function defined in a recipes library. In *gemindr* recipe packages,
      defaults are references to other defined recipe functions.
-   context
-     A `list` of all passed contexts. This defines which recipe set to use but
-     may also contain other string literals, which are passed on to primitives
-     that may interpret certain string elements for their own purposes. 
-     Default is ['sq']. The context parameter is discussed in greater detail in
-     the next chapter in :ref:`Selecting Recipes with RecipeMapper <rselect>`.
    usercals
      A `dictionary` of user provided calibration files, keyed on cal type.
      E.g., {'processed_bias': 'foo_bias.fits'}
@@ -144,10 +149,20 @@ Mapper and does *not* override ``__init__()``. RecipeMapper implements the
 recipe search algorithm and provides one (1) public method on the class:
 ``get_applicable_recipe()``.
 
- **Class RecipeMapper** `(adinputs, recipename='default', context=['sq'], usercals=None, uparms=None, upload_metrics=False)`
+ **Class RecipeMapper** `(adinputs, context=['sq'], drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload_metrics=False)`
 
    adinputs
      A `list` of input AstroData objects (required).
+   context
+     A `list` of all passed contexts. This defines which recipe set to use but
+     may also contain other string literals, which are passed on to primitives
+     that may interpret certain string elements for their own purposes. 
+     Default is ['sq']. The context parameter is discussed in greater detail in
+     the next chapter in :ref:`Selecting Recipes with RecipeMapper <rselect>`.
+   drpkg
+     A `string` indicating the name of the data reduction package to map. Default
+     is 'geminidr'. The package *must* be importable and should provide instrument
+     packages of the same form as defined under *geminidr*.
    recipename
      A `string` indicating the recipe to use for processing. ``recipename`` may
      be a system or external recipe name, as passed by a ``reduce`` command with 
@@ -156,12 +171,6 @@ recipe search algorithm and provides one (1) public method on the class:
      'default', which may be an actual function or a reference to a named recipe 
      function defined in a recipes library. In *gemindr* recipe packages,
      defaults are references to other defined recipe functions.
-   context
-     A `list` of all passed contexts. This defines which recipe set to use but
-     may also contain other string literals, which are passed on to primitives
-     that may interpret certain string elements for their own purposes. 
-     Default is ['sq']. The context parameter is discussed in greater detail in
-     the next chapter in :ref:`Selecting Recipes with RecipeMapper <rselect>`.
    usercals
      A `dictionary` of user provided calibration files, keyed on cal type.
      E.g., {'processed_bias': 'foo_bias.fits'}

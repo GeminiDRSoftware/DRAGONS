@@ -4,9 +4,8 @@
 
 .. _iface:
 
-Mapper Class Interfaces
-***********************
-
+Using the Mappers API
+*********************
 For practical applications, the Mapper base class provides no functionality, but
 defines all attributes for instances built from subclasses of Mapper. Though not 
 strictly an abstract class, the Mapper base class cannot be used on its own. 
@@ -19,13 +18,14 @@ packages.
 The programmatic interfaces on the current mapper classes are straight forward.
 One begins by passing a list of astrodata instances, and any ancilliary arguments,
 to the "constructor" of either PrimitiveMapper or RecipeMapper. Below, we reiterate
-the input arguments to a Mapper class and show the default values of any 
-parameters when passed by the caller::
+the input arguments to a Mapper class and show the default values of parameters not
+passed by the caller::
 
   __init__(self,
            adinputs,             <list> AstroData objects.
-	   recipename='default', <str>  The recipe name.
 	   context=['sq'],       <list> Defines the recipe set or sets to search.
+	   drpkg='geminidr',      <str> Defines the 'dr' package to map.
+	   recipename='default',  <str> The recipe name.
            usercals=None,        <dict> User provided calibration files.
 	   uparms=None,          <list> User parameters passed to primitives.
 	   upload_metrics=False, <bool> Send QA metrics to fitsstore
@@ -35,34 +35,43 @@ Once an instance of either a PrimitiveMapper or a RecipeMapper class is built,
 that instance has one (1) and only one public method, a method that invokes
 the search algorithm for the instance.
 
+It shall be noted here that the following discussion and examples are based on
+using the default data reduction package, *geminidr*. This Gemini Observatory
+"drpkg" defines recipes, contexts, and primitive classes for several instruments
+of the Observatory. With that in mind, the last :ref:`section of this chapter <drpkg>`
+will detail steps required to build your own "drpkg", whether for testing purposes
+or as a new, complete data reduction package. It will be the case that all examples
+presented herein will be perfectly applicable to any correctly implemented *drpkg*.
+
 Selecting Primitives with PrimitiveMapper
 =========================================
 
-Primitive classes are defined in the *geminidr* package under *gemini_python*.
-These classes define methods that provide essential data processing functionality. 
-Primitive classes in *geminidr* are structured hierarchically and employ multiple 
-inheritance. (Hereafter, a Primitive class may be referred to as a set of 
-"primitives" or just "primitives", which are just the defined or inherited methods 
-on that class).
+Primitive classes for Gemini Observatory instruments are defined in the *geminidr*
+package under *gemini_python*. This is specified as the default value on the ``drpkg``
+keyword argument shown above. These classes define methods to provide essential
+data processing functionality. Primitive classes in *geminidr* are structured
+hierarchically and employ multiple inheritance. (Hereafter, a Primitive class may
+be referred to as a set of "primitives" or just "primitives", which are just the
+defined or inherited methods on that class).
 
-"Generic" primitive classes in the ``geminidr`` package are defined under 
-``geminidr.core``. These generic classes provide functions that work on all 
-data produced by Gemini Oberservatory. These classes are arranged logically, 
-meaning primitive functions for some general task are grouped together. For 
-example, the stacking functions are defined in the class, 
-``core.primitives_stack.Stack``.
+"Generic" primitive classes in the ``geminidr`` package are defined under
+``geminidr.core`` (see :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`. These
+generic classes provide functions that work on all data produced by Gemini
+Oberservatory. These classes are arranged logically, meaning primitive functions
+for some general task are grouped together. For example, the stacking functions
+are defined on the ``Stack`` class found in ``core.primitives_stack``.
 
-There are five (5) defined primitive classes in `core` that are not strictly 
-generic but are what might be called "quasi-generic", that is, they define 
-methods for data of a certain general kind, such imaging or spectroscopy. 
+There are five (5) defined primitive classes in `core` that are not strictly
+generic but are what might be called "quasi-generic", that is, they define
+methods for data of a certain general kind, such imaging or spectroscopy.
 :ref:`Figure 4.2 <gmoscls>` illustrates these classes by breaking them out of
 *core* to show what they are and where in the class structure they are used.
 
-Generic classes are inherited by the primitive class, ``Gemini``. The ``Gemini`` 
-class is then inherited by all instrument-specific primitive classes. It is these 
-instrument-specific classes that one might call "concrete," because they will 
-provide a complete set of fully implement methods particular to the instrument 
-data being processed.
+Generic classes are inherited by the primitive class, ``Gemini``. The ``Gemini``
+class is then inherited by all instrument-specific primitive classes. These
+instrument-specific classes are what might be called "concrete," because they
+will provide a complete set of fully implement methods particular to the
+instrument data being processed.
 
 .. _prmcls:
 
@@ -70,12 +79,12 @@ data being processed.
 
    Hierarchy of Primitive classes defined under `geminidr`
 
-Because real data are produced by real instruments, the PrimitiveMapper will 
-usually be pointed to and select primitive classes defined at the instrument-mode 
-level, i.e., one or more inheritance levels under an instrument primitive class. 
-That sounds like gobble, but :ref:`Fig. 4.1, Primitive Class Hierarchy <prmcls>`, 
-illustrates that this is simple. For example, an F2 image will be processed with 
-the "f2 image" primitive class, GNIRS image data, the "gnirs image" class, and so 
+Because real data are produced by real instruments, the PrimitiveMapper will
+usually be pointed to and select primitive classes defined at the instrument-mode
+level, i.e., one or more inheritance levels under an instrument primitive class.
+That sounds like gobble but :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`,
+illustrates that this is simple. For example, an F2 image will be processed with
+the "f2 image" primitive class, GNIRS image data, the "gnirs image" class, and so
 on.
 
 .. _gmoscls:
@@ -84,20 +93,21 @@ on.
 
    Hierarchy of Primitive classes inherited by GMOS
 
-Recall that primitive classes are attributed with a *tagset* indicating the 
+Recall that primitive classes are attributed with a *tagset* indicating the
 particular kinds of data to which they are applicable. Indeed, as defined in the
-*geminidr* package, only ``gemini`` and subclasses thereof have *tagset* attributes 
-that make them discoverable by the PrimitiveMapper. Which also implies that any 
+*geminidr* package, only ``gemini`` and subclasses thereof have *tagset* attributes
+that make them discoverable by the PrimitiveMapper. Which also implies that any
 primitive classes defined in ``core`` are not discoverable by the PrimitiveMapper.
 We shall examine the details of this statement in the next section.
 
 Mapping Data to Primitives
 --------------------------
 
-When the PrimitiveMapper receives an input dataset, those data are passed as an 
-*astrodata* object. All astrodata objects have been classified with a number of 
-what are called `tags`, which are present on the *astrodata* instance as an 
-attribute of the object. For example, a typical unprocessed GMOS image:
+When the PrimitiveMapper receives input data, those data are passed as a
+list of *astrodata* objects, one *astrodata* object per input dataset. All astrodata
+objects have been classified with a number of what are called `tags`, which are
+present on the *astrodata* instance as an attribute of the object. For example, a
+typical unprocessed GMOS image:
 
 >>> ad = astrodata.open('S20161025S0111.fits')
 >>> ad.tags
@@ -152,56 +162,83 @@ passed. The returned ``pset`` is the *actual instance of the class* and is ready
 to be used.
 
 The *tagset* is the only criterion used by the PrimitiveMapper to find the correct
-primitive class. Readers may correctly infer from this that names of primitive 
-classes, and the modules containing them, are entirely arbitrary; they can be 
-named at the discretion of the developer. Indeed, the entire set of primitive 
-classes could exist in a single file. But for reasons that should be obvious, 
-such an "arrangement" is considered ill-advised.
-
+primitive class. Readers may correctly infer from this that naming primitive
+classes, and the modules containing them, is arbitrary; primitive classes and the
+containing modules can be named at the discretion of the developer. Indeed, the
+entire set of primitive classes could exist in a single file. For reasons too
+obvious to enumerate, such an "arrangement" is considered ill-advised.
 
 .. _rselect:
 
 Selecting Recipes with RecipeMapper
 ===================================
 
-Recipes are pre-defined python functions that receive a single argument: a 
-primitive class object (instance). Unlike primitive classes, recipes are much 
-simpler; they are straight up functions with one argument. Recipe functions are 
-not classes and do not (cannot) inherit. The recipe simply defines the set and 
-order of primitive functions to be called on the data, references to which are 
+Recipes are pre-defined python functions that receive a single argument: a
+primitive class object (instance). Unlike primitive classes, recipes are much
+simpler; they are straight up functions with one argument. Recipe functions are
+not classes and do not (cannot) inherit. The recipe simply defines the set and
+order of primitive functions to be called on the data, references to which are
 contained by the primitive instance. Essentially, a recipe is a pipeline.
 
-Recipe functions are defined in python modules (which may be referred to as 
+Recipe functions are defined in python modules (which may be referred to as
 recipe libraries, a collection of functions) that are placed in a *geminidr*
 instrument package. Recipes are only defined for instruments and exist under
-an instrument package in the directory, ``recipes/``::
+an instrument package in the directory in a ``recipes/`` directory like this::
 
-  ../geminidr/gmos/recipes
-  ../geminidr/niri/recipes
   ../geminidr/f2/recipes
+  ../geminidr/gmos/recipes
+  ../geminidr/gnirs/recipes
   .. [etc. ]
+
+Here is a (current) listing of instrument recipe directories under *geminidr*::
+
+  geminidr/f2/recipes/:
+      __init__.py
+      qa/
+      sq/
+
+  geminidr/gmos/recipes/:
+      __init__.py
+      qa/
+      sq/
+
+  geminidr/gnirs/recipes/:
+      __init__.py
+      qa/
+      sq/
+
+  geminidr/gsaoi/recipes/:
+      __init__.py
+      qa/
+      sq/
+
+  geminidr/niri/recipes/:
+      __init__.py
+      qa/
+      sq/
+
+Readers will note the appearance of directories named ``qa`` and ``sq`` under
+recipes. These directories indicate a separation of recipe types, named to indicate
+the kinds of recipes contained therein. Any named directories defined under
+``recipes/`` are termed "contexts." 
 
 .. _context:
 
-**Context**
-
-An instrument package *recipes* path is extended by names indicating what is
-termed the "context." Within *geminidr* instrument packages, two contexts are
-defined under all recipes directories: `qa` and `sq`, which indicate that 
-recipes defined under ``recipes/qa`` provide Quality Assurance (QA) processing. 
-Science Quality (SQ) recipes defined under ``recipes/sq`` provide science 
-quality reduction pipelines, which takes the form ::
-
- ../geminidr/<instrument_package>/recipes/qa/
- ../geminidr/<instrument_package>/recipes/sq/
-
-Currently defined recipe library files will appear under one or all of these 
-context directories.
+Context
+-------
+An instrument package *recipes* path is extended by names indicating a "context."
+As shown above, *geminidr* instrument packages define two contexts under all
+recipes directories: `qa` and `sq`, which indicate that recipes defined under
+``recipes/qa`` provide Quality Assurance (*qa*) processing. Science Quality
+(*sq*) recipes defined under ``recipes/sq`` provide science quality reduction
+pipelines. Currently defined recipe library files will appear under one or all of
+these context directories.
 
 Context is not hard limited to just `qa` and `sq` contexts for the RecipeMapper.
-The form new contexts shall have takes the same pattern as above ::
+Indeed, contexts can be named almost anything you like. The form new contexts shall
+have takes the same pattern shown above::
 
-  ../geminidr/<instrument_package>/recipes/<context>/
+  ../geminidr/<instrument_name>/recipes/<context>/
 
 Developers are free to define and use new *contexts* as they choose. All that is 
 required to have the RecipeMapper select recipes from another context is to pass a 
@@ -210,7 +247,7 @@ uses a default context when no context is passed. The :ref:`next section <d2r>`
 will discuss this and provide examples for adding new contexts and selecting recipes 
 from these new contexts.
 
-.. admonition:: [Breakout] Why is Context a list?
+.. admonition:: Why is Context a list?
 
    A reasonable question will arise regarding the *context* parameter: why is
    context a list and not just a single string value?
@@ -251,21 +288,21 @@ in the section of Chapter 2, :ref:`Instrument Packages <ipkg>`.
 Mapping Data to Recipes
 -----------------------
 
-When the RecipeMapper receives an input dataset and a possible context, those 
-data are passed as an *astrodata* object. All astrodata objects have been 
-classified with a number of what are called `tags`, which are present on the 
-*astrodata* instance as an attribute of the object. For example, a typical 
-unprocessed GMOS image:
+When the RecipeMapper receives input data, those data are passed as a
+list of *astrodata* objects, one *astrodata* object per input dataset. All
+astrodata objects have been classified with a set of `tags`, which are present
+on the *astrodata* instance as an attribute of the object. For example, a
+typical unprocessed GMOS image:
 
 >>> ad = astrodata.open('S20161025S0111.fits')
 >>> ad.tags
 set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
 
-The RecipeMapper uses these tags to search *geminidr* packages, first by 
+The RecipeMapper uses these tags to search *geminidr* packages, first by
 immediately narrowing the search to the applicable instrument package and then
-by using the ``context`` parameter, further focusing the recipe search. In this 
-case, the instrument and package are ``gmos``. The Mapper classes have an 
-understanding of this, and set their own attribute on Mapper instances called, 
+by using the ``context`` parameter, further focusing the recipe search. In this
+case, the instrument and package are ``gmos``. The Mapper classes have an
+understanding of this, and set their own attribute on Mapper instances called,
 ``pkg``:
 
 >>> from recipe_system.mappers.recipeMapper import RecipeMapper
@@ -278,11 +315,11 @@ You can also see the current context setting on the RecipeMapper instance:
 >>> rm.context
 ['qa']
 
-Once a RecipeMapper instance is created, the public method, 
-``get_applicable_recipe()`` can be invoked and the search for the most 
-appropriate recipe begins. The search algorithm is concerned with finding module 
-objects that define a ``recipe_tags`` attribute on the module (library). Each 
-recipe library defines, or may define, multiple recipe functions, all of which are 
+Once a RecipeMapper instance is created, the public method,
+``get_applicable_recipe()`` can be invoked and the search for the most
+appropriate recipe begins. The search algorithm is concerned with finding module
+objects that define a ``recipe_tags`` attribute on the module (library). Each
+recipe library defines, or may define, multiple recipe functions, all of which are
 applicable to the data classification described by the ``recipe_tags`` set.
 
 Continuing the 'gmos' example, let's see how these recipe libraries are tagged::
@@ -441,11 +478,11 @@ Using the new context, let's see how we can select ``myrecipes.myreduce``.
 >>> recipefn.__name__
 'myreduce'
 
-This can be to work in the same way the RecipeMapper locates recipes using 
-a default recipe, but two things needs to appear in the new recipe file 
-(i.e., ``myrecipes.py``). One, an attribute defined on the module called, 
-``recipe_tags`` (:ref:`see above <d2r>`) and, two, an attribute named ``default`` 
-pointing to whichever recipe function you wish to be the default recipe when 
+This can be made to work in the same way the RecipeMapper locates recipes using
+a default recipe, but two things need to appear in the new recipe file
+(i.e., ``myrecipes.py``). One, an attribute defined on the module called,
+``recipe_tags`` (:ref:`see above <d2r>`) and, two, an attribute named ``default``
+pointing to whichever recipe function you wish to be the default recipe when
 unspecified.
 
 We proceed with the example and intend that the new recipe is applicable
@@ -464,11 +501,11 @@ For example, in myrecipes.py, place the ``default`` reference ::
   default = myreduce
 
 Once this new context and recipe library have been installed under *geminidr* in
-this manner, you are now able to have your myreduce recipe selected by the 
+this manner, you are now able to have your myreduce recipe selected by the
 RecipeMapper.
 
 We'll step through this from the top, only this time, we want to get ``myreduce``
-from ``myrecipes.py`` under ``gmos/my_context/myrecipes.py`` returned by the 
+from ``myrecipes.py`` under ``gmos/my_context/myrecipes.py`` returned by the
 RecipeMapper:
 
 >>> import astrodata
@@ -507,14 +544,13 @@ a nominal function call::
 That's it. Once the function, ``recipe``, is called with the primitive instance, 
 ``p``, the pipeline begins execution.
 
-Within a pipeline context, the ``Reduce`` class is responsible for retrieving 
-recipes and primitive sets appropriate to the data and passing the primitive 
-object as the argument to the recipe function. And while the ``Reduce`` class 
-provides exception handling during pipeline execution, there are no such 
-protections at the level of the mapper interfaces. Any exceptions raised will 
-have to be dealt with by those using the Recipe System at this lower level 
-interface.
-
+In the context of running ``reduce`` from the command line, the ``Reduce`` class
+is responsible for retrieving recipes and primitive sets appropriate to the data
+and passing the primitive object as the argument to the recipe function. And while
+the ``Reduce`` class provides exception handling during pipeline execution, there
+are no such protections at the level of the mapper interfaces. Any exceptions
+raised will have to be dealt with by those using the Recipe System at this lower
+level interface.
 
 .. rubric:: Footnotes
 

@@ -84,17 +84,27 @@ Users and developers wishing to see more information about the ``astrodata``
 package, how to use the programmtic interfaces on such objects should consult the
 documents :ref:`enumerated above <related>`.
 
+.. _defs:
+
 Definitions
 ===========
 
+Data Reduction Package (drpkg)
+------------------------------
+A data reduction (dr) package is simply an umbrella directory under which
+instrument packages can be defined. Currently, only `geminidr` is defined for
+the Gemini Observatory instruments, which provides instrument packages for
+GMOS-(N,S), GSAOI, F2, GNIRS, and NIRI. Users running ``reduce`` can change the
+default 'dr' package to other such defined packages with the ``--drpkg`` option.
+
 Context
 -------
-A context is a label by which the recipe libraries are delineated and 
-which are manifest in instrument packages as directories named with these 
-same labels. These context names `should` indicate or hint at the purpose or 
-quality of the recipes contained therein. For example, Quality Assurance recipes 
-are found in the ``qa`` recipes directory, Science Qauality recipes, in an 
-``sq`` recipes directory.
+A context is a list of one or more labels by which the recipe libraries are
+delineated and which are manifest in instrument packages ``recipes`` directory
+as directories named with these same labels. These context names `should`
+indicate or hint at the purpose or quality of the recipes contained therein.
+For example, Quality Assurance recipes are found in the ``qa`` recipes directory,
+Science Qauality recipes, in an ``sq`` recipes directory.
 
 Primitive
 ---------
@@ -116,8 +126,17 @@ A *recipe* is a python function defined for specific instruments and modes. A
 recipe function recieves one parameter, an instance of a primitive class. 
 This "primitive" class presents all available primitive methods on the 
 instance recived by the recipe, which is then free to call any primitive 
-function in any order. The acquisition of an applicable recipe and primitive
+function in any order. [#ord]_ The acquisition of an applicable recipe and primitive
 class is the primary operation provided by ``reduce``.
+
+.. rubric:: Footnotes
+
+.. [#ord] This is not strictly true, as certain primitives check metadata to
+          determine if something required to be done was actually done.
+          For instance, many primitives check that headers have been updated
+          by the *standardizeGeminiHeaders* and *standardizeInstrumentHeaders*
+          primitives.
+
 
 Recipe Library
 --------------
@@ -138,14 +157,16 @@ E.g.:
 >>> ad.tags
 set(['RAW', 'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'ACQUISITION'])
 
-Astrodata tags are matched against primitive classes that provide a ``tagset`` 
-attribute on the class, and against recipe libraries providing a ``recipe_tags`` 
-attribute on the library module. These attributes are targets for the Recipe System, 
-and are of the same form as the astrodata instance attribute.
+Astrodata tags are matched against primitive classes that provide a ``tagset``
+attribute on the class, and against recipe libraries providing a ``recipe_tags``
+attribute on the library module. These attributes are targets for the Recipe
+System, and are of the same form as the astrodata instance attribute. All
+"tag-like" attributes used by astrodata and the Recipe System, ``tags``,
+``tagset``, and ``recipe_tags`` are python *sets* and not simply lists.
 
 Tags and tagset matching by the Mapper classes are discussed in greater detail in
-subsequent chapters of this document, :ref:`Chp. 3, The Mappers <mapps>`, and 
-:ref:`Chp. 4, Mapper Class Interfaces <iface>`.
+subsequent chapters of this document, :ref:`Chapter 3, The Mappers <mapps>`, and
+:ref:`Chapter 4, Mapper Class Interfaces <iface>`.
 
 The subject of *astrodata* is beyond the scope of this document. Readers and 
 developers should consult the :ref:`Astrodata documentation <related>` for 
@@ -153,11 +174,10 @@ further information on *astrodata* and data classifications.
 
 Outline of the Recipe System
 ============================
-
 The following is an outline of the Recipe System, its command line interface,
 ``reduce``, and the system's relationship with instrument packages. A brief
-description of each segment of :ref:`Fig 2.1, Schematic Diagram <schematic>` of the 
-Recipe System and supporting compenents follows.
+description of each segment of :ref:`Figure 2.1, Schematic Diagram <schematic>`
+of the Recipe System and supporting compenents follows.
 
 .. _schematic:
 
@@ -250,9 +270,6 @@ often present (``lookups/``), though not needed by the Recipe System::
 
   <instrument>_package/
                   lookups/
-                  recipes/qa/
-                         /sq/
-                         /.../
                   parameters_<instrument>.py
                   primitives_<instrument>.py
                   parameters_<instrument>_<mode1>.py
@@ -260,15 +277,15 @@ often present (``lookups/``), though not needed by the Recipe System::
                   parameters_<instrument>_<modeX>.py
                   primitives_<instrument>_<modeX>.py
                   [ ... ]
+                  recipes/qa/
+                         /sq/
+                         /.../
 
 As a real example, the 'gmos' instrument package under ``geminidr`` ::
 
   gmos/
       __init__.py
       lookups/
-      recipes/qa/
-             /sq/
-             /.../
       parameters_gmos.py
       primitives_gmos.py
       parameters_gmos_ifu.py
@@ -283,38 +300,42 @@ As a real example, the 'gmos' instrument package under ``geminidr`` ::
       primitives_gmos_nodandshuffle.py
       parameters_gmos_spect.py
       primitives_gmos_spect.py
+      recipes/
 
 Recipe System targets of instrument packages are recipe libraries contained
 in ``recipes/`` and the ``primitives_X.py`` modules, which define the primitive
-classes. The ``parameters_X.py`` modules will be imported and used by the matching
-primitive class, but they are *not* targets of the Recipe System. The naming of
-the primitive and parameter modules is discretionary; targeted attributes are
-defined within the modules and classes.
+classes. While the ``parameters_X.py`` modules will be imported and used by the
+matching primitive class, they are *not* targets of the Recipe System and
+do not provide, and shall not provide, a ``tagset`` attribute on those classes.
+The naming of the primitive and parameter modules and class names is discretionary;
+targeted attributes are defined only on discoverable classes.
 
 The ``recipes`` package is further delineated by subpackages described as
-"context" packages. Currently, two such contexts are defined within the 
+"context" packages. Currently, two such contexts are defined within the
 instrument package recipe libraries defined under ``geminidr``, and which
 provide context-specific recipes: "qa" and "sq" recipes. The "qa" context
 provides Quality Assurance recipes of the kind used for near real-time
 processing at summit, whereas "sq" recipes provide pipeline definitions
 (recipes) for "science quality" data reduction. In general, "sq" context recipes
-`require` full calibration, including bias, flat, and fringe (GMOS) correction 
+`require` full calibration, including bias, flat, and fringe (GMOS) correction
 while "qa" recipes do not. Both the Reduce class and the ``reduce`` command line
 provide a default context, which can be overridden by the user with the
-``--context`` option.
+``--context`` option. See :ref:`Section 2.4, Definitions <defs>` for a refresher
+on these definitions.
 
 The Recipe System is ready built to handle any new and newly named context
 packages. Indeed, the Gemini Observatory has plans for a "quicklook" context,
 which is expected to provide one (or more) recipes that will facilitate
-quicklook capability.
+quicklook capability. There is much more about instrument packages, recipes, and
+contexts in :ref:`Chapter 4, Mapper Class Interfaces <iface>`.
 
 .. note:: While it is entirely possible to allow unrestricted naming of
    subpackages and modules within an instrument package, the Recipe System is
    optimized to search packages of this form, which, in particular, allows the
    mapping algorithms to bypass lookup tables defined in the ``lookups/``
    directory. Because the Recipe System conducts depth-first searches,
-   the optimization expidites mapping by simply excluding subpackages and
-   modules that are known not to be targets.
+   the optimization expedites mapping by known exclusion: bypassing subpackages 
+   and modules that are known not to be targets.
 
 .. _calrq:
 
