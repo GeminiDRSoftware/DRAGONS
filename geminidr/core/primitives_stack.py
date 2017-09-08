@@ -163,7 +163,7 @@ class Stack(PrimitivesBASE):
         ad.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
 
         # Add suffix to datalabel to distinguish from the reference frame
-        ad.phu.set('DATALAB', "{}{}".format(ad.phu.DATALAB, sfx),
+        ad.phu.set('DATALAB', "{}{}".format(ad.phu.get('DATALAB', ''), sfx),
                    self.keyword_comments['DATALAB'])
 
         # Timestamp and update filename and prepare to return single output
