@@ -166,7 +166,7 @@ System, and are of the same form as the astrodata instance attribute. All
 
 Tags and tagset matching by the Mapper classes are discussed in greater detail in
 subsequent chapters of this document, :ref:`Chapter 3, The Mappers <mapps>`, and
-:ref:`Chapter 4, Mapper Class Interfaces <iface>`.
+:ref:`Chapter 4, Using The Mappers API <iface>`.
 
 The subject of *astrodata* is beyond the scope of this document. Readers and 
 developers should consult the :ref:`Astrodata documentation <related>` for 
@@ -327,7 +327,7 @@ The Recipe System is ready built to handle any new and newly named context
 packages. Indeed, the Gemini Observatory has plans for a "quicklook" context,
 which is expected to provide one (or more) recipes that will facilitate
 quicklook capability. There is much more about instrument packages, recipes, and
-contexts in :ref:`Chapter 4, Mapper Class Interfaces <iface>`.
+contexts in :ref:`Chapter 4, Using The Mappers API <iface>`.
 
 .. note:: While it is entirely possible to allow unrestricted naming of
    subpackages and modules within an instrument package, the Recipe System is

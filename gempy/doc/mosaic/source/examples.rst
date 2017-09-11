@@ -27,7 +27,7 @@ Example 1: Create a mosaic using MosaicAD class.
 - This mosaic function is available and supports GMOS and GSAOI data
   ::
 
-    from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
+    from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 .. _asastro_ex:
 
@@ -69,7 +69,7 @@ available parameters in this method.
     import astrodata
     import gemini_instruments
     from gempy.mosaic.mosaicAD import MosaicAD
-    from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
+    from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 - Open your FTIS file as astrodata
   ::
@@ -117,7 +117,7 @@ True.
     import astrodata
     import gemini_instruments
     from gempy.mosaic.mosaicAD import MosaicAD
-    from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
+    from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
     ad = astrodata.open(file)
 
@@ -157,7 +157,7 @@ The blocks' layout is represented with a tuple of the form (column, row)
     import astrodata
     import gemini_instruments
     from gempy.mosaic.mosaicAD import MosaicAD
-    from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
+    from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
     ad = astrodata.open(file)
 
 - Create a mosaicAD object using the input ad and the imported mosaic function:
