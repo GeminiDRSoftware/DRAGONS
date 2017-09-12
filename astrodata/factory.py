@@ -14,7 +14,7 @@ class AstroDataFactory(object):
         instantiating an AstroData class for a FITS file.
         """
         if not hasattr(cls, '_matches_data'):
-            raise AstroDataError("Class '{}' contains no '_matches_data' method".format(cls.__name__))
+            raise AttributeError("Class '{}' has no '_matches_data' method".format(cls.__name__))
         self._registry.add(cls)
 
     def _getAstroData(self, data_provider):
