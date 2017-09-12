@@ -1,6 +1,7 @@
 from builtins import object
 from future.builtins import str
 
+from .core import AstroDataError
 from .fits import FitsLoader
 from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
 
