@@ -1000,9 +1000,24 @@ class Preprocess(PrimitivesBASE):
                 continue
             
             if dark is None:
-                log.warning("No changes will be made to {}, since no "
-                            "dark was specified".format(ad.filename))
-                continue
+                if 'qa' in self.context:
+                    log.warning("No changes will be made to {}, since no "
+                                "dark was specified".format(ad.filename))
+                    continue
+                else:
+                    raise IOError("No processed dark listed for {}".
+                                   format(ad.filename))
+
+            # Check the inputs have matching filters, binning, and shapes
+            try:
+                gt.check_inputs_match(ad, dark)
+            except ValueError:
+                # Else try to extract a matching region from the dark
+                dark = gt.clip_auxiliary_data(adinput=ad, aux=dark,
+                    aux_type="cal", keyword_comments=self.keyword_comments)
+
+                # Check again, but allow it to fail if they still don't match
+                gt.check_inputs_match(ad, dark)
 
             log.fullinfo("Subtracting the dark ({}) from the input "
                          "AstroData object {}".
