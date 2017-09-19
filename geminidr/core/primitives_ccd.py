@@ -159,8 +159,6 @@ class CCD(PrimitivesBASE):
                     nbiascontam = 5 if detname == 'e2vDD' else 4
             else:
                 detname = ''
-                nbiascontam = 0
-                order = 1
 
             osec_list = ad.overscan_section()
             dsec_list = ad.data_section()
