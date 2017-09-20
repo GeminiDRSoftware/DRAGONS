@@ -52,7 +52,6 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["addDQ"]
         sfx = params["suffix"]
-        dq_dtype = np.int16
 
         # Getting all the filenames first prevents reopening the same file
         # for each science AD
@@ -74,7 +73,7 @@ class Standardize(PrimitivesBASE):
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
                 final_bpm = clip_method(ad, aux=bpm, aux_type='bpm',
-                    return_dtype=dq_dtype, keyword_comments=self.keyword_comments)
+                    return_dtype=DQ.datatype, keyword_comments=self.keyword_comments)
 
             for ext, bpm_ext in zip(ad, final_bpm):
                 extver = ext.hdr['EXTVER']
@@ -87,7 +86,7 @@ class Standardize(PrimitivesBASE):
                 saturation_level = ext.saturation_level()
 
                 # Need to create the array first for 3D raw F2 data, with 2D BPM
-                ext.mask = np.zeros_like(ext.data, dtype=dq_dtype)
+                ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
                 if bpm_ext is not None:
                     ext.mask |= bpm_ext.data
 
@@ -126,7 +125,7 @@ class Standardize(PrimitivesBASE):
                             # remove any very large ones. This is much faster
                             # than progressively adding each region to DQ
                             hidden_saturation_array = np.where(regions > 0,
-                                                            4, 0).astype(dq_dtype)
+                                                    4, 0).astype(DQ.datatype)
                             for region in range(1, nregions+1):
                                 # Limit of 10000 pixels for a hole is a bit arbitrary
                                 if region_sizes[region-1] > 10000:
@@ -174,7 +173,6 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        dq_dtype = np.int16
 
         # Getting all the filenames first prevents reopening the same file
         # for each science AD
@@ -196,13 +194,13 @@ class Standardize(PrimitivesBASE):
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
-                final_illum = clip_method(ad, illum, 'bpm', dq_dtype,
+                final_illum = clip_method(ad, illum, 'bpm', DQ.datatype,
                                         self.keyword_comments)
 
             for ext, illum_ext in zip(ad, final_illum):
                 # Ensure we're only adding the unilluminated bit
                 iext = np.where(illum_ext.data > 0, DQ.unilluminated,
-                                0).astype(dq_dtype)
+                                0).astype(DQ.datatype)
                 ext.mask = iext if ext.mask is None else ext.mask | iext
 
             # Timestamp and update filename

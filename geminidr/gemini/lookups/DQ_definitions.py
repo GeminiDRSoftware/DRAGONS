@@ -1,3 +1,6 @@
+import numpy as np
+datatype = np.uint16
+
 bad_pixel = 1
 non_linear = 2
 saturated = 4
