@@ -327,7 +327,7 @@ def normalize_ucals(files, cals):
     This list would pass to the Reduce __init__ as such, but, this function
     will translate and apply all user cals to all passed files.
 
-    {(ad.data_label(), 'processed_bias'): '/path/to/foo.fits'}
+    {(ad.calibration_key(), 'processed_bias'): '/path/to/foo.fits'}
 
     This dictionary is of the same form as the calibrations dictionary for
     retrieved and stored calibrations.
@@ -383,6 +383,6 @@ def normalize_ucals(files, cals):
                 emsg = "Calibration {} does not match site of observation {}"
                 raise TypeError(emsg.format(cad.filename, ad.filename))
 
-            normalz.update({(ad.data_label(), ctype): cpath})
+            normalz.update({(ad.calibration_key(), ctype): cpath})
 
     return normalz

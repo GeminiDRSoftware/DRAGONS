@@ -27,6 +27,7 @@ from types import StringType
 
 import astrodata
 import gemini_instruments
+from ghost_instruments import ghost
 
 from gempy.utils import logutils
 

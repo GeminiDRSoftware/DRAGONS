@@ -101,14 +101,14 @@ class Calibrations(dict):
         return
 
     def _add_cal(self, key, val):
-        # Munge the key from (ad, caltype) to (ad.data_label, caltype)
-        key = (key[0].data_label(), key[1])
+        # Munge the key from (ad, caltype) to (ad.calibration_key, caltype)
+        key = (key[0].calibration_key(), key[1])
         self.update({key: val})
         caches.save_cache(self, self._calindfile)
         return
 
     def _get_cal(self, ad, caltype):
-        key = (ad.data_label(), caltype)
+        key = (ad.calibration_key(), caltype)
         calfile = self.get(key)
         if calfile is None:
             return None

@@ -351,6 +351,20 @@ class AstroDataGemini(AstroDataFits):
         return self.phu.get(self._keyword_for('azimuth'))
 
     @astro_data_descriptor
+    def calibration_key(self):
+        """
+        Returns an object to be used as a key in the Calibrations dict.
+        Multiple ADs can share a key but there can be only one of each type
+        of calibration for each key. data_label() is the default.
+        
+        Returns
+        -------
+        string
+            identifier
+        """
+        return self.data_label()
+
+    @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
         """
         Returns the name of the camera.  The component ID can be removed
