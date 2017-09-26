@@ -16,7 +16,7 @@ Astrodata User Manual
 
    intro
    structure
-   io
+   iomef
    tags
    headers
    data
