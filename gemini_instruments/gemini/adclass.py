@@ -356,13 +356,15 @@ class AstroDataGemini(AstroDataFits):
         Returns an object to be used as a key in the Calibrations dict.
         Multiple ADs can share a key but there can be only one of each type
         of calibration for each key. data_label() is the default.
+        "_stack" is removed to avoid making a new request for a stacked
+        frame, which will need the same calibration as the original.
         
         Returns
         -------
         string
             identifier
         """
-        return self.data_label()
+        return self.data_label().replace('_stack', '')
 
     @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
