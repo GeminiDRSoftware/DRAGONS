@@ -928,6 +928,27 @@ class AstroDataGemini(AstroDataFits):
         return self.observation_id()
 
     @astro_data_descriptor
+    def instrument(self, generic=False):
+        """
+        Returns the name of the instrument making the observation
+
+        Parameters
+        ----------
+        generic: boolean
+            If set, don't specify the specific instrument if there are clones
+            (e.g., return "GMOS" rather than "GMOS-N" or "GMOS-S")
+
+        Returns
+        -------
+        str
+            instrument name
+        """
+        inst = self.phu.get(self._keyword_for('instrument'))
+        if generic and 'GMOS-' in inst:
+            return 'GMOS'
+        return inst
+
+    @astro_data_descriptor
     def is_ao(self):
         """
         Tells whether or not the data was taken with adaptive optics.
