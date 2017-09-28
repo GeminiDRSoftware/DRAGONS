@@ -372,18 +372,18 @@ class AstroDataF2(AstroDataGemini):
                               prettify=["filter_name", "disperser", "focal_plane_mask"],
                               additional=additional_item)
 
-    @astro_data_descriptor
-    def instrument(self):
-        """
-        Returns the name of the instrument, coping with the fact that early
-        data apparently had the keyword INSTRUME='Flam'
+    # @astro_data_descriptor
+    # def instrument(self):
+    #     """
+    #     Returns the name of the instrument, coping with the fact that early
+    #     data apparently had the keyword INSTRUME='Flam'
 
-        Returns
-        -------
-        str
-            The name of the instrument, namely 'F2'
-        """
-        return 'F2'
+    #     Returns
+    #     -------
+    #     str
+    #         The name of the instrument, namely 'F2'
+    #     """
+    #     return 'F2'
 
     @returns_list
     @astro_data_descriptor

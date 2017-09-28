@@ -61,8 +61,7 @@ class Mapper(object):
         """
         self.adinputs   = adinputs
         self._context   = context
-        ainst = adinputs[0].instrument()
-        self.pkg        = 'gmos' if "GMOS" in ainst else ainst.lower()
+        self.pkg        = adinputs[0].instrument(generic=True).lower()
         self.dotpackage = dotpath(drpkg, self.pkg)
         self.recipename = recipename
         self.tags       = adinputs[0].tags
