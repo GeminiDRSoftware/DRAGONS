@@ -746,7 +746,7 @@ class AstroDataGemini(AstroDataFits):
         tags = self.tags
         if 'IMAGE' in tags:
             filter_name = self.filter_name(pretty=True)
-            for inst in ('*', self.instrument()):
+            for inst in ('*', self.instrument(generic=True)):
                 try:
                     wave_in_microns = filter_wavelengths[inst, filter_name]
                 except KeyError:
