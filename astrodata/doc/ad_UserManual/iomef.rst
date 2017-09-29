@@ -34,7 +34,7 @@ Open and access existing dataset
 
 Read in the dataset
 -------------------
-The file on disk is load into the AstroData class associated with the instrument the data is from.
+The file on disk is loaded into the AstroData class associated with the instrument the data is from.
 This association is done automatically based on header content.
 ::
 
@@ -43,7 +43,7 @@ This association is done automatically based on header content.
     gemini_instruments.gmos.adclass.AstroDataGmos
 
 From now on, ``ad`` knows it is GMOS data.  It knows how to access it's headers and when using the
-recipe_system, it will trigger the selection of the GMOS primitives and recipes.
+Recipe System (``recipe_system``), it will trigger the selection of the GMOS primitives and recipes.
 
 The original path and filename are stored in the object. If you were to write the AstroData object to
 disk without specifying anything, those path and filename would be used. ::
@@ -56,16 +56,16 @@ disk without specifying anything, those path and filename would be used. ::
 
 Accessing the content of a MEF file
 -----------------------------------
-Accessing data, headers, tables will be covered in details in following chapters.  Here we just
+Accessing pixel data, headers, tables will be covered in details in following chapters.  Here we just
 introduce the basic content interfaces.
 
 For details on the AstroData structure, please refer to the previous chapter.
 
-AstroData uses NDData has the core of its structure.  Each FITS extension becomes a NDData object and is added
+AstroData uses NDData as the core of its structure.  Each FITS extension becomes a NDData object and is added
 to a list.
 
-To access pixel data, the list index and the `.data` attribute are used.  That returns a numpy.ndarray. The
-list of NDData is zero-indexed.  Extension number 1 in a MEF is index 0 in an AstroData object. ::
+To access pixel data, the list index and the `.data` attribute are used.  That returns a ``numpy.ndarray``. The
+list of NDData is zero-indexed.  *Extension number 1 in a MEF is index 0 in an AstroData object*. ::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
     >>> data = ad[0].data
@@ -77,7 +77,7 @@ list of NDData is zero-indexed.  Extension number 1 in a MEF is index 0 in an As
 Remember that in Python the y-axis is the first number in a ndarray.
 
 The variance and data quality planes, the VAR and DQ planes in Gemini MEF files, are represented by the
-`variance` and `mask` attributes, respectively.  They are not their own "extension", they don't have their
+``variance`` and ``mask`` attributes, respectively.  They are not their own "extension", they don't have their
 own index in the list, unlike in a MEF.  They are attached to the data pixel, packaged together by the
 NDData object. ::
 
@@ -87,10 +87,10 @@ NDData object. ::
 Tables in the MEF will also be loaded into the AstroData object.  If a table is associated with a specific
 science extension through the EXTVER header, that table will be packaged within the same AstroData extension
 as the pixel data.  The AstroData extension is the NDData object plus any table or other pixel array.  If the
-table is not associated with a specific extension an applies globally, it will be added to the AstroData object
+table is not associated with a specific extension and applies globally, it will be added to the AstroData object
 as a global addition.  No indexing will be required to access it.
 
-The tables are stored internally as astropy `Table`s. ::
+The tables are stored internally as astropy ``Table`` objects. ::
 
     >>> ad[0].OBJCAT
     <Table length=6>
@@ -152,11 +152,11 @@ Please make sure that you have read the previous chapter on Structure.
 
 Appending an extension
 ----------------------
-Here we take an extension from one AstroData object and append it to the first.  Because we are mapping
+In this section, we take an extension from one AstroData object and append it to another.  Because we are mapping
 a FITS file, the EXTVER keyword gets automatically updated to the next available value to ensure that
-when the AstroData object is written back to disk as MEF, it will be coherent. ::
+when the AstroData object is written back to disk as MEF, it will be coherent.
 
-Here is an example appending the whole AstroData extensions, with variance, mask and tables.
+Here is an example appending a whole AstroData extension, with pixel data, variance, mask and tables.
 ::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
@@ -195,7 +195,7 @@ Here is an example appending the whole AstroData extensions, with variance, mask
 
 As you can see above, the fourth extension of ``advar``, along with everything it contains was appended
 at the end of the first AstroData object.  Also, note that the EXTVER of the extension while in ``advar``
-was 4, but once appended to ``ad``, it had to be changed to the next available integer, 1 to 4 being already
+was 4, but once appended to ``ad``, it had to be changed to the next available integer, 5, numbers 1 to 4 being already
 used by ``ad``'s own extensions.
 
 And here we are appending only the pixel data, leaving behind the other associated data.

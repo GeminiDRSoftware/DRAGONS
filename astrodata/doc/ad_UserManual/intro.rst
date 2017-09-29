@@ -8,7 +8,7 @@ Introduction
 
 What is Astrodata?
 ==================
-Astrodata is a tool to represent internally datasets stored on disks   Astrodata provides uniform interfaces
+Astrodata is a tool to represent internally datasets stored on disks.   Astrodata provides uniform interfaces
 for working on datasets from
 different instruments.  Once a dataset has been opened with Astrodata, the object "knowns about itself".
 Information like instrument, observation mode, and how to access headers, is readily available through the

@@ -6,6 +6,5 @@
 The Astrodata Object
 ********************
 
-(based on nddata, with variance and mask. how tables are stored, how
-headers are stored, etc.  Try to be as MEF-agnostic as possible.  there's
-another section for the MEF mapping.)
+.. todo::
+ (based on nddata, with variance and mask. how tables are stored, how headers are stored, etc.  Try to be as MEF-agnostic as possible.  there's another section for the MEF mapping.)
