@@ -76,10 +76,13 @@ class CalibDB(PrimitivesBASE):
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
-        rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
-        cal_requests = get_cal_requests(rqs_actual, caltype)
-        calibration_records = process_cal_requests(cal_requests)
-        self._add_cal(calibration_records)
+        if self.usercals and caltype in [key[1] for key in self.usercals.keys()]:
+            self._add_cal(self.usercals)
+        else:
+            rqs_actual = [ad for ad in adinputs if self._get_cal(ad,caltype) is None]
+            cal_requests = get_cal_requests(rqs_actual, caltype)
+            calibration_records = process_cal_requests(cal_requests)
+            self._add_cal(calibration_records)
         return adinputs
 
     def getProcessedArc(self, adinputs=None, **params):
