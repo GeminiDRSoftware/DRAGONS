@@ -1,4 +1,6 @@
 *.md linguist-vendored
 *.txt linguist-vendored
 *.yml linguist-vendored
-
+recipe_system/adcc/client/* linguist-vendored
+recipe_system/adcc/client/css/* linguist-vendored
+astrodata/doc/* linguist-documentation
