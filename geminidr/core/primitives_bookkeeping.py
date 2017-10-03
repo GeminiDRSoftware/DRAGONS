@@ -120,6 +120,24 @@ class Bookkeeping(PrimitivesBASE):
                         log.stdinfo("   {}".format(f))
         return adinputs
 
+    def selectInputs(self, adinputs=None, **params):
+        """
+        Selects frames whose tags match a list of one or more supplied tags.
+        The user is likely to want to redirect the output list.
+        
+        Parameters
+        ----------
+        tags: str/list
+            Tags which frames must match to be selected
+        """
+        required_tags = params.get("tags") or []
+        if isinstance(required_tags, str):
+            required_tags = required_tags.split(',')
+
+        adoutputs = [ad for ad in adinputs
+                     if set(required_tags).issubset(ad.tags)]
+        return adoutputs
+
     def showInputs(self, adinputs=None, stream='main', **params):
         """
         A simple primitive to show the filenames for the current inputs to 
