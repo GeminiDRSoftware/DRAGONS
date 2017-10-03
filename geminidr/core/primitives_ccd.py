@@ -151,16 +151,6 @@ class CCD(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            # Use gireduce defaults if values aren't specified
-            if 'GMOS' in ad.tags:
-                detname = ad.detector_name(pretty=True)
-                if order is None and func.startswith('poly'):
-                    order = 6 if detname.startswith('Hamamatsu') else 0
-                if nbiascontam is None:
-                    nbiascontam = 5 if detname == 'e2vDD' else 4
-            else:
-                detname = ''
-
             osec_list = ad.overscan_section()
             dsec_list = ad.data_section()
             ybinning = ad.detector_y_bin()
@@ -172,12 +162,6 @@ class CCD(PrimitivesBASE):
                 else:  # Bias on left
                     x1 += 1
                     x2 -= nbiascontam
-
-                if detname.startswith('Hamamatsu') and func.startswith('poly'):
-                    y1 = max(y1, 48 // ybinning)
-                    if i == 0:  # Don't log for every extension
-                        log.fullinfo('Ignoring bottom 48 rows of {}'.
-                                    format(ad.filename))
 
                 row = np.arange(y1, y2)
                 data = np.mean(ext.data[y1:y2, x1:x2], axis=1)
