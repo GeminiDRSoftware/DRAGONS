@@ -17,7 +17,6 @@ from geminidr import PrimitivesBASE
 from .parameters_calibdb import ParametersCalibDB
 
 from recipe_system.utils.decorators import parameter_override
-from recipe_system.cal_service import caches
 # ------------------------------------------------------------------------------
 @parameter_override
 class CalibDB(PrimitivesBASE):
@@ -31,11 +30,6 @@ class CalibDB(PrimitivesBASE):
         self.parameters = ParametersCalibDB
         self._not_found = "Calibration not found for {}"
 
-    def _add_cal(self, crecords):
-        self.calibrations.update(crecords)
-        caches.save_cache(self.calibrations, caches.calindfile)
-        return
-
     def _get_cal(self, ad, caltype):
         key = (ad, caltype)
         calfile = self.calibrations[key]
@@ -46,7 +40,7 @@ class CalibDB(PrimitivesBASE):
             return calfile
         else:
             del self.calibrations[key]
-            caches.save_cache(self.calibrations, caches.calindfile)
+            self.calibrations.cache_to_disk()
             return None
 
     def _assert_calibrations(self, adinputs, caltype):
@@ -65,24 +59,25 @@ class CalibDB(PrimitivesBASE):
             raise TypeError("getCalibration: Received no caltype or calfile.")
 
         for ad in adinputs:
-            self.calibrations._add_cal((ad, caltype), calfile)
+            self.calibrations[ad, caltype] = calfile
 
         return adinputs
 
     def getCalibration(self, adinputs=None, **params):
+        """
+        Uses the calibration manager to population the Calibrations dict for
+        all frames, updating any existing entries
+        """
         caltype = params.get('caltype')
         log = self.log
         if caltype is None:
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
-        if self.usercals and caltype in [key[1] for key in self.usercals.keys()]:
-            self._add_cal(self.usercals)
-        else:
-            rqs_actual = [ad for ad in adinputs if self._get_cal(ad,caltype) is None]
-            cal_requests = get_cal_requests(rqs_actual, caltype)
-            calibration_records = process_cal_requests(cal_requests)
-            self._add_cal(calibration_records)
+        cal_requests = get_cal_requests(adinputs, caltype)
+        calibration_records = process_cal_requests(cal_requests)
+        for ad, calfile in calibration_records.items():
+            self.calibrations[ad, caltype] = calfile
         return adinputs
 
     def getProcessedArc(self, adinputs=None, **params):
@@ -145,12 +140,13 @@ class CalibDB(PrimitivesBASE):
                     except KeyError:
                         log.warning("MDF not found in {}".format(inst_lookups))
                     else:
-                        self.calibrations._add_cal((ad, caltype), mdf)
+                        self.calibrations[ad, caltype] = mdf
                         continue
                 log.stdinfo("Requesting MDF from fitsstore ...")
                 mdf_requests = get_cal_requests([ad], caltype)
                 mdf_records = process_cal_requests(mdf_requests)
-                self._add_cal(mdf_records)
+                for ad, calfile in mdf_records.items():
+                    self.calibrations[ad, caltype] = calfile
 
         return adinputs
 

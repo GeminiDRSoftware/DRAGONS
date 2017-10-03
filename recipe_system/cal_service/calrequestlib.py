@@ -159,16 +159,14 @@ def process_cal_requests(cal_requests):
 
     E.g., The returned dictionary has the form,
 
-    { (input datalabel, caltype): <filename_of_calibration_including_path>,
+    { (ad): <filename_of_calibration_including_path>,
       ...
     }
 
     """
     calibration_records = {}
     def _add_cal_record(rq, calfile):
-        rqkey = (rq.datalabel, rq.caltype)
-        calrec = calfile
-        calibration_records.update({rqkey: calrec})
+        calibration_records.update({rq.ad: calfile})
         return
 
     cache = set_caches()
@@ -183,7 +181,7 @@ def process_cal_requests(cal_requests):
             log.error("END CALIBRATION SERVICE REPORT\n")
             warn = "No {} calibration file found for {}"
             log.warning(warn.format(rq.caltype, rq.filename))
-            _add_cal_record(rq, calname)
+            #_add_cal_record(rq, calname)
             continue
 
         log.info("Found calibration (url): {}".format(calurl))

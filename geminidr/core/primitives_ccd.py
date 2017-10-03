@@ -56,7 +56,8 @@ class CCD(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         bias_list = params["bias"] if params["bias"] else [
-            self._get_cal(ad, 'processed_bias') for ad in adinputs]
+            self._get_cal(ad, 'processed_bias') or self.getProcessedBias([ad])
+            for ad in adinputs]
 
         # Provide a bias AD object for every science frame
         for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):

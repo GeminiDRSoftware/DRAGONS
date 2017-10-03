@@ -67,7 +67,6 @@ class PrimitivesBASE(object):
         self.upload_metrics   = upmetrics
         self.upload_calibs    = upcalibs
         self.user_params      = uparms if uparms else {}
-        self.usercals         = ucals if ucals else {}
         self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
@@ -78,7 +77,7 @@ class PrimitivesBASE(object):
                 for k,v in self.sx_dict.items()})
 
         self.cachedict        = caches.set_caches()
-        self.calibrations     = Calibrations(caches.calindfile)
+        self.calibrations     = Calibrations(caches.calindfile, user_cals=ucals)
         self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.

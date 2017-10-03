@@ -88,10 +88,11 @@ def cal_search_factory():
     )
 
 class Calibrations(dict):
-    def __init__(self, calindfile, *args, **kwargs):
+    def __init__(self, calindfile, user_cals={}, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self._calindfile = calindfile
         self.update(caches.load_cache(self._calindfile))
+        self._usercals = user_cals or {}  # Handle user_cals=None
 
     def __getitem__(self, key):
         return self._get_cal(*key)
@@ -100,23 +101,36 @@ class Calibrations(dict):
         self._add_cal(key, val)
         return
 
+    def __delitem__(self, key):
+        # Cope with malformed keys
+        try:
+            self.pop((key[0].calibration_key(), key[1]), None)
+        except (TypeError, IndexError):
+            pass
+
     def _add_cal(self, key, val):
         # Munge the key from (ad, caltype) to (ad.calibration_key, caltype)
         key = (key[0].calibration_key(), key[1])
         self.update({key: val})
-        caches.save_cache(self, self._calindfile)
+        self.cache_to_disk()
         return
 
     def _get_cal(self, ad, caltype):
         key = (ad.calibration_key(), caltype)
+        if key in self._usercals:
+            return self._usercals[key]
         calfile = self.get(key)
-        if calfile is None:
-            return None
-        else:
-            # If the file isn't on disk, delete it from the dict
-            if os.path.isfile(calfile):
-                return calfile
-            else:
-                del self[key]
-                caches.save_cache(self, self._calindfile)
-                return None
+        return calfile
+        #if calfile is None:
+        #    return None
+        #else:
+        #    # If the file isn't on disk, delete it from the dict
+        #    if os.path.isfile(calfile):
+        #        return calfile
+        #    else:
+        #        del self[key]
+        #        self.cache_to_disk()
+        #        return None
+
+    def cache_to_disk(self):
+        caches.save_cache(self, self._calindfile)
