@@ -90,8 +90,8 @@ gemini_keyword_names = dict(
     wavelength_band = 'WAVEBAND',
     wavelength_reference_pixel = 'WREFPIX',
     well_depth_setting = 'WELDEPTH',
-    x_offset = 'XOFFSET',
-    y_offset = 'YOFFSET',
+    telescope_x_offset = 'XOFFSET',
+    telescope_y_offset = 'YOFFSET',
 )
 
 class AstroDataGemini(AstroDataFits):
@@ -1787,7 +1787,7 @@ class AstroDataGemini(AstroDataFits):
         return self.phu.get(self._keyword_for('well_depth_setting'))
 
     @astro_data_descriptor
-    def x_offset(self):
+    def telescope_x_offset(self):
         """
         Returns the telescope offset along the x-axis, as defined by
         the relevant header keyword
@@ -1797,10 +1797,10 @@ class AstroDataGemini(AstroDataFits):
         float
             the telescope offset along the x-axis
         """
-        return self.phu.get(self._keyword_for('x_offset'))
+        return self.phu.get(self._keyword_for('telescope_x_offset'))
 
     @astro_data_descriptor
-    def y_offset(self):
+    def telescope_y_offset(self):
         """
         Returns the telescope offset along the y-axis, as defined by
         the relevant header keyword
@@ -1810,7 +1810,7 @@ class AstroDataGemini(AstroDataFits):
         float
             the telescope offset along the y-axis
         """
-        return self.phu.get(self._keyword_for('y_offset'))
+        return self.phu.get(self._keyword_for('telescope_y_offset'))
 
     def _get_wcs_coords(self):
         """

@@ -530,7 +530,7 @@ class AstroDataF2(AstroDataGemini):
 
     # TODO: document why these are reversed
     @astro_data_descriptor
-    def x_offset(self):
+    def telescope_x_offset(self):
         """
         Returns the x offset from origin of this image
 
@@ -545,7 +545,7 @@ class AstroDataF2(AstroDataGemini):
             return None
 
     @astro_data_descriptor
-    def y_offset(self):
+    def telescope_y_offset(self):
         """
         Returns the y offset from origin of this image
 

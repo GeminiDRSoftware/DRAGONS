@@ -286,8 +286,10 @@ class Preprocess(PrimitivesBASE):
                         if (same_cfg and delta_time < seconds):
                             
                             # Get the distance between science and sky images
-                            delta_x = ad_sci.x_offset() - ad_sky.x_offset()
-                            delta_y = ad_sci.y_offset() - ad_sky.y_offset()
+                            delta_x = (ad_sci.telescope_x_offset() -
+                                       ad_sky.telescope_x_offset())
+                            delta_y = (ad_sci.telescope_y_offset() -
+                                       ad_sky.telescope_y_offset())
                             delta_sky = math.sqrt(delta_x**2 + delta_y**2)
                             if (delta_sky > min_distance):
                                 this_sky_list.append(ad_sky)
