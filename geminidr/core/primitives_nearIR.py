@@ -91,9 +91,29 @@ class NearIR(PrimitivesBASE):
         one from the other, and returns that single frame. It uses streams to
         propagate the frames, hence there's no need to send/collect adinputs.
         """
-        self.separateLampOff(adinputs)
-        self.stackLampOnLampOff(None)
-        return self.subtractLampOnLampOff(None)
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        self.selectInputs(tags='LAMPON', outstream='lampOn')
+        self.selectInputs(tags='LAMPOFF', outstream='lampOff')
+        self.showInputs(stream='lampOn')
+        self.showInputs(stream='lampOff')
+        self.stackFrames(stream='lampOn')
+        self.stackFrames(stream='lampOff')
+
+        if self.streams['lampOn'] and self.streams['lampOff']:
+            flat = self.streams['lampOn'][0] - self.streams['lampOff'][0]
+            flat.filename = gt.filename_updater(flat, suffix="lampOnOff")
+            del self.streams['lampOn'], self.streams['lampOff']
+            return [flat]
+        else:
+            log.warning("Cannot subtract lamp on - lamp off flats as do not "
+                        "have some of each")
+            if self.streams['lampOn']:
+                log.warning("Returning stacked lamp on flats")
+                return self.streams['lampOn']
+            else:
+                return []
 
     def separateFlatsDarks(self, adinputs=None, **params):
         """
@@ -126,41 +146,6 @@ class NearIR(PrimitivesBASE):
         self.streams.update({"darks" : dark_list})
         return adinputs
 
-    def separateLampOff(self, adinputs=None, **params):
-        """
-        This primitive is intended to run on gcal imaging flats.
-        It goes through the input list and figures out which ones are lamp-on
-        and which ones are lamp-off, and pushes these to two streams.
-        It can also cope with domeflats if their type is specified in the
-        header keyword OBJECT.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        # Initialize the list of output AstroData objects
-        lampon_list = []
-        lampoff_list = []
-
-        for ad in adinputs:
-            if 'GCAL_IR_ON' in ad.tags:
-                log.stdinfo("{} is a lamp-on flat".format(ad.filename))
-                lampon_list.append(ad)
-            elif 'GCAL_IR_OFF' in ad.tags:
-                log.stdinfo("{} is a lamp-off flat".format(ad.filename))
-                lampoff_list.append(ad)
-            elif ('Domeflat OFF' in ad.phu.get('OBJECT')):
-                log.stdinfo("{} is a lamp-off domeflat".format(ad.filename))
-                lampoff_list.append(ad)
-            elif ('Domeflat' in ad.phu.get('OBJECT')):
-                log.stdinfo("{} is a lamp-on domeflat".format(ad.filename))
-                lampon_list.append(ad)
-            else:
-                log.warning("Cannot determine lamp-on/off for {}".
-                            format(ad.filename))
-
-        self.streams.update({"lampOn" : lampon_list, "lampOff": lampoff_list})
-        return adinputs
-
     def stackDarks(self, adinputs=None, **params):
         """
         This primitive stacks the files in the "darks" stream, after checking
@@ -184,60 +169,3 @@ class NearIR(PrimitivesBASE):
         self.showInputs(stream='darks')
         self.streams['darks'] = self.stackFrames(self.streams['darks'])
         return adinputs
-
-    def stackLampOnLampOff(self, adinputs=None, **params):
-        """
-        This primitive stacks the Lamp On flats and the LampOff flats from
-        the streams, and returns the two stacked flats to the streams.
-        It doesn't even look at adinputs.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        if self.streams.get('lampOn'):
-            self.showInputs(stream='lampOn')
-            self.streams['lampOn'] = self.stackFrames(self.streams['lampOn'])
-
-        if self.streams.get('lampOff'):
-            self.showInputs(stream='lampOff')
-            self.streams['lampOff'] = self.stackFrames(self.streams['lampOff'])
-        return adinputs
-
-    def subtractLampOnLampOff(self, adinputs=None, **params):
-        """
-        This primitive subtracts the lamp off stack from the lampon stack.
-        It expects there to be only one file (the stack) in each stream -
-        call stackLampOnLampOff to do the stacking before calling this
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        lampon_list = self.streams.get('lampOn', [])
-        lampoff_list = self.streams.get('lampOff', [])
-
-        if lampon_list and lampoff_list:
-            if len(lampon_list) > 1:
-                log.warning('More than one file in the lampOn stream. '
-                            'Using first file only.')
-            if len(lampoff_list) > 1:
-                log.warning('More than one file in the lampOff stream. '
-                            'Using first file only.')
-            lampon = lampon_list[0]
-            lampoff = lampoff_list[0]
-            log.stdinfo("Lamp ON is:  {}".format(lampon.filename))
-            log.stdinfo("Lamp OFF is: {}".format(lampoff.filename))
-            lampon.subtract(lampoff)
-            lampon.filename = gt.filename_updater(lampon, suffix="lampOnOff")
-            del self.streams['lampOn'], self.streams['lampOff']
-            return [lampon]
-        else:
-            log.warning("Cannot subtract lamp on - lamp off flats as do not "
-                        "have some of each")
-            if len(lampon_list) > 0:
-                log.warning("Returning stacked lamp on flats")
-                return lampon_list
-            elif len(lampoff_list) > 0:
-                return []
-            else:
-                log.warning("Something is not right, no flats were accessible.")
-                return []
