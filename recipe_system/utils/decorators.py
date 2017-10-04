@@ -132,7 +132,8 @@ def parameter_override(fn):
         if len(args) == 1 and 'adinputs' not in params:
             # Use appropriate stream inputs
             instream = params.get('instream', params.get('stream', 'main'))
-            params.update({'adinputs': pobj.streams[instream]})
+            # Allow a non-existent stream to be passed
+            params.update({'adinputs': pobj.streams.get(instream, [])})
             ret_value = fn(*args, **params)
             # And place the outputs in the appropriate stream
             outstream = params.get('outstream', params.get('stream', 'main'))
