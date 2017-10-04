@@ -37,14 +37,14 @@ class CalibDB(PrimitivesBASE):
             key = (ad, caltype)
             calfile = self.calibrations[key]
             if not calfile:
-                caloutputs.append[None]
+                caloutputs.append(None)
             # If the file isn't on disk, delete it from the dict
             elif os.path.isfile(calfile):
                 caloutputs.append(calfile)
             else:
                 del self.calibrations[key]
                 self.calibrations.cache_to_disk()
-                caloutputs.append[None]
+                caloutputs.append(None)
         return caloutputs if isinstance(adinput, list) else caloutputs[0]
 
     def _assert_calibrations(self, adinputs, caltype):
