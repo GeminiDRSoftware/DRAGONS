@@ -30,18 +30,22 @@ class CalibDB(PrimitivesBASE):
         self.parameters = ParametersCalibDB
         self._not_found = "Calibration not found for {}"
 
-    def _get_cal(self, ad, caltype):
-        key = (ad, caltype)
-        calfile = self.calibrations[key]
-        if not calfile:
-            return None
-        # If the file isn't on disk, delete it from the dict
-        if os.path.isfile(calfile):
-            return calfile
-        else:
-            del self.calibrations[key]
-            self.calibrations.cache_to_disk()
-            return None
+    def _get_cal(self, adinput, caltype):
+        caloutputs = []
+        adinputs = adinput if isinstance(adinput, list) else [adinput]
+        for ad in adinputs:
+            key = (ad, caltype)
+            calfile = self.calibrations[key]
+            if not calfile:
+                caloutputs.append[None]
+            # If the file isn't on disk, delete it from the dict
+            elif os.path.isfile(calfile):
+                caloutputs.append(calfile)
+            else:
+                del self.calibrations[key]
+                self.calibrations.cache_to_disk()
+                caloutputs.append[None]
+        return caloutputs if isinstance(adinput, list) else caloutputs[0]
 
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
@@ -63,18 +67,19 @@ class CalibDB(PrimitivesBASE):
 
         return adinputs
 
-    def getCalibration(self, adinputs=None, **params):
+    def getCalibration(self, adinputs=None, refresh=True, caltype=None):
         """
         Uses the calibration manager to population the Calibrations dict for
         all frames, updating any existing entries
         """
-        caltype = params.get('caltype')
         log = self.log
         if caltype is None:
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
-        cal_requests = get_cal_requests(adinputs, caltype)
+        ad_rq = adinputs if refresh else [ad for ad in adinputs
+                                          if not self._get_cal(ad, caltype)]
+        cal_requests = get_cal_requests(ad_rq, caltype)
         calibration_records = process_cal_requests(cal_requests)
         for ad, calfile in calibration_records.items():
             self.calibrations[ad, caltype] = calfile
@@ -82,32 +87,32 @@ class CalibDB(PrimitivesBASE):
 
     def getProcessedArc(self, adinputs=None, **params):
         caltype = "processed_arc"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedBias(self, adinputs=None, **params):
         caltype = "processed_bias"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedDark(self, adinputs=None, **params):
         caltype = "processed_dark"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)  
         return adinputs
     
     def getProcessedFlat(self, adinputs=None, **params):
         caltype = "processed_flat"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)        
         return adinputs
     
     def getProcessedFringe(self, adinputs=None, **params):
         caltype = "processed_fringe"
         log = self.log
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         # Fringe correction is always optional; do not raise errors if fringe
         # not found
         try:
