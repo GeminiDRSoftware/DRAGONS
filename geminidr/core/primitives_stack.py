@@ -6,6 +6,8 @@
 import numpy as np
 from copy import deepcopy
 
+from astropy import table
+
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.eti import gemcombineeti
 from gempy.utils import logutils
@@ -121,57 +123,39 @@ class Stack(PrimitivesBASE):
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
 
-        # Preserve the input dtype for the data quality extension
-        #dq_dtypes_list = []
-        #for ad in ad_input_list:
-        #    if ad[DQ]:
-        #        for ext in ad[DQ]:
-        #            dq_dtypes_list.append(ext.data.dtype)
-
-        #if dq_dtypes_list:
-        #    unique_dq_dtypes = set(dq_dtypes_list)
-        #    unique_dq_dtypes_list = [dtype for dtype in unique_dq_dtypes]
-        #    if len(unique_dq_dtypes_list) == 1:
-        #        # The input data quality extensions have the same dtype
-        #        dq_dtype = unique_dq_dtypes_list[0]
-        #    elif len(unique_dq_dtypes_list) == 2:
-        #        dq_dtype = np.promote_types(unique_dq_dtypes_list[0],
-        #                                    unique_dq_dtypes_list[1])
-        #    else:
-        #        # The input data quality extensions have more than two
-        #        # different dtypes. Since np.promote_types only accepts two
-        #        # dtypes as input, for now, just use uint16 in this case
-        #        # (when gemcombine is replaced with a python function, the
-        #        # combining of the DQ extension can be handled correctly by
-        #        # numpy).
-        #        dq_dtype = np.dtype(np.uint16)
-
         # Instantiate ETI and then run the task
         gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
-        ad = gemcombine_task.run()
+        ad_out = gemcombine_task.run()
+
+        # Propagate REFCAT as the union of all input REFCATs
+        refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
+        if refcats:
+            out_refcat = table.unique(table.vstack(refcats,
+                                metadata_conflicts='silent'), keys='Cat_Id')
+            out_refcat['Cat_Id'] = range(1, len(out_refcat)+1)
+            ad_out.REFCAT = out_refcat
 
         # Gemcombine sets the GAIN keyword to the sum of the gains;
         # reset it to the average instead. Set the RDNOISE to the
         # sum in quadrature of the input read noise. Set the keywords in
         # the variance and data quality extensions to be the same as the
         # science extensions.
-        for ext, gain, rn in zip(ad, gain_list, read_noise_list):
+        for ext, gain, rn in zip(ad_out, gain_list, read_noise_list):
             ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
             ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
         # Stick the first extension's values in the PHU
-        ad.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
-        ad.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
+        ad_out.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
+        ad_out.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
 
         # Add suffix to datalabel to distinguish from the reference frame
-        ad.phu.set('DATALAB', "{}{}".format(ad.phu.get('DATALAB', ''), sfx),
+        ad_out.phu.set('DATALAB', "{}{}".format(ad_out.data_label(), sfx),
                    self.keyword_comments['DATALAB'])
 
         # Timestamp and update filename and prepare to return single output
-        gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
         ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-        adinputs = [ad]
 
-        return adinputs
+        return [ad_out]
 
     def stackSkyFrames(self, adinputs=None, **params):
         """
