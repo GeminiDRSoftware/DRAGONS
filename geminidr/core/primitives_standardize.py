@@ -95,7 +95,7 @@ class Standardize(PrimitivesBASE):
                                  'above level {:.2f}'.
                                  format(ad.filename, extver, saturation_level))
                     ext.mask |= np.where(ext.data >= saturation_level,
-                                         DQ.saturated, 0)
+                                         DQ.saturated, 0).astype(DQ.datatype)
 
                 if non_linear_level:
                     if saturation_level:
@@ -106,7 +106,7 @@ class Standardize(PrimitivesBASE):
                                                 non_linear_level))
                             ext.mask |= np.where((ext.data >= non_linear_level) &
                                                  (ext.data < saturation_level),
-                                                 DQ.non_linear, 0)
+                                                 DQ.non_linear, 0).astype(DQ.datatype)
                             # Readout modes of IR detectors can result in
                             # saturated pixels having values below the
                             # saturation level. Flag those. Assume we have an
@@ -146,7 +146,7 @@ class Standardize(PrimitivesBASE):
                                      format(ad.filename, extver,
                                             non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
-                                             DQ.non_linear, 0)
+                                             DQ.non_linear, 0).astype(DQ.datatype)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
