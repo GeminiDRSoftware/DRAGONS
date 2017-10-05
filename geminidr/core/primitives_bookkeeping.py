@@ -122,7 +122,7 @@ class Bookkeeping(PrimitivesBASE):
 
     def selectInputs(self, adinputs=None, **params):
         """
-        Selects frames whose tags match a list of one or more supplied tags.
+        Selects frames whose tags match any one of a list of supplied tags.
         The user is likely to want to redirect the output list.
         
         Parameters
@@ -134,8 +134,14 @@ class Bookkeeping(PrimitivesBASE):
         if isinstance(required_tags, str):
             required_tags = required_tags.split(',')
 
-        adoutputs = [ad for ad in adinputs
-                     if set(required_tags).issubset(ad.tags)]
+        # This selects AD that match *all* the tags. While possibly the most
+        # natural, one can achieve this by a series of matches to each tag
+        # individually. There is, however, no way to combine lists produced
+        # this way to create one as if produced by matching *any* of the tags.
+        # Hence a match to *any* tag makes more sense as the implementation.
+        #adoutputs = [ad for ad in adinputs
+        #             if set(required_tags).issubset(ad.tags)]
+        adoutputs = [ad for ad in adinputs if (set(required_tags) & ad.tags)]
         return adoutputs
 
     def showInputs(self, adinputs=None, stream='main', **params):
