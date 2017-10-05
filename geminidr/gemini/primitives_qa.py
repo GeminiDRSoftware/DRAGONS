@@ -141,7 +141,7 @@ class QA(PrimitivesBASE):
                         bg_mag_list.append(bg_mag)
                         qastatus = _get_qa_band('bg', ad, bg_mag, bg_band_limits)
                         ext_info.update({"percentile_band": qastatus.band,
-                                         "comment": qastatus.warning})
+                                         "comment": [qastatus.warning]})
                     else:
                         log.warning("Background is less than or equal to 0 "
                                     "for {}:{}".format(ad.filename,extver))

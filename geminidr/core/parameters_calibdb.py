@@ -4,8 +4,20 @@
 from geminidr import ParametersBASE
 
 class ParametersCalibDB(ParametersBASE):
-    getCalibration    = {
-        "caltype"           : None,
+    getProcessedArc = {
+        "refresh"           : True
+    }
+    getProcessedBias = {
+        "refresh"           : True
+    }
+    getProcessedDark = {
+        "refresh"           : True
+    }
+    getProcessedFlat = {
+        "refresh"           : True
+    }
+    getProcessedFringe = {
+        "refresh"           : True
     }
     storeProcessedArc = {
         "suffix"            : "_arc",
