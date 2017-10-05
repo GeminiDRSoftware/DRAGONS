@@ -370,7 +370,7 @@ class AstroDataNiri(AstroDataGemini):
         filter_name = self.filter_name(pretty=True)
         camera = self.camera()
         # Explicit: if BUNIT is missing, assume data are in ADU
-        bunit = self.hdr.get('BUNIT', 'adu').lower()
+        bunit = self.hdr.get('BUNIT', 'adu')
         zpt = lookup.nominal_zeropoints.get((filter_name, camera))
 
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
@@ -378,11 +378,11 @@ class AstroDataNiri(AstroDataGemini):
         if self.is_single:
             try:
                 return zpt - (
-                    2.5 * math.log10(gain) if bunit == 'adu' else 0)
+                    2.5 * math.log10(gain) if bunit.lower() == 'adu' else 0)
             except TypeError:
                 return None
         else:
-            return [zpt - (2.5 * math.log10(g) if b == 'adu' else 0)
+            return [zpt - (2.5 * math.log10(g) if b.lower() == 'adu' else 0)
                    if zpt and g else None
                    for g, b in zip(gain, bunit)]
 
