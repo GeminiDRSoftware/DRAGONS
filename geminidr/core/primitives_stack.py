@@ -237,16 +237,24 @@ class Stack(PrimitivesBASE):
                     # the sky for correction
                     ad_sky_for_correction_output_list.append(ad_sky)
                 else:
-                    ad_sky_to_stack_list = []
+                    ad_sky_stack_list = []
 
                     # Combine the list of sky AstroData objects
+                    # We want to mask out objects but can't modify the input
+                    # files, so need to make copies
                     log.stdinfo("Combining the following sky frames for {}".
                                  format(origname))
                     for ad_sky in ad_sky_list:
                         log.stdinfo("  {}".format(ad_sky.filename))
-                        ad_sky_to_stack_list.append(ad_sky)
+                        ad_sky_stack_list.append(deepcopy(ad_sky))
 
-                    ad_stacked_sky_list = self.stackFrames(ad_sky_to_stack_list,
+                    # Dilate the object mask and apply to DQ so objects are
+                    # masked out of the sky frames. Some consideration of the
+                    # dilation radius is needed.
+                    ad_sky_stack_list = self.dilateObjectMask(ad_sky_stack_list,
+                                                              dilation=3)
+                    ad_sky_stack_list = self.addObjectMaskToDQ(ad_sky_stack_list)
+                    ad_stacked_sky_list = self.stackFrames(ad_sky_stack_list,
                                                            **params)
 
                     # Add the sky to be used to correct this science AstroData
