@@ -7,6 +7,7 @@ import math
 import datetime
 import numpy as np
 from copy import deepcopy
+from scipy.ndimage import binary_dilation
 
 import astrodata
 import gemini_instruments
@@ -43,6 +44,7 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         sfx = params["suffix"]
+
         for ad in adinputs:
             for ext in ad:
                 if hasattr(ext, 'OBJMASK'):
@@ -411,6 +413,36 @@ class Preprocess(PrimitivesBASE):
         """
         self.getProcessedDark(adinputs)
         adinputs = self.subtractDark(adinputs, **params)
+        return adinputs
+
+    def dilateObjectMask(self, adinputs=None, **params):
+        """
+        Grows the influence of objects detected by dilating the OBJMASK using
+        the binary_dilation routine
+        
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        dilation: float
+            radius of dilation circle
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        dilation = params["dilation"]
+        xgrid, ygrid = np.mgrid[-dilation:dilation+1, -dilation:dilation+1]
+        structure = np.where(xgrid*xgrid+ygrid*ygrid < dilation*dilation,
+                             True, False)
+
+        for ad in adinputs:
+            for ext in ad:
+                if hasattr(ext, 'OBJMASK') and ext.OBJMASK is not None:
+                    ext.OBJMASK = binary_dilation(ext.OBJMASK,
+                                                  structure).astype(np.uint8)
+
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
+                                              strip=True)
         return adinputs
 
     def divideByFlat(self, adinputs=None, **params):

@@ -30,6 +30,10 @@ class ParametersPreprocess(ParametersBASE):
         "suffix"            : '_darkCorrected',
         "dark"              : None,
     }
+    dilateObjectMask = {
+        "suffix"            : '_objmaskDilated',
+        "dilation"          : 1,
+    }
     divideByFlat = {
         "suffix"            : "_flatCorrected",
         "flat"              : None,
