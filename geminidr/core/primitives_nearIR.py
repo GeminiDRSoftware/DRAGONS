@@ -5,10 +5,12 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from astropy.stats import sigma_clip
+import datetime
 
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from .parameters_nearIR import ParametersNearIR
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -20,6 +22,56 @@ class NearIR(PrimitivesBASE):
     def __init__(self, adinputs, **kwargs):
         super(NearIR, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersNearIR
+
+    def addLatencyToDQ(self, adinputs=None, **params):
+        """
+        Flags pixels in the DQ plane of an image based on whether the same
+        pixel has been flagged as saturated in a previous image.
+        
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        non_linear : bool
+            flag non-linear pixels (as well as saturated ones)?
+        time: float
+            time (in seconds) for which latency is an issue 
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        flags = DQ.saturated | (DQ.non_linear if params["non_linear"] else 0)
+        # Create a timedelta object using the value of the "time" parameter
+        seconds = datetime.timedelta(seconds=params["time"])
+
+        # Avoids n^2 calls to the descriptor
+        times = [ad.ut_datetime() for ad in adinputs]
+        for i, ad in enumerate(adinputs):
+            # Find which frames have their bright pixels propagated
+            propagated = filter(lambda x: (x[1]<times[i] and times[i]-x[1]<seconds),
+                                zip(adinputs, times))
+            if propagated:
+                log.stdinfo('{} affected by {}'.format(ad.filename,
+                                    ','.join([x[0].filename for x in propagated])))
+
+                for ad_latent in list(zip(*propagated)[0]):
+                    # AD extensions might not be in the same order
+                    # Set aux_type to 'bpm' which means hot pixels in a subarray
+                    # can still be propagated to a subsequent full-array image
+                    ad_latent = gt.clip_auxiliary_data(ad, aux=ad_latent,
+                                                       aux_type='bpm', keyword_comments=self.keyword_comments)
+                    for ext, ext_latent in zip(ad, ad_latent):
+                        if ext_latent.mask is not None:
+                            latency = np.where(ext_latent.mask & flags, DQ.cosmic_ray,
+                                            0).astype(DQ.datatype)
+                            ext.mask = latency if ext.mask is None \
+                                else ext.mask | latency
+            else:
+                log.stdinfo('{} is not affected by latency'.format(ad.filename))
+
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
+                                              strip=True)
+        return adinputs
 
     def makeBPM(self, adinputs=None, **params):
         """
