@@ -146,8 +146,8 @@ class NearIR(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        self.selectInputs(tags='LAMPON', outstream='lampOn')
-        self.selectInputs(tags='LAMPOFF', outstream='lampOff')
+        self.selectFromInputs(tags='LAMPON', outstream='lampOn')
+        self.selectFromInputs(tags='LAMPOFF', outstream='lampOff')
         self.showInputs(stream='lampOn')
         self.showInputs(stream='lampOff')
         self.stackFrames(stream='lampOn')

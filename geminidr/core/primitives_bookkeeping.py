@@ -120,7 +120,7 @@ class Bookkeeping(PrimitivesBASE):
                         log.stdinfo("   {}".format(f))
         return adinputs
 
-    def selectInputs(self, adinputs=None, **params):
+    def selectFromInputs(self, adinputs=None, **params):
         """
         Selects frames whose tags match any one of a list of supplied tags.
         The user is likely to want to redirect the output list.
