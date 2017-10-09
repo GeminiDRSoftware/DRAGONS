@@ -22,7 +22,7 @@ import re
 
 from distutils.core import setup
 
-PACKAGENAME = 'gemini_python'
+PACKAGENAME = 'dragons'
 
 # PACKAGES and PACKAGE_DIRS
 ASTRODATA_MODULES = ['astrodata']
@@ -189,8 +189,8 @@ SCRIPTS.extend(GEMPY_SCRIPTS)
 
 EXTENSIONS = None
 
-setup ( name='gemini_python',
-        version='2.0.0',
+setup ( name='dragons',
+        version='2.0.6-alpha',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
         author_email='sus_inquiries@gemini.edu',
