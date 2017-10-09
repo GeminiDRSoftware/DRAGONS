@@ -73,7 +73,7 @@ class Standardize(PrimitivesBASE):
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
                 final_bpm = clip_method(ad, aux=bpm, aux_type='bpm',
-                    return_dtype=DQ.datatype, keyword_comments=self.keyword_comments)
+                    return_dtype=DQ.datatype)
 
             for ext, bpm_ext in zip(ad, final_bpm):
                 extver = ext.hdr['EXTVER']
@@ -194,8 +194,8 @@ class Standardize(PrimitivesBASE):
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
-                final_illum = clip_method(ad, illum, 'bpm', DQ.datatype,
-                                        self.keyword_comments)
+                final_illum = clip_method(ad, aux=illum, aux_type='bpm',
+                                          return_dtype=DQ.datatype)
 
             for ext, illum_ext in zip(ad, final_illum):
                 # Ensure we're only adding the unilluminated bit

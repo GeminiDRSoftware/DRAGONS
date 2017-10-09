@@ -82,8 +82,8 @@ class GNIRSImage(GNIRS, Image, Photometry):
         corr_illum_ad = _position_illum_mask(reference, illum_ad, log)
 
         for ad in adinputs:
-            final_illum = gt.clip_auxiliary_data(adinput=ad, aux=corr_illum_ad,
-                    aux_type="bpm", keyword_comments=self.keyword_comments)
+            final_illum = gt.clip_auxiliary_data(ad, aux=corr_illum_ad,
+                    aux_type="bpm")
  
             # binary_OR the illumination mask or create a DQ plane from it.
             if ad[0].mask is None:

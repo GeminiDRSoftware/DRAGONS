@@ -59,7 +59,7 @@ class NearIR(PrimitivesBASE):
                     # Set aux_type to 'bpm' which means hot pixels in a subarray
                     # can still be propagated to a subsequent full-array image
                     ad_latent = gt.clip_auxiliary_data(ad, aux=ad_latent,
-                                                       aux_type='bpm', keyword_comments=self.keyword_comments)
+                                                       aux_type='bpm')
                     for ext, ext_latent in zip(ad, ad_latent):
                         if ext_latent.mask is not None:
                             latency = np.where(ext_latent.mask & flags, DQ.cosmic_ray,

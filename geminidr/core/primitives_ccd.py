@@ -80,8 +80,7 @@ class CCD(PrimitivesBASE):
             try:
                 gt.check_inputs_match(ad, bias, check_filter=False)
             except ValueError:
-                bias = gt.clip_auxiliary_data(ad, bias, aux_type='cal',
-                                    keyword_comments=self.keyword_comments)
+                bias = gt.clip_auxiliary_data(ad, aux=bias, aux_type='cal')
                 # An Error will be raised if they don't match now
                 gt.check_inputs_match(ad, bias, check_filter=False)
 

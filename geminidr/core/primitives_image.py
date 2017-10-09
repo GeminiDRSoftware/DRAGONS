@@ -70,7 +70,7 @@ class Image(Register, Resample):
                 gt.check_inputs_match(ad, fringe)
             except ValueError:
                 fringe = gt.clip_auxiliary_data(adinput=ad, aux=fringe,
-                        aux_type="cal", keyword_comments=self.keyword_comments)
+                                                aux_type="cal")
                 gt.check_inputs_match(ad, fringe)
 
             ad.subtract(fringe)

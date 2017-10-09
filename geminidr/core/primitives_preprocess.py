@@ -493,13 +493,10 @@ class Preprocess(PrimitivesBASE):
                 # be used for a CCD2-only science frame. 
                 if 'GSAOI' in ad.tags:
                     flat = gt.clip_auxiliary_data_GSAOI(adinput=ad, 
-                                    aux=flat, aux_type="cal",
-                                    keyword_comments=self.keyword_comments)
+                                    aux=flat, aux_type="cal")
                 else:
                     flat = gt.clip_auxiliary_data(adinput=ad, 
-                                    aux=flat, aux_type="cal", 
-                                    keyword_comments=self.keyword_comments)
-
+                                    aux=flat, aux_type="cal")
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, flat)
 
@@ -1048,8 +1045,7 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, dark, check_filter=False)
             except ValueError:
                 # Else try to extract a matching region from the dark
-                dark = gt.clip_auxiliary_data(adinput=ad, aux=dark,
-                    aux_type="cal", keyword_comments=self.keyword_comments)
+                dark = gt.clip_auxiliary_data(ad, aux=dark, aux_type="cal")
 
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, dark, check_filter=False)

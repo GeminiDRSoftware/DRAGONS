@@ -497,8 +497,7 @@ class GMOSImage(GMOS, Image, Photometry):
             except ValueError:
                 # If not, try to clip the fringe frame to the size of the
                 # science data and try again
-                fringe = gt.clip_auxiliary_data(ad, aux=fringe, aux_type="cal",
-                                        keyword_comments=self.keyword_comments)
+                fringe = gt.clip_auxiliary_data(ad, aux=fringe, aux_type="cal")
 
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, fringe)

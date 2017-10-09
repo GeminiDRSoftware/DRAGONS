@@ -71,8 +71,7 @@ class TestGeminiTools:
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                           'N20160620S0035.fits'))
         bpm_ad = astrodata.open('geminidr/niri/lookups/BPM/NIRI_bpm.fits')
-        ret = gt.clip_auxiliary_data(ad, bpm_ad, 'bpm', np.int16,
-                                     keyword_comments)
+        ret = gt.clip_auxiliary_data(ad, bpm_ad, 'bpm', np.int16)
         assert ret[0].data.shape == ad[0].data.shape
         assert np.all(ret[0].data == bpm_ad[0].data[256:768,256:768])
 
@@ -80,8 +79,7 @@ class TestGeminiTools:
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                           'S20150528S0112.fits'))
         bpm_ad = astrodata.open('geminidr/gsaoi/lookups/BPM/gsaoibpm_high_full.fits')
-        ret = gt.clip_auxiliary_data_GSAOI(ad, bpm_ad, 'bpm', np.int16,
-                                     keyword_comments)
+        ret = gt.clip_auxiliary_data_GSAOI(ad, bpm_ad, 'bpm', np.int16)
         for rd, cd, bd in zip(ret.data, ad.data, bpm_ad.data):
             assert rd.shape == cd.shape
             # Note this only works for unprepared data because of the ROI
