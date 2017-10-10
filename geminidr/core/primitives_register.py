@@ -267,6 +267,7 @@ class Register(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         full_wcs = params["full_wcs"]
 
         for ad in adinputs:
@@ -461,6 +462,12 @@ class Register(PrimitivesBASE):
             # Report the measurement to the fitsstore
             fitsdict = qap.fitsstore_report(ad, "pe", info_list,
                         self.calurl_dict, self.context, self.upload_metrics)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
+                                            strip=True)
+
         return adinputs
 
 ##############################################################################
