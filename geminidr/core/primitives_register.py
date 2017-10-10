@@ -306,7 +306,8 @@ class Register(PrimitivesBASE):
             best_model = (0, None)
 
             for index in objcat_order:
-                extver = ad[index].hdr['EXTVER']
+                ext = ad[index]
+                extver = ext.hdr['EXTVER']
                 try:
                     objcat = ad[index].OBJCAT
                 except AttributeError:
