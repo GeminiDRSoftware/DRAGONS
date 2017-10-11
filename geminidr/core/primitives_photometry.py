@@ -108,12 +108,15 @@ class Photometry(PrimitivesBASE):
                             format(len(refcat), ad.filename))
                 filter_name = ad.filter_name(pretty=True)
                 colterm_dict = color_corrections.colorTerms
-                if filter_name in colterm_dict:
+                try:
                     formulae = colterm_dict[filter_name]
-                    ad.REFCAT = _calculate_magnitudes(refcat, formulae)
-                else:
+                except KeyError:
                     log.warning("Filter {} is not in catalogs - will not be able to flux "
                                 "calibrate".format(filter_name))
+                    formulae = []
+                # Call even if magnitudes can't be calculated since adds
+                # a proper FITS header
+                ad.REFCAT = _calculate_magnitudes(refcat, formulae)
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
@@ -234,11 +237,12 @@ def _calculate_magnitudes(refcat, formulae):
     # Create new columns for the magnitude (and error) in the image's filter
     # We need to ensure the table's meta is updated.
     # Would be simpler to do this when the REFCAT is added
-    dummy_data = [-999.0] * len(refcat)
-    refcat.add_column(Column(data=dummy_data, name='filtermag',
-                             dtype='f4', unit='mag'))
-    refcat.add_column(Column(data=dummy_data, name='filtermag_err',
-                             dtype='f4', unit='mag'))
+    if formulae:
+        dummy_data = [-999.0] * len(refcat)
+        refcat.add_column(Column(data=dummy_data, name='filtermag',
+                                 dtype='f4', unit='mag'))
+        refcat.add_column(Column(data=dummy_data, name='filtermag_err',
+                                 dtype='f4', unit='mag'))
     hdr = refcat.meta['header']
     hdr.update(add_header_to_table(refcat))
     refcat.meta['header'] = hdr
