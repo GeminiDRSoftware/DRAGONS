@@ -539,10 +539,10 @@ class QA(PrimitivesBASE):
                         fwhm = Measurement(None, None, 0)
                         log.warning("No good sources found in {}:{}".
                                     format(ad.filename, extver))
-                        iq_overlays.append(None)
                         # If there is an AO-estimated seeing value, this can be
                         # delivered as a metric, otherwise we can't do anything
                         if not (is_ao and ao_seeing):
+                            iq_overlays.append(None)
                             info_list.append({})
                             continue
                     else:
