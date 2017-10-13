@@ -8,8 +8,6 @@ from os import path
 
 from gempy.gemini import gemini_tools as gt
 
-from .lookups.source_detection import sextractor_dict
-
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from .parameters_niri import ParametersNIRI
@@ -28,9 +26,6 @@ class NIRI(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(NIRI, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.niri.lookups'
-        self.sx_dict.update({k:
-                path.join(path.dirname(sextractor_dict.__file__), v)
-            for k,v in sextractor_dict.sx_dict.items()})
         self.parameters = ParametersNIRI
 
     def nonlinearityCorrect(self, adinputs=None, **params):

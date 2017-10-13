@@ -147,12 +147,19 @@ class Photometry(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
         set_saturation = params["set_saturation"]
         # Setting mask_bits=0 is the same as not replacing bad pixels
         mask_bits = params["replace_flags"] if params["mask"] else 0
 
         # Will raise an Exception if SExtractor is too old or missing
         SExtractorETI().check_version()
+
+        # Delete primitive-specific keywords from params so we only have
+        # the ones for SExtractor
+        for key in ("suffix", "set_saturation", "replace_flags", "mask"):
+            del params[key]
 
         adoutputs = []
         for ad in adinputs:
@@ -165,6 +172,15 @@ class Photometry(PrimitivesBASE):
                       'PARAMETERS_NAME': self.sx_dict[dqtype, 'param'],
                       'FILTER_NAME': self.sx_dict[dqtype, 'conv'],
                       'STARNNW_NAME': self.sx_dict[dqtype, 'nnw']}
+
+            # In general, we want the passed parameters to have the same names
+            # as the SExtractor params (but in lowercase). PHOT_AUTOPARAMS
+            # takes two arguments, and it's only the second we're exposing.
+            for key, value in params.items():
+                if key == 'phot_min_radius':
+                    sexpars.update({"PHOT_AUTOPARAMS": "2.5,{}".format(value)})
+                else:
+                    sexpars.update({key.upper(): value})
 
             for ext in ad:
                 # saturation_level() descriptor always returns level in ADU,
@@ -221,7 +237,7 @@ class Photometry(PrimitivesBASE):
 
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
             adoutputs.append(ad)
         return adoutputs
