@@ -298,8 +298,8 @@ class Register(PrimitivesBASE):
             objcat_order = np.argsort(objcat_lengths)[::-1]
 
             pixscale = ad.pixel_scale()
-            initial = (15.0 if ad.instrument() == 'GNIRS' else 5.0) / pixscale  # Search box size
-            final = 1.0 / pixscale  # Matching radius
+            initial = params["initial"] / pixscale  # Search box size
+            final = params["final"] / pixscale  # Matching radius
             max_ref_sources = 100 if 'qa' in self.context else None  # Don't need more than this many
             if full_wcs is None:
                 full_wcs = not ('qa' in self.context)

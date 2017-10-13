@@ -29,6 +29,12 @@ class ParametersGNIRSImage(ParametersGNIRS, ParametersImage, ParametersPhotometr
         "back_size"             : 32,
         "back_filtersize"       : 3,
     }
+    determineAstrometricSolution = {
+        "suffix"            : "_astrometryCorrected",
+        "full_wcs"          : None,
+        "initial"           : 15.0,
+        "final"             : 1.0,
+    }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",
         "mask"              : True,
