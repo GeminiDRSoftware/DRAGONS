@@ -177,6 +177,10 @@ class Photometry(PrimitivesBASE):
             # as the SExtractor params (but in lowercase). PHOT_AUTOPARAMS
             # takes two arguments, and it's only the second we're exposing.
             for key, value in params.items():
+                if value is True:
+                    value = 'Y'
+                elif value is False:
+                    value = 'N'
                 if key == 'phot_min_radius':
                     sexpars.update({"PHOT_AUTOPARAMS": "2.5,{}".format(value)})
                 else:
