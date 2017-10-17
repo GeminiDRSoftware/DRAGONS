@@ -8,13 +8,15 @@ DRAGONS Documentation
 
 .. admonition:: Document ID
 
-   <PIPE-USER-999_DocumentID>
+   <PIPE-USER-103_DRAGONSManual>
 
 .. toctree::
    :numbered:
    :maxdepth: 2
    
    AstroData Cheat Sheet <http://astrodata-cheatsheet.readthedocs.io/en/latest/>
+   Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/>
+   Recipe System Users Manual <http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/>
 
 Indices and tables
 ==================
