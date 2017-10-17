@@ -365,11 +365,30 @@ class Register(PrimitivesBASE):
 
                 # We probably don't need zillions of REFCAT sources
                 if max_ref_sources and num_ref_sources > max_ref_sources:
+                    ref_mags = None
                     try:
                         ref_mags = refcat['filtermag']
+                        if np.all(np.where(np.isnan(ref_mags), -999,
+                                           ref_mags) < -99):
+                            log.stdinfo('The REFCAT magnitude column has no '
+                                        'valid values')
+                            ref_mags = None
                     except KeyError:
                         log.stdinfo('Cannot find a magnitude column to cull REFCAT')
-                    else:
+                    if ref_mags is None:
+                        for filt in 'rhikgjzu':
+                            try:
+                                ref_mags = refcat[filt+'mag']
+                            except KeyError:
+                                pass
+                            else:
+                                if not np.all(np.where(np.isnan(ref_mags), -999,
+                                                       ref_mags) < -99):
+                                    log.stdinfo('Using {} magnitude instead'.
+                                                format(filt))
+                                    break
+
+                    if ref_mags is not None:
                         in_field &= (ref_mags > -99)
                         num_ref_sources = np.sum(in_field)
                         if num_ref_sources > max_ref_sources:
@@ -437,8 +456,11 @@ class Register(PrimitivesBASE):
                     for i, m in enumerate(matched):
                         if m >= 0:
                             objcat['REF_NUMBER'][m] = refcat['Id'][i]
-                            objcat['REF_MAG'][m] = refcat['filtermag'][i]
-                            objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
+                            try:
+                                objcat['REF_MAG'][m] = refcat['filtermag'][i]
+                                objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
+                            except KeyError:  # no such columns in REFCAT
+                                pass
                             dra.append(3600*(objcat['X_WORLD'][m] -
                                              refcat['RAJ2000'][i]) * cosdec)
                             ddec.append(2600*(objcat['Y_WORLD'][m] -

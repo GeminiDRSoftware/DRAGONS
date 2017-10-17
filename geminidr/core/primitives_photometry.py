@@ -108,12 +108,15 @@ class Photometry(PrimitivesBASE):
                             format(len(refcat), ad.filename))
                 filter_name = ad.filter_name(pretty=True)
                 colterm_dict = color_corrections.colorTerms
-                if filter_name in colterm_dict:
+                try:
                     formulae = colterm_dict[filter_name]
-                    ad.REFCAT = _calculate_magnitudes(refcat, formulae)
-                else:
+                except KeyError:
                     log.warning("Filter {} is not in catalogs - will not be able to flux "
                                 "calibrate".format(filter_name))
+                    formulae = []
+                # Call even if magnitudes can't be calculated since adds
+                # a proper FITS header
+                ad.REFCAT = _calculate_magnitudes(refcat, formulae)
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
@@ -231,6 +234,7 @@ class Photometry(PrimitivesBASE):
                                    table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
                                             ad.filename, ext.hdr['EXTVER']))
+                # The presence of an OBJCAT demands objects (philosophical)
                 if len(ext.OBJCAT) == 0:
                     del ext.OBJCAT
 
@@ -254,11 +258,12 @@ def _calculate_magnitudes(refcat, formulae):
     # Create new columns for the magnitude (and error) in the image's filter
     # We need to ensure the table's meta is updated.
     # Would be simpler to do this when the REFCAT is added
-    dummy_data = [-999.0] * len(refcat)
-    refcat.add_column(Column(data=dummy_data, name='filtermag',
-                             dtype='f4', unit='mag'))
-    refcat.add_column(Column(data=dummy_data, name='filtermag_err',
-                             dtype='f4', unit='mag'))
+    if formulae:
+        dummy_data = [-999.0] * len(refcat)
+        refcat.add_column(Column(data=dummy_data, name='filtermag',
+                                 dtype='f4', unit='mag'))
+        refcat.add_column(Column(data=dummy_data, name='filtermag_err',
+                                 dtype='f4', unit='mag'))
     hdr = refcat.meta['header']
     hdr.update(add_header_to_table(refcat))
     refcat.meta['header'] = hdr
@@ -419,14 +424,11 @@ def _cull_objcat(ext):
 
 def _profile_sources(ad, seeing_estimate=None):
     """
-    FWHM (and encircled-energy) measurements of objects to be more IRAF-like.
-    Finds the distance from the source center to the closest pixel whose flux
-    is less than half the peak. Also finds the distance to the farthest pixel
-    whose flux is more than half the peak, provided this is closer than the
-    10th closest pixel below half the peak (the number 10 is arbitrary, but
-    ensures that it's finding a pixel that's genuinely part of the profile,
-    and not some cosmic ray or nearby source. These radii are averaged to
-    give the HWHM, which is doubled to give the FWHM.
+    FWHM (and encircled-energy) measurements of objects. The FWHM is
+    estimated by counting the number of pixels above the half-maximum
+    and circularizing that number, Distant pixels are rejected in case
+    there's a neighbouring object. This appears to work well and is
+    fast, which is essential.
     
     The 50% encircled energy (EE50) is just determined from a cumulative sum
     of pixel values, sorted by distance from source center. 

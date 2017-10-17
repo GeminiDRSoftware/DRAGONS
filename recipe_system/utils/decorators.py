@@ -45,6 +45,8 @@ the decorated class.
 
 """
 from functools import wraps
+from copy import deepcopy
+
 from gempy.utils import logutils
 import inspect
 
@@ -130,13 +132,19 @@ def parameter_override(fn):
         params.update(kwargs)
         set_logging(pname)
         if len(args) == 1 and 'adinputs' not in params:
-            # Use appropriate stream inputs
+            # Use appropriate stream input/output
             instream = params.get('instream', params.get('stream', 'main'))
-            # Allow a non-existent stream to be passed
-            params.update({'adinputs': pobj.streams.get(instream, [])})
+            outstream = params.get('outstream', params.get('stream', 'main'))
+            # Many primitives operate on AD instances in situ, so need to
+            # copy inputs if they're going to a new output stream
+            if instream != outstream:
+                adinputs = [deepcopy(ad) for ad in pobj.streams[instream]]
+            else:
+                # Allow a non-existent stream to be passed
+                adinputs = pobj.streams.get(instream, [])
+            params.update({'adinputs': adinputs})
             ret_value = fn(*args, **params)
             # And place the outputs in the appropriate stream
-            outstream = params.get('outstream', params.get('stream', 'main'))
             pobj.streams[outstream] = ret_value
         else:
             ret_value = fn(*args, **params)
