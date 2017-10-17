@@ -214,6 +214,7 @@ class Photometry(PrimitivesBASE):
                                    table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
                                             ad.filename, ext.hdr['EXTVER']))
+                # The presence of an OBJCAT demands objects (philosophical)
                 if len(ext.OBJCAT) == 0:
                     del ext.OBJCAT
 
@@ -403,14 +404,11 @@ def _cull_objcat(ext):
 
 def _profile_sources(ad, seeing_estimate=None):
     """
-    FWHM (and encircled-energy) measurements of objects to be more IRAF-like.
-    Finds the distance from the source center to the closest pixel whose flux
-    is less than half the peak. Also finds the distance to the farthest pixel
-    whose flux is more than half the peak, provided this is closer than the
-    10th closest pixel below half the peak (the number 10 is arbitrary, but
-    ensures that it's finding a pixel that's genuinely part of the profile,
-    and not some cosmic ray or nearby source. These radii are averaged to
-    give the HWHM, which is doubled to give the FWHM.
+    FWHM (and encircled-energy) measurements of objects. The FWHM is
+    estimated by counting the number of pixels above the half-maximum
+    and circularizing that number, Distant pixels are rejected in case
+    there's a neighbouring object. This appears to work well and is
+    fast, which is essential.
     
     The 50% encircled energy (EE50) is just determined from a cumulative sum
     of pixel values, sorted by distance from source center. 
