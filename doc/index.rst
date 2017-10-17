@@ -14,7 +14,7 @@ DRAGONS Documentation
    :numbered:
    :maxdepth: 2
    
-   AstroData Cheat Sheet <http://astrodata-cheatsheet.readthedocs.io/en/latest/>
+   AstroData Cheat Sheet <http://astrodata-cheat-sheet.readthedocs.io/en/latest//>
    Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/>
    Recipe System Users Manual <http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/>
 
