@@ -3,6 +3,8 @@
 #
 #                                                            primitives_image.py
 # ------------------------------------------------------------------------------
+import numpy as np
+
 from gempy.gemini import gemini_tools as gt
 
 from .primitives_register import Register
@@ -34,6 +36,99 @@ class Image(Register, Resample):
         return adinputs
 
     def scaleByIntensity(self, adinputs=None, **params):
+        """
+        This primitive scales the inputs so they have the same intensity as
+        the reference input (first in the list), which is untouched. Scaling
+        can be done by mean or median and a statistics section can be used.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        scaling: str ["mean"/"median"]
+            type of scaling to use
+        section: str/None
+            section of image to use for statistics "x1:x2,y1:y2"
+        separate_ext: bool
+            if True, scale extensions independently?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        scaling = params["scaling"]
+        section = params["section"]
+        separate_ext = params["separate_ext"]
+
+        if len(adinputs) < 2:
+            log.stdinfo("Scaling has no effect when there are fewer than two inputs")
+            return adinputs
+
+        # Do some housekeeping to handle mutually exclusive parameter inputs
+        if separate_ext and len(set([len(ad) for ad in adinputs])) > 1:
+            log.warning("Scaling by extension requested but inputs have "
+                        "different sizes. Turning off.")
+            separate_ext = False
+
+        if scaling not in ("mean", "median"):
+            log.warning("Scaling {} not known. Using mean.".format(scaling))
+            scaling = "mean"
+
+        if section is not None:
+            try:
+                x1, x2, y1, y2 = map(int, section.replace(',', ':').split(':'))
+            except (AttributeError, ValueError):
+                log.warning("Cannot parse section. Using full frame for "
+                            "statistics")
+                section = None
+            else:
+                x2 += 1
+                y2 += 1
+
+        # I'm not making the assumption that all extensions are the same shape
+        # This makes things more complicated, but more general
+        targets = [np.nan] * len(adinputs[0])
+        for ad in adinputs:
+            all_data = []
+            for index, ext in enumerate(ad):
+                extver = ext.hdr['EXTVER']
+                if section is None:
+                    x1, y1 = 0, 0
+                    y2, x2 = ext.data.shape
+                data = ext.data[y1:y2, x1:x2]
+                if data.size:
+                    mask = None if ext.mask is None else ext.mask[y1:y2, x1:x2]
+                else:
+                    log.warning("Section does not intersect with data for {}:{}."
+                                " Using full frame.".format(ad.filename, extver))
+                    data = ext.data
+                    mask = ext.mask
+                if mask is not None:
+                    data = data[mask == 0]
+
+                if not separate_ext:
+                    all_data.extend(data.ravel())
+
+                if separate_ext or index == len(ad)-1:
+                    if separate_ext:
+                        value = getattr(np, scaling)(data)
+                        log.fullinfo("{}:{} has {} value of {}".format(ad.filename,
+                                                            extver, scaling, value))
+                    else:
+                        value = getattr(np, scaling)(all_data)
+                        log.fullinfo("{} has {} value of {}".format(ad.filename,
+                                                                    scaling, value))
+                    if np.isnan(targets[index]):
+                        targets[index] = value
+                    else:
+                        factor = targets[index] / value
+                        log.fullinfo("Multiplying by {}".format(factor))
+                        if separate_ext:
+                            ext *= factor
+                        else:
+                            ad *= factor
+
+            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
+                                              strip=True)
         return adinputs
 
     def scaleFringeToScience(self, adinputs=None, **params):

@@ -18,6 +18,9 @@ class ParametersImage(ParametersRegister, ParametersResample):
     }
     scaleByIntensity = {
         "suffix"                : "_scaled",
+        "scaling"               : "mean",
+        "section"               : None,
+        "separate_ext"          : False,
     }
     scaleFringeToScience = {
         "suffix"                : "_fringeScaled",
