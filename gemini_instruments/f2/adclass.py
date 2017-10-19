@@ -238,6 +238,19 @@ class AstroDataF2(AstroDataGemini):
         """
         return self.array_section(pretty=pretty)
 
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        """
+        Returns the axis along which the light is dispersed.
+
+        Returns
+        -------
+        (list of) int (2)
+            Dispersion axis.
+        """
+        return 2 if 'SPECT' in self.tags else None
+
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
         """

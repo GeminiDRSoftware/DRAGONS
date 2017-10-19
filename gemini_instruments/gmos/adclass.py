@@ -408,6 +408,19 @@ class AstroDataGmos(AstroDataGemini):
             dispersion = gmu.convert_units('meters', cd11, output_units)
         return dispersion
 
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        """
+        Returns the axis along which the light is dispersed.
+
+        Returns
+        -------
+        (list of) int (1)
+            Dispersion axis.
+       """
+        return 1 if 'SPECT' in self.tags else None
+
     @astro_data_descriptor
     def exposure_time(self):
         """
