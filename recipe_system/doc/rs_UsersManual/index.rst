@@ -11,7 +11,6 @@ Recipe System Users Manual
    PIPE-USER-109_RSUserManual
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
    intro

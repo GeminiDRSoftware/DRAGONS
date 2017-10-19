@@ -3,15 +3,14 @@
    contain the root `toctree` directive.
    Manually edited by KRA, 08-05-2017.
 
-Recipe System Users Manual
-==========================
+Recipe System Programmers Manual
+================================
 
 .. admonition:: Document ID
 
    PIPE-USER-108_RSProgManual
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
    intro

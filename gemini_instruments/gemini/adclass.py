@@ -756,7 +756,7 @@ class AstroDataGemini(AstroDataFits):
 
         # TODO: We may need to sort out Nones here...
         kw = self._keyword_for('dispersion_axis')
-        return [int(dispaxis) for dispaxis in self.hdr.get(kw)]
+        return map(int, self.hdr.get(kw))
 
     @astro_data_descriptor
     def effective_wavelength(self, output_units=None):
