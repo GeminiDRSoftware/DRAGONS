@@ -808,6 +808,8 @@ def clip_sources(ad):
         each Table contains a subset of information on the good stellar sources
     """
     # Columns in the output table
+    log = logutils.get_logger(__name__)
+
     column_mapping = {'x': 'X_IMAGE',
                       'y': 'Y_IMAGE',
                       'fwhm': 'PROFILE_FWHM',
@@ -825,6 +827,11 @@ def clip_sources(ad):
 
     is_ao = ad.is_ao()
     sn_limit = 25 if is_ao else 50
+
+    # Produce warning but return what is expected
+    if not any([hasattr(ext, 'OBJCAT') for ext in ad]):
+        log.warning("No OBJCATs found on input. Has detectSources() been run?")
+        return [Table()] * len(ad)
 
     good_sources = []
     for ext in ad:
