@@ -840,7 +840,7 @@ class Preprocess(PrimitivesBASE):
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
         #TODO: The 'Gemini' here is the pkgname, which might not do anything
-        groups = gt.group_exposures(adinputs, 'Gemini', frac_FOV=frac_FOV)
+        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
         ngroups = len(groups)
         log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
 

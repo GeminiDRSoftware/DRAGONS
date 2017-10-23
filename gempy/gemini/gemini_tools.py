@@ -2030,9 +2030,8 @@ def group_exposures(adinput, pkg=None, frac_FOV=1.0):
     :param adinputs: A list of exposures to sort into groups.
     :type adinputs: list of AstroData instances
 
-    :param pkg: Package name of the calling primitive. Used to determine
-                correct package lookup tables. Passed through to
-                ExposureGroup() call.
+    :param pkg: package containing instrument lookups. Passed through
+                to ExposureGroup() call.
     :type pkg: <str>
 
     :param frac_FOV: proportion by which to scale the area in which
@@ -2169,17 +2168,12 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     # in this simple case.
     global _FOV_lookup, _FOV_pointing_in_field
 
-    # Look up the back-end implementation for the appropriate instrument,
-    # or use the previously-cached one.
-    # Build the lookup name to the instrument specific FOV module. In all 
-    # likelihood this is 'Gemini'.
-    FOV_mod = "geminidr.{}.lookups.FOV".format(inst)
-
     try:
-        FOV = import_module(FOV_mod)
+        FOV = import_module('FOV', package)
         _FOV_pointing_in_field = FOV.pointing_in_field
     except (ImportError, AttributeError):
-        raise NameError("FOV.pointing_in_field() function not implemented for %s" % inst)
+        raise NameError("FOV.pointing_in_field() function not found in {}".
+                        format(package))
 
     # Execute it & return the results:
     return _FOV_pointing_in_field(pos, pointing, frac_FOV=frac_FOV,
