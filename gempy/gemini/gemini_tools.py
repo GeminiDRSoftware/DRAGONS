@@ -2169,7 +2169,7 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     global _FOV_lookup, _FOV_pointing_in_field
 
     try:
-        FOV = import_module('FOV', package)
+        FOV = import_module('{}.FOV'.format(package))
         _FOV_pointing_in_field = FOV.pointing_in_field
     except (ImportError, AttributeError):
         raise NameError("FOV.pointing_in_field() function not found in {}".
