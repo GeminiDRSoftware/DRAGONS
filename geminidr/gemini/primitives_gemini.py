@@ -50,9 +50,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
             # Update various header keywords
             log.status("Updating keywords that are common to all Gemini data")
-            if ad.phu.get('ORIGNAME') is None:
-                ad.phu.set('ORIGNAME', ad.orig_filename,
-                           'Original filename prior to processing')
             ad.phu.set('NSCIEXT', len(ad), self.keyword_comments['NSCIEXT'])
             ad.hdr.set('BUNIT', 'adu', self.keyword_comments['BUNIT'])
 

@@ -390,16 +390,26 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         adinputs = self.validateData(adinputs)
         adinputs = self.standardizeStructure(adinputs)
-        adinputs = self.standardizeObservatoryHeaders(adinputs)
-        adinputs = self.standardizeInstrumentHeaders(adinputs)
+        adinputs = self.standardizeHeaders(adinputs)
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
         return adinputs
 
     def standardizeHeaders(self, adinputs=None, **params):
+        """
+        This primitive is used to standardize the headers of data. It adds
+        the ORIGNAME keyword and then calls the standardizeObservatoryHeaders
+        and standardizeInstrumentHeaders primitives.
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            if 'ORIGNAME' not in ad.phu:
+                ad.phu.set('ORIGNAME', ad.orig_filename,
+                           'Original filename prior to processing')
+
         adinputs = self.standardizeObservatoryHeaders(adinputs, **params)
         adinputs = self.standardizeInstrumentHeaders(adinputs, **params)
         return adinputs
