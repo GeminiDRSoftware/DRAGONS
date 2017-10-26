@@ -408,6 +408,36 @@ class Standardize(PrimitivesBASE):
         return adinputs
 
     def standardizeObservatoryHeaders(self, adinputs=None, **params):
+        """
+        This primitive is used to make the changes and additions to the
+        keywords in the headers of the data. All it does is add the ORIGNAME
+        keyword to the header (if it doesn't exist), which is a standard
+        DRAGONS keyword to assist with filename updates
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        for ad in adinputs:
+            if timestamp_key in ad.phu:
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by standardize"
+                            "ObservatoryHeaders".format(ad.filename))
+                continue
+
+            if 'ORIGNAME' not in ad.phu:
+                ad.phu.set('ORIGNAME', ad.orig_filename,
+                           'Original filename prior to processing')
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(ad, suffix=params["suffix"],
+                                              strip=True)
         return adinputs
 
     def standardizeStructure(self, adinputs=None, **params):
