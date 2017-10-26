@@ -391,8 +391,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(uffix=params["suffix"], strip=True)
         return adinputs
     
     def scaleByIntensity(self, adinputs=None, **params):
@@ -445,8 +444,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def scaleFringeToScience(self, adinputs=None, **params):
@@ -613,8 +611,8 @@ class GMOSImage(GMOS, Image, Photometry):
             
             # Timestamp and update filename
             gt.mark_history(scaled_fringe, primname=self.myself(), keyword=timestamp_key)
-            scaled_fringe.filename = gt.filename_updater(
-                adinput=ad, suffix=params["suffix"], strip=True)
+            scaled_fringe.filename = ad.filename
+            scaled_fringe.update_filename(suffix=params["suffix"], strip=True)
             fringe_outputs.append(scaled_fringe)
 
         # We're returning the list of scaled fringe frames

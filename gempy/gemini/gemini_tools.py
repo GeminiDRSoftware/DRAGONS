@@ -1013,52 +1013,6 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
                                       keyword_comments["OBJECT"])
     return adinput
 
-
-def filename_updater(adinput=None, infilename='', suffix='', prefix='',
-                     strip=False):
-    """
-    This function is for updating the file names of astrodata objects.
-    A prefix and/or suffix can be added, either to the current filename
-    or to the original filename (strip=True does NOT attempt to parse
-    the current filename to find the original root).
-
-    Note: 
-    1.if the input filename has a path, the returned value will have
-    path stripped off of it.
-    2. if strip is set to True, then adinput must be defined.
-
-    Parameters
-    ----------
-    adinput: AstroData
-        input astrodata instance having its filename updated
-    suffix: str
-        string to put between end of current filename and extension
-    prefix: str
-        string to put at the beginning of a filename
-    strip: bool
-        if True, use the original filename of the AD object, not what it has now
-    """
-    # We need the original filename if we're going to strip
-    if strip:
-        try:
-            filename = adinput.phu['ORIGNAME']
-        except KeyError:
-            # If it's not there, grab the AD attr instead and add the keyword
-            filename = adinput.orig_filename
-            adinput.phu.set('ORIGNAME', filename,
-                            'Original filename prior to processing')
-    else:
-        filename = infilename if infilename else adinput.filename
-
-    # Possibly, filename could be None
-    try:
-        name, filetype = os.path.splitext(filename)
-    except AttributeError:
-        name, filetype = '', '.fits'
-
-    outFileName = prefix+name+suffix+filetype
-    return outFileName
-
 @handle_single_adinput
 def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
                      allow_empty=False):
@@ -1094,8 +1048,7 @@ def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
             mark_history(adinput=ad, keyword=timestamp_key)
         # Update the filename
         if suffix is not None:
-            ad.filename = filename_updater(adinput=ad, suffix=suffix,
-                                           strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         adoutput_list.append(ad)
     return adoutput_list
 

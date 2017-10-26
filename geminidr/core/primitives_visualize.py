@@ -272,7 +272,7 @@ class Visualize(PrimitivesBASE):
             ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.filename = gt.filename_updater(adinput=ad_out, suffix=suffix, strip=True)
+            ad_out.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad_out)
 
         return adoutputs

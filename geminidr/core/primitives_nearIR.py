@@ -81,7 +81,7 @@ class NearIR(PrimitivesBASE):
             data_mask = np.ma.mask_or(dark_mask.mask, flat_mask.mask)
             flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
-        flat.filename = gt.filename_updater(adinput=flat, suffix="_bpm")
+        flat.update_filename(suffix="_bpm")
         flat.phu.set('OBJECT', 'BPM')
         return [flat]
 
@@ -227,7 +227,7 @@ class NearIR(PrimitivesBASE):
             log.stdinfo("Lamp ON is:  {}".format(lampon.filename))
             log.stdinfo("Lamp OFF is: {}".format(lampoff.filename))
             lampon.subtract(lampoff)
-            lampon.filename = gt.filename_updater(lampon, suffix="lampOnOff")
+            lampon.update_filename(suffix="lampOnOff")
             del self.streams['lampOn'], self.streams['lampOff']
             return [lampon]
         else:

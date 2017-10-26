@@ -55,6 +55,5 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs

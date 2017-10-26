@@ -56,7 +56,7 @@ class Preprocess(PrimitivesBASE):
                     log.warning('No object mask present for {}:{}; cannot '
                                 'apply object mask'.format(ad.filename,
                                                            ext.hdr['EXTVER']))
-            ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def ADUToElectrons(self, adinputs=None, **params):
@@ -96,7 +96,7 @@ class Preprocess(PrimitivesBASE):
             # has units of electrons so update the physical units keyword.
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(ad, suffix=sfx,  strip=True)
+            ad.update_filename(suffix=sfx,  strip=True)
         return adinputs
     
     def applyDQPlane(self, adinputs=None, **params):
@@ -152,7 +152,7 @@ class Preprocess(PrimitivesBASE):
                 ext.data[ext.mask & replace_flags != 0] = rep_value
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(ad, suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def associateSky(self, adinputs=None, **params):
@@ -391,7 +391,7 @@ class Preprocess(PrimitivesBASE):
                 # Timestamp the header and update the filename
                 gt.mark_history(ad, primname=self.myself(),
                                 keyword=timestamp_key)
-                ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
+                ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -477,8 +477,7 @@ class Preprocess(PrimitivesBASE):
             # Update the header and filename
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def flatCorrect(self, adinputs=None, **params):
@@ -571,8 +570,7 @@ class Preprocess(PrimitivesBASE):
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-                                              strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
     
     def normalizeFlat(self, adinputs=None, **params):
@@ -631,8 +629,7 @@ class Preprocess(PrimitivesBASE):
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-                                              strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
 #### Refactored but not tested
@@ -680,8 +677,7 @@ class Preprocess(PrimitivesBASE):
 #
 #                # Timestamp and update the filename
 #                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-#                ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-#                                              strip=True)
+#                ad.update_filename(suffix=sfx, strip=True)
 #        return adinputs
 
     def separateSky(self, adinputs=None, **params):
@@ -1028,7 +1024,7 @@ class Preprocess(PrimitivesBASE):
             # Record dark used, timestamp, and update filename
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
@@ -1081,8 +1077,7 @@ class Preprocess(PrimitivesBASE):
                 # Timestamp and update filename
                 gt.mark_history(ad_sci, primname=self.myself(),
                                 keyword=timestamp_key)
-                ad_sci.filename = gt.filename_updater(adinput=ad_sci,
-                                        suffix=params["suffix"], strip=True)
+                ad_sci.update_filename(suffix=params["suffix"], strip=True)
 
             else:
                 log.warning("No changes will be made to {}, since no "
@@ -1135,7 +1130,7 @@ class Preprocess(PrimitivesBASE):
                     
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def thresholdFlatfield(self, adinputs=None, **params):
@@ -1190,6 +1185,5 @@ class Preprocess(PrimitivesBASE):
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-                                              strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs

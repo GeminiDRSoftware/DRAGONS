@@ -127,8 +127,7 @@ class Photometry(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def detectSources(self, adinputs=None, **params):
@@ -225,8 +224,7 @@ class Photometry(PrimitivesBASE):
 
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(ad)
         return adoutputs
 

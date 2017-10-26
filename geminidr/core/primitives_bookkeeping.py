@@ -44,8 +44,7 @@ class Bookkeeping(PrimitivesBASE):
         # Update file names and write the files to disk to ensure the right
         # version is stored before adding it to the list.
         for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
             log.stdinfo("Writing {} to disk".format(ad.filename))
             # Need to specify 'ad.filename' here so writes to current dir
             ad.write(ad.filename, clobber=True)
@@ -194,8 +193,7 @@ class Bookkeeping(PrimitivesBASE):
         
         for ad in adinputs:
             if sfx or pfx:
-                ad.filename = gt.filename_updater(adinput=ad,
-                                prefix=pfx, suffix=sfx, strip=params["strip"])
+                ad.update_filename(prefix=pfx, suffix=sfx, strip=params["strip"])
                 log.fullinfo("File name updated to {}".format(ad.filename))
                 outfilename = ad.filename
             elif params['outfilename']:
