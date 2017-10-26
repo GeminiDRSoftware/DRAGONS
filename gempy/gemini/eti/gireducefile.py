@@ -63,13 +63,13 @@ class InAtList(GireduceFile):
         log.debug("InAtList prepare()")
         for ad in self.adinput:
             ad = gemini_tools.obsmode_add(ad)
-            newname = gemini_tools.filename_updater(adinput=ad, \
-                            prefix=self.get_prefix(), strip=True)
-            #newname = ''.join([self.get_prefix(), ad.filename])
-            self.diskinlist.append(newname)
+            origname = ad.filename
+            ad.update_filename(prefix=self.get_prefix(), strip=True)
+            self.diskinlist.append(ad.filename)
             log.fullinfo("Temporary image (%s) on disk for the IRAF task %s" % \
-                          (newname, self.taskname))
-            ad.write(newname, clobber=True)
+                          (ad.filename, self.taskname))
+            ad.write(clobber=True)
+            ad.filename = origname
         self.atlist = "tmpImageList" + self.pid_task
         fhdl = open(self.atlist, "w")
         for fil in self.diskinlist:
@@ -110,11 +110,11 @@ class OutAtList(GireduceFile):
     def prepare(self):
         log.debug("OutAtList prepare()")
         for ad in self.adinput:
-            outname = gemini_tools.filename_updater(adinput=ad, \
-                            suffix=self.suffix, strip=True)
-            #outname = re.sub('_varAdded', self.suffix, ad.filename)
-            self.ad_name.append(outname)
-            self.diskoutlist.append(self.get_prefix() + outname)
+            origname = ad.filename
+            ad.update_filename(suffix=self.suffix, strip=True)
+            self.ad_name.append(ad.filename)
+            self.diskoutlist.append(self.get_prefix() + ad.filename)
+            ad.filename = origname
         self.atlist = "tmpOutList" + self.pid_task
         fhdl = open(self.atlist, "w")
         for fil in self.diskoutlist:

@@ -102,12 +102,6 @@ class TestGeminiTools:
     def test_convert_to_cal_header(self):
         pass
 
-    def test_filename_updater(self):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, 'GMOS',
-                                            'N20110524S0358_varAdded.fits'))
-        ret = gt.filename_updater(ad, suffix='_forStack', strip=True)
-        assert ret == 'N20110524S0358_forStack.fits'
-
     def test_finalise_ad_input(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                     'S20150110S0208_sourcesDetected.fits'))

@@ -227,8 +227,7 @@ class GMOS(Gemini, CCD):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(ad)
         return adoutputs
 
@@ -482,8 +481,7 @@ class GMOS(Gemini, CCD):
             # Timestamp and update filename
             gt.mark_history(adoutput, primname=self.myself(),
                             keyword=timestamp_key)
-            adoutput.filename = gt.filename_updater(adoutput,
-                                    suffix=params["suffix"], strip=True)
+            adoutput.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(adoutput)
         return adoutputs
 

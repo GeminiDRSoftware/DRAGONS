@@ -92,8 +92,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
                 ad[0].mask |= final_illum[0].data
 
             # Update the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def _get_illum_mask_filename(self, ad):

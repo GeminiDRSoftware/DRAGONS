@@ -61,8 +61,7 @@ class Spect(PrimitivesBASE):
 #            gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 #
 #            # Change the filename
-#             adout.filename = gt.filename_updater(
-#                 adinput=adout, suffix=rc["suffix"], strip=True)
+#             adout.update_filename(suffix=rc["suffix"], strip=True)
 #
 #             # Append the output AstroData object to the list
 #             # of output AstroData objects
@@ -100,8 +99,7 @@ class Spect(PrimitivesBASE):
 #             gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 #
 #             # Change the filename
-#             adout.filename = gt.filename_updater(
-#                 adinput=adout, suffix=rc["suffix"], strip=True)
+#             adout.update_filename(suffix=rc["suffix"], strip=True)
 #
 #             # Append the output AstroData object to the list
 #             # of output AstroData objects
@@ -181,8 +179,7 @@ class Spect(PrimitivesBASE):
 #             gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 #
 #             # Change the filename
-#             adout.filename = gt.filename_updater(
-#                 adinput=adout, suffix=rc["suffix"], strip=True)
+#             adout.update_filename(suffix=rc["suffix"], strip=True)
 #
 #             # Append the output AstroData object to the list
 #             # of output AstroData objects
@@ -251,8 +248,7 @@ class Spect(PrimitivesBASE):
 #             gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 #
 #             # Change the filename
-#             adout.filename = gt.filename_updater(
-#                 adinput=adout, suffix=rc["suffix"], strip=True)
+#             adout.update_filename(suffix=rc["suffix"], strip=True)
 #
 #             # Append the output AstroData object to the list
 #             # of output AstroData objects
@@ -304,8 +300,7 @@ class Spect(PrimitivesBASE):
 #             gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 #
 #             # Change the filename
-#             adout.filename = gt.filename_updater(
-#                 adinput=adout, suffix=rc["suffix"], strip=True)
+#             adout.update_filename(suffix=rc["suffix"], strip=True)
 #
 #             # Append the output AstroData object to the list
 #             # of output AstroData objects

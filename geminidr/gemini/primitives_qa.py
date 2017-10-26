@@ -190,8 +190,7 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def measureCC(self, adinputs=None, suffix='_ccMeasured'):
@@ -396,8 +395,7 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def measureIQ(self, adinputs=None, suffix='_iqMeasured', remove_bias=False,
@@ -655,8 +653,7 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
 ##############################################################################

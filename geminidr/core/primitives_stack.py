@@ -153,7 +153,7 @@ class Stack(PrimitivesBASE):
 
         # Timestamp and update filename and prepare to return single output
         gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-        ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+        ad_out.update_filename(suffix=sfx, strip=True)
 
         return [ad_out]
 
@@ -219,10 +219,7 @@ class Stack(PrimitivesBASE):
                     # sky AstroDataRecord object associated with this science
                     # AstroData object
                     ad_sky = deepcopy(ad_sky_list[0])
-
-                    # Update the filename
-                    ad_sky.filename = gt.filename_updater(
-                      adinput=ad_sky, suffix=sky_suffix, strip=True)
+                    ad_sky.update_filename(suffix=sky_suffix, strip=True)
 
                     # Create the AstroDataRecord for this new AstroData Object
                     log.fullinfo("Only one sky frame available for {}: {}".
@@ -263,8 +260,8 @@ class Stack(PrimitivesBASE):
                         ad_stacked_sky = ad_stacked_sky_list[0]
                         # Change filename so the _skyStacked frame associated
                         # with a particular science frame has the same root
-                        ad_stacked_sky.filename = gt.filename_updater(
-                            infilename=origname, suffix=params['suffix'])
+                        ad_stacked_sky.filename = origname
+                        ad_stacked_sky.update_filename(suffix=params['suffix'])
 
                         # Add the appropriate time stamp to the PHU
                         gt.mark_history(adinput=ad_stacked_sky,

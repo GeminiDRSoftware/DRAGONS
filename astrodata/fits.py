@@ -1570,6 +1570,28 @@ class AstroDataFits(AstroData):
             fileobj = self.path
         self._dataprov.to_hdulist().writeto(fileobj, clobber=clobber)
 
+    def update_filename(self, prefix='', suffix='', strip=False):
+        if strip:
+            try:
+                filename = self.phu['ORIGNAME']
+            except KeyError:
+                # If it's not there, grab the AD attr instead and add the keyword
+                filename = self.orig_filename
+                self.phu.set('ORIGNAME', filename,
+                                'Original filename prior to processing')
+        else:
+            filename = self.filename
+
+        # Possibly, filename could be None
+        try:
+            name, filetype = os.path.splitext(filename)
+        except AttributeError:
+            name, filetype = '', '.fits'
+
+        # Cope with prefix or suffix as None
+        self.filename = (prefix or '') + name + (suffix or '') + filetype
+        return
+
 
     @astro_data_descriptor
     def instrument(self):
