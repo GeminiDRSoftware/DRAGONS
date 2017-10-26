@@ -28,6 +28,11 @@ from types import StringType
 import astrodata
 import gemini_instruments
 try:
+    import soar_instruments
+except ImportError:
+    pass
+
+try:
     from ghost_instruments import ghost
 except ImportError:
     pass
@@ -203,7 +208,11 @@ class Reduce(object):
                 log.error(str(err))
                 xstat = signal.SIGABRT
 
-        self._write_final(p.streams['main'])
+        if hasattr(p, 'streams'):
+            self._write_final(p.streams['main'])
+        else:
+            self._write_final(p.adinputs)
+
         if xstat != 0:
             msg = "reduce instance aborted."
         else:
