@@ -1588,7 +1588,8 @@ class AstroDataFits(AstroData):
         except AttributeError:
             name, filetype = '', '.fits'
 
-        self.filename = prefix+name+suffix+filetype
+        # Cope with prefix or suffix as None
+        self.filename = (prefix or '') + name + (suffix or '') + filetype
         return
 
 
