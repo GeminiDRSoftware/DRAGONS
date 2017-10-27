@@ -441,8 +441,7 @@ class Preprocess(PrimitivesBASE):
                     ext.OBJMASK = binary_dilation(ext.OBJMASK,
                                                   structure).astype(np.uint8)
 
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def divideByFlat(self, adinputs=None, **params):

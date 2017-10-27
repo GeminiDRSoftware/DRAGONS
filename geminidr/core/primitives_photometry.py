@@ -244,7 +244,7 @@ class Photometry(PrimitivesBASE):
 
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad)
         return adoutputs
 

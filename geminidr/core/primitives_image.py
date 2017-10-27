@@ -127,8 +127,7 @@ class Image(Register, Resample):
                         else:
                             ad *= factor
 
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def scaleFringeToScience(self, adinputs=None, **params):

@@ -69,8 +69,7 @@ class NearIR(PrimitivesBASE):
             else:
                 log.stdinfo('{} is not affected by latency'.format(ad.filename))
 
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def makeBPM(self, adinputs=None, **params):
@@ -155,7 +154,7 @@ class NearIR(PrimitivesBASE):
 
         if self.streams['lampOn'] and self.streams['lampOff']:
             flat = self.streams['lampOn'][0] - self.streams['lampOff'][0]
-            flat.filename = gt.filename_updater(flat, suffix="lampOnOff")
+            flat.update_filename(suffix="lampOnOff")
             del self.streams['lampOn'], self.streams['lampOff']
             return [flat]
         else:
