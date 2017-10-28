@@ -756,85 +756,67 @@ class Preprocess(PrimitivesBASE):
         # front I'm assuming the infrastructure will do that at some point.
         frac_FOV = params["frac_FOV"]
 
-        # Get optional user-specified lists of object or sky filenames, to
-        # assist with classifying groups as one or the other. Currently
-        # primitive parameters have no concept of lists so we parse a string
-        # argument here. As of March 2014 this only works with "reduce2":
-        ref_obj = params["ref_obj"].split(',')
-        ref_sky = params["ref_sky"].split(',')
+        # Primitive will construct sets of object and sky frames. First look
+        # for pre-assigned header keywords (user can set them as a guide)
+        objects = set(filter(lambda ad: 'OBJFRAME' in ad.phu, adinputs))
+        skies = set(filter(lambda ad: 'SKYFRAME' in ad.phu, adinputs))
+
+        # Next use optional parameters. These are likely to be passed as
+        # comma-separated lists, but should also cope with NoneTypes
+        ref_obj = (params["ref_obj"] or '').split(',')
+        ref_sky = (params["ref_sky"] or '').split(',')
         if ref_obj == ['']: ref_obj = []
         if ref_sky == ['']: ref_sky = []
 
-        # Loop over input AstroData objects and extract their filenames, for
-        # 2-way comparison with any ref_obj/ref_sky list(s) supplied by the
-        # user. This could go into a support function but should become fairly
-        # trivial once we address the issues noted below.
+        # Add these to the object/sky sets, warning of conflicts
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
-        filenames = [strip_fits(ad.phu['ORIGNAME']) for ad in adinputs]
+        missing = []
+        for ad in adinputs:
+            for obj_filename in ref_obj:
+                if strip_fits(obj_filename) in ad.filename:
+                    objects.add(ad)
+                    if 'SKYFRAME' in ad.phu and 'OBJFRAME' not in ad.phu:
+                        log.warning("{} previously classified as SKY; added "
+                                "OBJECT as requested".format(ad.filename))
+                    break
+                missing.append(obj_filename)
+
+            for sky_filename in ref_sky:
+                if strip_fits(sky_filename) in ad.filename:
+                    objects.add(ad)
+                    if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
+                        log.warning("{} previously classified as OBJECT; "
+                                "added SKY as requested".format(ad.filename))
+                    break
+                missing.append(sky_filename)
+
+            # Mark unguided exposures as skies
+            if ad.wavefront_sensor() is None:
+                # Old Gemini data are missing the guiding keywords and the
+                # descriptor returns None. So look to see if the keywords
+                # exist; if so, it really is unguided.
+                if ('PWFS1_ST' in ad.phu and 'PWFS2_ST' in ad.phu and
+                   'OIWFS_ST' in ad.phu):
+                    if ad in objects:
+                        # Warn user but keep manual assignment
+                        log.warning("{} manually flagged as OBJECT but it's "
+                                    "unguided!".format(ad.filename))
+                    elif ad not in skies:
+                        log.fullinfo("Treating {} as SKY since it's unguided".
+                                    format(ad.filename))
+                        skies.add(ad)
+                # (else can't determine guiding state reliably so ignore it)
 
         # Warn the user if they referred to non-existent input file(s):
-        missing = [name for name in ref_obj if name not in filenames]
-        missing.extend([name for name in ref_sky if name not in filenames])
         if missing:
             log.warning("Failed to find the following file(s), specified "
                 "via ref_obj/ref_sky parameters, in the input:")
             for name in missing:
                 log.warning("  {}".format(name))
 
-        # Loop over input AstroData objects and apply any overriding sky/object
-        # classifications based on user-supplied or guiding information:
-        for ad, base_name in zip(adinputs, filenames):
-            # Remember any pre-existing classifications so we can point them
-            # out if the user requests something different this time:
-            obj = ad.phu.get('OBJFRAME') is not None
-            sky = ad.phu.get('SKYFRAME') is not None
-
-            # If the user specified manually that this file is object and/or
-            # sky, note that in the metadata (alongside any existing flags):
-            if base_name in ref_obj and not obj:
-                if sky:
-                    log.warning("{} previously classified as SKY; added "
-                      "OBJECT as requested".format(base_name))
-                ad.phu.set('OBJFRAME', 'TRUE')
-
-            if base_name in ref_sky and not sky:
-                if obj:
-                    log.warning("{} previously classified as OBJECT; added "
-                      "SKY as requested".format(base_name))
-                ad.phu.set('SKYFRAME', 'TRUE')
-
-            # If the exposure is unguided, classify it as sky unless the
-            # user has specified otherwise (in which case we loudly point
-            # out the anomaly but do as requested).
-            #
-            # Although this descriptor naming may not always be ideal for
-            # non-Gemini applications, it is our AstroData convention for
-            # determining whether an exposure is guided or not.
-            if ad.wavefront_sensor() is None:
-                # Old Gemini data are missing the guiding keywords but
-                # the descriptor then returns None, which is indistinguishable
-                # from an unguided exposure (Trac #416). Even phu_get_key_value
-                # fails to make this distinction. Whatever we do here (eg.
-                # using dates to figure out whether the keywords should be
-                # present), it is bound to be Gemini-specific until the
-                # behaviour of descriptors is fixed.
-                if ('PWFS1_ST' in ad.phu and 'PWFS2_ST' in ad.phu and
-                   'OIWFS_ST' in ad.phu):
-
-                    # The exposure was really unguided:
-                    if ad.phu.get("OBJFRAME"):
-                        log.warning("Exp. {} manually flagged as "
-                            "on-target but unguided!".format(base_name))
-                    else:
-                        log.fullinfo("Treating {} as sky since it's unguided".
-                                    format(base_name))
-                        ad.phu.set('SKYFRAME', 'TRUE')
-                # (else can't determine guiding state reliably so ignore it)
-
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
-        #TODO: The 'Gemini' here is the pkgname, which might not do anything
         groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
         ngroups = len(groups)
         log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
@@ -843,151 +825,96 @@ class Preprocess(PrimitivesBASE):
         # exposure belongs to, propagate any already-known classification(s)
         # to other members of the same group and determine whether everything
         # is finally on source and/or sky:
-        haveobj = False; havesky = False
-        allobj = True; allsky = True
         for num, group in enumerate(groups):
             adlist = group.list()
-#            obj = False; sky = False
             for ad in adlist:
                 ad.phu['EXPGROUP'] = num
-#                if ad.phu.get('OBJFRAME'): obj = True
-#                if ad.phu.get('SKYFRAME'): sky = True
-#                # if obj and sky: break  # no: need to record all group nums
-#            if obj:
-#                haveobj = True
-#                for ad in adlist:
-#                    ad.phu['OBJFRAME'] = 'TRUE'
-#            else:
-#                allobj = False
-#            if sky:
-#                havesky = True
-#                for ad in adlist:
-#                    ad.phu['SKYFRAME'] = 'TRUE'
-#            else:
-#                allsky = False
-            # CJS: This reads more cleanly and should do the same thing
-            if any(ad.phu.get('OBJFRAME') for ad in adlist):
-                haveobj = True
-                for ad in adlist:
-                    ad.phu.set('OBJFRAME', 'TRUE')
-            else:
-                allobj = False
-            if any(ad.phu.get('SKYFRAME') for ad in adlist):
-                havesky = True
-                for ad in adlist:
-                    ad.phu.set('SKYFRAME', 'TRUE')
-            else:
-                allsky = False
 
-        # If we now have object classifications but no sky, or vice versa,
-        # make whatever reasonable inferences we can about the others:
-        if haveobj and not havesky:
-            for ad in adinputs:
-                if allobj or not ad.phu.get('OBJFRAME'):
-                    ad.phu.set('SKYFRAME', 'TRUE')
-        elif havesky and not haveobj:
-            for ad in adinputs:
-                if allsky or not ad.phu.get('SKYFRAME'):
-                    ad.phu.set('OBJFRAME', 'TRUE')
+            # If any of these is already an OBJECT, then they all are:
+            if objects.intersection(adlist):
+                objects.update(adlist)
+
+            # And ditto for SKY:
+            if skies.intersection(adlist):
+                skies.update(adlist)
+
+        # If one set is empty, try to fill it. Put unassigned inputs in the
+        # empty set. If all inputs are assigned, put them all in the empty set.
+        if objects and not skies:
+            skies = (set(adinputs) - objects) or objects.copy()
+        if skies and not objects:
+            objects = (set(adinputs) - skies) or skies.copy()
+
 
         # If all the exposures are still unclassified at this point, we
         # couldn't decide which groups are which based on user input or guiding
-        # so use the distance from the target or failing that assume everything
-        # is on source but warn the user about it if there's more than 1 group:
-        if not haveobj and not havesky:
-            # With 2 groups, the one closer to the target position must be
-            # on source and the other is presumably sky. For Gemini data, the
-            # former, on-source group should be the one with smaller P/Q.
-            # TO DO: Once we update ExposureGroup to use RA & Dec descriptors
-            # instead of P & Q, this will need changing to subtract the target
-            # RA & Dec explicitly. For non-Gemini data where the target RA/Dec
-            # are unknown, we'll have to skip this bit and proceed to assuming
-            # everything is on source unless given better information.
-            if ngroups == 2:
-                log.fullinfo("Treating 1 group as object & 1 as sky, based "
-                  "on target proximity")
-
-                dsq0 = sum([x**2 for x in groups[0].group_cen])
-                dsq1 = sum([x**2 for x in groups[1].group_cen])
-                if dsq1 < dsq0:
-                    order = ["SKYFRAME", "OBJFRAME"]
-                else:
-                    order = ["OBJFRAME", "SKYFRAME"]
-                for group, key in zip(groups, order):
-                    adlist = group.list()
-                    for ad in adlist:
-                        ad.phu.set(key, "TRUE")
-
-            # For more or fewer than 2 groups, we just have to assume that
-            # everything is on target, for lack of better information. With
-            # only 1 group, this should be a sound assumption, otherwise we
-            # warn the user.
+        # so try to use the distance from the target
+        if not objects and not skies:
+            if ngroups < 2:  # Includes zero if adinputs=[]
+                log.fullinfo("Treating a single group as both object and sky")
+                objects = set(adinputs)
+                skies = set(adinputs)
             else:
-                if ngroups > 1:
-                    log.warning("Unable to determine which of {} detected " \
-                        "groups are sky/object -- assuming they are all on " \
-                        "target AND usable as sky".format(ngroups))
-                else:
-                    log.fullinfo("Treating a single group as both object & sky")
-                for ad in adinputs:
-                    ad.phu.set('OBJFRAME', 'TRUE')
-                    ad.phu.set('SKYFRAME', 'TRUE')
+                distsq = map(lambda grp: sum([x * x for x in grp.group_cen]),
+                             groups)
+                if ngroups == 2:
+                    log.fullinfo("Treating 1 group as object and 1 as sky, "
+                                 "based on target proximity")
+                    closest = np.argmin(distsq)
+                    objects = set(groups[closest])
+                    skies = set(adinputs) - objects
+                else:  # More than 2 groups
+                    # Add groups by proximity until at least half the inputs
+                    # are classified as objects
+                    log.fullinfo("Classifying groups based on target "
+                                 "proximity and observation efficiency")
+                    for group in map(lambda x: groups[x], np.argsort(distsq)):
+                        objects.update(group.list())
+                        if len(objects) >= len(adinputs) // 2:
+                            break
+                    # We might have everything become an object here, in
+                    # which case, make them all skies too (better ideas?)
+                    skies = (set(adinputs) - objects) or objects
 
         # It's still possible for some exposures to be unclassified at this
         # point if the user has identified some but not all of several groups
         # manually (or that's what's in the headers). We can't do anything
         # sensible to rectify that, so just discard the unclassified ones and
         # complain about it.
-        missing = [name for ad, name in zip(adinputs, filenames) if
-                   not ad.phu.get("OBJFRAME") and not ad.phu.get("SKYFRAME")]
+        missing = filter(lambda ad: ad not in objects and ad not in skies,
+                         adinputs)
         if missing:
             log.warning("ignoring the following input file(s), which could "
               "not be classified as object or sky after applying incomplete "
               "prior classifications from the input:")
-            for name in missing:
-                log.warning("  {}".format(name))
+            for ad in missing:
+                log.warning("  {}".format(ad.filename))
 
-        # Construct object & sky lists from the classifications stored above
-        # in exposure meta-data, making a complete copy of the input for any
-        # duplicate entries (it is hoped this won't require additional memory
-        # once memory mapping is used appropriately):
-        ad_sci_list = []
-        ad_sky_list = []
-        for ad in adinputs:
-            on_source = ad.phu.get("OBJFRAME")
-            if on_source:
-                ad_sci_list.append(ad)
-            if ad.phu.get("SKYFRAME"):
-                if on_source:
-                    ad_sky_list.append(deepcopy(ad))
-                else:
-                    ad_sky_list.append(ad)
+        # Construct object & sky lists (preserving order in adinputs) from
+        # the classifications, making a complete copy of the input for any
+        # duplicate entries:
+        ad_objects = filter(lambda ad: ad in objects, adinputs)
+        ad_skies = filter(lambda ad: ad in skies, adinputs)
+        ad_skies = [deepcopy(ad) if ad in objects else ad for ad in ad_skies]
 
         log.stdinfo("Science frames:")
-        for ad_sci in ad_sci_list:
-            log.stdinfo("  %s" % ad_sci.filename)
-        log.stdinfo("Sky frames:")
-        for ad_sky in ad_sky_list:
-            log.stdinfo("  %s" % ad_sky.filename)
+        for ad in ad_objects:
+            log.stdinfo("  {}".format(ad.filename))
+            ad.phu['OBJFRAME'] = 'TRUE'
 
-        #TODO: Looks like ad_sci_output_list should become adinputs
-        # Add the appropriate time stamp to the PHU and update the filename
-        # of the science and sky AstroData objects 
-        ad_sci_output_list = gt.finalise_adinput(ad_sci_list,
-                    timestamp_key=timestamp_key, suffix=sfx, allow_empty=True)
-        ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
-                    timestamp_key=timestamp_key, suffix=sfx, allow_empty=True)
-               
-        # Report the list of output sky AstroData objects to the sky stream in
-        # the reduction context
-        #rc.report_output(ad_sky_output_list, stream="sky")
-        
-        # Report the list of output science AstroData objects to the reduction
-        # context
-        #rc.report_output(ad_sci_output_list)
-        adinputs = ad_sci_output_list
-        self.streams['sky'] = ad_sky_output_list
-        return adinputs
+        log.stdinfo("Sky frames:")
+        for ad in ad_skies:
+            log.stdinfo("  {}".format(ad.filename))
+            ad.phu['SKYFRAME'] = 'TRUE'
+
+        # Timestamp and update filename for all object/sky frames
+        for ad in ad_objects + ad_skies:
+            gt.mark_history(ad, keyword=timestamp_key)
+            ad.update_filename(suffix=sfx)
+
+        # Put skies in sky stream and return the objects
+        self.streams['sky'] = ad_skies
+        return ad_objects
 
     def skyCorrect(self, adinputs=None, **params):
         #self.scaleSkyToInput()
