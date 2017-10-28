@@ -8,6 +8,7 @@ import datetime
 import numpy as np
 from copy import deepcopy
 from scipy.ndimage import binary_dilation
+from astropy.table import Table
 
 import astrodata
 import gemini_instruments
@@ -160,12 +161,9 @@ class Preprocess(PrimitivesBASE):
     def associateSky(self, adinputs=None, **params):
         """
         This primitive determines which sky AstroData objects are associated
-        with each science AstroData object and adds this information to a
-        dictionary (in the form {science1:[sky1,sky2],science2:[sky2,sky3]}),
-        where science1 and science2 are the science AstroData objects and sky1,
-        sky2 and sky3 are the sky AstroDataRecord objects, which is then added
-        to the reduction context.
-        
+        with each science AstroData object and puts this information in a
+        Table attached to each science frame.
+
         The input sky AstroData objects can be provided by the user using the
         parameter 'sky'. Otherwise, the science AstroData objects are found in
         the main stream (as normal) and the sky AstroData objects are found in
@@ -184,6 +182,7 @@ class Preprocess(PrimitivesBASE):
         time: float
             number of seconds
         use_all: bool
+            use everything in the "sky" stream?
 
         :param sky: The input sky frame(s) to be subtracted from the input
                     science frame(s). The input sky frame(s) can be a list of
@@ -201,135 +200,82 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         max_skies = params["max_skies"]
-        min_distance = params["distance"]
+        min_distsq = params.get("distance", 0) ** 2
 
         # Create a timedelta object using the value of the "time" parameter
         seconds = datetime.timedelta(seconds=params["time"])
 
-        if 'sky' in params and params['sky']:
+        if params.get('sky'):
             sky = params['sky']
             # Produce a list of AD objects from the sky frame/list
-            ad_sky_list = sky if isinstance(sky, list) else [sky]
-            ad_sky_list = [ad if isinstance(ad, astrodata.AstroData) else
-                           astrodata.open(ad) for ad in ad_sky_list]
-        else:
-            # The separateSky primitive puts the sky AstroData objects in the
-            # sky stream.
-            ad_sky_list = self.streams.get('sky')
+            ad_skies = sky if isinstance(sky, list) else [sky]
+            ad_skies = [ad if isinstance(ad, astrodata.AstroData) else
+                           astrodata.open(ad) for ad in ad_skies]
+        else:  # get from sky stream (put there by separateSky)
+            ad_skies = self.streams.get('sky', [])
         
-        if not adinputs or not ad_sky_list:
+        if not adinputs or not ad_skies:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
                         "object are required for associateSky")
-            
-            # Add the science and sky AstroData objects to the output science
-            # and sky AstroData object lists, respectively, without further
-            # processing, after adding the appropriate time stamp to the PHU
-            # and updating the filename.
-            if adinputs:
-                adinputs = gt.finalise_adinput(adinputs,
-                    timestamp_key=timestamp_key, suffix=sfx)
-            
-            if ad_sky_list:
-                ad_sky_output_list = gt.finalise_adinput(
-                    adinput=ad_sky_list, timestamp_key=timestamp_key,
-                    suffix=sfx)
-            else:
-                ad_sky_output_list = []
         else:
-            # Initialize the dict that will contain the association between
-            # the science AstroData objects and the sky AstroData objects
-            sky_dict = {}
-            
-            for ad_sci in adinputs:
-                # Determine the sky AstroData objects that are associated with
-                # this science AstroData object. Initialize the list of sky
-                # AstroDataRecord objects
-                this_sky_list = []
-                # Since there are no timestamps in these records, keep a list
-                # of time offsets in case we need to limit the number of skies
-                delta_time_list = []
-                
-                # Use the ORIGNAME of the science AstroData object as the key
-                # of the dictionary 
-                origname = ad_sci.phu.get('ORIGNAME')
-                
+            # Create a dict with the observation times to aid in association
+            # Allows us to select suitable skies and propagate their datetimes
+            sky_times = dict(zip(ad_skies,
+                                 [ad.ut_datetime() for ad in ad_skies]))
+
+            for ad in adinputs:
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
                 if params["use_all"]:
                     log.stdinfo("Associating all available sky AstroData "
-                                 "objects with {}" .format(ad_sci.filename))
-
-                    #TODO: SORT THIS OUT! It was AstroDataRecords
-                    # Set the list of sky AstroDataRecord objects for this
-                    # science AstroData object equal to the input list of sky
-                    # AstroDataRecord objects
-                    #for ad_sky in ad_sky_list:
-                    #    adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
-                    
-                    # Update the dictionary with the list of sky AstroData
-                    # objects associated with this science AstroData object
-                    sky_dict.update({origname: ad_sky_list})
+                                 "objects with {}" .format(ad.filename))
+                    sky_list = ad_skies
                 else:
-                    ad_sci_datetime = ad_sci.ut_datetime()
-                    for ad_sky in ad_sky_list:
-                        # Make sure the candidate sky exposures actually match
-                        # the science configuration (eg. if sequenced over
-                        # different filters or exposure times):
-                        same_cfg = gt.matching_inst_config(ad_sci, ad_sky,
-                            check_exposure=True)
+                    sci_time = ad.ut_datetime()
+                    xoffset = ad.telescope_x_offset()
+                    yoffset = ad.telescope_y_offset()
 
-                        # Time difference between science and sky observations
-                        ad_sky_datetime = ad_sky.ut_datetime()
-                        delta_time = abs(ad_sci_datetime - ad_sky_datetime)
-                        
-                        # Select only those sky AstroData objects observed
-                        # within "time" seconds of the science AstroData object
-                        if (same_cfg and delta_time < seconds):
-                            
-                            # Get the distance between science and sky images
-                            delta_x = (ad_sci.telescope_x_offset() -
-                                       ad_sky.telescope_x_offset())
-                            delta_y = (ad_sci.telescope_y_offset() -
-                                       ad_sky.telescope_y_offset())
-                            delta_sky = math.sqrt(delta_x**2 + delta_y**2)
-                            if (delta_sky > min_distance):
-                                this_sky_list.append(ad_sky)
-                                delta_time_list.append(delta_time)
-                                
+                    # First, select only skies with matching configurations
+                    # and within the specified time and with sufficiently
+                    # large separation. Keep dict format
+                    sky_dict = {k: v for k, v in sky_times.items() if
+                                gt.matching_inst_config(ad1=ad, ad2=k,
+                                                        check_exposure=True)
+                                and abs(sci_time - v) <= seconds
+                                and ((k.telescope_x_offset() - xoffset)**2 +
+                                     (k.telescope_y_offset() - yoffset)**2
+                                     > min_distsq**2)}
+
                     # Now cull the list of associated skies if necessary to
                     # those closest in time to the sceince observation
-                    if max_skies is not None and len(this_sky_list) > max_skies:
-                        sorted_list = sorted(zip(delta_time_list, this_sky_list))
-                        this_sky_list = [x[1] for x in sorted_list[:max_skies]]
+                    if max_skies is not None and len(sky_dict) > max_skies:
+                        sky_list = sorted(sky_dict, key=lambda x:
+                                          abs(sky_dict[x]-sci_time))[:max_skies]
+                    else:
+                        sky_list = sky_dict.keys()
 
-                    # Update the dictionary with the list of sky
-                    # AstroDataRecord objects associated with this science
-                    # AstroData object
-                    sky_dict.update({origname: this_sky_list})
-                
-                if not sky_dict[origname]:
-                    log.warning("No sky frames available for {}".format(origname))
-                else:
+                    # Sort sky list chronologically for presentation purposes
+                    sky_list = sorted(sky_list, key=lambda sky: sky.ut_datetime())
+
+                if sky_list:
+                    sky_table = Table(names=('SKYNAME',),
+                                    data=[[sky.filename for sky in sky_list]])
                     log.stdinfo("The sky frames associated with {} are:".
-                                 format(origname))
-                    for ad_sky in sky_dict[origname]:
-                        log.stdinfo("  {}".format(ad_sky.filename))
+                                 format(ad.filename))
+                    for sky in sky_list:
+                        log.stdinfo("  {}".format(sky.filename))
+                    ad.SKYTABLE = sky_table
+                else:
+                    log.warning("No sky frames available for {}".format(ad.filename))
 
-            #TODO: Sort this out!
-            # Add the appropriate time stamp to the PHU and change the filename
-            # of the science and sky AstroData objects 
-            adinputs = gt.finalise_adinput(adinputs,
-                                    timestamp_key=timestamp_key, suffix=sfx)
-            ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
-                                    timestamp_key=timestamp_key, suffix=sfx)
-            
-            # Store the association dictionary as an attribute of the class
-            self.sky_dict = sky_dict
+        # Timestamp and update filenames
+        for ad in adinputs + ad_skies:
+            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         
-        # Report the list of output sky AstroData objects to the sky stream in
-        # the reduction context 
-        self.streams['sky'] = ad_sky_output_list
+        # Need to update sky stream in case it came from the "sky" parameter
+        self.streams['sky'] = ad_skies
         return adinputs
 
     def correctBackgroundToReferenceImage(self, adinputs=None, **params):
@@ -393,8 +339,7 @@ class Preprocess(PrimitivesBASE):
                                 self.keyword_comments["SKYLEVEL"])
 
                 # Timestamp the header and update the filename
-                gt.mark_history(ad, primname=self.myself(),
-                                keyword=timestamp_key)
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
                 ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
@@ -769,6 +714,7 @@ class Preprocess(PrimitivesBASE):
         if ref_sky == ['']: ref_sky = []
 
         # Add these to the object/sky sets, warning of conflicts
+        # use "in" for filename comparison so user can specify rootname only
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
         missing = []
@@ -909,8 +855,8 @@ class Preprocess(PrimitivesBASE):
 
         # Timestamp and update filename for all object/sky frames
         for ad in ad_objects + ad_skies:
-            gt.mark_history(ad, keyword=timestamp_key)
-            ad.update_filename(suffix=sfx)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
 
         # Put skies in sky stream and return the objects
         self.streams['sky'] = ad_skies
