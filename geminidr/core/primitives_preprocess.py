@@ -788,9 +788,8 @@ class Preprocess(PrimitivesBASE):
         # empty set. If all inputs are assigned, put them all in the empty set.
         if objects and not skies:
             skies = (set(adinputs) - objects) or objects.copy()
-        if skies and not objects:
+        elif skies and not objects:
             objects = (set(adinputs) - skies) or skies.copy()
-
 
         # If all the exposures are still unclassified at this point, we
         # couldn't decide which groups are which based on user input or guiding
@@ -827,8 +826,7 @@ class Preprocess(PrimitivesBASE):
         # manually (or that's what's in the headers). We can't do anything
         # sensible to rectify that, so just discard the unclassified ones and
         # complain about it.
-        missing = filter(lambda ad: ad not in objects and ad not in skies,
-                         adinputs)
+        missing = filter(lambda ad: ad not in objects | skies, adinputs)
         if missing:
             log.warning("ignoring the following input file(s), which could "
               "not be classified as object or sky after applying incomplete "
