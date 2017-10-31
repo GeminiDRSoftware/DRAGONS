@@ -9,9 +9,11 @@ E.g.,
 """
 
 # ------------------------------------------------------------------------------
-from inspect import stack
 import os
+import pickle
 import warnings
+from inspect import stack
+
 from astropy.io.fits.verify import VerifyWarning
 
 from gempy.utils import logutils
@@ -22,16 +24,46 @@ from .gemini.lookups import timestamp_keywords
 from .gemini.lookups.source_detection import sextractor_dict
 
 from recipe_system.cal_service import calurl_dict
-from recipe_system.cal_service import caches
-
 from recipe_system.utils.decorators import parameter_override
 
-# ------------------------------------------------------------------------------
+# ------------------------------ caches ----------------------------------------
+# Formerly in cal_service/caches.py
+#
+# GLOBAL/CONSTANTS (could be exported to config file)
+CALS = "calibrations"
+
+# [caches]
+caches = {
+    'reducecache'  : '.reducecache',
+    'calibrations' : CALS
+    }
+
+calindfile = os.path.join('.', caches['reducecache'], "calindex.pkl")
+stkindfile = os.path.join('.', caches['reducecache'], "stkindex.pkl")
+
+def set_caches():
+    cachedict = {}
+    for cachename, cachedir in caches.items():
+        if not os.path.exists(cachedir):
+            os.makedirs(cachedir)
+        cachedict.update({cachename:cachedir})
+    return cachedict
+
+def load_cache(cachefile):
+    if os.path.exists(cachefile):
+        return pickle.load(open(cachefile, 'r'))
+    else:
+        return {}
+
+def save_cache(object, cachefile):
+    pickle.dump(object, open(cachefile, 'wb'))
+    return
+# ------------------------- END caches------------------------------------------
 class Calibrations(dict):
     def __init__(self, calindfile, user_cals={}, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self._calindfile = calindfile
-        self.update(caches.load_cache(self._calindfile))
+        self.update(load_cache(self._calindfile))
         self._usercals = user_cals or {}                 # Handle user_cals=None
 
     def __getitem__(self, key):
@@ -63,7 +95,7 @@ class Calibrations(dict):
         return calfile
 
     def cache_to_disk(self):
-        caches.save_cache(self, self._calindfile)
+        save_cache(self, self._calindfile)
         return
 # ------------------------------------------------------------------------------
 class ParametersBASE(object):
@@ -117,9 +149,9 @@ class PrimitivesBASE(object):
                 os.path.join(os.path.dirname(sextractor_dict.__file__), v)
                 for k,v in self.sx_dict.items()})
 
-        self.cachedict        = caches.set_caches()
-        self.calibrations     = Calibrations(caches.calindfile, user_cals=ucals)
-        self.stacks           = caches.load_cache(caches.stkindfile)
+        self.cachedict        = set_caches()
+        self.calibrations     = Calibrations(calindfile, user_cals=ucals)
+        self.stacks           = load_cache(stkindfile)
 
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]
