@@ -2,6 +2,13 @@
 The geminidr package provides the base classes for all parameter and primitive
 classes in the geminidr package.
 
+This module provides the caches library to primitives, but currently, only
+Bookkeeping uses the cache directly (addToList). 
+
+This module now provides the Calibrations class, formerly part of cal_service.
+Calibrations() also uses the caches funcitons, which are now directly available
+here.
+
 E.g.,
 >>> from geminidr import ParametersBASE
 >>> from geminidr import PrimitivesBASE
