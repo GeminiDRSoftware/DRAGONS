@@ -242,6 +242,12 @@ class Photometry(PrimitivesBASE):
             # (PROFILE_FWHM, PROFILE_EE50)
             ad = _profile_sources(ad, seeing_estimate)
 
+            # We've added a new OBJMASK. It's possible the AD already had an
+            # OBJMASK that was dilated. Need to remove this keyword from PHU
+            kw = self.timestamp_keys["dilateObjectMask"]
+            if kw in ad.phu:
+                del ad.phu[kw]
+
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)

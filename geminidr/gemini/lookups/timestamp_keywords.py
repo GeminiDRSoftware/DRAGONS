@@ -24,6 +24,7 @@ timestamp_keys = {
     "determineWaveCalSolution": "WAVECAL",
     "determineWavelengthSolution": "WAVESOLN",
     "determineAstrometricSolution": "ASTRMTRY",
+    "dilateObjectMask": "DLOBJMSK",
     "divide": "DIVIDE",
     "divideByFlat": "DIVFLAT",
     "extract1DSpectra": "EXTRACT",

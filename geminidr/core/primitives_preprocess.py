@@ -269,8 +269,8 @@ class Preprocess(PrimitivesBASE):
                 else:
                     log.warning("No sky frames available for {}".format(ad.filename))
 
-        # Timestamp and update filenames
-        for ad in adinputs + ad_skies:
+        # Timestamp and update filenames of science frames only
+        for ad in adinputs:
             ad.update_filename(suffix=sfx, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         
@@ -371,22 +371,33 @@ class Preprocess(PrimitivesBASE):
             suffix to be added to output files
         dilation: float
             radius of dilation circle
+        repeat: bool
+            allow a repeated dilation? Unless set, the primitive will no-op
+            if the appropriate header keyword timestamp is found
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
+        repeat = params["repeat"]
         dilation = params["dilation"]
         xgrid, ygrid = np.mgrid[-dilation:dilation+1, -dilation:dilation+1]
         structure = np.where(xgrid*xgrid+ygrid*ygrid < dilation*dilation,
                              True, False)
 
         for ad in adinputs:
+            if timestamp_key in ad.phu and not repeat:
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by dilateObjectMask".
+                            format(ad.filename))
+                continue
             for ext in ad:
                 if hasattr(ext, 'OBJMASK') and ext.OBJMASK is not None:
                     ext.OBJMASK = binary_dilation(ext.OBJMASK,
                                                   structure).astype(np.uint8)
 
             ad.update_filename(suffix=params["suffix"], strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
     def divideByFlat(self, adinputs=None, **params):
@@ -474,7 +485,7 @@ class Preprocess(PrimitivesBASE):
     def makeSky(self, adinputs=None, **params):
         adinputs = self.separateSky(adinputs, **params)
         adinputs = self.associateSky(adinputs, **params)
-        adinputs = self.stackSkyFrames(adinputs, **params)
+        #adinputs = self.stackSkyFrames(adinputs, **params)
         #self.makeMaskedSky()
         return adinputs
 
@@ -861,8 +872,95 @@ class Preprocess(PrimitivesBASE):
         return ad_objects
 
     def skyCorrect(self, adinputs=None, **params):
-        #self.scaleSkyToInput()
-        adinputs = self.subtractSky(adinputs, **params)
+        """
+        This primitive subtracts a sky frame from each of the science inputs.
+        Each science input should have a list of skies in a SKYTABLE extension
+        and these are stacked and subtracted, using the appropriate primitives.
+        
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        sky: str/AD/list
+            sky frame(s) to be subtracted from each science input
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys['subtractSky']
+
+        # We'll need to process the sky frames so collect them all up and do
+        # this first, to avoid repeating it every time one is reused
+        skies = set()
+        skytables = []
+        for ad in adinputs:
+            try:
+                sky_list = list(ad.SKYTABLE["SKYNAME"])
+                del ad.SKYTABLE  # Not needed any more
+            except AttributeError:
+                log.warning("{} has no SKYTABLE so cannot subtract a sky "
+                            "frame".format(ad.filename))
+                sky_list = None
+            except KeyError:
+                log.warning("Cannot read SKYTABLE associated with {} so "
+                            "continuing".format(ad.filename))
+                sky_list = None
+            # Sort to ease equality comparisons
+            skytables.append(sorted(sky_list))
+            if sky_list:  # Not if None
+                skies.update(sky_list)
+
+        # Now make a list of AD instances of the skies, and delete any
+        # filenames that could not be converted to ADs
+        skies = list(skies)
+        ad_skies = []
+        for filename in skies:
+            for sky in self.streams["sky"]:
+                if sky.filename == filename:
+                    break
+            else:
+                try:
+                    sky = astrodata.open(filename)
+                except IOError:
+                    log.warning("Cannot find a sky file named {}. "
+                            "Ignoring it.".format(filename))
+                    skies.remove(filename)
+                    continue
+            ad_skies.append(sky)
+
+        # We've got all the sky frames in sky_dict, so delete the sky stream
+        # to eliminate references to the original frames before we modify them
+        del self.streams["sky"]
+        ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
+                    else self.detectSources([ad])[0] for ad in ad_skies]
+        ad_skies = self.dilateObjectMask(ad_skies, **params)
+        ad_skies = self.addObjectMaskToDQ(ad_skies)
+        sky_dict = dict(zip(skies, ad_skies))
+
+        # Make a list of stacked sky frames, but use references if the same
+        # frames are used for more than one adinput. Use a value "0" to
+        # indicate we have not tried to make a sky for this adinput ("None"
+        # means we've tried but failed and this can be passed to subtractSky)
+        stacked_skies = [0] * len(adinputs)
+        for i, skytable in enumerate(skytables):
+            if stacked_skies[i] == 0:
+                stacked_sky = self.stackSkyFrames(map(lambda sky: sky_dict[sky],
+                                                      skytable))
+                if len(stacked_sky) == 1:
+                    stacked_sky = stacked_sky[0]
+                else:
+                    log.warning("Problem with stacking the following sky "
+                                "frames for {}".format(adinputs[i].filename))
+                    for filename in skytable:
+                        log.warning("  {}".format(filename))
+                    stacked_sky = None
+                # Assign this stacked sky frame to all adinputs that want it
+                for j in range(i, len(skytables)):
+                    if skytables[j] == skytable:
+                        stacked_skies[j] = stacked_sky
+
+        # Now we have a list of skies to subtract, one per adinput, so send
+        # this to subtractSky as the "sky" parameter
+        adinputs = self.subtractSky(adinputs, sky=stacked_skies)
         return adinputs
 
     def subtractDark(self, adinputs=None, **params):
@@ -937,61 +1035,47 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        sky: list
+        sky: str/AD/list
+            sky frame(s) to subtract
+        reset_sky: bool
+            maintain the sky level by adding a constant to the science
+            frame after subtracting the sky?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        reset_sky = params["reset_sky"]
 
-        if 'sky' in params and params['sky']:
-            # Use the list of sky frames provided by the user. Generate a
-            # dictionary associating the input sky AstroData objects to the
-            # input science AstroData objects.
-            sky_dict = dict(list(zip(**gt.make_lists([ad.phu.get('ORIGNAME')
-                                     for ad in adinputs], params['sky']))))
-
-        else:
-            # The stackSkyFrames primitive makes the dictionary containing the
-            # information associating the stacked sky frames to the science
-            # frames an attribute of the PrimitivesClass
-            sky_dict = getattr(self, 'stacked_sky_dict')
-            
-        # Loop over each science AstroData object in the science list
-        for ad_sci in adinputs:
-            if ad_sci.phu.get(timestamp_key):
+        for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
+                                             force_ad=True)):
+            if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractSky".
-                            format(ad_sci.filename))
+                            format(ad.filename))
                 continue
             
-            # Retrieve the sky AstroData object associated with the input
-            # science AstroData object
-            origname = ad_sci.phu.get("ORIGNAME")
-            if origname in sky_dict:
-                ad_sky = sky_dict[origname]
+            if ad_sky is not None:
+                if reset_sky:
+                    old_sky = gt.measure_bg_from_image(ad, value_only=True)
                 log.stdinfo("Subtracting the sky ({}) from the science "
                             "AstroData object {}".
-                            format(ad_sky.filename, ad_sci.filename))
-                ad_sci.subtract(ad_sky)
-
-                # Timestamp and update filename
-                gt.mark_history(ad_sci, primname=self.myself(),
-                                keyword=timestamp_key)
-                ad_sci.update_filename(suffix=params["suffix"], strip=True)
-
+                            format(ad_sky.filename, ad.filename))
+                ad.subtract(ad_sky)
+                if reset_sky:
+                    new_sky = gt.measure_bg_from_image(ad, value_only=True)
+                    for ext, new_level, old_level in zip(ad, new_sky, old_sky):
+                        sky_offset = new_level - old_level
+                        log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
+                                            ad.filename, ext.hdr['EXTVER']))
+                        ext.add(sky_offset)
             else:
                 log.warning("No changes will be made to {}, since no "
-                            "appropriate sky could be retrieved".
-                            format(ad_sci.filename))
+                            "sky was specified".format(ad.filename))
 
-        #TODO: Confirm this is OK. We don't want to keep references to all
-        # those sky frames hanging around
-        del self.sky_dict
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
 
-        # Add the appropriate time stamp to the PHU and update the filename
-        # of the science and sky AstroData objects 
-        #adinputs = gt.finalise_adinput(adinput=adinputs,
-        #            timestamp_key=timestamp_key, suffix=params["suffix"])
         return adinputs
 
     def subtractSkyBackground(self, adinputs=None, **params):

@@ -159,17 +159,14 @@ class Stack(PrimitivesBASE):
 
     def stackSkyFrames(self, adinputs=None, **params):
         """
-        This primitive stacks the sky frames for each science frame (as
-        determined from the self.sky_dict attribute previously set) by
-        calling stackFrames and then attaches AD objects of the stacked sky
-        frames to each science frame via the self.stacked_sky_dict attribute
+        This primitive stacks the AD frames sent to it with object masking.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        mask: bool
-            apply mask to data before combining?
+        dilation: int
+            dilation radius for expanding object mask
         nhigh: int
             number of high pixels to reject
         nlow: int
@@ -183,113 +180,12 @@ class Stack(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackSkyFrames"]
 
-        # Initialize the list of output science and stacked sky AstroData
-        # objects
-        ad_sky_for_correction_output_list = []
-
-        # Initialize the dictionary that will contain the association between
-        # the science AstroData objects and the stacked sky AstroData objects
-        stacked_sky_dict = {}
-
-        # The associateSky primitive creates an attribute with the information
-        # associating the sky frames to the science frames
-        try:
-            sky_dict = self.sky_dict
-        except AttributeError:
-            sky_dict = {}
-
-        for ad_sci in adinputs:
-            # Retrieve the list of sky AstroData objects associated with the
-            # input science AstroData object
-            origname = ad_sci.phu.get('ORIGNAME')
-            if origname in sky_dict:
-                ad_sky_list = sky_dict[origname]
-
-                if not ad_sky_list:
-                    log.warning("No sky frames available for {}".format(origname))
-                    continue
-
-                # Generate a unique suffix for the stacked sky AstroData object
-                sky_suffix = "_for{}".format(origname.replace('.fits', ''))
-
-                if len(ad_sky_list) == 1:
-                    # There is only one associated sky AstroData object for
-                    # this science AstroData object, so there is no need to
-                    # call stackFrames. Update the dictionary with the single
-                    # sky AstroDataRecord object associated with this science
-                    # AstroData object
-                    ad_sky = deepcopy(ad_sky_list[0])
-                    ad_sky.update_filename(suffix=sky_suffix, strip=True)
-
-                    # Create the AstroDataRecord for this new AstroData Object
-                    log.fullinfo("Only one sky frame available for {}: {}".
-                                format(origname, ad_sky.filename))
-
-                    # Update the dictionary with the stacked sky
-                    # AstroDataRecord object associated with this science
-                    # AstroData object
-                    stacked_sky_dict.update({origname: ad_sky})
-
-                    # Update the output stacked sky AstroData list to contain
-                    # the sky for correction
-                    ad_sky_for_correction_output_list.append(ad_sky)
-                else:
-                    ad_sky_stack_list = []
-
-                    # Combine the list of sky AstroData objects
-                    # We want to mask out objects but can't modify the input
-                    # files, so need to make copies
-                    log.stdinfo("Combining the following sky frames for {}".
-                                 format(origname))
-                    for ad_sky in ad_sky_list:
-                        log.stdinfo("  {}".format(ad_sky.filename))
-                        ad_sky_stack_list.append(deepcopy(ad_sky))
-
-                    # Dilate the object mask and apply to DQ so objects are
-                    # masked out of the sky frames. Some consideration of the
-                    # dilation radius is needed.
-                    ad_sky_stack_list = self.dilateObjectMask(ad_sky_stack_list,
-                                                              dilation=3)
-                    ad_sky_stack_list = self.addObjectMaskToDQ(ad_sky_stack_list)
-                    ad_stacked_sky_list = self.stackFrames(ad_sky_stack_list,
-                                                           **params)
-
-                    # Add the sky to be used to correct this science AstroData
-                    # object to the list of output sky AstroData objects
-                    if len(ad_stacked_sky_list) == 1:
-                        ad_stacked_sky = ad_stacked_sky_list[0]
-                        # Change filename so the _skyStacked frame associated
-                        # with a particular science frame has the same root
-                        ad_stacked_sky.filename = origname
-                        ad_stacked_sky.update_filename(suffix=params['suffix'])
-
-                        # Add the appropriate time stamp to the PHU
-                        gt.mark_history(adinput=ad_stacked_sky,
-                                        primname=self.myself(),
-                                        keyword=timestamp_key)
-
-                        #ad_sky_for_correction_output_list.append(
-                        #  ad_stacked_sky)
-
-                        # Update the dictionary with the stacked sky AD object
-                        stacked_sky_dict.update({origname: ad_stacked_sky})
-                    else:
-                        log.warning("Problem with stacking")
-
-        # Add the appropriate time stamp to the PHU and update the filename of
-        # the science AstroData objects
-        #adinputs = gt.finalise_adinput(adinputs, timestamp_key=timestamp_key,
-        #                                suffix=params["suffix"])
-
-        # Add the association dictionary to the reduction context
-        self.stacked_sky_dict = stacked_sky_dict
-
-        #TODO: This list doesn't seem to be picked up anywhere else
-        # Report the list of output stacked sky AstroData objects to the
-        # forSkyCorrection stream in the reduction context
-        # rc.report_output(
-        #  ad_sky_for_correction_output_list, stream="forSkyCorrection")
-        # rc.run("showInputs(stream='forSkyCorrection')")
+        # Run detectSources() on any frames without any OBJMASKs
+        adinputs = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad) else
+                    self.detectSources([ad])[0] for ad in adinputs]
+        adinputs = self.dilateObjectMask(adinputs, dilation=params["dilation"])
+        adinputs = self.addObjectMaskToDQ(adinputs)
+        adinputs = self.stackFrames(adinputs, **params)
         return adinputs
 
 ##############################################################################
