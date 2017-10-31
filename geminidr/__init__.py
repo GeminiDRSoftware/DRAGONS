@@ -7,18 +7,8 @@ E.g.,
 >>> from geminidr import PrimitivesBASE
 
 """
-class ParametersBASE(object):
-    """
-    Base class for all Gemini package parameter sets.
 
-    Most other parameter classes will be separate from their
-    matching primitives class. Here, we incorporate the parameter
-    class, ParametersBASE, into the mod.
-
-    """
-    pass
 # ------------------------------------------------------------------------------
-
 from inspect import stack
 import os
 import warnings
@@ -33,9 +23,60 @@ from .gemini.lookups.source_detection import sextractor_dict
 
 from recipe_system.cal_service import calurl_dict
 from recipe_system.cal_service import caches
-from recipe_system.cal_service import Calibrations
 
 from recipe_system.utils.decorators import parameter_override
+
+# ------------------------------------------------------------------------------
+class Calibrations(dict):
+    def __init__(self, calindfile, user_cals={}, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        self._calindfile = calindfile
+        self.update(caches.load_cache(self._calindfile))
+        self._usercals = user_cals or {}                 # Handle user_cals=None
+
+    def __getitem__(self, key):
+        return self._get_cal(*key)
+
+    def __setitem__(self, key, val):
+        self._add_cal(key, val)
+        return
+
+    def __delitem__(self, key):
+        # Cope with malformed keys
+        try:
+            self.pop((key[0].calibration_key(), key[1]), None)
+        except (TypeError, IndexError):
+            pass
+
+    def _add_cal(self, key, val):
+        # Munge the key from (ad, caltype) to (ad.calibration_key, caltype)
+        key = (key[0].calibration_key(), key[1])
+        self.update({key: val})
+        self.cache_to_disk()
+        return
+
+    def _get_cal(self, ad, caltype):
+        key = (ad.calibration_key(), caltype)
+        if key in self._usercals:
+            return self._usercals[key]
+        calfile = self.get(key)
+        return calfile
+
+    def cache_to_disk(self):
+        caches.save_cache(self, self._calindfile)
+        return
+# ------------------------------------------------------------------------------
+class ParametersBASE(object):
+    """
+    Base class for all Gemini package parameter sets.
+
+    Most other parameter classes will be separate from their
+    matching primitives class. Here, we incorporate the parameter
+    class, ParametersBASE, into the mod.
+
+    """
+    pass
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesBASE(object):
