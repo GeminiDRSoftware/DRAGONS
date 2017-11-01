@@ -16,6 +16,7 @@ timestamp_keys = {
     "applyDQPlane": "APLDQPLN",
     "associateSky": "ASSOCSKY",
     "attachWavelengthSolution": "ATTWVSOL",
+    "biasCorrect": "BIASCORR",
     "correctBackgroundToReferenceImage": "CORRBG",
     "correctWCSToReferenceFrame": "CORRWCS",
     "cutFootprints": "CUTSFP",
