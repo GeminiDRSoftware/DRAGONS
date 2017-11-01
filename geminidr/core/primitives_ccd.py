@@ -28,16 +28,6 @@ class CCD(PrimitivesBASE):
         self.parameters = ParametersCCD
 
     def biasCorrect(self, adinputs=None, **params):
-        self.getProcessedBias(adinputs)
-        adinputs = self.subtractBias(adinputs, **params)
-        return adinputs
-
-    def overscanCorrect(self, adinputs=None, **params):
-        adinputs = self.subtractOverscan(adinputs, **params)
-        adinputs = self.trimOverscan(adinputs, **params)
-        return adinputs
-
-    def subtractBias(self, adinputs=None, **params):
         """
         The subtractBias primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
@@ -94,6 +84,11 @@ class CCD(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
                                               strip=True)
+        return adinputs
+
+    def overscanCorrect(self, adinputs=None, **params):
+        adinputs = self.subtractOverscan(adinputs, **params)
+        adinputs = self.trimOverscan(adinputs, **params)
         return adinputs
 
     def subtractOverscan(self, adinputs=None, **params):
