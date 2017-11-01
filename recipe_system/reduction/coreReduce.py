@@ -27,7 +27,10 @@ from types import StringType
 
 import astrodata
 import gemini_instruments
-import soar_instruments
+try:
+    import soar_instruments
+except ImportError:
+    pass
 
 try:
     from ghost_instruments import ghost
