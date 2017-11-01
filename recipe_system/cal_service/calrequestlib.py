@@ -15,21 +15,12 @@ from gempy.utils import logutils
 from .caches  import set_caches
 from recipe_system.cal_service import cal_search_factory, handle_returns_factory
 from .file_getter import get_file_iterator, GetterError
+from astrodata import descriptor_list
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 # Currently delivers transport_request.calibration_search fn.
 calibration_search = cal_search_factory()
-# ------------------------------------------------------------------------------
-descriptor_list = ['amp_read_area', 'camera', 'central_wavelength', 'coadds',
-                   'data_label', 'data_section', 'detector_roi_setting',
-                   'detector_x_bin', 'detector_y_bin', 'disperser',
-                   'exposure_time', 'filter_name', 'focal_plane_mask',
-                   'gain_setting', 'gcal_lamp', 'instrument', 'lyot_stop',
-                   'nod_count', 'nod_pixels', 'object', 'observation_class',
-                   'observation_id',
-                   'observation_type', 'program_id', 'read_speed_setting',
-                   'ut_datetime', 'read_mode', 'well_depth_setting']
 # ------------------------------------------------------------------------------
 def get_request(url, filename):
     iterator = get_file_iterator(url)
@@ -115,7 +106,7 @@ def get_cal_requests(inputs, caltype):
         rq = CalibrationRequest(ad, caltype)
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
-        for desc_name in descriptor_list:
+        for desc_name in descriptor_list(ad):
             try:
                 descriptor = getattr(ad, desc_name)
             except AttributeError:
