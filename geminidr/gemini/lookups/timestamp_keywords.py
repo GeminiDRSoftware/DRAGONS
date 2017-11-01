@@ -55,7 +55,7 @@ timestamp_keys = {
     "standardizeInstrumentHeaders": "SDZHDRSI",
     "standardizeStructure": "SDZSTRUC",
     "subtract": "SUBTRACT",
-    "subtractBias": "SUBBIAS",
+#    "subtractBias": "SUBBIAS",
     "subtractDark": "SUBDARK",
     "subtractFringe": "SUBFRING",
     "subtractOverscan": "SUBOVER",

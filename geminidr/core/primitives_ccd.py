@@ -29,10 +29,11 @@ class CCD(PrimitivesBASE):
 
     def biasCorrect(self, adinputs=None, **params):
         """
-        The subtractBias primitive will subtract the science extension of the
+        The biasCorrect primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
         frames. The variance and data quality extension will be updated, if
-        they exist.
+        they exist. If no bias is provided, getProcessedBias will be called
+        to ensure a bias exists for every adinput.
 
         Parameters
         ----------
@@ -54,7 +55,7 @@ class CCD(PrimitivesBASE):
         for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractBias".
+                            "already been processed by biasCorrect".
                             format(ad.filename))
                 continue
 

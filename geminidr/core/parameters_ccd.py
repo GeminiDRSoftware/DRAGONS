@@ -17,10 +17,6 @@ class ParametersCCD(ParametersBASE):
         "nbiascontam"       : None,
         "order"             : None,
     }
-    subtractBias = {
-        "suffix"            : "_biasCorrected",
-        "bias"              : None,
-    }
     subtractOverscan = {
         "suffix"            : "_overscanSubtracted",
         "niterate"          : 2,

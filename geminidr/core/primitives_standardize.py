@@ -343,7 +343,7 @@ class Standardize(PrimitivesBASE):
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
             if (poisson_noise and 'GMOS' in tags and
-                ad.phu.get(self.timestamp_keys['subtractBias']) is None and
+                ad.phu.get(self.timestamp_keys['biasCorrect']) is None and
                 ad.phu.get(self.timestamp_keys['subtractOverscan']) is None):
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
