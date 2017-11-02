@@ -248,8 +248,7 @@ class Register(PrimitivesBASE):
         # Timestamp and update filenames
         for ad in adoutputs:
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                            strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adoutputs
     
     def determineAstrometricSolution(self, adinputs=None, **params):
@@ -298,8 +297,8 @@ class Register(PrimitivesBASE):
             objcat_order = np.argsort(objcat_lengths)[::-1]
 
             pixscale = ad.pixel_scale()
-            initial = (15.0 if ad.instrument() == 'GNIRS' else 5.0) / pixscale  # Search box size
-            final = 1.0 / pixscale  # Matching radius
+            initial = params["initial"] / pixscale  # Search box size
+            final = params["final"] / pixscale  # Matching radius
             max_ref_sources = 100 if 'qa' in self.context else None  # Don't need more than this many
             if full_wcs is None:
                 full_wcs = not ('qa' in self.context)
@@ -487,8 +486,7 @@ class Register(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                            strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
 
@@ -516,57 +514,19 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     if len(adinput) != len(adref):
         log.warning("Number of extensions in input files are different. "
                     "Cannot correct WCS.")
-        return
+        return adinput
 
     log.stdinfo("Updating WCS of {} based on {}".format(adinput.filename,
                                                         adref.filename))
     try:
-        poffset1 = adref.phu['POFFSET']
-        qoffset1 = adref.phu['QOFFSET']
-        poffset2 = adinput.phu['POFFSET']
-        qoffset2 = adinput.phu['QOFFSET']
-        pixscale = adref.pixel_scale()
+        xdiff = adinput.detector_x_offset() - adref.detector_x_offset()
+        ydiff = adinput.detector_y_offset() - adref.detector_y_offset()
         pa1 = adref.phu['PA']
         pa2 = adinput.phu['PA']
-    except KeyError:
+    except (KeyError, TypeError):  # TypeError if offset is None
         log.warning("Cannot obtain necessary offsets from headers "
                     "so no change will be made")
-        return
-
-    try:
-        bottom_port = adref.phu['INPORT'] == 1
-    except KeyError:
-        bottom_port = False  # probably!
-
-    # This logic has been taken from GACQ with most instances checked
-    if 'NIRI' in adref.tags:
-        xoffset = poffset2 - poffset1
-        yoffset = qoffset1 - qoffset2
-        if bottom_port and not adref.is_ao():
-            xoffset = -xoffset
-    elif 'GNIRS' in adref.tags:
-        xoffset = qoffset2 - qoffset1
-        yoffset = poffset1 - poffset2
-        if bottom_port and not adref.is_ao():
-            xoffset = -xoffset
-    elif 'F2' in adref.tags:
-        xoffset = qoffset1 - qoffset2
-        yoffset = poffset1 - poffset2
-        if bottom_port:
-            yoffset = -yoffset
-    elif 'TRECS' in adref.tags:
-        xoffset = poffset2 - poffset1
-        yoffset = qoffset1 - qoffset2
-    else:
-        xoffset = poffset2 - poffset1
-        yoffset = qoffset2 - qoffset1
-        if bottom_port:
-            if adref.instrument() == 'GMOS-S':
-                yoffset = -yoffset
-            else:
-                xoffset = -xoffset
-    xdiff = xoffset / pixscale
-    ydiff = yoffset / pixscale
+        return adinput
 
     # We expect mosaicked inputs but there's no reason why this couldn't
     # work for all extensions in an image

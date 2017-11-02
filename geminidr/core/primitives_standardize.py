@@ -73,7 +73,7 @@ class Standardize(PrimitivesBASE):
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
                 final_bpm = clip_method(ad, aux=bpm, aux_type='bpm',
-                    return_dtype=DQ.datatype, keyword_comments=self.keyword_comments)
+                    return_dtype=DQ.datatype)
 
             for ext, bpm_ext in zip(ad, final_bpm):
                 extver = ext.hdr['EXTVER']
@@ -150,7 +150,7 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
 
         # Add the illumination mask if requested
         if params['illum_mask']:
@@ -194,8 +194,8 @@ class Standardize(PrimitivesBASE):
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
-                final_illum = clip_method(ad, illum, 'bpm', DQ.datatype,
-                                        self.keyword_comments)
+                final_illum = clip_method(ad, aux=illum, aux_type='bpm',
+                                          return_dtype=DQ.datatype)
 
             for ext, illum_ext in zip(ad, final_illum):
                 # Ensure we're only adding the unilluminated bit
@@ -205,7 +205,7 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -272,7 +272,7 @@ class Standardize(PrimitivesBASE):
                                                              ad.filename))
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def addVAR(self, adinputs=None, **params):
@@ -351,7 +351,7 @@ class Standardize(PrimitivesBASE):
 
             _calculate_var(ad, read_noise, poisson_noise)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
@@ -390,16 +390,26 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         adinputs = self.validateData(adinputs)
         adinputs = self.standardizeStructure(adinputs)
-        adinputs = self.standardizeObservatoryHeaders(adinputs)
-        adinputs = self.standardizeInstrumentHeaders(adinputs)
+        adinputs = self.standardizeHeaders(adinputs)
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def standardizeHeaders(self, adinputs=None, **params):
+        """
+        This primitive is used to standardize the headers of data. It adds
+        the ORIGNAME keyword and then calls the standardizeObservatoryHeaders
+        and standardizeInstrumentHeaders primitives.
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            if 'ORIGNAME' not in ad.phu:
+                ad.phu.set('ORIGNAME', ad.orig_filename,
+                           'Original filename prior to processing')
+
         adinputs = self.standardizeObservatoryHeaders(adinputs, **params)
         adinputs = self.standardizeInstrumentHeaders(adinputs, **params)
         return adinputs
@@ -475,8 +485,7 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(ad)
         return adoutputs
 
@@ -541,8 +550,7 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def _get_bpm_filename(self, ad):

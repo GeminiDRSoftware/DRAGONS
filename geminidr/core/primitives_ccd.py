@@ -71,8 +71,7 @@ class CCD(PrimitivesBASE):
             try:
                 gt.check_inputs_match(ad, bias, check_filter=False)
             except ValueError:
-                bias = gt.clip_auxiliary_data(ad, bias, aux_type='cal',
-                                    keyword_comments=self.keyword_comments)
+                bias = gt.clip_auxiliary_data(ad, aux=bias, aux_type='cal')
                 # An Error will be raised if they don't match now
                 gt.check_inputs_match(ad, bias, check_filter=False)
 
@@ -83,8 +82,7 @@ class CCD(PrimitivesBASE):
             # Record bias used, timestamp, and update filename
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def overscanCorrect(self, adinputs=None, **params):
@@ -148,16 +146,6 @@ class CCD(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            # Use gireduce defaults if values aren't specified
-            if 'GMOS' in ad.tags:
-                detname = ad.detector_name(pretty=True)
-                if order is None and func.startswith('poly'):
-                    order = 6 if detname.startswith('Hamamatsu') else 0
-                if nbiascontam is None:
-                    nbiascontam = 5 if detname == 'e2vDD' else 4
-            else:
-                detname = ''
-
             osec_list = ad.overscan_section()
             dsec_list = ad.data_section()
             ybinning = ad.detector_y_bin()
@@ -169,12 +157,6 @@ class CCD(PrimitivesBASE):
                 else:  # Bias on left
                     x1 += 1
                     x2 -= nbiascontam
-
-                if detname.startswith('Hamamatsu') and func.startswith('poly'):
-                    y1 = max(y1, 48 // ybinning)
-                    if i == 0:  # Don't log for every extension
-                        log.fullinfo('Ignoring bottom 48 rows of {}'.
-                                    format(ad.filename))
 
                 row = np.arange(y1, y2)
                 data = np.mean(ext.data[y1:y2, x1:x2], axis=1)
@@ -241,7 +223,7 @@ class CCD(PrimitivesBASE):
 
             # Timestamp, and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -273,5 +255,5 @@ class CCD(PrimitivesBASE):
             # Set keyword, timestamp, and update filename
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs

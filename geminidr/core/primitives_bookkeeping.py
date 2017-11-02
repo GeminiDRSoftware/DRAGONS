@@ -28,14 +28,14 @@ class Bookkeeping(PrimitivesBASE):
     def __init__(self, adinputs, **kwargs):
         super(Bookkeeping, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersBookkeeping
-    
+
     def addToList(self, adinputs=None, purpose=None, **params):
         """
         This primitive will update the lists of files to be stacked
         that have the same observationID with the current inputs.
         This file is cached between calls to reduce, thus allowing
         for one-file-at-a-time processing.
-        
+
         Parameters
         ----------
         purpose: str (None => "list")
@@ -43,12 +43,11 @@ class Bookkeeping(PrimitivesBASE):
         """
         log = self.log
         suffix = '_{}'.format(purpose) if purpose else '_list'
-        
+
         # Update file names and write the files to disk to ensure the right
         # version is stored before adding it to the list.
         for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
             log.stdinfo("Writing {} to disk".format(ad.filename))
             # Need to specify 'ad.filename' here so writes to current dir
             ad.write(ad.filename, clobber=True)
@@ -88,7 +87,7 @@ class Bookkeeping(PrimitivesBASE):
         This primitive will check the files in the stack lists are on disk,
         and then update the inputs list to include all members that belong
         to the same stack(s) as the input(s).
-        
+
         Parameters
         ----------
         purpose: str
@@ -110,7 +109,7 @@ class Bookkeeping(PrimitivesBASE):
             stacklist = self.stacks[sid]
             log.stdinfo("List for stack id {}(...):".format(sid[:35]))
             # Limit length of stacklist
-            if len(stacklist)>max_frames and max_frames is not None:
+            if len(stacklist) > max_frames and max_frames is not None:
                 stacklist = stacklist[-max_frames:]
             # Add each file to the input list if it's not already there
             for f in stacklist:
@@ -123,9 +122,33 @@ class Bookkeeping(PrimitivesBASE):
                         log.stdinfo("   {}".format(f))
         return adinputs
 
+    def selectFromInputs(self, adinputs=None, **params):
+        """
+        Selects frames whose tags match any one of a list of supplied tags.
+        The user is likely to want to redirect the output list.
+
+        Parameters
+        ----------
+        tags: str/list
+            Tags which frames must match to be selected
+        """
+        required_tags = params.get("tags") or []
+        if isinstance(required_tags, str):
+            required_tags = required_tags.split(',')
+
+        # This selects AD that match *all* the tags. While possibly the most
+        # natural, one can achieve this by a series of matches to each tag
+        # individually. There is, however, no way to combine lists produced
+        # this way to create one as if produced by matching *any* of the tags.
+        # Hence a match to *any* tag makes more sense as the implementation.
+        #adoutputs = [ad for ad in adinputs
+        #             if set(required_tags).issubset(ad.tags)]
+        adoutputs = [ad for ad in adinputs if set(required_tags) & ad.tags]
+        return adoutputs
+
     def showInputs(self, adinputs=None, stream='main', **params):
         """
-        A simple primitive to show the filenames for the current inputs to 
+        A simple primitive to show the filenames for the current inputs to
         this primitive.
         """
         log = self.log
@@ -136,7 +159,7 @@ class Bookkeeping(PrimitivesBASE):
         return adinputs
 
     showFiles = showInputs
-    
+
     def showList(self, adinputs=None, purpose=None, **params):
         """
         This primitive will log the list of files in the stacking list matching
@@ -165,15 +188,72 @@ class Bookkeeping(PrimitivesBASE):
                 log.status("No datasets in list")
         return adinputs
 
+    def transferAttribute(self, adinputs=None, source=None, attribute=None):
+        """
+        This primitive takes an attribute (e.g., "mask", or "OBJCAT") from
+        the AD(s) in another ("source") stream and applies it to the ADs in
+        this stream. There must be either the same number of ADs in each
+        stream, or only 1 in the source stream.
+        
+        Parameters
+        ----------
+        source: str
+            name of stream containing ADs whose attributes you want
+        attribute: str
+            attribute to transfer from ADs in other stream
+        """
+        log = self.log
+
+        if source is None:
+            log.info("No source stream specified so nothing to transfer")
+            return adinputs
+
+        if attribute is None:
+            log.info("No attribute specified so nothing to transfer")
+            return adinputs
+
+        if source not in self.streams.keys():
+            log.info("Stream {} does not exist so nothing to transfer".format(source))
+            return adinputs
+
+        source_length = len(self.streams[source])
+        if not (source_length == 1 or source_length == len(adinputs)):
+            log.warning("Incompatible stream lengths: {} and {}".
+                        format(len(adinputs), source_length))
+            return adinputs
+
+        # Keep track of whether we find anything to transfer, as failing to
+        # do so might indicate a problem and we should warn the user
+        found = False
+        for ad1, ad2 in zip(*gt.make_lists(adinputs, self.streams[source])):
+            # Attribute could be top-level or extension-level
+            if hasattr(ad2, attribute):
+                try:
+                    setattr(ad1, attribute, getattr(ad2, attribute))
+                except ValueError:  # data, mask, are gettable not settable
+                    pass
+                else:
+                    found = True
+                    continue
+            for ext1, ext2 in zip(ad1, ad2):
+                if hasattr(ext2, attribute):
+                    setattr(ext1, attribute, getattr(ext2, attribute))
+                    found = True
+
+        if not found:
+            log.warning("Did not find any {} attributes to transfer".format(attribute))
+
+        return adinputs
+
     def writeOutputs(self, adinputs=None, **params):
         """
         A primitive that may be called by a recipe at any stage to
         write the outputs to disk.
-        If suffix is set during the call to writeOutputs, any previous 
+        If suffix is set during the call to writeOutputs, any previous
         suffixes will be striped and replaced by the one provided.
-        examples: 
-        writeOutputs(suffix= '_string'), writeOutputs(prefix= '_string') 
-        or if you have a full file name in mind for a SINGLE file being 
+        examples:
+        writeOutputs(suffix= '_string'), writeOutputs(prefix= '_string')
+        or if you have a full file name in mind for a SINGLE file being
         ran through Reduce you may use writeOutputs(outfilename='name.fits').
 
         Parameters
@@ -194,11 +274,10 @@ class Bookkeeping(PrimitivesBASE):
         pfx = params['prefix']
         log.fullinfo("suffix = {}".format(sfx))
         log.fullinfo("prefix = {}".format(pfx))
-        
+
         for ad in adinputs:
             if sfx or pfx:
-                ad.filename = gt.filename_updater(adinput=ad,
-                                prefix=pfx, suffix=sfx, strip=params["strip"])
+                ad.update_filename(prefix=pfx, suffix=sfx, strip=params["strip"])
                 log.fullinfo("File name updated to {}".format(ad.filename))
                 outfilename = ad.filename
             elif params['outfilename']:
@@ -218,7 +297,7 @@ class Bookkeeping(PrimitivesBASE):
                 outfilename = ad.filename
                 log.fullinfo("not changing the file name to be written "
                              "from its current name")
-            
+
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
             ad.write(outfilename, clobber=params["clobber"])

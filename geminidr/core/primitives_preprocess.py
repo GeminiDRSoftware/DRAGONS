@@ -7,6 +7,8 @@ import math
 import datetime
 import numpy as np
 from copy import deepcopy
+from scipy.ndimage import binary_dilation
+from astropy.table import Table
 
 import astrodata
 import gemini_instruments
@@ -43,6 +45,7 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         sfx = params["suffix"]
+
         for ad in adinputs:
             for ext in ad:
                 if hasattr(ext, 'OBJMASK'):
@@ -56,7 +59,7 @@ class Preprocess(PrimitivesBASE):
                     log.warning('No object mask present for {}:{}; cannot '
                                 'apply object mask'.format(ad.filename,
                                                            ext.hdr['EXTVER']))
-            ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def ADUToElectrons(self, adinputs=None, **params):
@@ -96,7 +99,7 @@ class Preprocess(PrimitivesBASE):
             # has units of electrons so update the physical units keyword.
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(ad, suffix=sfx,  strip=True)
+            ad.update_filename(suffix=sfx,  strip=True)
         return adinputs
     
     def applyDQPlane(self, adinputs=None, **params):
@@ -152,18 +155,15 @@ class Preprocess(PrimitivesBASE):
                 ext.data[ext.mask & replace_flags != 0] = rep_value
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(ad, suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def associateSky(self, adinputs=None, **params):
         """
         This primitive determines which sky AstroData objects are associated
-        with each science AstroData object and adds this information to a
-        dictionary (in the form {science1:[sky1,sky2],science2:[sky2,sky3]}),
-        where science1 and science2 are the science AstroData objects and sky1,
-        sky2 and sky3 are the sky AstroDataRecord objects, which is then added
-        to the reduction context.
-        
+        with each science AstroData object and puts this information in a
+        Table attached to each science frame.
+
         The input sky AstroData objects can be provided by the user using the
         parameter 'sky'. Otherwise, the science AstroData objects are found in
         the main stream (as normal) and the sky AstroData objects are found in
@@ -182,6 +182,7 @@ class Preprocess(PrimitivesBASE):
         time: float
             number of seconds
         use_all: bool
+            use everything in the "sky" stream?
 
         :param sky: The input sky frame(s) to be subtracted from the input
                     science frame(s). The input sky frame(s) can be a list of
@@ -199,133 +200,82 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         max_skies = params["max_skies"]
-        min_distance = params["distance"]
+        min_distsq = params.get("distance", 0) ** 2
 
         # Create a timedelta object using the value of the "time" parameter
         seconds = datetime.timedelta(seconds=params["time"])
 
-        if 'sky' in params and params['sky']:
+        if params.get('sky'):
             sky = params['sky']
             # Produce a list of AD objects from the sky frame/list
-            ad_sky_list = sky if isinstance(sky, list) else [sky]
-            ad_sky_list = [ad if isinstance(ad, astrodata.AstroData) else
-                           astrodata.open(ad) for ad in ad_sky_list]
-        else:
-            # The separateSky primitive puts the sky AstroData objects in the
-            # sky stream.
-            ad_sky_list = self.streams.get('sky')
+            ad_skies = sky if isinstance(sky, list) else [sky]
+            ad_skies = [ad if isinstance(ad, astrodata.AstroData) else
+                           astrodata.open(ad) for ad in ad_skies]
+        else:  # get from sky stream (put there by separateSky)
+            ad_skies = self.streams.get('sky', [])
         
-        if not adinputs or not ad_sky_list:
+        if not adinputs or not ad_skies:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
                         "object are required for associateSky")
-            
-            # Add the science and sky AstroData objects to the output science
-            # and sky AstroData object lists, respectively, without further
-            # processing, after adding the appropriate time stamp to the PHU
-            # and updating the filename.
-            if adinputs:
-                adinputs = gt.finalise_adinput(adinputs,
-                    timestamp_key=timestamp_key, suffix=sfx)
-            
-            if ad_sky_list:
-                ad_sky_output_list = gt.finalise_adinput(
-                    adinput=ad_sky_list, timestamp_key=timestamp_key,
-                    suffix=sfx)
-            else:
-                ad_sky_output_list = []
         else:
-            # Initialize the dict that will contain the association between
-            # the science AstroData objects and the sky AstroData objects
-            sky_dict = {}
-            
-            for ad_sci in adinputs:
-                # Determine the sky AstroData objects that are associated with
-                # this science AstroData object. Initialize the list of sky
-                # AstroDataRecord objects
-                this_sky_list = []
-                # Since there are no timestamps in these records, keep a list
-                # of time offsets in case we need to limit the number of skies
-                delta_time_list = []
-                
-                # Use the ORIGNAME of the science AstroData object as the key
-                # of the dictionary 
-                origname = ad_sci.phu.get('ORIGNAME')
-                
+            # Create a dict with the observation times to aid in association
+            # Allows us to select suitable skies and propagate their datetimes
+            sky_times = dict(zip(ad_skies,
+                                 [ad.ut_datetime() for ad in ad_skies]))
+
+            for ad in adinputs:
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
                 if params["use_all"]:
                     log.stdinfo("Associating all available sky AstroData "
-                                 "objects with {}" .format(ad_sci.filename))
-
-                    #TODO: SORT THIS OUT! It was AstroDataRecords
-                    # Set the list of sky AstroDataRecord objects for this
-                    # science AstroData object equal to the input list of sky
-                    # AstroDataRecord objects
-                    #for ad_sky in ad_sky_list:
-                    #    adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
-                    
-                    # Update the dictionary with the list of sky AstroData
-                    # objects associated with this science AstroData object
-                    sky_dict.update({origname: ad_sky_list})
+                                 "objects with {}" .format(ad.filename))
+                    sky_list = ad_skies
                 else:
-                    ad_sci_datetime = ad_sci.ut_datetime()
-                    for ad_sky in ad_sky_list:
-                        # Make sure the candidate sky exposures actually match
-                        # the science configuration (eg. if sequenced over
-                        # different filters or exposure times):
-                        same_cfg = gt.matching_inst_config(ad_sci, ad_sky,
-                            check_exposure=True)
+                    sci_time = ad.ut_datetime()
+                    xoffset = ad.telescope_x_offset()
+                    yoffset = ad.telescope_y_offset()
 
-                        # Time difference between science and sky observations
-                        ad_sky_datetime = ad_sky.ut_datetime()
-                        delta_time = abs(ad_sci_datetime - ad_sky_datetime)
-                        
-                        # Select only those sky AstroData objects observed
-                        # within "time" seconds of the science AstroData object
-                        if (same_cfg and delta_time < seconds):
-                            
-                            # Get the distance between science and sky images
-                            delta_x = ad_sci.x_offset() - ad_sky.x_offset()
-                            delta_y = ad_sci.y_offset() - ad_sky.y_offset()
-                            delta_sky = math.sqrt(delta_x**2 + delta_y**2)
-                            if (delta_sky > min_distance):
-                                this_sky_list.append(ad_sky)
-                                delta_time_list.append(delta_time)
-                                
+                    # First, select only skies with matching configurations
+                    # and within the specified time and with sufficiently
+                    # large separation. Keep dict format
+                    sky_dict = {k: v for k, v in sky_times.items() if
+                                gt.matching_inst_config(ad1=ad, ad2=k,
+                                                        check_exposure=True)
+                                and abs(sci_time - v) <= seconds
+                                and ((k.telescope_x_offset() - xoffset)**2 +
+                                     (k.telescope_y_offset() - yoffset)**2
+                                     > min_distsq**2)}
+
                     # Now cull the list of associated skies if necessary to
                     # those closest in time to the sceince observation
-                    if max_skies is not None and len(this_sky_list) > max_skies:
-                        sorted_list = sorted(zip(delta_time_list, this_sky_list))
-                        this_sky_list = [x[1] for x in sorted_list[:max_skies]]
+                    if max_skies is not None and len(sky_dict) > max_skies:
+                        sky_list = sorted(sky_dict, key=lambda x:
+                                          abs(sky_dict[x]-sci_time))[:max_skies]
+                    else:
+                        sky_list = sky_dict.keys()
 
-                    # Update the dictionary with the list of sky
-                    # AstroDataRecord objects associated with this science
-                    # AstroData object
-                    sky_dict.update({origname: this_sky_list})
-                
-                if not sky_dict[origname]:
-                    log.warning("No sky frames available for {}".format(origname))
-                else:
+                    # Sort sky list chronologically for presentation purposes
+                    sky_list = sorted(sky_list, key=lambda sky: sky.ut_datetime())
+
+                if sky_list:
+                    sky_table = Table(names=('SKYNAME',),
+                                    data=[[sky.filename for sky in sky_list]])
                     log.stdinfo("The sky frames associated with {} are:".
-                                 format(origname))
-                    for ad_sky in sky_dict[origname]:
-                        log.stdinfo("  {}".format(ad_sky.filename))
+                                 format(ad.filename))
+                    for sky in sky_list:
+                        log.stdinfo("  {}".format(sky.filename))
+                    ad.SKYTABLE = sky_table
+                else:
+                    log.warning("No sky frames available for {}".format(ad.filename))
 
-            #TODO: Sort this out!
-            # Add the appropriate time stamp to the PHU and change the filename
-            # of the science and sky AstroData objects 
-            adinputs = gt.finalise_adinput(adinputs,
-                                    timestamp_key=timestamp_key, suffix=sfx)
-            ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
-                                    timestamp_key=timestamp_key, suffix=sfx)
-            
-            # Store the association dictionary as an attribute of the class
-            self.sky_dict = sky_dict
+        # Timestamp and update filenames of science frames only
+        for ad in adinputs:
+            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         
-        # Report the list of output sky AstroData objects to the sky stream in
-        # the reduction context 
-        self.streams['sky'] = ad_sky_output_list
+        # Need to update sky stream in case it came from the "sky" parameter
+        self.streams['sky'] = ad_skies
         return adinputs
 
     def correctBackgroundToReferenceImage(self, adinputs=None, **params):
@@ -389,9 +339,8 @@ class Preprocess(PrimitivesBASE):
                                 self.keyword_comments["SKYLEVEL"])
 
                 # Timestamp the header and update the filename
-                gt.mark_history(ad, primname=self.myself(),
-                                keyword=timestamp_key)
-                ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -409,6 +358,46 @@ class Preprocess(PrimitivesBASE):
         """
         self.getProcessedDark(adinputs)
         adinputs = self.subtractDark(adinputs, **params)
+        return adinputs
+
+    def dilateObjectMask(self, adinputs=None, **params):
+        """
+        Grows the influence of objects detected by dilating the OBJMASK using
+        the binary_dilation routine
+        
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        dilation: float
+            radius of dilation circle
+        repeat: bool
+            allow a repeated dilation? Unless set, the primitive will no-op
+            if the appropriate header keyword timestamp is found
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        repeat = params["repeat"]
+        dilation = params["dilation"]
+        xgrid, ygrid = np.mgrid[-dilation:dilation+1, -dilation:dilation+1]
+        structure = np.where(xgrid*xgrid+ygrid*ygrid < dilation*dilation,
+                             True, False)
+
+        for ad in adinputs:
+            if timestamp_key in ad.phu and not repeat:
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by dilateObjectMask".
+                            format(ad.filename))
+                continue
+            for ext in ad:
+                if hasattr(ext, 'OBJMASK') and ext.OBJMASK is not None:
+                    ext.OBJMASK = binary_dilation(ext.OBJMASK,
+                                                  structure).astype(np.uint8)
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
     def divideByFlat(self, adinputs=None, **params):
@@ -459,13 +448,10 @@ class Preprocess(PrimitivesBASE):
                 # be used for a CCD2-only science frame. 
                 if 'GSAOI' in ad.tags:
                     flat = gt.clip_auxiliary_data_GSAOI(adinput=ad, 
-                                    aux=flat, aux_type="cal",
-                                    keyword_comments=self.keyword_comments)
+                                    aux=flat, aux_type="cal")
                 else:
                     flat = gt.clip_auxiliary_data(adinput=ad, 
-                                    aux=flat, aux_type="cal", 
-                                    keyword_comments=self.keyword_comments)
-
+                                    aux=flat, aux_type="cal")
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, flat)
 
@@ -477,8 +463,7 @@ class Preprocess(PrimitivesBASE):
             # Update the header and filename
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def flatCorrect(self, adinputs=None, **params):
@@ -500,7 +485,7 @@ class Preprocess(PrimitivesBASE):
     def makeSky(self, adinputs=None, **params):
         adinputs = self.separateSky(adinputs, **params)
         adinputs = self.associateSky(adinputs, **params)
-        adinputs = self.stackSkyFrames(adinputs, **params)
+        #adinputs = self.stackSkyFrames(adinputs, **params)
         #self.makeMaskedSky()
         return adinputs
 
@@ -571,8 +556,7 @@ class Preprocess(PrimitivesBASE):
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-                                              strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
     
     def normalizeFlat(self, adinputs=None, **params):
@@ -631,8 +615,7 @@ class Preprocess(PrimitivesBASE):
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-                                              strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
 #### Refactored but not tested
@@ -680,8 +663,7 @@ class Preprocess(PrimitivesBASE):
 #
 #                # Timestamp and update the filename
 #                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-#                ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-#                                              strip=True)
+#                ad.update_filename(suffix=sfx, strip=True)
 #        return adinputs
 
     def separateSky(self, adinputs=None, **params):
@@ -730,86 +712,69 @@ class Preprocess(PrimitivesBASE):
         # front I'm assuming the infrastructure will do that at some point.
         frac_FOV = params["frac_FOV"]
 
-        # Get optional user-specified lists of object or sky filenames, to
-        # assist with classifying groups as one or the other. Currently
-        # primitive parameters have no concept of lists so we parse a string
-        # argument here. As of March 2014 this only works with "reduce2":
-        ref_obj = params["ref_obj"].split(',')
-        ref_sky = params["ref_sky"].split(',')
+        # Primitive will construct sets of object and sky frames. First look
+        # for pre-assigned header keywords (user can set them as a guide)
+        objects = set(filter(lambda ad: 'OBJFRAME' in ad.phu, adinputs))
+        skies = set(filter(lambda ad: 'SKYFRAME' in ad.phu, adinputs))
+
+        # Next use optional parameters. These are likely to be passed as
+        # comma-separated lists, but should also cope with NoneTypes
+        ref_obj = (params["ref_obj"] or '').split(',')
+        ref_sky = (params["ref_sky"] or '').split(',')
         if ref_obj == ['']: ref_obj = []
         if ref_sky == ['']: ref_sky = []
 
-        # Loop over input AstroData objects and extract their filenames, for
-        # 2-way comparison with any ref_obj/ref_sky list(s) supplied by the
-        # user. This could go into a support function but should become fairly
-        # trivial once we address the issues noted below.
+        # Add these to the object/sky sets, warning of conflicts
+        # use "in" for filename comparison so user can specify rootname only
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
-        filenames = [strip_fits(ad.phu['ORIGNAME']) for ad in adinputs]
+        missing = []
+        for ad in adinputs:
+            for obj_filename in ref_obj:
+                if strip_fits(obj_filename) in ad.filename:
+                    objects.add(ad)
+                    if 'SKYFRAME' in ad.phu and 'OBJFRAME' not in ad.phu:
+                        log.warning("{} previously classified as SKY; added "
+                                "OBJECT as requested".format(ad.filename))
+                    break
+                missing.append(obj_filename)
+
+            for sky_filename in ref_sky:
+                if strip_fits(sky_filename) in ad.filename:
+                    objects.add(ad)
+                    if 'OBJFRAME' in ad.phu and 'SKYFRAME' not in ad.phu:
+                        log.warning("{} previously classified as OBJECT; "
+                                "added SKY as requested".format(ad.filename))
+                    break
+                missing.append(sky_filename)
+
+            # Mark unguided exposures as skies
+            if ad.wavefront_sensor() is None:
+                # Old Gemini data are missing the guiding keywords and the
+                # descriptor returns None. So look to see if the keywords
+                # exist; if so, it really is unguided.
+                if ('PWFS1_ST' in ad.phu and 'PWFS2_ST' in ad.phu and
+                   'OIWFS_ST' in ad.phu):
+                    if ad in objects:
+                        # Warn user but keep manual assignment
+                        log.warning("{} manually flagged as OBJECT but it's "
+                                    "unguided!".format(ad.filename))
+                    elif ad not in skies:
+                        log.fullinfo("Treating {} as SKY since it's unguided".
+                                    format(ad.filename))
+                        skies.add(ad)
+                # (else can't determine guiding state reliably so ignore it)
 
         # Warn the user if they referred to non-existent input file(s):
-        missing = [name for name in ref_obj if name not in filenames]
-        missing.extend([name for name in ref_sky if name not in filenames])
         if missing:
             log.warning("Failed to find the following file(s), specified "
                 "via ref_obj/ref_sky parameters, in the input:")
             for name in missing:
                 log.warning("  {}".format(name))
 
-        # Loop over input AstroData objects and apply any overriding sky/object
-        # classifications based on user-supplied or guiding information:
-        for ad, base_name in zip(adinputs, filenames):
-            # Remember any pre-existing classifications so we can point them
-            # out if the user requests something different this time:
-            obj = ad.phu.get('OBJFRAME') is not None
-            sky = ad.phu.get('SKYFRAME') is not None
-
-            # If the user specified manually that this file is object and/or
-            # sky, note that in the metadata (alongside any existing flags):
-            if base_name in ref_obj and not obj:
-                if sky:
-                    log.warning("{} previously classified as SKY; added "
-                      "OBJECT as requested".format(base_name))
-                ad.phu.set('OBJFRAME', 'TRUE')
-
-            if base_name in ref_sky and not sky:
-                if obj:
-                    log.warning("{} previously classified as OBJECT; added "
-                      "SKY as requested".format(base_name))
-                ad.phu.set('SKYFRAME', 'TRUE')
-
-            # If the exposure is unguided, classify it as sky unless the
-            # user has specified otherwise (in which case we loudly point
-            # out the anomaly but do as requested).
-            #
-            # Although this descriptor naming may not always be ideal for
-            # non-Gemini applications, it is our AstroData convention for
-            # determining whether an exposure is guided or not.
-            if ad.wavefront_sensor() is None:
-                # Old Gemini data are missing the guiding keywords but
-                # the descriptor then returns None, which is indistinguishable
-                # from an unguided exposure (Trac #416). Even phu_get_key_value
-                # fails to make this distinction. Whatever we do here (eg.
-                # using dates to figure out whether the keywords should be
-                # present), it is bound to be Gemini-specific until the
-                # behaviour of descriptors is fixed.
-                if ('PWFS1_ST' in ad.phu and 'PWFS2_ST' in ad.phu and
-                   'OIWFS_ST' in ad.phu):
-
-                    # The exposure was really unguided:
-                    if ad.phu.get("OBJFRAME"):
-                        log.warning("Exp. {} manually flagged as "
-                            "on-target but unguided!".format(base_name))
-                    else:
-                        log.fullinfo("Treating {} as sky since it's unguided".
-                                    format(base_name))
-                        ad.phu.set('SKYFRAME', 'TRUE')
-                # (else can't determine guiding state reliably so ignore it)
-
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
-        #TODO: The 'Gemini' here is the pkgname, which might not do anything
-        groups = gt.group_exposures(adinputs, 'Gemini', frac_FOV=frac_FOV)
+        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
         ngroups = len(groups)
         log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
 
@@ -817,155 +782,188 @@ class Preprocess(PrimitivesBASE):
         # exposure belongs to, propagate any already-known classification(s)
         # to other members of the same group and determine whether everything
         # is finally on source and/or sky:
-        haveobj = False; havesky = False
-        allobj = True; allsky = True
         for num, group in enumerate(groups):
             adlist = group.list()
-#            obj = False; sky = False
             for ad in adlist:
                 ad.phu['EXPGROUP'] = num
-#                if ad.phu.get('OBJFRAME'): obj = True
-#                if ad.phu.get('SKYFRAME'): sky = True
-#                # if obj and sky: break  # no: need to record all group nums
-#            if obj:
-#                haveobj = True
-#                for ad in adlist:
-#                    ad.phu['OBJFRAME'] = 'TRUE'
-#            else:
-#                allobj = False
-#            if sky:
-#                havesky = True
-#                for ad in adlist:
-#                    ad.phu['SKYFRAME'] = 'TRUE'
-#            else:
-#                allsky = False
-            # CJS: This reads more cleanly and should do the same thing
-            if any(ad.phu.get('OBJFRAME') for ad in adlist):
-                haveobj = True
-                for ad in adlist:
-                    ad.phu.set('OBJFRAME', 'TRUE')
-            else:
-                allobj = False
-            if any(ad.phu.get('SKYFRAME') for ad in adlist):
-                havesky = True
-                for ad in adlist:
-                    ad.phu.set('SKYFRAME', 'TRUE')
-            else:
-                allsky = False
 
-        # If we now have object classifications but no sky, or vice versa,
-        # make whatever reasonable inferences we can about the others:
-        if haveobj and not havesky:
-            for ad in adinputs:
-                if allobj or not ad.phu.get('OBJFRAME'):
-                    ad.phu.set('SKYFRAME', 'TRUE')
-        elif havesky and not haveobj:
-            for ad in adinputs:
-                if allsky or not ad.phu.get('SKYFRAME'):
-                    ad.phu.set('OBJFRAME', 'TRUE')
+            # If any of these is already an OBJECT, then they all are:
+            if objects.intersection(adlist):
+                objects.update(adlist)
+
+            # And ditto for SKY:
+            if skies.intersection(adlist):
+                skies.update(adlist)
+
+        # If one set is empty, try to fill it. Put unassigned inputs in the
+        # empty set. If all inputs are assigned, put them all in the empty set.
+        if objects and not skies:
+            skies = (set(adinputs) - objects) or objects.copy()
+        elif skies and not objects:
+            objects = (set(adinputs) - skies) or skies.copy()
 
         # If all the exposures are still unclassified at this point, we
         # couldn't decide which groups are which based on user input or guiding
-        # so use the distance from the target or failing that assume everything
-        # is on source but warn the user about it if there's more than 1 group:
-        if not haveobj and not havesky:
-            # With 2 groups, the one closer to the target position must be
-            # on source and the other is presumably sky. For Gemini data, the
-            # former, on-source group should be the one with smaller P/Q.
-            # TO DO: Once we update ExposureGroup to use RA & Dec descriptors
-            # instead of P & Q, this will need changing to subtract the target
-            # RA & Dec explicitly. For non-Gemini data where the target RA/Dec
-            # are unknown, we'll have to skip this bit and proceed to assuming
-            # everything is on source unless given better information.
-            if ngroups == 2:
-                log.fullinfo("Treating 1 group as object & 1 as sky, based "
-                  "on target proximity")
-
-                dsq0 = sum([x**2 for x in groups[0].group_cen])
-                dsq1 = sum([x**2 for x in groups[1].group_cen])
-                if dsq1 < dsq0:
-                    order = ["SKYFRAME", "OBJFRAME"]
-                else:
-                    order = ["OBJFRAME", "SKYFRAME"]
-                for group, key in zip(groups, order):
-                    adlist = group.list()
-                    for ad in adlist:
-                        ad.phu.set(key, "TRUE")
-
-            # For more or fewer than 2 groups, we just have to assume that
-            # everything is on target, for lack of better information. With
-            # only 1 group, this should be a sound assumption, otherwise we
-            # warn the user.
+        # so try to use the distance from the target
+        if not objects and not skies:
+            if ngroups < 2:  # Includes zero if adinputs=[]
+                log.fullinfo("Treating a single group as both object and sky")
+                objects = set(adinputs)
+                skies = set(adinputs)
             else:
-                if ngroups > 1:
-                    log.warning("Unable to determine which of {} detected " \
-                        "groups are sky/object -- assuming they are all on " \
-                        "target AND usable as sky".format(ngroups))
-                else:
-                    log.fullinfo("Treating a single group as both object & sky")
-                for ad in adinputs:
-                    ad.phu.set('OBJFRAME', 'TRUE')
-                    ad.phu.set('SKYFRAME', 'TRUE')
+                distsq = [sum([x * x for x in g.group_cen]) for g in groups]
+                if ngroups == 2:
+                    log.fullinfo("Treating 1 group as object and 1 as sky, "
+                                 "based on target proximity")
+                    closest = np.argmin(distsq)
+                    objects = set(groups[closest])
+                    skies = set(adinputs) - objects
+                else:  # More than 2 groups
+                    # Add groups by proximity until at least half the inputs
+                    # are classified as objects
+                    log.fullinfo("Classifying groups based on target "
+                                 "proximity and observation efficiency")
+                    for group in [groups[i] for i in np.argsort(distsq)]:
+                        objects.update(group.list())
+                        if len(objects) >= len(adinputs) // 2:
+                            break
+                    # We might have everything become an object here, in
+                    # which case, make them all skies too (better ideas?)
+                    skies = (set(adinputs) - objects) or objects
 
         # It's still possible for some exposures to be unclassified at this
         # point if the user has identified some but not all of several groups
         # manually (or that's what's in the headers). We can't do anything
         # sensible to rectify that, so just discard the unclassified ones and
         # complain about it.
-        missing = [name for ad, name in zip(adinputs, filenames) if
-                   not ad.phu.get("OBJFRAME") and not ad.phu.get("SKYFRAME")]
+        missing = filter(lambda ad: ad not in objects | skies, adinputs)
         if missing:
             log.warning("ignoring the following input file(s), which could "
               "not be classified as object or sky after applying incomplete "
               "prior classifications from the input:")
-            for name in missing:
-                log.warning("  {}".format(name))
+            for ad in missing:
+                log.warning("  {}".format(ad.filename))
 
-        # Construct object & sky lists from the classifications stored above
-        # in exposure meta-data, making a complete copy of the input for any
-        # duplicate entries (it is hoped this won't require additional memory
-        # once memory mapping is used appropriately):
-        ad_sci_list = []
-        ad_sky_list = []
-        for ad in adinputs:
-            on_source = ad.phu.get("OBJFRAME")
-            if on_source:
-                ad_sci_list.append(ad)
-            if ad.phu.get("SKYFRAME"):
-                if on_source:
-                    ad_sky_list.append(deepcopy(ad))
-                else:
-                    ad_sky_list.append(ad)
+        # Construct object & sky lists (preserving order in adinputs) from
+        # the classifications, making a complete copy of the input for any
+        # duplicate entries:
+        ad_objects = filter(lambda ad: ad in objects, adinputs)
+        ad_skies = filter(lambda ad: ad in skies, adinputs)
+        ad_skies = [deepcopy(ad) if ad in objects else ad for ad in ad_skies]
 
         log.stdinfo("Science frames:")
-        for ad_sci in ad_sci_list:
-            log.stdinfo("  %s" % ad_sci.filename)
-        log.stdinfo("Sky frames:")
-        for ad_sky in ad_sky_list:
-            log.stdinfo("  %s" % ad_sky.filename)
+        for ad in ad_objects:
+            log.stdinfo("  {}".format(ad.filename))
+            ad.phu['OBJFRAME'] = 'TRUE'
 
-        #TODO: Looks like ad_sci_output_list should become adinputs
-        # Add the appropriate time stamp to the PHU and update the filename
-        # of the science and sky AstroData objects 
-        ad_sci_output_list = gt.finalise_adinput(ad_sci_list,
-                    timestamp_key=timestamp_key, suffix=sfx, allow_empty=True)
-        ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
-                    timestamp_key=timestamp_key, suffix=sfx, allow_empty=True)
-               
-        # Report the list of output sky AstroData objects to the sky stream in
-        # the reduction context
-        #rc.report_output(ad_sky_output_list, stream="sky")
-        
-        # Report the list of output science AstroData objects to the reduction
-        # context
-        #rc.report_output(ad_sci_output_list)
-        adinputs = ad_sci_output_list
-        self.streams['sky'] = ad_sky_output_list
-        return adinputs
+        log.stdinfo("Sky frames:")
+        for ad in ad_skies:
+            log.stdinfo("  {}".format(ad.filename))
+            ad.phu['SKYFRAME'] = 'TRUE'
+
+        # Timestamp and update filename for all object/sky frames
+        for ad in ad_objects + ad_skies:
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        # Put skies in sky stream and return the objects
+        self.streams['sky'] = ad_skies
+        return ad_objects
 
     def skyCorrect(self, adinputs=None, **params):
-        #self.scaleSkyToInput()
-        adinputs = self.subtractSky(adinputs, **params)
+        """
+        This primitive subtracts a sky frame from each of the science inputs.
+        Each science input should have a list of skies in a SKYTABLE extension
+        and these are stacked and subtracted, using the appropriate primitives.
+        
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        sky: str/AD/list
+            sky frame(s) to be subtracted from each science input
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys['subtractSky']
+
+        # We'll need to process the sky frames so collect them all up and do
+        # this first, to avoid repeating it every time one is reused
+        skies = set()
+        skytables = []
+        for ad in adinputs:
+            try:
+                # Sort to ease equality comparisons
+                sky_list = sorted(list(ad.SKYTABLE["SKYNAME"]))
+                del ad.SKYTABLE  # Not needed any more
+            except AttributeError:
+                log.warning("{} has no SKYTABLE so cannot subtract a sky "
+                            "frame".format(ad.filename))
+                sky_list = None
+            except KeyError:
+                log.warning("Cannot read SKYTABLE associated with {} so "
+                            "continuing".format(ad.filename))
+                sky_list = None
+            skytables.append(sky_list)
+            if sky_list:  # Not if None
+                skies.update(sky_list)
+
+        # Now make a list of AD instances of the skies, and delete any
+        # filenames that could not be converted to ADs
+        skies = list(skies)
+        ad_skies = []
+        for filename in skies:
+            for sky in self.streams["sky"]:
+                if sky.filename == filename:
+                    break
+            else:
+                try:
+                    sky = astrodata.open(filename)
+                except IOError:
+                    log.warning("Cannot find a sky file named {}. "
+                            "Ignoring it.".format(filename))
+                    skies.remove(filename)
+                    continue
+            ad_skies.append(sky)
+
+        # We've got all the sky frames in sky_dict, so delete the sky stream
+        # to eliminate references to the original frames before we modify them
+        del self.streams["sky"]
+        ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
+                    else self.detectSources([ad])[0] for ad in ad_skies]
+        ad_skies = self.dilateObjectMask(ad_skies, **params)
+        ad_skies = self.addObjectMaskToDQ(ad_skies)
+        sky_dict = dict(zip(skies, ad_skies))
+
+        # Make a list of stacked sky frames, but use references if the same
+        # frames are used for more than one adinput. Use a value "0" to
+        # indicate we have not tried to make a sky for this adinput ("None"
+        # means we've tried but failed and this can be passed to subtractSky)
+        # Fill initial list with None where the SKYTABLE produced None
+        stacked_skies = [None if tbl is None else 0 for tbl in skytables]
+        for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
+            if stacked_skies[i] == 0:
+                stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
+                                                      skytable])
+                if len(stacked_sky) == 1:
+                    # Provide a more intelligent filename
+                    stacked_sky = stacked_sky[0]
+                    stacked_sky.phu['ORIGNAME'] = ad.phu['ORIGNAME']
+                    stacked_sky.update_filename(suffix="_sky", strip=True)
+                else:
+                    log.warning("Problem with stacking the following sky "
+                                "frames for {}".format(adinputs[i].filename))
+                    for filename in skytable:
+                        log.warning("  {}".format(filename))
+                    stacked_sky = None
+                # Assign this stacked sky frame to all adinputs that want it
+                for j in range(i, len(skytables)):
+                    if skytables[j] == skytable:
+                        stacked_skies[j] = stacked_sky
+
+        # Now we have a list of skies to subtract, one per adinput, so send
+        # this to subtractSky as the "sky" parameter
+        adinputs = self.subtractSky(adinputs, sky=stacked_skies)
         return adinputs
 
     def subtractDark(self, adinputs=None, **params):
@@ -1014,8 +1012,7 @@ class Preprocess(PrimitivesBASE):
                 gt.check_inputs_match(ad, dark, check_filter=False)
             except ValueError:
                 # Else try to extract a matching region from the dark
-                dark = gt.clip_auxiliary_data(adinput=ad, aux=dark,
-                    aux_type="cal", keyword_comments=self.keyword_comments)
+                dark = gt.clip_auxiliary_data(ad, aux=dark, aux_type="cal")
 
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, dark, check_filter=False)
@@ -1028,7 +1025,7 @@ class Preprocess(PrimitivesBASE):
             # Record dark used, timestamp, and update filename
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
@@ -1041,62 +1038,47 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        sky: list
+        sky: str/AD/list
+            sky frame(s) to subtract
+        reset_sky: bool
+            maintain the sky level by adding a constant to the science
+            frame after subtracting the sky?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        reset_sky = params["reset_sky"]
 
-        if 'sky' in params and params['sky']:
-            # Use the list of sky frames provided by the user. Generate a
-            # dictionary associating the input sky AstroData objects to the
-            # input science AstroData objects.
-            sky_dict = dict(list(zip(**gt.make_lists([ad.phu.get('ORIGNAME')
-                                     for ad in adinputs], params['sky']))))
-
-        else:
-            # The stackSkyFrames primitive makes the dictionary containing the
-            # information associating the stacked sky frames to the science
-            # frames an attribute of the PrimitivesClass
-            sky_dict = getattr(self, 'stacked_sky_dict')
-            
-        # Loop over each science AstroData object in the science list
-        for ad_sci in adinputs:
-            if ad_sci.phu.get(timestamp_key):
+        for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
+                                             force_ad=True)):
+            if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractSky".
-                            format(ad_sci.filename))
+                            format(ad.filename))
                 continue
             
-            # Retrieve the sky AstroData object associated with the input
-            # science AstroData object
-            origname = ad_sci.phu.get("ORIGNAME")
-            if origname in sky_dict:
-                ad_sky = sky_dict[origname]
+            if ad_sky is not None:
+                if reset_sky:
+                    old_sky = gt.measure_bg_from_image(ad, value_only=True)
                 log.stdinfo("Subtracting the sky ({}) from the science "
                             "AstroData object {}".
-                            format(ad_sky.filename, ad_sci.filename))
-                ad_sci.subtract(ad_sky)
-
-                # Timestamp and update filename
-                gt.mark_history(ad_sci, primname=self.myself(),
-                                keyword=timestamp_key)
-                ad_sci.filename = gt.filename_updater(adinput=ad_sci,
-                                        suffix=params["suffix"], strip=True)
-
+                            format(ad_sky.filename, ad.filename))
+                ad.subtract(ad_sky)
+                if reset_sky:
+                    new_sky = gt.measure_bg_from_image(ad, value_only=True)
+                    for ext, new_level, old_level in zip(ad, new_sky, old_sky):
+                        sky_offset = new_level - old_level
+                        log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
+                                            ad.filename, ext.hdr['EXTVER']))
+                        ext.add(sky_offset)
             else:
                 log.warning("No changes will be made to {}, since no "
-                            "appropriate sky could be retrieved".
-                            format(ad_sci.filename))
+                            "sky was specified".format(ad.filename))
 
-        #TODO: Confirm this is OK. We don't want to keep references to all
-        # those sky frames hanging around
-        del self.sky_dict
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
 
-        # Add the appropriate time stamp to the PHU and update the filename
-        # of the science and sky AstroData objects 
-        #adinputs = gt.finalise_adinput(adinput=adinputs,
-        #            timestamp_key=timestamp_key, suffix=params["suffix"])
         return adinputs
 
     def subtractSkyBackground(self, adinputs=None, **params):
@@ -1135,7 +1117,7 @@ class Preprocess(PrimitivesBASE):
                     
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def thresholdFlatfield(self, adinputs=None, **params):
@@ -1190,6 +1172,5 @@ class Preprocess(PrimitivesBASE):
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
-                                              strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs

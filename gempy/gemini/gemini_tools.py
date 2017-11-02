@@ -438,7 +438,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
 
 @handle_single_adinput
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None, 
-                        return_dtype=None, keyword_comments=None):
+                        return_dtype=None):
     """
     This function clips auxiliary data like calibration files or BPMs
     to the size of the data section in the science. It will pad auxiliary
@@ -455,8 +455,6 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
         type of auxiliary file
     return_dtype: dtype
         datatype of returned objects
-    keyword_comments: dict
-        comments to add for any new header keywords
 
     Returns
     -------
@@ -464,13 +462,6 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
         auxiliary file(s), appropriately clipped
     """
     log = logutils.get_logger(__name__)
-
-    # ensure caller passes the sextractor default dictionary of parameters.
-    try:
-        assert isinstance(keyword_comments, dict)
-    except AssertionError:
-        log.error("TypeError: keyword comments dict was not received.")
-        raise TypeError("keyword comments dict required")
 
     if not isinstance(aux, list):
         aux = [aux]
@@ -491,10 +482,6 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
         sci_arraysec = ad.array_section()
         sci_xbin = ad.detector_x_bin()
         sci_ybin = ad.detector_y_bin()
-
-        datasec_keyword = ad._keyword_for('data_section')
-        detsec_keyword = ad._keyword_for('detector_section')
-        arraysec_keyword = ad._keyword_for('array_section')
 
         # Get the detector section, data section and array section values
         # for the auxiliary AstroData object using the appropriate
@@ -594,13 +581,26 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 # preserved from r5564 without revisiting its logic):
                 elif not all(off1 == off2 for off1, off2 in
                              zip(aux_offsets, science_offsets)):
-                    raise ValueError(
-                        "Overscan regions do not match in {}, {}".
+                    raise ValueError("Overscan regions do not match in {}, {}".
                         format(auxext.filename, ext.filename))
 
-                # Convert the dtype if requested
+                # Convert the dtype if requested (only SCI and VAR)
                 if return_dtype is not None:
-                    ext_to_clip.operate(np.ndarray.astype, return_dtype)
+                    #ext_to_clip.operate(np.ndarray.astype, return_dtype)
+                    ext_to_clip[0].data = ext_to_clip[0].data.astype(return_dtype)
+                    if ext_to_clip[0].variance is not None:
+                        ext_to_clip[0].variance = \
+                            ext_to_clip[0].variance.astype(return_dtype)
+
+                # Update keywords based on the science frame
+                for descriptor in ('data_section', 'detector_section',
+                                   'array_section'):
+                    try:
+                        kw = ext._keyword_for(descriptor)
+                        ext_to_clip.hdr[kw] = (ext.hdr[kw],
+                                               ext.hdr.get_comment(kw))
+                    except (AttributeError, KeyError):
+                        pass
 
                 # Append the data to the AD object
                 new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
@@ -619,7 +619,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
 @handle_single_adinput
 def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None, 
-                        return_dtype=None, keyword_comments=None):
+                        return_dtype=None):
     """
     This function clips auxiliary data like calibration files or BPMs
     to the size of the data section in the science. It will pad auxiliary
@@ -640,8 +640,6 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
         type of auxiliary file
     return_dtype: dtype
         datatype of returned objects
-    keyword_comments: dict
-        comments to add for any new header keywords
 
     Returns
     -------
@@ -649,13 +647,6 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
         auxiliary file(s), appropriately clipped
     """
     log = logutils.get_logger(__name__)
-
-    # ensure caller passes the sextractor default dictionary of parameters.
-    try:
-        assert isinstance(keyword_comments, dict)
-    except AssertionError:
-        log.error("TypeError: keyword comments dict was not received.")
-        raise TypeError("keyword comments dict required")
 
     if not isinstance(aux, list):
         aux = [aux]
@@ -674,10 +665,6 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
         sci_detsec = ad.detector_section()
         sci_datasec = ad.data_section()
         sci_arraysec = ad.array_section()
-
-        datasec_keyword = ad._keyword_for('data_section')
-        detsec_keyword = ad._keyword_for('detector_section')
-        arraysec_keyword = ad._keyword_for('array_section')
 
         # Get the detector section, data section and array section values
         # for the auxiliary AstroData object using the appropriate
@@ -773,9 +760,23 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                         "Overscan regions do not match in {}, {}".
                             format(auxext.filename, ext.filename))
 
-                # Convert the dtype if requested
+                # Convert the dtype if requested (only SCI and VAR)
                 if return_dtype is not None:
-                    ext_to_clip.operate(np.ndarray.astype, return_dtype)
+                    #ext_to_clip.operate(np.ndarray.astype, return_dtype)
+                    ext_to_clip[0].data = ext_to_clip[0].data.astype(return_dtype)
+                    if ext_to_clip[0].variance is not None:
+                        ext_to_clip[0].variance = \
+                            ext_to_clip[0].variance.astype(return_dtype)
+
+                # Update keywords based on the science frame
+                for descriptor in ('data_section', 'detector_section',
+                                   'array_section'):
+                    try:
+                        kw = ext._keyword_for(descriptor)
+                        ext_to_clip.hdr[kw] = (ext.hdr[kw],
+                                               ext.hdr.get_comment(kw))
+                    except (AttributeError, KeyError):
+                        pass
 
                 # Append the data to the AD object
                 new_aux.append(ext_to_clip[0].nddata, reset_ver=True)
@@ -1013,52 +1014,6 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
                                       keyword_comments["OBJECT"])
     return adinput
 
-
-def filename_updater(adinput=None, infilename='', suffix='', prefix='',
-                     strip=False):
-    """
-    This function is for updating the file names of astrodata objects.
-    A prefix and/or suffix can be added, either to the current filename
-    or to the original filename (strip=True does NOT attempt to parse
-    the current filename to find the original root).
-
-    Note: 
-    1.if the input filename has a path, the returned value will have
-    path stripped off of it.
-    2. if strip is set to True, then adinput must be defined.
-
-    Parameters
-    ----------
-    adinput: AstroData
-        input astrodata instance having its filename updated
-    suffix: str
-        string to put between end of current filename and extension
-    prefix: str
-        string to put at the beginning of a filename
-    strip: bool
-        if True, use the original filename of the AD object, not what it has now
-    """
-    # We need the original filename if we're going to strip
-    if strip:
-        try:
-            filename = adinput.phu['ORIGNAME']
-        except KeyError:
-            # If it's not there, grab the AD attr instead and add the keyword
-            filename = adinput.orig_filename
-            adinput.phu.set('ORIGNAME', filename,
-                            'Original filename prior to processing')
-    else:
-        filename = infilename if infilename else adinput.filename
-
-    # Possibly, filename could be None
-    try:
-        name, filetype = os.path.splitext(filename)
-    except AttributeError:
-        name, filetype = '', '.fits'
-
-    outFileName = prefix+name+suffix+filetype
-    return outFileName
-
 @handle_single_adinput
 def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
                      allow_empty=False):
@@ -1094,8 +1049,7 @@ def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
             mark_history(adinput=ad, keyword=timestamp_key)
         # Update the filename
         if suffix is not None:
-            ad.filename = filename_updater(adinput=ad, suffix=suffix,
-                                           strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         adoutput_list.append(ad)
     return adoutput_list
 
@@ -2029,9 +1983,8 @@ def group_exposures(adinput, pkg=None, frac_FOV=1.0):
     :param adinputs: A list of exposures to sort into groups.
     :type adinputs: list of AstroData instances
 
-    :param pkg: Package name of the calling primitive. Used to determine
-                correct package lookup tables. Passed through to
-                ExposureGroup() call.
+    :param pkg: package containing instrument lookups. Passed through
+                to ExposureGroup() call.
     :type pkg: <str>
 
     :param frac_FOV: proportion by which to scale the area in which
@@ -2168,17 +2121,12 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     # in this simple case.
     global _FOV_lookup, _FOV_pointing_in_field
 
-    # Look up the back-end implementation for the appropriate instrument,
-    # or use the previously-cached one.
-    # Build the lookup name to the instrument specific FOV module. In all 
-    # likelihood this is 'Gemini'.
-    FOV_mod = "geminidr.{}.lookups.FOV".format(inst)
-
     try:
-        FOV = import_module(FOV_mod)
+        FOV = import_module('{}.FOV'.format(package))
         _FOV_pointing_in_field = FOV.pointing_in_field
     except (ImportError, AttributeError):
-        raise NameError("FOV.pointing_in_field() function not implemented for %s" % inst)
+        raise NameError("FOV.pointing_in_field() function not found in {}".
+                        format(package))
 
     # Execute it & return the results:
     return _FOV_pointing_in_field(pos, pointing, frac_FOV=frac_FOV,

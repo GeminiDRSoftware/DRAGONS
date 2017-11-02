@@ -192,8 +192,7 @@ class CalibDB(PrimitivesBASE):
         """
         for ad in adinputs:
             if suffix:
-                ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                                  strip=True)
+                ad.update_filename(suffix=suffix, strip=True)
             if update_datalab:
                 _update_datalab(ad, suffix, self.keyword_comments)
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
@@ -250,7 +249,7 @@ class CalibDB(PrimitivesBASE):
         sfx = params["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
             ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe", 
                                           keyword_comments=self.keyword_comments)
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFRNG")

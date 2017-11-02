@@ -16,6 +16,25 @@ class ParametersGNIRSImage(ParametersGNIRS, ParametersImage, ParametersPhotometr
         "rotate"                : True,
         "scale"                 : False,
     }
+    detectSources = {
+        "suffix"                : "_sourcesDetected",
+        "mask"                  : False,
+        "replace_flags"         : 249,
+        "set_saturation"        : False,
+        "detect_minarea"        : 40,
+        "detect_thresh"         : 3.0,
+        "analysis_thresh"       : 1.5,
+        "deblend_mincont"       : 0.001,
+        "phot_min_radius"       : 3.5,
+        "back_size"             : 32,
+        "back_filtersize"       : 3,
+    }
+    determineAstrometricSolution = {
+        "suffix"            : "_astrometryCorrected",
+        "full_wcs"          : None,
+        "initial"           : 15.0,
+        "final"             : 1.0,
+    }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",
         "mask"              : True,

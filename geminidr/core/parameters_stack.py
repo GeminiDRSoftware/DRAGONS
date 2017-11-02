@@ -25,6 +25,7 @@ class ParametersStack(ParametersBASE):
     }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",
+        "dilation"          : 3,
         "mask"              : True,
         "nhigh"             : 1,
         "nlow"              : 1,

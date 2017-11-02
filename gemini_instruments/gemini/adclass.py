@@ -90,8 +90,8 @@ gemini_keyword_names = dict(
     wavelength_band = 'WAVEBAND',
     wavelength_reference_pixel = 'WREFPIX',
     well_depth_setting = 'WELDEPTH',
-    x_offset = 'XOFFSET',
-    y_offset = 'YOFFSET',
+    telescope_x_offset = 'XOFFSET',
+    telescope_y_offset = 'YOFFSET',
 )
 
 class AstroDataGemini(AstroDataFits):
@@ -625,6 +625,40 @@ class AstroDataGemini(AstroDataFits):
             The detector binning
         """
         return self.phu.get(self._keyword_for('detector_y_bin'), 1)
+
+    @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped if on bottom port
+        return -offset if self.phu.get('INPORT')==1 else offset
+
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            return self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
@@ -1517,6 +1551,32 @@ class AstroDataGemini(AstroDataFits):
         return dec
 
     @astro_data_descriptor
+    def telescope_x_offset(self):
+        """
+        Returns the telescope offset along the x-axis, as defined
+        by the relevant header keyword (in arcseconds)
+
+        Returns
+        -------
+        float
+            the telescope offset along the x-axis
+        """
+        return self.phu.get(self._keyword_for('telescope_x_offset'))
+
+    @astro_data_descriptor
+    def telescope_y_offset(self):
+        """
+        Returns the telescope offset along the y-axis in, as defined by
+        the relevant header keyword (in arcseconds)
+
+        Returns
+        -------
+        float
+            the telescope offset along the y-axis
+        """
+        return self.phu.get(self._keyword_for('telescope_y_offset'))
+
+    @astro_data_descriptor
     def ut_date(self):
         """
         Returns the UT date of the observation as a datetime object.
@@ -1785,32 +1845,6 @@ class AstroDataGemini(AstroDataFits):
             the well-depth setting
         """
         return self.phu.get(self._keyword_for('well_depth_setting'))
-
-    @astro_data_descriptor
-    def x_offset(self):
-        """
-        Returns the telescope offset along the x-axis, as defined by
-        the relevant header keyword
-
-        Returns
-        -------
-        float
-            the telescope offset along the x-axis
-        """
-        return self.phu.get(self._keyword_for('x_offset'))
-
-    @astro_data_descriptor
-    def y_offset(self):
-        """
-        Returns the telescope offset along the y-axis, as defined by
-        the relevant header keyword
-
-        Returns
-        -------
-        float
-            the telescope offset along the y-axis
-        """
-        return self.phu.get(self._keyword_for('y_offset'))
 
     def _get_wcs_coords(self):
         """

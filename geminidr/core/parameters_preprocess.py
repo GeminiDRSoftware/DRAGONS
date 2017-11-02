@@ -30,6 +30,11 @@ class ParametersPreprocess(ParametersBASE):
         "suffix"            : '_darkCorrected',
         "dark"              : None,
     }
+    dilateObjectMask = {
+        "suffix"            : '_objmaskDilated',
+        "dilation"          : 1,
+        "repeat"            : False,
+    }
     divideByFlat = {
         "suffix"            : "_flatCorrected",
         "flat"              : None,
@@ -55,12 +60,15 @@ class ParametersPreprocess(ParametersBASE):
         "ref_sky"           : "",
         "frac_FOV"          : 0.9,
     }
+    skyCorrect = {
+    }
     subtractDark = {
         "suffix"            : "_darkCorrected",
         "dark"              : None,
     }
     subtractSky = {
         "suffix"            : "_skyCorrected",
+        "reset_sky"         : False,
     }
     subtractSkyBackground = {
         "suffix"            : "_skyBackgroundSubtracted",

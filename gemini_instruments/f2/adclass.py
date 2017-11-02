@@ -252,6 +252,40 @@ class AstroDataF2(AstroDataGemini):
         return 2 if 'SPECT' in self.tags else None
 
     @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            return -self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = -self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Bottom port flip
+        return -offset if self.phu.get('INPORT')==1 else offset
+
+    @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
@@ -543,7 +577,7 @@ class AstroDataF2(AstroDataGemini):
 
     # TODO: document why these are reversed
     @astro_data_descriptor
-    def x_offset(self):
+    def telescope_x_offset(self):
         """
         Returns the x offset from origin of this image
 
@@ -558,7 +592,7 @@ class AstroDataF2(AstroDataGemini):
             return None
 
     @astro_data_descriptor
-    def y_offset(self):
+    def telescope_y_offset(self):
         """
         Returns the y offset from origin of this image
 

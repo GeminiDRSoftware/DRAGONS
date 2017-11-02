@@ -4,23 +4,18 @@
 from geminidr import ParametersBASE
 
 class ParametersNearIR(ParametersBASE):
+    addLatencyToDQ = {
+        "suffix"        : "_latencyAdded",
+        "non_linear"    : False,
+        "time"          : 120.,
+    }
     makeBPM = {
     }
     lampOnLampOff = {
     }
-    makeLampOffFlat = {
-    }
-    makeLampOnFlat = {
-    }
     separateFlatsDarks = {
     }
-    separateLampOff = {
-    }
     stackDarks = {
-    }
-    stackLampOnLampOff = {
-    }
-    subtractLampOnLampOff = {
     }
     thermalEmissionCorrect = {
     }
