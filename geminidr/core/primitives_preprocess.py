@@ -894,7 +894,8 @@ class Preprocess(PrimitivesBASE):
         skytables = []
         for ad in adinputs:
             try:
-                sky_list = list(ad.SKYTABLE["SKYNAME"])
+                # Sort to ease equality comparisons
+                sky_list = sorted(list(ad.SKYTABLE["SKYNAME"]))
                 del ad.SKYTABLE  # Not needed any more
             except AttributeError:
                 log.warning("{} has no SKYTABLE so cannot subtract a sky "
@@ -904,8 +905,7 @@ class Preprocess(PrimitivesBASE):
                 log.warning("Cannot read SKYTABLE associated with {} so "
                             "continuing".format(ad.filename))
                 sky_list = None
-            # Sort to ease equality comparisons
-            skytables.append(sorted(sky_list))
+            skytables.append(sky_list)
             if sky_list:  # Not if None
                 skies.update(sky_list)
 
@@ -940,13 +940,18 @@ class Preprocess(PrimitivesBASE):
         # frames are used for more than one adinput. Use a value "0" to
         # indicate we have not tried to make a sky for this adinput ("None"
         # means we've tried but failed and this can be passed to subtractSky)
-        stacked_skies = [0] * len(adinputs)
-        for i, skytable in enumerate(skytables):
+        # Fill initial list with None where the SKYTABLE produced None
+        stacked_skies = map(lambda x: None if x is None else 0, skytables)
+        for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
+            print ad.filename, skytable
             if stacked_skies[i] == 0:
                 stacked_sky = self.stackSkyFrames(map(lambda sky: sky_dict[sky],
                                                       skytable))
                 if len(stacked_sky) == 1:
+                    # Provide a more intelligent filename
                     stacked_sky = stacked_sky[0]
+                    stacked_sky.phu['ORIGNAME'] = ad.phu['ORIGNAME']
+                    stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
                     log.warning("Problem with stacking the following sky "
                                 "frames for {}".format(adinputs[i].filename))
