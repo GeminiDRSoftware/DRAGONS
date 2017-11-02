@@ -811,8 +811,7 @@ class Preprocess(PrimitivesBASE):
                 objects = set(adinputs)
                 skies = set(adinputs)
             else:
-                distsq = map(lambda grp: sum([x * x for x in grp.group_cen]),
-                             groups)
+                distsq = [sum([x * x for x in g.group_cen]) for g in groups]
                 if ngroups == 2:
                     log.fullinfo("Treating 1 group as object and 1 as sky, "
                                  "based on target proximity")
@@ -824,7 +823,7 @@ class Preprocess(PrimitivesBASE):
                     # are classified as objects
                     log.fullinfo("Classifying groups based on target "
                                  "proximity and observation efficiency")
-                    for group in map(lambda x: groups[x], np.argsort(distsq)):
+                    for group in [groups[i] for i in np.argsort(distsq)]:
                         objects.update(group.list())
                         if len(objects) >= len(adinputs) // 2:
                             break
@@ -941,11 +940,11 @@ class Preprocess(PrimitivesBASE):
         # indicate we have not tried to make a sky for this adinput ("None"
         # means we've tried but failed and this can be passed to subtractSky)
         # Fill initial list with None where the SKYTABLE produced None
-        stacked_skies = map(lambda x: None if x is None else 0, skytables)
+        stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
-                stacked_sky = self.stackSkyFrames(map(lambda sky: sky_dict[sky],
-                                                      skytable))
+                stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
+                                                      skytable])
                 if len(stacked_sky) == 1:
                     # Provide a more intelligent filename
                     stacked_sky = stacked_sky[0]
