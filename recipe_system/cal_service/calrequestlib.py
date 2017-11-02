@@ -12,7 +12,7 @@ from urlparse import urlparse
 
 from gempy.utils import logutils
 
-from .caches  import set_caches
+from geminidr  import set_caches
 from recipe_system.cal_service import cal_search_factory, handle_returns_factory
 from .file_getter import get_file_iterator, GetterError
 from astrodata import descriptor_list
