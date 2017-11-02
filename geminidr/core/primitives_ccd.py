@@ -28,21 +28,12 @@ class CCD(PrimitivesBASE):
         self.parameters = ParametersCCD
 
     def biasCorrect(self, adinputs=None, **params):
-        self.getProcessedBias(adinputs)
-        adinputs = self.subtractBias(adinputs, **params)
-        return adinputs
-
-    def overscanCorrect(self, adinputs=None, **params):
-        adinputs = self.subtractOverscan(adinputs, **params)
-        adinputs = self.trimOverscan(adinputs, **params)
-        return adinputs
-
-    def subtractBias(self, adinputs=None, **params):
         """
-        The subtractBias primitive will subtract the science extension of the
+        The biasCorrect primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
         frames. The variance and data quality extension will be updated, if
-        they exist.
+        they exist. If no bias is provided, getProcessedBias will be called
+        to ensure a bias exists for every adinput.
 
         Parameters
         ----------
@@ -64,7 +55,7 @@ class CCD(PrimitivesBASE):
         for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractBias".
+                            "already been processed by biasCorrect".
                             format(ad.filename))
                 continue
 
@@ -92,6 +83,11 @@ class CCD(PrimitivesBASE):
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
+        return adinputs
+
+    def overscanCorrect(self, adinputs=None, **params):
+        adinputs = self.subtractOverscan(adinputs, **params)
+        adinputs = self.trimOverscan(adinputs, **params)
         return adinputs
 
     def subtractOverscan(self, adinputs=None, **params):

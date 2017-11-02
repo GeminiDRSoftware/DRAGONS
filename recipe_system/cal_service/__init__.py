@@ -1,7 +1,6 @@
 import os
 from ..config import globalConf, STANDARD_REDUCTION_CONF, DEFAULT_DIRECTORY
 from . import transport_request
-from . import caches
 
 try:
     from . import localmanager
@@ -10,6 +9,7 @@ except ImportError as e:
     localmanager_available = False
     import_error = str(e)
 
+# ------------------------------------------------------------------------------
 # BEGIN Setting up the calibs section for config files
 CONFIG_SECTION = 'calibs'
 
@@ -21,7 +21,7 @@ globalConf.update_exports({
     CONFIG_SECTION: ('standalone', 'database_dir')
 })
 # END Setting up the calibs section for config files
-
+# ------------------------------------------------------------------------------
 def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
     """
     Load the configuration from the specified path to file
@@ -86,51 +86,3 @@ def cal_search_factory():
         if is_local() else
         transport_request.calibration_search
     )
-
-class Calibrations(dict):
-    def __init__(self, calindfile, user_cals={}, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-        self._calindfile = calindfile
-        self.update(caches.load_cache(self._calindfile))
-        self._usercals = user_cals or {}  # Handle user_cals=None
-
-    def __getitem__(self, key):
-        return self._get_cal(*key)
-
-    def __setitem__(self, key, val):
-        self._add_cal(key, val)
-        return
-
-    def __delitem__(self, key):
-        # Cope with malformed keys
-        try:
-            self.pop((key[0].calibration_key(), key[1]), None)
-        except (TypeError, IndexError):
-            pass
-
-    def _add_cal(self, key, val):
-        # Munge the key from (ad, caltype) to (ad.calibration_key, caltype)
-        key = (key[0].calibration_key(), key[1])
-        self.update({key: val})
-        self.cache_to_disk()
-        return
-
-    def _get_cal(self, ad, caltype):
-        key = (ad.calibration_key(), caltype)
-        if key in self._usercals:
-            return self._usercals[key]
-        calfile = self.get(key)
-        return calfile
-        #if calfile is None:
-        #    return None
-        #else:
-        #    # If the file isn't on disk, delete it from the dict
-        #    if os.path.isfile(calfile):
-        #        return calfile
-        #    else:
-        #        del self[key]
-        #        self.cache_to_disk()
-        #        return None
-
-    def cache_to_disk(self):
-        caches.save_cache(self, self._calindfile)

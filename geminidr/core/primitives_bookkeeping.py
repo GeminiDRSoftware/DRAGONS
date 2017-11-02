@@ -5,13 +5,16 @@
 # ------------------------------------------------------------------------------
 import astrodata
 import gemini_instruments
+
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
+from geminidr import save_cache, stkindfile
+
 from .parameters_bookkeeping import ParametersBookkeeping
 
 from recipe_system.utils.decorators import parameter_override
-from recipe_system.cal_service import caches
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class Bookkeeping(PrimitivesBASE):
@@ -55,7 +58,7 @@ class Bookkeeping(PrimitivesBASE):
                 # Stack doesn't exist yet, so start it off...
                 self.stacks[_stackid(purpose, ad)] = [ad.filename]
 
-        caches.save_cache(self.stacks, caches.stkindfile)
+        save_cache(self.stacks, stkindfile)
         return adinputs
 
     def clearAllStreams(self, adinputs=None, **params):
