@@ -943,7 +943,6 @@ class Preprocess(PrimitivesBASE):
         # Fill initial list with None where the SKYTABLE produced None
         stacked_skies = map(lambda x: None if x is None else 0, skytables)
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
-            print ad.filename, skytable
             if stacked_skies[i] == 0:
                 stacked_sky = self.stackSkyFrames(map(lambda sky: sky_dict[sky],
                                                       skytable))
