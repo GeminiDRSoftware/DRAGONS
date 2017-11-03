@@ -816,7 +816,7 @@ class Preprocess(PrimitivesBASE):
                     log.fullinfo("Treating 1 group as object and 1 as sky, "
                                  "based on target proximity")
                     closest = np.argmin(distsq)
-                    objects = set(groups[closest])
+                    objects = set(groups[closest].list())
                     skies = set(adinputs) - objects
                 else:  # More than 2 groups
                     # Add groups by proximity until at least half the inputs
