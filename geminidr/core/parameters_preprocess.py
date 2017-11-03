@@ -61,6 +61,7 @@ class ParametersPreprocess(ParametersBASE):
         "frac_FOV"          : 0.9,
     }
     skyCorrect = {
+        "dilation"          : 2,
         "mask"              : True,
         "nhigh"             : 1,
         "nlow"              : 1,
