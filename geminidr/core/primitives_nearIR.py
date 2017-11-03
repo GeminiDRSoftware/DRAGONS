@@ -153,6 +153,7 @@ class NearIR(PrimitivesBASE):
         self.stackFrames(stream='lampOff')
 
         if self.streams['lampOn'] and self.streams['lampOff']:
+            log.fullinfo("Subtracting lampOff stack from lampOn stack")
             flat = self.streams['lampOn'][0] - self.streams['lampOff'][0]
             flat.update_filename(suffix="lampOnOff")
             del self.streams['lampOn'], self.streams['lampOff']
@@ -165,6 +166,18 @@ class NearIR(PrimitivesBASE):
                 return self.streams['lampOn']
             else:
                 return []
+
+    def makeLampFlat(self, adinputs=None, **params):
+        """
+        This is the generic primitive to make a flatfield from lamp flats.
+        The default behaviour is to be fed some lamp-on flats and lamp-off
+        flats and difference the two stacks, so it just calls the
+        lampOnLampOff() primitive.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = self.lampOnLampOff(adinputs)
+        return adinputs
 
     def separateFlatsDarks(self, adinputs=None, **params):
         """
