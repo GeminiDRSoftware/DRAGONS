@@ -887,6 +887,10 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys['subtractSky']
 
+        # Parameters to be passed to stackSkyFrames
+        stack_params = {k: v for k,v in params.items() if
+                        k in self.parameters.stackSkyFrames and k != "_suffix"}
+
         # We'll need to process the sky frames so collect them all up and do
         # this first, to avoid repeating it every time one is reused
         skies = set()
@@ -944,7 +948,7 @@ class Preprocess(PrimitivesBASE):
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
                 stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
-                                                      skytable])
+                                                  skytable], **stack_params)
                 if len(stacked_sky) == 1:
                     # Provide a more intelligent filename
                     stacked_sky = stacked_sky[0]
