@@ -35,7 +35,7 @@ def reduce(p):
     p.getList(purpose='forSky')
     p.separateSky()
     p.associateSky()
-    p.skyCorrect()
+    p.skyCorrect(dilation=0)
     p.detectSources()
     p.measureIQ(display=True)
     p.determineAstrometricSolution()

@@ -61,6 +61,11 @@ class ParametersPreprocess(ParametersBASE):
         "frac_FOV"          : 0.9,
     }
     skyCorrect = {
+        "mask"              : True,
+        "nhigh"             : 1,
+        "nlow"              : 1,
+        "operation"         : "median",
+        "reject_method"     : "avsigclip",
     }
     subtractDark = {
         "suffix"            : "_darkCorrected",
