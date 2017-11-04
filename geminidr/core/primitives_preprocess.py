@@ -512,7 +512,7 @@ class Preprocess(PrimitivesBASE):
                             "already been processed by nonlinearityCorrect".
                             format(ad.filename))
                 continue
-            
+
             # Get the correction coefficients
             try:
                 nonlin_coeffs = ad.nonlinearity_coeffs()
@@ -520,7 +520,7 @@ class Preprocess(PrimitivesBASE):
                 log.warning("Unable to obtain nonlinearity coefficients for "
                             "{}".format(ad.filename))
                 continue
-            
+
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use regular maths
             log.status("Applying nonlinearity correction to {}".
@@ -558,7 +558,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
-    
+
     def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive normalizes each science extension of the input
@@ -622,7 +622,7 @@ class Preprocess(PrimitivesBASE):
 #    def scaleByExposureTime(self, adinputs=None, **params):
 #        """
 #        This primitive scales input images to match the exposure time of
-#        the first image. 
+#        the first image.
 #        """
 #        log = self.log
 #        log.debug(gt.log_message("primitive", "scaleByExposureTime", "starting"))
@@ -649,7 +649,7 @@ class Preprocess(PrimitivesBASE):
 #
 #                # Log and save the scale factor. Also change the exposure time
 #                # (not sure if this is OK, since I'd rather leave this as the
-#                # original value, but a lot of primitives match/select on 
+#                # original value, but a lot of primitives match/select on
 #                # this - ED)
 #                log.fullinfo("Intensity scaled to match exposure time of {}: "
 #                             "{:.3f}".format(first_filename, scale))
@@ -885,7 +885,10 @@ class Preprocess(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys['subtractSky']
+
+        reset_sky = params["reset_sky"]
+        scale = params["scale"]
+        zero = params["zero"]
 
         # Parameters to be passed to stackSkyFrames
         stack_params = {k: v for k,v in params.items() if
@@ -967,7 +970,8 @@ class Preprocess(PrimitivesBASE):
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
-        adinputs = self.subtractSky(adinputs, sky=stacked_skies)
+        adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale=scale,
+                                    zero=zero, reset_sky=reset_sky)
         return adinputs
 
     def subtractDark(self, adinputs=None, **params):
@@ -988,7 +992,7 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        
+
         dark_list = params["dark"] if params["dark"] else [
             self._get_cal(ad, 'processed_dark') for ad in adinputs]
 
@@ -1000,7 +1004,7 @@ class Preprocess(PrimitivesBASE):
                             "already been processed by subtractDark".
                             format(ad.filename))
                 continue
-            
+
             if dark is None:
                 if 'qa' in self.context:
                     log.warning("No changes will be made to {}, since no "
@@ -1025,7 +1029,7 @@ class Preprocess(PrimitivesBASE):
                          "AstroData object {}".
                          format(dark.filename, ad.filename))
             ad.subtract(dark)
-            
+
             # Record dark used, timestamp, and update filename
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1042,16 +1046,27 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        sky: str/AD/list
-            sky frame(s) to subtract
         reset_sky: bool
             maintain the sky level by adding a constant to the science
             frame after subtracting the sky?
+        scale: bool
+            scale each extension of each sky frame to match the science frame?
+        sky: str/AD/list
+            sky frame(s) to subtract
+        zero: bool
+            apply offset to each extension of each sky frame to match science?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         reset_sky = params["reset_sky"]
+        scale = params["scale"]
+        zero = params["zero"]
+
+        if scale and zero:
+            log.warning("Both the scale and zero parameters are set. "
+                        "Setting zero=False.")
+            zero = False
 
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
                                              force_ad=True)):
@@ -1060,17 +1075,29 @@ class Preprocess(PrimitivesBASE):
                             "already been processed by subtractSky".
                             format(ad.filename))
                 continue
-            
+
             if ad_sky is not None:
-                if reset_sky:
-                    old_sky = gt.measure_bg_from_image(ad, value_only=True)
+                # Only call measure_bg_from_image if we need it
+                if reset_sky or scale or zero:
+                    old_bg = gt.measure_bg_from_image(ad, value_only=True)
                 log.stdinfo("Subtracting the sky ({}) from the science "
                             "AstroData object {}".
                             format(ad_sky.filename, ad.filename))
+                if scale or zero:
+                    sky_bg = gt.measure_bg_from_image(ad_sky, value_only=True)
+                    for ext_sky, final_bg, init_bg in zip(ad_sky, old_bg, sky_bg):
+                        if scale:
+                            ext_sky *= final_bg / init_bg
+                        else:
+                            ext_sky += final_bg - init_bg
+                        log.fullinfo("Applying {} to EXTVER {} from {} to {}".
+                                format(("scaling" if scale else "zeropoint"),
+                                       ext_sky.hdr['EXTVER'], init_bg, final_bg))
+
                 ad.subtract(ad_sky)
                 if reset_sky:
-                    new_sky = gt.measure_bg_from_image(ad, value_only=True)
-                    for ext, new_level, old_level in zip(ad, new_sky, old_sky):
+                    new_bg = gt.measure_bg_from_image(ad, value_only=True)
+                    for ext, new_level, old_level in zip(ad, new_bg, old_bg):
                         sky_offset = new_level - old_level
                         log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
                                             ad.filename, ext.hdr['EXTVER']))

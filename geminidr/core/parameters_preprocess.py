@@ -67,6 +67,9 @@ class ParametersPreprocess(ParametersBASE):
         "nlow"              : 1,
         "operation"         : "median",
         "reject_method"     : "avsigclip",
+        "reset_sky"         : False,
+        "scale"             : False,
+        "zero"              : False,
     }
     subtractDark = {
         "suffix"            : "_darkCorrected",

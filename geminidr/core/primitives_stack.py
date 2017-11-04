@@ -178,7 +178,7 @@ class Stack(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["stackSkyFrames"]
+        #timestamp_key = self.timestamp_keys["stackSkyFrames"]
 
         # Parameters to be passed to stackFrames
         stack_params = {k: v for k,v in params.items() if
