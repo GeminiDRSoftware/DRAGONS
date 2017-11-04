@@ -24,11 +24,12 @@ class ParametersF2Image(ParametersF2, ParametersImage, ParametersPhotometry):
         "set_saturation"        : False,
     }
     makeLampFlat = {}
-    stackSkyFrames = {
-        "suffix"            : "_skyStacked",
-        "mask"              : True,
-        "nhigh"             : 1,
-        "nlow"              : 0,
-        "operation"         : "median",
-        "reject_method"     : "minmax",
-    }
+    #stackSkyFrames = {
+    #    "suffix"            : "_skyStacked",
+    #    "dilation"          : 2,
+    #    "mask"              : True,
+    #    "nhigh"             : 1,
+    #    "nlow"              : 0,
+    #    "operation"         : "median",
+    #    "reject_method"     : "minmax",
+    #}
