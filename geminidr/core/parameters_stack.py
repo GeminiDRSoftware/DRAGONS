@@ -31,4 +31,6 @@ class ParametersStack(ParametersBASE):
         "nlow"              : 1,
         "operation"         : "median",
         "reject_method"     : "avsigclip",
+        "scale"             : True,
+        "zero"              : False,
     }

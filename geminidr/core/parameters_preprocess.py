@@ -68,7 +68,7 @@ class ParametersPreprocess(ParametersBASE):
         "operation"         : "median",
         "reject_method"     : "avsigclip",
         "reset_sky"         : False,
-        "scale"             : False,
+        "scale"             : True,
         "zero"              : False,
     }
     subtractDark = {
@@ -78,6 +78,9 @@ class ParametersPreprocess(ParametersBASE):
     subtractSky = {
         "suffix"            : "_skyCorrected",
         "reset_sky"         : False,
+        "scale"             : True,
+        "sky"               : None,
+        "zero"              : False,
     }
     subtractSkyBackground = {
         "suffix"            : "_skyBackgroundSubtracted",

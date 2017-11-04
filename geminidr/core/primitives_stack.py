@@ -180,6 +180,13 @@ class Stack(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys["stackSkyFrames"]
 
+        scale = params["scale"]
+        zero = params["zero"]
+        if scale and zero:
+            log.warning("Both the scale and zero parameters are set. "
+                        "Setting zero=False.")
+            zero = False
+
         # Parameters to be passed to stackFrames
         stack_params = {k: v for k,v in params.items() if
                         k in self.parameters.stackFrames and k != "suffix"}
@@ -189,6 +196,15 @@ class Stack(PrimitivesBASE):
                     self.detectSources([ad])[0] for ad in adinputs]
         adinputs = self.dilateObjectMask(adinputs, dilation=params["dilation"])
         adinputs = self.addObjectMaskToDQ(adinputs)
+        if scale or zero:
+            ref_bg = gt.measure_bg_from_image(adinputs[0], value_only=True)
+            for ad in adinputs[1:]:
+                this_bg = gt.measure_bg_from_image(ad, value_only=True)
+                for ext, this, ref in zip(ad, this_bg, ref_bg):
+                    if scale:
+                        ext *= ref / this
+                    elif zero:
+                        ext += ref - this
         adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 

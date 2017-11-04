@@ -889,6 +889,10 @@ class Preprocess(PrimitivesBASE):
         reset_sky = params["reset_sky"]
         scale = params["scale"]
         zero = params["zero"]
+        if scale and zero:
+            log.warning("Both the scale and zero parameters are set. "
+                        "Setting zero=False.")
+            zero = False
 
         # Parameters to be passed to stackSkyFrames
         stack_params = {k: v for k,v in params.items() if
@@ -1059,10 +1063,10 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
         reset_sky = params["reset_sky"]
         scale = params["scale"]
         zero = params["zero"]
-
         if scale and zero:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
