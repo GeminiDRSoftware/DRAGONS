@@ -22,7 +22,7 @@ from recipe_system.reduction.coreReduce import Reduce
 
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_args
-from recipe_system.utils.reduce_utils import normalize_context
+from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
 
 from recipe_system.cal_service import localmanager_available
@@ -81,7 +81,7 @@ def main(args):
     try:
         assert log.root.handlers
         log.root.handlers = []
-        logutils.config(mode=args.logmode, console_lvl=args.loglevel,
+        logutils.config(mode=args.logmode, console_lvl='stdinfo',
                         file_name=args.logfile)
         log = logutils.get_logger(__name__)
         log.info("Logging configured for application: reduce")
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     globalConf.load(STANDARD_REDUCTION_CONF)
     # Deal with argparse structures that are different than optparse
     args = normalize_args(args)
-    args.context = normalize_context(args.context)
+    args.upload = normalize_upload(args.upload)
 
     if args.displayflags:
         show_parser_options(parser, args)

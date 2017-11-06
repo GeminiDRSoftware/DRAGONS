@@ -219,7 +219,7 @@ class GMOS(Gemini, CCD):
 
             # And the bias level too!
             bias_level = get_bias_level(adinput=ad,
-                                        estimate='qa' in self.context)
+                                        estimate='qa' in self.mode)
             for ext, bias in zip(ad, bias_level):
                 if bias is not None:
                     ext.hdr.set('RAWBIAS', bias,

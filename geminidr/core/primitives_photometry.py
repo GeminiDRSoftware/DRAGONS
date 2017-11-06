@@ -87,7 +87,7 @@ class Photometry(PrimitivesBASE):
                 if type(ra) is not float:
                     raise ValueError("wcs_dec descriptor did not return a float.")
             except:
-                if "qa" in self.context:
+                if "qa" in self.mode:
                     log.warning("No RA/Dec in header of {}; cannot find "
                                 "reference sources".format(ad.filename))
                     continue
@@ -111,7 +111,7 @@ class Photometry(PrimitivesBASE):
                 try:
                     formulae = colterm_dict[filter_name]
                 except KeyError:
-                    log.warning("Filter {} is not in catalogs - will not be able to flux "
+                    log.warning("Filter {} not in catalogs - unable to flux "
                                 "calibrate".format(filter_name))
                     formulae = []
                 # Call even if magnitudes can't be calculated since adds
@@ -121,7 +121,7 @@ class Photometry(PrimitivesBASE):
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
                 #if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                #    ad = _match_objcat_refcat(ad, self.context)
+                #    ad = _match_objcat_refcat(ad, self.mode)
                 #else:
                 #    log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
 

@@ -124,28 +124,27 @@ class PrimitivesBASE(object):
     primitive sets. __init__.py provides, or should provide, all attributes
     needed by subclasses.
 
-    Three parameters are required on the initializer:
+    Parameters
+    ----------
+    adinputs: <list> A list of astrodata objects
 
-    adinputs: a list of astrodata objects
-        <list>
+    mode:     <str>  Operational Mode, one of 'sq', 'qa', 'ql'.
 
-    context: the context for recipe selection, etc.
-        <list>
+    upload:   <list> A list of products to upload to fitsstore.
+                     QA metrics uploaded if 'metrics' in upload.
+              E.g.,
 
-    upmetrics: upload the QA metrics produced by the QAP.
-        <bool>
+                  upload = ['metrics', ['calibs', ... ]]
 
     """
     tagset = None
 
-    def __init__(self, adinputs, context=['qa'], upmetrics=False, upcalibs=False,
-                 ucals=None, uparms=None):
+    def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None):
         self.streams          = {'main': adinputs}
-        self.context          = context
+        self.mode             = mode
         self.parameters       = ParametersBASE
         self.log              = logutils.get_logger(__name__)
-        self.upload_metrics   = upmetrics
-        self.upload_calibs    = upcalibs
+        self._upload          = upload
         self.user_params      = uparms if uparms else {}
         self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
@@ -164,3 +163,17 @@ class PrimitivesBASE(object):
         self.myself           = lambda: stack()[1][3]
 
         warnings.simplefilter('ignore', category=VerifyWarning)
+
+    @property
+    def upload(self):
+        return self._upload
+
+    @upload.setter
+    def upload(self, upl):
+        if upl is None:
+            self._upload = None
+        elif isinstance(upl, str):
+            self._upload = [seg.lower().strip() for seg in upl.split(',')]
+        elif isinstance(upl, list):
+            self._upload = upl
+        return

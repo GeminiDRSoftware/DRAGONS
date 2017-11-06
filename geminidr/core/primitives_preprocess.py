@@ -320,7 +320,7 @@ class Preprocess(PrimitivesBASE):
 
                 for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
                     if bg is None:
-                        if 'qa' in self.context:
+                        if 'qa' in self.mode:
                             log.warning("Could not get background level from "
                                 "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
                             continue
@@ -430,7 +430,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if flat is None:
-                if 'qa' in self.context:
+                if 'qa' in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "flatfield has been specified".
                                 format(ad.filename))
@@ -1010,7 +1010,7 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             if dark is None:
-                if 'qa' in self.context:
+                if 'qa' in self.mode:
                     log.warning("No changes will be made to {}, since no "
                                 "dark was specified".format(ad.filename))
                     continue

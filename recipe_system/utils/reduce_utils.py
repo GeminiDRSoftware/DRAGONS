@@ -1,7 +1,9 @@
+from __future__ import print_function
 #
 #                                                                reduce_utils.py
 # ------------------------------------------------------------------------------
 # Utility function library for reduce and the Reduce class.
+from builtins import range
 __version__ = "2.0.0 (beta)"
 # ------------------------------------------------------------------------------
 from argparse import ArgumentParser
@@ -82,11 +84,6 @@ def buildParser(version):
                         action=PosArgAction, default=[],
                         help="fitsfile [fitsfile ...] ")
 
-    parser.add_argument("--context", dest="context", default=None,
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="Use <context> for recipe selection and "
-                        " primitives sensitive to context. Eg., --context QA")
-
     parser.add_argument("--drpkg", dest='drpkg', default='geminidr',
                         nargs="*", action=UnitaryArgumentAction,
                         help="Specify another data reduction (dr) package. "
@@ -97,12 +94,6 @@ def buildParser(version):
     parser.add_argument("--logfile", dest="logfile", default="reduce.log",
                         nargs="*", action=UnitaryArgumentAction,
                         help="name of log (default is 'reduce.log')")
-
-    parser.add_argument("--loglevel", dest="loglevel", default="stdinfo",
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="Set the verbose level for console "
-                        "logging; (critical, error, warning, status, stdinfo, "
-                        "fullinfo, debug)")
 
     parser.add_argument("--logmode", dest="logmode", default="standard",
                         nargs="*", action=UnitaryArgumentAction,
@@ -118,6 +109,14 @@ def buildParser(version):
                         "for 'primitivename'. Separate par/val pairs by "
                         "whitespace: "
                         "(eg. '-p par1=val1 par2=val2')")
+
+    parser.add_argument("--qa", action='store_const', dest="mode",
+                        default='sq', const='qa',help="Use 'qa' recipes."
+                        "Default is to use 'sq' recipes.")
+
+    parser.add_argument("--ql", action='store_const', dest="mode",
+                        default='sq', const='ql',help="Use 'quicklook' recipes."
+                        "Default is to use 'sq' recipes.")
 
     parser.add_argument("-r", "--recipe", dest="recipename", default=None,
                         nargs="*", action=UnitaryArgumentAction,
@@ -144,10 +143,11 @@ def buildParser(version):
                         help="Add 'suffix' to filenames at end of reduction; "
                         "strip all other suffixes marked by '_'; ")
 
-    parser.add_argument("--upload_metrics", dest='upmetrics', default=False,
-                        action=BooleanAction, nargs="*",
-                        help="Send QA metrics to fitsstore. Default is False."
-                        "Eg., --upload_metrics")
+    parser.add_argument("--upload", dest='upload', default=None,
+                        action=UnitaryArgumentAction, nargs="*",
+                        help="Send these pipeline products to fitsstore."
+                        "Default is None."
+                        "Eg., --upload metrics calibs")
 
     parser.add_argument("--user_cal", dest='user_cal', default=None,
                         nargs="*", action=CalibrationAction,
@@ -192,11 +192,11 @@ def insert_option_value(parser, args, option, value):
     return
 
 def show_parser_options(parser, args):
-    all_opts = parser.__dict__['_option_string_actions'].keys()
+    all_opts = list(parser.__dict__['_option_string_actions'].keys())
     handled_flag_set = []
-    print "\n\t"+"-"*20+"   switches, vars, vals  "+"-"*20+"\n"
-    print "\t  Literals\t\t\tvar 'dest'\t\tValue"
-    print "\t", "-"*65
+    print("\n\t"+"-"*20+"   switches, vars, vals  "+"-"*20+"\n")
+    print("\t  Literals\t\t\tvar 'dest'\t\tValue")
+    print("\t", "-"*65)
     for opt in all_opts:
         all_option_flags = get_option_flags(parser, opt)
         if opt in handled_flag_set:
@@ -213,8 +213,8 @@ def show_parser_options(parser, args):
             fmt2 = ":: {} ".format(dvar)
             fmt3 = ":: {}".format(val)
             fmtf = fmt1.ljust(33) + fmt2.ljust(24) + fmt3
-            print fmtf
-    print "\t"+"-"*65+"\n"
+            print(fmtf)
+    print("\t"+"-"*65+"\n")
     return
 
 # ------------------------------------------------------------------------------
@@ -273,8 +273,6 @@ def normalize_args(args):
     if localmanager_available:
         if isinstance(args.local_db_dir, list):
             args.local_db_dir = args.local_db_dir[0]
-    if isinstance(args.loglevel, list):
-        args.loglevel = args.loglevel[0]
     if isinstance(args.logmode, list):
         args.logmode = args.logmode[0]
     if isinstance(args.logfile, list):
@@ -283,36 +281,36 @@ def normalize_args(args):
         args.suffix = args.suffix[0]
     return args
 
-def normalize_context(context):
+def normalize_upload(upload):
     """
-    For Recipe System v2.0, context shall now be a list of context values.
+    For Recipe System v2.0, upload shall now be a list of things to send
+    to fitsstore.
     E.g.,
+    $ reduce --upload metrics <file.fits> <file2.fits>
+    $ reduce --upload metrics, calibs <file.fits> <file2.fits>
+    $ reduce --upload metrics, calibs, science <file.fits> <file2.fits>
 
-    $ reduce --context QA upload    <file.fits> <file2.fits>
-    $ reduce --context=QA,upload    <file.fits> <file2.fits>
-    $ reduce --context="QA, upload" <file.fits> <file2.fits>
+    Result in 
 
-    all result in context == ['qa', 'upload']
+    upload == ['metrics']
+    upload == ['metrics', 'calibs']
+    upload == ['metrics', 'calibs', 'science']
 
-    A passed None defaults to 'qa'.
+    :parameter upload: upload argument received by the reduce command line.
+    :type upload: <list>
 
-    :parameter context: context argument received by the reduce command line.
-    :type context: <list>
-
-    :return: list of coerced or defaulted context values.
+    :return: list of coerced or defaulted upload instructions.
     :rtype: <list>
 
     """
-    if context is None:
-        context = ['qa']                   # Set default 'qa' [later, 'sq']
+    if upload and isinstance(upload, list):
+        splitc = upload if len(upload) > 1 else upload[0].split(',')
+        return [c.lower() for c in splitc]
+    elif upload is None:
+        pass
     else:
-        try:
-            assert isinstance(context, list)
-        except AssertionError:
-            raise TypeError("context must be a list")
-
-    splitc = context if len(context) > 1 else context[0].split(',')
-    return [c.lower() for c in splitc]
+        raise TypeError("upload must be None or a list")
+    return
 
 def normalize_ucals(files, cals):
     """
