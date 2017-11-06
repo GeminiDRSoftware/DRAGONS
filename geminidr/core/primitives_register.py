@@ -262,7 +262,7 @@ class Register(PrimitivesBASE):
         full_wcs: bool (or None)
             use an updated WCS for each matching iteration, rather than simply
             applying pixel-based corrections to the initial mapping?
-            (None => not ('qa' in context))
+            (None => not ('qa' in mode))
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -299,9 +299,9 @@ class Register(PrimitivesBASE):
             pixscale = ad.pixel_scale()
             initial = params["initial"] / pixscale  # Search box size
             final = params["final"] / pixscale  # Matching radius
-            max_ref_sources = 100 if 'qa' in self.context else None  # Don't need more than this many
+            max_ref_sources = 100 if 'qa' in self.mode else None  # No more than this
             if full_wcs is None:
-                full_wcs = not ('qa' in self.context)
+                full_wcs = not ('qa' in self.mode)
 
             best_model = (0, None)
 
@@ -481,8 +481,10 @@ class Register(PrimitivesBASE):
                     info_list.append({})
 
             # Report the measurement to the fitsstore
-            fitsdict = qap.fitsstore_report(ad, "pe", info_list,
-                        self.calurl_dict, self.context, self.upload_metrics)
+            if self.upload and "metrics" in self.upload:
+                fitsdict = qap.fitsstore_report(ad, "pe", info_list,
+                                                self.calurl_dict,
+                                                self.mode, upload=True)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

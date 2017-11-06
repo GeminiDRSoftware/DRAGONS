@@ -184,9 +184,10 @@ class QA(PrimitivesBASE):
                     qap.adcc_report(ad, "bg", qad)
 
             # Report measurement to fitsstore
-            fitsdict = qap.fitsstore_report(ad, "sb", info_list,
-                        calurl_dict=self.calurl_dict, context=self.context,
-                                           upload=self.upload_metrics)
+            if self.upload and "metrics" in self.upload:
+                fitsdict = qap.fitsstore_report(ad, "sb", info_list,
+                                                self.calurl_dict,
+                                                self.mode, upload=True)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -386,9 +387,10 @@ class QA(PrimitivesBASE):
                               "comment": qad["comment"]}) for info in info_list]
 
                 # Also report to fitsstore
-                fitsdict = qap.fitsstore_report(ad, "zp", info_list,
-                            calurl_dict=self.calurl_dict, context=self.context,
-                                               upload=self.upload_metrics)
+                if self.upload and "metrics" in self.upload:
+                    fitsdict = qap.fitsstore_report(ad, "zp", info_list,
+                                                    self.calurl_dict, self.mode,
+                                                    upload=True)
             else:
                 log.stdinfo("    Filename: {}".format(ad.filename))
                 log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
@@ -621,9 +623,12 @@ class QA(PrimitivesBASE):
                                         comment=self.keyword_comments["MEANELLP"])
 
                     if info_list:
-                        fitsdict = qap.fitsstore_report(adiq, "iq", info_list,
-                                calurl_dict=self.calurl_dict, context=self.context,
-                                upload=self.upload_metrics)
+                        if self.upload and "metrics" in self.upload:
+                            fitsdict = qap.fitsstore_report( adiq, "iq", 
+                                                             info_list, 
+                                                             self.calurl_dict, 
+                                                             self.mode, 
+                                                             upload=True)
 
                     # If displaying, make a mask to display along with image
                     # that marks which stars were used (a None was appended
