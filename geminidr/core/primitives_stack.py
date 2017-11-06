@@ -82,8 +82,8 @@ class Stack(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        mask: bool
-            apply mask to data before combining?
+        apply_dq: bool
+            apply DQ mask to data before combining?
         nhigh: int
             number of high pixels to reject
         nlow: int
@@ -165,8 +165,12 @@ class Stack(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+        apply_dq: bool
+            apply DQ mask to data before combining?
         dilation: int
             dilation radius for expanding object mask
+        mask_objects: bool
+            mask objects from the input frames?
         nhigh: int
             number of high pixels to reject
         nlow: int
@@ -192,10 +196,13 @@ class Stack(PrimitivesBASE):
                         k in self.parameters.stackFrames and k != "suffix"}
 
         # Run detectSources() on any frames without any OBJMASKs
-        adinputs = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad) else
-                    self.detectSources([ad])[0] for ad in adinputs]
-        adinputs = self.dilateObjectMask(adinputs, dilation=params["dilation"])
-        adinputs = self.addObjectMaskToDQ(adinputs)
+        if params["mask_objects"]:
+            adinputs = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad) else
+                        self.detectSources([ad])[0] for ad in adinputs]
+            adinputs = self.dilateObjectMask(adinputs,
+                                             dilation=params["dilation"])
+            adinputs = self.addObjectMaskToDQ(adinputs)
+
         if scale or zero:
             ref_bg = gt.measure_bg_from_image(adinputs[0], value_only=True)
             for ad in adinputs[1:]:

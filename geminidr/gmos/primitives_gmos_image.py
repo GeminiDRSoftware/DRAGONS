@@ -626,8 +626,8 @@ class GMOSImage(GMOS, Image, Photometry):
         ----------
         suffix: str
             suffix to be added to output files
-        mask: bool
-            apply mask to data before combining? (passed to stackFrames)
+        apply_dq: bool
+            apply DQ mask to data before combining? (passed to stackFrames)
         operation: str
             type of combine operation (passed to stackFrames)
         reject_method: str
@@ -662,7 +662,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # same level, and then stack
             adinputs = self.scaleByIntensity(adinputs)
             adinputs = self.stackFrames(adinputs, suffix=params["suffix"],
-                        operation=params["operation"], mask=params["mask"],
+                        operation=params["operation"], apply_dq=params["apply_dq"],
                         reject_method=reject_method, nlow=nlow, nhigh=nhigh)
         return adinputs
 

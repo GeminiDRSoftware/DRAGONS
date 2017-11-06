@@ -58,7 +58,8 @@ class ParametersPreprocess(ParametersBASE):
     }
     skyCorrect = {
         "dilation"          : 2,
-        "mask"              : True,
+        "apply_dq"          : True,
+        "mask_objects"      : True,
         "nhigh"             : 1,
         "nlow"              : 1,
         "operation"         : "median",
