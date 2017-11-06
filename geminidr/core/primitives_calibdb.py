@@ -50,7 +50,7 @@ class CalibDB(PrimitivesBASE):
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)                 # from cache
-            if not calurl and "qa" not in self.context:
+            if not calurl and "qa" not in self.mode:
                     raise IOError(self._not_found.format(ad.filename))
         return adinputs
 
@@ -174,7 +174,7 @@ class CalibDB(PrimitivesBASE):
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
             ad.write(fname, clobber=True)
             log.stdinfo("Calibration stored as {}".format(fname))
-            if 'upload' in self.context:
+            if self.upload and 'calibs' in self.upload:
                 try:
                     upload_calibration(fname)
                 except:

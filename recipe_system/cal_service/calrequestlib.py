@@ -1,6 +1,10 @@
 #
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import hashlib
 import requests
 
@@ -8,11 +12,12 @@ from os import mkdir
 from os.path import basename, exists
 from os.path import join, split
 
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 from gempy.utils import logutils
 
-from .caches  import set_caches
+from geminidr import set_caches
+
 from recipe_system.cal_service import cal_search_factory, handle_returns_factory
 from .file_getter import get_file_iterator, GetterError
 # ------------------------------------------------------------------------------
@@ -121,7 +126,7 @@ def get_cal_requests(inputs, caltype):
             except AttributeError:
                 pass
             else:
-                kwargs = options[desc_name] if desc_name in options.keys() else {}
+                kwargs = options[desc_name] if desc_name in list(options.keys()) else {}
                 try:
                     dv = _handle_returns(descriptor(**kwargs))
                 except:

@@ -1,8 +1,11 @@
 #
 #                                                           request_transport.py
 # ------------------------------------------------------------------------------
-import urllib
-import urllib2
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import traceback
 
 from os.path import join, basename
@@ -78,13 +81,13 @@ def upload_calibration(filename):
     url = join(UPLOADPROCCAL, fn)
     postdata = open(filename).read()
     try:
-        rq = urllib2.Request(url)
+        rq = urllib.request.Request(url)
         rq.add_header('Content-Length', '%d' % len(postdata))
         rq.add_header('Content-Type', 'application/octet-stream')
         rq.add_header('Cookie', 'gemini_fits_upload_auth=%s' % UPLOADCOOKIE)
-        u = urllib2.urlopen(rq, postdata)
+        u = urllib.request.urlopen(rq, postdata)
         response = u.read()
-    except urllib2.HTTPError as error:
+    except urllib.error.HTTPError as error:
         log.error(str(error))
         raise
     return
@@ -117,16 +120,16 @@ def calibration_search(rq, return_xml=False):
     rqurl = rqurl + "/{}".format(rq.filename)
     # encode and send request
     sequence = [("descriptors", rq.descriptors), ("types", rq.tags)]
-    postdata = urllib.urlencode(sequence)
+    postdata = urllib.parse.urlencode(sequence)
     response = "CALIBRATION_NOT_FOUND"
     try:
-        calRQ = urllib2.Request(rqurl)
-        u = urllib2.urlopen(calRQ, postdata)
+        calRQ = urllib.request.Request(rqurl)
+        u = urllib.request.urlopen(calRQ, postdata)
         response = u.read()
-    except urllib2.HTTPError as err:
+    except urllib.error.HTTPError as err:
         log.error(str(err))
         return (None, str(err))
-    except urllib2.URLError as err:
+    except urllib.error.URLError as err:
         log.error(str(err))
         return (None, str(err))
 
@@ -134,7 +137,7 @@ def calibration_search(rq, return_xml=False):
         return (None, response)
 
     nones = []
-    for dname, dval in rq.descriptors.items():
+    for dname, dval in list(rq.descriptors.items()):
         if dval is None:
             nones.append(dname)
 

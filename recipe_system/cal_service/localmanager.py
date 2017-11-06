@@ -1,3 +1,4 @@
+from builtins import object
 import os
 from os.path import abspath, basename, dirname, isdir
 import warnings
@@ -192,7 +193,7 @@ class LocalManager(object):
         """
 
         for root, dirs, files in os.walk(path):
-            for fname in filter(lambda l: l.endswith('.fits'), files):
+            for fname in [l for l in files if l.endswith('.fits')]:
                 self.ingest_file(os.path.join(root, fname))
                 if log:
                     log("Ingested {}/{}".format(root, fname))
@@ -231,10 +232,10 @@ class LocalManager(object):
             utc = descripts["ut_datetime"]
             descripts.update({"ut_datetime":utc})
 
-        for (type_, desc) in extra_descript.items():
+        for (type_, desc) in list(extra_descript.items()):
             descripts[desc] = type_ in types
 
-        nones = [desc for (desc, value) in descripts.items() if value is None]
+        nones = [desc for (desc, value) in list(descripts.items()) if value is None]
 
         # Obtain a calibration manager object instantiated according to the
         # instrument.

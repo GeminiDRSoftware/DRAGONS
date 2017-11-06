@@ -44,6 +44,7 @@ the decorated class.
             [ … ]
 
 """
+from builtins import zip
 from functools import wraps
 from copy import deepcopy
 
@@ -73,7 +74,7 @@ def userpar_override(pname, args, upars):
     This returns a dict of the overridden parameters and their values.
     """
     parset = {}
-    for key, val in upars.items():
+    for key, val in list(upars.items()):
         if ':' in key:
             prim, par = key.split(':')
             if prim == pname and par in args:
@@ -108,7 +109,7 @@ def make_class_wrapper(wrapped):
 
             attr_fn = getattr(cls, attr_name)
             if callable(attr_fn):
-                if attr_name not in attr_fn.im_class.__dict__:
+                if attr_name not in attr_fn.__self__.__class__.__dict__:
                     continue
                 else:
                     setattr(cls, attr_name, wrapped(attr_fn))
@@ -126,7 +127,7 @@ def parameter_override(fn):
         # Override with those in the parameters file
         params.update(getattr(pobj.parameters, pname, {}))
         # Override with user inputs
-        params.update(userpar_override(pname, params.keys(),
+        params.update(userpar_override(pname, list(params.keys()),
                       pobj.user_params))
         # Override with values in the function call
         params.update(kwargs)
@@ -153,5 +154,5 @@ def parameter_override(fn):
         return ret_value
     # Make dict of default values (ignore args[0]='self', args[1]='adinputs')
     argspec = inspect.getargspec(fn)
-    gn.parameters = dict(zip(argspec.args[2:], argspec.defaults[1:]))
+    gn.parameters = dict(list(zip(argspec.args[2:], argspec.defaults[1:])))
     return gn

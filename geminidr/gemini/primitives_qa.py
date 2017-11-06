@@ -33,6 +33,7 @@ Measurement = namedtuple('Measurement', 'value std samples')
 class QA(PrimitivesBASE):
     """
     This is the class containing the QA primitives.
+
     """
     tagset = set(["GEMINI"])
 
@@ -184,9 +185,12 @@ class QA(PrimitivesBASE):
                     qap.adcc_report(ad, "bg", qad)
 
             # Report measurement to fitsstore
-            fitsdict = qap.fitsstore_report(ad, "sb", info_list,
-                        calurl_dict=self.calurl_dict, context=self.context,
-                                           upload=self.upload_metrics)
+            go_metrics = False
+            if self.upload is not None:
+                go_metrics = True if 'metrics' in self.upload else False
+
+            fitsdict = qap.fitsstore_report(ad, "sb", info_list, self.calurl_dict,
+                                            self.mode, upload=go_metrics)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -387,9 +391,13 @@ class QA(PrimitivesBASE):
                               "comment": qad["comment"]}) for info in info_list]
 
                 # Also report to fitsstore
+                go_metrics = False
+                if self.upload is not None:
+                    go_metrics = True if 'metrics' in self.upload else False
+
                 fitsdict = qap.fitsstore_report(ad, "zp", info_list,
-                            calurl_dict=self.calurl_dict, context=self.context,
-                                               upload=self.upload_metrics)
+                                                self.calurl_dict, self.mode,
+                                                upload=go_metrics)
             else:
                 log.stdinfo("    Filename: {}".format(ad.filename))
                 log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
@@ -623,9 +631,14 @@ class QA(PrimitivesBASE):
                                         comment=self.keyword_comments["MEANELLP"])
 
                     if info_list:
+                        go_metrics = False
+                        if self.upload is not None:
+                            go_metrics = True if 'metrics' in self.upload else False
+
                         fitsdict = qap.fitsstore_report(adiq, "iq", info_list,
-                                calurl_dict=self.calurl_dict, context=self.context,
-                                upload=self.upload_metrics)
+                                                        self.calurl_dict, 
+                                                        self.mode,
+                                                        upload=go_metrics)
 
                     # If displaying, make a mask to display along with image
                     # that marks which stars were used (a None was appended
@@ -655,8 +668,8 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.filename = gt.filename_updater(adinput=ad,suffix=suffix,strip=True)
+
         return adinputs
 
 ##############################################################################

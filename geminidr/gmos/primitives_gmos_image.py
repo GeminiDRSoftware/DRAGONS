@@ -182,7 +182,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         adoutputs = []
         for ad in adinputs:
-            if _needs_fringe_correction(ad, self.context):
+            if _needs_fringe_correction(ad, self.mode):
                 # Check for a fringe in the "fringe" stream first; the makeFringe
                 # primitive, if it was called, would have added it there;
                 # this avoids the latency involved in storing and retrieving
@@ -227,7 +227,7 @@ class GMOSImage(GMOS, Image, Photometry):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         # Exit without doing anything if any of the inputs are inappropriate
-        if not all(_needs_fringe_correction(ad, self.context) for ad in adinputs):
+        if not all(_needs_fringe_correction(ad, self.mode) for ad in adinputs):
             return adinputs
         if len(set(ad.filter_name(pretty=True) for ad in adinputs)) > 1:
             log.warning("Mismatched filters in input; not making fringe "
@@ -260,8 +260,8 @@ class GMOSImage(GMOS, Image, Photometry):
             return adinputs
         elif (any(ad.telescope=="Gemini-North" for ad in adinputs) and
                       len(fringe_adinputs)<5):
-            if "qa" in self.context:
-                # If fewer than 5 frames and in QA context, don't
+            if "qa" in self.mode:
+                # If fewer than 5 frames and in QA mode, don't
                 # make a fringe -- it'll just make the data look worse.
                 log.stdinfo("Fewer than 5 frames provided as input "
                             "for GMOS-N data. Not making fringe frame.")
@@ -669,7 +669,7 @@ class GMOSImage(GMOS, Image, Photometry):
                         reject_method=reject_method, nlow=nlow, nhigh=nhigh)
         return adinputs
 
-def _needs_fringe_correction(ad, context):
+def _needs_fringe_correction(ad, mode):
     """
     This function determines whether an AstroData object needs a fringe
     correction. If it says no, it reports its decision to the log.
@@ -678,12 +678,13 @@ def _needs_fringe_correction(ad, context):
     ----------
     ad: AstroData
         input AD object
-    context: str
-        reduction context
+    mode: <str>
+        reduction mode; one of 'qa', 'sq', 'ql'
 
     Returns
     -------
-    bool: does this image need a correction?
+    <bool>: does this image need a correction?
+
     """
     log = logutils.get_logger(__name__)
     filter = ad.filter_name(pretty=True)
@@ -694,7 +695,7 @@ def _needs_fringe_correction(ad, context):
                     format(ad.filename, filter))
         return False
     elif filter == "i" and "Gemini-North" in tel:
-        if "qa" in context:
+        if "qa" in mode:
             log.stdinfo("No fringe correction necessary for {} with filter "
                         "{} and GMOS-N".format(ad.filename, filter))
             return False

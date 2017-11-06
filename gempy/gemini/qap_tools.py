@@ -119,18 +119,27 @@ def status_report(status):
 
     return
 
-def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
+def fitsstore_report(ad, metric, info_list, calurl_dict, mode, upload=False):
     """
     Parameters
     ----------
     ad: AstroData
         input image
+
     metric: str
         type of metric being reported (IQ, ZP, SB, PE)
+
     info_list: list
         the QA info, one dict item per extension
+
     calurl_dict: dict
         information about the FITSStore (needed if report gets sent)
+
+    mode: <list>
+        A string indicating recipe mode ('qa', 'sq', or 'ql')
+
+    upload: <bool>
+        Upload metrics to fitstore. Default is False.
 
     Returns
     -------
@@ -155,7 +164,10 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, context, upload=False):
     # set generating this metric
     qareport["software"] = "QAP"
     qareport["software_version"] = ad_version
-    qareport["context"] = context
+
+    # context --> mode, a <str>.
+    # Here we pass 'mode' to the context key for fitsstore.
+    qareport["context"] = mode  
     
     qametric_list = []
     for ext, info in zip(ad, info_list):

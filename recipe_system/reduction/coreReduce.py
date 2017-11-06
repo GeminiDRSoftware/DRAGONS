@@ -23,7 +23,6 @@ import sys
 import inspect
 import signal
 import traceback
-from types import StringType
 
 import astrodata
 import gemini_instruments
@@ -41,7 +40,7 @@ from gempy.utils import logutils
 
 from astrodata.core import AstroDataError
 
-from recipe_system.utils.errors import ContextError
+from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
 
@@ -87,27 +86,27 @@ class Reduce(object):
             args = buildParser(_version).parse_args([])
 
         self.adinputs = None
-        self._context = args.context
+        self.mode     = args.mode
         self.drpkg    = args.drpkg
         self.files    = args.files
         self.suffix   = args.suffix
         self.ucals    = normalize_ucals(args.files, args.user_cal)
         self.uparms   = set_btypes(args.userparam)
-        self.upload_metrics = args.upmetrics
-        self.urecipe = args.recipename if args.recipename else 'default'
+        self._upload  = args.upload
+        self.urecipe  = args.recipename if args.recipename else 'default'
 
     @property
-    def context(self):
-        return self._context
+    def upload(self):
+        return self._upload
 
-    @context.setter
-    def context(self, ctx):
-        if ctx is None:
-            self._context = ['qa']         # Set default 'qa' [later, 'sq']
-        elif isinstance(ctx, StringType):
-            self._context = [seg.lower().strip() for seg in ctx.split(',')]
-        elif isinstance(ctx, list):
-            self._context = ctx
+    @upload.setter
+    def upload(self, upl):
+        if upl is None:
+            self._upload = None
+        elif isinstance(upl, str):
+            self._upload = [seg.lower().strip() for seg in upl.split(',')]
+        elif isinstance(upl, list):
+            self._upload = upl
         return
 
     def runr(self):
@@ -156,18 +155,18 @@ class Reduce(object):
             log.error(str(err))
             return xstat
 
-        rm = RecipeMapper(self.adinputs, context=self.context, drpkg=self.drpkg,
+        rm = RecipeMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.urecipe)
 
-        pm = PrimitiveMapper(self.adinputs, context=self.context, drpkg=self.drpkg,
+        pm = PrimitiveMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
                              usercals=self.ucals, uparms=self.uparms,
-                             upload_metrics=self.upload_metrics)
+                             upload=self.upload)
 
         try:
             recipe = rm.get_applicable_recipe()
-        except ContextError as err:
+        except ModeError as err:
             xstat = signal.SIGTERM
-            log.error("No context package matched: {}".format(rm.context))
+            log.error("No Mode matched: {}".format(rm.mode))
             return xstat
         except RecipeNotFound as err:
             pass
