@@ -35,10 +35,6 @@ class ParametersPreprocess(ParametersBASE):
         "dilation"          : 1,
         "repeat"            : False,
     }
-    divideByFlat = {
-        "suffix"            : "_flatCorrected",
-        "flat"              : None,
-    }
     flatCorrect = {
         "suffix"            : '_flatCorrected',
         "flat"              : None,

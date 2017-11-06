@@ -400,11 +400,13 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def divideByFlat(self, adinputs=None, **params):
+    def flatCorrect(self, adinputs=None, **params):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the division on the data.
+        If no flatfield is provided, getProcessedFlat will be called
+        to ensure a flat exists for every adinput.
 
         Parameters
         ----------
@@ -417,15 +419,17 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        flat_list = params["flat"] if params["flat"] else [
-            self._get_cal(ad, 'processed_flat') for ad in adinputs]
+        flat_list = params["flat"]
+        if flat_list is None:
+            self.getProcessedFlat(refresh=False)
+            flat_list = self._get_cal(adinputs, 'processed_flat')
 
         # Provide a flatfield AD object for every science frame
         for ad, flat in zip(*gt.make_lists(adinputs, flat_list,
                                            force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
-                            "already been processed by divideByFlat".
+                            "already been processed by flatCorrect".
                             format(ad.filename))
                 continue
 
@@ -464,22 +468,6 @@ class Preprocess(PrimitivesBASE):
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-        return adinputs
-
-    def flatCorrect(self, adinputs=None, **params):
-        """
-        Obtains processed flat(s) from the calibration service and divides
-        the science image(s) by it/them.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        flat: str/list
-            name of flat to use (in which case the cal request is superfluous)
-        """
-        self.getProcessedFlat(adinputs)
-        adinputs = self.divideByFlat(adinputs, **params)
         return adinputs
 
     def makeSky(self, adinputs=None, **params):

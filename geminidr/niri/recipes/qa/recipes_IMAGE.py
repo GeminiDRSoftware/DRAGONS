@@ -69,7 +69,7 @@ def makeSkyFlat(p):
     p.normalizeFlat(stream='fastsky')
     p.thresholdFlatfield(stream='fastsky')
     # Flatfield with the fastsky and find objects
-    p.divideByFlat(flat=p.streams['fastsky'][0], outstream='flattened')
+    p.flatCorrect(flat=p.streams['fastsky'][0], outstream='flattened')
     p.detectSources(detect_minarea=20, stream='flattened')
     p.dilateObjectMask(dilation=10, stream='flattened')
     p.addObjectMaskToDQ(stream='flattened')

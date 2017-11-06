@@ -103,15 +103,6 @@ class TestPreprocess:
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                                 'N20070819S0104_darkCorrected.fits'))
 
-    def test_divideByFlat(self):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_darkCorrected.fits'))
-        p = NIRIImage([ad])
-        ad = p.divideByFlat(flat=os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070913S0220_flat.fits'))[0]
-        assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_flatCorrected.fits'))
-
     def test_flatCorrect(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                 'N20070819S0104_darkCorrected.fits'))

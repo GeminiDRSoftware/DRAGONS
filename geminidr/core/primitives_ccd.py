@@ -47,7 +47,7 @@ class CCD(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         bias_list = params["bias"]
-        if params["bias"] is None:
+        if bias_list is None:
             self.getProcessedBias(refresh=False)
             bias_list = self._get_cal(adinputs, 'processed_bias')
 
