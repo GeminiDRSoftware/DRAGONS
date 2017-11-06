@@ -429,11 +429,11 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         # Nothing is going to happen so leave now!
+        dilation = params["dilation"]
         if dilation < 1:
             return adinputs
 
         repeat = params["repeat"]
-        dilation = params["dilation"]
         xgrid, ygrid = np.mgrid[-dilation:dilation+1, -dilation:dilation+1]
         structure = np.where(xgrid*xgrid+ygrid*ygrid <= dilation*dilation,
                              True, False)
