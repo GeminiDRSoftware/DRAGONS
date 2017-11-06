@@ -67,10 +67,6 @@ class ParametersPreprocess(ParametersBASE):
         "scale"             : True,
         "zero"              : False,
     }
-    subtractDark = {
-        "suffix"            : "_darkCorrected",
-        "dark"              : None,
-    }
     subtractSky = {
         "suffix"            : "_skyCorrected",
         "reset_sky"         : False,

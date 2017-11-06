@@ -346,18 +346,67 @@ class Preprocess(PrimitivesBASE):
 
     def darkCorrect(self, adinputs=None, **params):
         """
-        Obtains processed dark(s) from the calibration service and subtracts
-        it/them from the science image(s).
+        This primitive will subtract each SCI extension of the inputs by those
+        of the corresponding dark. If the inputs contain VAR or DQ frames,
+        those will also be updated accordingly due to the subtraction on the 
+        data. If no dark is provided, getProcessedDark will be called to
+        ensure a dark exists for every adinput.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
         dark: str/list
-            name of dark to use (in which case the cal request is superfluous)
+            name(s) of the dark file(s) to be subtracted
         """
-        self.getProcessedDark(adinputs)
-        adinputs = self.subtractDark(adinputs, **params)
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+
+        dark_list = params["dark"]
+        if dark_list is None:
+            self.getProcessedDark(refresh=False)
+            dark_list = self._get_cal(adinputs, 'processed_dark')
+
+        # Provide a dark AD object for every science frame
+        for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
+                                           force_ad=True)):
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by darkCorrect".
+                            format(ad.filename))
+                continue
+
+            if dark is None:
+                if 'qa' in self.mode:
+                    log.warning("No changes will be made to {}, since no "
+                                "dark was specified".format(ad.filename))
+                    continue
+                else:
+                    raise IOError("No processed dark listed for {}".
+                                   format(ad.filename))
+
+            # Check the inputs have matching binning, and shapes
+            # TODO: Check exposure time?
+            try:
+                gt.check_inputs_match(ad, dark, check_filter=False)
+            except ValueError:
+                # Else try to extract a matching region from the dark
+                dark = gt.clip_auxiliary_data(ad, aux=dark, aux_type="cal")
+
+                # Check again, but allow it to fail if they still don't match
+                gt.check_inputs_match(ad, dark, check_filter=False)
+
+            log.fullinfo("Subtracting the dark ({}) from the input "
+                         "AstroData object {}".
+                         format(dark.filename, ad.filename))
+            ad.subtract(dark)
+
+            # Record dark used, timestamp, and update filename
+            ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def dilateObjectMask(self, adinputs=None, **params):
@@ -964,68 +1013,6 @@ class Preprocess(PrimitivesBASE):
         # this to subtractSky as the "sky" parameter
         adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale=scale,
                                     zero=zero, reset_sky=reset_sky)
-        return adinputs
-
-    def subtractDark(self, adinputs=None, **params):
-        """
-        This primitive will subtract each SCI extension of the inputs by those
-        of the corresponding dark. If the inputs contain VAR or DQ frames,
-        those will also be updated accordingly due to the subtraction on the 
-        data.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        dark: str/list
-            name(s) of the dark file(s) to be subtracted
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-
-        dark_list = params["dark"] if params["dark"] else [
-            self._get_cal(ad, 'processed_dark') for ad in adinputs]
-
-        # Provide a dark AD object for every science frame
-        for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
-                                           force_ad=True)):
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractDark".
-                            format(ad.filename))
-                continue
-
-            if dark is None:
-                if 'qa' in self.mode:
-                    log.warning("No changes will be made to {}, since no "
-                                "dark was specified".format(ad.filename))
-                    continue
-                else:
-                    raise IOError("No processed dark listed for {}".
-                                   format(ad.filename))
-
-            # Check the inputs have matching binning, and shapes
-            # TODO: Check exposure time?
-            try:
-                gt.check_inputs_match(ad, dark, check_filter=False)
-            except ValueError:
-                # Else try to extract a matching region from the dark
-                dark = gt.clip_auxiliary_data(ad, aux=dark, aux_type="cal")
-
-                # Check again, but allow it to fail if they still don't match
-                gt.check_inputs_match(ad, dark, check_filter=False)
-
-            log.fullinfo("Subtracting the dark ({}) from the input "
-                         "AstroData object {}".
-                         format(dark.filename, ad.filename))
-            ad.subtract(dark)
-
-            # Record dark used, timestamp, and update filename
-            ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):

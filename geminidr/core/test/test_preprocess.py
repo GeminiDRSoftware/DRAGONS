@@ -134,15 +134,6 @@ class TestPreprocess:
     def test_skyCorrect(self):
         pass
 
-    def test_subtractDark(self):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_nonlinearityCorrected.fits'))
-        p = NIRIImage([ad])
-        ad = p.darkCorrect(dark=os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0339_dark.fits'))[0]
-        assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_darkCorrected.fits'))
-
     def test_subtractSky(self):
         pass
 
