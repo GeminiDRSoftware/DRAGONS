@@ -109,7 +109,8 @@ def make_class_wrapper(wrapped):
 
             attr_fn = getattr(cls, attr_name)
             if callable(attr_fn):
-                if attr_name not in attr_fn.__self__.__class__.__dict__:
+                if attr_name not in attr_fn.im_class.__dict__:
+                #if attr_name not in attr_fn.__self__.__class__.__dict__:
                     continue
                 else:
                     setattr(cls, attr_name, wrapped(attr_fn))
