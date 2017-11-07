@@ -408,8 +408,8 @@ class Register(PrimitivesBASE):
                 # Send all sources to the alignment/matching engine, indicating the ones to
                 # use for the alignment
                 if num_ref_sources > 0:
-                    log.stdinfo('Aligning extver {} with {} REFCAT and {} OBJCAT sources'.
-                                format(extver, num_ref_sources, keep_num))
+                    log.stdinfo('Aligning {}:{} with {} REFCAT and {} OBJCAT sources'.
+                                format(ad.filename, extver, num_ref_sources, keep_num))
                     matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
                                                       use_in=in_field, use_ref=sorted_idx,
                                                       model_guess=m_init, translation_range=initial,
