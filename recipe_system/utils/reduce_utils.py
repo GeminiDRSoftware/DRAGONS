@@ -97,8 +97,8 @@ def buildParser(version):
 
     parser.add_argument("--logmode", dest="logmode", default="standard",
                         nargs="*", action=UnitaryArgumentAction,
-                        help="Set log mode: 'standard', 'console', 'quiet', "
-                        "'debug', or 'null'.")
+                        help="Set log mode: 'standard', 'quiet', 'debug'"
+                        "Default is 'standard'. 'quiet' writes only to log file.")
 
     parser.add_argument("-p", "--param", dest="userparam", default=None,
                         nargs="*", action=ParameterAction,
