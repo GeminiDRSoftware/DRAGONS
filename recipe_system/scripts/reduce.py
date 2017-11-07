@@ -81,8 +81,7 @@ def main(args):
     try:
         assert log.root.handlers
         log.root.handlers = []
-        logutils.config(mode=args.logmode, console_lvl='stdinfo',
-                        file_name=args.logfile)
+        logutils.config(mode=args.logmode, file_name=args.logfile)
         log = logutils.get_logger(__name__)
         log.info("Logging configured for application: reduce")
         log.info(" ")
