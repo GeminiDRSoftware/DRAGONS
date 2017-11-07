@@ -981,10 +981,11 @@ class Preprocess(PrimitivesBASE):
         # We've got all the sky frames in sky_dict, so delete the sky stream
         # to eliminate references to the original frames before we modify them
         del self.streams["sky"]
-        ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
-                    else self.detectSources([ad])[0] for ad in ad_skies]
-        ad_skies = self.dilateObjectMask(ad_skies, **params)
-        ad_skies = self.addObjectMaskToDQ(ad_skies)
+        if params["mask_objects"]:
+            ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
+                        else self.detectSources([ad])[0] for ad in ad_skies]
+            ad_skies = self.dilateObjectMask(ad_skies, **params)
+            ad_skies = self.addObjectMaskToDQ(ad_skies)
         sky_dict = dict(zip(skies, ad_skies))
 
         # Make a list of stacked sky frames, but use references if the same
@@ -1002,6 +1003,7 @@ class Preprocess(PrimitivesBASE):
                     stacked_sky = stacked_sky[0]
                     stacked_sky.phu['ORIGNAME'] = ad.phu['ORIGNAME']
                     stacked_sky.update_filename(suffix="_sky", strip=True)
+                    stacked_sky.write(clobber=True)
                 else:
                     log.warning("Problem with stacking the following sky "
                                 "frames for {}".format(adinputs[i].filename))
