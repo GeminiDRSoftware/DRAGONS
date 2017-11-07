@@ -174,7 +174,7 @@ class Register(PrimitivesBASE):
                     else:
                         log.warning("WCS can only be corrected indirectly "
                             "and fallback=None. Not attempting WCS correction "
-                            "for ".format(ad.filename))
+                            "for {}".format(ad.filename))
                 else:
                     log.fullinfo("Number of objects in image {}: {}".format(
                                  ad.filename, nobj))
