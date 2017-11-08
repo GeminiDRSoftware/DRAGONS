@@ -71,11 +71,17 @@ class Reduce(object):
     """
     def __init__(self, sys_args=None):
         """
-        :parameter sys_args: optional argparse.Namespace instance
-        :type sys_args: <Nameapace>
 
-        :return: ReduceNH instance
-        :rtype: <ReduceNH>
+        Parameters
+        ----------
+        sys_args : <Nameapace> or <duck-type object>
+                   argparse.Namespace instance (optional)
+                   This object type is not required, per se, but only that any
+                   passed object *must* present an equivalent interface to
+                   that of an <argparse.Namespace> instance.
+        Returns
+        -------
+        <Reduce instance>
 
         """
         if sys_args:
@@ -113,27 +119,13 @@ class Reduce(object):
         """
         Map and run the requested or defaulted recipe.
 
-        :parameters: <void>
+        Parameters
+        ----------
+        <void>
 
-        :returns: exit code
-        :rtype: <int>
-
-        @TODO !!!!!!!!!
-        RE: user supplied calibration files. --user_cal. User supplied
-        calibrations no longer need an indicated 'caltype.'
-
-        In the old system, a user had to pass a user_cal like,
-
-        --user_cal processed_bias:foo_bias.fits
-
-        This is unncessary. This class can and will determine this caltype,
-        such as,
-
-           'processed_bias', 'processed_flat', etc.
-
-        and pass this to the primitive set when instantiated.
-
-        BUT this is not yet implemented!
+        Returns
+        -------
+        xstat : <int> exit code
 
         """
         xstat = 0
@@ -143,7 +135,6 @@ class Reduce(object):
             ffiles = self._check_files(self.files)
         except IOError as err:
             xstat = signal.SIGIO
-            log.error("_check_files() raised IOError exception.")
             log.error(str(err))
             return xstat
 
@@ -151,7 +142,6 @@ class Reduce(object):
             self.adinputs = self._convert_inputs(ffiles)
         except IOError as err:
             xstat = signal.SIGIO
-            log.error("_convert_inputs() raised IOError exception.")
             log.error(str(err))
             return xstat
 
@@ -165,7 +155,10 @@ class Reduce(object):
         try:
             recipe = rm.get_applicable_recipe()
         except ModeError as err:
+            xstat = signal.SIGIO
             log.error("No Mode matched: {}".format(rm.mode))
+            log.error(str(err))
+            log.info("Searching primtive set for {}".format(self.urecipe))
             pass
         except RecipeNotFound as err:
             pass
