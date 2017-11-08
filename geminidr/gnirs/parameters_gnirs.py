@@ -4,16 +4,6 @@ from ..gemini.parameters_gemini import ParametersGemini
 from ..core.parameters_nearIR import ParametersNearIR
 
 class ParametersGNIRS(ParametersGemini, ParametersNearIR):
-    addDQ = {
-        "suffix"                : "_dqAdded",
-        "bpm"                   : None,
-        "illum_mask"            : True,
-    }
-    addReferenceCatalog = {
-        "suffix"                : "_refcatAdded",
-        "radius"                : 0.033,
-        "source"                : "2mass",
-    }
     associateSky = {
         "suffix"                : "_skyAssociated",
         "distance"              : 1.,

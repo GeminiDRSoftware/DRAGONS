@@ -5,6 +5,16 @@ from ..core.parameters_image import ParametersImage
 from ..core.parameters_photometry import ParametersPhotometry
 
 class ParametersGNIRSImage(ParametersGNIRS, ParametersImage, ParametersPhotometry):
+    addDQ = {
+        "suffix"                : "_dqAdded",
+        "bpm"                   : None,
+        "illum_mask"            : True,
+    }
+    addReferenceCatalog = {
+        "suffix"                : "_refcatAdded",
+        "radius"                : 0.033,
+        "source"                : "2mass",
+    }
     correctWCSToReferenceFrame = {
         "suffix"                : "_wcsCorrected",
         "method"                : "header",
