@@ -165,9 +165,8 @@ class Reduce(object):
         try:
             recipe = rm.get_applicable_recipe()
         except ModeError as err:
-            xstat = signal.SIGTERM
             log.error("No Mode matched: {}".format(rm.mode))
-            return xstat
+            pass
         except RecipeNotFound as err:
             pass
 
