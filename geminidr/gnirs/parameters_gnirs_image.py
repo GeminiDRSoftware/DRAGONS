@@ -37,11 +37,15 @@ class ParametersGNIRSImage(ParametersGNIRS, ParametersImage, ParametersPhotometr
     }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",
-        "mask"              : True,
+        "dilation"          : 2,
+        "apply_dq"          : True,
+        "mask_objects"      : True,
         "nhigh"             : 1,
-        "nlow"              : 0,
+        "nlow"              : 1,
         "operation"         : "median",
         "reject_method"     : "avsigclip",
+        "scale"             : True,
+        "zero"              : False,
     }
     standardizeStructure = {
         "suffix"                : "_structureStandardized",
