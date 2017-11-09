@@ -24,40 +24,36 @@ class Mapper(object):
     def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='default',
                  usercals=None, uparms=None, upload=None):
         """
-        :parameter adinputs: list of AstroData objects.
-        :type adinputs: <list>
+        Parameters
+        ----------
+        adinputs : <list>
+                   A list of AstroData objects.
 
-        :parameter drpkg: The data reduction package to map. Default is 'geminidr'.
-                          This package *must* be importable.
-        :type drpkg: <str>
+        drpkg : <str>
+                The data reduction package to map. Default is 'geminidr'.
+                This package *must* be importable.
 
-        :parameter recipename: The recipe to use for processing. Passed by user 
-                               with -r or set by caller. Else 'default' recipe.
-        :type recipename: <str>
+        recipename : <str>
+                     The recipe to use for processing. Passed by user
+                     with -r or set by caller. Else 'default' recipe.
 
-        :parameter mode: Pipeline mode. Selection criterion for recipe sets.
-                         Supported modes:
-                         'sq' - Science Quality (default)
-                         'qa' - Quality Assessment
-                         'ql' - Quicklook
-        :type mode: <str>
+        mode : <str>
+               Pipeline mode. Selection criterion for recipe sets.
+               Supported modes:
+               'sq' - Science Quality (default)
+               'qa' - Quality Assessment
+               'ql' - Quicklook
 
-        :parameter usercals: A dict of user provided calibration files, keyed
-                             on cal type.
+        usercals : <dict>
+                   A dict of user provided calibration files, keyed on cal type.
+                   E.g., {'processed_bias': 'foo_bias.fits'}
 
-                             E.g.,
-                                  {'processed_bias': 'foo_bias.fits'}
-                             
-        :type usercals: <dict>
+        uparms : <list> 
+                 A list of tuples of user parameters like, (parameter, value).
+                 Each may have a specified primitive.
+                 E.g., [('foo','bar'), ('tileArrays:par1','val1')]
 
-        :parameter uparms: A set of user parameters passed via command line
-                           or other caller.
-        :type uparms: <list> list of (parameter, value) tuples. Each may have a 
-                             specified primitive.
-                             E.g., [('foo','bar'), ('tileArrays:par1','val1')]
-
-        :parameter upload: list of things to upload. e.g., ['metrics']
-        :type upload: <list>
+        upload : <list> A list of things to upload. e.g., ['metrics']
 
         """
         self.adinputs   = adinputs

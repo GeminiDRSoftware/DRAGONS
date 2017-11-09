@@ -42,9 +42,15 @@ class RecipeMapper(Mapper):
         """
         Start of the recipe library search cascade.
 
-        :returns: tuple including the best tag set match and the primitive class
-                  that provided the match.
-        :rtype: <tuple>, (set, class)
+        Parameters
+        ----------
+        <void>
+
+        Returns
+        -------
+        <tuple> : (set, <function>)
+                A tuple including the best tag set match and the recipe function
+                that matched.
 
         """
         matched_set = (set([]), None)

@@ -38,9 +38,17 @@ class PrimitiveMapper(Mapper):
     # Primtive search cascade
     def _retrieve_primitive_set(self):
         """
-        :returns: tuple including the best tag set match and the primitive class
-                  that provided the match.
-        :rtype:   <tuple>, (set, class)
+        Start of the primitive class search cascade.
+
+        Parameters
+        ----------
+        <void>
+
+        Returns
+        -------
+        <tuple> : (set, <class>)
+                tuple including the best tag set match and the primitive class
+                that best matched.
 
         """
         matched_set = (set([]), None)
