@@ -49,8 +49,8 @@ class RecipeMapper(Mapper):
         Returns
         -------
         <tuple> : (set, <function>)
-                A tuple including the best tag set match and the recipe function
-                that matched.
+                  A tuple including the best tag set match and the recipe function
+                  that best matched.
 
         """
         matched_set = (set([]), None)

@@ -47,8 +47,8 @@ class PrimitiveMapper(Mapper):
         Returns
         -------
         <tuple> : (set, <class>)
-                tuple including the best tag set match and the primitive class
-                that best matched.
+                  Tuple including the best tag set match and the primitive class
+                  that best matched.
 
         """
         matched_set = (set([]), None)
