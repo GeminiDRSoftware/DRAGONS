@@ -67,7 +67,6 @@ def reduce_nostack(p):
     p.ADUToElectrons()
     p.addVAR(read_noise=True, poisson_noise=True)
     p.darkCorrect()
-    p.writeOutputs()
     p.flatCorrect()
     p.detectSources()
     p.measureIQ(display=True)
