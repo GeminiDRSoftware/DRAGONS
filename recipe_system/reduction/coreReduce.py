@@ -155,10 +155,7 @@ class Reduce(object):
         try:
             recipe = rm.get_applicable_recipe()
         except ModeError as err:
-            xstat = signal.SIGIO
-            log.error("No Mode matched: {}".format(rm.mode))
-            log.error(str(err))
-            log.info("Searching primtive set for {}".format(self.urecipe))
+            log.warn("WARNING: {}".format(err))
             pass
         except RecipeNotFound as err:
             pass
@@ -178,7 +175,7 @@ class Reduce(object):
             try:
                 primitive_as_recipe = getattr(p, self.urecipe)
                 pname = primitive_as_recipe.__name__
-                log.info("Found {} as a primitive.".format(pname))
+                log.stdinfo("Found '{}' as a primitive.".format(pname))
                 self._logheader(primitive_as_recipe.__name__)
                 primitive_as_recipe()
             except AttributeError:
