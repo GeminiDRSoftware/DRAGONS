@@ -146,13 +146,18 @@ class Bookkeeping(PrimitivesBASE):
         adoutputs = [ad for ad in adinputs if set(required_tags) & ad.tags]
         return adoutputs
 
-    def showInputs(self, adinputs=None, stream='main', **params):
+    def showInputs(self, adinputs=None, **params):
         """
         A simple primitive to show the filenames for the current inputs to
         this primitive.
+        
+        Parameters
+        ----------
+        purpose: str
+            Brief description for output
         """
         log = self.log
-        log.stdinfo("Inputs to stream {}".format(stream))
+        log.stdinfo("Inputs for {}".format(params["purpose"]))
 
         for ad in adinputs:
             log.stdinfo("  {}".format(ad.filename))

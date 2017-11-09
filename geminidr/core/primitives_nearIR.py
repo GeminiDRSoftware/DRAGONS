@@ -145,25 +145,24 @@ class NearIR(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        self.selectFromInputs(tags='LAMPON', outstream='lampOn')
-        self.selectFromInputs(tags='LAMPOFF', outstream='lampOff')
-        self.showInputs(stream='lampOn')
-        self.showInputs(stream='lampOff')
-        self.stackFrames(stream='lampOn')
-        self.stackFrames(stream='lampOff')
+        lamp_on_list = self.selectFromInputs(adinputs, tags='LAMPON')
+        lamp_off_list = self.selectFromInputs(adinputs, tags='LAMPOFF')
+        self.showInputs(lamp_on_list, stream='lampOn')
+        self.showInputs(lamp_off_list, stream='lampOff')
+        ad_on = self.stackFrames(lamp_on_list)
+        ad_off = self.stackFrames(lamp_off_list)
 
-        if self.streams['lampOn'] and self.streams['lampOff']:
+        if ad_on and ad_off:
             log.fullinfo("Subtracting lampOff stack from lampOn stack")
-            flat = self.streams['lampOn'][0] - self.streams['lampOff'][0]
+            flat = ad_on[0] - ad_off[0]
             flat.update_filename(suffix="lampOnOff")
-            del self.streams['lampOn'], self.streams['lampOff']
             return [flat]
         else:
             log.warning("Cannot subtract lamp on - lamp off flats as do not "
                         "have some of each")
-            if self.streams['lampOn']:
+            if ad_on:
                 log.warning("Returning stacked lamp on flats")
-                return self.streams['lampOn']
+                return ad_on
             else:
                 return []
 
@@ -230,6 +229,6 @@ class NearIR(PrimitivesBASE):
                 raise IOError("DARKS ARE NOT OF EQUAL EXPTIME")
 
         # stack the darks stream
-        self.showInputs(stream='darks')
+        self.showInputs(purpose='darks')
         self.streams['darks'] = self.stackFrames(self.streams['darks'])
         return adinputs
