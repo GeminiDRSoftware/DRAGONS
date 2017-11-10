@@ -24,18 +24,24 @@ import inspect
 import signal
 import traceback
 
+from importlib import import_module
+
 import astrodata
 import gemini_instruments
-try:
-    import soar_instruments
-except ImportError:
-    pass
 
-try:
-    from ghost_instruments import ghost
-except ImportError:
-    pass
+# ------------------------------------------------------------------------------
+# These are here temporarily. In future, use --adpkg on reduce.
+# try:
+#     import soar_instruments
+# except ImportError:
+#     pass
 
+# try:
+#     from ghost_instruments import ghost
+# except ImportError:
+#     pass
+
+# ------------------------------------------------------------------------------
 from gempy.utils import logutils
 
 from astrodata.core import AstroDataError
@@ -90,6 +96,10 @@ class Reduce(object):
             args = buildParser(_version).parse_args()
         else:
             args = buildParser(_version).parse_args([])
+
+        # acquire any new astrodata classes.
+        if args.adpkg:
+            import_module(args.adpkg)
 
         self.adinputs = None
         self.mode     = args.mode

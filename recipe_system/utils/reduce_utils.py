@@ -84,11 +84,17 @@ def buildParser(version):
                         action=PosArgAction, default=[],
                         help="fitsfile [fitsfile ...] ")
 
+    parser.add_argument("--adpkg", dest='adpkg', default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Specify an external astrodata definitions package. "
+                        "This is only passed for non-Gemini instruments."
+                        "The package must be importable. E.g., "
+                        "--adpkg soar_instruments ")
+
     parser.add_argument("--drpkg", dest='drpkg', default='geminidr',
                         nargs="*", action=UnitaryArgumentAction,
                         help="Specify another data reduction (dr) package. "
-                        "The package must be importable either through sys.path "
-                        "or a user's PYTHONPATH. Recipe system default is "
+                        "The package must be importable. Recipe system default is "
                         "'geminidr'. E.g., --drpkg ghostdr ")
 
     parser.add_argument("--logfile", dest="logfile", default="reduce.log",
@@ -97,7 +103,7 @@ def buildParser(version):
 
     parser.add_argument("--logmode", dest="logmode", default="standard",
                         nargs="*", action=UnitaryArgumentAction,
-                        help="Set log mode: 'standard', 'quiet', 'debug'"
+                        help="Set log mode: 'standard', 'quiet', 'debug'. "
                         "Default is 'standard'. 'quiet' writes only to log file.")
 
     parser.add_argument("-p", "--param", dest="userparam", default=None,
@@ -265,7 +271,8 @@ def normalize_args(args):
     :rtype: <Namespace>
 
     """
-
+    if isinstance(args.adpkg, list):
+        args.adpkg = args.adpkg[0]
     if isinstance(args.drpkg, list):
         args.drpkg = args.drpkg[0]
     if isinstance(args.recipename, list):
