@@ -4,6 +4,8 @@
 #
 #                                                                    showpars.py
 # ------------------------------------------------------------------------------
+from __future__ import print_function
+
 import sys
 from argparse import ArgumentParser
 
@@ -31,23 +33,22 @@ def get_pars(filename):
     return p.parameters
 
 def showpars(pobj, primname):
-    """
-
-    """
     for i in dir(pobj):
         if i.startswith("_"):
             continue
 
     pars = getattr(pobj, primname)
     print
-    print "Settable parameters on primitive '{}':".format(primname)
-    print "="*32
-    print " Name       Current setting"
-    print
+    print("Settable parameters on '{}':".format(primname))
+    print("="*32)
+    print(" Name\t\t\tCurrent setting")
+    print()
     for k,v in pars.items():
-        print "{} :         {}".format(k,v)
-
-    print
+        if len(k) <= 4:
+            print("{} :\t\t\t{}".format(k,v))
+        else:
+            print("{} : \t\t{}".format(k,v))
+    print()
     return
 
 if __name__ == '__main__':
