@@ -7,14 +7,14 @@ reduce \- Recipe Processing Management System, v2.0, command line interface (cli
 [\fB\-v\fR]
 [\fB\-d\fR]
 [\fB\--context\fR CONTEXT]
+[\fB\--adpkg\fR ADPKG]
 [\fB\--drpkg\fR DRPKG]
 [\fB\--logmode\fR LOGMODE]
 [\fB\--logfile\fR LOGFILE]
-[\fB\--loglevel\fR LOGLEVEL]
 [\fB\-p\fR USERPARAM [USERPARAM ...]]
 [\fB\-r\fR RECIPENAME]
 [\fB\--suffix\fR SUFFIX]
-[\fB\--upload_metrics\fR]
+[\fB\--upload\fR UPLOAD]
 [\fB\--user_cal\fR USER_CAL]
 fitsfile [fitsfile ...]
 
@@ -56,6 +56,16 @@ E.g.,
 .RE
 .RE
 .TP
+\fB\-\-adpkg\fR ADPKG
+Specify an external astrodata definitions package. This is only passed for
+non-Gemini instruments.The package must be importable.
+.RS
+E.g.,
+.RS
+\fB\-\-adpkg\fR ghost_instruments
+.RE
+.RE
+.TP
 \fB\-\-drpkg\fR DRPKG
 Specify another data reduction (dr) package. The package must be
 importable either through sys.path or a user's PYTHONPATH.
@@ -71,18 +81,9 @@ E.g.,
 Name of log file (default is 
 .B 'reduce.log'
 )
-.TP 
-\fB\--loglevel\fR LOGLEVEL
-Set the verbose level for console logging. One of
-.RS
-.B critical, error, warning, status, stdinfo, fullinfo, debug
-(default is 
-.B stdinfo
-)
-.RE
 .TP
 \fB\--logmode\fR LOGMODE
-Set log mode. One of \fB\ standard, console, quiet, debug, or null\fR
+Set log mode. One of \fB\ standard, quiet, debug\fR
 (default is \fB\ standard\fR)
 .RE
 .RE
@@ -112,7 +113,6 @@ E.g.,
 
 For a recipe file in the current working directory (cwd), only the file name
 is needed, as in,
-
 .RS
 \fB\-r\fR recipefile.recipe_function
 .RE
@@ -132,8 +132,13 @@ Add SUFFIX to filenames at end of reduction; strip all other suffixes
 marked by '_'.
 .RE
 .TP	
-\fB\-\-upload_metrics\fR
-Use this switch to send QA metrics to fitsstore. Default is \fBFalse\fR.
+\fB\-\-upload\fR PROD [PROD ...]
+Send these pipeline products to fitsstore. Default is None.
+.RS
+E.g.,
+.RS
+\fB\-\-upload\fR metrics calibs
+.RE
 .RE
 .TP
 \fB\-\-user_cal\fR USER_CAL
@@ -146,12 +151,10 @@ E.g.,
 .RE
 
 .SH ENVIRONMENT
-Recommend Anaconda 4.2.0, Astropy 1.2.1. (Ureka 1.5.2 should also work
-for awhile.)
+Recommend Anaconda 4.2.0, Astropy 1.2.1.
 
 .SH BUGS
---user_cal Currently, this option is not enabled pending critical
-implementation decision. (kra, 14-08-17)
+None known
 
 .SH SEE ALSO 
 .I typewalk(1)
