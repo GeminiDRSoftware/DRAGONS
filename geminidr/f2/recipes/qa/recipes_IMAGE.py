@@ -79,7 +79,7 @@ def reduce_nostack(p):
     p.getList(purpose='forSky')
     p.separateSky()
     p.associateSky()
-    p.skyCorrect()
+    p.skyCorrect(mask_objects=False)
     p.detectSources()
     p.measureIQ(display=True)
     p.determineAstrometricSolution()
