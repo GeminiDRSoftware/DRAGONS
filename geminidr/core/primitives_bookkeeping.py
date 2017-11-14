@@ -107,7 +107,7 @@ class Bookkeeping(PrimitivesBASE):
         # Since adinputs takes priority over cached files, can exit now
         # if we already have enough/too many files.
         if len(adinputs) >= max_frames:
-            del adinputs[max_frames:]
+            del adinputs[:len(adinputs)-max_frames]
             log.stdinfo("Input list is longer than/equal to max_frames. "
                         "Returning the following files:")
             for ad in adinputs:
@@ -122,20 +122,27 @@ class Bookkeeping(PrimitivesBASE):
                 sid_list.append(sid)
 
         # Import inputs from all lists
+        all_files = []
         for sid in sid_list:
             stacklist = self.stacks[sid]
-            log.stdinfo("List for stack id {}(...):".format(sid[:35]))
-            # Add each file to adinputs if not already there and there's room
+            log.debug("List for stack id {}(...):".format(sid[:35]))
             for f in stacklist:
-                if f not in [ad.filename for ad in adinputs]:
-                    if len(adinputs) < max_frames:
-                        try:
-                            adinputs.append(astrodata.open(f))
-                            log.stdinfo("   {}".format(f))
-                        except IOError:
-                            log.stdinfo("   {} NOT FOUND".format(f))
-                else:
-                    log.stdinfo("   {}".format(f))
+                log.debug("   {}".format(f))
+            all_files.extend(stacklist)
+
+        # Get most recent frames first
+        log.stdinfo("Using the following files:")
+        for f in sorted(all_files, reverse=True):
+            # Add each file to adinputs if not already there and there's room
+            if f not in [ad.filename for ad in adinputs]:
+                if len(adinputs) < max_frames:
+                    try:
+                        adinputs.append(astrodata.open(f))
+                        log.stdinfo("   {}".format(f))
+                    except IOError:
+                        log.stdinfo("   {} NOT FOUND".format(f))
+            else:
+                log.stdinfo("   {} (in memory)".format(f))
         return adinputs
 
     def selectFromInputs(self, adinputs=None, **params):
