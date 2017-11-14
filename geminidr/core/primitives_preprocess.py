@@ -890,7 +890,7 @@ class Preprocess(PrimitivesBASE):
         # duplicate entries:
         ad_objects = filter(lambda ad: ad in objects, adinputs)
         ad_skies = filter(lambda ad: ad in skies, adinputs)
-        ad_skies = [deepcopy(ad) if ad in objects else ad for ad in ad_skies]
+        #ad_skies = [deepcopy(ad) if ad in objects else ad for ad in ad_skies]
 
         log.stdinfo("Science frames:")
         for ad in ad_objects:
@@ -966,7 +966,9 @@ class Preprocess(PrimitivesBASE):
         ad_skies = []
         for filename in skies:
             for sky in self.streams["sky"]:
-                if sky.filename == filename:
+                if sky.filename in [filename,
+                        filename.replace(self.parameters.separateSky["suffix"],
+                                         self.parameters.associateSky["suffix"])]:
                     break
             else:
                 try:
@@ -985,7 +987,7 @@ class Preprocess(PrimitivesBASE):
             ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
                         else self.detectSources([ad])[0] for ad in ad_skies]
             ad_skies = self.dilateObjectMask(ad_skies, **params)
-            ad_skies = self.addObjectMaskToDQ(ad_skies)
+            #ad_skies = self.addObjectMaskToDQ(ad_skies)
         sky_dict = dict(zip(skies, ad_skies))
 
         # Make a list of stacked sky frames, but use references if the same
@@ -996,14 +998,13 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
-                stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
+                stacked_sky = self.stackSkyFrames([deepcopy(sky_dict[sky]) for sky in
                                                   skytable], **stack_params)
                 if len(stacked_sky) == 1:
                     # Provide a more intelligent filename
                     stacked_sky = stacked_sky[0]
                     stacked_sky.phu['ORIGNAME'] = ad.phu['ORIGNAME']
                     stacked_sky.update_filename(suffix="_sky", strip=True)
-                    stacked_sky.write(clobber=True)
                 else:
                     log.warning("Problem with stacking the following sky "
                                 "frames for {}".format(adinputs[i].filename))
