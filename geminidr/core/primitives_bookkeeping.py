@@ -173,8 +173,8 @@ class Bookkeeping(PrimitivesBASE):
             Brief description for output
         """
         log = self.log
-        log.stdinfo("Inputs for {}".format(params["purpose"]))
-
+        purpose = params["purpose"] or "primitive"
+        log.stdinfo("Inputs for {}".format(purpose))
         for ad in adinputs:
             log.stdinfo("  {}".format(ad.filename))
         return adinputs
