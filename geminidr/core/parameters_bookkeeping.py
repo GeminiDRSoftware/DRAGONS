@@ -15,7 +15,7 @@ class ParametersBookkeeping(ParametersBASE):
         "tags"                  : None,
     }
     showInputs = {
-        "purpose"               : "primitive",
+        "purpose"               : None,
     }
     showList = {
         "purpose"               : 'all',

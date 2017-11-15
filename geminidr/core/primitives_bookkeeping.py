@@ -42,6 +42,8 @@ class Bookkeeping(PrimitivesBASE):
             purpose/name of this list, used as suffix for files
         """
         log = self.log
+        if purpose is None:
+            purpose = ''
         suffix = '_{}'.format(purpose) if purpose else '_list'
 
         # Update file names and write the files to disk to ensure the right
@@ -96,30 +98,44 @@ class Bookkeeping(PrimitivesBASE):
             maximum number of frames to return
         """
         log = self.log
-        purpose = params.get('purpose', '')
-        max_frames = params['max_frames']
+        purpose = params["purpose"]
+        if purpose is None:
+                purpose = ''
+        # Make comparison checks easier if there's no limit
+        max_frames = params['max_frames'] or 1000000
 
-        # Get ID for all inputs; use a set to avoid duplication
-        sidset = set()
-        [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
+        # Since adinputs takes priority over cached files, can exit now
+        # if we already have enough/too many files.
+        if len(adinputs) >= max_frames:
+            del adinputs[max_frames:]
+            log.stdinfo("Input list is longer than/equal to max_frames. "
+                        "Returning the following files:")
+            for ad in adinputs:
+                log.stdinfo("   {}".format(ad.filename))
+            return adinputs
 
-        adinputs = []
+        # Get ID for all inputs; want to preserve order of stacking lists
+        sid_list = []
+        for ad in adinputs:
+            sid = _stackid(purpose, ad)
+            if sid not in sid_list:
+                sid_list.append(sid)
+
         # Import inputs from all lists
-        for sid in sidset:
+        for sid in sid_list:
             stacklist = self.stacks[sid]
             log.stdinfo("List for stack id {}(...):".format(sid[:35]))
-            # Limit length of stacklist
-            if len(stacklist) > max_frames and max_frames is not None:
-                stacklist = stacklist[-max_frames:]
-            # Add each file to the input list if it's not already there
+            # Add each file to adinputs if not already there and there's room
             for f in stacklist:
                 if f not in [ad.filename for ad in adinputs]:
-                    try:
-                        adinputs.append(astrodata.open(f))
-                    except IOError:
-                        log.stdinfo("   {} NOT FOUND".format(f))
-                    else:
-                        log.stdinfo("   {}".format(f))
+                    if len(adinputs) < max_frames:
+                        try:
+                            adinputs.append(astrodata.open(f))
+                            log.stdinfo("   {}".format(f))
+                        except IOError:
+                            log.stdinfo("   {} NOT FOUND".format(f))
+                else:
+                    log.stdinfo("   {}".format(f))
         return adinputs
 
     def selectFromInputs(self, adinputs=None, **params):
@@ -157,8 +173,8 @@ class Bookkeeping(PrimitivesBASE):
             Brief description for output
         """
         log = self.log
-        log.stdinfo("Inputs for {}".format(params["purpose"]))
-
+        purpose = params["purpose"] or "primitive"
+        log.stdinfo("Inputs for {}".format(purpose))
         for ad in adinputs:
             log.stdinfo("  {}".format(ad.filename))
         return adinputs
