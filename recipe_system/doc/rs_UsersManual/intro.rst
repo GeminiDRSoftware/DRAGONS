@@ -62,33 +62,32 @@ defined instrument packages (`targets`).
 There are three critical parameters the Recipe System needs to map a dataset to
 a primitive class and a recipe:
 
- * context
+ * mode
  * recipe name
  * tags (or `tagset`)
 
-Recipes and tags have already been mentioned, but `context` is one other 
-parameter required to perform recipe selection. The `context` is simply a 
+Recipes and tags have already been mentioned, but `mode` is one other 
+parameter required to perform recipe selection. The `mode` is simply a 
 label by which the recipe libraries are delineated and which are manifest 
-in instrument packages as directories named with these same context labels.
+in instrument packages as directories named with these same-named labels.
 
 For example, instrument packages for many Gemini instruments are provided under 
 the `gemindr` package, each of which contain a ``recipes`` directory that, in 
-turn, contains a `qa` directory and a `sq` directory. These `context` directories 
+turn, contains a `qa` directory and a `sq` directory. These `mode` directories 
 provide all recipes that pertain to data processing classified as Quality 
 Assurance (``qa``) or Science Quality (``sq``). The **QAP**, the Quality 
-Assurance Pipeline, is the ``reduce_nostack`` recipe under the ``qa`` context 
-libraries. As users become familiar with running and using the Recipe System, 
-they are free to add any new contexts as they like. The Recipe System is 
-name-agnostic: contexts, recipe libraries (modules), and recipe function names 
-are arbitrary.
+Assurance Pipeline, is the ``reduce_nostack`` recipe under the ``qa`` recipe 
+libraries. The Recipe System requires no naming convention, that is, the system
+is name-agnostic: naming of recipe libraries (modules) and recipe functions is
+arbitrary.
 
 With no arguments passed on the command line, what has happened in the example 
 above? What has happened is that the Recipe System has fallen back to defaults
-for a recipe name and a context, which, in the current (beta) release, results
-in the recipe, ``reduce_nostack``, and a context of `qa`. These default
+for a recipe name and a mode, which, in the current (beta) release, results
+in the recipe, ``reduce_nostack``, and a mode of `qa`. These default
 settings are equivalent to the command line::
 
- $ reduce -r reduce_nostack --context qa S20161025S0111.fits
+ $ reduce -r reduce_nostack --qa S20161025S0111.fits
 
 As indicated, a recipe is just a function that recieves a primitive instance 
 paired with the data, and which specifies that the following primitive functions 
@@ -128,17 +127,17 @@ command invokes and to demonstrate how much the ``reduce`` interface abstracts
 away the complexity of the processing that is engaged with the simplicity of 
 commands.
 
-There is much more to say about the topic of contexts and recipe libraries, 
+There is much more to say about the topic of modes and recipe libraries, 
 presented in depth in the :ref:`Recipe System Programmer’s Manual <refdocs>`.
 
 Definitions
 ===========
 
-Context
--------
-A context is a label by which the recipe libraries are delineated and 
+Mode
+----
+A mode is a label by which the recipe libraries are delineated and 
 which are manifest in instrument packages as directories named with these 
-same labels. These context names `should` indicate or hint at the purpose or 
+same labels. These mode names `should` indicate or hint at the purpose or 
 quality of the recipes contained therein. For example, Quality Assurance recipes 
 are found in the ``qa`` recipes directory, Science Qauality recipes, in an 
 ``sq`` recipes directory.

@@ -19,13 +19,12 @@ the instance. Use the type specified in the type column.)::
  -------------------------------------------------------
  displayflags           <type 'bool'>        False
  files                  <type 'list'>        []
- context                <type 'list'>        ['qa']
  logfile                <type 'str'>         'reduce.log'
- loglevel               <type 'str'>         'stdinfo'
  logmode                <type 'str'>         'standard'
+ mode                   <type 'str'>         'sq'      
  recipename             <type 'str'>         None
  suffix                 <type 'str'>         None
- upmetrics              <type 'bool'>        False
+ upload                 <type 'list'>        None
  user_cal               <type 'str'>         None
  userparam              <type 'list'>        None
 
@@ -81,19 +80,18 @@ files). Here, each list of ``procfiles`` is then passed to the internal
         # write logfile only, no stdout.
         reduce_object.logmode = 'quiet'
         reduce_object.userparam = ['clobber=True']
+	
+        logutils.config(file_name=reduce_object.logfile, mode=reduce_object.logmode)
 
-        logutils.config(file_name=reduce_object.logfile, 
-                        mode=reduce_object.logmode,
-                        console_lvl=reduce_object.loglevel)
-
-        def launch_reduce(datasets, recipe=None, upload=False):
+        def launch_reduce(datasets, recipe=None, upload=None):
             reduce_object.files = datasets
             if recipe:
                 reduce_object.recipename = recipe
+
             if upload:
-                reduce_object.context = 'qa, upload'
-            else:
-                reduce_object.context = 'qa'
+                reduce_object.upload = upload
+
+            reduce_object.mode = 'qa'  # request 'qa' recipes
             reduce_object.runr()
             return
 
@@ -113,5 +111,4 @@ files). Here, each list of ``procfiles`` is then passed to the internal
         reduce_conditions_are_met(procfiles)
 
 Calling ``reduce_conditions_are_met()`` without the ``control_options`` 
-parameter will result in the ``context`` attribute being set to ``'qa'``.
-
+parameter will result in the ``mode`` attribute being set to ``'qa'``.
