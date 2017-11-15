@@ -86,7 +86,7 @@ class Masktype(GemcombineParam):
     def __init__(self, inputs=None, params=None):
         log.debug("Masktype __init__")
         GemcombineParam.__init__(self, inputs, params)
-        if params["apply_dq"]:
+        if params.get("apply_dq"):
             self.masktype = "goodvalue"
         else:
             self.masktype = "none"
