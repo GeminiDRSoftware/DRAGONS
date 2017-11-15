@@ -30,7 +30,7 @@ def reduce_nostack(p):
     p.determineAstrometricSolution()
     p.measureCC()
     p.addToList(purpose='forSky')
-    p.getList(purpose='forSky', max_frames=8)
+    p.getList(purpose='forSky', max_frames=9)
     p.separateSky()
     p.associateSky()
     p.skyCorrect()
