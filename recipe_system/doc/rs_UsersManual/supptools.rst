@@ -5,24 +5,23 @@
 Supplemental tools
 ==================
 
-The gemini_python package provides a number of command line tools that users may
+The DRAGONS package provides a number of command line tools that users may
 find helpful in executing reduce on their data.
 
-With the installation and configuration of gemini_python comes some supplemental
+With the installation and configuration of DRAGONS comes some supplemental
 tools to help users discover information, not only about their own data, but
 about the Recipe System, such as available recipes, primitives, and defined
 tag sets.
 
-If the user environment has been configured correctly these applications 
-will work directly.
+If your environment has been configured correctly these applications will work
+directly.
 
 .. _adcc:
 
 adcc
 ----
 The application that has been historically known as the ``adcc`` (Automated
-Data Communication Center), is significantly scaled back from its previous
-incarnation and now runs only as an HTTP server. The webservice provided
+Data Communication Center), is an HTTP proxy server. The webservice provided
 by the ``adcc`` allows both the Recipe System and primitive functions to post
 data produced during data processing. These data comprise image quality and
 observing condition metrics, passed to the web server in the form of messages

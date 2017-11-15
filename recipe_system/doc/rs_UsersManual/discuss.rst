@@ -7,7 +7,7 @@ In the works
 
 Fits Storage
 ------------
-In the context of ``reduce`` and the Astrodata Recipe System, FitsStorage provides
+In the context of the DRAGONS Recipe System and ``reduce``, FitsStorage provides
 a calibration management and association feature. When given a science frame (or
 any frame that requires calibration) and a calibration type requested, FitsStorage
 is able to automatically choose the best available calibration of the required type
@@ -26,9 +26,9 @@ Local Calibration Service
 +++++++++++++++++++++++++
 A local 'fitsstore' service will be delivered as part of future Recipe System
 releases and will provide the calibration management and association features of
-:ref:`fitsstore`: for use with the public release of the `gemini_python` data
-reduction package. This feature will provide automatic calibration selection for
-both pipeline (recipe) operations and in an interactive processing environment.
+:ref:`fitsstore`: for use with the public release of the DRAGONS data reduction
+package. This feature will provide automatic calibration selection for both pipeline
+(recipe) operations and in an interactive processing environment.
 
 .. _future:
 
@@ -46,4 +46,4 @@ As things stand now, it is up to the user to pass commonly typed data to
 ``reduce``. As shown in the previous section, :ref:`typewalk`, ``typewalk`` 
 can help a user perform this task and create a 'ready-to-run' @file that can 
 be passed directly to ``reduce``. Properly implemented 'intelligence' will 
-`not` require the user to determine the AstroDataTypes of datasets.
+`not` require the user to determine the AstroData tags of datasets.

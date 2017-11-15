@@ -35,17 +35,19 @@ We begin with the example shown in the :ref:`Introduction <intro>`::
 
   $ reduce S20161025S0111.fits
 
-With no command line parameters or other options, a default *context* of `'qa'` 
-is set and the default recipe for all instruments is `'reduce_nostack'`, defined 
-for various kinds of datasets and currently used for QAP summit operations. 
-*Unless* passed an explicit recipe (-r, --recipename) and/or context, 
-the Recipe System uses the dataset's astrodata `tags` (or `tagset`) and the 
-Recipe System default `context` to locate the appropriate recipe to run.
+With no command line parameters or other options, a default mode of `'sq'` 
+is set and a default recipe for all instruments is defined for various kinds of
+datasets.
 
-Within the ``gemini_python`` package, `qa` recipe libraries for a dataset taken
+*Unless* passed an explicit recipe (-r, --recipename) and/or mode flag
+(i.e. --qa or --ql), the Recipe System uses the dataset's astrodata `tags`
+(or `tagset`) and the Recipe System default mode `sq` to locate the appropriate
+recipe to run.
+
+Within the ``DRAGONS`` package, `sq` recipe libraries for a dataset taken
 with GMOS are defined in the ``geminidr`` package under::
 
-  gmos/recipes/qa
+  gmos/recipes/sq
 
 As previously indicated, the ``reduce`` command itself is deceptively simple
 considering the processing that ensues. This simplicity is outward facing, which
@@ -61,11 +63,12 @@ also available as a manual page as (``man reduce``). Subsequently, further
 description and discussion of certain non-trivial options is presented. ::
 
   $ reduce --help
-  usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--drpkg DRPKG]
-              [--logfile LOGFILE] [--loglevel LOGLEVEL] [--logmode LOGMODE]
-              [-p USERPARAM [USERPARAM ...]] [-r RECIPENAME] [--suffix SUFFIX]
-              [--upload_metrics] [--user_cal USER_CAL]
-              fitsfile [fitsfile ...]
+  usage: reduce [-h] [-v] [-d] [--adpkg ADPKG] [--drpkg DRPKG]
+                [--logfile LOGFILE] [--logmode LOGMODE]
+		[-p USERPARAM [USERPARAM ...]] [--qa] [--ql] [-r RECIPENAME]
+		[--suffix SUFFIX] [--upload UPLOAD]
+		[--user_cal USER_CAL [USER_CAL ...]]
+		fitsfile [fitsfile ...]
 
   _____________________________ Gemini Observatory ____________________________
   ____________________ Recipe Processing Management System ____________________
@@ -78,17 +81,16 @@ description and discussion of certain non-trivial options is presented. ::
   -h, --help            Show this help message and exit.
   -v, --version         Show program's version number and exit.
   -d , --displayflags   Display all parsed option flags and exit.
-  --context CONTEXT     Use <context> for recipe selection and primitives
-                        sensitive to context. Eg., --context QA.
+  --adpkg ADPKG         Specify an external astrodata definitions package.
+                        This is only passed for non-Gemini instruments.The
+                        package must be importable.
+			E.g., --adpkg soar_instruments
   --drpkg DRPKG         Specify another data reduction (dr) package. The
                         package must be importable either through sys.path or
                         a user's PYTHONPATH. Recipe System default is 'geminidr'.
                         E.g., --drpkg ghostdr.
   --logfile LOGFILE     Set name of log file (default is 'reduce.log').
-  --loglevel LOGLEVEL   Set verbose level for console logging; (critical,
-                        error, warning, status, stdinfo, fullinfo, debug).
-  --logmode LOGMODE     Set log mode: 'standard', 'console', 'quiet', 'debug',
-                        or 'null'.
+  --logmode LOGMODE     Set log mode: 'standard', 'quiet', 'debug'.
   -p USERPARAM [USERPARAM ...], --param USERPARAM [USERPARAM ...]
                         Set a parameter from the command line. The form '-p
                         par=val' sets a parameter such that all primitives
@@ -112,7 +114,8 @@ description and discussion of certain non-trivial options is presented. ::
                         defined in a single file.
   --suffix SUFFIX       Add 'suffix' to filenames at end of reduction; strip
                         all other suffixes marked by '_'.
-  --upload_metrics      Send QA metrics to the metrics db. Default is False.
+  --upload UPLOAD       Send these pipeline products to fitsstore. Default is
+                        None. Eg., --upload metrics calibs
   --user_cal USER_CAL   Specify user supplied calibrations for calibration
                         types. Eg., --user_cal gsTest_arc.fits .
 
@@ -135,24 +138,23 @@ Informational switches
     Recipe System has not been invoked and a default recipe not yet determined.
     Eg.,::
 
-       $ reduce -d --logmode console fitsfile.fits
+       $ reduce -d --logmode quiet fitsfile.fits
 
-       --------------------   switches, vars, vals  --------------------
-
-       Literals                    var 'dest'                  Value
-       -----------------------------------------------------------------
-       ['-d', '--displayflags']    :: displayflags           :: True
-       ['-p', '--param']           :: userparam              :: None
-       ['--logmode']               :: logmode                :: console
-       ['--context']               :: context                :: ['qa']
-       ['-r', '--recipe']          :: recipename             :: None
-       ['--suffix']                :: suffix                 :: None
-       ['--loglevel']              :: loglevel               :: stdinfo
-       ['--drpkg']                 :: drpkg                  :: geminidr
-       ['--user_cal']              :: user_cal               :: None
-       ['--logfile']               :: logfile                :: reduce.log
-       ['--upload_metrics']        :: upmetrics              :: False
-       -----------------------------------------------------------------
+	  Literals			var 'dest'		Value
+	 -----------------------------------------------------------------
+	['-d', '--displayflags']        :: displayflags         :: True
+	['-p', '--param']               :: userparam            :: None
+	['--logmode']                   :: logmode              :: quiet
+	['--ql']                        :: mode                 :: sq
+	['--qa']                        :: mode                 :: sq
+	['--upload']                    :: upload               :: None
+	['-r', '--recipe']              :: recipename           :: None
+	['--adpkg']                     :: adpkg                :: None
+	['--suffix']                    :: suffix               :: None
+	['--drpkg']                     :: drpkg                :: geminidr
+	['--user_cal']                  :: user_cal             :: None
+	['--logfile']                   :: logfile              :: reduce.log
+	-----------------------------------------------------------------
 
        Input fits file(s):	fitsfile.fits
 
@@ -160,73 +162,62 @@ Informational switches
 
 Configuration Switches, Options
 +++++++++++++++++++++++++++++++
-**--context <CONTEXT>**
-    Use <CONTEXT> for recipe selection and for primitives sensitive to context. 
-    Eg., ``--context qa``. When not specified, the context defaults to 'qa'. 
+**--adpkg <ADPKG>**
+    Specify an external astrodata definitions package. This is only passed for
+    non-Gemini instruments.The package must be importable.
+    E.g., --adpkg soar_instruments
 
 **--logfile <LOGFILE>**
     Set the log file name. Default is 'reduce.log' in the current directory.
-
-**--loglevel <LOGLEVEL>**
-    Set the verbose level for console logging. One of
-
-    * critical
-    * error
-    * warning
-    * status
-    * stdinfo
-    * fullinfo
-    * debug
-
-    Default setting is 'stdinfo.'
 
 **--logmode <LOGMODE>**
     Set logging mode. One of
 
     * standard
-    * console
     * quiet
     * debug
-    * null
 
-    where 'console' writes only to screen and 'quiet' writes only to the log
-    file. Default is 'standard'.
+    'quiet' writes only to the log file. Default is 'standard'.
 
 **--drpkg DRPKG**
     Specify an external data reduction (dr) package. The package must be
     importable either through sys.path or a user's PYTHONPATH.
     Default is 'geminidr'.
 
-    E.g., ``--drpkg ghostdr``
+    E.g.::
+
+      --drpkg ghostdr
 
     When this option is specified, users will see the passed value for 
-    'drpkg'using the [-d --displayflags] option. For the example above::
+    'drpkg'using the [-d --displayflags] option. We shall also include the
+    --adpkg option for Ghost data. For the example above::
 
-     $ reduce -d --drpkg ghostdr --logmode console fitsfile.fits
+     $ reduce -d --adpkg ghost_instruments --drpkg ghostdr --logmode quiet --qa
+       -r display S20150929S0151.fits
 
         --------------------   switches, vars, vals  --------------------
 
 	  Literals			var 'dest'		Value
-	-----------------------------------------------------------------
-	['-d', '--displayflags']        :: displayflags       :: True
-	['-p', '--param']               :: userparam          :: None
-	['--logmode']                   :: logmode            :: console
-	['--context']                   :: context            :: ['qa']
-	['-r', '--recipe']              :: recipename         :: None
-	['--suffix']                    :: suffix             :: None
-	['--loglevel']                  :: loglevel           :: stdinfo
-	['--drpkg']                     :: drpkg              :: ghostdr
-	['--user_cal']                  :: user_cal           :: None
-	['--logfile']                   :: logfile            :: reduce.log
-	['--upload_metrics']            :: upmetrics          :: False
+	 -----------------------------------------------------------------
+	['-d', '--displayflags']        :: displayflags         :: True
+	['-p', '--param']               :: userparam            :: None
+	['--logmode']                   :: logmode              :: quiet
+	['--ql']                        :: mode                 :: qa
+	['--qa']                        :: mode                 :: qa
+	['--upload']                    :: upload               :: None
+	['-r', '--recipe']              :: recipename           :: display
+	['--adpkg']                     :: adpkg                :: ghost_instruments
+	['--suffix']                    :: suffix               :: None
+	['--drpkg']                     :: drpkg                :: ghostdr
+	['--user_cal']                  :: user_cal             :: None
+	['--logfile']                   :: logfile              :: reduce.log
 	-----------------------------------------------------------------
 
-     Input fits file(s):	fitsfile.fits
+     Input fits file(s):	S20150929S0151.fits
 
 **-p <USERPARAM [USERPARAM ...]>, --param <USERPARAM [USERPARAM ...]>**
     Set a primitive parameter from the command line. The form '-p par=val' sets 
-    the parameter in the reduction context such that all primitives will 'see' it.
-    The form
+    the parameter such that all primitives will 'see' it. The form
 
     ``-p primitivename:par=val``
 
@@ -270,17 +261,22 @@ Configuration Switches, Options
 **--suffix <SUFFIX>**
     Add 'suffix' to output filenames at end of reduction.
 
-**--upload_metrics**
-    Send QA metrics to fitsstore. Default is False.
+**--upload**
+    Send the following pipeline products to fitsstore. Default is None.
+    E.g.::
+
+      --upload metrics calibs
+
+    OR equivalently::
+
+      --upload=metrics,calibs
 
 **--user_cal <USER_CAL [USER_CAL ...]>**
     The option allows users to provide their own calibrations to ``reduce``.
-    Add a calibration to User Calibration Service. 
-    '--user_cal CAL_PATH'
-    Eg.,
+    Add a calibration to User Calibration Service.
+    E.g.::
 
-    ``--user_cal wcal/gsTest_arc.fits``
-
+     --user_cal wcal/gsTest_arc.fits
 
 .. _userpars:
 
@@ -351,11 +347,11 @@ with an example `reduce` command line that has even more arguments. We will
 also include new positional arguments, i.e., file names::
 
   $ reduce -p stackFlats:operation=mean high_reject=4 low_reject=2 
-    -r recipe.ArgsTest --context SQ S20130616S0019.fits N20100311S0090.fits
+    -r recipe.ArgsTest S20130616S0019.fits N20100311S0090.fits
 
 Ungainly, to be sure. Here, two (2) `user parameters` are being specified 
-with **-p**, a `recipe` with **-r**, and a `context` argument is specified 
-to be **sq** . This can be wrapped in a plain text @file called, for example,
+with **-p**, a `recipe` with **-r**, and a --qa argument is specified for 'qa'
+recipes. This can be wrapped in a plain text @file called, for example,
 `reduce_args.par`::
 
    S20130616S0019.fits
@@ -365,7 +361,6 @@ to be **sq** . This can be wrapped in a plain text @file called, for example,
    high_reject=4
    low_reject=2 
    -r recipe.ArgsTests
-   --context SQ
 
 This then turns the previous reduce command line into something a little more 
 `keyboard friendly`::
@@ -379,8 +374,7 @@ file could be thus written like::
   --param
   stackFlats:operation=mean
   high_reject=4
-  low_reject=2 
-  --context SQ
+  low_reject=2
   S20130616S0019.fits
   N20100311S0090.fits
 
@@ -393,7 +387,7 @@ Here's a more readable version of the file from the previous example
 using comments and tabulation::
 
     # reduce parameter file
-    # GDPSG 
+    # Gemini Observatory DRAGONS
 
     # Spec the recipe
     -r 
@@ -403,14 +397,12 @@ using comments and tabulation::
     --param
         stackFlats:operation=mean
 	high_reject=4
-	low_reject=2 
-    --context 
-        qa                       # QA context
+	low_reject=2
 
     S20130616S0019.fits
     N20100311S0090.fits
 
-All the above  examples of ``reduce_args.par`` are equivalently parsed, which 
+All these examples of ``reduce_args.par`` are equivalently parsed, which
 users may check by adding the **-d** flag::
 
   $ reduce -d @redpars.par
@@ -419,20 +411,20 @@ users may check by adding the **-d** flag::
 
   Literals			var 'dest'		Value
   -----------------------------------------------------------------
-  ['-d', '--displayflags']      :: displayflags      :: True
-  ['-p', '--param']             :: userparam         :: ['stackFlats:operation=mean',
-                                                       'high_reject=4','low_reject=2']
-  ['--logmode']                 :: logmode           :: standard
-  ['--context']                 :: context           :: ['qa']
-  ['-r', '--recipe']            :: recipename        :: recipe.ArgsTests
-  ['--suffix']                  :: suffix            :: None
-  ['--loglevel']                :: loglevel          :: stdinfo
-  ['--drpkg']                   :: drpkg             :: geminidr
-  ['--user_cal']                :: user_cal          :: None
-  ['--logfile']                 :: logfile           :: reduce.log
-  ['--upload_metrics']          :: upmetrics         :: False
+  ['-d', '--displayflags']        :: displayflags     :: True
+  ['-p', '--param']               :: userparam        :: ['stackFlats:operation=mean',
+                                                          'high_reject=4', 'low_reject=2']
+  ['--logmode']                   :: logmode          :: standard
+  ['--ql']                        :: mode             :: sq
+  ['--qa']                        :: mode             :: sq
+  ['--upload']                    :: upload           :: None
+  ['-r', '--recipe']              :: recipename       :: recipe.ArgsTests
+  ['--adpkg']                     :: adpkg            :: None
+  ['--suffix']                    :: suffix           :: None
+  ['--drpkg']                     :: drpkg            :: geminidr
+  ['--user_cal']                  :: user_cal         :: None
+  ['--logfile']                   :: logfile          :: reduce.log
   -----------------------------------------------------------------
-  
 
   Input fits file(s):	S20130616S0019.fits
   Input fits file(s):	N20100311S0090.fits
@@ -469,13 +461,13 @@ be written as::
 
 The parser will open and read the @fitsfiles, consuming those lines in the 
 same way as any other command line arguments. Indeed, such a file need not only 
-contain fits files (positional arguments), but other arguments as well. This is 
-recursive. That is, the @fitsfiles can contain other at-files", which can contain 
-other "at-files", which can contain ..., etc. These will be processed 
+contain fits files (positional arguments), but other arguments as well. This is
+recursive. That is, the @fitsfiles can contain other at-files", which can contain
+other "at-files", which can contain ..., etc. These will be processed
 serially.
 
-As stipulated earlier, because the @file facility provides arguments equivalent 
-to those that appear on the command line, employment of this facility means that 
+As stipulated earlier, because the @file facility provides arguments equivalent
+to those that appear on the command line, employment of this facility means that
 a reduce command line could assume the form::
 
    $ reduce @parfile @fitsfiles
@@ -484,7 +476,7 @@ or equally::
 
    $ reduce @fitsfiles @parfile
 
-where 'parfile' could contain the flags and user parameters, and 'fitsfiles' 
+where 'parfile' could contain the flags and user parameters, and 'fitsfiles'
 could contain a list of datasets.
 
 Eg., fitsfiles comprises the one line::
@@ -501,14 +493,14 @@ while parfile holds all other specifications::
     stackFlats:operation=mean
     high_reject=4
     low_reject=2 
-  
+
   # Spec the recipe
   -r recipe.ArgTests
 
 The @file does not need to be located in the current directory.  Normal directory 
 path syntax applies, for example::
 
-   reduce @../../mydefaultparams @fitsfile
+   reduce @../../parfile @fitsfile
 
 Overriding @file values
 +++++++++++++++++++++++
@@ -586,8 +578,8 @@ users as the following discussion illustrates.
 Class Reduce, the runr() method, and logging
 ++++++++++++++++++++++++++++++++++++++++++++
 
-The Reduce class is defined under the ``gemini_python`` code base in the 
-``recipe_system.reduction`` module, ``coreReduce.py``.
+The Reduce class is defined under ``DRAGONS`` in the ``recipe_system.reduction``
+module, ``coreReduce.py``.
 
 The Reduce class is importable and provides settable attributes and a callable 
 that can be used programmatically. Callers need not supply an "args" parameter 
@@ -621,13 +613,13 @@ All other properties and  attributes on the API may be set in standard pythonic
 ways. See Appendix :ref:`Class Reduce: Settable properties and attributes <props>` 
 for further discussion and more examples.
 
-Neither ``coreReduce`` nor the Reduce class initializes any logging activity. This is
-the responsibility of outside parties. Should you wish to log the processing steps 
--- probably true -- you will have to initialize your own "logger". You are free to 
-provide your own logger, or you can use the fully defined logger provided in 
-*gemini_python*. It is recommended that you use this system logger, as the 
+Neither ``coreReduce`` nor the Reduce class initializes any logging activity. This
+is the responsibility of outside parties. Should you wish to log the processing
+steps -- probably true -- you will have to initialize your own "logger". You are
+free to provide your own logger, or you can use the fully defined logger provided
+in  *DRAGONS*. It is recommended that you use this system logger, as the 
 ``reduce`` command line options, and corresponding Reduce attributes, are tuned
-to use the *gemini_python* logger. You will see logger configuration calls in
+to use the *DRAGONS* logger. You will see logger configuration calls in
 the examples below. For details on how to configure this logger, see 
 :ref:`Using the logger <logger>`.
 
@@ -646,8 +638,7 @@ Reduce and logutils::
   >>> reduce.files.append('S20130616S0019.fits')
   >>> reduce.recipename = 'recipe.MyRecipe'
   >>> reduce.logfile = 'my_reduce_run.log'
-  >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
-                      console_lvl=reduce.loglevel)
+  >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode)
   >>> reduce.runr()
   All submitted files appear valid
   Starting Reduction on set #1 of 1
@@ -667,8 +658,7 @@ Eg.,::
  >>> reduce.files.append('S20130616S0019.fits')
  >>> reduce.recipename = 'recipe.MyRecipe'
  >>> reduce.logfile = 'my_reduce_run.log'
- >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
-                      console_lvl=reduce.loglevel)
+ >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode)
  >>> reduce.runr()
    ...
  reduce completed successfully.
@@ -676,14 +666,14 @@ Eg.,::
  >>> reduce.recipename = 'recipe.NewRecipe'
  >>> reduce.files = ['newfile.fits']
  >>> reduce.userparam = ['clobber=True']
- >>> runr()
+ >>> reduce.runr()
 
 Once an attribute is set on an instance, such as above with ``userparam``, it is
 always set on the instance. If, on another call of runr() the caller does not
-wish to have ``clobber=True``, simply reset the property::
+wish to have ``clobber=True``, simply reset the attribute::
 
 >>> reduce.userparam = []
->>> runr()
+>>> reduce.runr()
 
 Readers may wish to examine the examples in Appendix 
 :ref:`Class Reduce: Settable properties and attributes <props>` 
@@ -699,7 +689,7 @@ Using the logger
 	  demonstrates how this is easily done. It is `highly recommended` 
 	  that callers configure the logger. 
 
-It is recommended that callers of Reduce use a logger supplied by the astrodata
+It is recommended that callers of Reduce use a logger supplied by the DRAGONS
 module ``logutils``. This module employs the python logger module, but with 
 recipe system specific features and embellishments. The recipe system 
 expects to have access to a logutils logger object, which callers should provide
@@ -725,15 +715,10 @@ instance with appropriate default values:
    :columns: 1
 
    * logfile
-   * loglevel
    * logmode
-   * logindent
 
-The ``reduce`` command line provides access to the first three of these 
-attributes, as described in Sec. :ref:`options`, but ``logindent``, which 
-controls the indention levels of logging output, is accessible only through the 
-public interface on an instance of ``Reduce()``. It is not anticipated that users
-will need, or even want, to change the value of ``logindent``, but it is possible.
+The ``reduce`` command line provides access to the these attributes, as described in
+Sec. :ref:`options`.
 
 An instance of ``Reduce()`` provides the following attributes that may be passed 
 to the ``logutils.config()``. The default values provided for these logging 
@@ -744,10 +729,6 @@ configuration parameters may be examined through direct inspection::
   'reduce.log'
   >>> reduce.logmode
   'standard'
-  >>> reduce.loglevel
-  'stdinfo'
-  >>> reduce.logindent
-  3
 
 Users may adjust these values and then pass them to the ``logutils.config()`` 
 function, or pass other values directly to ``config()``. This is precisely what 
@@ -756,8 +737,7 @@ Appendix :ref:`Class Reduce: Settable properties and attributes <props>` for
 allowable and default values of these and other options.
 
 >>> from gempy.utils import logutils
->>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
-                    console_lvl=reduce.loglevel)
+>>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode)
 
 .. note:: logutils.config() may be called mutliply, should callers, for example,
 	want to change logfile names for different calls on runr().
