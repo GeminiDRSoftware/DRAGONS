@@ -143,7 +143,8 @@ class Bookkeeping(PrimitivesBASE):
                         log.stdinfo("   {} NOT FOUND".format(f))
             else:
                 log.stdinfo("   {} (in memory)".format(f))
-        return adinputs
+        # Return sorted list
+        return sorted(adinputs, key=lambda ad: ad.filename)
 
     def selectFromInputs(self, adinputs=None, **params):
         """
