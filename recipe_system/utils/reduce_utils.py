@@ -65,9 +65,9 @@ class ReduceArgumentParser(ArgumentParser):
 # ------------------------------------------------------------------------------
 def buildParser(version):
     parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " +
-                                  "_"*28 + "\n" + "_"*20 +
-                                  " Recipe Processing Management System " +
-                                  "_"*20 + "\n" + "_"*22 +
+                                  "_"*28 + "\n" + "_"*16 +
+                            " DRAGONS Recipe Processing Management System " +
+                                  "_"*16 + "\n" + "_"*22 +
                                   " Recipe System Release"+version+" "+"_"*22,
                                   prog="reduce",
                                   formatter_class=ReduceHelpFormatter,

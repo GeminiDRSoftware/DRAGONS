@@ -16,7 +16,7 @@ Glossary
 
   astrodata
 
-      Part of the gemini_python package that defines the abstraction 
+      Part of the DRAGONS package that defines the abstraction 
       layer for observational datasets. This abstraction layer is used
       extensively by the Recipe System to effect correct processing.
 
@@ -32,13 +32,14 @@ Glossary
       through a uniform, instrument-agnostic interface to the FITS headers.
       E.g., ``ad.gain()``
 
-  gemini_python
+  DRAGONS
       A suite of packages comprising ``astrodata``, ``gemini_instruments``, the
       ``recipe_system`` and ``gempy``, all of which provide the full functionality
-      needed to run recipe pipelines on observational datasets.
+      needed to run recipe pipelines on observational datasets. DRAGONS can be
+      referred to as a framework.
 
   gempy
-      A ``gemini_python`` package comprising gemini specific functional utilities.
+      A DRAGONS package comprising gemini specific functional utilities.
 
   primitive
       A function defined within a data reduction instrument package (a "dr" package) 
@@ -58,7 +59,7 @@ Glossary
       ``reduce.`` Essentially, a recipe is a pipeline.
 
   Recipe System
-      The gemin_python framework that accommodates defined recipes and primitives 
+      The DRAGONS framework that accommodates defined recipes and primitives 
       classes. The Recipe System defines a set of classes that exploit attributes 
       on an astrodata instance of a dataset to locate recipes and primitives 
       appropriate to that dataset.
