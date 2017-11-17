@@ -391,7 +391,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(uffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
     
     def scaleByIntensity(self, adinputs=None, **params):
