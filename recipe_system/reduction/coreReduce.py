@@ -30,7 +30,7 @@ import astrodata
 import gemini_instruments
 
 # ------------------------------------------------------------------------------
-# These are here temporarily. In future, use --adpkg on reduce.
+# These are vestigial and left here temporarily. Use --adpkg on reduce.
 # try:
 #     import soar_instruments
 # except ImportError:

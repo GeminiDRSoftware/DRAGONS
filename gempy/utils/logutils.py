@@ -108,9 +108,6 @@ def config(mode='standard', file_name='dragons.log', file_lvl=15, stomp=False):
     mode : <str> 
           logging mode: 'debug', 'standard', 'quiet'
 
-    console_lvl : <int>
-          console logging level
-
     file_lvl : <int>
           file logging level
 

@@ -71,7 +71,7 @@ description and discussion of certain non-trivial options is presented. ::
 		fitsfile [fitsfile ...]
 
   _____________________________ Gemini Observatory ____________________________
-  ____________________ Recipe Processing Management System ____________________
+  ________________ DRAGONS Recipe Processing Management System ________________
   ______________________ Recipe System Release2.0 (beta) ______________________
 
   positional arguments:
@@ -98,6 +98,8 @@ description and discussion of certain non-trivial options is presented. ::
                         '-p primitivename:par=val', sets the parameter only
                         for 'primitivename'. Separate par/val pairs by
                         whitespace: (eg. '-p par1=val1 par2=val2').
+  --qa                  Use 'qa' recipes. Default is to use 'sq' recipes.
+  --ql                  Use 'quicklook' recipes. Default is to use 'sq' recipes.
   -r RECIPENAME, --recipe RECIPENAME
                         Specify a recipe by name. Users can request non-
                         default system recipe functions by their simple names,
@@ -227,9 +229,23 @@ Configuration Switches, Options
 
     See Sec. :ref:`userpars`, for more information on these values.
 
+**--qa**
+    Set the ``mode`` attribute to 'qa'. Default is 'sq'. Note: there is no
+    ``--mode`` option. ``mode`` is an attribute on the Reduce class which is
+    set by the this flag and/or the following ``--ql`` flag. See the reduce
+    example table above. This flag has no effect when **-r**, **--recipename**
+    is specified.
+
+**--ql**
+    Set the ``mode`` attribute to 'ql'. Default is 'sq'. Note: there is no
+    flag, ``--mode``. ``mode`` is an attribute on the Reduce class which is
+    set by the this flag and/or the previous ``--qa`` flag. See the reduce
+    example table above. This flag has no effect when **-r**, **--recipename**
+    is specified.
+
 **-r <RECIPENAME>, --recipe <RECIPENAME>**
     Specify a recipe by name. Users can request non-default system recipe 
-    functions by their simple names, e.g., ``-r qaStack``, OR may specify
+    functions by their simple names, e.g., ``-r stack``, OR may specify
     their own recipe file and recipe function. A user defined recipe function 
     must be 'dotted' with the recipe file.
 
@@ -245,10 +261,11 @@ Configuration Switches, Options
      -r recipefile.recipe_function
 
     The fact that the recipe function is dotted with the recipe file name implies 
-    that multiple user defined recipe functions can be defined in a single file.
+    that multiple user recipe functions can be defined in a single file, i.e.
+    a recipe library.
 
     Readers should understand that these recipe files must be *python modules* 
-    and named accordingly. I.e., in the example above, 'recipefile' is a 
+    and named accordingly. That is, in the example above, 'recipefile' is a 
     python module named, ``'recipefile.py'``
 
     Finally, the specified recipe can be an *actual primitive function name*::
@@ -346,20 +363,19 @@ To further illustrate the convenience provided by an '@file', we'll continue
 with an example `reduce` command line that has even more arguments. We will 
 also include new positional arguments, i.e., file names::
 
-  $ reduce -p stackFlats:operation=mean high_reject=4 low_reject=2 
+  $ reduce -p stackFlats:operation=mean high_reject=4 low_reject=2
     -r recipe.ArgsTest S20130616S0019.fits N20100311S0090.fits
 
-Ungainly, to be sure. Here, two (2) `user parameters` are being specified 
-with **-p**, a `recipe` with **-r**, and a --qa argument is specified for 'qa'
-recipes. This can be wrapped in a plain text @file called, for example,
-`reduce_args.par`::
+Ungainly, to be sure. Here, three (3) `user parameters` are being specified 
+with **-p**, a `recipe` with **-r**. We can write these parameters into our
+plain text @file called `reduce_args.par`::
 
    S20130616S0019.fits
    N20100311S0090.fits
    --param
    stackFlats:operation=mean
    high_reject=4
-   low_reject=2 
+   low_reject=2
    -r recipe.ArgsTests
 
 This then turns the previous reduce command line into something a little more 
@@ -368,7 +384,7 @@ This then turns the previous reduce command line into something a little more
   $ reduce @reduce_args.par
 
 The order of arguments in an @file is irrelevant, as is the file's name. The above 
-file could be thus written like::
+file could present the arguments in a completely different order, like::
 
   -r recipe.ArgsTests
   --param
@@ -383,11 +399,12 @@ character.  White space is the only significant separator of arguments: spaces,
 tabs, newlines are all equivalent when argument parsing.  This means
 the user can "arrange" their @file for clarity.
 
-Here's a more readable version of the file from the previous example
-using comments and tabulation::
+Here's a more readable version of the file from the previous example using
+comments and tabulation::
 
+    # Gemini Observatory
+    # DRAGONS
     # reduce parameter file
-    # Gemini Observatory DRAGONS
 
     # Spec the recipe
     -r 
@@ -411,19 +428,19 @@ users may check by adding the **-d** flag::
 
   Literals			var 'dest'		Value
   -----------------------------------------------------------------
-  ['-d', '--displayflags']        :: displayflags     :: True
-  ['-p', '--param']               :: userparam        :: ['stackFlats:operation=mean',
-                                                          'high_reject=4', 'low_reject=2']
-  ['--logmode']                   :: logmode          :: standard
-  ['--ql']                        :: mode             :: sq
-  ['--qa']                        :: mode             :: sq
-  ['--upload']                    :: upload           :: None
-  ['-r', '--recipe']              :: recipename       :: recipe.ArgsTests
-  ['--adpkg']                     :: adpkg            :: None
-  ['--suffix']                    :: suffix           :: None
-  ['--drpkg']                     :: drpkg            :: geminidr
-  ['--user_cal']                  :: user_cal         :: None
-  ['--logfile']                   :: logfile          :: reduce.log
+  ['-d', '--displayflags']      :: displayflags     :: True
+  ['-p', '--param']             :: userparam        :: ['stackFlats:operation=mean',
+                                                       'high_reject=4','low_reject=2']
+  ['--logmode']                 :: logmode          :: standard
+  ['--ql']                      :: mode             :: sq
+  ['--qa']                      :: mode             :: sq
+  ['--upload']                  :: upload           :: None
+  ['-r', '--recipe']            :: recipename       :: recipe.ArgsTests
+  ['--adpkg']                   :: adpkg            :: None
+  ['--suffix']                  :: suffix           :: None
+  ['--drpkg']                   :: drpkg            :: geminidr
+  ['--user_cal']                :: user_cal         :: None
+  ['--logfile']                 :: logfile          :: reduce.log
   -----------------------------------------------------------------
 
   Input fits file(s):	S20130616S0019.fits
@@ -572,8 +589,8 @@ class Reduce.  This section is for advanced users wishing to code using the
 The ``reduce`` application is essentially a skeleton script providing the 
 described command line interface. After parsing the command line, the script 
 then passes the parsed arguments to its main() function, which in turn calls 
-the Reduce() class constructor with "args". The Reduce class is scriptable by
-users as the following discussion illustrates.
+the Reduce() class constructor with the command line "args". The Reduce class
+is scriptable by users as the following discussion illustrates.
 
 Class Reduce, the runr() method, and logging
 ++++++++++++++++++++++++++++++++++++++++++++
@@ -703,8 +720,8 @@ To use ``logutils``, import, configure, and get it::
 
 where ``__name__`` is usually the calling module's __name__ property, but can
 be any string value. Once configured and instantiated, the ``log`` object is 
-ready to use. See section :ref:`options` for logging levels described on the 
-``--loglevel`` option.
+ready to use. See section :ref:`options` for logging modes described on the 
+``--logmode`` option.
 
 Once an instance of Reduce has been made, callers may (should) configure the 
 logutils facility with attributes available on the instance. Instances of 
@@ -739,5 +756,5 @@ allowable and default values of these and other options.
 >>> from gempy.utils import logutils
 >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode)
 
-.. note:: logutils.config() may be called mutliply, should callers, for example,
-	want to change logfile names for different calls on runr().
+.. note:: logutils.config() may be called mutliply, should callers
+	  want to change logfile names for different calls on runr().
