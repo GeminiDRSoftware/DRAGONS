@@ -1,7 +1,23 @@
-
+#
+#                                                                  gemini_python
+#
+#                                                              transformation.py
+# ------------------------------------------------------------------------------
+__version__ = '2.0.0 (beta)'
+# ------------------------------------------------------------------------------
 import numpy as np
 import scipy.ndimage as nd
 
+# ------------------------------------------------------------------------------
+DQMap = {'bad_pixel' : 1,
+         'non_linear': 2,
+         'saturated' : 4,
+         'cosmic_ray': 8,
+         'no_data'   : 16,
+         'overlap'   : 32,
+         'unilluminated': 64
+     }
+# ------------------------------------------------------------------------------
 class Transformation(object):
     """
     Transformation provides facilities to transform a frame of
@@ -87,11 +103,14 @@ class Transformation(object):
             differently. DQ flags are set bit-wise, such that each pixel is the
             sum of any of the following values:
 
-            0 = good pixel
-            1 = bad pixel (from bad pixel mask)
-            2 = nonlinear
-            4 = saturated
-            etc.,
+             0 = good pixel
+             1 = bad pixel (from bad pixel mask)
+             2 = nonlinear
+             4 = saturated
+             8 = cosmic ray
+            16 = no data
+            32 = overlap
+            64 = unilluminated
 
             To transform the DQ plane without losing flag information, it is
             unpacked into separate masks, each of which is transformed in the
@@ -103,79 +122,78 @@ class Transformation(object):
     def __init__(self, rotation, shift, magnification, interpolator='affine',
                  order=1, as_iraf=True):
         """
-        parameters
+        Parameters
         ----------
 
         rotation:   Rotation in degrees from the x-axis in the
                     counterwise direction about the center.
+
         shift:      Tuple (x_shit,y_shift), amount to shift in pixel.
+
         magnification:
                     Tuple of floats, (x,y) magnification. Amount
                     to magnify the output frame about the center.
+
         offset:     For affine transform, indicates the offset
                     into the array where the transform is applied.
-        interpolator: The interpolator function use, values are:
-                    'affine': (Default), uses ndimage.affine_tranform
-                            which uses a spline interpolator of order (order).
+
+        interpolator: Interpolator function to use, values are:
+
+                    'affine': Uses ndimage.affine_transform(), which uses a
+                              spline interpolator of order (order).
+
                     'map_coords': Uses ndimage.maps_coordinates using a
-                            spline interpolator of order (order)
-                    'dq_data': Uses the method transform_dq.
+                                  spline interpolator of order (order)
+
+                    'dq_data': Uses transform_8bit() or transform_16bit().
+
         order:      The order of the spline interpolator use in
                     ndimage.affine_transform and ndimage.maps_coordinates.
+
         as_iraf:    (bool). Default: True. If True, set the transformation
                     to be compatible with IRAF/geotran task, where the
                     rotation is in the counterwise direction.
+
         """
-
-        # Set rotation angle (degrees) to radians
-        rot_rads = np.radians(rotation)
-
-        # Turn input tuples to single values
-        xshift, yshift = shift
-        xmag, ymag = magnification
-
-        # Convert rotation and magnification values to IRAF/geotran
-        # types.
-        if as_iraf:
-            rot_rads = -rot_rads     # The rotation direction in Python
-                                     # scipy.ndimage package is clockwise,
-                                     # so we change the sign.
-
-        # If the rot,shift and magnification have default values
-        # then set member notransform to True.
-        self.notransform = False
-        if (rot_rads == 0.) and (shift == (0., 0.)) and \
-                (magnification == (1, 1)):
-            self.notransform = True
-
-        # For clarity put the pars in a dictionary.
-        self.params = {
-            'rotation'     : rot_rads,
-            'shift'        : (xshift, yshift),
-            'magnification': (xmag, ymag)
-        }
+        # First parameter checking ...
+        if order > 5:
+            raise ValueError('Spline order cannot be greater than 5')
 
         if interpolator not in ['affine', 'map_coords']:
             raise ValueError('Bad input parameter "interpolator" value')
 
-        # Set default values
-        self.affine = True
         self.map_coords = False
-        self.dq_data = False
-
-        # Reset if parameter does not have the default value.
         if interpolator == 'map_coords':
             self.set_map_coords()
 
-        if order > 5:
-            raise ValueError('Spline order cannot be greater than 5')
+        rot_rads = np.radians(rotation)
+        xmag, ymag = magnification
+        xshift, yshift = shift
+        # Convert rotation and magnification values to IRAF/geotran types.
+        # The rotation direction in scipy.ndimage package is clockwise,
+        # switch sign.
+        if as_iraf:
+            rot_rads = -rot_rads
 
-        self.order = min(5, max(order, 1))  # Spline order
+        # If rot, shift, mag. have default values -> notransform = True.
+        if rot_rads == 0. and shift == (0., 0.) and magnification == (1, 1):
+            self.notransform = True
+        else:
+            self.notransform = False
 
-        # Set default values for these members. The methods affine_transform
-        # and map_coordinates allow changing.
-        self.mode = 'constant'
-        self.cval = 0
+        self.params = {
+            'rotation'     : rot_rads,
+            'shift'        : (xshift, yshift),
+            'magnification': (xmag, ymag)}
+
+        # Set default values
+        self.affine  = True
+        self.cval    = 0.
+        self.dq_data = False
+        self.matrix  = np.array([[1, 0],[0, 1]])  # default ident matrix
+        self.mode    = 'constant'
+        self.offset  = shift
+        self.order   = min(5, max(order, 1))      # Spline order
 
 
     def affine_init(self, imagesize):
@@ -183,15 +201,14 @@ class Transformation(object):
           Set the affine_transformation function parameters:
           matrix and offset.
 
-          Input
-          -----
+          Parameters
+          ----------
             imagesize:
                 Tuple with image.shape values or (npixel_y, npixels_x).
                 These are used to put the center of rotation to the
                 center of the frame.
+
         """
-
-
         # Set rotation origin as the center of the image
         ycen, xcen     = np.asarray(imagesize) / 2.
         xmag, ymag     = self.params['magnification']
@@ -214,7 +231,6 @@ class Transformation(object):
         # We add back the shift
         xoff -= xshift
         yoff -= yshift
-
         self.offset = (yoff, xoff)
 
 
@@ -223,8 +239,8 @@ class Transformation(object):
         Front end method to the scipy.ndimage.affine_transform
         function.
 
-        Inputs
-        ------
+        Parameters
+        ----------
             Image: ndarray with image data.
             order:  Spline interpolator order. If 1 it use a linear
                     interpolation method, zero is the 'nearest' method.
@@ -268,8 +284,8 @@ class Transformation(object):
           For each (x,y) there is one (x_out,y_out) which
           are function of rotation, shift and/or magnification.
 
-          Input
-          -----
+          Parameters
+          ----------
             imagesize: The shape of the frame where the (x,y)
                        coordinates are taken from. It sets
                        the center of rotation.
@@ -307,8 +323,8 @@ class Transformation(object):
         """
         Front end to scipy.ndimage.map_cordinates function
 
-        Input
-        -----
+        Parameters
+        ----------
             Image: ndarray with image data.
             order:  Spline interpolator order. If 1 it use a linear
                     interpolation method, zero is the 'nearest' method.
@@ -357,7 +373,7 @@ class Transformation(object):
         elif self.map_coords:                   # Use map_coordinates
             output = self.map_coordinates(data)
         elif self.dq_data:                      # DQ data use map_coordinates
-            output = self.transform_dq(data)
+            output = self._transform_16bit(data)
         else:
             raise ValueError("Transform function not defined.")
 
@@ -428,7 +444,7 @@ class Transformation(object):
 
         self.order = order
 
-    def transform_dq(self, data):
+    def transform_8bit(self, data):
         """
         Transform the data quality plane. Must be handled a little
         differently. DQ flags are set bit-wise, such that each pixel is the
@@ -441,17 +457,16 @@ class Transformation(object):
         back together to generate the transformed DQ plane.
 
         DQ flags are set bit-wise
-
-        bit 1: bad pixel (1)
-        bit 2: nonlinear (2)
-        bit 3: saturated (4)
-        bit 4:
-        bit 5: nodata (5)
-
-        A pixel can be 0 (good, no flags), or the sum of
-        any of the above flags
-        (or any others I don't know about)
-
+        -------------------------
+        'bad_pixel'    :  1
+        'non_linear'   :  2
+        'saturated'    :  4
+        'cosmic_ray'   :  8
+        'no_data'      : 16
+        'overlap'      : 32
+        'unilluminated': 64
+        -------------------------
+        A pixel can be 0 (good, no flags), or the sum of any of the above flags
         (Note: This code was taken from resample.py)
 
         Parameters
@@ -459,7 +474,7 @@ class Transformation(object):
         :param data: Ndarray to transform
         :param data,rot,shift, mag, jfactor: See self.affine_tranform help
 
-        Output
+        Return
         ------
         :param outdata: The tranformed input data. Input remains unchanged.
 
@@ -470,7 +485,6 @@ class Transformation(object):
         # unpack the DQ data into separate masks
         # NOTE: this method only works for 8-bit masks!
         unp = data.shape + (8,)
-
         unpack_data = np.unpackbits(np.uint8(data)).reshape(unp)
 
         # transform each mask
@@ -495,10 +509,9 @@ class Transformation(object):
                 # no-data values with Nans
                 cval = np.nan
                 do_nans = True
+ 
             trans_mask = self.map_coordinates(mask, cval=cval)
 
-            del mask
-            mask = None
             # Get the nans indices:
             if do_nans:
                 gnan = np.where(np.isnan(trans_mask))
@@ -512,10 +525,32 @@ class Transformation(object):
             del trans_mask
             trans_mask = None
 
-            # QUESTION: Do we need to put outdata[gnan] for each plane != 7?
+            # QUESTION: Do we need to put outdata[gnan] for each plane != 7 ?
         # put nan's back
         if gnan != None:
             outdata[gnan] = np.nan
+
         return outdata
 
+    def _transform_16bit(self, mask):
+        """
+        Transform the DQ plane, bit by bit. Since np.unpackbits() only works
+        on uint8 data, we have to do this by hand.
 
+        Parameters
+        ----------
+        mask: A 16-bit mask to be transformed.
+        type: <ndarray>
+
+        """
+        trans_mask = np.zeros(mask.shape, dtype=np.uint16)
+        for j in range(0, 16):
+            bit = 2**j
+            # Only transform bits that have a pixel set. But we always want
+            # to do one transformation so we can pad the data with DQ.no_data
+            if bit == DQMap['no_data'] or np.sum(mask & bit) > 0:
+                cval=DQMap['no_data'] if bit == DQMap['no_data'] else 0
+                temp_mask = self.affine_transform((mask & 2**j).astype(np.float32), cval=cval)
+                trans_mask += np.where(np.abs(temp_mask > 0.01*bit), bit, 0).astype(np.uint16)
+
+        return trans_mask

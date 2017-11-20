@@ -110,9 +110,10 @@ class QA(PrimitivesBASE):
                     log.fullinfo("EXTVER {}: Raw BG level = {:.3f}".
                                  format(extver, bg_count.value))
                     if bias_level is not None:
-                        bg_count = _arith(bg_count, 'sub', bias_level[i])
-                        log.fullinfo("          Bias-subtracted BG level = "
-                                     "{:.3f}".format(bg_count.value))
+                        if bias_level[i] is not None:
+                            bg_count = _arith(bg_count, 'sub', bias_level[i])
+                            log.fullinfo("          Bias-subtracted BG level "
+                                     "= {:.3f}".format(bg_count.value))
 
                 # Put Measurement into the list in place of 3 values
                 bg_list[i] = bg_count
@@ -140,7 +141,7 @@ class QA(PrimitivesBASE):
                         bg_mag_list.append(bg_mag)
                         qastatus = _get_qa_band('bg', ad, bg_mag, bg_band_limits)
                         ext_info.update({"percentile_band": qastatus.band,
-                                         "comment": qastatus.warning})
+                                         "comment": [qastatus.warning]})
                     else:
                         log.warning("Background is less than or equal to 0 "
                                     "for {}:{}".format(ad.filename,extver))
@@ -183,14 +184,14 @@ class QA(PrimitivesBASE):
                     qap.adcc_report(ad, "bg", qad)
 
             # Report measurement to fitsstore
-            fitsdict = qap.fitsstore_report(ad, "sb", info_list,
-                        calurl_dict=self.calurl_dict, context=self.context,
-                                           upload=self.upload_metrics)
+            if self.upload and "metrics" in self.upload:
+                fitsdict = qap.fitsstore_report(ad, "sb", info_list,
+                                                self.calurl_dict,
+                                                self.mode, upload=True)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def measureCC(self, adinputs=None, suffix='_ccMeasured'):
@@ -370,7 +371,7 @@ class QA(PrimitivesBASE):
 
             # Only if we've managed to measure at least one zeropoint
             if any(zp.value for zp in all_zp):
-                avg_cloud = _stats(all_cloud, weights=None)
+                avg_cloud = _stats(all_cloud, weights='variance')
                 qastatus = _get_qa_band('cc', ad, avg_cloud, qa.ccBands, simple=False)
 
                 comments = _cc_report(ad, all_zp, avg_cloud, qastatus)
@@ -386,17 +387,17 @@ class QA(PrimitivesBASE):
                               "comment": qad["comment"]}) for info in info_list]
 
                 # Also report to fitsstore
-                fitsdict = qap.fitsstore_report(ad, "zp", info_list,
-                            calurl_dict=self.calurl_dict, context=self.context,
-                                               upload=self.upload_metrics)
+                if self.upload and "metrics" in self.upload:
+                    fitsdict = qap.fitsstore_report(ad, "zp", info_list,
+                                                    self.calurl_dict, self.mode,
+                                                    upload=True)
             else:
                 log.stdinfo("    Filename: {}".format(ad.filename))
                 log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def measureIQ(self, adinputs=None, suffix='_iqMeasured', remove_bias=False,
@@ -463,7 +464,7 @@ class QA(PrimitivesBASE):
                             log.fullinfo("Bias levels used: {}".
                                          format(bias_level))
                             for ext, bias in zip(adiq, bias_level):
-                                ext.subtract(bias)
+                                ext.subtract(np.float32(bias))
 
                 log.fullinfo("Tiling extensions together in order to compile "
                              "IQ data from all extensions")
@@ -538,10 +539,10 @@ class QA(PrimitivesBASE):
                         fwhm = Measurement(None, None, 0)
                         log.warning("No good sources found in {}:{}".
                                     format(ad.filename, extver))
-                        iq_overlays.append(None)
                         # If there is an AO-estimated seeing value, this can be
                         # delivered as a metric, otherwise we can't do anything
                         if not (is_ao and ao_seeing):
+                            iq_overlays.append(None)
                             info_list.append({})
                             continue
                     else:
@@ -622,9 +623,12 @@ class QA(PrimitivesBASE):
                                         comment=self.keyword_comments["MEANELLP"])
 
                     if info_list:
-                        fitsdict = qap.fitsstore_report(adiq, "iq", info_list,
-                                calurl_dict=self.calurl_dict, context=self.context,
-                                upload=self.upload_metrics)
+                        if self.upload and "metrics" in self.upload:
+                            fitsdict = qap.fitsstore_report( adiq, "iq", 
+                                                             info_list, 
+                                                             self.calurl_dict, 
+                                                             self.mode, 
+                                                             upload=True)
 
                     # If displaying, make a mask to display along with image
                     # that marks which stars were used (a None was appended
@@ -654,8 +658,7 @@ class QA(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                              strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
 ##############################################################################

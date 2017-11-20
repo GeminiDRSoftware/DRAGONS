@@ -1,7 +1,7 @@
 #
 #                                                                  gemini_python
 #
-#                                                                astrodata.utils
+#                                                                    gempy.utils
 #                                                                    logutils.py
 # ------------------------------------------------------------------------------
 # $Id$
@@ -20,15 +20,22 @@ SW = 3
 logging.raiseExceptions = 0
 
 # Logging levels
-ll = {'CRITICAL':50, 'ERROR':40, 'WARNING':30, 'STATUS':25, 
-      'STDINFO':21, 'INFO':20, 'FULLINFO':15, 'DEBUG':10}
+ll = {'CRITICAL':50, 'ERROR':40, 'WARNING' :30, 'STATUS':25, 
+      'STDINFO' :21, 'INFO' :20, 'FULLINFO':15, 'DEBUG' :10}
 
 def customize_log(log=None):
     """
-    :param log: A fresh log from logging.getLogger()
-    :type log: logging.Logger
-
     Sets up custom attributes for logger
+
+    Parameters
+    ----------
+    log : <logging.Logger>
+          Logger object from logging.getLogger()
+
+    Returns
+    -------
+    <void>
+
     """
     def arghandler(args=None, levelnum=None, prefix=None):
         largs = list(args)
@@ -70,61 +77,63 @@ def customize_log(log=None):
 
 def get_logger(name=None):
     """
-    :param name: Name of logger (usually __name__)
-    :type name: string
-
-    :returns: Logger with new levels and prefixes for some levels
-    :rtype: logging.Logger
-
     Wraps logging.getLogger and returns a custom logging object
+
+    Parameters
+    ----------
+    name: <str> 
+          Name of logger (usually __name__)
+
+    Returns
+    -------
+    log : <logging.Logger>
+          Logger with new levels and prefixes for some levels
+
     """
     log = logging.getLogger(name)
     try:
         assert log.root.handlers
         customize_log(log)
     except AssertionError:
-        config(mode='console')
+        config(mode='standard')
         customize_log(log)
     return log
         
-def config(mode='standard', console_lvl=None, file_lvl=None,
-           file_name='ad.log', stomp=False):
+def config(mode='standard', file_name='dragons.log', file_lvl=15, stomp=False):
     """
-    :param mode: logging mode: 'standard', 'console', 'quiet', 'debug', 
-                               'null'
-    :type  mode: <str>
+    Controls Dragons logging configuration.
 
-    :param console_lvl: console logging level
-    :type  console_lvl: <str>
+    Parameters
+    ----------
+    mode : <str> 
+          logging mode: 'debug', 'standard', 'quiet'
 
-    :param file_lvl: file logging level
-    :type  file_lvl: <str>
+    console_lvl : <int>
+          console logging level
 
-    :param file_name: filename of the logger
-    :type  file_name: <str>
+    file_lvl : <int>
+          file logging level
 
-    :param stomp: Controls append to logfiles found with same name
-    :type  stomp: <bool>
+    file_name : <atr> 
+          filename of the logger
+
+    stomp: <bool>
+          Controls append to logfiles found with same name
     
-    Controls the recipe system (rs) logging configuration.
+    Returns
+    -------
+    <void>
+
     """
-    if stomp:
-        fm = 'w'
-    else:
-        fm = 'a'
     logfmt = None
-    lmodes = ['null', 'console', 'debug', 'standard', 'quiet']
+    lmodes = ['debug', 'standard', 'quiet']
+    fm = 'w' if stomp else 'a'
     mode = mode.lower()
     if mode not in lmodes:
         raise NameError("Unknown mode")
 
-    # Allow callers to nullify the logger. (??)
-    if mode == 'null':
-        return
-
     rootlog = logging.getLogger('')
-    # every call on config clears the handlers list.
-    rootlog.handlers = []
+    rootlog.handlers = []     # every call on config clears the handlers list.
 
     # Add the new levels
     logging.addLevelName(ll['STATUS'], 'STATUS')
@@ -133,37 +142,16 @@ def config(mode='standard', console_lvl=None, file_lvl=None,
 
     # Define rootlog handler(s) through basicConfig() according to mode
     customize_log(rootlog)
-
-    # Set the console and file logging levels
-    if mode == 'console':
-        console_lvl_asint = ll['FULLINFO']
-        logging.basicConfig(level=console_lvl_asint, format='%(message)s')
-
-    elif mode == 'quiet':
+    if mode == 'quiet':
         logfmt = STDFMT
-        if file_lvl:
-            file_lvl_asint = ll[str(file_lvl).upper()]
-        else:
-            file_lvl_asint = ll['FULLINFO']
-
-        logging.basicConfig(level=file_lvl_asint, format=logfmt,
+        logging.basicConfig(level=file_lvl, format=logfmt,
                             datefmt='%Y-%m-%d %H:%M:%S', 
                             filename=file_name, filemode=fm)
 
-    # modes 'standard' and 'debug" will log to console *and* file
-    # each with custom file and console log levels. 
     elif mode == 'standard':
         logfmt = STDFMT
-        if console_lvl:
-            console_lvl_asint = ll[str(console_lvl).upper()]
-        else:   
-            console_lvl_asint = ll['STDINFO']
-        if file_lvl:
-            file_lvl_asint = ll[str(file_lvl).upper()]
-        else:
-            file_lvl_asint = ll['FULLINFO']
-
-        logging.basicConfig(level=file_lvl_asint, format=logfmt,
+        console_lvl = 21
+        logging.basicConfig(level=file_lvl, format=logfmt,
                             datefmt='%Y-%m-%d %H:%M:%S', 
                             filename=file_name, filemode=fm)
 
@@ -171,21 +159,14 @@ def config(mode='standard', console_lvl=None, file_lvl=None,
         console = logging.StreamHandler()
         formatter = logging.Formatter('%(message)s')
         console.setFormatter(formatter)
-        console.setLevel(console_lvl_asint)
+        console.setLevel(console_lvl)
         rootlog.addHandler(console)
 
     elif mode == 'debug':
         logfmt = DBGFMT
-        if console_lvl:
-            console_lvl_asint = ll[str(console_lvl).upper()]
-        else:   
-            console_lvl_asint = ll['DEBUG']
-        if file_lvl:
-            file_lvl_asint = ll[str(file_lvl).upper()]
-        else:
-            file_lvl_asint = ll['DEBUG']
-
-        logging.basicConfig(level=file_lvl_asint, format=logfmt,
+        console_lvl = 10
+        file_lvl = 10
+        logging.basicConfig(level=file_lvl, format=logfmt,
                             datefmt='%Y-%m-%d %H:%M:%S', 
                             filename=file_name, filemode=fm)
 
@@ -193,19 +174,26 @@ def config(mode='standard', console_lvl=None, file_lvl=None,
         console = logging.StreamHandler()
         formatter = logging.Formatter('%(message)s')
         console.setFormatter(formatter)
-        console.setLevel(console_lvl_asint)
+        console.setLevel(console_lvl)
         rootlog.addHandler(console)
     return
 
 def update_indent(li=0, mode=''):
     """
-    :param li: log indent
-    :type li: integer
-
-    :param mode: logging mode
-    :type mode: string
-
     Updates indents for reduce by changing the formatter
+
+    Parameters
+    ----------
+    li : <int> 
+         log indentation 
+
+    mode: <str>
+          logging mode
+
+    Returns
+    -------
+    <void>
+
     """
     log = logging.getLogger('')
     
@@ -230,6 +218,7 @@ def update_indent(li=0, mode=''):
 def change_level(new_level=''):
     """
     Change the level of the console handler
+
     """
     log = logging.getLogger('')
     for hndl in log.handlers:

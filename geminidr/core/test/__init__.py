@@ -105,7 +105,7 @@ def ad_compare(ad1, ad2):
     # Extension by extension, check all the attributes
     log.stdinfo('Checking extensions...')
     for ext1, ext2 in zip(ad1, ad2):
-        log.stdinfo('  Checking extver {}'.format(ext1.hdr.EXTVER))
+        log.stdinfo('  Checking extver {}'.format(ext1.hdr['EXTVER']))
         for attr in ['data', 'mask', 'variance', 'OBJMASK', 'OBJCAT']:
             attr1 = getattr(ext1, attr, None)
             attr2 = getattr(ext2, attr, None)

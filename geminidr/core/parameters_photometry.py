@@ -14,9 +14,11 @@ class ParametersPhotometry(ParametersBASE):
         "mask"                  : False,
         "replace_flags"         : 249,
         "set_saturation"        : False,
+        "detect_minarea"        : 8,
+        "detect_thresh"         : 2.0,
+        "analysis_thresh"       : 2.0,
+        "deblend_mincont"       : 0.005,
+        "phot_min_radius"       : 3.5,
+        "back_size"             : 32,
+        "back_filtersize"       : 8,
     }
-    measureCCAndAstrometry = {
-        "suffix"                : "_ccAndAstrometryMeasured",
-        "correct_wcs"           : False,
-    }
-

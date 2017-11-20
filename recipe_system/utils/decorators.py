@@ -44,7 +44,10 @@ the decorated class.
             [ … ]
 
 """
+from builtins import zip
 from functools import wraps
+from copy import deepcopy
+
 from gempy.utils import logutils
 import inspect
 
@@ -71,7 +74,7 @@ def userpar_override(pname, args, upars):
     This returns a dict of the overridden parameters and their values.
     """
     parset = {}
-    for key, val in upars.items():
+    for key, val in list(upars.items()):
         if ':' in key:
             prim, par = key.split(':')
             if prim == pname and par in args:
@@ -79,6 +82,22 @@ def userpar_override(pname, args, upars):
         elif key in args:
             parset.update({key: val})
     return parset
+
+def set_logging(pname):
+   global LOGINDENT
+   LOGINDENT += 1
+   logutils.update_indent(LOGINDENT)
+   stat_msg = "PRIMITIVE: {}".format(pname)
+   log.status(stat_msg)
+   log.status("-" * len(stat_msg))
+   return
+
+def unset_logging():
+   global LOGINDENT
+   log.status(".")
+   LOGINDENT -= 1
+   logutils.update_indent(LOGINDENT)
+   return    
 
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
@@ -91,6 +110,7 @@ def make_class_wrapper(wrapped):
             attr_fn = getattr(cls, attr_name)
             if callable(attr_fn):
                 if attr_name not in attr_fn.im_class.__dict__:
+                #if attr_name not in attr_fn.__self__.__class__.__dict__:
                     continue
                 else:
                     setattr(cls, attr_name, wrapped(attr_fn))
@@ -101,9 +121,6 @@ def make_class_wrapper(wrapped):
 def parameter_override(fn):
     @wraps(fn)
     def gn(*args, **kwargs):
-        global LOGINDENT
-        LOGINDENT += 1
-        logutils.update_indent(LOGINDENT)
         pobj = args[0]
         pname = fn.__name__
         # Start with parameters listed in the function definition
@@ -111,30 +128,32 @@ def parameter_override(fn):
         # Override with those in the parameters file
         params.update(getattr(pobj.parameters, pname, {}))
         # Override with user inputs
-        params.update(userpar_override(pname, params.keys(),
+        params.update(userpar_override(pname, list(params.keys()),
                       pobj.user_params))
         # Override with values in the function call
         params.update(kwargs)
-
-        stat_msg = "PRIMITVE: {}".format(pname)
-        log.status(stat_msg)
-        log.status("-" * len(stat_msg))
+        set_logging(pname)
         if len(args) == 1 and 'adinputs' not in params:
-            # Use appropriate stream inputs
+            # Use appropriate stream input/output
             instream = params.get('instream', params.get('stream', 'main'))
-            params.update({'adinputs': pobj.streams[instream]})
+            outstream = params.get('outstream', params.get('stream', 'main'))
+            # Many primitives operate on AD instances in situ, so need to
+            # copy inputs if they're going to a new output stream
+            if instream != outstream:
+                adinputs = [deepcopy(ad) for ad in pobj.streams[instream]]
+            else:
+                # Allow a non-existent stream to be passed
+                adinputs = pobj.streams.get(instream, [])
+            params.update({'adinputs': adinputs})
             ret_value = fn(*args, **params)
             # And place the outputs in the appropriate stream
-            outstream = params.get('outstream', params.get('stream', 'main'))
             pobj.streams[outstream] = ret_value
         else:
             ret_value = fn(*args, **params)
 
-        log.status(".")
-        LOGINDENT -= 1
-        logutils.update_indent(LOGINDENT)
+        unset_logging()
         return ret_value
     # Make dict of default values (ignore args[0]='self', args[1]='adinputs')
     argspec = inspect.getargspec(fn)
-    gn.parameters = dict(zip(argspec.args[2:], argspec.defaults[1:]))
+    gn.parameters = dict(list(zip(argspec.args[2:], argspec.defaults[1:])))
     return gn

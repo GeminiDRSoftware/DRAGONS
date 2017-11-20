@@ -9,6 +9,8 @@ from os.path import join, basename
 from xml.dom import minidom
 from pprint  import pformat
 
+from gemini_instruments.common import Section
+
 from gempy.utils import logutils
 from . import calurl_dict
 # ------------------------------------------------------------------------------
@@ -121,10 +123,12 @@ def calibration_search(rq, return_xml=False):
         calRQ = urllib2.Request(rqurl)
         u = urllib2.urlopen(calRQ, postdata)
         response = u.read()
-    except urllib2.HTTPError, error:
-        calserv_msg = error.read()
-        traceback.print_exc()
-        return (None, calserv_msg)
+    except urllib2.HTTPError as err:
+        log.error(str(err))
+        return (None, str(err))
+    except urllib2.URLError as err:
+        log.error(str(err))
+        return (None, str(err))
 
     if return_xml:
         return (None, response)
@@ -150,3 +154,13 @@ def calibration_search(rq, return_xml=False):
     log.stdinfo(repr(calurlel.data))
 
     return (calurlel.data, calurlmd5.data)
+
+def handle_returns(dv):
+    # TODO: This sends "old style" request for data section, where the section
+    #       is converted to a regular 4-element list. In "new style" requests,
+    #       we send the Section as-is. This will need to be revised when
+    #       (eventually) FitsStorage upgrades to new AstroData
+    if isinstance(dv, list) and isinstance(dv[0], Section):
+        return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
+    else:
+        return dv

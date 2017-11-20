@@ -13,6 +13,7 @@ Prototype reduce (New Hope).
 
 """
 # ---------------------------- Package Import ----------------------------------
+import os
 import sys
 
 from gempy.utils import logutils
@@ -21,8 +22,13 @@ from recipe_system.reduction.coreReduce import Reduce
 
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_args
-from recipe_system.utils.reduce_utils import normalize_context
+from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
+
+from recipe_system.cal_service import localmanager_available
+from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
+
+from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
 
 # ------------------------------------------------------------------------------
 def main(args):
@@ -75,8 +81,7 @@ def main(args):
     try:
         assert log.root.handlers
         log.root.handlers = []
-        logutils.config(mode=args.logmode, console_lvl=args.loglevel,
-                        file_name=args.logfile)
+        logutils.config(mode=args.logmode, file_name=args.logfile)
         log = logutils.get_logger(__name__)
         log.info("Logging configured for application: reduce")
         log.info(" ")
@@ -97,14 +102,24 @@ if __name__ == "__main__":
     version_report = _version
     parser = buildParser(version_report)
     args = parser.parse_args()
+
+    globalConf.load(STANDARD_REDUCTION_CONF)
     # Deal with argparse structures that are different than optparse
     args = normalize_args(args)
-    args.context = normalize_context(args.context)
+    args.upload = normalize_upload(args.upload)
 
     if args.displayflags:
         show_parser_options(parser, args)
         for item in ["Input fits file(s):\t%s" % inf for inf in args.files]:
             print(item)
         sys.exit()
+
+    if localmanager_available:
+        if args.local_db_dir is not None:
+            globalConf.update(CAL_CONFIG_SECTION, dict(
+                standalone=True,
+                database_dir=os.path.expanduser(args.local_db_dir)
+            ))
+    globalConf.export_section(CAL_CONFIG_SECTION)
 
     sys.exit(main(args))

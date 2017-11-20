@@ -189,14 +189,15 @@ class ADCCHandler(BaseHTTPRequestHandler):
         See that class for what the method does normally.
 
         """
+        msg_form  = '"%s" %s %s'
         try:
             assert self.informers["verbose"]
-            self.log_message("{} {} {}".format(self.requestline, code, size))
+            self.log_message(msg_form, repr(self.requestline), code, size)
         except AssertionError:
             if "cmdqueue.json" in self.requestline:
                 pass
             else:
-                self.log_message("{} {} {}".format(self.requestline, code, size))
+                self.log_message(msg_form, repr(self.requestline), code, size)
         return
 
     def do_GET(self):
@@ -277,7 +278,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 if "file" in parms:
                     logfile = parms["file"][0]
-                    print(logfile)
                     if not os.path.exists(logfile):
                         msg = "Log file not available"
                     else:
@@ -287,8 +287,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 else:
                     msg = "No log file available"
 
-                tdic = {"log":msg}
-
+                tdic = {"log": msg}
                 self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
         except IOError:
             self.send_error(404,'File Not Found: %s' % self.path)

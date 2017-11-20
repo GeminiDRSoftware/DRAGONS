@@ -30,9 +30,10 @@ class ParametersPreprocess(ParametersBASE):
         "suffix"            : '_darkCorrected',
         "dark"              : None,
     }
-    divideByFlat = {
-        "suffix"            : "_flatCorrected",
-        "flat"              : None,
+    dilateObjectMask = {
+        "suffix"            : '_objmaskDilated',
+        "dilation"          : 1,
+        "repeat"            : False,
     }
     flatCorrect = {
         "suffix"            : '_flatCorrected',
@@ -47,6 +48,7 @@ class ParametersPreprocess(ParametersBASE):
     normalizeFlat = {
         "suffix"            : "_normalized",
         "scale"             : "median",
+        "separate_ext"      : False,
     }
     separateSky = {
         "suffix"            : "_skySeparated",
@@ -54,12 +56,24 @@ class ParametersPreprocess(ParametersBASE):
         "ref_sky"           : "",
         "frac_FOV"          : 0.9,
     }
-    subtractDark = {
-        "suffix"            : "_darkCorrected",
-        "dark"              : None,
+    skyCorrect = {
+        "dilation"          : 2,
+        "apply_dq"          : True,
+        "mask_objects"      : True,
+        "nhigh"             : 1,
+        "nlow"              : 1,
+        "operation"         : "median",
+        "reject_method"     : "avsigclip",
+        "reset_sky"         : False,
+        "scale"             : True,
+        "zero"              : False,
     }
     subtractSky = {
         "suffix"            : "_skyCorrected",
+        "reset_sky"         : False,
+        "scale"             : True,
+        "sky"               : None,
+        "zero"              : False,
     }
     subtractSkyBackground = {
         "suffix"            : "_skyBackgroundSubtracted",

@@ -22,7 +22,7 @@ import re
 
 from distutils.core import setup
 
-PACKAGENAME = 'gemini_python'
+PACKAGENAME = 'dragons'
 
 # PACKAGES and PACKAGE_DIRS
 ASTRODATA_MODULES = ['astrodata']
@@ -61,19 +61,16 @@ GEMINIDR_MODULES = ['geminidr',
                     'geminidr.gmos.recipes.sq',
                     'geminidr.gnirs',
                     'geminidr.gnirs.lookups',
-                    'geminidr.gnirs.lookups.source_detection',
                     'geminidr.gnirs.recipes',
                     'geminidr.gnirs.recipes.qa',
                     'geminidr.gnirs.recipes.sq',
                     'geminidr.gsaoi',
                     'geminidr.gsaoi.lookups',
-                    'geminidr.gsaoi.lookups.source_detection',
                     'geminidr.gsaoi.recipes',
                     'geminidr.gsaoi.recipes.qa',
                     'geminidr.gsaoi.recipes.sq',
                     'geminidr.niri',
                     'geminidr.niri.lookups',
-                    'geminidr.niri.lookups.source_detection',
                     'geminidr.niri.recipes',
                     'geminidr.niri.recipes.qa',
                     'geminidr.niri.recipes.sq',
@@ -170,10 +167,10 @@ RS_SCRIPTS = [ os.path.join('recipe_system', 'scripts', 'adcc'),
                os.path.join('recipe_system', 'scripts', 'superclean'),
              ]
 
-GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'fwhm_histogram'),
+GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'automosaic.py'),
+                  os.path.join('gempy', 'scripts', 'fwhm_histogram'),
                   os.path.join('gempy', 'scripts', 'gmoss_fix_HAM_BPMs.py'),
                   os.path.join('gempy', 'scripts', 'gmoss_fix_headers.py'),
-                  os.path.join('gempy', 'scripts', 'mosaicFactory.py'),
                   os.path.join('gempy', 'scripts', 'pipeline2iraf'),
                   os.path.join('gempy', 'scripts', 'profile_all_obj'),
                   os.path.join('gempy', 'scripts', 'psf_plot'),
@@ -189,8 +186,8 @@ SCRIPTS.extend(GEMPY_SCRIPTS)
 
 EXTENSIONS = None
 
-setup ( name='gemini_python',
-        version='2.0.0',
+setup ( name='dragons',
+        version='2.0.6-alpha',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
         author_email='sus_inquiries@gemini.edu',

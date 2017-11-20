@@ -132,7 +132,7 @@ def descriptor_list(ad):
     --------
     A tuple of str
     """
-    members = inspect.getmembers(ad, lambda x: hasattr(x, 'descriptor_method'))
+    members = inspect.getmembers(ad.__class__, lambda x: hasattr(x, 'descriptor_method'))
     return tuple(mname for (mname, method) in members)
 
 def astro_data_tag(fn):
@@ -515,8 +515,15 @@ class AstroData(object):
             self._processing_tags = True
             try:
                 results = []
-                for mname, method in inspect.getmembers(self, lambda x: hasattr(x, 'tag_method')):
-                    ts = method()
+                # Calling inspect.getmembers on `self` would trigger all the properties (tags,
+                # phu, hdr, etc.), and that's undesirable. To prevent that, we'll inspect the
+                # *class*. But that returns us unbound methods. We use `method.__get__(self)` to
+                # get a bound version.
+                #
+                # It's a bit of a roundabout way to get to what we want, but it's better than
+                # the option...
+                for mname, method in inspect.getmembers(self.__class__, lambda x: hasattr(x, 'tag_method')):
+                    ts = method.__get__(self)()
                     plus, minus, blocked_by, blocks, if_present = ts
                     if plus or minus or blocks:
                         results.append(ts)
@@ -941,6 +948,37 @@ class AstroData(object):
                 ext.variance = operator(ext.variance, *args, **kwargs)
 
     def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
+        """
+        Sets the .data, and optionally .mask and .variance attributes of a
+        single-extension AstroData slice. This function will optionally
+        check whether these attributes have the same shape.
+        
+        Parameters
+        ----------
+        data : ndarray
+            The array to assign to the .data attribute ("SCI")
+
+        mask : ndarray, optional
+            The array to assign to the .mask attribute ("DQ")
+
+        variance: ndarray, optional
+            The array to assign to the .variance attribute ("VAR")
+
+        check: bool
+            If set, then the function will check that the mask and variance
+            arrays have the same shape as the data array
+
+        Raises
+        -------
+        TypeError
+            if an attempt is made to set the .mask or .variance attributes
+            with something other than an array
+
+        ValueError
+            if the .mask or .variance attributes don't have the same shape as
+            .data, OR if this is called on an AD instance that isn't a single
+            extension slice
+        """
         if not self.is_single:
             raise ValueError("Trying to reset a non-sliced AstroData object")
 

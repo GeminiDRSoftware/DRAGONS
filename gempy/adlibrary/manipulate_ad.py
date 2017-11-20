@@ -51,8 +51,8 @@ def remove_single_length_dimension(adinput):
             # This should be a log.debug call, but that doesn't appear to work
             # right now, so using log.fullinfo
             #log.fullinfo("Updated dimensions of {}[{},{}] = {}".format(adinput.filename,
-            #                                                       ext.hdr.EXTNAME,
-            #                                                       ext.hdr.EXTVER,
+            #                                                       ext.hdr['EXTNAME'],
+            #                                                       ext.hdr['EXTVER'],
             #                                                       ext.data.shape))
 
             # Remove the keywords relating to the dimension that has been

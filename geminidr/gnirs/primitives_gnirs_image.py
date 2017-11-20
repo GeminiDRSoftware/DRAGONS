@@ -82,8 +82,8 @@ class GNIRSImage(GNIRS, Image, Photometry):
         corr_illum_ad = _position_illum_mask(reference, illum_ad, log)
 
         for ad in adinputs:
-            final_illum = gt.clip_auxiliary_data(adinput=ad, aux=corr_illum_ad,
-                    aux_type="bpm", keyword_comments=self.keyword_comments)
+            final_illum = gt.clip_auxiliary_data(ad, aux=corr_illum_ad,
+                    aux_type="bpm")
  
             # binary_OR the illumination mask or create a DQ plane from it.
             if ad[0].mask is None:
@@ -92,8 +92,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
                 ad[0].mask |= final_illum[0].data
 
             # Update the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def _get_illum_mask_filename(self, ad):
@@ -131,20 +130,32 @@ def _position_illum_mask(adinput, illum, log):
     # Normalizing and thresholding the science data to get a rough
     # illumination mask. A 5x5 box around non-illuminated pixels is also 
     # flagged as non-illuminated to better handle the edge effects. The
-    # limit for thresholding is set to an empirically determined value of
-    # 2 for the moment - ideally, this should be replaced with a 
-    # statistically determined value or function.
+    # limit for thresholding is twice the median *and* more than 3x the
+    # read noise. A check is made that a reasonable number of pixels
+    # pass this test, since center_of_mass() will always return a result
+    # even when it really shouldn't.
     addata = adinput[0].data
-    adpixdata = np.copy(addata) / addata.mean()
-    
-    threshpixdata = np.zeros(adpixdata.shape, np.int16)
-    threshpixdata[np.where(adpixdata < 2.)] = 1
+    med = max(np.median(addata), 0.0)
+    # Get read noise in appropriate units (descriptor returns electrons)
+    rdnoise = adinput.read_noise()[0]
+    if adinput.hdr.get('BUNIT', 'ADU')[0].upper() == 'ADU':
+        rdnoise /= adinput.gain()[0]
+    # Set UNilliminated pixels here, to allow the binary_dilation to work
+    threshpixdata = np.where(np.logical_and(addata>2*med, addata>3*rdnoise),
+                             np.int16(0), np.int16(1))
     structure = np.ones((5,5))
     threshpixdata = binary_dilation(threshpixdata, structure)
     
-    # This mask identifies the non-illuminated pixels.  We want
-    # to feed the keyhole to the center_of_mass. We invert the mask.
+    # Invert to set illuminated pixels. Demand a minimum number of such pixels
     keyhole = 1 - threshpixdata
+    numpix_mask_illum = np.sum(illum[0].data==0)
+    numpix_data_illum = np.sum(keyhole)
+    if numpix_data_illum < 0.5 * numpix_mask_illum:
+        log.warning("Only {} illuminated pixels detected in {}, when {} are"
+                    "expected. Using the illumination mask without adjustment"
+                    ".".format(numpix_data_illum, adinput.filename,
+                               numpix_mask_illum))
+        return illum
 
     # Finding the centre of mass of the rough pixel mask and using
     # this in comparison with the centre of mass of the illumination

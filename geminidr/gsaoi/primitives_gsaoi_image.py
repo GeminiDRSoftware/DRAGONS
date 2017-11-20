@@ -39,7 +39,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
         if not adinputs:
             return adinputs
 
-        if adinputs[0].wavelength_band() in ['Z', 'J']:
+        if adinputs[0].effective_wavelength(output_units='micrometers') < 1.4:
             log.stdinfo('Using stackFrames to make flatfield')
             adinputs = self.stackFrames(adinputs)
         else:

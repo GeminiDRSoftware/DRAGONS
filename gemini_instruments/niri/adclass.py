@@ -165,6 +165,8 @@ class AstroDataNiri(AstroDataGemini):
             assert data_section == data_section[::-1], \
                 "Multiple extensions with different data_sections"
             data_section = data_section[0]
+        elif data_section is None:
+            return None
 
         x1, x2, y1, y2 = data_section
         # Check for a sensibly-sized square
@@ -201,6 +203,40 @@ class AstroDataNiri(AstroDataGemini):
             Position of the detector using an IRAF section format (1-based).
         """
         return self.array_section(pretty=pretty)
+
+    @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped if on bottom port unless AO is operating
+        return -offset if (self.phu.get('INPORT')==1 and
+                           not self.is_ao()) else offset
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            return -self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
@@ -385,9 +421,9 @@ class AstroDataNiri(AstroDataGemini):
         sat_level = self.saturation_level()
         linear_limit = lookup.array_properties['linearlimit']
         if isinstance(sat_level, list):
-            return [int(linear_limit * s) for s in sat_level]
+            return [(int(linear_limit * s) if s else None) for s in sat_level]
         else:
-            return int(linear_limit * sat_level)
+            return int(linear_limit * sat_level) if sat_level else None
 
     @astro_data_descriptor
     def pupil_mask(self, stripID=False, pretty=False):

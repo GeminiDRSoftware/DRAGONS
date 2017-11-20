@@ -30,17 +30,25 @@ class PrimitiveMapper(Mapper):
         if primitive_actual is None:
             raise PrimitivesNotFound("No qualified primitive set could be found")
 
-        return primitive_actual(self.adinputs, context=self.context,
+        return primitive_actual(self.adinputs, mode=self.mode,
                                 ucals=self.usercals, uparms=self.userparams,
-                                upmetrics=self.upload_metrics)
+                                upload=self.upload)
 
     # --------------------------------------------------------------------------
     # Primtive search cascade
     def _retrieve_primitive_set(self):
         """
-        :returns: tuple including the best tag set match and the primitive class
-                  that provided the match.
-        :rtype:   <tuple>, (set, class)
+        Start of the primitive class search cascade.
+
+        Parameters
+        ----------
+        <void>
+
+        Returns
+        -------
+        <tuple> : (set, <class>)
+                  Tuple including the best tag set match and the primitive class
+                  that best matched.
 
         """
         matched_set = (set([]), None)

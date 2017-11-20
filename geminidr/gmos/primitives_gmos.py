@@ -7,8 +7,6 @@ import os
 import numpy as np
 from copy import deepcopy
 
-from astropy.modeling import models, fitting
-
 import astrodata
 import gemini_instruments
 
@@ -137,8 +135,8 @@ class GMOS(Gemini, CCD):
             ad_out.hdr.set("CCDNAME", ad.detector_name(),
                               comment=self.keyword_comments["CCDNAME"])
 
-            # TODO: Old code complained about mask being float32 and having
-            # negative values that needed fixing. Doesn't seem to be true
+            if hasattr(ad, 'REFCAT'):
+                ad_out.REFCAT = deepcopy(ad.REFCAT)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad_out)
@@ -221,28 +219,28 @@ class GMOS(Gemini, CCD):
 
             # And the bias level too!
             bias_level = get_bias_level(adinput=ad,
-                                        estimate='qa' in self.context)
+                                        estimate='qa' in self.mode)
             for ext, bias in zip(ad, bias_level):
-                ext.hdr.set('RAWBIAS', bias, self.keyword_comments['RAWBIAS'])
+                if bias is not None:
+                    ext.hdr.set('RAWBIAS', bias,
+                                self.keyword_comments['RAWBIAS'])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(ad)
         return adoutputs
 
     def subtractOverscan(self, adinputs=None, **params):
         """
         Subtract the overscan level from the image by fitting a polynomial
-        to the overscan region.
+        to the overscan region. This sets the appropriate parameters for GMOS
+        (the gireduce defaults) and calls the CCD-level method.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        average: str ("mean"/"median")
-            function for averaging in short direction
         niterate: int
             number of rejection iterations
         high_reject: float
@@ -253,84 +251,31 @@ class GMOS(Gemini, CCD):
             comma-separated list of IRAF-style overscan sections
         nbiascontam: int/None
             number of columns adjacent to the illuminated region to reject
+        function: str
+            function to fit ("polynomial" | "spline" | "none")
         order: int
-            order of Chebyshev fit/None
+            order of Chebyshev fit or spline/None
         """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        detname = adinputs[0].detector_name(pretty=True)
+        if params["order"] is None and params["function"].startswith('poly'):
+            params["order"] = 6 if detname.startswith('Hamamatsu') else 0
+        if params["nbiascontam"] is None:
+            params["nbiascontam"] = 5 if detname == 'e2vDD' else 4
 
-        sfx = params["suffix"]
-        average = params["average"]
-        niterate = params["niterate"]
-        lo_rej = params["low_reject"]
-        hi_rej = params["high_reject"]
-        order = params["order"]
-        nbiascontam = params["nbiascontam"]
+        # Set the overscan_section and data_section keywords to chop off the
+        # bottom 48 (unbinned) rows, as Gemini-IRAF does
+        if detname.startswith('Hamamatsu') and params["function"].startswith('poly'):
+            for ad in adinputs:
+                y1 = 48 // ad.detector_y_bin()
+                dsec_list = ad.data_section()
+                osec_list = ad.overscan_section()
+                for ext, dsec, osec in zip(ad, dsec_list, osec_list):
+                    ext.hdr['BIASSEC'] = '[{}:{},{}:{}]'.format(osec.x1+1,
+                                                    osec.x2, y1+1, osec.y2)
+                    ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
+                                                    dsec.x2, y1+1, dsec.y2)
 
-        if average not in ('mean', 'median'):
-            log.warning("Averaging method {} not known; using mean".
-                        format(average))
-            average = "mean"
-
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by subtractOverscan".
-                            format(ad.filename))
-                continue
-
-            # Use gireduce defaults if values aren't specified
-            detname = ad.detector_name(pretty=True)
-            if order is None:
-                order = 6 if detname.startswith('Hamamatsu') else 0
-            if nbiascontam is None:
-                nbiascontam = 5 if detname == 'e2vDD' else 4
-
-            osec_list = ad.overscan_section()
-            dsec_list = ad.data_section()
-            for ext, osec, dsec in zip(ad, osec_list, dsec_list):
-                x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
-                if x1 > dsec.x1:  # Bias on right
-                    x1 += nbiascontam
-                    x2 -= 1
-                else:  # Bias on left
-                    x1 += 1
-                    x2 -= nbiascontam
-
-                if detname.startswith('Hamamatsu'):
-                    log.fullinfo('Ignoring bottom 48 rows of {}'.
-                                 format(ad.filename))
-                    y1 = 48
-
-                row = np.arange(y1, y2)
-                data = getattr(np, average)(ext.data[y1:y2, x1:x2], axis=1)
-                mask = np.array([False] * len(data))
-
-                for iter in range(niterate+1):
-                    bias_init = models.Chebyshev1D(degree=order,
-                                                   c0=np.median(data[~mask]))
-                    fit_f = fitting.LinearLSQFitter()
-                    bias = fit_f(bias_init, row[~mask], data[~mask])
-                    residuals = data - bias(row)
-                    sigma = np.std(residuals[~mask])
-                    mask = np.where(np.logical_or(residuals>hi_rej*sigma,
-                                    residuals<-lo_rej*sigma), True, False)
-
-                # using "-=" won't change from int to float
-                ext.data = ext.data - np.tile(bias(np.arange(0, ext.data.shape[0])),
-                                             (ext.data.shape[1],1)).T.astype(np.float32)
-
-                ext.hdr.set('OVERSEC', '[{}:{},{}:{}]'.format(x1+1,x2,y1+1,y2),
-                            self.keyword_comments['OVERSEC'])
-                ext.hdr.set('OVERSCAN', np.mean(bias(row)),
-                            self.keyword_comments['OVERSCAN'])
-                ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
-
-            # Timestamp, and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-
+        adinputs = super(GMOS, self).subtractOverscan(adinputs, **params)
         return adinputs
 
     def tileArrays(self, adinputs=None, **params):
@@ -366,7 +311,7 @@ class GMOS(Gemini, CCD):
             # so they won't get tiled with science data
             log.fullinfo("Trimming data to data section:")
             old_shape = [ext.data.shape for ext in ad]
-            ad = gt.trim_to_data_section(ad,
+            ad = gt.trim_to_data_section(deepcopy(ad),
                                          keyword_comments=self.keyword_comments)
             new_shape = [ext.data.shape for ext in ad]
             changed = old_shape!=new_shape
@@ -375,7 +320,7 @@ class GMOS(Gemini, CCD):
             # Gap width comes from a lookup table
             gap_height = int(ad[0].data.shape[0])
             gap_width = _obtain_arraygap(ad)
-            chip_gap = np.zeros((gap_height,gap_width))
+            chip_gap = np.zeros((gap_height,gap_width), dtype=ad[0].data.dtype)
 
             # Get the correct order of the extensions by sorting on
             # the first element in detector section
@@ -536,8 +481,7 @@ class GMOS(Gemini, CCD):
             # Timestamp and update filename
             gt.mark_history(adoutput, primname=self.myself(),
                             keyword=timestamp_key)
-            adoutput.filename = gt.filename_updater(adoutput,
-                                    suffix=params["suffix"], strip=True)
+            adoutput.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(adoutput)
         return adoutputs
 

@@ -26,7 +26,7 @@ def makeProcessedFlat(p):
     p.addVAR(poisson_noise=True)
     p.addToList(purpose='forFlat')
     p.getList(purpose='forFlat')
-    p.lampOnLampOff()
+    p.makeLampFlat()
     p.normalizeFlat()
     p.thresholdFlatfield()
     p.storeProcessedFlat()

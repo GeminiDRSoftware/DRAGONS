@@ -1,10 +1,13 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import os
 import sys
 import pwd
 import string
 import signal
-import commands
+import subprocess
 import subprocess
 
 from getpass import getuser
@@ -213,7 +216,7 @@ if options.pkl or options.log or options.tmps or options.fits:
 # stop or show processes
 prep = ""
 if optka or optkr or optsap or optsup:
-    outputall = commands.getoutput("ps -ef | grep python")
+    outputall = subprocess.getoutput("ps -ef | grep python")
     lines = outputall.split("\n")
     # must use username and userid to avoid mac conflict
     username = getuser()
@@ -265,10 +268,10 @@ if optsup or optsap:
 
 if options.verbose:
     if rstr != "":
-        print hstr + rstr
+        print(hstr + rstr)
     else:
-        print "no files, dirs, or processes to clean"
+        print("no files, dirs, or processes to clean")
 elif options.silent:
     pass
 else:
-    print "."
+    print(".")

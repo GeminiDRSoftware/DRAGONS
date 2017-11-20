@@ -156,6 +156,40 @@ class AstroDataGnirs(AstroDataGemini):
         return self.array_section(pretty=pretty)
 
     @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped if on bottom port unless AO is operating
+        return -offset if (self.phu.get('INPORT')==1 and
+                           not self.is_ao()) else offset
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+
+    @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
         Returns the name of the disperser group as the name of the grating
@@ -209,8 +243,13 @@ class AstroDataGnirs(AstroDataGemini):
         str
             The name of the focal plane mask with or without the component ID.
         """
-        slit = self.slit(stripID=stripID, pretty=pretty).replace('Acquisition', 'Acq')
-        decker = self.decker(stripID=stripID, pretty=pretty).replace('Acquisition', 'Acq')
+        try:
+            slit = self.slit(stripID=stripID,
+                             pretty=pretty).replace('Acquisition', 'Acq')
+            decker = self.decker(stripID=stripID,
+                                 pretty=pretty).replace('Acquisition', 'Acq')
+        except AttributeError:  # either slit or decker is None
+            return None
 
         # Default fpm value
         fpm = "{}&{}".format(slit, decker)

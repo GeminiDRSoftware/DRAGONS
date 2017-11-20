@@ -29,13 +29,13 @@ class MosaicData(object):
     init_coord             # Initialize coords if not supplied
     position_amps_in_block # Set a dictionary to contain the list indexes
                            # of each data_list element that falls in one block.
+
     """
     def __init__(self, data_list=None, coords=None):
         """
 
         Parameters
         ----------
-
         :param data_list:
             List of ndarrays representing the pixel image data,
             all the elements are of the same shape.
@@ -54,22 +54,23 @@ class MosaicData(object):
 
         EXAMPLES:
 
-          >>> from gemp.adlibrary.mosaicAD import MosaicData
-          >>> # Make 4 data arrays of size nx:1024, ny:2048
-          >>> data = numpy.linspace(0.,1000.,1024*2048).reshape(2048,1024)
-          >>> data_list = [data*(-1)**k for k in numpy.arange(4)]
-          >>> # Image section are: (x1,x2,y1,y2)
-          >>> coords = {'amp_mosaic_coord': [(0, 1024, 0, 2048),
-                                             (1024, 2048, 0, 2048),
-                                            (2048, 3072, 0, 2048),
-                                            (3072, 4096, 0, 2048)],
-                        'amp_block_coord': [(0, 1024, 0, 2048),
-                                            (0, 1024, 0, 2048),
-                                            (0, 1024, 0, 2048),
-                                            (0, 1024, 0, 2048)]}
+        >>> from gemp.adlibrary.mosaicAD import MosaicData
+        >>> # Make 4 data arrays of size nx:1024, ny:2048
+        >>> data = numpy.linspace(0.,1000.,1024*2048).reshape(2048,1024)
+        >>> data_list = [data*(-1)**k for k in numpy.arange(4)]
+        >>> # Image section are: (x1, x2, y1, y2)
+        >>> coords = {
+        'amp_mosaic_coord': [(   0, 1024, 0, 2048),
+                             (1024, 2048, 0, 2048),
+                             (2048, 3072, 0, 2048),
+                             (3072, 4096, 0, 2048)],
+        'amp_block_coord' : [(0, 1024, 0, 2048),
+                             (0, 1024, 0, 2048),
+                             (0, 1024, 0, 2048),
+                             (0, 1024, 0, 2048)]
+        }
 
-          >>> md = MosaicData(data_list, coords)
-
+        >>> md = MosaicData(data_list, coords)
 
         """
 
@@ -205,6 +206,7 @@ class MosaicData(object):
         ampsorder = np.array(zip(anumbers, coordx1, coordy1),
                              dtype=[('ext', np.int), ('coordx1', np.int),
                                     ('coordy1', np.int)])
+
         ampsorder.sort(order=('coordy1', 'coordx1'))
         order = np.asarray([amp[0] for amp in ampsorder]) + 1
         return order

@@ -19,6 +19,15 @@ class ParametersGMOS(ParametersGemini, ParametersCCD):
         "remove_bias"       : True,
         "separate_ext"      : False,
     }
+    subtractOverscan = {
+        "suffix"            : "_overscanSubtracted",
+        "niterate"          : 2,
+        "high_reject"       : 3.0,
+        "low_reject"        : 3.0,
+        "function"          : "polynomial",
+        "nbiascontam"       : None,
+        "order"             : None,
+    }
     validateData = {
         "suffix"            : "_dataValidated",
         "num_exts"          : [1,2,3,4,6,12],

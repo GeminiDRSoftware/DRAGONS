@@ -19,36 +19,36 @@ the instance. Use the type specified in the type column.)::
  -------------------------------------------------------
  displayflags           <type 'bool'>        False
  files                  <type 'list'>        []
- context                <type 'str'>         None
  logfile                <type 'str'>         'reduce.log'
- loglevel               <type 'str'>         'stdinfo'
  logmode                <type 'str'>         'standard'
+ mode                   <type 'str'>         'sq'      
  recipename             <type 'str'>         None
  suffix                 <type 'str'>         None
+ upload                 <type 'list'>        None
  user_cal               <type 'str'>         None
  userparam              <type 'list'>        None
 
 Examples
 --------
 
-Setting attributes on a Reduce object::
+Setting attributes on a Reduce instance::
 
- >>> reduce = ReduceNH()
- >>> reduce.logfile = "my_reduction.log"
- >>> reduce.recipe = "recipe.my_recipe"
- >>> reduce.files = ['UVW.fits', 'XYZ.fits']
+ >>> myreduce = Reduce()
+ >>> myreduce.logfile = "my_reduction.log"
+ >>> myreduce.recipe = "recipe.my_recipe"
+ >>> myreduce.files = ['UVW.fits', 'XYZ.fits']
 
 Or in other pythonic ways::
 
  >>> file_list = ['FOO.fits', 'BAR.fits']
- >>> reduce.files.extend(file_list)
- >>> reduce.files
+ >>> myreduce.files.extend(file_list)
+ >>> myreduce.files
  ['UVW.fits', 'XYZ.fits', 'FOO.fits', 'BAR.fits']
 
 Users wishing to pass primtive parameters to the recipe_system need only set
-the one (1) attribute, ``userparam``, on the Reduce instance::
+the one attribute, ``userparam``, on the Reduce instance::
 
- >>> reduce.userparam = ['clobber=True']
+ >>> myreduce.userparam = ['clobber=True']
 
 This is the API equivalent to the command line option::
 
@@ -57,7 +57,7 @@ This is the API equivalent to the command line option::
 For muliple primitive parameters, the 'userparam' attribute is a list of 
 'par=val' strings, as in::
 
- >>> reduce.userparam = [ 'par1=val1', 'par2=val2', ... ]
+ >>> myreduce.userparam = [ 'par1=val1', 'par2=val2', ... ]
 
 Example function
 ----------------
@@ -80,19 +80,18 @@ files). Here, each list of ``procfiles`` is then passed to the internal
         # write logfile only, no stdout.
         reduce_object.logmode = 'quiet'
         reduce_object.userparam = ['clobber=True']
+	
+        logutils.config(file_name=reduce_object.logfile, mode=reduce_object.logmode)
 
-        logutils.config(file_name=reduce_object.logfile, 
-                        mode=reduce_object.logmode,
-                        console_lvl=reduce_object.loglevel)
-
-        def launch_reduce(datasets, recipe=None, upload=False):
+        def launch_reduce(datasets, recipe=None, upload=None):
             reduce_object.files = datasets
             if recipe:
                 reduce_object.recipename = recipe
+
             if upload:
-                reduce_object.context = 'qa, upload'
-            else:
-                reduce_object.context = 'qa'
+                reduce_object.upload = upload
+
+            reduce_object.mode = 'qa'  # request 'qa' recipes
             reduce_object.runr()
             return
 
@@ -111,6 +110,5 @@ files). Here, each list of ``procfiles`` is then passed to the internal
     if conditions_are_met:
         reduce_conditions_are_met(procfiles)
 
-Readers will see here that calling ``reduce_conditions_are_met()`` without the
-``control_options`` parameter will result in the ``running_contexts`` attribute 
-being set to ``'qa'``.
+Calling ``reduce_conditions_are_met()`` without the ``control_options`` 
+parameter will result in the ``mode`` attribute being set to ``'qa'``.

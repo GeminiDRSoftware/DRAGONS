@@ -7,6 +7,7 @@ import numpy as np
 
 from .mosaicGeometry import MosaicGeometry
 from .transformation import Transformation
+from .transformation import DQMap
 
 # ------------------------------------------------------------------------------
 class Mosaic(object):
@@ -118,234 +119,76 @@ class Mosaic(object):
         self.data_list = mosaic_data.data_list   # Lists of ndarray pixel data.
         self.data_index_per_block = None
 
-        # Check whether we can initialize coords
         mosaic_data.init_coord(mosaic_geometry)
-
-        # Dictionary with keys 'amp_mosaic_coord','amp_block_coord'.
         self.coords = mosaic_data.coords
-
-        # Generate default geometry object given the coords dictionary.
-        if mosaic_geometry is None:            # No geometry object.
+        if mosaic_geometry is None:
             mosaic_geometry = self.set_default_geometry()
 
-        # mosaic_geometry may be None if self.coords is None.
         self.geometry = mosaic_geometry
 
         # If both objects are not None set up block attributes.
-        if not (mosaic_geometry is None and self.coords is None):
+        if not (self.geometry is None and self.coords is None):
             self.set_blocks()
-
-            # Check the mosaic_data and mosaic_geometry attribute
-            # values for consistency.
             self.verify_inputs()
-
-            # Now that we have coords, get the order of the amps
-            # according to x and y position.
+            # Set order of amps according to x and y position.
             self.coords['order'] = mosaic_data.get_coords_order()
 
-        # Boolean to set min area enclosing all data_list elements in mosaic.
         self.return_ROI = True
-
-        # Mask array for the resulting mosaic. 0: good data, 1: no-data
-        self.mask = None
-
-        # Hidden flag: False when the mask for the reference extension is made.
-        self.__do_mask = True
-
-        # When set by set_transformations it is a dictionary with keys (col,row)
-        # of the mosaic block location.
         self.transform_objects = None
-
-        # Set the Transformation class method; behaves the same way as the
-        # IRAF geotran task.
         self.as_iraf = True
 
 
-    def set_default_geometry(self):
-        """
-          We are here because the object MosaicGeometry instantiated
-          in Mosaic __init__ function is None.
-
-        """
-        if not hasattr(self, 'coords'):
-            raise ValueError("From set_default_geometry: 'coords' not defined.")
-
-        if self.coords is None:
-            return
-
-        # The coords dictionary is defined.
-        # This is the list of positions w/r to the mosaic
-        # lower left (0,0) origin
-        amp_mosaic_coord = self.coords['amp_mosaic_coord']
-
-        # This is the list of positions w/r to the block lower left (0,0) origin
-        bcoord = self.coords['amp_block_coord']
-
-        # Set blocksize from amp_block_coord. Notice that we are taken the
-        # maximum value for each axis.
-        dnx, dny = max([(cc[1], cc[3]) for cc in bcoord])
-        blocksize = (dnx, dny)
-
-        # Get minimum origin coordinates from all the data_list elements.
-        xcoo_0, ycoo_0 = min([(dd[0], dd[2]) for dd in amp_mosaic_coord])
-
-        # Calculate the mosaic array grid tuple (ncols,nrows).
-        nblocksx, nblocksy = max([((dd[1]-xcoo_0) / dnx, (dd[3]-ycoo_0) / dny)
-                                  for dd in amp_mosaic_coord])
-
-        # Set the attribute
-        mosaic_grid = (max(1, int(nblocksx)), max(1, int(nblocksy)))
-
-        # This is the minimum dictionary necessary to create a
-        # MosaicGeometry object
-        geodict = {'mosaic_grid':mosaic_grid, 'blocksize':blocksize}
-
-        # Now instantiate the object
-        return  MosaicGeometry(geodict)
-
-    def verify_inputs(self):
-        """
-        Verify that mosaic_data and geometry object atributes are consistent.
-
-        """
-        if self.coords is None and self.geometry is None:
-            return
-
-        # coord1 ... amp_mosaic_coord
-        # coord2 ... amp_block_coord
-        # blocksize should be equal or larger that any value in coord2.
-        if self.coords is None:
-            # We do not have coords but we do have geometry values.
-            # Set coords1 and 2
-            dszy, dszx = self.data_list[0].shape
-            datalen = len(self.data_list)
-            bcoord = [(0, dszx, 0, dszy) for k in range(datalen)]
-            # amp_mosaic_coord: Make the sections run along the x-axis.
-            mcoord = [(k*dszx, k*dszx + dszx, 0, dszy) for k in range(datalen)]
-            self.coords = {'amp_mosaic_coord': mcoord,
-                           'amp_block_coord': bcoord}
-        else:
-            bcoord = np.asarray(self.coords['amp_block_coord'])
-
-
-        # Get the minimum and maximum value of corners
-        # for each block data_list element.
-        #
-        minx = min([cc[0] for cc in bcoord])
-        maxx = max([cc[1] for cc in bcoord])
-        miny = min([cc[2] for cc in bcoord])
-        maxy = min([cc[3] for cc in bcoord])
-        blcx, blcy = self.geometry.blocksize
-
-        # Now check that given blocksize shape is consistent
-        # with these limits.
-        #
-        if not((minx >= 0) and (maxx <= blcx) and
-            (miny >= 0) and (maxy <= blcy)):
-            line1 = "Geometry tuple 'blocksize' does not agree with "
-            line1 += "coordinates range."
-            line2 = '\n\t\tblocksize_x:'+str(blcx)+', blocksize_y:' + str(blcy)
-            line3 = '\n\t\tminX,maxX,minY,maxY:(%d,%d,%d,%d)' % \
-                    (minx, maxx, miny, maxy)
-            raise ValueError(line1 + line2 + line3)
-
-        return
-
-    def set_transformations(self):
-        """
-        Instantiates the Transformation class objects for each block that needs
-        correction for rotation, shift and/or magnification. Set a dictionary 
-        with (col,row) as a key and value the Transformation object.
-
-        """
-        # Correction parameters from the MosaicGeometry object dict.
-        geo = self.geometry
-        nblocksx, nblocksy = geo.mosaic_grid
-        mag = geo.transformation['magnification']
-        rot = geo.transformation['rotation']       # (x_rot, y_rot)
-        shift = geo.transformation['shift']        # (x_shift, y_shift)
-        order = 1
-        if geo.interpolator == 'spline':
-            order = geo.spline_order
-
-        transform_objects = {}
-        # Use the keys valid (col,row) tuples as there could be some
-        # tuples with no data hence no tuple.
-        for col, row in self.data_index_per_block:
-            # Turn block tuple location (col,row) into list index
-            indx = col + row*nblocksx
-
-            # Instantiates a Transformation object. The interpolator
-            # order can be reset if needed.
-            trf = Transformation(rot[indx][0], shift[indx], mag[indx], 
-                                 order=order, as_iraf=self.as_iraf)
-
-            # Add a key to the dictionary with value the object.
-            transform_objects[col, row] = trf
-
-        # Reset the attribute
-        self.transform_objects = transform_objects
-        return
-
-    def mosaic_image_data(self, tile=False, block=None, return_ROI=True,
-                          dq_data=False, jfactor=None):
-
+    def mosaic_image_data(self, block=None, dq_data=False, jfactor=None,
+                          tile=False, return_ROI=True):
         """
         Main method to layout the block of data in a mosaic grid.
         Correction for rotation, shifting and magnification is performed with
         respect to the reference block.
+
         A Mask is also created containing value zero for positions were
         there are pixel data and one for everywhere else -like gaps and
         areas of no-data due to shiftingr; for example, after transforming.
 
         Parameters
         ----------
+        block: Allows a specific block to be returned as the output mosaic.
+               The tuple notation is (col,row) (0-based), where (0,0) is the
+               lower left block. The blocks layout is given by the attribute
+               mosaic_grid.
+        type:  <tuple>, default: None
 
-        :param tile: If True, layout the block in the mosaic grid
-                     with no correction for rotation nor shift.
-                     Gaps are included.
-        :ptype tile: boolean, default: False
+        dq_data: If True, then the input data is transformed
+                 bit-plane by bit-plane. DQ is 8-bit planes so far.
+        type:    <bool>
 
-        :param block: Allows a specific block to be returned as the
-                      output mosaic. The tuple notation is (col,row)
-                      (zero-based) where (0,0) is the lower left block.
-                      The blocks layout is given by the attribute mosaic_grid.
-        :ptype block: Tuple, default: None
+        tile: Layout the block in the mosaic grid with no correction for
+              rotation nor shift. Gaps are included.
+        type: <bool>, default: False
 
-        :param return_ROI:
-                      Flag to use the minimum frame enclosing all the
-                      block_data elements.
-        :ptype return_ROI: Boolean, default: True
-        :ptype dq_data: (bool). If True, then the input data is transformed
-                        bit-plane by bit-plane. DQ is 8-bit planes so far.
-        :param jfactor: Factor to multiply transformed block to conserve flux.
+        return_ROI: Use the minimum frame enclosing all the block_data elements.
+        type:       <bool>, default: True
 
-        Output
+        jfactor: Factor to multiply transformed block to conserve flux.
+        type:    <list>
+
+        Return
         ------
-
         :return: An ndarray with the mosaiic. The Mask created is available
                  as an attribute with name 'mask'.
 
-
         """
         self.return_ROI = return_ROI
-        geo = self.geometry
-
-        # If we don't have coordinates then do Horizontal tiling
+        # No coordinates, then do Horizontal tiling
         if self.coords is None:
             return np.hstack(self.data_list)
 
-        # See if we want to return a block only.
         if block:
             return self.get_blocks(block).values()[0]
 
-        # Number of blocks in (x,y)_direction in mosaic
-        nblocksx, nblocksy = geo.mosaic_grid
+        # N blocks in (x,y)_direction
+        nblocksx, nblocksy = self.geometry.mosaic_grid
+        blocksize_x, blocksize_y = self.geometry.blocksize
 
-        # Blocksize in x and y
-        blocksize_x, blocksize_y = geo.blocksize
-
-        # Initialize multiplicative factor to conserve flux.
         if jfactor is None:
             jfactor = [1.] * blocksize_x * blocksize_y
 
@@ -354,63 +197,47 @@ class Mosaic(object):
             gap_mode = 'tile_gaps'
         else:
             gap_mode = 'transform_gaps'
-
-            # -- Set up the transform_object dictionary
             self.set_transformations()
 
-        gaps = geo.gap_dict[gap_mode]
-
-        # Get the maximum value for x_gap and y_gap to
-        # determine the maximum mosaic size
-        #
+        gaps = self.geometry.gap_dict[gap_mode]
         gap_values = gaps.values()
         max_xgap = max([g[0] for g in gap_values])
         max_ygap = max([g[1] for g in gap_values])
 
-        # This is the entire mosaic area.
-        # Number of pixels in x and in y.
-
+        # This is the entire mosaic area, pixels in x and in y.
         mos_data = self.mosaic_data       # MosaicData object
         self.block_mosaic_coord = mos_data.block_mosaic_coord
+
         max_x = 0
         for coords in self.block_mosaic_coord.values():
             max_x = max(max_x, coords[0], coords[1])
+
         mosaic_nx = max_x + max_xgap*(nblocksx-1)
         mosaic_ny = max(v[3] for k, v in self.block_mosaic_coord.items()) + \
                     max_ygap*(nblocksy-1)
 
-        # Form a dictionary of blocks from the data_list.
-        # The keys are tuples (column,row)
-        #
+        # Form a dictionary of blocks from the data_list, keys are tuples
+        # (column,row)
         block_data = self.get_blocks()
 
-        # If we have ROI, not all blocks in the block_data list
-        # are defined.
-        #
+        # If we have ROI, not all blocks in the block_data list are defined.
         # Get the 1st defined block_data element.
         def_key = block_data.keys()[0]
 
         # Setup mosaic output array. Same datatype as block_data's
         outtype = block_data[def_key].dtype
         outdata = np.zeros((mosaic_ny, mosaic_nx), dtype=outtype)
-
-        # Create the output mask. We do not create another one for
-        # this self (instance).
-        if self.__do_mask:
-            self.mask = np.ones((mosaic_ny, mosaic_nx), dtype=np.int8)
+        outdata += DQMap['no_data']
 
         # ------- Paste each block (after transforming if tile=False)
         #         into the output mosaic array considering the gaps.
 
-        # Initialize coordinates of the box to contain
-        # all the blocks.
+        # Initialize coordinates of the box to contain all blocks.
         rx1 = mosaic_nx
         rx2 = 0
         ry1 = mosaic_ny
         ry2 = 0
-
         bszx, bszy = blocksize_x, blocksize_y
-
         for col, row in block_data:
             data = block_data[col, row]
             if not tile:
@@ -418,6 +245,7 @@ class Mosaic(object):
                 trans_obj = self.transform_objects[col, row]
                 if dq_data:
                     trans_obj.set_dq_data()
+
                 data = trans_obj.transform(data)
                 # Divide by the jacobian to conserve flux
                 indx = col + row*nblocksx
@@ -425,22 +253,10 @@ class Mosaic(object):
 
             # Get the block corner coordinates plus gaps wrt to mosaic origin
             x_gap, y_gap = gaps[(col, row)]
-            my1, my2, mx1, mx2 = \
-                self._get_block_corners(bszx, bszy, col, row, x_gap, y_gap)
-
-            if dq_data:
-                # When transforming DQ data, we set the no-data values
-                # -resulting from the shifting or rotation areas, to Nans
-                # Set the nodata value (nans) to zero
-                gnan = np.where(np.isnan(data))
-                data[gnan] = 0
+            my1,my2,mx1,mx2 = self._get_block_corners(bszx,bszy,col,row,x_gap,y_gap)
 
             # Position block_data in the output mosaic ndarray.
             outdata[my1:my2, mx1:mx2] = data
-
-            if self.__do_mask:
-            # -- mask ndarray values are zero for pixel data, one for no-data.
-                self.mask[my1:my2, mx1:mx2] = np.where(data == 0, 1, 0)
 
             # ------ ROI
             # Coordinates of the current block including gaps w/r to the mosaic
@@ -456,14 +272,12 @@ class Mosaic(object):
             rx2 = max(rx2, x2)
             ry1 = min(ry1, y1)
             ry2 = max(ry2, y2)
+
         if return_ROI:
-            outdata = outdata[ry1:ry2, rx1:rx2]      # Crop data
-            self.mask = self.mask[ry1:ry2, rx1:rx2]    # Crop masks
+            outdata = outdata[ry1:ry2, rx1:rx2]        # Crop data
 
         del block_data      # We no longer need this list in memory
-        # mask is already done. Reset the flag to not do another for any
-        # other extension.
-        self.__do_mask = False
+        # mask is already done.
 
         return outdata
 
@@ -490,55 +304,6 @@ class Mosaic(object):
         my1 = int(row * ysize + y_gap * row)
         my2 = int(my1 + ysize)
         return my1, my2, mx1, mx2
-
-    def set_blocks(self):
-        """
-        1) Set position of blocks within a mosaic.
-        2) Set indexes of input amplifier list belonging to each block.
-
-        Look where an amplifier is positioned within a block by
-        looking at its image-section amp_mosaic_coord corners. If the
-        amplifier data is within the block limits, add it to
-        data_index_per_block.
-
-        """
-        # Set things up only if we have coords
-
-        if self.coords is None:
-            return
-
-        #NOTE: Here we use the word 'amplifier' to refer to one element
-        #      of the input data_list.
-
-        geo = self.geometry
-        mosaic_grid = geo.mosaic_grid
-        self.blocksize = geo.blocksize
-
-        mos_data = self.mosaic_data                       # MosaicData object
-
-        # See where each extension data (aka amps) goes in the
-        # block (ccdsec).
-        mos_data.position_amps_in_block(mosaic_grid, self.blocksize)
-
-
-        # Indices from the amp_mosaic_coord list in each block.
-        # E.g. In a 2-amp per CCD, we would have 2 indices per block
-        # entry in 'data_index_per_block'
-        #
-        self.data_index_per_block = mos_data.data_index_per_block
-
-        # Number of amplifiers per block
-        #
-        # mark the 1st block that have data. In ROI cases, not
-        # all blocks have data.
-        data_index = self.data_index_per_block
-        for key in data_index:
-            namps = len(data_index[key])
-            if namps > 0:
-                self._amps_per_block = namps
-                break
-
-        return
 
     def get_blocks(self, block=None):
         """
@@ -593,6 +358,85 @@ class Mosaic(object):
 
         return block_data
 
+    def set_blocks(self):
+        """
+        1) Set position of blocks within a mosaic.
+        2) Set indexes of input amplifier list belonging to each block.
+
+        Look where an amplifier is positioned within a block by
+        looking at its image-section amp_mosaic_coord corners. If the
+        amplifier data is within the block limits, add it to
+        data_index_per_block.
+
+        """
+        # Set things up only if we have coords
+        if self.coords is None:
+            return
+
+        # NOTE: 'amplifier' is one element of input data_list.
+        self.blocksize = self.geometry.blocksize
+        mosaic_grid = self.geometry.mosaic_grid
+
+        # Where extension data (amps) goes in the block (ccdsec).
+        self.mosaic_data.position_amps_in_block(mosaic_grid, self.blocksize)
+
+        # Indices from the amp_mosaic_coord list in each block.
+        # E.g. In a 2-amp per CCD, we would have 2 indices per block
+        # entry in 'data_index_per_block'
+        self.data_index_per_block = self.mosaic_data.data_index_per_block
+
+        # Number of amplifiers per block. Mark 1st block that has data.
+        # For ROI, not all blocks have data.
+        for key in self.data_index_per_block:
+            namps = len(self.data_index_per_block[key])
+            if namps > 0:
+                self._amps_per_block = namps
+                break
+
+        return
+
+    def set_default_geometry(self):
+        """
+        We are here because the object MosaicGeometry instantiated
+        in Mosaic __init__ function is None.
+
+        """
+        if not hasattr(self, 'coords'):
+            raise ValueError("From set_default_geometry: 'coords' not defined.")
+
+        if self.coords is None:
+            return
+
+        # The coords dictionary is defined.
+        # This is the list of positions w/r to the mosaic
+        # lower left (0,0) origin
+        amp_mosaic_coord = self.coords['amp_mosaic_coord']
+
+        # This is the list of positions w/r to the block lower left (0,0) origin
+        bcoord = self.coords['amp_block_coord']
+
+        # Set blocksize from amp_block_coord. Notice that we are taken the
+        # maximum value for each axis.
+        dnx, dny = max([(cc[1], cc[3]) for cc in bcoord])
+        blocksize = (dnx, dny)
+
+        # Get minimum origin coordinates from all the data_list elements.
+        xcoo_0, ycoo_0 = min([(dd[0], dd[2]) for dd in amp_mosaic_coord])
+
+        # Calculate the mosaic array grid tuple (ncols,nrows).
+        nblocksx, nblocksy = max([((dd[1]-xcoo_0) / dnx, (dd[3]-ycoo_0) / dny)
+                                  for dd in amp_mosaic_coord])
+
+        # Set the attribute
+        mosaic_grid = (max(1, int(nblocksx)), max(1, int(nblocksy)))
+
+        # This is the minimum dictionary necessary to create a
+        # MosaicGeometry object
+        geodict = {'mosaic_grid':mosaic_grid, 'blocksize':blocksize}
+
+        # Now instantiate the object
+        return  MosaicGeometry(geodict)
+
     def set_interpolator(self, tfunction='linear', spline_order=2):
         """
         Changing the interpolation method to use when correcting the blocks for
@@ -627,6 +471,91 @@ class Mosaic(object):
         self.geometry.spline_order = order
         return
 
+    def set_transformations(self):
+        """
+        Instantiates the Transformation class objects for each block that needs
+        correction for rotation, shift and/or magnification. Set a dictionary 
+        with (col,row) as a key and value the Transformation object.
+
+        """
+        # Correction parameters from the MosaicGeometry object dict.
+        geo = self.geometry
+        nblocksx, nblocksy = geo.mosaic_grid
+        mag = geo.transformation['magnification']
+        rot = geo.transformation['rotation']       # (x_rot, y_rot)
+        shift = geo.transformation['shift']        # (x_shift, y_shift)
+        order = 1
+        if geo.interpolator == 'spline':
+            order = geo.spline_order
+
+        transform_objects = {}
+        # Use the keys valid (col,row) tuples as there could be some
+        # tuples with no data hence no tuple.
+        for col, row in self.data_index_per_block:
+            # Turn block tuple location (col,row) into list index
+            indx = col + row*nblocksx
+
+            # Instantiates a Transformation object. The interpolator
+            # order can be reset if needed.
+            trf = Transformation(rot[indx][0], shift[indx], mag[indx], 
+                                 order=order, as_iraf=self.as_iraf)
+
+            # Add a key to the dictionary with value the object.
+            transform_objects[col, row] = trf
+
+        # Reset the attribute
+        self.transform_objects = transform_objects
+        return
+
+    def verify_inputs(self):
+        """
+        Verify that mosaic_data and geometry object atributes are consistent.
+
+        """
+        if self.coords is None and self.geometry is None:
+            return
+
+        # coord1 ... amp_mosaic_coord
+        # coord2 ... amp_block_coord
+        # blocksize should be equal or larger that any value in coord2.
+        if self.coords is None:
+            # We do not have coords but we do have geometry values.
+            # Set coords1 and 2
+            dszy, dszx = self.data_list[0].shape
+            datalen = len(self.data_list)
+            bcoord = [(0, dszx, 0, dszy) for k in range(datalen)]
+            # amp_mosaic_coord: Make the sections run along the x-axis.
+            mcoord = [(k*dszx, k*dszx + dszx, 0, dszy) for k in range(datalen)]
+            self.coords = {'amp_mosaic_coord': mcoord,
+                           'amp_block_coord': bcoord}
+        else:
+            bcoord = np.asarray(self.coords['amp_block_coord'])
+
+
+        # Get the minimum and maximum value of corners
+        # for each block data_list element.
+        #
+        minx = min([cc[0] for cc in bcoord])
+        maxx = max([cc[1] for cc in bcoord])
+        miny = min([cc[2] for cc in bcoord])
+        maxy = min([cc[3] for cc in bcoord])
+        blcx, blcy = self.geometry.blocksize
+
+        # Now check that given blocksize shape is consistent
+        # with these limits.
+        #
+        if not((minx >= 0) and (maxx <= blcx) and
+            (miny >= 0) and (maxy <= blcy)):
+            line1 = "Geometry tuple 'blocksize' does not agree with "
+            line1 += "coordinates range."
+            line2 = '\n\t\tblocksize_x:'+str(blcx)+', blocksize_y:' + str(blcy)
+            line3 = '\n\t\tminX,maxX,minY,maxY:(%d,%d,%d,%d)' % \
+                    (minx, maxx, miny, maxy)
+            raise ValueError(line1 + line2 + line3)
+
+        return
+
+# -------------
 # The following 2 functions were added by James, to help with the co-ordinate
 # bookeeping for GSAOI. I believe they are more general than the mosaicking
 # functionality itself but there's no point building in unnecessary limitations

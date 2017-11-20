@@ -75,6 +75,38 @@ class AstroDataTrecs(AstroDataGemini):
         return gmu.convert_units('microns', wave_in_microns, output_units)
 
     @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            return self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            return -self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+
+    @astro_data_descriptor
     def dispersion(self, asMicrometers=False, asNanometers=False,
                    asAngstroms=False):
         """

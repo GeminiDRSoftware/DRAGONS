@@ -22,7 +22,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     # Extract pointing info. (currently p/q but this will be replaced with
     # RA/Dec/PA) from the AstroData instance.
-    position = (pos.phu.POFFSET, pos.phu.QOFFSET)
+    position = (pos.phu['POFFSET'], pos.phu['QOFFSET'])
 
     # TO DO: References to the field size will need changing to decimal
     # degrees once we pass absolute co-ordinates?
