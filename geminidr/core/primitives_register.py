@@ -183,8 +183,8 @@ class Register(PrimitivesBASE):
 
                     # GNIRS WCS is dubious, so update WCS by using the ref
                     # image's WCS and the telescope offsets
-                    if ad.instrument() == 'GNIRS' and not use_wcs:
-                        ad = _create_wcs_from_offsets(ad, ref_image)
+                    #if ad.instrument() == 'GNIRS' and not use_wcs:
+                    #    ad = _create_wcs_from_offsets(ad, ref_image)
 
                     if not use_wcs:
                         log.warning("Parameter 'use_wcs' is False.")
@@ -521,8 +521,8 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     log.stdinfo("Updating WCS of {} based on {}".format(adinput.filename,
                                                         adref.filename))
     try:
-        xdiff = adinput.detector_x_offset() - adref.detector_x_offset()
-        ydiff = adinput.detector_y_offset() - adref.detector_y_offset()
+        xdiff = adref.detector_x_offset() - adinput.detector_x_offset()
+        ydiff = adref.detector_y_offset() - adinput.detector_y_offset()
         pa1 = adref.phu['PA']
         pa2 = adinput.phu['PA']
     except (KeyError, TypeError):  # TypeError if offset is None
@@ -543,8 +543,8 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
                                          center_of_rotation[1], 1)
         extin.hdr['CRVAL1'] = float(ra0)
         extin.hdr['CRVAL2'] = float(dec0)
-        extin.hdr['CRPIX1'] = center_of_rotation[0] + xdiff
-        extin.hdr['CRPIX2'] = center_of_rotation[1] + ydiff
+        extin.hdr['CRPIX1'] = center_of_rotation[0] - xdiff
+        extin.hdr['CRPIX2'] = center_of_rotation[1] - ydiff
         cd = models.Rotation2D(angle=pa1-pa2)(*wcsref.wcs.cd)
         extin.hdr['CD1_1'] = cd[0][0]
         extin.hdr['CD1_2'] = cd[0][1]

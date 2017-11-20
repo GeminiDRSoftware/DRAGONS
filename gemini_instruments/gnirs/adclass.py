@@ -185,7 +185,7 @@ class AstroDataGnirs(AstroDataGemini):
             The offset in pixels
         """
         try:
-            return self.phu.get('POFFSET') / self.pixel_scale()
+            return -self.phu.get('POFFSET') / self.pixel_scale()
         except TypeError:  # either is None
             return None
 
