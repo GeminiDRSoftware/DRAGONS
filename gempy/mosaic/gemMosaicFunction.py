@@ -122,19 +122,22 @@ def _set_geo_values(ad, ccdsecs, detsecs, binning):
     instrument = "gmos" if "GMOS" in ad.instrument() else ad.instrument().lower()
     lookup_tables = geometry_module.format(instrument)
     geotable = import_module(lookup_tables)
-    
+
     # key elements for chip geometries
-    dettype      =  ad.phu.get('DETTYPE')
-    detector     =  ad.phu.get('DETECTOR')
-    instrument   = ad.instrument()
+    #dettype      =  ad.phu.get('DETTYPE')
+    #detector     =  ad.phu.get('DETECTOR')
+    #instrument   = ad.instrument()
+
+    chipids = ad.detector_name()
+
     x_bin, y_bin = binning
     if x_bin > 1 or y_bin > 1:
         bin_string = "binned"
     else:
         bin_string = "unbinned"
 
-    binning_key  = (instrument, dettype, detector, bin_string)
-    unbinned_key = (instrument, dettype, detector, 'unbinned')
+    binning_key  = (chipids, bin_string)
+    unbinned_key = (chipids, 'unbinned')
 
     xshift, yshift = np.asfarray(geotable.shift[binning_key]).transpose()
     tab_rotation   = geotable.rotation[binning_key]

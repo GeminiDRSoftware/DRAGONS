@@ -114,7 +114,7 @@ Usage:
   from gempy.adlibrary.mosaicAD import MosaicAD
   #     This is a user function available for your use,
   #     it supports GMOS and GSAOI data
-  from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
+  from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 
   # Instantiate an AstroData object using a GMOS FITS file.

@@ -67,9 +67,12 @@ class GMOSSpect(GMOS, Spect):
             ad_tiled = self.tileArrays([ad], tile_all=True)[0]
 
             # Ignore bad pixels (non-linear/saturated are OK)
+            if ad_tiled[0].mask is None:
+                mask = None
+            else:
+                mask = ad_tiled[0].mask & ~(DQ.non_linear | DQ.saturated)
             spatial_profile = np.ma.array(ad_tiled[0].data,
-                                          mask=ad_tiled[0].mask &
-                                ~(DQ.non_linear | DQ.saturated)).sum(axis=1)
+                                          mask=mask).sum(axis=1)
 
             # Construct a theoretical illumination map from the MDF data
             slits_profile = np.zeros_like(spatial_profile)
@@ -109,7 +112,8 @@ class GMOSSpect(GMOS, Spect):
                     slits_profile[max(int(slit_ymin),0):
                                   min(int(slit_ymax+1),len(slits_profile))] = 1
                     if slit_ymin > shuffle:
-                        slits_profile[slit_ymin-shuffle:slit_ymax-shuffle+1] = 1
+                        slits_profile[int(slit_ymin-shuffle):
+                                      int(slit_ymax-shuffle+1)] = 1
 
             # Cross-correlate collapsed image with theoretical profile
             c = np.correlate(spatial_profile, slits_profile, mode='full')
@@ -133,6 +137,5 @@ class GMOSSpect(GMOS, Spect):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad,
-                             suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs

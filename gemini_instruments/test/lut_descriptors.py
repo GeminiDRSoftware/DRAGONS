@@ -79,8 +79,8 @@ fixture_data = {
         ('wcs_dec', None),
         ('wcs_ra', None),
         ('well_depth_setting', None),
-        ('x_offset', 16.3438747164),
-        ('y_offset', 36.3643103685),
+        ('telescope_x_offset', 16.3438747164),
+        ('telescope_y_offset', 36.3643103685),
         ),
     ('F2', 'S20140217S0036.fits'): (
         ('airmass', 1.697),
@@ -159,8 +159,8 @@ fixture_data = {
         ('wcs_dec', -39.42553861918893),
         ('wcs_ra', 34.84293107620551),
         ('well_depth_setting', None),
-        ('x_offset', -0.0324777684697),
-        ('y_offset', 1.52706222735),
+        ('telescope_x_offset', -0.0324777684697),
+        ('telescope_y_offset', 1.52706222735),
         ),
     ('GMOS', 'N20160605S0099.fits'): (
         ('airmass', 1.269),
@@ -243,8 +243,8 @@ fixture_data = {
         ('wcs_dec', 12.4397499981706),
         ('wcs_ra', 290.370708361446),
         ('well_depth_setting', None),
-        ('x_offset', 0.0),
-        ('y_offset', 0.0),
+        ('telescope_x_offset', 0.0),
+        ('telescope_y_offset', 0.0),
         ),
     ('GMOS', 'S20150903S0061.fits'): (
         ('airmass', 1.023),
@@ -327,8 +327,8 @@ fixture_data = {
         ('wcs_dec', -26.434180561),
         ('wcs_ra', 278.664425001),
         ('well_depth_setting', None),
-        ('x_offset', 0.0),
-        ('y_offset', 0.0),
+        ('telescope_x_offset', 0.0),
+        ('telescope_y_offset', 0.0),
         ),
     ('GNIRS', 'N20120117S0019.fits'): (
         ('airmass', 1.154),
@@ -407,8 +407,8 @@ fixture_data = {
         ('wcs_dec', 33.93129057327495),
         ('wcs_ra', 16.233395667749306),
         ('well_depth_setting', 'Shallow'),
-        ('x_offset', 24.9996573062),
-        ('y_offset', 0.130899095798),
+        ('telescope_x_offset', 24.9996573062),
+        ('telescope_y_offset', 0.130899095798),
         ),
     ('GPI', 'S20161014S0043.fits') : (
         ('airmass', 1.096),
@@ -488,8 +488,8 @@ fixture_data = {
         ('wcs_dec', -45.0878451574),
         ('wcs_ra', 343.393331379),
         ('well_depth_setting', None),
-        ('x_offset', 0.0),
-        ('y_offset', 0.0),
+        ('telescope_x_offset', 0.0),
+        ('telescope_y_offset', 0.0),
         ),
     ('GSAOI', 'S20150110S0142.fits'): (
         ('airmass', 1.299),
@@ -569,8 +569,8 @@ fixture_data = {
         ('wcs_dec', -69.5047344086805),
         ('wcs_ra', 80.4524176022188),
         ('well_depth_setting', None),
-        ('x_offset', 0.0),
-        ('y_offset', 0.0),
+        ('telescope_x_offset', 0.0),
+        ('telescope_y_offset', 0.0),
         ),
     ('michelle', 'N20111112S0316.fits') : (
         ('airmass', 1.315),
@@ -650,8 +650,8 @@ fixture_data = {
         ('wcs_dec', 16.9783427208),
         ('wcs_ra', 71.7745834761),
         ('well_depth_setting', None),
-        ('x_offset', 3.45037802541),
-        ('y_offset', -2.72948342187),
+        ('telescope_x_offset', 3.45037802541),
+        ('telescope_y_offset', -2.72948342187),
         ),
     ('NICI', 'S20130715S0111.fits') : (
         ('airmass', 1.057),
@@ -731,8 +731,8 @@ fixture_data = {
         ('wcs_dec', -13.0838494563),
         ('wcs_ra', 316.903239557),
         ('well_depth_setting', None),
-        ('x_offset', -0.00405390839368),
-        ('y_offset', 0.0629580811395),
+        ('telescope_x_offset', -0.00405390839368),
+        ('telescope_y_offset', 0.0629580811395),
         ),
     ('NIFS', 'N20160708S0134.fits') : (
         ('airmass', 1.408),
@@ -812,8 +812,8 @@ fixture_data = {
         ('wcs_dec', -22.0014252265),
         ('wcs_ra', 269.065309046),
         ('well_depth_setting', None),
-        ('x_offset', -0.492100128594),
-        ('y_offset', -0.248050471324)
+        ('telescope_x_offset', -0.492100128594),
+        ('telescope_y_offset', -0.248050471324)
         ),
     ('NIRI', 'N20131215S0178.fits') : (
         ('airmass', 1.064),
@@ -893,8 +893,8 @@ fixture_data = {
         ('wcs_dec', -0.168230439363),
         ('wcs_ra', 86.553050617),
         ('well_depth_setting', 'Shallow'),
-        ('x_offset', 6.32124160802),
-        ('y_offset', 74.9002129805),
+        ('telescope_x_offset', 6.32124160802),
+        ('telescope_y_offset', 74.9002129805),
         ),
     ('TReCS', 'S20121030S0130.fits') : (
         ('airmass', 1.593),
@@ -974,7 +974,7 @@ fixture_data = {
         ('wcs_dec', -70.8485336304),
         ('wcs_ra', 15.8077726364),
         ('well_depth_setting', None),
-        ('x_offset', 0.0),
-        ('y_offset', 0.0),
+        ('telescope_x_offset', 0.0),
+        ('telescope_y_offset', 0.0),
         ),
 }

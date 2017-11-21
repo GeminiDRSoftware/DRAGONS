@@ -9,7 +9,7 @@ class ParametersStack(ParametersBASE):
     }
     stackFlats = {
         "suffix"            : "_stack",
-        "mask"              : True,
+        "apply_dq"          : True,
         "nhigh"             : 1,
         "nlow"              : 1,
         "operation"         : "median",
@@ -17,7 +17,7 @@ class ParametersStack(ParametersBASE):
     }
     stackFrames = {
         "suffix"            : "_stack",
-        "mask"              : True,
+        "apply_dq"          : True,
         "nhigh"             : 1,
         "nlow"              : 1,
         "operation"         : "average",
@@ -25,9 +25,13 @@ class ParametersStack(ParametersBASE):
     }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",
-        "mask"              : True,
+        "dilation"          : 2,
+        "apply_dq"          : True,
+        "mask_objects"      : True,
         "nhigh"             : 1,
         "nlow"              : 1,
         "operation"         : "median",
         "reject_method"     : "avsigclip",
+        "scale"             : True,
+        "zero"              : False,
     }

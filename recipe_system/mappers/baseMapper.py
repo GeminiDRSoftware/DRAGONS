@@ -7,7 +7,6 @@ import importlib
 
 from ..utils.mapper_utils import dictify
 from ..utils.mapper_utils import dotpath
-from ..utils.mapper_utils import DRMARKER
 # ------------------------------------------------------------------------------
 class Mapper(object):
     """
@@ -22,45 +21,63 @@ class Mapper(object):
     module and class attributes that match on a dataset's tags attribute.
 
     """
-    def __init__(self, adinputs, recipename='default', context=['qa'],
-                 usercals=None, uparms=None, upload_metrics=False):
+    def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='default',
+                 usercals=None, uparms=None, upload=None):
         """
-        :parameter adinputs: list of AstroData objects.
-        :type adinputs: <list>
+        Parameters
+        ----------
+        adinputs : <list>
+                   A list of AstroData objects.
 
-        :parameter recipename: The recipe to use for processing. Passed by user 
-                               with -r or set by caller. Else 'default' recipe.
-        :type recipename: <str>
+        drpkg : <str>
+                The data reduction package to map. Default is 'geminidr'.
+                This package *must* be importable.
 
-        :parameter context: The context. This defines which recipe set to use,
-                            Default is 'QA'.
-        :type context: <str>
+        recipename : <str>
+                     The recipe to use for processing. Passed by user
+                     with -r or set by caller. Else 'default' recipe.
 
-        :parameter usercals: A dict of user provided calibration files, keyed
-                             on cal type.
+        mode : <str>
+               Pipeline mode. Selection criterion for recipe sets.
+               Supported modes:
+               'sq' - Science Quality (default)
+               'qa' - Quality Assessment
+               'ql' - Quicklook
 
-                             E.g.,
-                                  {'processed_bias': 'foo_bias.fits'}
-                             
-        :type usercals: <dict>
+        usercals : <dict>
+                   A dict of user provided calibration files, keyed on cal type.
+                   E.g., {'processed_bias': 'foo_bias.fits'}
 
-        :parameter uparms: A set of user parameters passed via command line
-                           or other caller.
-        :type uparms: <list> list of (parameter, value) tuples. Each may have a 
-                             specified primitive.
-                             E.g., [('foo','bar'), ('tileArrays:par1','val1')]
+        uparms : <list> 
+                 A list of tuples of user parameters like, (parameter, value).
+                 Each may have a specified primitive.
+                 E.g., [('foo','bar'), ('tileArrays:par1','val1')]
 
-        :parameter upload_metrics: Send Qa metrics to fitsstore.
-        :type upload_metrics: <bool>
+        upload : <list> A list of things to upload. e.g., ['metrics']
 
         """
         self.adinputs   = adinputs
-        self.context    = context
-        ainst = adinputs[0].instrument()
-        self.pkg        = 'gmos' if "GMOS" in ainst else ainst.lower()
-        self.dotpackage = dotpath(DRMARKER, self.pkg)
+        self.mode       = mode
+        self.pkg        = adinputs[0].instrument(generic=True).lower()
+        self.dotpackage = dotpath(drpkg, self.pkg)
         self.recipename = recipename
         self.tags       = adinputs[0].tags
         self.usercals   = usercals if usercals else {}
         self.userparams = dictify(uparms)
-        self.upload_metrics = upload_metrics
+        self._upload    = upload
+
+    @property
+    def upload(self):
+        return self._upload
+
+    @upload.setter
+    def upload(self, upl):
+        if upl is None:
+            self._upload = None
+        elif isinstance(upl, str):
+            self._upload = [seg.lower().strip() for seg in upl.split(',')]
+        elif isinstance(upl, list):
+            self._upload = upl
+        else:
+            raise TypeError("'upload' must be one of None, <str>, or <list>")
+        return

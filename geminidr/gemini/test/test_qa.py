@@ -54,16 +54,16 @@ class TestQA:
         ad = p.measureBG()[0]
         correct = [726.18213, 724.36047, 727.34491,
                    728.49664, 728.08966, 719.83728]
-        for rv, cv in zip(ad.hdr.SKYLEVEL, correct):
+        for rv, cv in zip(ad.hdr['SKYLEVEL'], correct):
             assert abs(rv - cv) < 0.1, 'Wrong background level'
-        assert (ad.phu.SKYLEVEL - 727.174) < 0.1
+        assert (ad.phu['SKYLEVEL'] - 727.174) < 0.1
 
         f = open(logfilename, 'r')
         for line in f.readlines():
             if 'BG band' in line:
                 assert line.split()[6] == 'BG80', 'Wrong BG band'
 
-        ad.phu.REQBG = '50-percentile'
+        ad.phu['REQBG'] = '50-percentile'
         ad = p.measureBG()[0]
         assert any('WARNING: BG requirement not met' in line
                    for line in f.readlines()), 'No BG warning'
@@ -74,7 +74,7 @@ class TestQA:
         p = GMOSImage([ad])
         ad = p.measureCC()[0]
         correct = [28.18, 28.16, 28.14, 28.11, 28.17, 28.12]
-        for rv, cv in zip(ad.hdr.MEANZP, correct):
+        for rv, cv in zip(ad.hdr['MEANZP'], correct):
             assert abs(rv - cv) < 0.02, 'Wrong zeropoint'
 
         f = open(logfilename, 'r')
@@ -85,7 +85,7 @@ class TestQA:
             ext.OBJCAT['MAG_AUTO'] += 0.3
         ad = p.measureCC()[0]
         correct = [c-0.3 for c in correct]
-        for rv, cv in zip(ad.hdr.MEANZP, correct):
+        for rv, cv in zip(ad.hdr['MEANZP'], correct):
             assert abs(rv - cv) < 0.02, 'Wrong zeropoint after edit'
         ccwarn = False
         for line in f.readlines():
@@ -100,15 +100,15 @@ class TestQA:
         p = GMOSImage([ad])
         ad = p.measureIQ()[0]
         # Try to give a reasonable-sized goal
-        assert abs(ad.phu.MEANFWHM - 0.42) < 0.02, 'Wrong FWHM'
-        assert abs(ad.phu.MEANELLP - 0.09) < 0.02, 'Wrong ellipticity'
+        assert abs(ad.phu['MEANFWHM'] - 0.42) < 0.02, 'Wrong FWHM'
+        assert abs(ad.phu['MEANELLP'] - 0.09) < 0.02, 'Wrong ellipticity'
 
         f = open(logfilename, 'r')
         for line in f.readlines():
             if 'IQ range' in line:
                 assert line.split()[8] == 'IQ20', 'Wrong IQ band'
 
-        ad.phu.REQIQ = '70-percentile'
+        ad.phu['REQIQ'] = '70-percentile'
         for ext in ad:
             ext.OBJCAT['PROFILE_FWHM'] *= 2.5
             ext.OBJCAT['PROFILE_EE50'] *= 2.5

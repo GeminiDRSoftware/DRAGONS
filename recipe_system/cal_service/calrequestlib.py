@@ -4,10 +4,6 @@
 import hashlib
 import requests
 
-from requests.exceptions import HTTPError
-from requests.exceptions import Timeout
-from requests.exceptions import ConnectionError
-
 from os import mkdir
 from os.path import basename, exists
 from os.path import join, split
@@ -16,31 +12,20 @@ from urlparse import urlparse
 
 from gempy.utils import logutils
 
-from gemini_instruments.common import Section
-
-from .caches  import set_caches
-from recipe_system.cal_service import cal_search_factory
+from geminidr  import set_caches
+from recipe_system.cal_service import cal_search_factory, handle_returns_factory
+from .file_getter import get_file_iterator, GetterError
+from astrodata import descriptor_list
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 # Currently delivers transport_request.calibration_search fn.
 calibration_search = cal_search_factory()
 # ------------------------------------------------------------------------------
-descriptor_list = ['amp_read_area', 'camera', 'central_wavelength', 'coadds',
-                   'data_label', 'data_section', 'detector_roi_setting',
-                   'detector_x_bin', 'detector_y_bin', 'disperser',
-                   'exposure_time', 'filter_name', 'focal_plane_mask',
-                   'gain_setting', 'gcal_lamp', 'instrument', 'lyot_stop',
-                   'nod_count', 'nod_pixels', 'object', 'observation_class',
-                   'observation_id',
-                   'observation_type', 'program_id', 'read_speed_setting',
-                   'ut_datetime', 'read_mode', 'well_depth_setting']
-# ------------------------------------------------------------------------------
 def get_request(url, filename):
-    r = requests.get(url, timeout=10.0)
-    r.raise_for_status()
+    iterator = get_file_iterator(url)
     with open(filename, 'wb') as fd:
-        for chunk in r.iter_content(chunk_size=128):
+        for chunk in iterator:
             fd.write(chunk)
     return filename
 
@@ -112,11 +97,8 @@ def get_cal_requests(inputs, caltype):
 
     """
     options = {'central_wavelength': {'asMicrometers': True}}
-    def _handle_returns(dv):
-        if isinstance(dv, list) and isinstance(dv[0], Section):
-            return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
-        else:
-            return dv
+
+    _handle_returns = handle_returns_factory()
 
     rq_events = []
     for ad in inputs:
@@ -124,7 +106,7 @@ def get_cal_requests(inputs, caltype):
         rq = CalibrationRequest(ad, caltype)
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
-        for desc_name in descriptor_list:
+        for desc_name in descriptor_list(ad):
             try:
                 descriptor = getattr(ad, desc_name)
             except AttributeError:
@@ -168,16 +150,14 @@ def process_cal_requests(cal_requests):
 
     E.g., The returned dictionary has the form,
 
-    { (input datalabel, caltype): <filename_of_calibration_including_path>,
+    { (ad): <filename_of_calibration_including_path>,
       ...
     }
 
     """
     calibration_records = {}
     def _add_cal_record(rq, calfile):
-        rqkey = (rq.datalabel, rq.caltype)
-        calrec = calfile
-        calibration_records.update({rqkey: calrec})
+        calibration_records.update({rq.ad: calfile})
         return
 
     cache = set_caches()
@@ -192,7 +172,7 @@ def process_cal_requests(cal_requests):
             log.error("END CALIBRATION SERVICE REPORT\n")
             warn = "No {} calibration file found for {}"
             log.warning(warn.format(rq.caltype, rq.filename))
-            _add_cal_record(rq, calname)
+            #_add_cal_record(rq, calname)
             continue
 
         log.info("Found calibration (url): {}".format(calurl))
@@ -204,7 +184,6 @@ def process_cal_requests(cal_requests):
             if cached_md5 == calmd5:
                 log.stdinfo("Cached calibration {} matched.".format(cachename))
                 _add_cal_record(rq, cachename)
-                continue
             else:
                 log.stdinfo("File {} is cached but".format(calname))
                 log.stdinfo("md5 checksums DO NOT MATCH")
@@ -213,34 +192,19 @@ def process_cal_requests(cal_requests):
                 try:
                     calname = get_request(calurl, cachename)
                     _add_cal_record(rq, cachename)
-                    continue
-                except HTTPError as err:
-                    errstr = "Could not retrieve {}".format(calurl)
-                    log.error(errstr)
-                    log.error(str(err))
-                    continue
-                except ConnectionError as err:
-                    log.error("Unable to connect to url {}".format(url))
-                    log.error(str(err))
-                    continue
-                except Timout as terr:
-                    log.error("Request timed out.")
-                    log.error(str(terr))
-                    continue
+                except GetterError as err:
+                    for message in err.messages:
+                        log.error(message)
+            continue
 
         log.status("Making request for {}".format(calurl))
         fname = split(calurl)[1]
         calname = join(cachedir, fname)
         try:
             calname = get_request(calurl, calname)
-        except HTTPError as err:
-            log.error(str(err))
-        except ConnectionError as err:
-            log.error("Unable to connect to url {}".format(url))
-            log.error(str(err))
-        except Timout as terr:
-            log.error("Request timed out.")
-            log.error(str(terr))
+        except GetterError as err:
+            for message in err.messages:
+                log.error(message)
         else:
             # hash compare
             download_mdf5 = generate_md5_digest(calname)

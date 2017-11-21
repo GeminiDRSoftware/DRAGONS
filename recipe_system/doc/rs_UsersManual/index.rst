@@ -8,15 +8,14 @@ Recipe System Users Manual
 
 .. admonition:: Document ID
 
-   PIPE-USER-108_RSUserManual
+   PIPE-USER-109_RSUserManual
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
    intro
-   overview
-   interfaces
+   install
+   howto
    supptools
    discuss
    ack

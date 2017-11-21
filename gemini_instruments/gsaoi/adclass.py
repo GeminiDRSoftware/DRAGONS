@@ -320,8 +320,8 @@ class AstroDataGsaoi(AstroDataGemini):
         # Try the first (only if sliced) extension, then the PHU
         try:
             h = self[0].hdr
-            crval = h.CRVAL1
-            ctype = h.CTYPE1
+            crval = h['CRVAL1']
+            ctype = h['CTYPE1']
         except KeyError:
             crval = self.phu.get('CRVAL1')
             ctype = self.phu.get('CTYPE1')
@@ -341,8 +341,8 @@ class AstroDataGsaoi(AstroDataGemini):
         # Try the first (only if sliced) extension, then the PHU
         try:
             h = self[0].hdr
-            crval = h.CRVAL2
-            ctype = h.CTYPE2
+            crval = h['CRVAL2']
+            ctype = h['CTYPE2']
         except KeyError:
             crval = self.phu.get('CRVAL2')
             ctype = self.phu.get('CTYPE2')

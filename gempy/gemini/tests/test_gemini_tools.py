@@ -71,8 +71,7 @@ class TestGeminiTools:
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                           'N20160620S0035.fits'))
         bpm_ad = astrodata.open('geminidr/niri/lookups/BPM/NIRI_bpm.fits')
-        ret = gt.clip_auxiliary_data(ad, bpm_ad, 'bpm', np.int16,
-                                     keyword_comments)
+        ret = gt.clip_auxiliary_data(ad, bpm_ad, 'bpm', np.int16)
         assert ret[0].data.shape == ad[0].data.shape
         assert np.all(ret[0].data == bpm_ad[0].data[256:768,256:768])
 
@@ -80,8 +79,7 @@ class TestGeminiTools:
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                           'S20150528S0112.fits'))
         bpm_ad = astrodata.open('geminidr/gsaoi/lookups/BPM/gsaoibpm_high_full.fits')
-        ret = gt.clip_auxiliary_data_GSAOI(ad, bpm_ad, 'bpm', np.int16,
-                                     keyword_comments)
+        ret = gt.clip_auxiliary_data_GSAOI(ad, bpm_ad, 'bpm', np.int16)
         for rd, cd, bd in zip(ret.data, ad.data, bpm_ad.data):
             assert rd.shape == cd.shape
             # Note this only works for unprepared data because of the ROI
@@ -103,12 +101,6 @@ class TestGeminiTools:
 
     def test_convert_to_cal_header(self):
         pass
-
-    def test_filename_updater(self):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, 'GMOS',
-                                            'N20110524S0358_varAdded.fits'))
-        ret = gt.filename_updater(ad, suffix='_forStack', strip=True)
-        assert ret == 'N20110524S0358_forStack.fits'
 
     def test_finalise_ad_input(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
@@ -150,19 +142,19 @@ class TestGeminiTools:
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                     'S20150110S0208_sourcesDetected.fits'))
         ret = gt.measure_bg_from_image(ad, sampling=1000)
-        correct = [(4769.6451962739029, 135.15673217773428, 4051),
-                   (4755.2097051531528, 139.58898356740355, 4141),
-                   (4795.2710757263212, 144.54896204033864, 4130),
-                   (4758.6914804861226, 136.653889361643, 4134)]
+        correct = [(4769.078849397978, 136.30732335464836, 4051),
+                   (4756.7707845272907, 138.45054591959072, 4141),
+                   (4797.0736783339098, 143.2131578397852, 4130),
+                   (4762.1949923200627, 136.64564601477898, 4134)]
         for rv, cv in zip(ret, correct):
             for a, b in zip(rv, cv):
-                assert abs(a - b) < 0.001, 'Problem with gaussfit=True'
+                assert abs(a - b) < 0.01, 'Problem with gaussfit=True'
         ret = gt.measure_bg_from_image(ad, sampling=100, gaussfit=False)
         correct = [(4766.5586, 118.92503, 38514), (4750.9131, 124.56567, 39535),
                    (4794.6167, 128.12645, 39309), (4757.0063, 121.23917, 39388)]
         for rv, cv in zip(ret, correct):
             for a, b in zip(rv, cv):
-                assert abs(a - b) < 0.001, 'Problem with gaussfit=False'
+                assert abs(a - b) < 0.01, 'Problem with gaussfit=False'
 
     def test_measure_bg_from_objcat(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',

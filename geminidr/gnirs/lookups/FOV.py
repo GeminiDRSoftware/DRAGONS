@@ -5,7 +5,6 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
 
-from geminidr.gemini.lookups.keyword_comments import keyword_comments
 from . import maskdb
 
 # ------------------------------------------------------------------------------
@@ -46,9 +45,9 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # Since we are only looking at the center position of the image relative
     # to the reference image, the PA of the image to be classified is 
     # sufficient (luckily!)
-    theta = math.radians(pos.phu.PA)
+    theta = math.radians(pos.phu['PA'])
     scale = pos.pixel_scale()
-    position = (pos.phu.POFFSET, pos.phu.QOFFSET)
+    position = (pos.phu['POFFSET'], pos.phu['QOFFSET'])
     deltap = (refpos[0] - position[0]) / scale
     deltaq = (refpos[1] - position[1]) / scale
     xshift = (deltap * math.cos(theta)) - (deltaq * math.sin(theta))
@@ -60,15 +59,14 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         illum = get_illum_mask_filename(ad)
         if illum:
             illum_ad = gt.clip_auxiliary_data(adinput=pos,
-                            aux=astrodata.open(illum), aux_type="bpm",
-                            keyword_comments=keyword_comments)
+                            aux=astrodata.open(illum), aux_type="bpm")
             illum_data = illum_ad[0].data
         else:
             raise IOError("Cannot find illumination mask for {}".
                           format(ad.filename))
 
         # Finding the center of the illumination mask
-        center_illum = (illum_ad.phu.CENMASSX, illum_ad.phu.CENMASSY)
+        center_illum = (illum_ad.phu['CENMASSX'], illum_ad.phu['CENMASSY'])
         checkpos = (int(center_illum[0] + xshift),
                     int(center_illum[1] + yshift))
         

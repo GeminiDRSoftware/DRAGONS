@@ -87,7 +87,7 @@ class Photometry(PrimitivesBASE):
                 if type(ra) is not float:
                     raise ValueError("wcs_dec descriptor did not return a float.")
             except:
-                if "qa" in self.context:
+                if "qa" in self.mode:
                     log.warning("No RA/Dec in header of {}; cannot find "
                                 "reference sources".format(ad.filename))
                     continue
@@ -108,24 +108,26 @@ class Photometry(PrimitivesBASE):
                             format(len(refcat), ad.filename))
                 filter_name = ad.filter_name(pretty=True)
                 colterm_dict = color_corrections.colorTerms
-                if filter_name in colterm_dict:
+                try:
                     formulae = colterm_dict[filter_name]
-                    ad.REFCAT = _calculate_magnitudes(refcat, formulae)
-                else:
-                    log.warning("Filter {} is not in catalogs - will not be able to flux "
+                except KeyError:
+                    log.warning("Filter {} not in catalogs - unable to flux "
                                 "calibrate".format(filter_name))
+                    formulae = []
+                # Call even if magnitudes can't be calculated since adds
+                # a proper FITS header
+                ad.REFCAT = _calculate_magnitudes(refcat, formulae)
 
                 # Match the object catalog against the reference catalog
                 # Update the refid and refmag columns in the object catalog
                 #if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                #    ad = _match_objcat_refcat(ad, self.context)
+                #    ad = _match_objcat_refcat(ad, self.mode)
                 #else:
                 #    log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def detectSources(self, adinputs=None, **params):
@@ -147,12 +149,19 @@ class Photometry(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
         set_saturation = params["set_saturation"]
         # Setting mask_bits=0 is the same as not replacing bad pixels
         mask_bits = params["replace_flags"] if params["mask"] else 0
 
         # Will raise an Exception if SExtractor is too old or missing
         SExtractorETI().check_version()
+
+        # Delete primitive-specific keywords from params so we only have
+        # the ones for SExtractor
+        for key in ("suffix", "set_saturation", "replace_flags", "mask"):
+            del params[key]
 
         adoutputs = []
         for ad in adinputs:
@@ -165,6 +174,19 @@ class Photometry(PrimitivesBASE):
                       'PARAMETERS_NAME': self.sx_dict[dqtype, 'param'],
                       'FILTER_NAME': self.sx_dict[dqtype, 'conv'],
                       'STARNNW_NAME': self.sx_dict[dqtype, 'nnw']}
+
+            # In general, we want the passed parameters to have the same names
+            # as the SExtractor params (but in lowercase). PHOT_AUTOPARAMS
+            # takes two arguments, and it's only the second we're exposing.
+            for key, value in params.items():
+                if value is True:
+                    value = 'Y'
+                elif value is False:
+                    value = 'N'
+                if key == 'phot_min_radius':
+                    sexpars.update({"PHOT_AUTOPARAMS": "2.5,{}".format(value)})
+                else:
+                    sexpars.update({key.upper(): value})
 
             for ext in ad:
                 # saturation_level() descriptor always returns level in ADU,
@@ -211,6 +233,7 @@ class Photometry(PrimitivesBASE):
                                    table=objcat, sx_dict=self.sx_dict)
                 log.stdinfo("Found {} sources in {}:{}".format(len(ext.OBJCAT),
                                             ad.filename, ext.hdr['EXTVER']))
+                # The presence of an OBJCAT demands objects (philosophical)
                 if len(ext.OBJCAT) == 0:
                     del ext.OBJCAT
 
@@ -219,10 +242,15 @@ class Photometry(PrimitivesBASE):
             # (PROFILE_FWHM, PROFILE_EE50)
             ad = _profile_sources(ad, seeing_estimate)
 
+            # We've added a new OBJMASK. It's possible the AD already had an
+            # OBJMASK that was dilated. Need to remove this keyword from PHU
+            kw = self.timestamp_keys["dilateObjectMask"]
+            if kw in ad.phu:
+                del ad.phu[kw]
+
             # Timestamp and update filename, and append to output list
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad)
         return adoutputs
 
@@ -234,11 +262,12 @@ def _calculate_magnitudes(refcat, formulae):
     # Create new columns for the magnitude (and error) in the image's filter
     # We need to ensure the table's meta is updated.
     # Would be simpler to do this when the REFCAT is added
-    dummy_data = [-999.0] * len(refcat)
-    refcat.add_column(Column(data=dummy_data, name='filtermag',
-                             dtype='f4', unit='mag'))
-    refcat.add_column(Column(data=dummy_data, name='filtermag_err',
-                             dtype='f4', unit='mag'))
+    if formulae:
+        dummy_data = [-999.0] * len(refcat)
+        refcat.add_column(Column(data=dummy_data, name='filtermag',
+                                 dtype='f4', unit='mag'))
+        refcat.add_column(Column(data=dummy_data, name='filtermag_err',
+                                 dtype='f4', unit='mag'))
     hdr = refcat.meta['header']
     hdr.update(add_header_to_table(refcat))
     refcat.meta['header'] = hdr
@@ -399,14 +428,11 @@ def _cull_objcat(ext):
 
 def _profile_sources(ad, seeing_estimate=None):
     """
-    FWHM (and encircled-energy) measurements of objects to be more IRAF-like.
-    Finds the distance from the source center to the closest pixel whose flux
-    is less than half the peak. Also finds the distance to the farthest pixel
-    whose flux is more than half the peak, provided this is closer than the
-    10th closest pixel below half the peak (the number 10 is arbitrary, but
-    ensures that it's finding a pixel that's genuinely part of the profile,
-    and not some cosmic ray or nearby source. These radii are averaged to
-    give the HWHM, which is doubled to give the FWHM.
+    FWHM (and encircled-energy) measurements of objects. The FWHM is
+    estimated by counting the number of pixels above the half-maximum
+    and circularizing that number, Distant pixels are rejected in case
+    there's a neighbouring object. This appears to work well and is
+    fast, which is essential.
     
     The 50% encircled energy (EE50) is just determined from a cumulative sum
     of pixel values, sorted by distance from source center. 

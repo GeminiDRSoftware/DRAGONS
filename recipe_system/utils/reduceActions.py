@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 #                                                                  gemini_python
 #
@@ -18,7 +19,7 @@ Action classes provided:
     BooleanAction         - optional switches
     UnitaryArgumentAction - single value options
     ParameterAction       - user parameters (-p, --param)
-    CalibrationAction     - user calibration services (--override_cal)
+    CalibrationAction     - user calibration services (--user_cal)
 
 Becuase of requirements on the reduce interface, any new reduce options should
 specify one of these actions in the add_argument() call. But only one (1)
@@ -107,7 +108,7 @@ class ParameterAction(Action):
                        [y.split('=')[0] for y in _par_args]]
             ]
 
-            print "Overriding", len(reemed), "parameter(s).\n"
+            print("Overriding", len(reemed), "parameter(s).\n")
             _extant_par_args.extend(_par_args)
             setattr(namespace, self.dest, _extant_par_args)
         return
@@ -142,7 +143,7 @@ class CalibrationAction(Action):
                        [y.split(':')[0] for y in _cal_args]]
             ]
 
-            print "Overriding", len(reemed), "calibration source(s).\n"
+            print("Overriding", len(reemed), "calibration source(s).\n")
             _extant_cal_args.extend(_cal_args)
             setattr(namespace, self.dest, _extant_cal_args)
         return

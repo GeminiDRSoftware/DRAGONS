@@ -6,8 +6,6 @@
 from os import path
 from gempy.gemini import gemini_tools as gt
 
-from .lookups.source_detection import sextractor_dict
-
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from .parameters_gnirs import ParametersGNIRS
@@ -26,9 +24,6 @@ class GNIRS(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(GNIRS, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gnirs.lookups'
-        self.sx_dict.update({k:
-                path.join(path.dirname(sextractor_dict.__file__), v)
-                for k,v in sextractor_dict.sx_dict.items()})
         self.parameters = ParametersGNIRS
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
@@ -97,6 +92,5 @@ class GNIRS(Gemini, NearIR):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs

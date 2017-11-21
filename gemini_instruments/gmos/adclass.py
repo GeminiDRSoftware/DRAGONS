@@ -8,7 +8,6 @@ from . import lookup
 from .. import gmu
 from ..gemini import AstroDataGemini
 
-
 class AstroDataGmos(AstroDataGemini):
 
     __keyword_dict = dict(array_name = 'AMPNAME',
@@ -337,6 +336,44 @@ class AstroDataGmos(AstroDataGemini):
             return ybin_list[0] if ybin_list == ybin_list[::-1] else None
 
     @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped for GMOS-N if on bottom port
+        return -offset if (self.phu.get('INPORT')==1 and
+                           self.instrument()=='GMOS-N') else offset
+
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped for GMOS-S if on bottom port
+        return -offset if (self.phu.get('INPORT')==1 and
+                           self.instrument()=='GMOS-S') else offset
+
+    @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
         Returns the name of the grating used for the observation
@@ -356,8 +393,13 @@ class AstroDataGmos(AstroDataGemini):
         stripID |= pretty
         disperser = self.phu.get('GRATING')
         if stripID:
-            disperser = gmu.removeComponentID(disperser).strip('+') if pretty \
-                else gmu.removeComponentID(disperser)
+            disperser = gmu.removeComponentID(disperser)
+            if pretty:
+                try:
+                    disperser = disperser.strip('+')
+                except AttributeError:
+                    pass
+
         return disperser
 
     @astro_data_descriptor
@@ -403,6 +445,19 @@ class AstroDataGmos(AstroDataGemini):
         except TypeError:
             dispersion = gmu.convert_units('meters', cd11, output_units)
         return dispersion
+
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        """
+        Returns the axis along which the light is dispersed.
+
+        Returns
+        -------
+        (list of) int (1)
+            Dispersion axis.
+       """
+        return 1 if 'SPECT' in self.tags else None
 
     @astro_data_descriptor
     def exposure_time(self):
@@ -837,9 +892,9 @@ class AstroDataGmos(AstroDataGemini):
         list/float
             saturation level
         """
-        def _well_depth(amp, bin, gain, bunit):
+        def _well_depth(detector, amp, bin, gain, bunit):
             try:
-                return lookup.gmosThresholds[amp] * bin / (
+                return lookup.gmosThresholds[detector][amp] * bin / (
                     gain if 'electron' in bunit else 1)
             except KeyError:
                 return None
@@ -854,6 +909,7 @@ class AstroDataGmos(AstroDataGemini):
         overscan_levels = self.hdr.get('OVERSCAN')
 
         detname = self.detector_name(pretty=True)
+        detector = self.header[0]['DETECTOR']  # the only way to distinguish GMOS-S Ham pre/post video board work.
         xbin = self.detector_x_bin()
         ybin = self.detector_y_bin()
         bin_factor = xbin * ybin
@@ -886,13 +942,14 @@ class AstroDataGmos(AstroDataGemini):
                               for blev, bsub, g, bunit in
                               zip(bias_levels, bias_subtracted, gain, bunits)]
 
+
         # For old EEV data, or heavily-binned data, we're ADC-limited
         if detname == 'EEV' or bin_factor > 2:
             return processed_limit
         else:
             # Otherwise, we're limited by the electron well depths
             if self.is_single:
-                saturation = _well_depth(ampname, bin_factor, gain, bunits)
+                saturation = _well_depth(detector, ampname, bin_factor, gain, bunits)
                 if saturation is None:
                     saturation = processed_limit
                 else:
@@ -900,7 +957,8 @@ class AstroDataGmos(AstroDataGemini):
                     if saturation > processed_limit:
                         saturation = processed_limit
             else:
-                well_limit = [_well_depth(a, bin_factor, g, b)
+                testlut = _well_depth(detector, ampname[0], bin_factor, gain[0], bunits[0])
+                well_limit = [_well_depth(detector, a, bin_factor, g, b)
                               for a, g, b in zip(ampname, gain, bunits)]
                 saturation = [None if w is None else
                               min(w + blev if not bsub else 0, p)
@@ -924,7 +982,7 @@ class AstroDataGmos(AstroDataGemini):
             h = self[0].hdr
             crval = h['CRVAL1']
             ctype = h['CTYPE1']
-        except KeyError:
+        except (KeyError, IndexError):
             crval = self.phu.get('CRVAL1')
             ctype = self.phu.get('CTYPE1')
         return crval if ctype == 'RA---TAN' else None
@@ -945,7 +1003,7 @@ class AstroDataGmos(AstroDataGemini):
             h = self[0].hdr
             crval = h['CRVAL2']
             ctype = h['CTYPE2']
-        except KeyError:
+        except (KeyError, IndexError):
             crval = self.phu.get('CRVAL2')
             ctype = self.phu.get('CTYPE2')
         return crval if ctype == 'DEC--TAN' else None

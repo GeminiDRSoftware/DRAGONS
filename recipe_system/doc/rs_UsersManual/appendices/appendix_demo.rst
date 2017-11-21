@@ -14,11 +14,11 @@ Setting up
 
 First install Ureka, which can be obtained at http://ssb.stsci.edu/ureka/.
 
-The second step is to install ``gemini_python`` as described in 
-:ref:`Section 2 - Installation <config>`.  
-Please do make sure that the command `reduce` is in your ``PATH`` and that 
-``PYTHONPATH`` includes the location where the modules ``astrodata``, the 
-``recipe_system``, and ``gempy`` are installed.
+The second step is to install DRAGONS as described in
+:ref:`Section 2 - Installation <config>`.  Please do make sure that the
+command `reduce` is in your ``PATH`` and that ``PYTHONPATH`` includes the
+location where the modules ``astrodata``, the ``recipe_system``, and ``gempy``
+are installed.
 
 The demo data is distributed separately.  You can find the demo data package 
 ``gemini_python_datapkg-X1.tar.gz`` on the Gemini website where you found the 
@@ -45,7 +45,7 @@ than on the multiple measurements of the QA metrics used at night.  QA metrics,
 here the image quality (IQ), will only be measured at the end of the reduction
 rather than throughout the reduction.   Another difference between the standard
 QA recipe and the demo recipe, is that the demo recipe does stack the data, while
-the stacking is turned off in the QA context.
+the stacking is turned off in QA mode.
 
 The demo recipe is essentially a Quick Look recipe.  It is NOT valid for Science
 Quality.  Remember that what you are using is a QA pipeline, not a Science
@@ -155,7 +155,7 @@ as the system will find them on its own.
 The Demo
 --------
 
-The images will be displayed at times.  Therefore, start ds9::
+Images will be displayed at times.  Therefore, start ds9::
 
    ds9 &
 
@@ -264,7 +264,3 @@ It is good practice to reset the RecipeSystem state when you are done::
 Your files will stay there, only some hidden RecipeSystem directories 
 and files will be deleted.
 
-Limitations
------------
-
-[ `Limitations of the new Recipe System 2.0 are still being determined.` ]

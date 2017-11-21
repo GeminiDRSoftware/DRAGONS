@@ -205,6 +205,40 @@ class AstroDataNiri(AstroDataGemini):
         return self.array_section(pretty=pretty)
 
     @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped if on bottom port unless AO is operating
+        return -offset if (self.phu.get('INPORT')==1 and
+                           not self.is_ao()) else offset
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            return -self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+
+    @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
         Returns the name of the disperser.  The component ID can be removed
@@ -336,7 +370,7 @@ class AstroDataNiri(AstroDataGemini):
         filter_name = self.filter_name(pretty=True)
         camera = self.camera()
         # Explicit: if BUNIT is missing, assume data are in ADU
-        bunit = self.hdr.get('BUNIT', 'adu').lower()
+        bunit = self.hdr.get('BUNIT', 'adu')
         zpt = lookup.nominal_zeropoints.get((filter_name, camera))
 
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
@@ -344,11 +378,11 @@ class AstroDataNiri(AstroDataGemini):
         if self.is_single:
             try:
                 return zpt - (
-                    2.5 * math.log10(gain) if bunit == 'adu' else 0)
+                    2.5 * math.log10(gain) if bunit.lower() == 'adu' else 0)
             except TypeError:
                 return None
         else:
-            return [zpt - (2.5 * math.log10(g) if b == 'adu' else 0)
+            return [zpt - (2.5 * math.log10(g) if b.lower() == 'adu' else 0)
                    if zpt and g else None
                    for g, b in zip(gain, bunit)]
 

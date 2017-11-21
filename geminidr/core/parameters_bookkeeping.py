@@ -11,6 +11,12 @@ class ParametersBookkeeping(ParametersBASE):
         "max_frames"            : None,
         "purpose"               : None,
     }
+    selectFromInputs = {
+        "tags"                  : None,
+    }
+    showInputs = {
+        "purpose"               : None,
+    }
     showList = {
         "purpose"               : 'all',
     }

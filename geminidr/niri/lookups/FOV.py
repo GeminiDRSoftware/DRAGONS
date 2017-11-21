@@ -28,7 +28,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     # Extract pointing info. (currently p/q but this will be replaced with
     # RA/Dec/PA) from the AstroData instance.
-    position = (ad.phu.POFFSET, ad.phu.QOFFSET)
+    position = (ad.phu['POFFSET'], ad.phu['QOFFSET'])
 
     # TO DO: References to the field size will need changing to decimal
     # degrees once we pass absolute co-ordinates?
@@ -40,7 +40,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # removed once pixel_scale() is improved or has the same check has been
     # added to it:
     if 'PREPARED' in ad.tags:
-        scale = ad.phu.PIXSCALE
+        scale = ad.phu['PIXSCALE']
     else:
         scale = ad.pixel_scale()
 
