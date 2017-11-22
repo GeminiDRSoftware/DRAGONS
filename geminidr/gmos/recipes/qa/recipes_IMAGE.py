@@ -108,7 +108,7 @@ def stack(p):
     p.getList(purpose='forStack')
     p.matchWCSToReference()
     p.resampleToCommonFrame()
-    p.correctBackgroundToReferenceImage()
+    p.correctBackgroundToReference()
     p.stackFrames()
     p.detectSources()
     p.measureIQ(display=True)

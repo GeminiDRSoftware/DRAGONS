@@ -304,7 +304,7 @@ class GMOSImage(GMOS, Image, Photometry):
             log.stdinfo('Fewer than 3 frames provided as input. '
                         'Not making fringe frame.')
         else:
-            frinputs = self.correctBackgroundToReferenceImage([deepcopy(ad)
+            frinputs = self.correctBackgroundToReference([deepcopy(ad)
                             for ad in adinputs], remove_zero_level=True)
 
             # If needed, do a rough median on all frames, subtract,

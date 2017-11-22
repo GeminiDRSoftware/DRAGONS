@@ -46,7 +46,6 @@ class Stack(PrimitivesBASE):
         else:
             adinputs = self.matchWCSToReference(adinputs, **params)
             adinputs = self.resampleToCommonFrame(adinputs, **params)
-            adinputs = self.correctBackgroundToReferenceImage(adinputs, **params)
             adinputs = self.stackFrames(adinputs, **params)
         return adinputs
 
@@ -75,6 +74,8 @@ class Stack(PrimitivesBASE):
             combine method
         reject_method: str
             type of pixel rejection (passed to gemcombine)
+        zero: bool
+            apply zero-level offset to match background levels?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -105,6 +106,9 @@ class Stack(PrimitivesBASE):
                      for i in range(nexts)]
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
+
+        if params["zero"]:
+            adinputs = self.correctBackgroundToReference(adinputs)
 
         # Instantiate ETI and then run the task
         gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
@@ -177,6 +181,10 @@ class Stack(PrimitivesBASE):
         # Parameters to be passed to stackFrames
         stack_params = {k: v for k,v in params.items() if
                         k in self.parameters.stackFrames and k != "suffix"}
+        # We're taking care of the varying sky levels here so stop
+        # stackFrames from getting involved
+        stack_params.update({'zero': False,
+                             'remove_background': False})
 
         # Run detectSources() on any frames without any OBJMASKs
         if params["mask_objects"]:
