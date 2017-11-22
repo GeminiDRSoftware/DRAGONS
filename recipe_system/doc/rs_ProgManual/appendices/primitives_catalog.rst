@@ -135,7 +135,7 @@ Public methods::
 
 Public methods::
 
-  correctWCSToReferenceFrame(method="sources", fallback=None, use_wcs=True, first_pass=10.0,
+  matchWCSToReference(method="sources", fallback=None, use_wcs=True, first_pass=10.0,
                              min_sources=3, cull_sources=False, rotate=False, scale=False, 
 			     suffix="_wcsCorrected")
 

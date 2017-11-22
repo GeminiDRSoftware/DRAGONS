@@ -294,7 +294,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "correctWCSToReferenceFrame":{
+ "matchWCSToReference":{
     "suffix":{
         "default"       : "_wcsCorrected",
         "type"          : "str",

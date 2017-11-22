@@ -44,7 +44,7 @@ class Stack(PrimitivesBASE):
                         "for alignAndStack")
             return adinputs
         else:
-            adinputs = self.correctWCSToReferenceFrame(adinputs, **params)
+            adinputs = self.matchWCSToReference(adinputs, **params)
             adinputs = self.alignToReferenceFrame(adinputs, **params)
             adinputs = self.correctBackgroundToReferenceImage(adinputs, **params)
             adinputs = self.stackFrames(adinputs, **params)
