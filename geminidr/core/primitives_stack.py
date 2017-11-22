@@ -100,15 +100,17 @@ class Stack(PrimitivesBASE):
         assert all(gain is not None for gain in gains), "Gain problem"
         assert all(rn is not None for rn in read_noises), "RN problem"
 
-        # Sum the values
+        # Compute gain and read noise of final stacked images
         nexts = len(gains[0])
         gain_list = [np.mean([gain[i] for gain in gains])
                      for i in range(nexts)]
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
 
+        # Match the background levels
         if params["zero"]:
-            adinputs = self.correctBackgroundToReference(adinputs)
+            adinputs = self.correctBackgroundToReference(adinputs,
+                                remove_background=params["remove_background"])
 
         # Instantiate ETI and then run the task
         gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
