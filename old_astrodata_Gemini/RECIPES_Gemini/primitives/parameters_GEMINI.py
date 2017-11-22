@@ -147,7 +147,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "alignToReferenceFrame":{
+ "resampleToCommonFrame":{
     "suffix":{
         "default"       : "_align",
         "type"          : "str",

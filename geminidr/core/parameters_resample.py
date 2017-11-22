@@ -4,7 +4,7 @@
 from geminidr import ParametersBASE
 
 class ParametersResample(ParametersBASE):
-    alignToReferenceFrame = {
+    resampleToCommonFrame = {
         "suffix"                : "_align",
         "interpolator"          : "nearest",
         "trim_data"             : False,

@@ -148,7 +148,7 @@ Public methods::
 
 Public methods::
 
-  alignToReferenceFrame(interpolator="nearest", trim_data=False, suffix="_align")
+  resampleToCommonFrame(interpolator="nearest", trim_data=False, suffix="_align")
 
 **Spect** (PrimitivesBASE)
 

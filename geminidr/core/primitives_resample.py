@@ -37,7 +37,7 @@ class Resample(PrimitivesBASE):
         super(Resample, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersResample
 
-    def alignToReferenceFrame(self, adinputs=None, **params):
+    def resampleToCommonFrame(self, adinputs=None, **params):
         """
         This primitive applies the transformation encoded in the input images
         WCSs to align them with a reference image, in reference image pixel
@@ -91,7 +91,7 @@ class Resample(PrimitivesBASE):
         if len(adinputs) < 2:
             log.warning("No alignment will be performed, since at least two "
                         "input AstroData objects are required for "
-                        "alignToReferenceFrame")
+                        "resampleToCommonFrame")
             return adinputs
 
         if not all(len(ad)==1 for ad in adinputs):

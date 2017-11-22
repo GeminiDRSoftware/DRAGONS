@@ -12,7 +12,7 @@ timestamp_keys = {
     "addReferenceCatalog": "ADDRECAT",
     "addVAR": "ADDVAR",
     "ADUToElectrons": "ADUTOELE",
-    "alignToReferenceFrame": "ALIGN",
+    "resampleToCommonFrame": "ALIGN",
     "applyDQPlane": "APLDQPLN",
     "associateSky": "ASSOCSKY",
     "attachWavelengthSolution": "ATTWVSOL",
