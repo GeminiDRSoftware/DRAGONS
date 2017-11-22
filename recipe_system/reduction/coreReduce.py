@@ -368,6 +368,6 @@ class Reduce(object):
                 ad.write(username, clobber=True)
                 log.stdinfo(outstr.format(username))
             elif ad.filename != ad.orig_filename:
-                ad.write(clobber=True)
+                ad.write(ad.filename, clobber=True)
                 log.stdinfo(outstr.format(ad.filename))
         return
