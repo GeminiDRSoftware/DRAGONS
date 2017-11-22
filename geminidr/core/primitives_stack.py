@@ -36,35 +36,18 @@ class Stack(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # Add the input frames to the forStack list and
-        # get other available frames from the same list
-        self.addToList(adinputs, purpose='forStack')
-        stack_inputs = self.getList(adinputs, purpose='forStack')
-
         # Return entire list if only one object (which would presumably be the
         # adinputs, or return the input list if we can't stack
-        if len(stack_inputs) <= 1:
+        if len(adinputs) <= 1:
             log.stdinfo("No alignment or correction will be performed, since "
                         "at least two input AstroData objects are required "
                         "for alignAndStack")
-            return stack_inputs
+            return adinputs
         else:
-            if (self.parameters.alignAndStack['check_if_stack'] and
-                    not _can_stack(stack_inputs)):
-                log.warning("No stacking will be performed, since a frame varies "
-                            "from the reference image by more than 1 degree")
-                return adinputs
-            else:
-                adinputs = stack_inputs
-                #TODO: Must be an easier way than this to determine whether
-                # an AD object has no OBJCATs
-                if any(all(getattr(ext, 'OBJCAT', None) is None for ext in ad)
-                       for ad in adinputs):
-                    adinputs = self.detectSources(adinputs, **params)
-                adinputs = self.correctWCSToReferenceFrame(adinputs, **params)
-                adinputs = self.alignToReferenceFrame(adinputs, **params)
-                adinputs = self.correctBackgroundToReferenceImage(adinputs, **params)
-                adinputs = self.stackFrames(adinputs, **params)
+            adinputs = self.correctWCSToReferenceFrame(adinputs, **params)
+            adinputs = self.alignToReferenceFrame(adinputs, **params)
+            adinputs = self.correctBackgroundToReferenceImage(adinputs, **params)
+            adinputs = self.stackFrames(adinputs, **params)
         return adinputs
 
     def stackFlats(self, adinputs=None, **params):
@@ -214,18 +197,3 @@ class Stack(PrimitivesBASE):
                         ext += ref - this
         adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
-
-##############################################################################
-# Below are the helper functions for the user level functions in this module #
-##############################################################################
-def _can_stack(adinputs):
-    """
-    This function checks for a set of AstroData input frames whether there is
-    more than 1 degree of rotation between the first frame and successive
-    frames. If so, stacking will not be performed.
-
-    :param adinput: List of AstroData instances
-    :type adinput: List of AstroData instances
-    """
-    ref_pa = adinputs[0].phu['PA']
-    return all(abs(ad.phu['PA'] - ref_pa) < 1.0 for ad in adinputs)

@@ -5,7 +5,6 @@ from geminidr import ParametersBASE
 
 class ParametersStack(ParametersBASE):
     alignAndStack = {
-        "check_if_stack"    : False,
     }
     stackFlats = {
         "suffix"            : "_stack",
