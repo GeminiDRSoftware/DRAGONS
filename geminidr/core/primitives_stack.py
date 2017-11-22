@@ -121,7 +121,7 @@ class Stack(PrimitivesBASE):
         if refcats:
             out_refcat = table.unique(table.vstack(refcats,
                                 metadata_conflicts='silent'), keys='Cat_Id')
-            out_refcat['Cat_Id'] = range(1, len(out_refcat)+1)
+            out_refcat['Cat_Id'] = list(range(1, len(out_refcat)+1))
             ad_out.REFCAT = out_refcat
 
         # Gemcombine sets the GAIN keyword to the sum of the gains;

@@ -423,7 +423,7 @@ def _cull_objcat(ext):
         #                    np.uint8(0)).reshape(objmask_shape)
 
     # Now renumber what's left sequentially
-    objcat['NUMBER'].data[:] = range(1, len(objcat)+1)
+    objcat['NUMBER'].data[:] = list(range(1, len(objcat)+1))
     return ext
 
 def _profile_sources(ad, seeing_estimate=None):

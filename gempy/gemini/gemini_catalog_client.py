@@ -217,7 +217,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     # It turns out to be not viable to use UCDs to select the columns,
     # even for the id, ra, and dec. Even with vizier. <sigh>
     # The first column is our running integer column
-    ret_table = Table([range(1, len(table.array[server_cols[0]])+1)],
+    ret_table = Table([list(range(1, len(table.array[server_cols[0]])+1))],
                       names=('Id',), dtype=('i4',))
 
     ret_table.add_column(Column(table.array[server_cols[0]], name='Cat_Id',
