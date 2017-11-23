@@ -103,9 +103,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
                 mask=self._mask, wcs=self._wcs, meta=self.meta,
                 unit=self._unit, window=slice)
 
-    def _lazy_property(self, prop_name):
-        if self._lazy[prop_name]:
-
     def _extract(self, source, scaling):
         return scaling(source.data if not self._window else source.section[self._window])
 
@@ -117,9 +114,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def uncertainty(self):
-        if not self._lazy['uncertainty']:
-            return super(NDAstroData, self).uncertainty
-        return self._extract(self._uncertainty, self._scalers['uncertainty'])
+        if self._uncertainty:
+            if not self._lazy['uncertainty']:
+                return super(NDAstroData, self).uncertainty
+            return self._extract(self._uncertainty, self._scalers['uncertainty'])
 
     @uncertainty.setter
     def uncertainty(self, value):
@@ -137,9 +135,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def mask(self):
-        if not self._lazy['mask']:
-            return super(NDAstroData, self).mask
-        return self._extract(self._mask, self._scalers['mask'])
+        if self._mask is not None:
+            if not self._lazy['mask']:
+                return super(NDAstroData, self).mask
+            return self._extract(self._mask, self._scalers['mask'])
 
     @mask.setter
     def mask(self, value):
@@ -150,3 +149,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         else:
             self._lazy['mask'] = False
             self._mask = value
+
+    def set_section(self, section, input):
+        self.data[section] = input.data
+        if self.uncertainty is not None:
+            self.uncertainty[section] = input.uncertainty
+        if self.mask is not None:
+            self.mask[section] = input.mask
