@@ -18,6 +18,7 @@ except ImportError:
     from itertools import izip_longest as zip_longest
 
 from .core import AstroData, DataProvider, astro_data_descriptor
+from .nddata import NDAstroData as NDDataObject
 
 from astropy.io import fits
 from astropy.io.fits import HDUList, Header, DELAYED
@@ -26,7 +27,8 @@ from astropy.io.fits import Column, FITS_rec
 from astropy.io.fits.hdu.table import _TableBaseHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
-from astropy.nddata import NDData, NDDataRef as NDDataObject
+# from astropy.nddata import NDData, NDDataRef as NDDataObject
+from astropy.nddata import NDData
 from astropy.nddata import StdDevUncertainty
 from astropy.table import Table
 import numpy as np
