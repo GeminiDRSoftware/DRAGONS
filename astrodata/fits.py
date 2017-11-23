@@ -342,7 +342,6 @@ class FitsProviderProxy(DataProvider):
         return len(self._mapping)
 
     def _mapped_nddata(self, idx=None):
-        self._provider._lazy_populate_object()
         if idx is None:
             return [self._provider._nddata[idx] for idx in self._mapping]
         else:
@@ -384,7 +383,7 @@ class FitsProviderProxy(DataProvider):
                 if not self.is_single:
                     raise TypeError("This attribute can only be assigned to a single-slice object")
                 target = self._mapped_nddata(0)
-                self._provider._append(value, name=attribute, add_to=target)
+                self._provider.append(value, name=attribute, add_to=target)
                 return
             elif attribute in {'path', 'filename'}:
                 raise AttributeError("Can't set path or filename on a sliced object")
@@ -540,7 +539,7 @@ class FitsProviderProxy(DataProvider):
             raise TypeError("Can't append objects to a slice without an extension name")
         target = self._mapped_nddata(0)
 
-        return self._provider._append(ext, name=name, add_to=target)
+        return self._provider.append(ext, name=name, add_to=target)
 
     def extver_map(self):
         """
@@ -573,8 +572,7 @@ class FitsProvider(DataProvider):
             '_sliced': False,
             '_single': False,
             '_phu': None,
-            '_nddata': None,
-            '_hdulist': None,
+            '_nddata': [],
             '_path': None,
             '_orig_filename': None,
             '_tables': {},
@@ -592,7 +590,7 @@ class FitsProvider(DataProvider):
 
     def __deepcopy__(self, memo):
         nfp = FitsProvider()
-        to_copy = ('_sliced', '_phu', '_single', '_nddata', '_hdulist',
+        to_copy = ('_sliced', '_phu', '_single', '_nddata',
                    '_path', '_orig_filename', '_tables', '_exposed',
                    '_resetting')
         for attr in to_copy:
@@ -647,8 +645,7 @@ class FitsProvider(DataProvider):
         # if self._resetting is there, because otherwise we enter a loop..
         if '_resetting' in self.__dict__ and not self._resetting and not _my_attribute(attribute):
             if attribute.isupper():
-                self._lazy_populate_object()
-                self._append(value, name=attribute, add_to=None)
+                self.append(value, name=attribute, add_to=None)
                 return
 
         # Fallback
@@ -704,6 +701,9 @@ class FitsProvider(DataProvider):
         self._standard_nddata_op(NDDataObject.divide, operand)
         return self
 
+    def set_phu(self, phu):
+        self._phu = phu
+
     def info(self, tags, indices=None):
         print("Filename: {}".format(self.path if self.path else "Unknown"))
         # This is fixed. We don't support opening for update
@@ -721,7 +721,6 @@ class FitsProvider(DataProvider):
         print(tag_line)
 
         # Let's try to be generic. Could it be that some file contains only tables?
-        self._lazy_populate_object()
         if indices is None:
             indices = tuple(range(len(self._nddata)))
         if indices:
@@ -745,7 +744,6 @@ class FitsProvider(DataProvider):
                 print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
 
     def _pixel_info(self, indices):
-        self._lazy_populate_object()
         for idx, obj in ((n, self._nddata[k]) for (n, k) in enumerate(indices)):
             header = obj.meta['header']
             other_objects = []
@@ -799,7 +797,6 @@ class FitsProvider(DataProvider):
 
     @property
     def exposed(self):
-        self._lazy_populate_object()
         return self._exposed.copy()
 
     def _slice(self, indices, multi=True):
@@ -907,55 +904,13 @@ class FitsProvider(DataProvider):
 
         return nd
 
-    def _reset_members(self, hdulist):
-        prev_reset = self._resetting
-        self._resetting = True
-        def_ext = FitsProvider.default_extension
-        try:
-            # Initialize the object containers to a bare minimum
-            self._phu = hdulist[0].header
-            self._tables = {}
-            self._nddata = []
-
-            seen = set([hdulist[0]])
-
-            skip_names = set([def_ext, 'REFCAT', 'MDF'])
-
-            def associated_extensions(ver):
-                for unit in hdulist:
-                    header = unit.header
-                    if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
-                        yield unit
-
-            sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == def_ext]
-
-            for idx, unit in enumerate(sci_units):
-                seen.add(unit)
-                ver = unit.header.get('EXTVER', -1)
-                nd = self._append(unit, name=def_ext, reset_ver=False)
-
-                for extra_unit in associated_extensions(ver):
-                    seen.add(extra_unit)
-                    name = extra_unit.header.get('EXTNAME')
-                    self._append(extra_unit, name=name, add_to=nd)
-
-            for other in hdulist:
-                if other in seen:
-                    continue
-                name = other.header['EXTNAME']
-                added = self._append(other, name=name, reset_ver=False)
-        finally:
-            self._resetting = prev_reset
-
     @property
     def path(self):
         return self._path
 
     @path.setter
     def path(self, value):
-        if self._path is not None:
-            self._lazy_populate_object()
-        elif value is not None:
+        if self._path is None and value is not None:
             self._orig_filename = os.path.basename(value)
         self._path = value
 
@@ -977,25 +932,6 @@ class FitsProvider(DataProvider):
     @property
     def orig_filename(self):
         return self._orig_filename
-
-    def _lazy_populate_object(self):
-        prev_reset = self._resetting
-        if self._nddata is None:
-            self._resetting = True
-            try:
-                if self.path:
-                    hdulist = FitsLoader._prepare_hdulist(fits.open(self.path), self.default_extension)
-                else:
-                    hdulist = self._hdulist
-                # Make sure that we have an HDUList to work with. Maybe we're creating
-                # an object from scratch
-                if hdulist is not None:
-                    self._reset_members(hdulist)
-                    self._hdulist = None
-                else:
-                    self._nddata = []
-            finally:
-                self._resetting = prev_reset
 
     def _ext_header(self, obj):
         if isinstance(obj, int):
@@ -1240,8 +1176,11 @@ class FitsProvider(DataProvider):
 
         return self._append_nddata(new_nddata, name=None, add_to=None, reset_ver=True)
 
-    def _append(self, ext, name=None, header=None, add_to=None, reset_ver=True):
-        self._lazy_populate_object()
+    def append(self, ext, name=None, header=None, reset_ver=True, add_to=None):
+        # NOTE: Most probably, if we want to copy the input argument, we
+        #       should do it here...
+        if isinstance(ext, PrimaryHDU):
+            raise ValueError("Only one Primary HDU allowed. Use set_phu if you really need to set one")
 
         dispatcher = (
                 (NDData, self._append_raw_nddata),
@@ -1256,16 +1195,6 @@ class FitsProvider(DataProvider):
         else:
             # Assume that this is an array for a pixel plane
             return self._append_array(ext, name=name, header=header, add_to=add_to)
-
-    def append(self, ext, name=None, header=None, reset_ver=True):
-        # TODO: Most probably, if we want to copy the input argument, we
-        #       should do it here...
-        if isinstance(ext, PrimaryHDU):
-            raise ValueError("Only one Primary HDU allowed")
-
-        self._lazy_populate_object()
-
-        return self._append(ext, name=name, header=header, add_to=None, reset_ver=reset_ver)
 
     def _extver_impl(self, nds=None):
         if nds is None:
@@ -1391,8 +1320,39 @@ class FitsLoader(object):
             hdulist = source
             provider.path = None
 
-        hdulist = self._prepare_hdulist(hdulist)
-        provider._reset_members(hdulist)
+        def_ext = FitsProvider.default_extension
+        hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext)
+
+        # Initialize the object containers to a bare minimum
+        provider.set_phu(hdulist[0].header)
+
+        seen = set([hdulist[0]])
+
+        skip_names = set([def_ext, 'REFCAT', 'MDF'])
+
+        def associated_extensions(ver):
+            for unit in hdulist:
+                header = unit.header
+                if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
+                    yield unit
+
+        sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == def_ext]
+
+        for idx, unit in enumerate(sci_units):
+            seen.add(unit)
+            ver = unit.header.get('EXTVER', -1)
+            nd = provider.append(unit, name=def_ext, reset_ver=False)
+
+            for extra_unit in associated_extensions(ver):
+                seen.add(extra_unit)
+                name = extra_unit.header.get('EXTNAME')
+                provider.append(extra_unit, name=name, add_to=nd)
+
+        for other in hdulist:
+            if other in seen:
+                continue
+            name = other.header['EXTNAME']
+            added = provider.append(other, name=name, reset_ver=False)
 
         return provider
 
