@@ -103,17 +103,11 @@ def unset_logging():
 def make_class_wrapper(wrapped):
     @wraps(wrapped)
     def class_wrapper(cls):
-        for attr_name in dir(cls):
-            if attr_name.startswith("_"):        # no prive, no magic
+        for attr_name, attr_fn in list(cls.__dict__.items()):
+            if attr_name.startswith("_") or not callable(attr_fn): # no prive,magic
                 continue
 
-            attr_fn = getattr(cls, attr_name)
-            if callable(attr_fn):
-                if attr_name not in attr_fn.im_class.__dict__:
-                #if attr_name not in attr_fn.__self__.__class__.__dict__:
-                    continue
-                else:
-                    setattr(cls, attr_name, wrapped(attr_fn))
+            setattr(cls, attr_name, wrapped(attr_fn))
         return cls
     return class_wrapper
 
