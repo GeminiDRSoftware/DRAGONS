@@ -1298,7 +1298,7 @@ class FitsLoader(object):
             for keyw in ('SIMPLE', 'EXTEND'):
                 if keyw in image.header:
                     del image.header[keyw]
-            image.header['EXTNAME'] = (FitsProvider.default_extension, 'Added by AstroData')
+            image.header['EXTNAME'] = (self._cls.default_extension, 'Added by AstroData')
             image.header['EXTVER'] = (1, 'Added by AstroData')
             new_list.append(image)
 
@@ -1322,7 +1322,7 @@ class FitsLoader(object):
             hdulist = source
             provider.path = None
 
-        def_ext = FitsProvider.default_extension
+        def_ext = self._cls.default_extension
         hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext)
 
         # Initialize the object containers to a bare minimum
