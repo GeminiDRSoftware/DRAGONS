@@ -10,15 +10,16 @@ import os
 from functools import partial, wraps
 import logging
 import warnings
+import gc
 
 try:
     # Python 3
-    from itertools import zip_longest
+    from itertools import zip_longest, product as cart_product
 except ImportError:
-    from itertools import izip_longest as zip_longest
+    from itertools import izip_longest as zip_longest, product as cart_product
 
 from .core import AstroData, DataProvider, astro_data_descriptor
-from .nddata import NDAstroData as NDDataObject
+from .nddata import NDAstroData as NDDataObject, new_variance_uncertainty_instance
 
 from astropy.io import fits
 from astropy.io.fits import HDUList, Header, DELAYED
@@ -29,7 +30,6 @@ from astropy.io.fits.hdu.table import _TableBaseHDU
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
 from astropy.nddata import NDData
-from astropy.nddata import StdDevUncertainty
 from astropy.table import Table
 import numpy as np
 
@@ -294,19 +294,6 @@ def normalize_indices(slc, nitems):
         raise IndexError("Index out of range")
 
     return indices, multiple
-
-class StdDevAsVariance(object):
-    def as_variance(self):
-        if self.array is not None:
-            return self.array ** 2
-        else:
-            return None
-
-def new_variance_uncertainty_instance(array):
-    obj = StdDevUncertainty(np.sqrt(array))
-    cls = obj.__class__
-    obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
-    return obj
 
 class FitsProviderProxy(DataProvider):
     # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not make
@@ -1261,7 +1248,7 @@ class FitsLoader(object):
         self._cls = cls
 
     @staticmethod
-    def _prepare_hdulist(hdulist, default_extension='SCI'):
+    def _prepare_hdulist(hdulist, default_extension='SCI', keep_file=False):
         new_list = []
         highest_ver = 0
         recognized = set()
@@ -1323,7 +1310,10 @@ class FitsLoader(object):
             provider.path = None
 
         def_ext = self._cls.default_extension
-        hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext)
+        _file = hdulist._file
+        hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext, keep_file=True)
+        if _file is not None:
+            hdulist._file = _file
 
         # Initialize the object containers to a bare minimum
         provider.set_phu(hdulist[0].header)
@@ -1343,12 +1333,32 @@ class FitsLoader(object):
         for idx, unit in enumerate(sci_units):
             seen.add(unit)
             ver = unit.header.get('EXTVER', -1)
-            nd = provider.append(unit, name=def_ext, reset_ver=False)
+            parts = {'data': unit, 'uncertainty': None, 'mask': None, 'other': []}
 
             for extra_unit in associated_extensions(ver):
                 seen.add(extra_unit)
                 name = extra_unit.header.get('EXTNAME')
-                provider.append(extra_unit, name=name, add_to=nd)
+                if name == 'DQ':
+                    parts['mask'] = extra_unit
+                elif name == 'VAR':
+                    parts['uncertainty'] = extra_unit
+                else:
+                    parts['other'].append(extra_unit)
+                # provider.append(extra_unit, name=name, add_to=nd)
+
+            if hdulist._file is not None and hdulist._file.memmap:
+                nd = NDDataObject(
+                        data = parts['data'],
+                        uncertainty = parts['uncertainty'],
+                        mask = parts['mask']
+                        )
+                provider.append(nd, name=def_ext, reset_ver=False)
+            else:
+                nd = provider.append(parts['data'], name=def_ext, reset_ver=False)
+                for item_name in ('mask', 'uncertainty'):
+                    item = parts[item_name]
+                    if item is not None:
+                        provider.append(item, name=item.header['EXTNAME'], add_to=nd)
 
         for other in hdulist:
             if other in seen:
