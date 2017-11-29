@@ -15,7 +15,7 @@ class ParametersGNIRSImage(ParametersGNIRS, ParametersImage, ParametersPhotometr
         "radius"                : 0.033,
         "source"                : "2mass",
     }
-    correctWCSToReferenceFrame = {
+    matchWCSToReference = {
         "suffix"                : "_wcsCorrected",
         "method"                : "header",
         "fallback"              : None,

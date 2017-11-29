@@ -278,7 +278,7 @@ class Preprocess(PrimitivesBASE):
         self.streams['sky'] = ad_skies
         return adinputs
 
-    def correctBackgroundToReferenceImage(self, adinputs=None, **params):
+    def correctBackgroundToReference(self, adinputs=None, **params):
         """
         This primitive does an additive correction to a set
         of images to put their sky background at the same level
@@ -288,7 +288,7 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        remove_zero_level: bool
+        remove_background: bool
             if True, set the new background level to zero in all images
             if False, set it to the level of the first image
         """
@@ -296,12 +296,12 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        remove_zero_level = params["remove_zero_level"]
+        remove_bg = params["remove_background"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least "
                         "two input AstroData objects are required for "
-                        "correctBackgroundToReferenceImage")
+                        "correctBackgroundToReference")
         # Check that all images have the same number of extensions
         elif not all(len(ad)==len(adinputs[0]) for ad in adinputs):
             raise IOError("Number of science extensions in input "
@@ -313,7 +313,7 @@ class Preprocess(PrimitivesBASE):
                 bg_list = gt.measure_bg_from_image(ad, value_only=True)
                 # If this is the first (reference) image, set the reference bg levels
                 if not ref_bg_list:
-                    if remove_zero_level:
+                    if remove_bg:
                         ref_bg_list = [0] * len(ad)
                     else:
                         ref_bg_list = bg_list

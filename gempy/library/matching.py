@@ -84,7 +84,7 @@ class Shift2D(FittableModel):
 
 class Scale2D(FittableModel):
     """2D scaling"""
-    def __init__(self, factor, factor_scale=1.0, **kwargs):
+    def __init__(self, factor=1.0, factor_scale=1.0, **kwargs):
         self._factor_scale = factor_scale
         super(Scale2D, self).__init__(factor, **kwargs)
 
@@ -103,9 +103,9 @@ class Scale2D(FittableModel):
 
 class Rotate2D(FittableModel):
     """Rotation; Rotation2D isn't fittable"""
-    def __init__(self, factor, angle_scale=1.0, **kwargs):
+    def __init__(self, angle=0.0, angle_scale=1.0, **kwargs):
         self._angle_scale = angle_scale
-        super(Rotate2D, self).__init__(factor, **kwargs)
+        super(Rotate2D, self).__init__(angle, **kwargs)
 
     inputs = ('x', 'y')
     outputs = ('x', 'y')

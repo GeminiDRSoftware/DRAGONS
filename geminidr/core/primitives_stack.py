@@ -36,35 +36,17 @@ class Stack(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # Add the input frames to the forStack list and
-        # get other available frames from the same list
-        self.addToList(adinputs, purpose='forStack')
-        stack_inputs = self.getList(adinputs, purpose='forStack')
-
         # Return entire list if only one object (which would presumably be the
         # adinputs, or return the input list if we can't stack
-        if len(stack_inputs) <= 1:
+        if len(adinputs) <= 1:
             log.stdinfo("No alignment or correction will be performed, since "
                         "at least two input AstroData objects are required "
                         "for alignAndStack")
-            return stack_inputs
+            return adinputs
         else:
-            if (self.parameters.alignAndStack['check_if_stack'] and
-                    not _can_stack(stack_inputs)):
-                log.warning("No stacking will be performed, since a frame varies "
-                            "from the reference image by more than 1 degree")
-                return adinputs
-            else:
-                adinputs = stack_inputs
-                #TODO: Must be an easier way than this to determine whether
-                # an AD object has no OBJCATs
-                if any(all(getattr(ext, 'OBJCAT', None) is None for ext in ad)
-                       for ad in adinputs):
-                    adinputs = self.detectSources(adinputs, **params)
-                adinputs = self.correctWCSToReferenceFrame(adinputs, **params)
-                adinputs = self.alignToReferenceFrame(adinputs, **params)
-                adinputs = self.correctBackgroundToReferenceImage(adinputs, **params)
-                adinputs = self.stackFrames(adinputs, **params)
+            adinputs = self.matchWCSToReference(adinputs, **params)
+            adinputs = self.resampleToCommonFrame(adinputs, **params)
+            adinputs = self.stackFrames(adinputs, **params)
         return adinputs
 
     def stackFlats(self, adinputs=None, **params):
@@ -92,6 +74,8 @@ class Stack(PrimitivesBASE):
             combine method
         reject_method: str
             type of pixel rejection (passed to gemcombine)
+        zero: bool
+            apply zero-level offset to match background levels?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -116,12 +100,17 @@ class Stack(PrimitivesBASE):
         assert all(gain is not None for gain in gains), "Gain problem"
         assert all(rn is not None for rn in read_noises), "RN problem"
 
-        # Sum the values
+        # Compute gain and read noise of final stacked images
         nexts = len(gains[0])
         gain_list = [np.mean([gain[i] for gain in gains])
                      for i in range(nexts)]
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
+
+        # Match the background levels
+        if params["zero"]:
+            adinputs = self.correctBackgroundToReference(adinputs,
+                                remove_background=params["remove_background"])
 
         # Instantiate ETI and then run the task
         gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
@@ -132,7 +121,7 @@ class Stack(PrimitivesBASE):
         if refcats:
             out_refcat = table.unique(table.vstack(refcats,
                                 metadata_conflicts='silent'), keys='Cat_Id')
-            out_refcat['Cat_Id'] = range(1, len(out_refcat)+1)
+            out_refcat['Cat_Id'] = list(range(1, len(out_refcat)+1))
             ad_out.REFCAT = out_refcat
 
         # Gemcombine sets the GAIN keyword to the sum of the gains;
@@ -194,6 +183,10 @@ class Stack(PrimitivesBASE):
         # Parameters to be passed to stackFrames
         stack_params = {k: v for k,v in params.items() if
                         k in self.parameters.stackFrames and k != "suffix"}
+        # We're taking care of the varying sky levels here so stop
+        # stackFrames from getting involved
+        stack_params.update({'zero': False,
+                             'remove_background': False})
 
         # Run detectSources() on any frames without any OBJMASKs
         if params["mask_objects"]:
@@ -214,18 +207,3 @@ class Stack(PrimitivesBASE):
                         ext += ref - this
         adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
-
-##############################################################################
-# Below are the helper functions for the user level functions in this module #
-##############################################################################
-def _can_stack(adinputs):
-    """
-    This function checks for a set of AstroData input frames whether there is
-    more than 1 degree of rotation between the first frame and successive
-    frames. If so, stacking will not be performed.
-
-    :param adinput: List of AstroData instances
-    :type adinput: List of AstroData instances
-    """
-    ref_pa = adinputs[0].phu['PA']
-    return all(abs(ad.phu['PA'] - ref_pa) < 1.0 for ad in adinputs)

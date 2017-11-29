@@ -5,7 +5,6 @@ from geminidr import ParametersBASE
 
 class ParametersStack(ParametersBASE):
     alignAndStack = {
-        "check_if_stack"    : False,
     }
     stackFlats = {
         "suffix"            : "_stack",
@@ -22,6 +21,8 @@ class ParametersStack(ParametersBASE):
         "nlow"              : 1,
         "operation"         : "average",
         "reject_method"     : "avsigclip",
+        "remove_background" : False,
+        "zero"              : True,
     }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",

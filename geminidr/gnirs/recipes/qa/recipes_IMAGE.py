@@ -35,6 +35,7 @@ def reduce(p):
     p.separateSky()
     p.associateSky()
     p.skyCorrect(mask_objects=False)
+    p.detectSources()
     p.alignAndStack()
     p.applyDQPlane()
     p.detectSources()

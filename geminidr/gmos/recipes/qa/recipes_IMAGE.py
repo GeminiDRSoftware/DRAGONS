@@ -106,9 +106,9 @@ def stack(p):
         A primitive set matching the recipe_tags.
     """
     p.getList(purpose='forStack')
-    p.correctWCSToReferenceFrame()
-    p.alignToReferenceFrame()
-    p.correctBackgroundToReferenceImage()
+    p.matchWCSToReference()
+    p.resampleToCommonFrame()
+    p.correctBackgroundToReference()
     p.stackFrames()
     p.detectSources()
     p.measureIQ(display=True)

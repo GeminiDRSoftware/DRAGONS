@@ -22,9 +22,9 @@ class ParametersPreprocess(ParametersBASE):
         "max_skies"         : None,
         "use_all"           : False,
     }
-    correctBackgroundToReferenceImage = {
+    correctBackgroundToReference = {
         "suffix"            : "_backgroundCorrected",
-        "remove_zero_level" : False,
+        "remove_background" : False,
     }
     darkCorrect = {
         "suffix"            : '_darkCorrected',

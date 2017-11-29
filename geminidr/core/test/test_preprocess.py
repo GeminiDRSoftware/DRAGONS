@@ -92,7 +92,7 @@ class TestPreprocess:
             assert len(v) == len(filenames) - 1
             assert set([k]+v) == filename_set
 
-    def test_correctBackgroundToReferenceImage(self):
+    def test_correctBackgroundToReference(self):
         pass
 
     def test_darkCorrect(self):

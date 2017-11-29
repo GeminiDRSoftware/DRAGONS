@@ -4,7 +4,7 @@
 from geminidr import ParametersBASE
 
 class ParametersRegister(ParametersBASE):
-    correctWCSToReferenceFrame = {
+    matchWCSToReference = {
         "suffix"            : "_wcsCorrected",
         "method"            : "sources",
         "fallback"          : None,
