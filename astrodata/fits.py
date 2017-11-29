@@ -713,7 +713,8 @@ class FitsProvider(DataProvider):
                 raise ValueError("Operands are not the same size")
             for n in indices:
                 try:
-                    self._set_nddata(n, operator(self._nddata[n], operand.nddata[n]))
+                    self._set_nddata(n, operator(self._nddata[n],
+                                                (operand.nddata if operand.is_single else operand.nddata[n])))
                 except TypeError:
                     # This may happen if operand is a sliced, single AstroData object
                     self._set_nddata(n, operator(self._nddata[n], operand.nddata))
