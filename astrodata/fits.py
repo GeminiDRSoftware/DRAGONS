@@ -1368,6 +1368,43 @@ class FitsLoader(object):
 
         return provider
 
+def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=False, with_mask=False):
+    def generate_boxes(shape, kernel):
+        if len(shape) != len(kernel):
+            raise AssertionError("Incompatible shape ({}) and kernel ({})".format(shape, kernel))
+
+        ticks = []
+        for axis, step in list(zip(shape, kernel)):
+            if (axis % step) == 0:
+                end_value = axis
+            else:
+                end_value = axis + (axis % step)
+            ticks.append([(x, x+step) for x in range(0, end_value, step)])
+
+        return cart_product(*ticks)
+
+    if shape is None:
+        if len(set(x.shape for x in sequence)) > 1:
+            raise ValueError("Can't calculate final shape: sequence elements disagree on shape, and none was provided")
+        shape = sequence[0].shape
+
+    if dtype is None:
+        dtype = sequence[0].window[:1,:1].data.dtype
+
+    result = NDDataObject(np.empty(shape, dtype=dtype),
+                          uncertainty=(np.empty(shape) if with_uncertainty else None),
+                          mask=(np.empty(shape) if with_uncertainty else None))
+
+    for coords in generate_boxes(shape, kernel):
+        # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
+        # Zipping them will get us a more desirable ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
+        # box = list(zip(*coords))
+        section = tuple([slice(start, end) for (start, end) in coords])
+        result.set_section(section, fn((element.window[section] for element in sequence)))
+        gc.collect()
+
+    return result
+
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
     # variable, each class will preserve its own, and there's no risk of
