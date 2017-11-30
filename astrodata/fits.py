@@ -1244,6 +1244,38 @@ def fits_ext_comp_key(ext):
 
     return ret
 
+class FitsLazyLoadable(object):
+    def __init__(self, obj):
+        self._obj = obj
+        self.lazy = True
+
+    def _create_result(self, shape):
+        return np.empty(shape, dtype=self.dtype)
+
+    def _scale(self, data):
+        return ((self._obj._orig_bscale * data) + self._obj._orig_bzero).astype(self.dtype)
+
+    def __getitem__(self, sl):
+        return self._obj.section[sl]
+
+    @property
+    def header(self):
+        return self._obj.header
+
+    @property
+    def data(self):
+        res = self._create_result(self.shape)
+        res[:] = self._scale(self._obj.data)
+        return res
+
+    @property
+    def shape(self):
+        return self._obj.shape
+
+    @property
+    def dtype(self):
+        return self._obj._dtype_for_bitpix()
+
 class FitsLoader(object):
     def __init__(self, cls = FitsProvider):
         self._cls = cls
@@ -1345,13 +1377,12 @@ class FitsLoader(object):
                     parts['uncertainty'] = extra_unit
                 else:
                     parts['other'].append(extra_unit)
-                # provider.append(extra_unit, name=name, add_to=nd)
 
             if hdulist._file is not None and hdulist._file.memmap:
                 nd = NDDataObject(
-                        data = parts['data'],
-                        uncertainty = parts['uncertainty'],
-                        mask = parts['mask']
+                        data = FitsLazyLoadable(parts['data']),
+                        uncertainty = None if parts['uncertainty'] is None else FitsLazyLoadable(parts['uncertainty']),
+                        mask = None if parts['mask'] is None else FitsLazyLoadable(parts['mask'])
                         )
                 provider.append(nd, name=def_ext, reset_ver=False)
             else:

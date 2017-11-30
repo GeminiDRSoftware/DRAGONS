@@ -34,15 +34,13 @@ class FakeArray(object):
         self.data = very_faked
         self.shape = (100, 100) # Won't matter. This is just to fool NDData
         self.dtype = np.float32 # Same here
-        self.__array__ = very_faked
+
     def __getitem__(self, index):
         # FAKE NEWS!
         return None
 
-class FakeData(object):
-    def __init__(self, data, mask):
-        self.data = FakeArray(data)
-        self.mask = mask
+    def __array__(self):
+        return self.data
 
 class NDWindowing(object):
     def __init__(self, target):
@@ -68,7 +66,7 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def data(self):
-        return self._target._get_data(section=self._window)
+        return self._target._get_simple('_data', section=self._window)
 
     @property
     def uncertainty(self):
@@ -76,7 +74,10 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def mask(self):
-        return self._target._get_mask(section=self._window)
+        return self._target._get_simple('_mask', section=self._window)
+
+def is_lazy(item):
+    return isinstance(item, ImageHDU) or (hasattr(item, 'lazy') and item.lazy)
 
 class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """Implements `NDData` with all Mixins.
@@ -136,40 +137,19 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
                  meta=None, unit=None, copy=False, window=None):
         self._scalers = {}
         self._window = window
-        self._lazy = {
-                'data': False,
-                'uncertainty': False,
-                'mask': False
-                }
 
-        if isinstance(data, ImageHDU):
-            kdata = FakeData(data, mask)
-            kmask = None
-            kuncert = None
-        else:
-            kdata = data
-            kmask = mask
-            kuncert = uncertainty
-        super(NDAstroData, self).__init__(kdata, kuncert, kmask,
-                                          wcs, meta, unit, copy)
+        super(NDAstroData, self).__init__(FakeArray(data) if is_lazy(data) else data,
+                                          None if is_lazy(uncertainty) else uncertainty,
+                                          mask, wcs, meta, unit, copy)
 
-        if isinstance(data, ImageHDU):
-            self._data = self._data.__array__
-            self._lazy['data'] = True
-            self._set_scaling('data', data.header)
-            self.meta['header'] = data.header
+        if is_lazy(data):
+            self.data = data
+        if is_lazy(uncertainty):
             self.uncertainty = uncertainty
 
     def __deepcopy__(self, memo):
         return self.__class__(self.data, self.uncertainty, self.mask, self.wcs,
                               deepcopy(self.meta), self.unit)
-
-    def _set_scaling(self, key, header):
-        bzero, bscale = header.get('BZERO'), header.get('BSCALE')
-        if bzero is None and bscale is None:
-            self._scalers[key] = lambda x: x
-        else:
-            self._scalers[key] = lambda x: (bscale * x) + bzero
 
     @property
     def window(self):
@@ -180,48 +160,49 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return self._data.shape
 
     def _extract(self, source, scaling, section=None):
-        return scaling(source.data if section is None else source.section[section])
-
-    def _get_data(self, section=None):
-        if self._lazy['data']:
-            temp = self._extract(self._data, self._scalers['data'], section=section)
-            if section is None:
-                self._lazy['data'] = False
-                self._data = temp
-            return temp
-        elif section is not None:
-            return self._data[section]
-        else:
-            return self._data
+        return scaling(source.data if section is None else source[section])
 
     def _get_uncertainty(self, section=None):
         if self._uncertainty is not None:
-            if self._lazy['uncertainty']:
-                temp = new_variance_uncertainty_instance(self._extract(self._uncertainty, self._scalers['uncertainty'], section=section))
+            if is_lazy(self._uncertainty):
+                data = self._uncertainty.data if section is None else self._uncertainty[section]
+                temp = new_variance_uncertainty_instance(data)
                 if section is None:
-                    self.uncertainty = new_variance_uncertainty_instance(self._extract(self._uncertainty, self._scalers['uncertainty']))
+                    self.uncertainty = temp
                 return temp
             elif section is not None:
                 return self._uncertainty[section]
             else:
                 return self._uncertainty
 
-    def _get_mask(self, section=None):
-        if self._mask is not None:
-            if self._lazy['mask']:
-                temp = self._extract(self._mask, self._scalers['mask'], section=section)
+    def _get_simple(self, target, section=None):
+        source = getattr(self, target)
+        if source is not None:
+            if is_lazy(source):
                 if section is None:
-                    self._lazy['data'] = False
-                    self._mask = temp
-                return temp
+                    ret = np.empty(source.shape, dtype=source.dtype)
+                    ret[:] = source.data
+                    setattr(self, target, ret)
+                else:
+                    ret = source[section]
+                return ret
             elif section is not None:
-                return self._mask[section]
+                return source[section]
             else:
-                return self._mask
+                return source
 
     @property
     def data(self):
-        return self._get_data()
+        return self._get_simple('_data')
+
+    @data.setter
+    def data(self, value):
+        if value is None:
+            raise ValueError("Cannot have None as the data value for an NDData object")
+
+        if is_lazy(value):
+            self.meta['header'] = value.header
+        self._data = value
 
     @property
     def uncertainty(self):
@@ -229,32 +210,18 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @uncertainty.setter
     def uncertainty(self, value):
-        if isinstance(value, ImageHDU):
-            self._lazy['uncertainty'] = True
-            self._set_scaling('uncertainty', value.header)
-            self._uncertainty = value
-        else:
-            self._lazy['uncertainty'] = False
-            if value is not None:
-                if value._parent_nddata is not None:
-                    value = value.__class__(value, copy=False)
-                value.parent_nddata = self
-            self._uncertainty = value
+        if value is not None and not is_lazy(value):
+            if value._parent_nddata is not None:
+                value = value.__class__(value, copy=False)
+            value.parent_nddata = self
+        self._uncertainty = value
 
     @property
     def mask(self):
-        if self._mask is not None:
-            if not self._lazy['mask']:
-                return super(NDAstroData, self).mask
-            return self._extract(self._mask, self._scalers['mask'])
+        self._get_simple('_mask')
 
     @mask.setter
     def mask(self, value):
-        if isinstance(value, ImageHDU):
-            self._lazy['mask'] = True
-            self._set_scaling('mask', value.header)
-        else:
-            self._lazy['mask'] = False
         self._mask = value
 
     def set_section(self, section, input):
@@ -265,7 +232,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
             self.mask[section] = input.mask
 
     def __repr__(self):
-        if self._lazy['data']:
+        if is_lazy(self._data):
             return self.__class__.__name__ + '(Memmapped)'
         else:
             return super(NDAstroData, self).__repr__()
