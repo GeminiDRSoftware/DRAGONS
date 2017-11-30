@@ -1392,6 +1392,9 @@ class FitsLoader(object):
                     if item is not None:
                         provider.append(item, name=item.header['EXTNAME'], add_to=nd)
 
+            for other in parts['other']:
+                provider.append(other, name=other.header['EXTNAME'], add_to=nd)
+
         for other in hdulist:
             if other in seen:
                 continue
