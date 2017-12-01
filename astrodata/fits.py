@@ -11,6 +11,8 @@ from functools import partial, wraps
 import logging
 import warnings
 import gc
+import inspect
+import traceback
 
 try:
     # Python 3
@@ -41,6 +43,19 @@ class AstroDataFitsDeprecationWarning(DeprecationWarning):
 
 warnings.simplefilter("always", AstroDataFitsDeprecationWarning)
 
+def deprecated(reason):
+    def decorator_wrapper(fn):
+        @wraps(fn)
+        def wrapper(*args, **kw):
+            current_source = '|'.join(traceback.format_stack(inspect.currentframe()))
+            if current_source not in wrapper.seen:
+                wrapper.seen.add(current_source)
+                warnings.warn(reason, AstroDataFitsDeprecationWarning)
+            return fn(*args, **kw)
+        wrapper.seen = set()
+        return wrapper
+    return decorator_wrapper
+
 class KeywordCallableWrapper(object):
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
         self.kw = keyword
@@ -69,7 +84,10 @@ class FitsHeaderCollection(object):
     It can also be iterated.
     """
     def __init__(self, headers):
-        self.__headers = headers
+        self.__headers = list(headers)
+
+    def _insert(self, idx, header):
+        self.__headers.insert(idx, header)
 
     def __iter__(self):
         for h in self.__headers:
@@ -433,6 +451,11 @@ class FitsProviderProxy(DataProvider):
         return self
 
     @property
+    @deprecated("Access to headers through this property is deprecated and will be removed in the future")
+    def header(self):
+        return self._provider._get_raw_headers(with_phu=True, indices=self._mapping)
+
+    @property
     def data(self):
         if self.is_single:
             return self._mapped_nddata(0).data
@@ -507,9 +530,9 @@ class FitsProviderProxy(DataProvider):
             return self._mapped_nddata(0)
 
     def hdr(self):
-        headers = [self._provider._ext_header(idx) for idx in self._mapping]
+        headers = self._provider._get_raw_headers(indices=self._mapping)
 
-        return headers[0] if self.is_single else headers
+        return headers[0] if self.is_single else FitsHeaderCollection(headers)
 
     def set_name(self, ext, name):
         self._provider.set_name(self._mapping[ext], name)
@@ -926,6 +949,21 @@ class FitsProvider(DataProvider):
             obj = self.nddata[obj]
         return obj.meta['header']
 
+    def _get_raw_headers(self, with_phu=False, indices=None):
+        if indices is None:
+            indices = range(len(self.nddata))
+        extensions = [self._ext_header(self.nddata[n]) for n in indices]
+
+        if with_phu:
+            return [self._phu] + extensions
+
+        return extensions
+
+    @property
+    @deprecated("Access to headers through this property is deprecated and will be removed in the future")
+    def header(self):
+        return self._get_raw_headers(with_phu=True)
+
     @property
     def nddata(self):
         return self._nddata
@@ -933,13 +971,10 @@ class FitsProvider(DataProvider):
     def phu(self):
         return self._phu
 
-    def hdr(self, single=False):
+    def hdr(self):
         if not self.nddata:
             return None
-        if (single or self._single):
-            return self._ext_header(0)
-        else:
-            return FitsHeaderCollection([self._ext_header(n) for n in self.nddata])
+        return FitsHeaderCollection(self._get_raw_headers())
 
     def set_name(self, ext, name):
         self._nddata[ext].meta['name'] = name
