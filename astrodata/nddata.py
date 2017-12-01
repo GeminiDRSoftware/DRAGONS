@@ -218,7 +218,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def mask(self):
-        self._get_simple('_mask')
+        return self._get_simple('_mask')
 
     @mask.setter
     def mask(self, value):
