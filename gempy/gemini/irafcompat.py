@@ -29,21 +29,21 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Add GPREPARE to PHU")
         ad.phu.set('GPREPARE', "Compatibility", "For IRAF compatibility")
-    if 'STACKFRM' in ad.phu.keywords and  ad.phu['OBSTYPE'] == "BIAS":
+    if 'STACKFRM' in ad.phu and  ad.phu['OBSTYPE'] == "BIAS":
         if verbose:
             print("Add GBIAS to PHU")
         ad.phu.set('GBIAS', "Compatibility", "For IRAF compatibility")
-    if 'ADUTOELE' in ad.phu.keywords:
+    if 'ADUTOELE' in ad.phu:
         if verbose:
             print("Add GGAIN to PHU")
             print("Add GAINMULT to PHU")
         ad.phu.set('GGAIN', "Compatibility", "For IRAF compatibility")
         ad.phu.set('GAINMULT', "Compatibility", "For IRAF compatibility")
-    if 'NORMLIZE' in ad.phu.keywords:
+    if 'NORMLIZE' in ad.phu:
         if verbose:
             print("Add GIFLAT to PHU")
         ad.phu.set('GIFLAT', "Compatibility", "For IRAF compatibility")
-    if 'BIASIM' in ad.phu.keywords:
+    if 'BIASIM' in ad.phu:
         if verbose:
             print("Add GIREDUCE to PHU")
         ad.phu.set('GIREDUCE', "Compatibility", "For IRAF compatibility")

@@ -185,7 +185,7 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _status_prepared(self):
-        if any(('PREPAR' in kw) for kw in self.phu.keywords):
+        if any(('PREPAR' in kw) for kw in self.phu):
             return TagSet(['PREPARED'])
         else:
             return TagSet(['UNPREPARED'])
@@ -194,7 +194,7 @@ class AstroDataGemini(AstroDataFits):
     def _status_overscan(self):
         found = []
         for pattern, tag in (('TRIMOVER', 'OVERSCAN_TRIMMED'), ('SUBOVER', 'OVERSCAN_SUBTRACTED')):
-            if any((pattern in kw) for kw in self.phu.keywords):
+            if any((pattern in kw) for kw in self.phu):
                 found.append(tag)
         if found:
             return TagSet(found)
@@ -204,13 +204,13 @@ class AstroDataGemini(AstroDataFits):
         kwords = set(['PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
                       'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG'])
 
-        if set(self.phu.keywords) & kwords:
+        if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])
 
     @astro_data_tag
     def _status_processed_science(self):
         for pattern in ('GMOSAIC', 'PREPAR'):
-            if not any((pattern in kw) for kw in self.phu.keywords):
+            if not any((pattern in kw) for kw in self.phu):
                 return
 
         if self.phu['OBSTYPE'] == 'OBJECT':
