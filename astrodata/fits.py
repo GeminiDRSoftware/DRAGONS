@@ -509,10 +509,7 @@ class FitsProviderProxy(DataProvider):
     def hdr(self):
         headers = [self._provider._ext_header(idx) for idx in self._mapping]
 
-        if self.is_single:
-            return headers[0]
-        else:
-            return FitsHeaderCollection(headers)
+        return headers[0] if self.is_single else headers
 
     def set_name(self, ext, name):
         self._provider.set_name(self._mapping[ext], name)
