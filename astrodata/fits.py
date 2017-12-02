@@ -1288,7 +1288,8 @@ class FitsLazyLoadable(object):
         return ((self._obj._orig_bscale * data) + self._obj._orig_bzero).astype(self.dtype)
 
     def __getitem__(self, sl):
-        return self._obj.section[sl]
+        # TODO: We may want (read: should) create an empty result array before scaling
+        return self._scale(self._obj.section[sl])
 
     @property
     def header(self):
