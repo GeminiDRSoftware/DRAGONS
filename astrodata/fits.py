@@ -1456,9 +1456,9 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
         dtype = sequence[0].window[:1,:1].data.dtype
 
     result = NDDataObject(np.empty(shape, dtype=dtype),
-                          uncertainty=(new_variance_uncertainty_instance(np.empty(shape))
+                          uncertainty=(new_variance_uncertainty_instance(np.empty(shape, dtype=dtype))
                                        if with_uncertainty else None),
-                          mask=(np.empty(shape) if with_mask else None))
+                          mask=(np.empty(shape, dtype=np.uint16) if with_mask else None))
 
     for coords in generate_boxes(shape, kernel):
         # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
