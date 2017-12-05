@@ -503,14 +503,10 @@ class FitsProviderProxy(DataProvider):
 
     @property
     def variance(self):
-        def variance_for(un):
-            if un is not None:
-                return un.array**2
-
         if self.is_single:
-            return variance_for(self.uncertainty)
+            return self._mapped_nddata(0).variance
         else:
-            return [variance_for(un) for un in self.uncertainty]
+            return [nd.variance for nd in self._mapped_nddata()]
 
     @variance.setter
     def variance(self, value):
@@ -1460,8 +1456,9 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
         dtype = sequence[0].window[:1,:1].data.dtype
 
     result = NDDataObject(np.empty(shape, dtype=dtype),
-                          uncertainty=(np.empty(shape) if with_uncertainty else None),
-                          mask=(np.empty(shape) if with_uncertainty else None))
+                          uncertainty=(new_variance_uncertainty_instance(np.empty(shape))
+                                       if with_uncertainty else None),
+                          mask=(np.empty(shape) if with_mask else None))
 
     for coords in generate_boxes(shape, kernel):
         # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)

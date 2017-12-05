@@ -73,6 +73,12 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return self._target._get_uncertainty(section=self._window)
 
     @property
+    def variance(self):
+        un = self.uncertainty
+        if un is not None:
+            return un.array**2
+
+    @property
     def mask(self):
         return self._target._get_simple('_mask', section=self._window)
 
@@ -224,10 +230,20 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def mask(self, value):
         self._mask = value
 
+    @property
+    def variance(self):
+        arr = self._get_uncertainty()
+        if arr is not None:
+            return arr.array**2
+
+    @variance.setter
+    def variance(self, value):
+        self.uncertainty = new_variance_uncertainty_instance(value)
+
     def set_section(self, section, input):
         self.data[section] = input.data
         if self.uncertainty is not None:
-            self.uncertainty[section] = input.uncertainty
+            self.uncertainty.array[section] = input.uncertainty.array
         if self.mask is not None:
             self.mask[section] = input.mask
 
