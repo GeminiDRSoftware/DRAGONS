@@ -119,7 +119,7 @@ def _set_geo_values(ad, ccdsecs, detsecs, binning):
 
     """
     geometry_module = 'geminidr.{}.lookups.geometry_conf'
-    instrument = "gmos" if "GMOS" in ad.instrument() else ad.instrument().lower()
+    instrument = ad.instrument(generic=True).lower()
     lookup_tables = geometry_module.format(instrument)
     geotable = import_module(lookup_tables)
 
@@ -150,8 +150,8 @@ def _set_geo_values(ad, ccdsecs, detsecs, binning):
     shift    = [(x, y) for x, y in zip(xshift, yshift)]
 
     # For x,y gap
-    gaps_tile = geotable.gaps_tile[binning_key]
-    gaps_transform = geotable.gaps_transform[binning_key]
+    gaps_tile = geotable.gaps_tile[binning_key].copy()
+    gaps_transform = geotable.gaps_transform[binning_key].copy()
     for k in gaps_tile.keys():                           # Bin the values
         gaps_tile[k] = (gaps_tile[k][0] / x_bin, 
                         gaps_tile[k][1] / y_bin)
