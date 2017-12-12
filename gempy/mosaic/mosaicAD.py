@@ -92,10 +92,10 @@ class MosaicAD(Mosaic):
         mosaic_data, geometry = mosaic_ad_function(ad)
         Mosaic.__init__(self, mosaic_data, geometry)
         self.jfactor = []               # Jacobians applied to interpolated pixels.
+        self.refext = None              # reference extension, see set_ref_extn()
         self.calculate_jfactor()        # Fill the jfactor vector with the
                                         # jacobian of transformation matrix.
         self.mosaic_shape = None        # Shape of the mosaicked output frame.
-                                        # Set in as_astrodata().
 
     # --------------------------------------------------------------------------
     def as_astrodata(self, block=None, tile=False, doimg=False, return_ROI=True,
@@ -139,9 +139,7 @@ class MosaicAD(Mosaic):
         adout.phu.set('TILED', ['FALSE', 'TRUE'][tile])
         adout.phu.set_comment('TILED', 'True: tiled; False: Image Mosaicked')
 
-        # Create mosaics of all image extensions in ad
         # image arrays mosaicked: 'data', 'variance', 'mask', 'OBJMASK'.
-
         # SCI
         self.data_list = self.get_data_list('data')
         if not self.data_list:
@@ -163,11 +161,6 @@ class MosaicAD(Mosaic):
             else:
                 varray = self.mosaic_image_data(block=block,return_ROI=return_ROI,
                                                 tile=tile)
-
-                # @TODO Not sure what to do with extention headers for VAR & DQ exts!
-                #self.mosaic_shape = varray.shape
-                #header = self.mosaic_header(varray.shape, block, tile)
-
         # DQ
         marray = None
         if not doimg:
@@ -177,11 +170,6 @@ class MosaicAD(Mosaic):
             else:
                 marray= self.mosaic_image_data(block=block,return_ROI=return_ROI,
                                                tile=tile, dq_data=True)
-
-                # @TODO Not sure what to do with extention headers for VAR & DQ exts!
-                #self.mosaic_shape = marray.shape
-                #header = self.mosaic_header(marray.shape, block, tile)
-
 
         adout[0].reset(data=darray, variance=varray, mask=marray)
 
@@ -194,6 +182,10 @@ class MosaicAD(Mosaic):
                 adout[0].OBJMASK = self.mosaic_image_data(block=block,
                                                           return_ROI=return_ROI,
                                                           tile=tile, dq_data=True)
+        # Propagate any REFCAT
+        if not doimg:
+            if hasattr(self.ad, 'REFCAT'):
+                adout[0].REFCAT = getattr(self.ad, 'REFCAT')
 
         return adout
 
@@ -220,8 +212,9 @@ class MosaicAD(Mosaic):
 
         """
         # If there is no WCS return 1 list of 1.s
+        self.set_ref_extn()
         try:
-           ref_wcs = wcs.WCS(self.ad.header[1])
+           ref_wcs = wcs.WCS(self.ad.header[self.refext])
         except:
            self.jfactor = [1.0] * len(self.ad)
            return
@@ -341,7 +334,7 @@ class MosaicAD(Mosaic):
         fmat1 = "[{}:{},{}:{}]"
         fmat2 = "[1:{},1:{}]"
 
-        mosaic_hd = self.ad.header[1].copy()              # SCI ext header.
+        mosaic_hd = self.ad.header[self.refext].copy()         # ref ext header.
         ref_block = self.geometry.ref_block  
         amps_per_block = self._amps_per_block
 
@@ -430,6 +423,20 @@ class MosaicAD(Mosaic):
         return info
 
     # --------------------------------------------------------------------------
+    def set_ref_extn(self):
+        amps_per_block = self._amps_per_block
+        ref_block      = self.geometry.ref_block                  # 0-based
+        nblocks_x      = self.geometry.mosaic_grid[0]
+        ref_block_number = ref_block[0] + ref_block[1]*nblocks_x
+
+        # Reference header.
+        if amps_per_block == 1:
+            self.refext = ref_block_number + 1   # EXTVERs starts from 1)
+        else:
+            # Get the first amplifier in the block
+            self.refext = amps_per_block*ref_block_number + 1
+
+        return
     # --------------------------------------------------------------------------
     def update_crpix(self, wcs, tile):
         """
