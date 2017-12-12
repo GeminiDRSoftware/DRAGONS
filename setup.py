@@ -163,6 +163,7 @@ DATA_FILES = []
 
 # SCRIPTS
 RS_SCRIPTS = [ os.path.join('recipe_system', 'scripts', 'adcc'),
+               os.path.join('recipe_system', 'scripts', 'caldb'),
                os.path.join('recipe_system', 'scripts', 'reduce'),
                os.path.join('recipe_system', 'scripts', 'superclean'),
              ]
@@ -175,6 +176,7 @@ GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'automosaic.py'),
                   os.path.join('gempy', 'scripts', 'profile_all_obj'),
                   os.path.join('gempy', 'scripts', 'psf_plot'),
                   os.path.join('gempy', 'scripts', 'showd'),
+                  os.path.join('gempy', 'scripts', 'showpars'),
                   os.path.join('gempy', 'scripts', 'swapper'),
                   os.path.join('gempy', 'scripts', 'typewalk'),
                   os.path.join('gempy', 'scripts', 'zp_histogram'),
@@ -187,7 +189,7 @@ SCRIPTS.extend(GEMPY_SCRIPTS)
 EXTENSIONS = None
 
 setup ( name='dragons',
-        version='2.0.6-alpha',
+        version='2.0.8-alpha',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
         author_email='sus_inquiries@gemini.edu',
