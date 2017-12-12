@@ -154,7 +154,7 @@ class QA(PrimitivesBASE):
                 if separate_ext:
                     comments = _bg_report(ext, bg_count, bunit, bg_mag, qastatus)
 
-            # Collapse extension-by-extension numbers
+            # Collapse extension-by-extension numbers if multiple extensions
             bg_count = _stats(bg_list)
             bg_mag = _stats(bg_mag_list)
 
@@ -700,8 +700,10 @@ def _stats(stats_list, weights='sample'):
             wt = [1.0] * len(use_list)
         total_samples = sum(m.samples for m in use_list)
         mean = np.average([m.value for m in use_list], weights=wt)
-        sigma = np.sqrt(np.average([(m.value - mean)**2 for m in use_list],
-                                   weights = wt))
+        var1 = np.average([(m.value - mean)**2 for m in use_list],
+                                   weights = wt)
+        var2 = sum(w*m.std*m.std for w, m in zip(wt, use_list))/sum(wt)
+        sigma = np.sqrt(var1 + var2)
     except:
         return Measurement(None, None, 0)
     return Measurement(mean, sigma, total_samples)
