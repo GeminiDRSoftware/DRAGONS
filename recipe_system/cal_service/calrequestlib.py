@@ -127,7 +127,7 @@ def get_cal_requests(inputs, caltype):
     return rq_events
 
 
-def process_cal_requests(cal_requests):
+def process_cal_requests(cal_requests, howmany=None):
     """
     Conduct a search for calibration files for the passed list of calibration
     requests. This passes the requests to the calibration_search() function,
@@ -144,6 +144,9 @@ def process_cal_requests(cal_requests):
 
     :parameter cal_requests: list of CalibrationRequest objects
     :type cal_requests: <list>
+    :parameter howmany: maximum number of calibrations to return per request
+            (not passed to the server-side request but trims the returned list)
+    :type howmany: None/<int>
 
     :returns: A set of science frames and matching calibrations.
     :rtype:   <dict>
@@ -165,7 +168,8 @@ def process_cal_requests(cal_requests):
         calname = None
         calmd5 = None
         calurl = None
-        calurl, calmd5 = calibration_search(rq)
+        calurl, calmd5 = calibration_search(rq,
+                                howmany=(howmany if howmany else 1))
         if calurl is None:
             log.error("START CALIBRATION SERVICE REPORT\n")
             log.error(calmd5)
@@ -175,44 +179,49 @@ def process_cal_requests(cal_requests):
             #_add_cal_record(rq, calname)
             continue
 
-        log.info("Found calibration (url): {}".format(calurl))
-        components = urlparse(calurl)
-        calname = basename(components.path)
-        cachename, cachedir = _check_cache(calname, rq.caltype)
-        if cachename:
-            cached_md5 = generate_md5_digest(cachename)
-            if cached_md5 == calmd5:
-                log.stdinfo("Cached calibration {} matched.".format(cachename))
-                _add_cal_record(rq, cachename)
-            else:
-                log.stdinfo("File {} is cached but".format(calname))
-                log.stdinfo("md5 checksums DO NOT MATCH")
-                log.stdinfo("Making request on calibration service")
-                log.stdinfo("Requesting URL {}".format(calurl))
-                try:
-                    calname = get_request(calurl, cachename)
-                    _add_cal_record(rq, cachename)
-                except GetterError as err:
-                    for message in err.messages:
-                        log.error(message)
-            continue
+        calibs = []
+        for url, md5 in zip(calurl, calmd5):
+            log.info("Found calibration (url): {}".format(url))
+            components = urlparse(url)
+            calname = basename(components.path)
+            cachename, cachedir = _check_cache(calname, rq.caltype)
+            if cachename:
+                cached_md5 = generate_md5_digest(cachename)
+                if cached_md5 == md5:
+                    log.stdinfo("Cached calibration {} matched.".format(cachename))
+                    calibs.append(cachename)
+                else:
+                    log.stdinfo("File {} is cached but".format(calname))
+                    log.stdinfo("md5 checksums DO NOT MATCH")
+                    log.stdinfo("Making request on calibration service")
+                    log.stdinfo("Requesting URL {}".format(url))
+                    try:
+                        calname = get_request(url, cachename)
+                        calibs.append(cachename)
+                    except GetterError as err:
+                        for message in err.messages:
+                            log.error(message)
+                continue
 
-        log.status("Making request for {}".format(calurl))
-        fname = split(calurl)[1]
-        calname = join(cachedir, fname)
-        try:
-            calname = get_request(calurl, calname)
-        except GetterError as err:
-            for message in err.messages:
-                log.error(message)
-        else:
-            # hash compare
-            download_mdf5 = generate_md5_digest(calname)
-            if download_mdf5 == calmd5:
-                log.status("MD5 hash match. Download OK.")
-                _add_cal_record(rq, calname)
+            log.status("Making request for {}".format(url))
+            fname = split(url)[1]
+            calname = join(cachedir, fname)
+            try:
+                calname = get_request(url, calname)
+            except GetterError as err:
+                for message in err.messages:
+                    log.error(message)
             else:
-                err = "MD5 hash of downloaded file does not match expected hash {}"
-                raise IOError(err.format(calmd5))
+                # hash compare
+                download_mdf5 = generate_md5_digest(calname)
+                if download_mdf5 == md5:
+                    log.status("MD5 hash match. Download OK.")
+                    calibs.append(calname)
+                else:
+                    err = "MD5 hash of downloaded file does not match expected hash {}"
+                    raise IOError(err.format(md5))
+
+        # If howmany=None, append the only file as a string, instead of the list
+        _add_cal_record(rq, calibs if howmany else calibs[0])
 
     return calibration_records

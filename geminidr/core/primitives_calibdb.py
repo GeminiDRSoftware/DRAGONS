@@ -35,16 +35,22 @@ class CalibDB(PrimitivesBASE):
         adinputs = adinput if isinstance(adinput, list) else [adinput]
         for ad in adinputs:
             key = (ad, caltype)
-            calfile = self.calibrations[key]
-            if not calfile:
+            calib = self.calibrations[key]
+            if not calib:
                 caloutputs.append(None)
             # If the file isn't on disk, delete it from the dict
-            elif os.path.isfile(calfile):
-                caloutputs.append(calfile)
+            # Now have to cope with calfile being a list of files
             else:
-                del self.calibrations[key]
-                self.calibrations.cache_to_disk()
-                caloutputs.append(None)
+                if isinstance(calib, list):
+                    cal_found = all(os.path.isfile(calfile) for calfile in calib)
+                else:
+                    cal_found = os.path.isfile(calib)
+                if cal_found:
+                    caloutputs.append(calib)
+                else:
+                    del self.calibrations[key]
+                    self.calibrations.cache_to_disk()
+                    caloutputs.append(None)
         return caloutputs if isinstance(adinput, list) else caloutputs[0]
 
     def _assert_calibrations(self, adinputs, caltype):
@@ -67,10 +73,24 @@ class CalibDB(PrimitivesBASE):
 
         return adinputs
 
-    def getCalibration(self, adinputs=None, refresh=True, caltype=None):
+    def getCalibration(self, adinputs=None, caltype=None, refresh=True,
+                       howmany=None):
         """
         Uses the calibration manager to population the Calibrations dict for
         all frames, updating any existing entries
+        
+        Parameters
+        ----------
+        adinputs: list of ADs
+            files for which calibrations are needed
+        caltype: str
+            type of calibration required (e.g., "processed_bias")
+        refresh: bool
+            if False, only seek calibrations for ADs without them; otherwise
+            request calibrations for all ADs
+        howmany: None/int
+            maximum number of calibrations to return per AD (None means return
+            the filename of one, rather than a list of filenames)
         """
         log = self.log
         if caltype is None:
@@ -80,7 +100,7 @@ class CalibDB(PrimitivesBASE):
         ad_rq = adinputs if refresh else [ad for ad in adinputs
                                           if not self._get_cal(ad, caltype)]
         cal_requests = get_cal_requests(ad_rq, caltype)
-        calibration_records = process_cal_requests(cal_requests)
+        calibration_records = process_cal_requests(cal_requests, howmany=howmany)
         for ad, calfile in calibration_records.items():
             self.calibrations[ad, caltype] = calfile
         return adinputs
