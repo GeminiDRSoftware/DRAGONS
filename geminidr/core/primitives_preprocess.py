@@ -25,6 +25,7 @@ from recipe_system.utils.decorators import parameter_override
 class Preprocess(PrimitivesBASE):
     """
     This is the class containing all of the preprocessing primitives.
+
     """
     tagset = None
 
@@ -41,6 +42,7 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -72,6 +74,7 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -111,11 +114,14 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         replace_flags: int
             The DQ bits, of which one needs to be set for a pixel to be replaced
+
         replace_value: str/float
             "median" or "average" to replace with that value of the good pixels,
             or a value
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -173,14 +179,19 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         distance: float
             minimum separation (in arcseconds) required to use an image as sky
+
         max_skies: int/None
             maximum number of skies to associate to each input frame
+
         sky: str/list
             name(s) of sky frame(s) to associate to each input
+
         time: float
             number of seconds
+
         use_all: bool
             use everything in the "sky" stream?
 
@@ -192,8 +203,10 @@ class Preprocess(PrimitivesBASE):
                     the same sky frame will be applied to all inputs; otherwise
                     the number of input sky frames must match the number of
                     input science frames.
+
         :type sky: string, Python list of string, AstroData or Python list of
                    Astrodata 
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -288,9 +301,11 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         remove_background: bool
             if True, set the new background level to zero in all images
             if False, set it to the level of the first image
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -356,8 +371,10 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         dark: str/list
             name(s) of the dark file(s) to be subtracted
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -418,11 +435,14 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         dilation: float
             radius of dilation circle
+
         repeat: bool
             allow a repeated dilation? Unless set, the primitive will no-op
             if the appropriate header keyword timestamp is found
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -465,8 +485,10 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         flat: str
             name of flatfield to use
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -541,6 +563,7 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -609,10 +632,13 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         scale: str
             type of scaling to use. Must be a numpy function
+
         separate_ext: bool
             Scale each extension individually?
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -725,15 +751,18 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         frac_FOV: float
             Proportion by which to scale the instrumental field of view when
             determining whether points are considered to be within the same
             field, for tweaking borderline cases (eg. to avoid co-adding
             target positions right at the edge of the field)
+
         ref_obj: str
             comma-separated list of filenames (as read from disk, without any
             additional suffixes appended) to be considered object/on-target
             exposures, as overriding guidance for any automatic classification.
+
         ref_sky: str
             comma-separated list of filenames to be considered as sky exposures
 
@@ -741,6 +770,7 @@ class Preprocess(PrimitivesBASE):
         also be respected as input (unless overridden by ref_obj/ref_sky) and
         these same keywords are set in the output, along with a group number
         with which each exposure is associated (EXPGROUP).
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -921,8 +951,10 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         sky: str/AD/list
             sky frame(s) to be subtracted from each science input
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1032,15 +1064,20 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         reset_sky: bool
             maintain the sky level by adding a constant to the science
+
             frame after subtracting the sky?
         scale: bool
             scale each extension of each sky frame to match the science frame?
+
         sky: str/AD/list
             sky frame(s) to subtract
+
         zero: bool
             apply offset to each extension of each sky frame to match science?
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1107,6 +1144,7 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1149,10 +1187,13 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         lower: float
             value below which DQ pixels should be set to unilluminated
+
         upper: float
             value above which DQ pixels should be set to unilluminated
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
