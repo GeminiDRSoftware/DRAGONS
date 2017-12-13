@@ -177,8 +177,6 @@ if __name__ == '__main__':
     argp, subp = buildArgumentParser()
     args = argp.parse_args(sys.argv[1:])
 
-    conf = load_calconf()
-
     # Override some options if the user has specified the path to
     # a database
     if args.db_path is not None:
@@ -186,6 +184,8 @@ if __name__ == '__main__':
             standalone=True,
             database_dir=args.db_path
         ))
+
+    conf = load_calconf()
 
     ret = -1
     try:

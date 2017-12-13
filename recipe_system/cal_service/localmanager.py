@@ -198,7 +198,7 @@ class LocalManager(object):
                 if log:
                     log("Ingested {}/{}".format(root, fname))
 
-    def calibration_search(self, rq, fullResult=False):
+    def calibration_search(self, rq, howmany=1, fullResult=False):
         """Performs a search in the database using the requested criteria.
 
         Parameters
@@ -206,6 +206,8 @@ class LocalManager(object):
         rq : CalibrationRequest
             Contains the search criteria, including instrument, descriptors,
             etc.
+        howmany: int
+            Maximum number of calibrations to return
         fullResult : bool
             This is here just for API compatibility. It's not used anywhere
             in the code, anyway, and should probably be removed altogether.
@@ -216,8 +218,8 @@ class LocalManager(object):
         result: tuple
             A tuple of exactly two elements.
 
-            In the case of success, the tuple contains two strings, the first
-            being the URL to a calibration file, and the second its MD5 sum.
+            In the case of success, the tuple contains two lists, the first
+            being the URLs to calibration files, and the second the MD5 sums.
 
             When an error occurs, the first element in the tuple will be
             `None`, and the second a string describing the error.
@@ -251,13 +253,16 @@ class LocalManager(object):
         # Obtain a list of calibrations for the specified cal type
         cals = getattr(cal_obj, method)(**args)
 
+        ret_value = []
         for cal in cals:
-            if cal.diskfile.present:
+            if cal.diskfile.present and len(ret_value) < howmany:
                 path = os.path.join(fsc.storage_root, cal.diskfile.path,
                                     cal.diskfile.file.name)
+                ret_value.append(('file://{}'.format(path), cal.diskfile.data_md5))
 
-                return ('file://{}'.format(path), cal.diskfile.data_md5)
-
+        if ret_value:
+            # Turn from list of tuples into two lists
+            return tuple(map(list, zip(*ret_value)))
         return (None, "Could not find a proper calibration in the local database")
 
     def list_files(self):
