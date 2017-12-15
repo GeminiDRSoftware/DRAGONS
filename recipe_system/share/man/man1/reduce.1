@@ -6,12 +6,13 @@ reduce \- Recipe Processing Management System, v2.0, command line interface (cli
 [\fB\-h\fR] 
 [\fB\-v\fR]
 [\fB\-d\fR]
-[\fB\--context\fR CONTEXT]
 [\fB\--adpkg\fR ADPKG]
 [\fB\--drpkg\fR DRPKG]
 [\fB\--logmode\fR LOGMODE]
 [\fB\--logfile\fR LOGFILE]
 [\fB\-p\fR USERPARAM [USERPARAM ...]]
+[\fB\--qa\fR]
+[\fB\--ql\fR]
 [\fB\-r\fR RECIPENAME]
 [\fB\--suffix\fR SUFFIX]
 [\fB\--upload\fR UPLOAD]
@@ -37,24 +38,6 @@ show program's version number and exit
 .TP
 .B -d , --displayflags
 display all parsed option flags and exit.
-.TP 
-\fB\--context\fR CONTEXT
-Use
-.B CONTEXT
-for recipe selection and primitives sensitive to context. Current values
-supported are
-.B QA 
-and 
-.B SQ
-(default is
-.B QA
-)
-.RS
-E.g.,
-.RS
-\fB\-\-context\fR QA
-.RE
-.RE
 .TP
 \fB\-\-adpkg\fR ADPKG
 Specify an external astrodata definitions package. This is only passed for
@@ -126,6 +109,35 @@ modules and should be named accordingly. I.e., in the example above,
 is a python module named, 
 .B 'recipefile.py'
 .RE
+
+.TP
+\fB\--qa\fR
+Use
+.B qa
+mode. This switch requests the
+.B Quality Assessment
+recipe 'mode' for recipe selection and primitives sensitive to this mode.
+Default mode is
+.B sq
+or
+.B Science Quality
+mode.
+.RE
+
+.TP
+\fB\--ql\fR
+Use
+.B ql
+mode. This switch requests the
+.B Quick Look
+recipe 'mode' for recipe selection and primitives
+sensitive to this mode. Default mode is
+.B sq
+or
+.B Science Quality
+mode.
+.RE
+
 .TP
 \fB\-\-suffix\fR SUFFIX
 Add SUFFIX to filenames at end of reduction; strip all other suffixes
