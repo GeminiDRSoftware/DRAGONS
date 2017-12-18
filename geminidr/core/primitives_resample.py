@@ -37,7 +37,7 @@ class Resample(PrimitivesBASE):
         super(Resample, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersResample
 
-    def alignToReferenceFrame(self, adinputs=None, **params):
+    def resampleToCommonFrame(self, adinputs=None, **params):
         """
         This primitive applies the transformation encoded in the input images
         WCSs to align them with a reference image, in reference image pixel
@@ -91,7 +91,7 @@ class Resample(PrimitivesBASE):
         if len(adinputs) < 2:
             log.warning("No alignment will be performed, since at least two "
                         "input AstroData objects are required for "
-                        "alignToReferenceFrame")
+                        "resampleToCommonFrame")
             return adinputs
 
         if not all(len(ad)==1 for ad in adinputs):
@@ -127,8 +127,7 @@ class Resample(PrimitivesBASE):
         for key in area_keys:
             ref_image[0].hdr.set(*key)
         out_wcs = WCS(ref_image.header[1])
-        ref_image.filename = gt.filename_updater(adinput=ref_image, suffix=sfx,
-                                                 strip=True)
+        ref_image.update_filename(suffix=sfx, strip=True)
         # -------------------- END establish reference frame -----------------------
 
         # --------------------   BEGIN transform data ...  -------------------------
@@ -175,7 +174,7 @@ class Resample(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 

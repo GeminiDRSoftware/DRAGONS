@@ -4,20 +4,20 @@
 from geminidr import ParametersBASE
 
 class ParametersRegister(ParametersBASE):
-    correctWCSToReferenceFrame = {
+    matchWCSToReference = {
         "suffix"            : "_wcsCorrected",
         "method"            : "sources",
         "fallback"          : None,
         "use_wcs"           : True,
-        "first_pass"        : 10.0,
+        "first_pass"        : 5.0,
         "min_sources"       : 3,
         "cull_sources"      : False,
         "rotate"            : False,
         "scale"             : False,
     }
-    # This primitive only sets the filename if you
-    # ask it to correct the Astrometry
     determineAstrometricSolution = {
         "suffix"            : "_astrometryCorrected",
         "full_wcs"          : None,
+        "initial"           : 5.0,
+        "final"             : 1.0,
     }

@@ -30,7 +30,7 @@ class Register(PrimitivesBASE):
         super(Register, self).__init__(adinputs, **kwargs)
         self.parameters = ParametersRegister
 
-    def correctWCSToReferenceFrame(self, adinputs=None, **params):
+    def matchWCSToReference(self, adinputs=None, **params):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
@@ -109,7 +109,7 @@ class Register(PrimitivesBASE):
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least "
                         "two input AstroData objects are required for "
-                        "correctWCSToReferenceFrame")
+                        "matchWCSToReference")
             return adinputs
 
         if not all(len(ad)==1 for ad in adinputs):
@@ -174,7 +174,7 @@ class Register(PrimitivesBASE):
                     else:
                         log.warning("WCS can only be corrected indirectly "
                             "and fallback=None. Not attempting WCS correction "
-                            "for ".format(ad.filename))
+                            "for {}".format(ad.filename))
                 else:
                     log.fullinfo("Number of objects in image {}: {}".format(
                                  ad.filename, nobj))
@@ -183,8 +183,8 @@ class Register(PrimitivesBASE):
 
                     # GNIRS WCS is dubious, so update WCS by using the ref
                     # image's WCS and the telescope offsets
-                    if ad.instrument() == 'GNIRS' and not use_wcs:
-                        ad = _create_wcs_from_offsets(ad, ref_image)
+                    #if ad.instrument() == 'GNIRS' and not use_wcs:
+                    #    ad = _create_wcs_from_offsets(ad, ref_image)
 
                     if not use_wcs:
                         log.warning("Parameter 'use_wcs' is False.")
@@ -248,8 +248,7 @@ class Register(PrimitivesBASE):
         # Timestamp and update filenames
         for ad in adoutputs:
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                            strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adoutputs
     
     def determineAstrometricSolution(self, adinputs=None, **params):
@@ -263,10 +262,11 @@ class Register(PrimitivesBASE):
         full_wcs: bool (or None)
             use an updated WCS for each matching iteration, rather than simply
             applying pixel-based corrections to the initial mapping?
-            (None => not ('qa' in context))
+            (None => not ('qa' in mode))
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         full_wcs = params["full_wcs"]
 
         for ad in adinputs:
@@ -297,16 +297,17 @@ class Register(PrimitivesBASE):
             objcat_order = np.argsort(objcat_lengths)[::-1]
 
             pixscale = ad.pixel_scale()
-            initial = (15.0 if ad.instrument() == 'GNIRS' else 5.0) / pixscale  # Search box size
-            final = 1.0 / pixscale  # Matching radius
-            max_ref_sources = 100 if 'qa' in self.context else None  # Don't need more than this many
+            initial = params["initial"] / pixscale  # Search box size
+            final = params["final"] / pixscale  # Matching radius
+            max_ref_sources = 100 if 'qa' in self.mode else None  # No more than this
             if full_wcs is None:
-                full_wcs = not ('qa' in self.context)
+                full_wcs = not ('qa' in self.mode)
 
             best_model = (0, None)
 
             for index in objcat_order:
-                extver = ad[index].hdr['EXTVER']
+                ext = ad[index]
+                extver = ext.hdr['EXTVER']
                 try:
                     objcat = ad[index].OBJCAT
                 except AttributeError:
@@ -363,11 +364,30 @@ class Register(PrimitivesBASE):
 
                 # We probably don't need zillions of REFCAT sources
                 if max_ref_sources and num_ref_sources > max_ref_sources:
+                    ref_mags = None
                     try:
                         ref_mags = refcat['filtermag']
+                        if np.all(np.where(np.isnan(ref_mags), -999,
+                                           ref_mags) < -99):
+                            log.stdinfo('The REFCAT magnitude column has no '
+                                        'valid values')
+                            ref_mags = None
                     except KeyError:
                         log.stdinfo('Cannot find a magnitude column to cull REFCAT')
-                    else:
+                    if ref_mags is None:
+                        for filt in 'rhikgjzu':
+                            try:
+                                ref_mags = refcat[filt+'mag']
+                            except KeyError:
+                                pass
+                            else:
+                                if not np.all(np.where(np.isnan(ref_mags), -999,
+                                                       ref_mags) < -99):
+                                    log.stdinfo('Using {} magnitude instead'.
+                                                format(filt))
+                                    break
+
+                    if ref_mags is not None:
                         in_field &= (ref_mags > -99)
                         num_ref_sources = np.sum(in_field)
                         if num_ref_sources > max_ref_sources:
@@ -388,8 +408,8 @@ class Register(PrimitivesBASE):
                 # Send all sources to the alignment/matching engine, indicating the ones to
                 # use for the alignment
                 if num_ref_sources > 0:
-                    log.stdinfo('Aligning extver {} with {} REFCAT and {} OBJCAT sources'.
-                                format(extver, num_ref_sources, keep_num))
+                    log.stdinfo('Aligning {}:{} with {} REFCAT and {} OBJCAT sources'.
+                                format(ad.filename, extver, num_ref_sources, keep_num))
                     matched, m_final = match_catalogs(xref, yref, objcat['X_IMAGE'], objcat['Y_IMAGE'],
                                                       use_in=in_field, use_ref=sorted_idx,
                                                       model_guess=m_init, translation_range=initial,
@@ -435,8 +455,11 @@ class Register(PrimitivesBASE):
                     for i, m in enumerate(matched):
                         if m >= 0:
                             objcat['REF_NUMBER'][m] = refcat['Id'][i]
-                            objcat['REF_MAG'][m] = refcat['filtermag'][i]
-                            objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
+                            try:
+                                objcat['REF_MAG'][m] = refcat['filtermag'][i]
+                                objcat['REF_MAG_ERR'][m] = refcat['filtermag_err'][i]
+                            except KeyError:  # no such columns in REFCAT
+                                pass
                             dra.append(3600*(objcat['X_WORLD'][m] -
                                              refcat['RAJ2000'][i]) * cosdec)
                             ddec.append(2600*(objcat['Y_WORLD'][m] -
@@ -458,8 +481,15 @@ class Register(PrimitivesBASE):
                     info_list.append({})
 
             # Report the measurement to the fitsstore
-            fitsdict = qap.fitsstore_report(ad, "pe", info_list,
-                        self.calurl_dict, self.context, self.upload_metrics)
+            if self.upload and "metrics" in self.upload:
+                fitsdict = qap.fitsstore_report(ad, "pe", info_list,
+                                                self.calurl_dict,
+                                                self.mode, upload=True)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
         return adinputs
 
 ##############################################################################
@@ -486,57 +516,19 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
     if len(adinput) != len(adref):
         log.warning("Number of extensions in input files are different. "
                     "Cannot correct WCS.")
-        return
+        return adinput
 
     log.stdinfo("Updating WCS of {} based on {}".format(adinput.filename,
                                                         adref.filename))
     try:
-        poffset1 = adref.phu['POFFSET']
-        qoffset1 = adref.phu['QOFFSET']
-        poffset2 = adinput.phu['POFFSET']
-        qoffset2 = adinput.phu['QOFFSET']
-        pixscale = adref.pixel_scale()
+        xdiff = adref.detector_x_offset() - adinput.detector_x_offset()
+        ydiff = adref.detector_y_offset() - adinput.detector_y_offset()
         pa1 = adref.phu['PA']
         pa2 = adinput.phu['PA']
-    except KeyError:
+    except (KeyError, TypeError):  # TypeError if offset is None
         log.warning("Cannot obtain necessary offsets from headers "
                     "so no change will be made")
-        return
-
-    try:
-        bottom_port = adref.phu['INPORT'] == 1
-    except KeyError:
-        bottom_port = False  # probably!
-
-    # This logic has been taken from GACQ with most instances checked
-    if 'NIRI' in adref.tags:
-        xoffset = poffset2 - poffset1
-        yoffset = qoffset1 - qoffset2
-        if bottom_port and not adref.is_ao():
-            xoffset = -xoffset
-    elif 'GNIRS' in adref.tags:
-        xoffset = qoffset2 - qoffset1
-        yoffset = poffset1 - poffset2
-        if bottom_port and not adref.is_ao():
-            xoffset = -xoffset
-    elif 'F2' in adref.tags:
-        xoffset = qoffset1 - qoffset2
-        yoffset = poffset1 - poffset2
-        if bottom_port:
-            yoffset = -yoffset
-    elif 'TRECS' in adref.tags:
-        xoffset = poffset2 - poffset1
-        yoffset = qoffset1 - qoffset2
-    else:
-        xoffset = poffset2 - poffset1
-        yoffset = qoffset2 - qoffset1
-        if bottom_port:
-            if adref.instrument() == 'GMOS-S':
-                yoffset = -yoffset
-            else:
-                xoffset = -xoffset
-    xdiff = xoffset / pixscale
-    ydiff = yoffset / pixscale
+        return adinput
 
     # We expect mosaicked inputs but there's no reason why this couldn't
     # work for all extensions in an image
@@ -551,8 +543,8 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
                                          center_of_rotation[1], 1)
         extin.hdr['CRVAL1'] = float(ra0)
         extin.hdr['CRVAL2'] = float(dec0)
-        extin.hdr['CRPIX1'] = center_of_rotation[0] + xdiff
-        extin.hdr['CRPIX2'] = center_of_rotation[1] + ydiff
+        extin.hdr['CRPIX1'] = center_of_rotation[0] - xdiff
+        extin.hdr['CRPIX2'] = center_of_rotation[1] - ydiff
         cd = models.Rotation2D(angle=pa1-pa2)(*wcsref.wcs.cd)
         extin.hdr['CD1_1'] = cd[0][0]
         extin.hdr['CD1_2'] = cd[0][1]

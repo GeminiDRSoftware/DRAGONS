@@ -82,8 +82,8 @@ class GNIRSImage(GNIRS, Image, Photometry):
         corr_illum_ad = _position_illum_mask(reference, illum_ad, log)
 
         for ad in adinputs:
-            final_illum = gt.clip_auxiliary_data(adinput=ad, aux=corr_illum_ad,
-                    aux_type="bpm", keyword_comments=self.keyword_comments)
+            final_illum = gt.clip_auxiliary_data(ad, aux=corr_illum_ad,
+                    aux_type="bpm")
  
             # binary_OR the illumination mask or create a DQ plane from it.
             if ad[0].mask is None:
@@ -92,8 +92,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
                 ad[0].mask |= final_illum[0].data
 
             # Update the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def _get_illum_mask_filename(self, ad):
@@ -114,7 +113,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
     
-def _position_illum_mask(adinput, illum, log):
+def _position_illum_mask(adinput, illum, log, max_dy=20):
     """
     This function is used to reposition a GNIRS illumination mask so that 
     the keyhole matches with the science data.
@@ -127,6 +126,8 @@ def _position_illum_mask(adinput, illum, log):
         the standard illumination mask
     log: logger
         the log
+    max_dy: int
+        maximum y shift allowed
     """
     # Normalizing and thresholding the science data to get a rough
     # illumination mask. A 5x5 box around non-illuminated pixels is also 
@@ -146,7 +147,21 @@ def _position_illum_mask(adinput, illum, log):
                              np.int16(0), np.int16(1))
     structure = np.ones((5,5))
     threshpixdata = binary_dilation(threshpixdata, structure)
-    
+
+    # There can be stray illumination (ghosts?) on the array which will upset
+    # the centre-of-mass measurement, so disregard pixels more than a certain
+    # distance from the keyhole in the illumination mask
+    illum_shape = illum[0].data.shape
+    data_shape = threshpixdata.shape
+    first, last = np.argmin(illum[0].data), np.argmin(illum[0].data[::-1])
+    ymin = np.unravel_index(first, illum_shape)[0]
+    ymax = illum_shape[0] - np.unravel_index(last, illum_shape)[0]
+    if ymin > max_dy:
+        threshpixdata[:ymin-max_dy] = np.ones((ymin-max_dy, data_shape[1]))
+    if ymax + max_dy < data_shape[0]:
+        threshpixdata[ymax+max_dy:] = np.ones((data_shape[0]-ymax-max_dy,
+                                               data_shape[1]))
+
     # Invert to set illuminated pixels. Demand a minimum number of such pixels
     keyhole = 1 - threshpixdata
     numpix_mask_illum = np.sum(illum[0].data==0)
@@ -164,10 +179,10 @@ def _position_illum_mask(adinput, illum, log):
     # center_of_mass function has switched x and y axes compared to normal.        
     comx_illummask = illum.phu['CENMASSX']
     comy_illummask = illum.phu['CENMASSY']
-    y, x = scipy.ndimage.measurements.center_of_mass(keyhole)
-    if not np.isnan(x) and not np.isnan(y):        
-        dx = int(x - comx_illummask)
-        dy = int(y - comy_illummask)
+    comy, comx = scipy.ndimage.measurements.center_of_mass(keyhole)
+    if not np.isnan(comx) and not np.isnan(comy):
+        dx = int(comx - comx_illummask)
+        dy = int(comy - comy_illummask)
     else:
         log.warning("The centre of mass of {} cannot be measured, so "
                 "the illumination mask cannot be positioned and "

@@ -22,17 +22,18 @@ class ParametersPreprocess(ParametersBASE):
         "max_skies"         : None,
         "use_all"           : False,
     }
-    correctBackgroundToReferenceImage = {
+    correctBackgroundToReference = {
         "suffix"            : "_backgroundCorrected",
-        "remove_zero_level" : False,
+        "remove_background" : False,
     }
     darkCorrect = {
         "suffix"            : '_darkCorrected',
         "dark"              : None,
     }
-    divideByFlat = {
-        "suffix"            : "_flatCorrected",
-        "flat"              : None,
+    dilateObjectMask = {
+        "suffix"            : '_objmaskDilated',
+        "dilation"          : 1,
+        "repeat"            : False,
     }
     flatCorrect = {
         "suffix"            : '_flatCorrected',
@@ -55,12 +56,24 @@ class ParametersPreprocess(ParametersBASE):
         "ref_sky"           : "",
         "frac_FOV"          : 0.9,
     }
-    subtractDark = {
-        "suffix"            : "_darkCorrected",
-        "dark"              : None,
+    skyCorrect = {
+        "dilation"          : 2,
+        "apply_dq"          : True,
+        "mask_objects"      : True,
+        "nhigh"             : 1,
+        "nlow"              : 1,
+        "operation"         : "median",
+        "reject_method"     : "avsigclip",
+        "reset_sky"         : False,
+        "scale"             : True,
+        "zero"              : False,
     }
     subtractSky = {
         "suffix"            : "_skyCorrected",
+        "reset_sky"         : False,
+        "scale"             : True,
+        "sky"               : None,
+        "zero"              : False,
     }
     subtractSkyBackground = {
         "suffix"            : "_skyBackgroundSubtracted",

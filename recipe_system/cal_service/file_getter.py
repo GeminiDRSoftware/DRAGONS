@@ -1,3 +1,4 @@
+from builtins import str
 import requests
 from requests.exceptions import HTTPError
 from requests.exceptions import Timeout

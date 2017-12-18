@@ -8,8 +8,6 @@ from os import path
 
 from gempy.gemini import gemini_tools as gt
 
-from .lookups.source_detection import sextractor_dict
-
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
 from .parameters_niri import ParametersNIRI
@@ -28,9 +26,6 @@ class NIRI(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(NIRI, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.niri.lookups'
-        self.sx_dict.update({k:
-                path.join(path.dirname(sextractor_dict.__file__), v)
-            for k,v in sextractor_dict.sx_dict.items()})
         self.parameters = ParametersNIRI
 
     def nonlinearityCorrect(self, adinputs=None, **params):
@@ -80,26 +75,31 @@ class NIRI(Gemini, NearIR):
                                 format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                raw_pixel_data = ext.data / coadds
-                
-                raw_mean_value = np.mean(raw_pixel_data)
+                raw_mean_value = np.mean(ext.data) / coadds
                 log.fullinfo("The mean value of the raw pixel data in " \
                              "{} is {:.8f}".format(ext.filename, raw_mean_value))
                 
                 log.fullinfo("Coefficients used = {:.12f} {:.9e} {:.9e}".
                             format(coeffs.time_delta, coeffs.gamma, coeffs.eta))
                 
+                # Convert back to ADU per exposure if data are in electrons
+                bunit = ext.hdr.get("BUNIT", 'ADU').upper()
+                conv_factor = (1 if bunit == 'ADU' else ext.gain()) * coadds
+
+                raw_pixel_data = ext.data / conv_factor  # ADU per 1 coadd
                 # Create a new array that contains the corrected pixel data
                 corrected_pixel_data = raw_pixel_data * (1 + raw_pixel_data *
-                        (coeffs.gamma + coeffs.eta * raw_pixel_data)) * coadds
-                
-                # Correct VAR plane; additive correction means this works
-                # even if read noise has been added. Data must be in ADU.
+                        (coeffs.gamma + coeffs.eta * raw_pixel_data)) * conv_factor
+
+                # Try to do something useful with the VAR plane, if it exists
+                # Since the data are fairly pristine, VAR will simply be the
+                # Poisson noise (divided by gain if in ADU), possibly plus RN**2
+                # So making an additive correction will sort this out,
+                # irrespective of whether there's read noise
+                conv_factor = ext.gain() if bunit == 'ADU' else 1
                 if ext.variance is not None:
-                    ext.variance += (corrected_pixel_data -
-                                raw_pixel_data*coadds) / ext.gain()
-                    
-                # Write the corrected pixel data to the output object
+                    ext.variance += (corrected_pixel_data - ext.data) / conv_factor
+                # Now update the SCI extension
                 ext.data = corrected_pixel_data
 
                 # Correct for the exposure time issue by scaling the counts
@@ -107,7 +107,7 @@ class NIRI(Gemini, NearIR):
                 ext.multiply(exptime / (exptime + coeffs.time_delta))
                 
                 # Determine the mean of the corrected pixel data
-                corrected_mean_value = np.mean(ext.data)
+                corrected_mean_value = np.mean(ext.data) / coadds
                 log.fullinfo("The mean value of the corrected pixel data in "
                         "{} is {:.8f}".format(ext.filename, corrected_mean_value))
             
@@ -117,8 +117,7 @@ class NIRI(Gemini, NearIR):
             
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
     
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
@@ -178,6 +177,5 @@ class NIRI(Gemini, NearIR):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs

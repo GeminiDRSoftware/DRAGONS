@@ -89,20 +89,23 @@ def upload_calibration(filename):
         raise
     return
 
-def calibration_search(rq, return_xml=False):
+def calibration_search(rq, howmany=1, return_xml=False):
     """
     Recieves a CalibrationRequest object, encodes the data and make the request
     on the appropriate server. Returns a URL, if any, and the MD5 hash checksum.
 
     :parameter rq: CalibrationRequest obj
     :type rq: <CalibrationRequest object>
+    
+    :parameter howmany: maxinum number of calibrations to return
+    :type howmany: <int>
 
     :parameter return_xml: return the xml message to the caller when no URL
                            is returned from the cal server.
     :type return_xml: <bool>
 
-    :return: A tuple of the matching URL and md5 hash checksum
-    :rtype: (<str>, <str>)
+    :return: A tuple of the matching URLs and md5 hash checksums
+    :rtype: (<list>, <list>)
 
     """
     rqurl = None
@@ -146,14 +149,18 @@ def calibration_search(rq, return_xml=False):
     try:
         dom = minidom.parseString(response)
         calel = dom.getElementsByTagName("calibration")
-        calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
-        calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
+        #calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
+        #calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
+        calurlel = [d.childNodes[0].data
+                    for d in dom.getElementsByTagName('url')[:howmany]]
+        calurlmd5 = [d.childNodes[0].data
+                     for d in dom.getElementsByTagName('md5')[:howmany]]
     except IndexError:
         return (None, preerr)
 
-    log.stdinfo(repr(calurlel.data))
-
-    return (calurlel.data, calurlmd5.data)
+    for url in calurlel:
+        log.stdinfo(repr(url))
+    return (calurlel, calurlmd5)
 
 def handle_returns(dv):
     # TODO: This sends "old style" request for data section, where the section

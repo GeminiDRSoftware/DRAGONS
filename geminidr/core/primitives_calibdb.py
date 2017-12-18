@@ -17,7 +17,6 @@ from geminidr import PrimitivesBASE
 from .parameters_calibdb import ParametersCalibDB
 
 from recipe_system.utils.decorators import parameter_override
-from recipe_system.cal_service import caches
 # ------------------------------------------------------------------------------
 @parameter_override
 class CalibDB(PrimitivesBASE):
@@ -31,28 +30,33 @@ class CalibDB(PrimitivesBASE):
         self.parameters = ParametersCalibDB
         self._not_found = "Calibration not found for {}"
 
-    def _add_cal(self, crecords):
-        self.calibrations.update(crecords)
-        caches.save_cache(self.calibrations, caches.calindfile)
-        return
-
-    def _get_cal(self, ad, caltype):
-        key = (ad, caltype)
-        calfile = self.calibrations[key]
-        if not calfile:
-            return None
-        # If the file isn't on disk, delete it from the dict
-        if os.path.isfile(calfile):
-            return calfile
-        else:
-            del self.calibrations[key]
-            caches.save_cache(self.calibrations, caches.calindfile)
-            return None
+    def _get_cal(self, adinput, caltype):
+        caloutputs = []
+        adinputs = adinput if isinstance(adinput, list) else [adinput]
+        for ad in adinputs:
+            key = (ad, caltype)
+            calib = self.calibrations[key]
+            if not calib:
+                caloutputs.append(None)
+            # If the file isn't on disk, delete it from the dict
+            # Now have to cope with calfile being a list of files
+            else:
+                if isinstance(calib, list):
+                    cal_found = all(os.path.isfile(calfile) for calfile in calib)
+                else:
+                    cal_found = os.path.isfile(calib)
+                if cal_found:
+                    caloutputs.append(calib)
+                else:
+                    del self.calibrations[key]
+                    self.calibrations.cache_to_disk()
+                    caloutputs.append(None)
+        return caloutputs if isinstance(adinput, list) else caloutputs[0]
 
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)                 # from cache
-            if not calurl and "qa" not in self.context:
+            if not calurl and "qa" not in self.mode:
                     raise IOError(self._not_found.format(ad.filename))
         return adinputs
 
@@ -65,51 +69,70 @@ class CalibDB(PrimitivesBASE):
             raise TypeError("getCalibration: Received no caltype or calfile.")
 
         for ad in adinputs:
-            self._add_cal({(ad.data_label(), caltype): calfile})
+            self.calibrations[ad, caltype] = calfile
 
         return adinputs
 
-    def getCalibration(self, adinputs=None, **params):
-        caltype = params.get('caltype')
+    def getCalibration(self, adinputs=None, caltype=None, refresh=True,
+                       howmany=None):
+        """
+        Uses the calibration manager to population the Calibrations dict for
+        all frames, updating any existing entries
+        
+        Parameters
+        ----------
+        adinputs: list of ADs
+            files for which calibrations are needed
+        caltype: str
+            type of calibration required (e.g., "processed_bias")
+        refresh: bool
+            if False, only seek calibrations for ADs without them; otherwise
+            request calibrations for all ADs
+        howmany: None/int
+            maximum number of calibrations to return per AD (None means return
+            the filename of one, rather than a list of filenames)
+        """
         log = self.log
         if caltype is None:
             log.error("getCalibration: Received no caltype")
             raise TypeError("getCalibration: Received no caltype.")
 
-        rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
-        cal_requests = get_cal_requests(rqs_actual, caltype)
-        calibration_records = process_cal_requests(cal_requests)
-        self._add_cal(calibration_records)
+        ad_rq = adinputs if refresh else [ad for ad in adinputs
+                                          if not self._get_cal(ad, caltype)]
+        cal_requests = get_cal_requests(ad_rq, caltype)
+        calibration_records = process_cal_requests(cal_requests, howmany=howmany)
+        for ad, calfile in calibration_records.items():
+            self.calibrations[ad, caltype] = calfile
         return adinputs
 
     def getProcessedArc(self, adinputs=None, **params):
         caltype = "processed_arc"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedBias(self, adinputs=None, **params):
         caltype = "processed_bias"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getProcessedDark(self, adinputs=None, **params):
         caltype = "processed_dark"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)  
         return adinputs
     
     def getProcessedFlat(self, adinputs=None, **params):
         caltype = "processed_flat"
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)        
         return adinputs
     
     def getProcessedFringe(self, adinputs=None, **params):
         caltype = "processed_fringe"
         log = self.log
-        self.getCalibration(adinputs, caltype=caltype)
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         # Fringe correction is always optional; do not raise errors if fringe
         # not found
         try:
@@ -142,12 +165,13 @@ class CalibDB(PrimitivesBASE):
                     except KeyError:
                         log.warning("MDF not found in {}".format(inst_lookups))
                     else:
-                        self._add_cal({(ad.data_label(), caltype): mdf})
+                        self.calibrations[ad, caltype] = mdf
                         continue
                 log.stdinfo("Requesting MDF from fitsstore ...")
                 mdf_requests = get_cal_requests([ad], caltype)
                 mdf_records = process_cal_requests(mdf_requests)
-                self._add_cal(mdf_records)
+                for ad, calfile in mdf_records.items():
+                    self.calibrations[ad, caltype] = calfile
 
         return adinputs
 
@@ -170,7 +194,7 @@ class CalibDB(PrimitivesBASE):
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
             ad.write(fname, clobber=True)
             log.stdinfo("Calibration stored as {}".format(fname))
-            if 'upload' in self.context:
+            if self.upload and 'calibs' in self.upload:
                 try:
                     upload_calibration(fname)
                 except:
@@ -188,8 +212,7 @@ class CalibDB(PrimitivesBASE):
         """
         for ad in adinputs:
             if suffix:
-                ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
-                                                  strip=True)
+                ad.update_filename(suffix=suffix, strip=True)
             if update_datalab:
                 _update_datalab(ad, suffix, self.keyword_comments)
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
@@ -246,7 +269,7 @@ class CalibDB(PrimitivesBASE):
         sfx = params["suffix"]
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         for ad in adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
             ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe", 
                                           keyword_comments=self.keyword_comments)
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFRNG")

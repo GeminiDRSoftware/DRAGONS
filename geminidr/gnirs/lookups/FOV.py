@@ -5,7 +5,6 @@ import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
 
-from geminidr.gemini.lookups.keyword_comments import keyword_comments
 from . import maskdb
 
 # ------------------------------------------------------------------------------
@@ -60,8 +59,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         illum = get_illum_mask_filename(ad)
         if illum:
             illum_ad = gt.clip_auxiliary_data(adinput=pos,
-                            aux=astrodata.open(illum), aux_type="bpm",
-                            keyword_comments=keyword_comments)
+                            aux=astrodata.open(illum), aux_type="bpm")
             illum_data = illum_ad[0].data
         else:
             raise IOError("Cannot find illumination mask for {}".

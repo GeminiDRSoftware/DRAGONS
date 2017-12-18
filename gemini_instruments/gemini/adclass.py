@@ -90,8 +90,8 @@ gemini_keyword_names = dict(
     wavelength_band = 'WAVEBAND',
     wavelength_reference_pixel = 'WREFPIX',
     well_depth_setting = 'WELDEPTH',
-    x_offset = 'XOFFSET',
-    y_offset = 'YOFFSET',
+    telescope_x_offset = 'XOFFSET',
+    telescope_y_offset = 'YOFFSET',
 )
 
 class AstroDataGemini(AstroDataFits):
@@ -349,6 +349,22 @@ class AstroDataGemini(AstroDataFits):
             azimuth
         """
         return self.phu.get(self._keyword_for('azimuth'))
+
+    @astro_data_descriptor
+    def calibration_key(self):
+        """
+        Returns an object to be used as a key in the Calibrations dict.
+        Multiple ADs can share a key but there can be only one of each type
+        of calibration for each key. data_label() is the default.
+        "_stack" is removed to avoid making a new request for a stacked
+        frame, which will need the same calibration as the original.
+        
+        Returns
+        -------
+        string
+            identifier
+        """
+        return self.data_label().replace('_stack', '')
 
     @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
@@ -611,6 +627,40 @@ class AstroDataGemini(AstroDataFits):
         return self.phu.get(self._keyword_for('detector_y_bin'), 1)
 
     @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped if on bottom port
+        return -offset if self.phu.get('INPORT')==1 else offset
+
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            return self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+
+    @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
         Returns the name of the disperser.  The component ID can be removed
@@ -706,7 +756,7 @@ class AstroDataGemini(AstroDataFits):
 
         # TODO: We may need to sort out Nones here...
         kw = self._keyword_for('dispersion_axis')
-        return [int(dispaxis) for dispaxis in self.hdr.get(kw)]
+        return map(int, self.hdr.get(kw))
 
     @astro_data_descriptor
     def effective_wavelength(self, output_units=None):
@@ -730,7 +780,7 @@ class AstroDataGemini(AstroDataFits):
         tags = self.tags
         if 'IMAGE' in tags:
             filter_name = self.filter_name(pretty=True)
-            for inst in ('*', self.instrument()):
+            for inst in ('*', self.instrument(generic=True)):
                 try:
                     wave_in_microns = filter_wavelengths[inst, filter_name]
                 except KeyError:
@@ -910,6 +960,27 @@ class AstroDataGemini(AstroDataFits):
             A group ID for compatible data.
         """
         return self.observation_id()
+
+    @astro_data_descriptor
+    def instrument(self, generic=False):
+        """
+        Returns the name of the instrument making the observation
+
+        Parameters
+        ----------
+        generic: boolean
+            If set, don't specify the specific instrument if there are clones
+            (e.g., return "GMOS" rather than "GMOS-N" or "GMOS-S")
+
+        Returns
+        -------
+        str
+            instrument name
+        """
+        inst = self.phu.get(self._keyword_for('instrument'))
+        if generic and 'GMOS-' in inst:
+            return 'GMOS'
+        return inst
 
     @astro_data_descriptor
     def is_ao(self):
@@ -1480,6 +1551,32 @@ class AstroDataGemini(AstroDataFits):
         return dec
 
     @astro_data_descriptor
+    def telescope_x_offset(self):
+        """
+        Returns the telescope offset along the x-axis, as defined
+        by the relevant header keyword (in arcseconds)
+
+        Returns
+        -------
+        float
+            the telescope offset along the x-axis
+        """
+        return self.phu.get(self._keyword_for('telescope_x_offset'))
+
+    @astro_data_descriptor
+    def telescope_y_offset(self):
+        """
+        Returns the telescope offset along the y-axis in, as defined by
+        the relevant header keyword (in arcseconds)
+
+        Returns
+        -------
+        float
+            the telescope offset along the y-axis
+        """
+        return self.phu.get(self._keyword_for('telescope_y_offset'))
+
+    @astro_data_descriptor
     def ut_date(self):
         """
         Returns the UT date of the observation as a datetime object.
@@ -1748,32 +1845,6 @@ class AstroDataGemini(AstroDataFits):
             the well-depth setting
         """
         return self.phu.get(self._keyword_for('well_depth_setting'))
-
-    @astro_data_descriptor
-    def x_offset(self):
-        """
-        Returns the telescope offset along the x-axis, as defined by
-        the relevant header keyword
-
-        Returns
-        -------
-        float
-            the telescope offset along the x-axis
-        """
-        return self.phu.get(self._keyword_for('x_offset'))
-
-    @astro_data_descriptor
-    def y_offset(self):
-        """
-        Returns the telescope offset along the y-axis, as defined by
-        the relevant header keyword
-
-        Returns
-        -------
-        float
-            the telescope offset along the y-axis
-        """
-        return self.phu.get(self._keyword_for('y_offset'))
 
     def _get_wcs_coords(self):
         """

@@ -713,7 +713,8 @@ class FitsProvider(DataProvider):
                 raise ValueError("Operands are not the same size")
             for n in indices:
                 try:
-                    self._set_nddata(n, operator(self._nddata[n], operand.nddata[n]))
+                    self._set_nddata(n, operator(self._nddata[n],
+                                                (operand.nddata if operand.is_single else operand.nddata[n])))
                 except TypeError:
                     # This may happen if operand is a sliced, single AstroData object
                     self._set_nddata(n, operator(self._nddata[n], operand.nddata))
@@ -1569,6 +1570,28 @@ class AstroDataFits(AstroData):
                 raise ValueError("A file name needs to be specified")
             fileobj = self.path
         self._dataprov.to_hdulist().writeto(fileobj, clobber=clobber)
+
+    def update_filename(self, prefix='', suffix='', strip=False):
+        if strip:
+            try:
+                filename = self.phu['ORIGNAME']
+            except KeyError:
+                # If it's not there, grab the AD attr instead and add the keyword
+                filename = self.orig_filename
+                self.phu.set('ORIGNAME', filename,
+                                'Original filename prior to processing')
+        else:
+            filename = self.filename
+
+        # Possibly, filename could be None
+        try:
+            name, filetype = os.path.splitext(filename)
+        except AttributeError:
+            name, filetype = '', '.fits'
+
+        # Cope with prefix or suffix as None
+        self.filename = (prefix or '') + name + (suffix or '') + filetype
+        return
 
 
     @astro_data_descriptor

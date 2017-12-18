@@ -200,22 +200,6 @@ Descriptors
      ...)
 
 
-Full headers
-------------
-
-All headers, PHU plus pixel extensions::
-
-    >>> ad.header
-
-Primary Header Unit::
-
-    >>> ad.header[0]
-
-Extension header::
-
-    >>> ad.header[1]  # for extension 0
-    >>> ad[0].header[1]   # for extension 0, since it returns PHU + that extension header.
-
 Direct access to header keywords
 --------------------------------
 
@@ -225,6 +209,10 @@ Direct access to header keywords
 
 Primary Header Unit
 *******************
+To see a print out of the full PHU:
+
+    >>> ad.phu
+
 Get value from PHU::
 
     >>> ad.phu['EXPTIME']
@@ -247,6 +235,11 @@ Delete PHU keyword::
 
 Pixel extension header
 **********************
+To see a print out of the full header for an extension or all the extensions:
+
+    >>> ad[0].hdr
+    >>> list(ad.hdr)
+
 Get value from an extension header::
 
     >>> ad[0].hdr['OVERSCAN']

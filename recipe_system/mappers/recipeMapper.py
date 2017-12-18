@@ -7,13 +7,12 @@ from importlib import import_module
 
 from .baseMapper import Mapper
 
+from ..utils.errors import ModeError
 from ..utils.errors import RecipeNotFound
-from ..utils.errors import ContextError
 
 from ..utils.mapper_utils import dotpath
 from ..utils.mapper_utils import find_user_recipe
 from ..utils.mapper_utils import RECIPEMARKER
-from ..utils.mapper_utils import DRMARKER
 # ------------------------------------------------------------------------------
 class RecipeMapper(Mapper):
     """
@@ -43,9 +42,15 @@ class RecipeMapper(Mapper):
         """
         Start of the recipe library search cascade.
 
-        :returns: tuple including the best tag set match and the primitive class
-                  that provided the match.
-        :rtype: <tuple>, (set, class)
+        Parameters
+        ----------
+        <void>
+
+        Returns
+        -------
+        <tuple> : (set, <function>)
+                  A tuple including the best tag set match and the recipe function
+                  that best matched.
 
         """
         matched_set = (set([]), None)
@@ -87,29 +92,29 @@ class RecipeMapper(Mapper):
                 continue
 
         loaded_pkg = import_module(dotpath(self.dotpackage, pkgname))
-        for context_pkg, ispkg in self._generate_context_pkg(loaded_pkg):
-            yield dotpath(pkgname, context_pkg), ispkg
+        for mode_pkg, ispkg in self._generate_mode_pkg(loaded_pkg):
+            yield dotpath(pkgname, mode_pkg), ispkg
 
-    def _generate_context_pkg(self, pkg):
+    def _generate_mode_pkg(self, pkg):
         found = False
         ppath = pkg.__path__[0]
         pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
-            if ispkg and pkgname in self.context:
+            if ispkg and pkgname in self.mode:
                 found = True
                 break
             else:
                 continue
 
         if not found:
-            cerr = "No context package matched '{}'"
-            raise ContextError(cerr.format(self.context))
+            cerr = "No recipe mode package matched '{}'"
+            raise ModeError(cerr.format(self.mode))
 
         loaded_pkg = import_module(dotpath(pkg.__name__, pkgname))
-        for mod, ispkg in self._generate_context_libs(loaded_pkg):
+        for mod, ispkg in self._generate_mode_libs(loaded_pkg):
             yield dotpath(pkgname, mod), ispkg
 
-    def _generate_context_libs(self, pkg):
+    def _generate_mode_libs(self, pkg):
         ppath = pkg.__path__[0]
         pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():

@@ -5,24 +5,23 @@
 Supplemental tools
 ==================
 
-The gemini_python package provides a number of command line tools that users may
+The DRAGONS package provides a number of command line tools that users may
 find helpful in executing reduce on their data.
 
-With the installation and configuration of gemini_python comes some supplemental
+With the installation and configuration of DRAGONS comes some supplemental
 tools to help users discover information, not only about their own data, but
 about the Recipe System, such as available recipes, primitives, and defined
 tag sets.
 
-If the user environment has been configured correctly these applications 
-will work directly.
+If your environment has been configured correctly these applications will work
+directly.
 
 .. _adcc:
 
 adcc
 ----
 The application that has been historically known as the ``adcc`` (Automated
-Data Communication Center), is significantly scaled back from its previous
-incarnation and now runs only as an HTTP server. The webservice provided
+Data Communication Center), is an HTTP proxy server. The webservice provided
 by the ``adcc`` allows both the Recipe System and primitive functions to post
 data produced during data processing. These data comprise image quality and
 observing condition metrics, passed to the web server in the form of messages
@@ -103,6 +102,78 @@ port number on which the web server is listening.
    another directory, another adcc will not be allowed to start. Users running
    the QA pipeline, or other recipes that may produce metrics, should remain in
    the directory containing the .adcc directory before starting ``reduce``.
+
+.. _showpars:
+
+showpars
+--------
+
+Inheritance and class overrides within the primitive and parameter hierarchies means
+that one cannot simply look at any given primitive function and its parameters and
+extrapolate those to all such named primitives and parameters. Primitives and their
+parameters are tied to the particular classes designed for those datasets identified
+as a particular kind of data.
+
+.. note::
+   ``showpars`` is not considered the final tool for users to examine and set
+   parameters for dataset reduction. Plans are in the works to develop a more
+   graphical tool to help users view and adjust parameters on primitive functions.
+   But it does show users the important information: the parameter names available
+   on the primitive's interface and the current (default) settings of the named
+   parameters.
+
+The ``showpars`` application is a simple command line utility allowing users
+to see the available parameters and defaults for a particular primitive
+function that is applicable to a given dataset. Since the applicable primitives
+for a particular dataset are dependent upon the `tagset` of the identified dataset
+(i.e. NIRI IMAGE, F2 IMAGE, F2 SPECT, GMOS BIAS, etc.), which is to say,
+the `kind` of data we are looking at, the parameters available on a named primitive
+function can vary across data types, as can the primitive function itself.
+
+We examine the help on the command line of showpars::
+
+ $ showpars.py -h
+ usage: showpars.py [-h] [-v] filen primn
+
+ Primitive parameter display, v2.0.0 (beta)
+
+ positional arguments:
+   filen          filename
+   primn          primitive name
+
+ optional arguments:
+   -h, --help     show this help message and exit
+   -v, --version  show program's version number and exit
+
+Two arguments are requiered, the dataset filename, and the primitive name of interest ::
+
+  $ showpars.py S20161025S0111.fits stackSkyFrames
+  Dataset tagged as
+  set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
+  Settable parameters on 'stackSkyFrames':
+  ========================================
+  Name			Current setting
+
+  scale : 		True
+  reject_method : 	avsigclip
+  nhigh : 		1
+  nlow :		1
+  suffix : 		_skyStacked
+  apply_dq : 		True
+  operation : 		median
+  zero :		False
+  dilation : 		2
+  mask_objects : 	True
+
+Armed with this information, users can now confidently adjust parameters for
+particular primitive functions. As we have seen already, this can be done
+easily from the `reduce` command line. Building on material covered in this
+manual, and continuing our example from above::
+
+  $ reduce -p stackSkyFrames:nhigh=3 S20161025S0111.fits
+
+And the reduction proceeds. When the ``stackSkyFrames`` primitive begins, the
+new value for nhigh will be used.
 
 .. _typewalk:
 

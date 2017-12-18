@@ -182,7 +182,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         adoutputs = []
         for ad in adinputs:
-            if _needs_fringe_correction(ad, self.context):
+            if _needs_fringe_correction(ad, self.mode):
                 # Check for a fringe in the "fringe" stream first; the makeFringe
                 # primitive, if it was called, would have added it there;
                 # this avoids the latency involved in storing and retrieving
@@ -227,7 +227,7 @@ class GMOSImage(GMOS, Image, Photometry):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         # Exit without doing anything if any of the inputs are inappropriate
-        if not all(_needs_fringe_correction(ad, self.context) for ad in adinputs):
+        if not all(_needs_fringe_correction(ad, self.mode) for ad in adinputs):
             return adinputs
         if len(set(ad.filter_name(pretty=True) for ad in adinputs)) > 1:
             log.warning("Mismatched filters in input; not making fringe "
@@ -260,8 +260,8 @@ class GMOSImage(GMOS, Image, Photometry):
             return adinputs
         elif (any(ad.telescope=="Gemini-North" for ad in adinputs) and
                       len(fringe_adinputs)<5):
-            if "qa" in self.context:
-                # If fewer than 5 frames and in QA context, don't
+            if "qa" in self.mode:
+                # If fewer than 5 frames and in QA mode, don't
                 # make a fringe -- it'll just make the data look worse.
                 log.stdinfo("Fewer than 5 frames provided as input "
                             "for GMOS-N data. Not making fringe frame.")
@@ -304,7 +304,7 @@ class GMOSImage(GMOS, Image, Photometry):
             log.stdinfo('Fewer than 3 frames provided as input. '
                         'Not making fringe frame.')
         else:
-            frinputs = self.correctBackgroundToReferenceImage([deepcopy(ad)
+            frinputs = self.correctBackgroundToReference([deepcopy(ad)
                             for ad in adinputs], remove_zero_level=True)
 
             # If needed, do a rough median on all frames, subtract,
@@ -391,8 +391,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
     
     def scaleByIntensity(self, adinputs=None, **params):
@@ -445,8 +444,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def scaleFringeToScience(self, adinputs=None, **params):
@@ -497,8 +495,7 @@ class GMOSImage(GMOS, Image, Photometry):
             except ValueError:
                 # If not, try to clip the fringe frame to the size of the
                 # science data and try again
-                fringe = gt.clip_auxiliary_data(ad, aux=fringe, aux_type="cal",
-                                        keyword_comments=self.keyword_comments)
+                fringe = gt.clip_auxiliary_data(ad, aux=fringe, aux_type="cal")
 
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, fringe)
@@ -613,8 +610,8 @@ class GMOSImage(GMOS, Image, Photometry):
             
             # Timestamp and update filename
             gt.mark_history(scaled_fringe, primname=self.myself(), keyword=timestamp_key)
-            scaled_fringe.filename = gt.filename_updater(
-                adinput=ad, suffix=params["suffix"], strip=True)
+            scaled_fringe.filename = ad.filename
+            scaled_fringe.update_filename(suffix=params["suffix"], strip=True)
             fringe_outputs.append(scaled_fringe)
 
         # We're returning the list of scaled fringe frames
@@ -629,12 +626,16 @@ class GMOSImage(GMOS, Image, Photometry):
         ----------
         suffix: str
             suffix to be added to output files
-        mask: bool
-            apply mask to data before combining? (passed to stackFrames)
+
+        apply_dq: bool
+            apply DQ mask to data before combining? (passed to stackFrames)
+
         operation: str
             type of combine operation (passed to stackFrames)
+
         reject_method: str
             rejection method (passed to stackFrames)
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -664,12 +665,15 @@ class GMOSImage(GMOS, Image, Photometry):
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
             adinputs = self.scaleByIntensity(adinputs)
-            adinputs = self.stackFrames(adinputs, suffix=params["suffix"],
-                        operation=params["operation"], mask=params["mask"],
-                        reject_method=reject_method, nlow=nlow, nhigh=nhigh)
+            adinputs = self.stackFrames(adinputs, zero=False,
+                                        suffix=params["suffix"],
+                                        operation=params["operation"],
+                                        apply_dq=params["apply_dq"],
+                                        reject_method=reject_method,
+                                        nlow=nlow, nhigh=nhigh)
         return adinputs
 
-def _needs_fringe_correction(ad, context):
+def _needs_fringe_correction(ad, mode):
     """
     This function determines whether an AstroData object needs a fringe
     correction. If it says no, it reports its decision to the log.
@@ -678,12 +682,13 @@ def _needs_fringe_correction(ad, context):
     ----------
     ad: AstroData
         input AD object
-    context: str
-        reduction context
+    mode: <str>
+        reduction mode; one of 'qa', 'sq', 'ql'
 
     Returns
     -------
-    bool: does this image need a correction?
+    <bool>: does this image need a correction?
+
     """
     log = logutils.get_logger(__name__)
     filter = ad.filter_name(pretty=True)
@@ -694,7 +699,7 @@ def _needs_fringe_correction(ad, context):
                     format(ad.filename, filter))
         return False
     elif filter == "i" and "Gemini-North" in tel:
-        if "qa" in context:
+        if "qa" in mode:
             log.stdinfo("No fringe correction necessary for {} with filter "
                         "{} and GMOS-N".format(ad.filename, filter))
             return False

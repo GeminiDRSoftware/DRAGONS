@@ -219,7 +219,7 @@ class GMOS(Gemini, CCD):
 
             # And the bias level too!
             bias_level = get_bias_level(adinput=ad,
-                                        estimate='qa' in self.context)
+                                        estimate='qa' in self.mode)
             for ext, bias in zip(ad, bias_level):
                 if bias is not None:
                     ext.hdr.set('RAWBIAS', bias,
@@ -227,10 +227,56 @@ class GMOS(Gemini, CCD):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(ad)
         return adoutputs
+
+    def subtractOverscan(self, adinputs=None, **params):
+        """
+        Subtract the overscan level from the image by fitting a polynomial
+        to the overscan region. This sets the appropriate parameters for GMOS
+        (the gireduce defaults) and calls the CCD-level method.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        niterate: int
+            number of rejection iterations
+        high_reject: float
+            number of standard deviations above which to reject high pixels
+        low_reject: float
+            number of standard deviations above which to reject low pixels
+        overscan_section: str/None
+            comma-separated list of IRAF-style overscan sections
+        nbiascontam: int/None
+            number of columns adjacent to the illuminated region to reject
+        function: str
+            function to fit ("polynomial" | "spline" | "none")
+        order: int
+            order of Chebyshev fit or spline/None
+        """
+        detname = adinputs[0].detector_name(pretty=True)
+        if params["order"] is None and params["function"].startswith('poly'):
+            params["order"] = 6 if detname.startswith('Hamamatsu') else 0
+        if params["nbiascontam"] is None:
+            params["nbiascontam"] = 5 if detname == 'e2vDD' else 4
+
+        # Set the overscan_section and data_section keywords to chop off the
+        # bottom 48 (unbinned) rows, as Gemini-IRAF does
+        if detname.startswith('Hamamatsu') and params["function"].startswith('poly'):
+            for ad in adinputs:
+                y1 = 48 // ad.detector_y_bin()
+                dsec_list = ad.data_section()
+                osec_list = ad.overscan_section()
+                for ext, dsec, osec in zip(ad, dsec_list, osec_list):
+                    ext.hdr['BIASSEC'] = '[{}:{},{}:{}]'.format(osec.x1+1,
+                                                    osec.x2, y1+1, osec.y2)
+                    ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
+                                                    dsec.x2, y1+1, dsec.y2)
+
+        adinputs = super(GMOS, self).subtractOverscan(adinputs, **params)
+        return adinputs
 
     def tileArrays(self, adinputs=None, **params):
         """
@@ -435,8 +481,7 @@ class GMOS(Gemini, CCD):
             # Timestamp and update filename
             gt.mark_history(adoutput, primname=self.myself(),
                             keyword=timestamp_key)
-            adoutput.filename = gt.filename_updater(adoutput,
-                                    suffix=params["suffix"], strip=True)
+            adoutput.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(adoutput)
         return adoutputs
 

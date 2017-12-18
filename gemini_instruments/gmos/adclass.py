@@ -336,6 +336,44 @@ class AstroDataGmos(AstroDataGemini):
             return ybin_list[0] if ybin_list == ybin_list[::-1] else None
 
     @astro_data_descriptor
+    def detector_x_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive x-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('POFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped for GMOS-N if on bottom port
+        return -offset if (self.phu.get('INPORT')==1 and
+                           self.instrument()=='GMOS-N') else offset
+
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        """
+        Returns the offset from the reference position in pixels along
+        the positive y-direction of the detector
+
+        Returns
+        -------
+        float
+            The offset in pixels
+        """
+        try:
+            offset = self.phu.get('QOFFSET') / self.pixel_scale()
+        except TypeError:  # either is None
+            return None
+        # Flipped for GMOS-S if on bottom port
+        return -offset if (self.phu.get('INPORT')==1 and
+                           self.instrument()=='GMOS-S') else offset
+
+    @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
         Returns the name of the grating used for the observation
@@ -407,6 +445,19 @@ class AstroDataGmos(AstroDataGemini):
         except TypeError:
             dispersion = gmu.convert_units('meters', cd11, output_units)
         return dispersion
+
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        """
+        Returns the axis along which the light is dispersed.
+
+        Returns
+        -------
+        (list of) int (1)
+            Dispersion axis.
+       """
+        return 1 if 'SPECT' in self.tags else None
 
     @astro_data_descriptor
     def exposure_time(self):

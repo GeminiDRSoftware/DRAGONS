@@ -147,7 +147,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "alignToReferenceFrame":{
+ "resampleToCommonFrame":{
     "suffix":{
         "default"       : "_align",
         "type"          : "str",
@@ -294,7 +294,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "correctWCSToReferenceFrame":{
+ "matchWCSToReference":{
     "suffix":{
         "default"       : "_wcsCorrected",
         "type"          : "str",

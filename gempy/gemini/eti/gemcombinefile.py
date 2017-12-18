@@ -58,13 +58,13 @@ class InAtList(GemcombineFile):
         log.debug("InAtList prepare()")
         for ad in self.adinput:
             ad = gemini_tools.obsmode_add(ad)
-            newname = gemini_tools.filename_updater(adinput=ad, \
-                            prefix=self.get_prefix(), strip=True)
-            #newname = ''.join([self.get_prefix(), ad.filename])
-            self.diskinlist.append(newname)
+            origname = ad.filename
+            ad.update_filename(prefix=self.get_prefix(), strip=True)
+            self.diskinlist.append(ad.filename)
             log.fullinfo("Temporary image (%s) on disk for the IRAF task %s" % \
-                          (newname, self.taskname))
-            ad.write(newname, clobber=True)
+                          (ad.filename, self.taskname))
+            ad.write(ad.filename, clobber=True)
+            ad.filename = origname
         self.atlist = "tmpImageList" + self.pid_task
         fhdl = open(self.atlist, "w")
         for fil in self.diskinlist:
@@ -104,9 +104,10 @@ class OutFile(GemcombineFile):
 
     def prepare(self):
         log.debug("Outfile prepare()")
-        outname = gemini_tools.filename_updater(adinput=self.adinput[0], \
-                        suffix=self.suffix, strip=True)
-        #outname = re.sub('_aligned', self.suffix, self.adinput[0].filename)
+        origname = self.adinput[0].filename
+        self.adinput[0].update_filename(suffix=self.suffix, strip=True)
+        outname = self.adinput[0].filename
+        self.adinput[0].filename = origname
         self.ad_name = outname
         self.tmp_name = self.get_prefix() + outname
         self.filedict.update({"output": self.tmp_name})

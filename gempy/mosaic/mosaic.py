@@ -9,6 +9,9 @@ from .mosaicGeometry import MosaicGeometry
 from .transformation import Transformation
 from .transformation import DQMap
 
+# temp import
+from gempy.utils import logutils
+log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 class Mosaic(object):
     """
@@ -173,7 +176,7 @@ class Mosaic(object):
 
         Return
         ------
-        :return: An ndarray with the mosaiic. The Mask created is available
+        :return: An ndarray with the mosaic. The Mask created is available
                  as an attribute with name 'mask'.
 
         """
@@ -226,7 +229,7 @@ class Mosaic(object):
 
         # Setup mosaic output array. Same datatype as block_data's
         outtype = block_data[def_key].dtype
-        outdata = np.zeros((mosaic_ny, mosaic_nx), dtype=outtype)
+        outdata = np.zeros((int(mosaic_ny), int(mosaic_nx)), dtype=outtype)
         outdata += DQMap['no_data']
 
         # ------- Paste each block (after transforming if tile=False)
@@ -277,8 +280,6 @@ class Mosaic(object):
             outdata = outdata[ry1:ry2, rx1:rx2]        # Crop data
 
         del block_data      # We no longer need this list in memory
-        # mask is already done.
-
         return outdata
 
     def _get_block_corners(self, xsize, ysize, col, row, x_gap, y_gap):
@@ -349,7 +350,7 @@ class Mosaic(object):
         # Loop over the dictionary keys with are the block tuples (col,row) in
         # the mosaic layout.
         for key in data_index:
-            detarray = np.zeros((blocksize_y, blocksize_x), dtype=dtype)
+            detarray = np.zeros((int(blocksize_y), int(blocksize_x)), dtype=dtype)
             for i in data_index[key]:
                 x1, x2, y1, y2 = bcoord[i]
                 # Convert to trimmed coordinates

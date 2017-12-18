@@ -6,15 +6,16 @@ reduce \- Recipe Processing Management System, v2.0, command line interface (cli
 [\fB\-h\fR] 
 [\fB\-v\fR]
 [\fB\-d\fR]
-[\fB\--context\fR CONTEXT]
+[\fB\--adpkg\fR ADPKG]
 [\fB\--drpkg\fR DRPKG]
 [\fB\--logmode\fR LOGMODE]
 [\fB\--logfile\fR LOGFILE]
-[\fB\--loglevel\fR LOGLEVEL]
 [\fB\-p\fR USERPARAM [USERPARAM ...]]
+[\fB\--qa\fR]
+[\fB\--ql\fR]
 [\fB\-r\fR RECIPENAME]
 [\fB\--suffix\fR SUFFIX]
-[\fB\--upload_metrics\fR]
+[\fB\--upload\fR UPLOAD]
 [\fB\--user_cal\fR USER_CAL]
 fitsfile [fitsfile ...]
 
@@ -37,22 +38,14 @@ show program's version number and exit
 .TP
 .B -d , --displayflags
 display all parsed option flags and exit.
-.TP 
-\fB\--context\fR CONTEXT
-Use
-.B CONTEXT
-for recipe selection and primitives sensitive to context. Current values
-supported are
-.B QA 
-and 
-.B SQ
-(default is
-.B QA
-)
+.TP
+\fB\-\-adpkg\fR ADPKG
+Specify an external astrodata definitions package. This is only passed for
+non-Gemini instruments.The package must be importable.
 .RS
 E.g.,
 .RS
-\fB\-\-context\fR QA
+\fB\-\-adpkg\fR ghost_instruments
 .RE
 .RE
 .TP
@@ -71,18 +64,9 @@ E.g.,
 Name of log file (default is 
 .B 'reduce.log'
 )
-.TP 
-\fB\--loglevel\fR LOGLEVEL
-Set the verbose level for console logging. One of
-.RS
-.B critical, error, warning, status, stdinfo, fullinfo, debug
-(default is 
-.B stdinfo
-)
-.RE
 .TP
 \fB\--logmode\fR LOGMODE
-Set log mode. One of \fB\ standard, console, quiet, debug, or null\fR
+Set log mode. One of \fB\ standard, quiet, debug\fR
 (default is \fB\ standard\fR)
 .RE
 .RE
@@ -112,7 +96,6 @@ E.g.,
 
 For a recipe file in the current working directory (cwd), only the file name
 is needed, as in,
-
 .RS
 \fB\-r\fR recipefile.recipe_function
 .RE
@@ -126,14 +109,48 @@ modules and should be named accordingly. I.e., in the example above,
 is a python module named, 
 .B 'recipefile.py'
 .RE
+
+.TP
+\fB\--qa\fR
+Use
+.B qa
+mode. This switch requests the
+.B Quality Assessment
+recipe 'mode' for recipe selection and primitives sensitive to this mode.
+Default mode is
+.B sq
+or
+.B Science Quality
+mode.
+.RE
+
+.TP
+\fB\--ql\fR
+Use
+.B ql
+mode. This switch requests the
+.B Quick Look
+recipe 'mode' for recipe selection and primitives
+sensitive to this mode. Default mode is
+.B sq
+or
+.B Science Quality
+mode.
+.RE
+
 .TP
 \fB\-\-suffix\fR SUFFIX
 Add SUFFIX to filenames at end of reduction; strip all other suffixes
 marked by '_'.
 .RE
 .TP	
-\fB\-\-upload_metrics\fR
-Use this switch to send QA metrics to fitsstore. Default is \fBFalse\fR.
+\fB\-\-upload\fR PROD [PROD ...]
+Send these pipeline products to fitsstore. Default is None.
+.RS
+E.g.,
+.RS
+\fB\-\-upload\fR metrics calibs
+.RE
 .RE
 .TP
 \fB\-\-user_cal\fR USER_CAL
@@ -146,12 +163,10 @@ E.g.,
 .RE
 
 .SH ENVIRONMENT
-Recommend Anaconda 4.2.0, Astropy 1.2.1. (Ureka 1.5.2 should also work
-for awhile.)
+Recommend Anaconda 4.2.0, Astropy 1.2.1.
 
 .SH BUGS
---user_cal Currently, this option is not enabled pending critical
-implementation decision. (kra, 14-08-17)
+None known
 
 .SH SEE ALSO 
 .I typewalk(1)

@@ -73,7 +73,7 @@ class Standardize(PrimitivesBASE):
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
                 final_bpm = clip_method(ad, aux=bpm, aux_type='bpm',
-                    return_dtype=DQ.datatype, keyword_comments=self.keyword_comments)
+                    return_dtype=DQ.datatype)
 
             for ext, bpm_ext in zip(ad, final_bpm):
                 extver = ext.hdr['EXTVER']
@@ -95,7 +95,7 @@ class Standardize(PrimitivesBASE):
                                  'above level {:.2f}'.
                                  format(ad.filename, extver, saturation_level))
                     ext.mask |= np.where(ext.data >= saturation_level,
-                                         DQ.saturated, 0)
+                                         DQ.saturated, 0).astype(DQ.datatype)
 
                 if non_linear_level:
                     if saturation_level:
@@ -106,7 +106,7 @@ class Standardize(PrimitivesBASE):
                                                 non_linear_level))
                             ext.mask |= np.where((ext.data >= non_linear_level) &
                                                  (ext.data < saturation_level),
-                                                 DQ.non_linear, 0)
+                                                 DQ.non_linear, 0).astype(DQ.datatype)
                             # Readout modes of IR detectors can result in
                             # saturated pixels having values below the
                             # saturation level. Flag those. Assume we have an
@@ -146,11 +146,11 @@ class Standardize(PrimitivesBASE):
                                      format(ad.filename, extver,
                                             non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
-                                             DQ.non_linear, 0)
+                                             DQ.non_linear, 0).astype(DQ.datatype)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
 
         # Add the illumination mask if requested
         if params['illum_mask']:
@@ -194,8 +194,8 @@ class Standardize(PrimitivesBASE):
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
-                final_illum = clip_method(ad, illum, 'bpm', DQ.datatype,
-                                        self.keyword_comments)
+                final_illum = clip_method(ad, aux=illum, aux_type='bpm',
+                                          return_dtype=DQ.datatype)
 
             for ext, illum_ext in zip(ad, final_illum):
                 # Ensure we're only adding the unilluminated bit
@@ -205,7 +205,7 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -272,7 +272,7 @@ class Standardize(PrimitivesBASE):
                                                              ad.filename))
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def addVAR(self, adinputs=None, **params):
@@ -343,7 +343,7 @@ class Standardize(PrimitivesBASE):
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
             if (poisson_noise and 'GMOS' in tags and
-                ad.phu.get(self.timestamp_keys['subtractBias']) is None and
+                ad.phu.get(self.timestamp_keys['biasCorrect']) is None and
                 ad.phu.get(self.timestamp_keys['subtractOverscan']) is None):
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
@@ -351,7 +351,7 @@ class Standardize(PrimitivesBASE):
 
             _calculate_var(ad, read_noise, poisson_noise)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
@@ -390,16 +390,26 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         adinputs = self.validateData(adinputs)
         adinputs = self.standardizeStructure(adinputs)
-        adinputs = self.standardizeObservatoryHeaders(adinputs)
-        adinputs = self.standardizeInstrumentHeaders(adinputs)
+        adinputs = self.standardizeHeaders(adinputs)
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
     def standardizeHeaders(self, adinputs=None, **params):
+        """
+        This primitive is used to standardize the headers of data. It adds
+        the ORIGNAME keyword and then calls the standardizeObservatoryHeaders
+        and standardizeInstrumentHeaders primitives.
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            if 'ORIGNAME' not in ad.phu:
+                ad.phu.set('ORIGNAME', ad.orig_filename,
+                           'Original filename prior to processing')
+
         adinputs = self.standardizeObservatoryHeaders(adinputs, **params)
         adinputs = self.standardizeInstrumentHeaders(adinputs, **params)
         return adinputs
@@ -408,6 +418,36 @@ class Standardize(PrimitivesBASE):
         return adinputs
 
     def standardizeObservatoryHeaders(self, adinputs=None, **params):
+        """
+        This primitive is used to make the changes and additions to the
+        keywords in the headers of the data. All it does is add the ORIGNAME
+        keyword to the header (if it doesn't exist), which is a standard
+        DRAGONS keyword to assist with filename updates
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        for ad in adinputs:
+            if timestamp_key in ad.phu:
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by standardize"
+                            "ObservatoryHeaders".format(ad.filename))
+                continue
+
+            if 'ORIGNAME' not in ad.phu:
+                ad.phu.set('ORIGNAME', ad.orig_filename,
+                           'Original filename prior to processing')
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(ad, suffix=params["suffix"],
+                                              strip=True)
         return adinputs
 
     def standardizeStructure(self, adinputs=None, **params):
@@ -445,8 +485,7 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(ad)
         return adoutputs
 
@@ -511,8 +550,7 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=params["suffix"],
-                                              strip=True)
+            ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
     def _get_bpm_filename(self, ad):

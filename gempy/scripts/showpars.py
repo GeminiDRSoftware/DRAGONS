@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 #
-#                                                                  gemini_python
-#
+#                                                                        DRAGONS
+#                                                                  gempy.scripts
 #                                                                    showpars.py
 # ------------------------------------------------------------------------------
+from __future__ import print_function
+
 import sys
 from argparse import ArgumentParser
 
@@ -28,31 +30,32 @@ def get_pars(filename):
     ad = astrodata.open(filename)
     pm = primitiveMapper.PrimitiveMapper([ad])
     p = pm.get_applicable_primitives()
-    return p.parameters
+    return p.parameters, ad.tags
 
-def showpars(pobj, primname):
-    """
-
-    """
+def showpars(pobj, primname, tags):
     for i in dir(pobj):
         if i.startswith("_"):
             continue
 
     pars = getattr(pobj, primname)
-    print
-    print "Settable parameters on primitive '{}':".format(primname)
-    print "="*32
-    print " Name       Current setting"
-    print
+    print("Dataset tagged as {}".format(tags))
+    print("Settable parameters on '{}':".format(primname))
+    print("="*40)
+    print(" Name\t\t\tCurrent setting")
+    print()
     for k,v in pars.items():
-        print "{} :         {}".format(k,v)
-
-    print
+        if len(k) <= 4:
+            print("{} :\t\t\t{}".format(k,v))
+        elif len(k) > 12:
+            print("{} : \t{}".format(k,v))
+        else:
+            print("{} : \t\t{}".format(k,v))
+    print()
     return
 
 if __name__ == '__main__':
     args = buildArgs()
     fname = args.filen[0]
     pname = args.primn[0]
-    paro = get_pars(fname)
-    sys.exit(showpars(paro, pname))
+    paro, tags = get_pars(fname)
+    sys.exit(showpars(paro, pname, tags))

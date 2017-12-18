@@ -23,16 +23,30 @@ import sys
 import inspect
 import signal
 import traceback
-from types import StringType
+
+from importlib import import_module
 
 import astrodata
 import gemini_instruments
 
+# ------------------------------------------------------------------------------
+# These are vestigial and left here temporarily. Use --adpkg on reduce.
+# try:
+#     import soar_instruments
+# except ImportError:
+#     pass
+
+# try:
+#     from ghost_instruments import ghost
+# except ImportError:
+#     pass
+
+# ------------------------------------------------------------------------------
 from gempy.utils import logutils
 
 from astrodata.core import AstroDataError
 
-from recipe_system.utils.errors import ContextError
+from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
 
@@ -63,11 +77,17 @@ class Reduce(object):
     """
     def __init__(self, sys_args=None):
         """
-        :parameter sys_args: optional argparse.Namespace instance
-        :type sys_args: <Nameapace>
 
-        :return: ReduceNH instance
-        :rtype: <ReduceNH>
+        Parameters
+        ----------
+        sys_args : <Nameapace> or <duck-type object>
+                   argparse.Namespace instance (optional)
+                   This object type is not required, per se, but only that any
+                   passed object *must* present an equivalent interface to
+                   that of an <argparse.Namespace> instance.
+        Returns
+        -------
+        <Reduce instance>
 
         """
         if sys_args:
@@ -77,55 +97,45 @@ class Reduce(object):
         else:
             args = buildParser(_version).parse_args([])
 
+        # acquire any new astrodata classes.
+        if args.adpkg:
+            import_module(args.adpkg)
+
         self.adinputs = None
-        self._context = args.context
+        self.mode     = args.mode
         self.drpkg    = args.drpkg
         self.files    = args.files
         self.suffix   = args.suffix
         self.ucals    = normalize_ucals(args.files, args.user_cal)
         self.uparms   = set_btypes(args.userparam)
-        self.upload_metrics = args.upmetrics
-        self.urecipe = args.recipename if args.recipename else 'default'
+        self._upload  = args.upload
+        self.urecipe  = args.recipename if args.recipename else 'default'
 
     @property
-    def context(self):
-        return self._context
+    def upload(self):
+        return self._upload
 
-    @context.setter
-    def context(self, ctx):
-        if ctx is None:
-            self._context = ['qa']         # Set default 'qa' [later, 'sq']
-        elif isinstance(ctx, StringType):
-            self._context = [seg.lower().strip() for seg in ctx.split(',')]
-        elif isinstance(ctx, list):
-            self._context = ctx
+    @upload.setter
+    def upload(self, upl):
+        if upl is None:
+            self._upload = None
+        elif isinstance(upl, str):
+            self._upload = [seg.lower().strip() for seg in upl.split(',')]
+        elif isinstance(upl, list):
+            self._upload = upl
         return
 
     def runr(self):
         """
         Map and run the requested or defaulted recipe.
 
-        :parameters: <void>
+        Parameters
+        ----------
+        <void>
 
-        :returns: exit code
-        :rtype: <int>
-
-        @TODO !!!!!!!!!
-        RE: user supplied calibration files. --user_cal. User supplied
-        calibrations no longer need an indicated 'caltype.'
-
-        In the old system, a user had to pass a user_cal like,
-
-        --user_cal processed_bias:foo_bias.fits
-
-        This is unncessary. This class can and will determine this caltype,
-        such as,
-
-           'processed_bias', 'processed_flat', etc.
-
-        and pass this to the primitive set when instantiated.
-
-        BUT this is not yet implemented!
+        Returns
+        -------
+        xstat : <int> exit code
 
         """
         xstat = 0
@@ -135,7 +145,6 @@ class Reduce(object):
             ffiles = self._check_files(self.files)
         except IOError as err:
             xstat = signal.SIGIO
-            log.error("_check_files() raised IOError exception.")
             log.error(str(err))
             return xstat
 
@@ -143,23 +152,21 @@ class Reduce(object):
             self.adinputs = self._convert_inputs(ffiles)
         except IOError as err:
             xstat = signal.SIGIO
-            log.error("_convert_inputs() raised IOError exception.")
             log.error(str(err))
             return xstat
 
-        rm = RecipeMapper(self.adinputs, context=self.context, drpkg=self.drpkg,
+        rm = RecipeMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.urecipe)
 
-        pm = PrimitiveMapper(self.adinputs, context=self.context, drpkg=self.drpkg,
+        pm = PrimitiveMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
                              usercals=self.ucals, uparms=self.uparms,
-                             upload_metrics=self.upload_metrics)
+                             upload=self.upload)
 
         try:
             recipe = rm.get_applicable_recipe()
-        except ContextError as err:
-            xstat = signal.SIGTERM
-            log.error("No context package matched: {}".format(rm.context))
-            return xstat
+        except ModeError as err:
+            log.warn("WARNING: {}".format(err))
+            pass
         except RecipeNotFound as err:
             pass
 
@@ -178,7 +185,7 @@ class Reduce(object):
             try:
                 primitive_as_recipe = getattr(p, self.urecipe)
                 pname = primitive_as_recipe.__name__
-                log.info("Found {} as a primitive.".format(pname))
+                log.stdinfo("Found '{}' as a primitive.".format(pname))
                 self._logheader(primitive_as_recipe.__name__)
                 primitive_as_recipe()
             except AttributeError:
@@ -199,7 +206,11 @@ class Reduce(object):
                 log.error(str(err))
                 xstat = signal.SIGABRT
 
-        self._write_final(p.streams['main'])
+        if hasattr(p, 'streams'):
+            self._write_final(p.streams['main'])
+        else:
+            self._write_final(p.adinputs)
+
         if xstat != 0:
             msg = "reduce instance aborted."
         else:
@@ -357,6 +368,6 @@ class Reduce(object):
                 ad.write(username, clobber=True)
                 log.stdinfo(outstr.format(username))
             elif ad.filename != ad.orig_filename:
-                ad.write(clobber=True)
+                ad.write(ad.filename, clobber=True)
                 log.stdinfo(outstr.format(ad.filename))
         return
