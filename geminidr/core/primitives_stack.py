@@ -65,18 +65,25 @@ class Stack(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+
         apply_dq: bool
             apply DQ mask to data before combining?
+
         nhigh: int
             number of high pixels to reject
+
         nlow: int
             number of low pixels to reject
+
         operation: str
             combine method
+
         reject_method: str
             type of pixel rejection (passed to gemcombine)
+
         zero: bool
             apply zero-level offset to match background levels?
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))

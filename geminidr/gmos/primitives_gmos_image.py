@@ -626,12 +626,16 @@ class GMOSImage(GMOS, Image, Photometry):
         ----------
         suffix: str
             suffix to be added to output files
+
         apply_dq: bool
             apply DQ mask to data before combining? (passed to stackFrames)
+
         operation: str
             type of combine operation (passed to stackFrames)
+
         reject_method: str
             rejection method (passed to stackFrames)
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -661,9 +665,12 @@ class GMOSImage(GMOS, Image, Photometry):
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
             adinputs = self.scaleByIntensity(adinputs)
-            adinputs = self.stackFrames(adinputs, suffix=params["suffix"],
-                        operation=params["operation"], apply_dq=params["apply_dq"],
-                        reject_method=reject_method, nlow=nlow, nhigh=nhigh)
+            adinputs = self.stackFrames(adinputs, zero=False,
+                                        suffix=params["suffix"],
+                                        operation=params["operation"],
+                                        apply_dq=params["apply_dq"],
+                                        reject_method=reject_method,
+                                        nlow=nlow, nhigh=nhigh)
         return adinputs
 
 def _needs_fringe_correction(ad, mode):

@@ -4,11 +4,6 @@
 #                                                                   gempy.gemini
 #                                                                gemini_tools.py
 # ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]
-__version_date__ = '$Date$'[7:-2]
-# ------------------------------------------------------------------------------
 import os
 import re
 import sys
@@ -1454,8 +1449,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         # Use DQ and OBJMASK to flag pixels
         flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
             else getattr(ext, 'OBJMASK', None)
-        bg_data = ext.data[flags==0] if flags is not None else ext.data
 
+        bg_data = ext.data[flags==0] if flags is not None else ext.data
         bg_data = bg_data.ravel()[::sampling]
         if len(bg_data) > 0:
             if gaussfit:
@@ -1468,6 +1463,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
                 fit_g = fitting.LevMarLSQFitter()
                 g = fit_g(g_init, bg_data, np.linspace(0.,1.,len(bg_data)+1)[1:])
                 bg, bg_std = g.mean.value, abs(g.stddev.value)
+
+                # --------------------------------------------------------------
                 #binsize = bg_std * 0.1
                 # Fit from -5 to +1 sigma
                 #bins = np.arange(bg - 5 * bg_std, bg + bg_std, binsize)
@@ -1482,6 +1479,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
                 #fit_g = fitting.LevMarLSQFitter()
                 #g = fit_g(g_init, x, histdata)
                 #bg, bg_std = g.mean.value, abs(g.stddev.value)
+                # --------------------------------------------------------------
+
             else:
                 # Sigma-clipping will screw up the stats of course!
                 bg_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
