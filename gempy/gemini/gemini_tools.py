@@ -472,7 +472,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux = astrodata.create(this_aux.header[0])
+        new_aux = astrodata.create(this_aux.phu)
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -598,7 +598,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                     try:
                         kw = ext._keyword_for(descriptor)
                         ext_to_clip.hdr[kw] = (ext.hdr[kw],
-                                               ext.hdr.get_comment(kw))
+                                               ext.hdr.comments[kw])
                     except (AttributeError, KeyError):
                         pass
 
@@ -774,7 +774,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                     try:
                         kw = ext._keyword_for(descriptor)
                         ext_to_clip.hdr[kw] = (ext.hdr[kw],
-                                               ext.hdr.get_comment(kw))
+                                               ext.hdr.comments[kw])
                     except (AttributeError, KeyError):
                         pass
 
@@ -1442,7 +1442,12 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         if ad is single extension, returns a bg value or (bg, std) tuple; otherwise
         returns a list of such things
     """
-    input_list = [ad] if ad.is_single else [ext for ext in ad]
+    # Handle NDData objects (or anything with .data and .mask attributes
+    try:
+        single = ad.is_single
+    except AttributeError:
+        single = True
+    input_list = [ad] if single else [ext for ext in ad]
 
     output_list = []
     for ext in input_list:
@@ -1491,7 +1496,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         else:
             output_list.append((bg, bg_std, len(bg_data)))
 
-    return output_list[0] if ad.is_single else output_list
+    return output_list[0] if single else output_list
 
 
 def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
