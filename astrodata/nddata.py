@@ -14,7 +14,12 @@ from astropy.nddata.mixins.ndarithmetic import NDArithmeticMixin
 from astropy.io.fits import ImageHDU
 import numpy as np
 
+import os, psutil
+
 __all__ = ['NDAstroData']
+
+def memusage(proc):
+    return '{:9.3f}'.format(float(proc.memory_info().rss) / (1024*1024))
 
 class StdDevAsVariance(object):
     def as_variance(self):

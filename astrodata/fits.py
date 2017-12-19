@@ -1315,7 +1315,7 @@ class FitsLoader(object):
         highest_ver = 0
         recognized = set()
 
-        if len(hdulist) > 1:
+        if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
             # MEF file
             for n, unit in enumerate(hdulist):
                 ev = unit.header.get('EXTVER')
@@ -1347,6 +1347,7 @@ class FitsLoader(object):
             for keyw in ('SIMPLE', 'EXTEND'):
                 if keyw in image.header:
                     del image.header[keyw]
+            # TODO: Remove self here (static method)
             image.header['EXTNAME'] = (self._cls.default_extension, 'Added by AstroData')
             image.header['EXTVER'] = (1, 'Added by AstroData')
             new_list.append(image)
@@ -1456,9 +1457,10 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
         dtype = sequence[0].window[:1,:1].data.dtype
 
     result = NDDataObject(np.empty(shape, dtype=dtype),
-                          uncertainty=(new_variance_uncertainty_instance(np.empty(shape, dtype=dtype))
+                          uncertainty=(new_variance_uncertainty_instance(np.zeros(shape, dtype=dtype))
                                        if with_uncertainty else None),
-                          mask=(np.empty(shape, dtype=np.uint16) if with_mask else None))
+                          mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
+                          meta=sequence[0].meta)
 
     for coords in generate_boxes(shape, kernel):
         # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
