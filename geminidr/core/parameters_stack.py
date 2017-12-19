@@ -14,7 +14,7 @@ class ParametersStack(ParametersBASE):
         "operation"         : "median",
         "reject_method"     : "minmax",
     }
-    stackFrames = {
+    stackFramesOld = {
         "suffix"            : "_stack",
         "apply_dq"          : True,
         "nhigh"             : 1,
@@ -23,6 +23,17 @@ class ParametersStack(ParametersBASE):
         "reject_method"     : "avsigclip",
         "remove_background" : False,
         "zero"              : True,
+    }
+    stackFrames = {
+        "suffix"            : "_stack",
+        "apply_dq"          : True,
+        "operation"         : "mean",
+        "reject_method"     : "ccdclip",
+        "remove_background" : False,
+        "scale"             : False,
+        "separate_ext"      : True,
+        "statsec"           : None,
+        "zero"              : False,
     }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",
