@@ -28,7 +28,7 @@ class ParametersStack(ParametersBASE):
         "suffix"            : "_stack",
         "apply_dq"          : True,
         "operation"         : "mean",
-        "reject_method"     : "ccdclip",
+        "reject_method"     : "varclip",
         "remove_background" : False,
         "scale"             : False,
         "separate_ext"      : True,
