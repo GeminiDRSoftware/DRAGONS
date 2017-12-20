@@ -34,7 +34,7 @@ class SExtractorETIFile(ETIFile):
         # copy the data plane in case we edit it
         self.data = input.data.copy()
         self.mask = input.mask
-        self.header = input.header[1]
+        self.header = input[0].hdr
         if mask_dq_bits and self.mask is not None:
             self.data[self.mask & mask_dq_bits>0] = np.median(
                 self.data[self.mask & mask_dq_bits==0])

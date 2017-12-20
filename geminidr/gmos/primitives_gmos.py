@@ -297,7 +297,7 @@ class GMOS(Gemini, CCD):
         adoutputs = []
         for ad in adinputs:
             # Start building output AD object with the input PHU
-            adoutput = astrodata.create(ad.header[0])
+            adoutput = astrodata.create(ad.phu)
 #            out_hdulist = ad.to_hdulist()[:1]
 
             # Do nothing if there is only one science extension

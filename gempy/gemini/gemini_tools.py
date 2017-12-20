@@ -652,7 +652,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux = astrodata.create(this_aux.header[0])
+        new_aux = astrodata.create(this_aux.phu)
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -1705,9 +1705,9 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     sx_dict: dict
         SExtractor dictionary
     """
-    for ext, header in zip(adoutput, adoutput.header[1:]):
+    for ext in adoutput:
         outextver = ext.hdr['EXTVER']
-        output_wcs = WCS(header)
+        output_wcs = WCS(ext.hdr)
         indices = [i for i in range(len(ext_mapping))
                    if ext_mapping[i] == outextver]
         inp_objcats = [adinput[i].OBJCAT for i in indices if

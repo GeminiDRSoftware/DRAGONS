@@ -319,7 +319,7 @@ class Register(PrimitivesBASE):
 
                 # The reference coordinates are always (x,y) pixels in the OBJCAT
                 # Set up the input coordinates
-                wcs = WCS(ad.header[index + 1])
+                wcs = WCS(ad[index].hdr)
                 xref, yref = refcat['RAJ2000'], refcat['DEJ2000']
                 if not full_wcs:
                     xref, yref = wcs.all_world2pix(xref, yref, 1)
@@ -538,7 +538,7 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
             center_of_rotation = (630.0, 520.0) if 'GNIRS' in adref.tags \
                 else tuple(0.5*x for x in extref.data.shape[::-1])
 
-        wcsref = WCS(extref.header[1])
+        wcsref = WCS(extref[0].hdr)
         ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
                                          center_of_rotation[1], 1)
         extin.hdr['CRVAL1'] = float(ra0)

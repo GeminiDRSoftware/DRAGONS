@@ -83,7 +83,7 @@ class GMOSImage(GMOS, Image, Photometry):
             gs_index = -1
             for index in ampsorder:
                 ext = ad[index]
-                wcs = WCS(ext.header[1])
+                wcs = WCS(ext.hdr)
                 x, y = wcs.all_world2pix([[oira, oidec]], 0)[0]
                 if x < datasec_list[index].x2 + 0.5:
                     gs_index = index

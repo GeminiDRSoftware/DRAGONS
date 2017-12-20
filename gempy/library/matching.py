@@ -758,14 +758,14 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
         x2, y2 = adref[0].OBJCAT['X_IMAGE'], adref[0].OBJCAT['Y_IMAGE']
 
     # convert reference positions to sky coordinates
-    ra2, dec2 = WCS(adref.header[1]).all_pix2world(x2, y2, 1)
+    ra2, dec2 = WCS(adref[0].hdr).all_pix2world(x2, y2, 1)
 
     func = match_catalogs if return_matches else align_catalogs
 
     if full_wcs:
         # Set up the (inverse) Pix2Sky transform with appropriate scalings
         pixel_range = max(adinput[0].data.shape)
-        transform = Pix2Sky(WCS(adinput.header[1]), factor=pixel_range,
+        transform = Pix2Sky(WCS(adinput[0].hdr), factor=pixel_range,
                             factor_scale=pixel_range, angle=0.0,
                             angle_scale=pixel_range/57.3, direction=-1)
         x_offset, y_offset = initial_shift
@@ -795,7 +795,7 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
             func_ret = func(ra2, dec2, x1, y1, model_guess=transform,
                             tolerance=tolerance)
     else:
-        x2a, y2a = WCS(adinput.header[1]).all_world2pix(ra2, dec2, 1)
+        x2a, y2a = WCS(adinput[0].hdr).all_world2pix(ra2, dec2, 1)
         func_ret = func(x2a, y2a, x1, y1, model_guess=None,
                         translation=initial_shift,
                         translation_range=first_pass,
