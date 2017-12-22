@@ -538,7 +538,7 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
             center_of_rotation = (630.0, 520.0) if 'GNIRS' in adref.tags \
                 else tuple(0.5*x for x in extref.data.shape[::-1])
 
-        wcsref = WCS(extref[0].hdr)
+        wcsref = WCS(extref.hdr)
         ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
                                          center_of_rotation[1], 1)
         extin.hdr['CRVAL1'] = float(ra0)
