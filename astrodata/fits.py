@@ -234,12 +234,13 @@ def header_for_table(table):
     columns = []
     for col in table.itercols():
         descr = {'name': col.name}
+        typekind = col.dtype.kind
         typename = col.dtype.name
-        if typename.startswith('string'): # Array of strings
-            strlen = col.dtype.itemsize
+        if typekind in {'S', 'U'}: # Array of strings
+            strlen = col.dtype.itemsize // col.dtype.alignment
             descr['format'] = '{}A'.format(strlen)
             descr['disp'] = 'A{}'.format(strlen)
-        elif typename == 'object': # Variable length array
+        elif typekind == 'O': # Variable length array
             raise TypeError("Variable length arrays like in column '{}' are not supported".format(col.name))
         else:
             try:
