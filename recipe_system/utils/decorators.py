@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This module provides decorator functions for implementing the (somewhat TBD) 
 parameter override policy of the prototype primitive classes. This implementation 
@@ -6,20 +5,20 @@ is subject to any change in policy.
 
 Currently, the policy defines an order of parameter precedence:
 
-1) ​*user parameters*​ -- as passed by -p on the ‘reduce’ command line. These take
-    full precedence over any other parameter setting. User parameters ​_may_​ be
+1)  *user parameters*-- as passed by -p on the reduce command line. These take
+    full precedence over any other parameter setting. User parameters may be
     primitive-specific, as in `-p makeFringeFrame:reject_method=jilt` in which
-    case, ​_only_​ that primitive’s parameter will be overridden. Other primitives
+    case, only that primitive's parameter will be overridden. Other primitives
     with the same parameter (e.g. `reject_method` is also a parameter for
     `stackFlats`) will remain unaffected. If a user passes an un-specified
     parameter, as in `reject_method=jilt`, then any primitive with that parameter
     will receive that parameter value.
 
-2) ​*recipe parameters*​ -- as passed on a recipe function call, like 
+2)  *recipe parameters* -- as passed on a recipe function call, like 
    `recipe_name(par1=val1)`. These will be overridden by same named user 
     parameters.
 
-3) ​*default parameters*​ -- The default parameter sets as defined in package 
+3)  *default parameters* -- The default parameter sets as defined in package 
     parameter files. These will be overridden by recipe parameters and then 
     user parameters when applicable.
 
@@ -41,7 +40,7 @@ the decorated class.
         @parameter_override
         class PrimitivesIMAGE(PrimitivesGMOS):
             def __init__(self, adinputs, uparms={}):
-            [ … ]
+                [ . . . ]
 
 """
 from builtins import zip
