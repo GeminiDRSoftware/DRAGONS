@@ -227,7 +227,7 @@ def header_for_table(table):
     for col in table.itercols():
         descr = {'name': col.name}
         typename = col.dtype.name
-        if typename.startswith('string'): # Array of strings
+        if typename.startswith('str'): # Array of strings
             strlen = col.dtype.itemsize
             descr['format'] = '{}A'.format(strlen)
             descr['disp'] = 'A{}'.format(strlen)
@@ -1303,14 +1303,19 @@ class FitsLazyLoadable(object):
 
     @property
     def dtype(self):
-        return self._obj._dtype_for_bitpix()
+        dtype = self._obj._dtype_for_bitpix()
+        if dtype is None:
+            bitpix = self._obj._orig_bitpix
+            if bitpix < 0:
+                dtype = np.dtype('float{}'.format(abs(bitpix)))
+        return dtype
 
 class FitsLoader(object):
     def __init__(self, cls = FitsProvider):
         self._cls = cls
 
     @staticmethod
-    def _prepare_hdulist(hdulist, default_extension='SCI', keep_file=False):
+    def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
         new_list = []
         highest_ver = 0
         recognized = set()
@@ -1318,6 +1323,8 @@ class FitsLoader(object):
         if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
             # MEF file
             for n, unit in enumerate(hdulist):
+                if extname_parser:
+                    extname_parser(unit)
                 ev = unit.header.get('EXTVER')
                 eh = unit.header.get('EXTNAME')
                 if ev not in (-1, None) and eh is not None:
@@ -1348,13 +1355,13 @@ class FitsLoader(object):
                 if keyw in image.header:
                     del image.header[keyw]
             # TODO: Remove self here (static method)
-            image.header['EXTNAME'] = (self._cls.default_extension, 'Added by AstroData')
+            image.header['EXTNAME'] = (default_extension, 'Added by AstroData')
             image.header['EXTVER'] = (1, 'Added by AstroData')
             new_list.append(image)
 
         return HDUList(sorted(new_list, key=fits_ext_comp_key))
 
-    def load(self, source):
+    def load(self, source, extname_parser=None):
         """
         Takes either a string (with the path to a file) or an HDUList as input, and
         tries to return a populated FitsProvider (or descendant) instance.
@@ -1374,7 +1381,8 @@ class FitsLoader(object):
 
         def_ext = self._cls.default_extension
         _file = hdulist._file
-        hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext, keep_file=True)
+        hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext,
+                                        extname_parser=extname_parser)
         if _file is not None:
             hdulist._file = _file
 
@@ -1581,7 +1589,6 @@ class AstroDataFits(AstroData):
         """
         return self.phu.get(self._keyword_for('instrument'))
 
-
     @astro_data_descriptor
     def object(self):
         """
@@ -1625,7 +1632,6 @@ class AstroDataFits(AstroData):
         IndexError
             If the provided EXTVER doesn't exist
         """
-
         try:
             if isinstance(ver, int):
                 return self[self._dataprov.extver_map()[ver]]
