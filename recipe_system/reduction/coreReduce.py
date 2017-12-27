@@ -4,6 +4,7 @@
 # the Reduce class. Used by the reduce, v2.0 cli.
 
 # ------------------------------------------------------------------------------
+from __future__ import print_function
 from builtins import str
 from builtins import object
 # ------------------------------------------------------------------------------
@@ -61,7 +62,9 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 def _log_traceback():
-    return traceback.format_exc(sys.exc_info()[-1])
+    tblist = traceback.format_tb(sys.exc_info()[-1])
+    [log.error(str(line)) for line in tblist]
+    return
 # ------------------------------------------------------------------------------
 class Reduce(object):
     """
@@ -200,9 +203,16 @@ class Reduce(object):
             except KeyboardInterrupt:
                 log.error("Caught KeyboardInterrupt (^C) signal")
                 xstat = signal.SIGINT
+            except IOError as err:
+                log.error(str(err))
+                xstat = signal.SIGABRT
+            except TypeError as err:
+                _log_traceback()
+                log.error(str(err))
+                xstat = signal.SIGABRT
             except Exception as err:
                 log.error("runr() caught an unhandled exception.")
-                log.error(_log_traceback())
+                _log_traceback()
                 log.error(str(err))
                 xstat = signal.SIGABRT
 

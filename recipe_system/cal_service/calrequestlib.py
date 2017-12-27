@@ -1,6 +1,12 @@
 #
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from builtins import object
+
 import hashlib
 import requests
 
@@ -8,7 +14,7 @@ from os import mkdir
 from os.path import basename, exists
 from os.path import join, split
 
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 from gempy.utils import logutils
 
@@ -85,15 +91,19 @@ def get_cal_requests(inputs, caltype):
     """
     Builds a list of CalibrationRequest objects, one for each 'ad' input.
 
-    @param inputs: list of input AstroData instances
-    @type inputs:  <list>
+    Parameters
+    ----------
+    inputs: <list>
+        A list of input AstroData instances
 
-    @param caltype: Calibration type, eg., 'processed_bias', 'flat', etc.
-    @type caltype:  <str>
+    caltype: <str>
+        Calibration type, eg., 'processed_bias', 'flat', etc.
 
-    @return: Returns a list of CalibrationRequest instances, one for
-             each passed 'ad' instance in 'inputs'.
-    @rtype:  <list>
+    Returns
+    -------
+    rq_events <list>
+        A list of CalibrationRequest instances, one for each passed 
+       'ad' instance in 'inputs'.
 
     """
     options = {'central_wavelength': {'asMicrometers': True}}
@@ -112,7 +122,7 @@ def get_cal_requests(inputs, caltype):
             except AttributeError:
                 pass
             else:
-                kwargs = options[desc_name] if desc_name in options.keys() else {}
+                kwargs = options[desc_name] if desc_name in list(options.keys()) else {}
                 try:
                     dv = _handle_returns(descriptor(**kwargs))
                 except:
@@ -142,20 +152,24 @@ def process_cal_requests(cal_requests, howmany=None):
     returned in the dictionary structure. A path of 'None' indicates that no
     calibration match was found.
 
-    :parameter cal_requests: list of CalibrationRequest objects
-    :type cal_requests: <list>
-    :parameter howmany: maximum number of calibrations to return per request
-            (not passed to the server-side request but trims the returned list)
-    :type howmany: None/<int>
+    Parameters
+    ----------
+    cal_requests: <list>
+        A list of CalibrationRequest objects
 
-    :returns: A set of science frames and matching calibrations.
-    :rtype:   <dict>
+    howmany: <int>/None 
+        Maximum number of calibrations to return per request
+        (not passed to the server-side request but trims the returned list)
+
+    Returns
+    -------
+    <dict> A set of science frames and matching calibrations.
 
     E.g., The returned dictionary has the form,
 
-    { (ad): <filename_of_calibration_including_path>,
-      ...
-    }
+        {(ad): <filename_of_calibration_including_path>,
+          ...
+        }
 
     """
     calibration_records = {}
@@ -222,6 +236,7 @@ def process_cal_requests(cal_requests, howmany=None):
                     raise IOError(err.format(md5))
 
         # If howmany=None, append the only file as a string, instead of the list
-        _add_cal_record(rq, calibs if howmany else calibs[0])
+        if calibs:
+            _add_cal_record(rq, calibs if howmany else calibs[0])
 
     return calibration_records

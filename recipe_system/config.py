@@ -4,10 +4,15 @@
 #                                                                  recipe_system
 #                                                                      config.py
 # ------------------------------------------------------------------------------
-# $Id$
+from future import standard_library
+standard_library.install_aliases()
+from builtins import map
+from builtins import str
+from builtins import object
+
 # ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]
-__version_date__ = '$Date$'[7:-2]
+__version__      = '2.0 (beta)'
+
 # ------------------------------------------------------------------------------
 # CONFIG SERVICE
 
@@ -20,7 +25,7 @@ this module, and it should be used as the only interface to the config system.
 
 import os
 import types
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 from collections import defaultdict
 
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
@@ -77,7 +82,7 @@ class Section(object):
             raise AttributeError("Unknown attribute {0!r}".format(attr))
 
     def __repr__(self):
-        return "<Section [{0}]>".format(', '.join(self._contents.keys()))
+        return "<Section [{0}]>".format(', '.join(list(self._contents.keys())))
 
 class Converter(object):
     def __init__(self, conv_dict, cp):
@@ -137,7 +142,7 @@ class ConfigObject(object):
             name of a config entry in that section that will be exported, if
             found.
         """
-        for section, opts in expdict.items():
+        for section, opts in list(expdict.items()):
             self._exports[section].update(opts)
 
     def update_translation(self, conv):
@@ -183,21 +188,21 @@ class ConfigObject(object):
             from the config files.
         """
 
-        if type(filenames) in types.StringTypes:
+        if type(filenames) in (str,):
             filenames = (filenames,)
 
         # Set the default values
         if defaults is not None:
-            for section, sub_items in defaults.items():
+            for section, sub_items in list(defaults.items()):
                 current_section_conf = self._sections.get(section, Section({})).as_dict()
-                for key, value in sub_items.items():
+                for key, value in list(sub_items.items()):
                     if key not in current_section_conf:
                         current_section_conf[key] = value
                 self._sections[section] = Section(current_section_conf)
 
         cp = SafeConfigParser()
 
-        cp.read(map(os.path.expanduser, filenames))
+        cp.read(list(map(os.path.expanduser, filenames)))
 
         translate = Converter(self._conv.copy(), cp)
 
