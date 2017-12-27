@@ -730,13 +730,20 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
     Returns
     -------
     QAstatus: band (int/list), reqband, warning (list), info (str)
-        actual band(s), requested, warning comment/[], useful string for later presentation
+        actual band(s), requested, warning comment/[], useful string for later
+        presentation.
+
     """
+    cmp = lambda x, y: (x > y) - (x < y)
     log = logutils.get_logger(__name__)
     try:
         reqband = getattr(ad, 'requested_{}'.format(metric.lower()))()
     except:
         reqband = None
+
+    fmt1 = '95% confidence test indicates worse than CC{}'
+    fmt2 = '95% confidence test indicates borderline CC{} or one band worse'
+    fmt3 = '95% confidence test indicates CC{} or better'
     info = ''
     warning = ''
 
@@ -750,7 +757,7 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
             # Straightfoward determination of which band the measured value
             # lies in. The uncertainty on the measurement is ignored.
             bands, limits = list(zip(*sorted(limit_dict.items(),
-                                key=lambda (k,v): k, reverse=True)))
+                                             key=lambda k_v: k_v[0], reverse=True)))
             sign = cmp(limits[1], limits[0])
             inequality = '<' if sign > 0 else '>'
             qaband = 100
@@ -767,8 +774,7 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
             # Assumes the measured value and uncertainty represent a Normal
             # distribution, and works out the probability that the true value
             # lies in each band
-            bands, limits = list(zip(*sorted(limit_dict.items(),
-                                key=lambda (k,v): v)))
+            bands, limits = list(zip(*sorted(limit_dict.items(), key=lambda k_v: k_v[1])))
             bands = (100,)+bands if bands[0]>bands[1] else bands+(100,)
             # To Bayesian this, prepend (0,) to limits and not to probs
             # and renormalize (divide all by 1-probs[0]) and add prior
@@ -785,13 +791,13 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
             for b, p in zip(bands[:-1], probs[:-1]):
                 cum_prob += p
                 if cum_prob < 0.05:
-                    log.fullinfo('95% confidence test indicates worse than CC{}'.format(b))
+                    log.fullinfo(fmt1.format(b))
                     if b == reqband:
                         warning = 'CC requirement not met at the 95% confidence level'
                 elif cum_prob < 0.95:
-                    log.fullinfo('95% confidence test indicates borderline CC{} or one band worse'.format(b))
+                    log.fullinfo(fmt2.format(b))
                 else:
-                    log.fullinfo('95% confidence test indicates CC{} or better'.format(b))
+                    log.fullinfo(fmt3.format(b))
 
     return QAstatus(qaband, reqband, warning, info)
 
@@ -1169,17 +1175,25 @@ def _strehl(ad, sources):
         return Measurement(strehl, strehl_std, len(strehl_list))
     return Measurement(None, None, 0)
 
-def _quick_psf(xc,yc, pixscale, wavelength, diameter, obsc_diam=0.0):
+def _quick_psf(xc, yc, pixscale, wavelength, diameter, obsc_diam=0.0):
     """
     Calculate the peak pixel flux (normalized to total flux) for a perfect
     diffraction pattern due by a circular aperture of a given diameter
     with a central obscuration.
-    
-    :param xc,yc: pixel center (only subpixel location matters)
-    :param pixscale: pixel scale in arcseconds
-    :param wavelength: wavelength in metres
-    :param diameter: diameter of aperture in metres
-    :param obsc_diam: diameter of central obscuration in metres
+
+    Parameters
+    ----------
+    xc, yc:
+        Pixel center (only subpixel location matters)
+    pixscale:
+        Pixel scale in arcseconds
+    wavelength:
+        Wavelength in metres
+    diameter:
+        Diameter of aperture in metres
+    obsc_diam:
+        Diameter of central obscuration in metres
+
     """
     xfrac = np.modf(float(xc))[0]
     yfrac = np.modf(float(yc))[0]

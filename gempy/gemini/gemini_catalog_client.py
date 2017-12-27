@@ -4,10 +4,8 @@
 #                                                                   gempy.gemini
 #                                                       gemini_catalog_client.py
 # ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]
-__version_date__ = '$Date$'[7:-2]
+from builtins import range
+__version__ = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 """
 This gemini_catalog_client module contains code to access various catalogs
@@ -20,6 +18,7 @@ For a given catalog, it has the capability to fall-back through a
 priority ordered list of servers if the primary server appears to be down.
 - It will handle this even if the secondard servers have the catalog in
 question in a different format to the primary.
+
 """
 # ------------------------------------------------------------------------------
 from astropy.vo.client.conesearch import conesearch as vo_conesearch
@@ -32,7 +31,7 @@ from astrodata import add_header_to_table
 from ..utils import logutils
 # ------------------------------------------------------------------------------
 # Used  to determine the function signature of the imported conesearch function
-function_defaults = vo_conesearch.func_defaults
+function_defaults = vo_conesearch.__defaults__
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------

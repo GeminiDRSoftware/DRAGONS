@@ -1,6 +1,8 @@
+from __future__ import print_function
 """
 Collection of functions to make pipeline-processed and 
 IRAF-processed files compatible with the other system.
+
 """
 # TODO: write unit tests for irafcompat
 
@@ -64,7 +66,7 @@ def _get_gmos_obsmode(ad):
         else:
             msg = "MASKTYP and MASKNAME are inconsistent. Cannot "\
                    "assign OBSMODE."
-            raise ValueError, msg
+            raise ValueError(msg)
     elif masktype == 1:
         if re.search('arcsec', maskname):
             obsmode = "LONGSLIT"
@@ -75,18 +77,15 @@ def _get_gmos_obsmode(ad):
                 looks_like = "IMAGE"
             elif maskname[0:3] == "IFU":
                 looks_like = "IFU"
-            print "ERROR: Should be LONGSLIT or MOS but "\
-                   "looks like {0}".format(looks_like)
-            msg = "MASKTYP and MASKNAME are inconsistent. Cannot "\
-                   "assign OBSMODE."
-            raise ValueError, msg
+            print("ERROR: Should be LONGSLIT or MOS but looks like {0}".format(looks_like))
+            msg = "MASKTYP and MASKNAME are inconsistent. Cannot assign OBSMODE."
+            raise ValueError(msg)
     else:
-        print "WARNING: Headers not standard, assuming OBSMODE=IMAGE."
+        print("WARNING: Headers not standard, assuming OBSMODE=IMAGE.")
         obsmode = "IMAGE"
     
     if grating == "MIRROR" and obsmode != "IMAGE":
-        print "WARNING: Mask or IFU used without grating, setting "\
-                        "OBSMODE to IMAGE."
+        print("WARNING: Mask or IFU used without grating, setting OBSMODE to IMAGE.")
         obsmode = "IMAGE"
 
     return obsmode
