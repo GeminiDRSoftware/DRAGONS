@@ -1350,6 +1350,18 @@ class AstroDataGemini(AstroDataFits):
         return self.hdr.get(self._keyword_for('read_noise'))
 
     @astro_data_descriptor
+    def read_speed_setting(self):
+        """
+        Returns the read speed setting for the observation
+
+        Returns
+        -------
+        str
+            the read speed setting
+        """
+        return self.phu.get(self._keyword_for('read_speed_setting'))
+
+    @astro_data_descriptor
     def requested_bg(self):
         """
         Returns the BG, background brightness, requested by the PI.
