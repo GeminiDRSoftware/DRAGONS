@@ -35,7 +35,6 @@ from astropy.nddata import NDData
 from astropy.table import Table
 import numpy as np
 
-INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
 LOGGER = logging.getLogger('AstroData FITS')
 
@@ -298,9 +297,9 @@ def normalize_indices(slc, nitems):
     if isinstance(slc, slice):
         start, stop, step = slc.indices(nitems)
         indices = list(range(start, stop, step))
-    elif isinstance(slc, INTEGER_TYPES) or (isinstance(slc, tuple) and all(isinstance(i, INTEGER_TYPES) for i in slc)):
-        if isinstance(slc, INTEGER_TYPES):
-            slc = (int(slc),)   # slc's type m
+    elif isinstance(slc, int) or (isinstance(slc, tuple) and all(isinstance(i, int) for i in slc)):
+        if isinstance(slc, int):
+            slc = (slc,)
             multiple = False
         else:
             multiple = True
