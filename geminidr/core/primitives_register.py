@@ -589,7 +589,7 @@ def _apply_model_to_wcs(adinput, transform=None, keyword_comments=None):
                             for p in model.param_names if 'angle' in p])
 
         cdmatrix = [[ad.hdr['CD{}_{}'.format(i,j)][0] / magnification
-                     for j in 1, 2] for i in 1, 2]
+                     for j in [1, 2]] for i in [1, 2]]
         m = models.Rotation2D(-rotation)
         newcdmatrix = m(*cdmatrix)
         for ax in 1, 2:

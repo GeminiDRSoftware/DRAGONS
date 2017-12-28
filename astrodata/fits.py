@@ -35,6 +35,7 @@ from astropy.nddata import NDData
 from astropy.table import Table
 import numpy as np
 
+INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
 LOGGER = logging.getLogger('AstroData FITS')
 
@@ -226,12 +227,13 @@ def header_for_table(table):
     columns = []
     for col in table.itercols():
         descr = {'name': col.name}
+        typekind = col.dtype.kind
         typename = col.dtype.name
-        if typename.startswith('str'): # Array of strings
-            strlen = col.dtype.itemsize
+        if typekind in {'S', 'U'}: # Array of strings
+            strlen = col.dtype.itemsize // col.dtype.alignment
             descr['format'] = '{}A'.format(strlen)
             descr['disp'] = 'A{}'.format(strlen)
-        elif typename == 'object': # Variable length array
+        elif typekind == 'O': # Variable length array
             raise TypeError("Variable length arrays like in column '{}' are not supported".format(col.name))
         else:
             try:
@@ -297,9 +299,9 @@ def normalize_indices(slc, nitems):
     if isinstance(slc, slice):
         start, stop, step = slc.indices(nitems)
         indices = list(range(start, stop, step))
-    elif isinstance(slc, int) or (isinstance(slc, tuple) and all(isinstance(i, int) for i in slc)):
-        if isinstance(slc, int):
-            slc = (slc,)
+    elif isinstance(slc, INTEGER_TYPES) or (isinstance(slc, tuple) and all(isinstance(i, INTEGER_TYPES) for i in slc)):
+        if isinstance(slc, INTEGER_TYPES):
+            slc = (int(slc),)   # slc's type m
             multiple = False
         else:
             multiple = True

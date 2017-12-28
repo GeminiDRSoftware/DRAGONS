@@ -372,7 +372,7 @@ def _estimate_seeing(objcat):
     else:
         seeing_estimate = None
 
-    if seeing_estimate <= 0:
+    if seeing_estimate and seeing_estimate <= 0:
         seeing_estimate = None
 
     return seeing_estimate

@@ -4,6 +4,9 @@
 #                                                                   gempy.gemini
 #                                                                   qap_tools.py
 # ------------------------------------------------------------------------------
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
 __version__ = 'beta (new hope)'
 # ------------------------------------------------------------------------------
 import os
@@ -11,7 +14,7 @@ import sys
 import json
 import getpass
 import socket
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from ..utils import logutils
 
@@ -35,11 +38,11 @@ def ping_adcc():
     site = None
     url = "http://localhost:8777/rqsite.json"
     try:
-        request = urllib2.Request(url)
-        adcc_file = urllib2.urlopen(request)
+        request = urllib.request.Request(url)
+        adcc_file = urllib.request.urlopen(request)
         site = adcc_file.read()
         adcc_file.close()
-    except (urllib2.HTTPError, urllib2.URLError):
+    except (urllib.error.HTTPError, urllib.error.URLError):
         pass
 
     if site:
@@ -68,13 +71,15 @@ def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
     evman = EventsManager()
     evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)
     event_pkt = evman.event_list.pop()
-    postdata = json.dumps(event_pkt)
+    jdata = json.dumps(event_pkt).encode('utf-8')
+    postdata = jdata
+    #postdata = urllib.parse.urlencode(jdata).encode('utf-8')
     try:
-        post_request = urllib2.Request(URL)
-        postr = urllib2.urlopen(post_request, postdata)
+        post_request = urllib.request.Request(URL)
+        postr = urllib.request.urlopen(post_request, postdata)
         postr.read()
         postr.close()
-    except urllib2.HTTPError:
+    except urllib.error.HTTPError:
         log.warning("Attempt to deliver metrics to adcc failed.")
 
     return
@@ -110,11 +115,11 @@ def status_report(status):
     event_pkt = evman.event_list.pop()
     postdata = json.dumps(event_pkt)
     try:
-        post_request = urllib2.Request(URL)
-        postr = urllib2.urlopen(post_request, postdata)
+        post_request = urllib.request.Request(URL)
+        postr = urllib.request.urlopen(post_request, postdata)
         postr.read()
         postr.close()
-    except urllib2.HTTPError:
+    except urllib.error.HTTPError:
         log.warning("Attempt to deliver status report to adcc failed.")
 
     return
@@ -211,10 +216,11 @@ def send_fitsstore_report(qareport, calurl_dict):
     """
     qalist = [qareport]
     try:
-        req = urllib2.Request(url=calurl_dict["QAMETRICURL"], data=json.dumps(qalist))
-        f = urllib2.urlopen(req)
+        req = urllib.request.Request(url=calurl_dict["QAMETRICURL"], data=json.dumps(qalist))
+        f = urllib.request.urlopen(req)
         f.close()
-    except urllib2.HTTPError, urllib2.URLError:
+    except urllib.error.HTTPError as xxx_todo_changeme:
+        urllib.error.URLError = xxx_todo_changeme
         log.warning("Attempt to deliver metrics to fitsstore failed.")
 
     return
