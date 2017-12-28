@@ -362,6 +362,7 @@ class GMOS(Gemini, CCD):
                 for ccd in range(1, num_ccd+1):
                     amps_on_ccd = ampsorder[ccd_map==ccd]
                     extns = [ad[i] for i in amps_on_ccd]
+                    
                     # Use the centre-left amplifier's HDU as basis for new HDU
                     ref_ext = amps_on_ccd[(len(amps_on_ccd) - 1) // 2]
                     # Stack the data, etc.

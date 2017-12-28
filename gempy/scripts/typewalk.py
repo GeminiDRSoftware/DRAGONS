@@ -4,6 +4,9 @@
 #
 #                                                                    typewalk.py
 # ------------------------------------------------------------------------------
+from __future__ import print_function
+from builtins import str
+from builtins import object
 __version__ = "v2.0 (beta) "
 # ------------------------------------------------------------------------------
 desc = """
@@ -198,7 +201,7 @@ class DataSpider(object):
                 try:
                     matched = re.match(mask, tfile)
                 except:
-                    print "BAD FILEMASK (must be a valid regexp):", mask
+                    print("BAD FILEMASK (must be a valid regexp):", mask)
                     return str(sys.exc_info()[1])
 
                 if (re.match(mask, tfile)) :
@@ -207,10 +210,10 @@ class DataSpider(object):
                         fl = astrodata.open(fname)
                         dtypes = list(fl.tags)
                     except IOError:
-                        print "Could not open file: %s" % fname
+                        print("Could not open file: %s" % fname)
                         continue
                     except AstroDataError:
-                        print "AstroData failed to open file: %s" % fname
+                        print("AstroData failed to open file: %s" % fname)
                         continue
 
                     # exclude if dtypes has any xtypes
@@ -245,7 +248,7 @@ class DataSpider(object):
                         continue
 
                     if firstfile:
-                        print rootln
+                        print(rootln)
 
                     firstfile = False
                     # PRINTING OUT THE FILE AND TYPE INFO
@@ -253,7 +256,7 @@ class DataSpider(object):
                     pwid = 40
                     fwid = pwid - indent
                     while len(tfile) >= (fwid - 1):
-                        print "     {}{}{}".format(Faces.BLUE, tfile, Faces.END)
+                        print("     {}{}{}".format(Faces.BLUE, tfile, Faces.END))
                         tfile = ""
 
                     if len(tfile) > 0:
@@ -268,7 +271,7 @@ class DataSpider(object):
                     fwid  = pwid+indent
                     lp    = len(prlin)
                     nsp   = pwid - ( lp % pwid )
-                    print prlincolor+("."*nsp)+"{}".format(Faces.END),
+                    print(prlincolor+("."*nsp)+"{}".format(Faces.END), end=' ')
                     tstr = ""
                     astr = ""
                     dtypes.sort()
@@ -280,7 +283,7 @@ class DataSpider(object):
 
                         astr += newtype
 
-                    print "{}{}{}".format(Faces.RED, astr, Faces.END)
+                    print("{}{}{}".format(Faces.RED, astr, Faces.END))
 
         if outfile and outfile_list:
             generate_outfile(outfile, outfile_list, only, or_logic, xtypes)
@@ -309,9 +312,9 @@ def main(options):
                     batchnum=int(options.batchnum)-1,
                     xtypes=options.xtags
         )
-        print "Done DataSpider.typewalk(..)"
+        print("Done DataSpider.typewalk(..)")
     except KeyboardInterrupt:
-        print "Interrupted by Control-C"
+        print("Interrupted by Control-C")
     return
 
 
