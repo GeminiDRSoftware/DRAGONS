@@ -187,8 +187,12 @@ class ConfigObject(object):
             the parent process. Those options will override the ones taken
             from the config files.
         """
+        try:
+            basestring
+        except NameError:
+            basestring = str
 
-        if type(filenames) in (str,):
+        if isinstance(filenames, basestring):
             filenames = (filenames,)
 
         # Set the default values
