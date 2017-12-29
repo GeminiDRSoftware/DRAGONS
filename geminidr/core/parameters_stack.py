@@ -37,13 +37,14 @@ class ParametersStack(ParametersBASE):
     }
     stackSkyFrames = {
         "suffix"            : "_skyStacked",
-        "dilation"          : 2,
         "apply_dq"          : True,
+        "dilation"          : 2,
+        "hsigma"            : 3.0,
+        "lsigma"            : 3.0,
         "mask_objects"      : True,
-        "nhigh"             : 1,
-        "nlow"              : 1,
+        "mclip"             : True,
         "operation"         : "median",
-        "reject_method"     : "avsigclip",
+        "reject_method"     : "sigclip",
         "scale"             : True,
         "zero"              : False,
     }
