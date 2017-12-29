@@ -1310,6 +1310,8 @@ class FitsLazyLoadable(object):
             bitpix = self._obj._orig_bitpix
             if bitpix < 0:
                 dtype = np.dtype('float{}'.format(abs(bitpix)))
+        if self._obj.header['EXTNAME'] == 'DQ':
+            dtype = np.uint16
         return dtype
 
 class FitsLoader(object):
