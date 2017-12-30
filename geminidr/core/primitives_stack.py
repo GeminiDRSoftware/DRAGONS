@@ -11,7 +11,6 @@ from astropy import table
 from functools import partial
 
 from gempy.gemini import gemini_tools as gt
-from gempy.gemini.eti import gemcombineeti
 
 from geminidr import PrimitivesBASE
 from .parameters_stack import ParametersStack
@@ -53,106 +52,6 @@ class Stack(PrimitivesBASE):
     def stackFlats(self, adinputs=None, **params):
         """Default behaviour is just to stack images as normal"""
         return self.stackFrames(adinputs, **params)
-
-    def stackFramesOld(self, adinputs=None, **params):
-        """
-        This primitive will stack each science extension in the input dataset.
-        New variance extensions are created from the stacked science extensions
-        and the data quality extensions are propagated through to the final
-        file.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-
-        apply_dq: bool
-            apply DQ mask to data before combining?
-
-        nhigh: int
-            number of high pixels to reject
-
-        nlow: int
-            number of low pixels to reject
-
-        operation: str
-            combine method
-
-        reject_method: str
-            type of pixel rejection (passed to gemcombine)
-
-        zero: bool
-            apply zero-level offset to match background levels?
-
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["stackFrames"]
-        sfx = params["suffix"]
-
-        if len(adinputs) <= 1:
-            log.stdinfo("No stacking will be performed, since at least two "
-                        "input AstroData objects are required for stackFrames")
-            return adinputs
-
-        # Ensure that each input AstroData object has been prepared
-        for ad in adinputs:
-            if not "PREPARED" in ad.tags:
-                raise IOError("{} must be prepared" .format(ad.filename))
-
-        # Determine the average gain from the input AstroData objects and
-        # add in quadrature the read noise
-        gains = [ad.gain() for ad in adinputs]
-        read_noises = [ad.read_noise() for ad in adinputs]
-
-        assert all(gain is not None for gain in gains), "Gain problem"
-        assert all(rn is not None for rn in read_noises), "RN problem"
-
-        # Compute gain and read noise of final stacked images
-        nexts = len(gains[0])
-        gain_list = [np.mean([gain[i] for gain in gains])
-                     for i in range(nexts)]
-        read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
-                                     for i in range(nexts)]
-
-        # Match the background levels
-        if params["zero"]:
-            adinputs = self.correctBackgroundToReference(adinputs,
-                                remove_background=params["remove_background"])
-
-        # Instantiate ETI and then run the task
-        gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
-        ad_out = gemcombine_task.run()
-
-        # Propagate REFCAT as the union of all input REFCATs
-        refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
-        if refcats:
-            out_refcat = table.unique(table.vstack(refcats,
-                                metadata_conflicts='silent'), keys='Cat_Id')
-            out_refcat['Cat_Id'] = list(range(1, len(out_refcat)+1))
-            ad_out.REFCAT = out_refcat
-
-        # Gemcombine sets the GAIN keyword to the sum of the gains;
-        # reset it to the average instead. Set the RDNOISE to the
-        # sum in quadrature of the input read noise. Set the keywords in
-        # the variance and data quality extensions to be the same as the
-        # science extensions.
-        for ext, gain, rn in zip(ad_out, gain_list, read_noise_list):
-            ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
-            ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
-        # Stick the first extension's values in the PHU
-        ad_out.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
-        ad_out.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
-
-        # Add suffix to datalabel to distinguish from the reference frame
-        ad_out.phu.set('DATALAB', "{}{}".format(ad_out.data_label(), sfx),
-                   self.keyword_comments['DATALAB'])
-
-        # Timestamp and update filename and prepare to return single output
-        gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-        ad_out.update_filename(suffix=sfx, strip=True)
-
-        return [ad_out]
 
     def stackFrames(self, adinputs=None, **params):
         """

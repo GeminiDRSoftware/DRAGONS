@@ -14,16 +14,6 @@ class ParametersStack(ParametersBASE):
         "operation"         : "median",
         "reject_method"     : "minmax",
     }
-    stackFramesOld = {
-        "suffix"            : "_stack",
-        "apply_dq"          : True,
-        "nhigh"             : 1,
-        "nlow"              : 1,
-        "operation"         : "average",
-        "reject_method"     : "avsigclip",
-        "remove_background" : False,
-        "zero"              : True,
-    }
     stackFrames = {
         "suffix"            : "_stack",
         "apply_dq"          : True,
