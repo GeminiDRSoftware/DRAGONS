@@ -32,7 +32,7 @@ Get path and filename::
 
 Write to a new file::
 
-    >>> ad.write(fileobj='new154.fits')
+    >>> ad.write(filename='new154.fits')
     >>> ad.filename
     N20170609S0154.fits
 
@@ -41,7 +41,7 @@ Overwrite the file::
     >>> adnew = astrodata.open('new154.fits')
     >>> adnew.filename
     new154.fits
-    >>> adnew.write(clobber=True)
+    >>> adnew.write(overwrite=True)
 
 Object structure
 ================
