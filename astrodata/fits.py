@@ -1551,12 +1551,16 @@ class AstroDataFits(AstroData):
     def info(self):
         self._dataprov.info(self.tags)
 
-    def write(self, fileobj=None, clobber=False):
-        if fileobj is None:
+    def write(self, filename=None, overwrite=False):
+        if filename is None:
             if self.path is None:
-                raise ValueError("A file name needs to be specified")
-            fileobj = self.path
-        self._dataprov.to_hdulist().writeto(fileobj, clobber=clobber)
+                raise ValueError("A filename needs to be specified")
+            filename = self.path
+        # Cope with astropy v1 and v2
+        if 'overwrite' in inspect.getargspec(HDUList.writeto).args:
+            self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
+        else:
+            self._dataprov.to_hdulist().writeto(filename, clobber=overwrite)
 
     def update_filename(self, prefix='', suffix='', strip=False):
         if strip:

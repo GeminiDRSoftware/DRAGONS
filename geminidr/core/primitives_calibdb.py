@@ -192,7 +192,7 @@ class CalibDB(PrimitivesBASE):
 
         for ad in adinputs:
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
-            ad.write(fname, clobber=True)
+            ad.write(fname, overwrite=True)
             log.stdinfo("Calibration stored as {}".format(fname))
             if self.upload and 'calibs' in self.upload:
                 try:

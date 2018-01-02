@@ -375,9 +375,9 @@ class Reduce(object):
         for ad in outputs:
             if self.suffix:
                 username = _sname(ad.filename)
-                ad.write(username, clobber=True)
+                ad.write(username, overwrite=True)
                 log.stdinfo(outstr.format(username))
             elif ad.filename != ad.orig_filename:
-                ad.write(ad.filename, clobber=True)
+                ad.write(ad.filename, overwrite=True)
                 log.stdinfo(outstr.format(ad.filename))
         return

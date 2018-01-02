@@ -85,8 +85,8 @@ class TestGemcombine(object):
         gemcombine_task = \
             eti.gemcombineeti.GemcombineETI(inputs, parameters)
         ad_stack = gemcombine_task.run()
-        ad_stack.write(clobber=True)
+        ad_stack.write(overwrite=True)
         del inputs
         del ad_stack
-        ##  NEED TO ADD A FITS DIFF.  Then remove clobber and delete
+        ##  NEED TO ADD A FITS DIFF.  Then remove overwrite and delete
         ##  the output fits once the diff is completed.
