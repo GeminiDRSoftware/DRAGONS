@@ -853,6 +853,7 @@ class AstroData(object):
         self._dataprov /= oper
         return self
 
+    __itruediv__ = __idiv__
     add = __iadd__
     subtract = __isub__
     multiply = __imul__

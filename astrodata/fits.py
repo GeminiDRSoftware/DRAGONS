@@ -709,6 +709,8 @@ class FitsProvider(DataProvider):
         self._standard_nddata_op(NDDataObject.divide, operand)
         return self
 
+    __itruediv__ = __idiv__
+
     def set_phu(self, phu):
         self._phu = phu
 
