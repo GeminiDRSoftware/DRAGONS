@@ -1,8 +1,12 @@
+from __future__ import division
+from __future__ import print_function
 #
 #                                                                  gemini_python
 #
 #                                                        primtives_gmos_image.py
 #  ------------------------------------------------------------------------------
+from builtins import zip
+from past.utils import old_div
 import numpy as np
 from copy import deepcopy
 import scipy.ndimage as ndimage
@@ -360,6 +364,7 @@ class GMOSImage(GMOS, Image, Photometry):
             log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
                          "statistics".format(xborder,ext.data.shape[1]-xborder,
                           yborder,ext.data.shape[0]-yborder))
+
             stat_region = ext.data[yborder:-yborder, xborder:-xborder]
                         
             # Remove DQ-flagged values (including saturated values)
@@ -372,7 +377,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Find the mode and standard deviation
             hist,edges = np.histogram(stat_region,
-                                      bins=int(np.max(ext.data)/0.1))
+                                      bins=int(old_div(np.max(ext.data),0.1)))
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)
             
@@ -427,13 +432,14 @@ class GMOSImage(GMOS, Image, Photometry):
             log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
                          "statistics".format(xborder, data.shape[1] - xborder,
                                              yborder, data.shape[0] - yborder))
+
             stat_region = data[yborder:-yborder, xborder:-xborder]
             mean = np.mean(stat_region)
 
             # Set reference level to the first image's mean
             if ref_mean is None:
                 ref_mean = mean
-            scale = ref_mean / mean
+            scale = old_div(ref_mean, mean)
 
             # Log and save the scale factor, and multiply by it
             log.fullinfo("Relative intensity for {}: {:.3f}".format(
@@ -510,7 +516,7 @@ class GMOSImage(GMOS, Image, Photometry):
                 log.fullinfo("Using exposure times to calculate the scaling "
                              "factor")
                 try:
-                    scale = ad.exposure_time() / fringe.exposure_time()
+                    scale = old_div(ad.exposure_time(), fringe.exposure_time())
                 except:
                     log.warning("Cannot get exposure times for {} and {}. "
                                 "Scaling by statistics instead.".format(
@@ -603,7 +609,7 @@ class GMOSImage(GMOS, Image, Photometry):
                 # This tends to overestimate the factor, but it is
                 # at least in the right ballpark, unlike the estimation
                 # used in girmfringe (masked_sci.std/fringe.std)
-                scale = sci_df / frn_df
+                scale = old_div(sci_df, frn_df)
 
             log.fullinfo("Scale factor found = {:.3f}".format(scale))
             scaled_fringe = deepcopy(fringe).multiply(scale)
