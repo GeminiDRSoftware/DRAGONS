@@ -137,6 +137,11 @@ class Visualize(PrimitivesBASE):
             # Otherwise, flatten all desired extensions into a single list
             if tile and len(ad) > 1:
                 log.fullinfo("Tiling extensions together before displaying")
+
+                # !! This is the replacement call for tileArrays() !!
+                # !! mosaicADdetectors handles both GMOS and GSAOI !!
+                # ad = self.mosaicADdetectors(tile=True)[0]
+
                 ad = self.tileArrays([ad], tile_all=True)[0]
 
             # Each extension is an individual display item (if the data have been
@@ -256,18 +261,34 @@ class Visualize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        
         do_img = params['doimg']
         suffix = params['suffix']
         tile = params['tile']
 
         adoutputs = []
         for ad in adinputs:
+            # Data validation
+            if ad.phu.get('GPREPARE') is None and ad.phu.get('PREPARE') is None:
+                raise IOError('{} must be prepared'.format(ad.filename))
+
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by mosaicDetectors".
+                            format(ad.filename))
+                continue
+
+            if len(ad) == 1:
+                log.stdinfo("No changes will be made to {}, since it "
+                            "contains only one extension".format(ad.filename))
+                continue
+            
             log.stdinfo("\tMosaicAD Working on {}".format(_compat(ad.tags)))
             log.stdinfo("\tConstructing MosaicAD instance ...")
 
             mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
 
-            log.stdinfo("\tMaking mosaic, converting data ...")
+            log.stdinfo("\tBuilding mosaic, converting data ...")
 
             ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
 
@@ -279,6 +300,25 @@ class Visualize(PrimitivesBASE):
 
 
     def tileArrays(self, adinputs=None, **params):
+        """
+        This tiles the GMOS detectors together
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+
+        tile: bool
+            tile to a single extension (as opposed to one extn per CCD)?
+
+         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        # Using mosaicADdetectors rather than tileArrays()
+        # mosaicADdetectors() handles both GSAOI and GMOS,
+        self.mosaicADdetectors(tile=True)
         return adinputs
 
 ##############################################################################
