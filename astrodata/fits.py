@@ -603,6 +603,10 @@ class FitsProvider(DataProvider):
         for attr in to_copy:
             nfp.__dict__[attr] = deepcopy(self.__dict__[attr])
 
+        # Top-level tables
+        for key in set(self.__dict__) - set(nfp.__dict__):
+            nfp.__dict__[key] = nfp.__dict__['_tables'][key]
+
         return nfp
 
     def _clone(self, mapping=None):
@@ -665,6 +669,7 @@ class FitsProvider(DataProvider):
             raise ValueError("Can't delete non-capitalized attributes")
         try:
             del self._tables[attribute]
+            del self.__dict__[attribute]
         except KeyError:
             raise AttributeError("'{}' is not a global table for this instance".format(attribute))
 
