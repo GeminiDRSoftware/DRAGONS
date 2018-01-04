@@ -136,8 +136,7 @@ class MosaicAD(Mosaic):
 
         """
         adout = astrodata.create(self.ad.phu)
-        adout.phu.set('TILED', ['FALSE', 'TRUE'][tile])
-        adout.phu.set_comment('TILED', 'True: tiled; False: Image Mosaicked')
+        adout.phu['TILED'] = (repr(tile).upper(), 'True: tiled; False: Image Mosaicked')
 
         # image arrays mosaicked: 'data', 'variance', 'mask', 'OBJMASK'.
         # SCI
