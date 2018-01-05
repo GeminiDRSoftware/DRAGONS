@@ -248,14 +248,16 @@ class Visualize(PrimitivesBASE):
             ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
 
         """
+        fmat1 = "No changes will be made to {}, since it has "
+        fmat1 += "already been processed by mosaicADdetectors"
+        fmat2 = "No changes will be made to {}; only one extension present."
+
         def _compat(tlist):
             item = None
             if "GMOS" in tlist and "IMAGE" in tlist:
                 item = 'GMOS IMAGE'
             elif "GSAOI" in tlist and "IMAGE" in tlist:
                 item = 'GSAOI IMAGE'
-            if not item:
-                raise TypeError("File is not a supported type.")
             return item
 
         log = self.log
@@ -268,28 +270,26 @@ class Visualize(PrimitivesBASE):
 
         adoutputs = []
         for ad in adinputs:
+            if not _compat(ad.tags):
+                adoutputs.append(ad)
+                continue
+
             # Data validation
             if ad.phu.get('GPREPARE') is None and ad.phu.get('PREPARE') is None:
                 raise IOError('{} must be prepared'.format(ad.filename))
 
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by mosaicDetectors".
-                            format(ad.filename))
-                continue
+                log.warning(fmat1.format(ad.filename))
 
             if len(ad) == 1:
-                log.stdinfo("No changes will be made to {}, since it "
-                            "contains only one extension".format(ad.filename))
+                log.stdinfo(fmat2.format(ad.filename))
+                adoutputs.append(ad)
                 continue
-            
-            log.stdinfo("\tMosaicAD Working on {}".format(_compat(ad.tags)))
-            log.stdinfo("\tConstructing MosaicAD instance ...")
 
+            log.stdinfo("\tMosaicAD Working on {}".format(_compat(ad.tags)))
             mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
 
             log.stdinfo("\tBuilding mosaic, converting data ...")
-
             ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
@@ -301,7 +301,7 @@ class Visualize(PrimitivesBASE):
 
     def tileArrays(self, adinputs=None, **params):
         """
-        This tiles the GMOS detectors together
+        This tiles GMOS and GSOAI chips.
 
         Parameters
         ----------
@@ -318,8 +318,8 @@ class Visualize(PrimitivesBASE):
 
         # Using mosaicADdetectors rather than tileArrays()
         # mosaicADdetectors() handles both GSAOI and GMOS,
-        self.mosaicADdetectors(tile=True)
-        return adinputs
+        adoutputs = self.mosaicADdetectors(tile=True)
+        return adoutputs
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
