@@ -63,7 +63,7 @@ class InAtList(GemcombineFile):
             self.diskinlist.append(ad.filename)
             log.fullinfo("Temporary image (%s) on disk for the IRAF task %s" % \
                           (ad.filename, self.taskname))
-            ad.write(ad.filename, clobber=True)
+            ad.write(ad.filename, overwrite=True)
             ad.filename = origname
         self.atlist = "tmpImageList" + self.pid_task
         fhdl = open(self.atlist, "w")
