@@ -127,6 +127,8 @@ class Stack(PrimitivesBASE):
 
         # Compute the scale and offset values by accessing the memmapped data
         # so we can pass those to the stacking function
+        # TODO: Should probably be done better to consider only the overlap
+        # regions between frames
         num_img = len(adinputs)
         num_ext = len(adinputs[0])
         zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
