@@ -184,7 +184,7 @@ class MosaicAD(Mosaic):
         # Propagate any REFCAT
         if not doimg:
             if hasattr(self.ad, 'REFCAT'):
-                adout[0].REFCAT = getattr(self.ad, 'REFCAT')
+                adout.REFCAT = self.ad.REFCAT
 
         return adout
 
