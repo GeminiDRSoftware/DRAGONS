@@ -68,7 +68,7 @@ class GMOS(Gemini, CCD):
         adoutputs = []
         for ad in adinputs:
             # Data validation
-            if ad.phu.get('GPREPARE') is None and ad.phu.get('PREPARE') is None:
+            if 'PREPARED' not in ad.tags:
                 raise IOError('{} must be prepared'.format(ad.filename))
 
             if ad.phu.get(timestamp_key):
