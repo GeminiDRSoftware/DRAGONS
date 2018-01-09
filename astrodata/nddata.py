@@ -177,9 +177,9 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
                     self.uncertainty = temp
                 return temp
             elif section is not None:
-                return np.array(self._uncertainty, copy=False)[section]
+                return self._uncertainty[section]
             else:
-                return np.array(self._uncertainty, copy=False)
+                return self._uncertainty
 
     def _get_simple(self, target, section=None):
         source = getattr(self, target)
