@@ -318,7 +318,7 @@ class Visualize(PrimitivesBASE):
 
         # Using mosaicADdetectors rather than tileArrays()
         # mosaicADdetectors() handles both GSAOI and GMOS,
-        adoutputs = self.mosaicADdetectors(tile=True)
+        adoutputs = self.mosaicADdetectors(adinputs, tile=True)
         return adoutputs
 
 ##############################################################################
