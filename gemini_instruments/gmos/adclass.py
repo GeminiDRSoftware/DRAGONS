@@ -909,7 +909,7 @@ class AstroDataGmos(AstroDataGemini):
         overscan_levels = self.hdr.get('OVERSCAN')
 
         detname = self.detector_name(pretty=True)
-        detector = self.header[0]['DETECTOR']  # the only way to distinguish GMOS-S Ham pre/post video board work.
+        detector = self.phu['DETECTOR']  # the only way to distinguish GMOS-S Ham pre/post video board work.
         xbin = self.detector_x_bin()
         ybin = self.detector_y_bin()
         bin_factor = xbin * ybin
