@@ -1,12 +1,10 @@
 from __future__ import print_function
 
 import numpy as np
-from scipy import interpolate
 from astropy.stats import sigma_clip
-from functools import partial, wraps
+from functools import wraps
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from datetime import datetime
 
 import inspect
 
@@ -271,13 +269,14 @@ class NDStacker(object):
         else:
             num_img = data.shape[0]
             # Because I'm sorting, I'll put large dummy values in a numpy array
-            data = np.where(mask, np.inf, data)
-            # Sorts variance with data
-            arg = np.argsort(data, axis=0)
+            # Have to keep all values if all values are masked!
+            # Sorts variance and mask with data
+            arg = np.argsort(np.where(mask, np.inf, data), axis=0)
             data = take_along_axis(data, arg, axis=0)
             variance = take_along_axis(variance, arg, axis=0)
-            num_good = NDStacker._num_good(mask)
+            mask = take_along_axis(mask, arg, axis=0)
             # IRAF imcombine maths
+            num_good = NDStacker._num_good(mask)
             nlo = (num_good * float(nmin) / num_img + 0.001).astype(int)
             nhi = num_good - (num_good * float(nmax) / num_img + 0.001).astype(int) - 1
             mask = np.zeros_like(data, dtype=bool)

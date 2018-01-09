@@ -23,6 +23,7 @@ except ImportError:
 from .core import AstroData, DataProvider, astro_data_descriptor
 from .nddata import NDAstroData as NDDataObject, new_variance_uncertainty_instance
 
+import astropy
 from astropy.io import fits
 from astropy.io.fits import HDUList, Header, DELAYED
 from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
@@ -1481,6 +1482,9 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
                           mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
                           meta=sequence[0].meta)
 
+    # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
+    log_level = astropy.logger.conf.log_level
+    astropy.log.setLevel(astropy.logger.WARNING)
     for coords in generate_boxes(shape, kernel):
         # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
         # Zipping them will get us a more desirable ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
@@ -1488,6 +1492,7 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
         section = tuple([slice(start, end) for (start, end) in coords])
         result.set_section(section, fn((element.window[section] for element in sequence)))
         gc.collect()
+    astropy.log.setLevel(log_level)  # and reset
 
     return result
 
