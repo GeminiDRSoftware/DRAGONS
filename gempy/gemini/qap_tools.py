@@ -73,7 +73,6 @@ def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
     event_pkt = evman.event_list.pop()
     jdata = json.dumps(event_pkt).encode('utf-8')
     postdata = jdata
-    #postdata = urllib.parse.urlencode(jdata).encode('utf-8')
     try:
         post_request = urllib.request.Request(URL)
         postr = urllib.request.urlopen(post_request, postdata)
@@ -113,7 +112,7 @@ def status_report(status):
     evman = EventsManager()
     evman.append_event(ad=ad, name='status', mdict=mdict, msgtype='reduce_status')
     event_pkt = evman.event_list.pop()
-    postdata = json.dumps(event_pkt)
+    postdata = json.dumps(event_pkt).encode('utf-8')
     try:
         post_request = urllib.request.Request(URL)
         postr = urllib.request.urlopen(post_request, postdata)
