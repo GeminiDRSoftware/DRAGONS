@@ -1,5 +1,5 @@
 #
-#                                                                  gemini_python
+#                                                                        DRAGONS
 #
 #                                                                   gempy.gemini
 #                                                                   qap_tools.py
@@ -7,7 +7,9 @@
 from future import standard_library
 standard_library.install_aliases()
 from builtins import zip
-__version__ = 'beta (new hope)'
+from concurrent.futures import TimeoutError
+# ------------------------------------------------------------------------------
+__version__ = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 import os
 import sys
@@ -203,23 +205,35 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, mode, upload=False):
 
 def send_fitsstore_report(qareport, calurl_dict):
     """
-    Sends a QA report to the FITSStore for ingestion
+    Send a QA report to the FITSStore for ingestion.
 
     Parameters
     ----------
-    qareport: dict
-        the QA report
-    calurl_dict: dict
-        information about the FITSstore
+    qareport: <dict>
+        QA metrics report
+
+    calurl_dict: <dict>
+        Provides FITSstore URLs. See the DRAGONS file, 
+        recipe_system.cal_service.calurl_dict
+
+    Return
+    ------
+    <void>
 
     """
+    tout_msg = "{} - Could not deliver metrics to fitsstore. "
+    tout_msg += "Server failed to respond."
     qalist = [qareport]
+    jdata = json.dumps(qalist).encode('utf-8')
     try:
-        req = urllib.request.Request(url=calurl_dict["QAMETRICURL"], data=json.dumps(qalist))
+        req = urllib.request.Request(url=calurl_dict["QAMETRICURL"], data=jdata)
         f = urllib.request.urlopen(req)
         f.close()
+    except TimeoutError as err:
+        log.warning(tout_msg.format('TimeoutError'))
     except urllib.error.HTTPError as xxx_todo_changeme:
         urllib.error.URLError = xxx_todo_changeme
         log.warning("Attempt to deliver metrics to fitsstore failed.")
-
+    except Exception as err:
+        log.warning(str(err))
     return
