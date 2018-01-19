@@ -474,7 +474,7 @@ class Register(PrimitivesBASE):
                                  format(delta_dec, ddec_std))
                     info_list.append({"dra": delta_ra, "dra_std": dra_std,
                                       "ddec": delta_dec, "ddec_std": ddec_std,
-                                      "nsamples": num_matched})
+                                      "nsamples": int(num_matched)})
                 else:
                     log.stdinfo("Could not determine astrometric offset for "
                                 "{}:{}".format(ad.filename, extver))
