@@ -1,8 +1,14 @@
+from __future__ import division
 #
 #                                                                  gemini_python
 #
 #                                                                      mosaic.py
 # ------------------------------------------------------------------------------
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import numpy as np
 
 from .mosaicGeometry import MosaicGeometry
@@ -186,7 +192,7 @@ class Mosaic(object):
             return np.hstack(self.data_list)
 
         if block:
-            return self.get_blocks(block).values()[0]
+            return list(self.get_blocks(block).values())[0]
 
         # N blocks in (x,y)_direction
         nblocksx, nblocksy = self.geometry.mosaic_grid
@@ -203,7 +209,7 @@ class Mosaic(object):
             self.set_transformations()
 
         gaps = self.geometry.gap_dict[gap_mode]
-        gap_values = gaps.values()
+        gap_values = list(gaps.values())
         max_xgap = max([g[0] for g in gap_values])
         max_ygap = max([g[1] for g in gap_values])
 
@@ -212,11 +218,11 @@ class Mosaic(object):
         self.block_mosaic_coord = mos_data.block_mosaic_coord
 
         max_x = 0
-        for coords in self.block_mosaic_coord.values():
+        for coords in list(self.block_mosaic_coord.values()):
             max_x = max(max_x, coords[0], coords[1])
 
         mosaic_nx = max_x + max_xgap*(nblocksx-1)
-        mosaic_ny = max(v[3] for k, v in self.block_mosaic_coord.items()) + \
+        mosaic_ny = max(v[3] for k, v in list(self.block_mosaic_coord.items())) + \
                     max_ygap*(nblocksy-1)
 
         # Form a dictionary of blocks from the data_list, keys are tuples
@@ -225,7 +231,7 @@ class Mosaic(object):
 
         # If we have ROI, not all blocks in the block_data list are defined.
         # Get the 1st defined block_data element.
-        def_key = block_data.keys()[0]
+        def_key = list(block_data.keys())[0]
 
         # Setup mosaic output array. Same datatype as block_data's
         outtype = block_data[def_key].dtype
@@ -252,7 +258,7 @@ class Mosaic(object):
                 data = trans_obj.transform(data)
                 # Divide by the jacobian to conserve flux
                 indx = col + row*nblocksx
-                data = data / jfactor[indx]
+                data = old_div(data, jfactor[indx])
 
             # Get the block corner coordinates plus gaps wrt to mosaic origin
             x_gap, y_gap = gaps[(col, row)]
@@ -354,7 +360,7 @@ class Mosaic(object):
             for i in data_index[key]:
                 x1, x2, y1, y2 = bcoord[i]
                 # Convert to trimmed coordinates
-                detarray[y1:y2, x1:x2] = data_list[i]
+                detarray[int(y1):int(y2), int(x1):int(x2)] = data_list[i]
             block_data[key] = detarray
 
         return block_data
@@ -425,7 +431,7 @@ class Mosaic(object):
         xcoo_0, ycoo_0 = min([(dd[0], dd[2]) for dd in amp_mosaic_coord])
 
         # Calculate the mosaic array grid tuple (ncols,nrows).
-        nblocksx, nblocksy = max([((dd[1]-xcoo_0) / dnx, (dd[3]-ycoo_0) / dny)
+        nblocksx, nblocksy = max([(old_div((dd[1]-xcoo_0), dnx), old_div((dd[3]-ycoo_0), dny))
                                   for dd in amp_mosaic_coord])
 
         # Set the attribute
@@ -583,7 +589,7 @@ def reset_origins(ranges, per_block=False):
 
     # Rearrange the co-ordinate range sequences into (start, end) pairs
     # in order to iterate over their dimensions more easily:
-    in_pairs = tuple(zip(*[iter(coord_set)] * 2) for coord_set in ranges)
+    in_pairs = tuple(list(zip(*[iter(coord_set)] * 2)) for coord_set in ranges)
 
     # Derive the offset to apply to each co-ordinate of each sequence:
     if per_block:
@@ -592,7 +598,7 @@ def reset_origins(ranges, per_block=False):
     else:
         # First invert the nested ordering of pairs (by dimension and then
         # original sequence, rather than vice versa):
-        by_dim = zip(*[iter(coord_set) for coord_set in in_pairs])
+        by_dim = list(zip(*[iter(coord_set) for coord_set in in_pairs]))
         adj = ([min(pair[0] for pair in dim) for dim in by_dim] * 2
                for coord_set in ranges)
 

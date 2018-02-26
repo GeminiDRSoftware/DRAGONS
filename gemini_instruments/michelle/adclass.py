@@ -13,8 +13,8 @@ class AstroDataMichelle(AstroDataGemini):
                           read_mode = 'MODE')
 
     @staticmethod
-    def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME', '').upper() == 'MICHELLE'
+    def _matches_data(source):
+        return source[0].header.get('INSTRUME', '').upper() == 'MICHELLE'
 
     @astro_data_tag
     def _tag_instrument(self):

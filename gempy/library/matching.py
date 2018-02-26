@@ -183,7 +183,7 @@ def _stat(tree, updated_model, x, y, sigma, maxsig):
     maxsep = maxsig*sigma
     xt, yt = updated_model(x, y)
     start = datetime.now()
-    dist, idx = tree.query(zip(xt, yt), k=5, distance_upper_bound=maxsep)
+    dist, idx = tree.query(list(zip(xt, yt)), k=5, distance_upper_bound=maxsep)
     sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
     #print (datetime.now()-start).total_seconds(), updated_model.parameters, sum
     return -sum  # to minimize
@@ -216,7 +216,7 @@ class KDTreeFitter(Fitter):
                     getattr(model_copy, p).value = 20*xtol if pval == 0 \
                         else (np.sign(pval) * 20*xtol)
 
-        tree = spatial.cKDTree(zip(*ref_coords))
+        tree = spatial.cKDTree(list(zip(*ref_coords)))
         # avoid _convert_input since tree can't be coerced to a float
         x, y = in_coords
         farg = (model_copy, x, y, sigma, maxsig, tree)
@@ -606,8 +606,8 @@ def match_sources(incoords, refcoords, radius=2.0, priority=[]):
         index of matched sources in the reference list (-1 means no match)
     """
     matched = np.full((len(incoords[0]),), -1, dtype=int)
-    tree = spatial.cKDTree(zip(*refcoords))
-    dist, idx = tree.query(zip(*incoords), distance_upper_bound=radius)
+    tree = spatial.cKDTree(list(zip(*refcoords)))
+    dist, idx = tree.query(list(zip(*incoords)), distance_upper_bound=radius)
     for i in range(len(refcoords[0])):
         inidx = np.where(idx==i)[0][np.argsort(dist[np.where(idx==i)])]
         for ii in inidx:
@@ -758,14 +758,14 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
         x2, y2 = adref[0].OBJCAT['X_IMAGE'], adref[0].OBJCAT['Y_IMAGE']
 
     # convert reference positions to sky coordinates
-    ra2, dec2 = WCS(adref.header[1]).all_pix2world(x2, y2, 1)
+    ra2, dec2 = WCS(adref[0].hdr).all_pix2world(x2, y2, 1)
 
     func = match_catalogs if return_matches else align_catalogs
 
     if full_wcs:
         # Set up the (inverse) Pix2Sky transform with appropriate scalings
         pixel_range = max(adinput[0].data.shape)
-        transform = Pix2Sky(WCS(adinput.header[1]), factor=pixel_range,
+        transform = Pix2Sky(WCS(adinput[0].hdr), factor=pixel_range,
                             factor_scale=pixel_range, angle=0.0,
                             angle_scale=pixel_range/57.3, direction=-1)
         x_offset, y_offset = initial_shift
@@ -795,7 +795,7 @@ def align_images_from_wcs(adinput, adref, first_pass=10, cull_sources=False,
             func_ret = func(ra2, dec2, x1, y1, model_guess=transform,
                             tolerance=tolerance)
     else:
-        x2a, y2a = WCS(adinput.header[1]).all_world2pix(ra2, dec2, 1)
+        x2a, y2a = WCS(adinput[0].hdr).all_world2pix(ra2, dec2, 1)
         func_ret = func(x2a, y2a, x1, y1, model_guess=None,
                         translation=initial_shift,
                         translation_range=first_pass,

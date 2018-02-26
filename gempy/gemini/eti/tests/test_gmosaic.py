@@ -63,8 +63,8 @@ class TestGmosaic(object):
         gmosaic_task = \
             eti.gmosaiceti.GmosaicETI(inputs, parameters, ad)
         ad_mosaic = gmosaic_task.run()
-        ad_mosaic.write(clobber=True)
+        ad_mosaic.write(overwrite=True)
         del ad
         del ad_mosaic
-        ##  NEED TO ADD A FITS DIFF.  Then remove clobber and delete
+        ##  NEED TO ADD A FITS DIFF.  Then remove overwrite and delete
         ##  the output fits once the diff is completed.

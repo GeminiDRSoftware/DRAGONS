@@ -1,9 +1,15 @@
+from __future__ import division
 #
 #                                                                  gemini_python
 #
 #                                                                   gempy.gemini
 #                                                                gemini_tools.py
 # ------------------------------------------------------------------------------
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import os
 import re
 import sys
@@ -32,7 +38,7 @@ from astrodata import __version__ as ad_version
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
-    return 0.5*(1.0+erf((x-mean)/(1.414213562*stddev)))
+    return 0.5*(1.0+erf(old_div((x-mean),(1.414213562*stddev))))
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -72,7 +78,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
 
     # ensure caller passes the sextractor default dictionary of parameters.
     try:
-        assert isinstance(sx_dict, dict) and sx_dict.has_key(('dq', 'param'))
+        assert isinstance(sx_dict, dict) and ('dq', 'param') in sx_dict
     except AssertionError:
         log.error("TypeError: A SExtractor dictionary was not received.")
         raise TypeError("Require SExtractor parameter dictionary.")
@@ -101,7 +107,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
             for name in expected_columns:
                 # Define Column properties with sensible placeholder data
                 if name in ["NUMBER"]:
-                    default = range(1, nrows+1)
+                    default = list(range(1, nrows+1))
                     dtype = np.int32
                 elif name in ["FLAGS", "IMAFLAGS_ISO", "REF_NUMBER"]:
                     default = [-999] * nrows
@@ -467,7 +473,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux = astrodata.create(this_aux.header[0])
+        new_aux = astrodata.create(this_aux.phu)
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -491,8 +497,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
             # Array section is unbinned; to use as indices for
             # extracting data, need to divide by the binning
             arraysec = [
-              arraysec[0] / sci_xbin, arraysec[1] / sci_xbin,
-              arraysec[2] / sci_ybin, arraysec[3] / sci_ybin]
+              old_div(arraysec[0], sci_xbin), old_div(arraysec[1], sci_xbin),
+              old_div(arraysec[2], sci_ybin), old_div(arraysec[3], sci_ybin)]
 
             # Check whether science data has been overscan-trimmed
             science_shape = ext.data.shape[-2:]
@@ -509,8 +515,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 # Array section is unbinned; to use as indices for
                 # extracting data, need to divide by the binning
                 aarraysec = [
-                    aarraysec[0] / sci_xbin, aarraysec[1] / sci_xbin,
-                    aarraysec[2] / sci_ybin, aarraysec[3] / sci_ybin]
+                    old_div(aarraysec[0], sci_xbin), old_div(aarraysec[1], sci_xbin),
+                    old_div(aarraysec[2], sci_ybin), old_div(aarraysec[3], sci_ybin)]
 
                 # Check whether auxiliary detector section contains
                 # science detector section
@@ -593,7 +599,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                     try:
                         kw = ext._keyword_for(descriptor)
                         ext_to_clip.hdr[kw] = (ext.hdr[kw],
-                                               ext.hdr.get_comment(kw))
+                                               ext.hdr.comments[kw])
                     except (AttributeError, KeyError):
                         pass
 
@@ -652,7 +658,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux = astrodata.create(this_aux.header[0])
+        new_aux = astrodata.create(this_aux.phu)
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -769,7 +775,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                     try:
                         kw = ext._keyword_for(descriptor)
                         ext_to_clip.hdr[kw] = (ext.hdr[kw],
-                                               ext.hdr.get_comment(kw))
+                                               ext.hdr.comments[kw])
                     except (AttributeError, KeyError):
                         pass
 
@@ -837,7 +843,7 @@ def clip_sources(ad):
             good_sources.append(Table())
             continue
 
-        stellar = np.fabs(objcat['FWHM_IMAGE']/1.08 - objcat['PROFILE_FWHM']
+        stellar = np.fabs(old_div(objcat['FWHM_IMAGE'],1.08) - objcat['PROFILE_FWHM']
                           ) < 0.2*objcat['FWHM_IMAGE'] if is_ao else \
                     objcat['CLASS_STAR'] > 0.8
 
@@ -868,7 +874,7 @@ def clip_sources(ad):
 
         # Create new tables with the columns and rows we want
         table = Table()
-        for new_name, old_name in column_mapping.iteritems():
+        for new_name, old_name in column_mapping.items():
             table[new_name] = objcat[old_name][good]
         pixscale = ext.pixel_scale()
         table['fwhm_arcsec'] *= pixscale
@@ -1073,16 +1079,16 @@ def fit_continuum(ad):
     pixel_scale = ad.pixel_scale()
     
     # Set full aperture to 4 arcsec
-    ybox = int(2.0 / pixel_scale)
+    ybox = int(old_div(2.0, pixel_scale))
 
     # Average 512 unbinned columns together
-    xbox = 256 / ad.detector_x_bin()
+    xbox = old_div(256, ad.detector_x_bin())
 
     # Average 16 unbinned background rows together
-    bgbox = 8 / ad.detector_x_bin()
+    bgbox = old_div(8, ad.detector_x_bin())
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
-    init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
+    init_width = old_div(1.2, (pixel_scale * (2 * np.sqrt(2 * np.log(2)))))
 
     # Ignore spectrum if not >1.5*background
     s2n_bg = 1.5
@@ -1108,7 +1114,7 @@ def fit_continuum(ad):
                     log.warning("No MDF is attached. Did addMDF find one?")
                 continue
             else:
-                shuffle = int(ad.nod_pixels() / ad.detector_y_bin())
+                shuffle = int(old_div(ad.nod_pixels(), ad.detector_y_bin()))
                 centers = [shuffle + np.argmax(signal[shuffle:shuffle*2])]
                 half_widths = [ybox]
         else:
@@ -1170,7 +1176,7 @@ def fit_continuum(ad):
                 dqcol = np.sum(dqbox==0, axis=1)
                 if np.any(dqcol==0):
                     continue
-                col = np.sum(databox, axis=1) / dqcol
+                col = old_div(np.sum(databox, axis=1), dqcol)
                 maxflux = np.max(abs(col))
                 
                 # Crude SNR test; is target bright enough in this wavelength range?
@@ -1193,7 +1199,7 @@ def fit_continuum(ad):
                     # N&S; background should be close to zero
                     bg = models.Const1D(0.)
                     # Fix background=0 if slit is in region where sky-subtraction will occur 
-                    if center > ad.nod_pixels()/ad.detector_y_bin():
+                    if center > old_div(ad.nod_pixels(),ad.detector_y_bin()):
                             bg.amplitude.fixed = True
                 else:
                     # Not N&S; background estimated from image
@@ -1408,7 +1414,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
 
     # Loop over each input AstroData object in the input list
     for ad in adinput:
-        for key, comm in keyword_dict.iteritems():
+        for key, comm in keyword_dict.items():
             ad.phu.set(key, tlm, comm)
 
     return
@@ -1437,7 +1443,12 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         if ad is single extension, returns a bg value or (bg, std) tuple; otherwise
         returns a list of such things
     """
-    input_list = [ad] if ad.is_single else [ext for ext in ad]
+    # Handle NDData objects (or anything with .data and .mask attributes
+    try:
+        single = ad.is_single
+    except AttributeError:
+        single = True
+    input_list = [ad] if single else [ext for ext in ad]
 
     output_list = []
     for ext in input_list:
@@ -1490,7 +1501,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         else:
             output_list.append((bg, bg_std, len(bg_data)))
 
-    return output_list[0] if ad.is_single else output_list
+    return output_list[0] if single else output_list
 
 
 def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
@@ -1700,9 +1711,9 @@ def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
     sx_dict: dict
         SExtractor dictionary
     """
-    for ext, header in zip(adoutput, adoutput.header[1:]):
+    for ext in adoutput:
         outextver = ext.hdr['EXTVER']
-        output_wcs = WCS(header)
+        output_wcs = WCS(ext.hdr)
         indices = [i for i in range(len(ext_mapping))
                    if ext_mapping[i] == outextver]
         inp_objcats = [adinput[i].OBJCAT for i in indices if
@@ -1839,7 +1850,7 @@ def write_database(ad, database_name=None, input_name=None):
     return
 
 
-class ExposureGroup:
+class ExposureGroup(object):
     """
     An ExposureGroup object maintains a record of AstroData instances that
     are spatially associated with the same general nod position or dither
@@ -1937,7 +1948,7 @@ class ExposureGroup:
         :returns: Exposure list
         :rtype: list of AstroData instances
         """
-        return self.members.keys()
+        return list(self.members.keys())
 
     def add_members(self, adinput):
         """
@@ -1968,9 +1979,9 @@ class ExposureGroup:
         self.members.update(addict)
 
         # Update the group centroid to account for the new points:
-        new_vals = addict.values()
+        new_vals = list(addict.values())
         newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_cen = [(cval * ngroups + nval) / ntot \
+        self.group_cen = [old_div((cval * ngroups + nval), ntot) \
           for cval, nval in zip(self.group_cen, newsum)]
 
 def group_exposures(adinput, pkg=None, frac_FOV=1.0):

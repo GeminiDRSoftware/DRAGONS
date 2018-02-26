@@ -1,6 +1,8 @@
+from __future__ import print_function
 """
 Collection of functions to make pipeline-processed and 
 IRAF-processed files compatible with the other system.
+
 """
 # TODO: write unit tests for irafcompat
 
@@ -29,21 +31,21 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Add GPREPARE to PHU")
         ad.phu.set('GPREPARE', "Compatibility", "For IRAF compatibility")
-    if 'STACKFRM' in ad.phu.keywords and  ad.phu['OBSTYPE'] == "BIAS":
+    if 'STACKFRM' in ad.phu and  ad.phu['OBSTYPE'] == "BIAS":
         if verbose:
             print("Add GBIAS to PHU")
         ad.phu.set('GBIAS', "Compatibility", "For IRAF compatibility")
-    if 'ADUTOELE' in ad.phu.keywords:
+    if 'ADUTOELE' in ad.phu:
         if verbose:
             print("Add GGAIN to PHU")
             print("Add GAINMULT to PHU")
         ad.phu.set('GGAIN', "Compatibility", "For IRAF compatibility")
         ad.phu.set('GAINMULT', "Compatibility", "For IRAF compatibility")
-    if 'NORMLIZE' in ad.phu.keywords:
+    if 'NORMLIZE' in ad.phu:
         if verbose:
             print("Add GIFLAT to PHU")
         ad.phu.set('GIFLAT', "Compatibility", "For IRAF compatibility")
-    if 'BIASIM' in ad.phu.keywords:
+    if 'BIASIM' in ad.phu:
         if verbose:
             print("Add GIREDUCE to PHU")
         ad.phu.set('GIREDUCE', "Compatibility", "For IRAF compatibility")
@@ -64,7 +66,7 @@ def _get_gmos_obsmode(ad):
         else:
             msg = "MASKTYP and MASKNAME are inconsistent. Cannot "\
                    "assign OBSMODE."
-            raise ValueError, msg
+            raise ValueError(msg)
     elif masktype == 1:
         if re.search('arcsec', maskname):
             obsmode = "LONGSLIT"
@@ -75,18 +77,15 @@ def _get_gmos_obsmode(ad):
                 looks_like = "IMAGE"
             elif maskname[0:3] == "IFU":
                 looks_like = "IFU"
-            print "ERROR: Should be LONGSLIT or MOS but "\
-                   "looks like {0}".format(looks_like)
-            msg = "MASKTYP and MASKNAME are inconsistent. Cannot "\
-                   "assign OBSMODE."
-            raise ValueError, msg
+            print("ERROR: Should be LONGSLIT or MOS but looks like {0}".format(looks_like))
+            msg = "MASKTYP and MASKNAME are inconsistent. Cannot assign OBSMODE."
+            raise ValueError(msg)
     else:
-        print "WARNING: Headers not standard, assuming OBSMODE=IMAGE."
+        print("WARNING: Headers not standard, assuming OBSMODE=IMAGE.")
         obsmode = "IMAGE"
     
     if grating == "MIRROR" and obsmode != "IMAGE":
-        print "WARNING: Mask or IFU used without grating, setting "\
-                        "OBSMODE to IMAGE."
+        print("WARNING: Mask or IFU used without grating, setting OBSMODE to IMAGE.")
         obsmode = "IMAGE"
 
     return obsmode

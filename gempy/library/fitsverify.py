@@ -43,7 +43,7 @@ def fitsverify(filename):
 
     stdoutstring += stderrstring
     # Check to see if we got a not a fits file situation
-    nfmatch = NFRE.search(stdoutstring)
+    nfmatch = NFRE.search(stdoutstring.decode('utf-8'))
     if nfmatch:
         isfits = 0
     else:
@@ -52,7 +52,7 @@ def fitsverify(filename):
     # If it is a fits file, parse how many warnings and errors we got
     if isfits:
         #print stdoutstring
-        match = WERE.search(stdoutstring)
+        match = WERE.search(stdoutstring.decode('utf-8'))
         if match:
             warnings = match.group(1)
             errors = match.group(2)

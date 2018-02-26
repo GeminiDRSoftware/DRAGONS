@@ -39,7 +39,7 @@ class F2Image(F2, Image, Photometry):
         if not adinputs:
             return adinputs
 
-        if adinputs[0].wavelength_band() == 'K':
+        if adinputs[0].wavelength_band() in ('K',):
             log.stdinfo('Using darkCorrect and stackFrames to make flatfield')
             adinputs = self.darkCorrect(adinputs)
             adinputs = self.stackFrames(adinputs)

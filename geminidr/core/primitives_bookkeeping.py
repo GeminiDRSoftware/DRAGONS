@@ -52,7 +52,7 @@ class Bookkeeping(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
             log.stdinfo("Writing {} to disk".format(ad.filename))
             # Need to specify 'ad.filename' here so writes to current dir
-            ad.write(ad.filename, clobber=True)
+            ad.write(ad.filename, overwrite=True)
             try:
                 if ad.filename not in self.stacks[_stackid(purpose, ad)]:
                     self.stacks[_stackid(purpose, ad)].append(ad.filename)
@@ -289,7 +289,7 @@ class Bookkeeping(PrimitivesBASE):
         ----------
         strip: bool
             strip the previous suffix off file name?
-        clobber: bool
+        overwrite: bool
             overwrite existing files?
         suffix: str
             new suffix to append to output files
@@ -329,7 +329,7 @@ class Bookkeeping(PrimitivesBASE):
 
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
-            ad.write(outfilename, clobber=params["clobber"])
+            ad.write(outfilename, overwrite=params["overwrite"])
         return adinputs
 
 # Helper function to make a stackid, without the IDFactory nonsense

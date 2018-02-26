@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+from future.utils import PY3
+
 from builtins import object
 from abc import abstractmethod
 from copy import deepcopy
@@ -8,15 +10,20 @@ import os
 from functools import partial, wraps
 import logging
 import warnings
+import gc
+import inspect
+import traceback
 
 try:
     # Python 3
-    from itertools import zip_longest
+    from itertools import zip_longest, product as cart_product
 except ImportError:
-    from itertools import izip_longest as zip_longest
+    from itertools import izip_longest as zip_longest, product as cart_product
 
 from .core import AstroData, DataProvider, astro_data_descriptor
+from .nddata import NDAstroData as NDDataObject, new_variance_uncertainty_instance
 
+import astropy
 from astropy.io import fits
 from astropy.io.fits import HDUList, Header, DELAYED
 from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
@@ -24,11 +31,12 @@ from astropy.io.fits import Column, FITS_rec
 from astropy.io.fits.hdu.table import _TableBaseHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
-from astropy.nddata import NDData, NDDataRef as NDDataObject
-from astropy.nddata import StdDevUncertainty
+# from astropy.nddata import NDData, NDDataRef as NDDataObject
+from astropy.nddata import NDData
 from astropy.table import Table
 import numpy as np
 
+INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
 LOGGER = logging.getLogger('AstroData FITS')
 
@@ -36,6 +44,19 @@ class AstroDataFitsDeprecationWarning(DeprecationWarning):
     pass
 
 warnings.simplefilter("always", AstroDataFitsDeprecationWarning)
+
+def deprecated(reason):
+    def decorator_wrapper(fn):
+        @wraps(fn)
+        def wrapper(*args, **kw):
+            current_source = '|'.join(traceback.format_stack(inspect.currentframe()))
+            if current_source not in wrapper.seen:
+                wrapper.seen.add(current_source)
+                warnings.warn(reason, AstroDataFitsDeprecationWarning)
+            return fn(*args, **kw)
+        wrapper.seen = set()
+        return wrapper
+    return decorator_wrapper
 
 class KeywordCallableWrapper(object):
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
@@ -54,34 +75,40 @@ class KeywordCallableWrapper(object):
             return self.coercion_fn(ret)
         return wrapper
 
-class FitsKeywordManipulator(object):
-    def __init__(self, headers, on_extensions=False, single=False):
-        self.__dict__.update({
-            "_headers": headers,
-            "_single": single,
-            "_on_ext": on_extensions
-        })
+class FitsHeaderCollection(object):
+    """
+    FitsHeaderCollection(headers)
 
-    def _ret_ext(self, values):
-        if self._single and len(self._headers) == 1:
-            return values[0]
-        else:
-            return values
+    This class provides group access to a list of PyFITS Header-like objects.
+    It exposes a number of methods (`set`, `get`, etc.) that operate over all
+    the headers at the same time.
 
-    @property
-    def keywords(self):
-        if self._on_ext:
-            return self._ret_ext([set(h.keys()) for h in self._headers])
-        else:
-            return set(self._headers[0].keys())
+    It can also be iterated.
+    """
+    def __init__(self, headers):
+        self.__headers = list(headers)
 
-    def show(self):
-        if self._on_ext:
-            for n, header in enumerate(self._headers):
-                print("==== Header #{} ====".format(n))
-                print(repr(header))
-        else:
-            print(repr(self._headers[0]))
+    def _insert(self, idx, header):
+        self.__headers.insert(idx, header)
+
+    def __iter__(self):
+        for h in self.__headers:
+            yield h
+
+#    @property
+#    def keywords(self):
+#        if self._on_ext:
+#            return self._ret_ext([set(h.keys()) for h in self.__headers])
+#        else:
+#            return set(self.__headers[0].keys())
+#
+#    def show(self):
+#        if self._on_ext:
+#            for n, header in enumerate(self.__headers):
+#                print("==== Header #{} ====".format(n))
+#                print(repr(header))
+#        else:
+#            print(repr(self.__headers[0]))
 
     def __setitem__(self, key, value):
         if isinstance(value, tuple):
@@ -90,67 +117,52 @@ class FitsKeywordManipulator(object):
             self.set(key, value=value)
 
     def set(self, key, value=None, comment=None):
-        for header in self._headers:
+        for header in self.__headers:
             header.set(key, value=value, comment=comment)
 
     def __getitem__(self, key):
-        if self._on_ext:
-            raised = False
-            missing_at = []
-            ret = []
-            for n, header in enumerate(self._headers):
-                try:
-                    ret.append(header[key])
-                except KeyError:
-                    missing_at.append(n)
-                    ret.append(None)
-                    raised = True
-            if raised:
-                error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
-                error.missing_at = missing_at
-                error.values = ret
-                raise error
-            return self._ret_ext(ret)
-        else:
-            return self._headers[0][key]
+        raised = False
+        missing_at = []
+        ret = []
+        for n, header in enumerate(self.__headers):
+            try:
+                ret.append(header[key])
+            except KeyError:
+                missing_at.append(n)
+                ret.append(None)
+                raised = True
+        if raised:
+            error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
+            error.missing_at = missing_at
+            error.values = ret
+            raise error
+        return ret
 
     def get(self, key, default=None):
         try:
             return self[key]
         except KeyError as err:
-            if self._on_ext:
-                vals = err.values
-                for n in err.missing_at:
-                    vals[n] = default
-                return self._ret_ext(vals)
-            else:
-                return default
+            vals = err.values
+            for n in err.missing_at:
+                vals[n] = default
+            return vals
 
     def __delitem__(self, key):
         self.remove(key)
 
     def remove(self, key):
-        if self._on_ext:
-            deleted = 0
-            for header in self._headers:
-                try:
-                    del header[key]
-                    deleted = deleted + 1
-                except KeyError:
-                    pass
-            if not deleted:
-                raise KeyError("'{}' is not on any of the extensions".format(key))
-        else:
+        deleted = 0
+        for header in self.__headers:
             try:
-                del self._headers[0][key]
+                del header[key]
+                deleted = deleted + 1
             except KeyError:
-                raise KeyError("'{}' is not on the PHU".format(key))
+                pass
+        if not deleted:
+            raise KeyError("'{}' is not on any of the extensions".format(key))
 
     def get_comment(self, key):
-        if self._on_ext:
-            return self._ret_ext([header.comments[key] for header in self._headers])
-        else:
-            return self._headers[0].comments[key]
+        return [header.comments[key] for header in self.__headers]
 
     def set_comment(self, key, comment):
         def _inner_set_comment(header):
@@ -159,33 +171,15 @@ class FitsKeywordManipulator(object):
 
             header.set(key, comment=comment)
 
-        if self._on_ext:
-            for n, header in enumerate(self._headers):
-                try:
-                    _inner_set_comment(header)
-                except KeyError as err:
-                    err.message = err.message + " at header {}".format(n)
-                    raise
-        else:
-            _inner_set_comment(self._headers[0])
-
-    def __getattr__(self, key):
-        warnings.warn("Access to cards through attribute name is deprecated and will be removed in the future", AstroDataFitsDeprecationWarning)
-        return self[key]
-
-    def __setattr__(self, key, value):
-        warnings.warn("Setting card values through attribute name is deprecated and will be removed in the future", AstroDataFitsDeprecationWarning)
-        self[key] = value
-
-    def __delattr__(self, key):
-        warnings.warn("Removing cards through attribute name is deprecated and will be removed in the future", AstroDataFitsDeprecationWarning)
-        del self[key]
+        for n, header in enumerate(self.__headers):
+            try:
+                _inner_set_comment(header)
+            except KeyError as err:
+                err.message = err.message + " at header {}".format(n)
+                raise
 
     def __contains__(self, key):
-        if self._on_ext:
-            return any(tuple(key in h for h in self._headers))
-        else:
-            return key in self._headers[0]
+        return any(tuple(key in h for h in self.__headers))
 
 def new_imagehdu(data, header, name=None):
 # Assigning data in a delayed way, won't reset BZERO/BSCALE in the header,
@@ -234,12 +228,13 @@ def header_for_table(table):
     columns = []
     for col in table.itercols():
         descr = {'name': col.name}
+        typekind = col.dtype.kind
         typename = col.dtype.name
-        if typename.startswith('string'): # Array of strings
-            strlen = col.dtype.itemsize
+        if typekind in {'S', 'U'}: # Array of strings
+            strlen = col.dtype.itemsize // col.dtype.alignment
             descr['format'] = '{}A'.format(strlen)
             descr['disp'] = 'A{}'.format(strlen)
-        elif typename == 'object': # Variable length array
+        elif typekind == 'O': # Variable length array
             raise TypeError("Variable length arrays like in column '{}' are not supported".format(col.name))
         else:
             try:
@@ -305,9 +300,9 @@ def normalize_indices(slc, nitems):
     if isinstance(slc, slice):
         start, stop, step = slc.indices(nitems)
         indices = list(range(start, stop, step))
-    elif isinstance(slc, int) or (isinstance(slc, tuple) and all(isinstance(i, int) for i in slc)):
-        if isinstance(slc, int):
-            slc = (slc,)
+    elif isinstance(slc, INTEGER_TYPES) or (isinstance(slc, tuple) and all(isinstance(i, INTEGER_TYPES) for i in slc)):
+        if isinstance(slc, INTEGER_TYPES):
+            slc = (int(slc),)   # slc's type m
             multiple = False
         else:
             multiple = True
@@ -320,19 +315,6 @@ def normalize_indices(slc, nitems):
         raise IndexError("Index out of range")
 
     return indices, multiple
-
-class StdDevAsVariance(object):
-    def as_variance(self):
-        if self.array is not None:
-            return self.array ** 2
-        else:
-            return None
-
-def new_variance_uncertainty_instance(array):
-    obj = StdDevUncertainty(np.sqrt(array))
-    cls = obj.__class__
-    obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
-    return obj
 
 class FitsProviderProxy(DataProvider):
     # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not make
@@ -370,7 +352,6 @@ class FitsProviderProxy(DataProvider):
         return len(self._mapping)
 
     def _mapped_nddata(self, idx=None):
-        self._provider._lazy_populate_object()
         if idx is None:
             return [self._provider._nddata[idx] for idx in self._mapping]
         else:
@@ -412,7 +393,7 @@ class FitsProviderProxy(DataProvider):
                 if not self.is_single:
                     raise TypeError("This attribute can only be assigned to a single-slice object")
                 target = self._mapped_nddata(0)
-                self._provider._append(value, name=attribute, add_to=target)
+                self._provider.append(value, name=attribute, add_to=target)
                 return
             elif attribute in {'path', 'filename'}:
                 raise AttributeError("Can't set path or filename on a sliced object")
@@ -473,8 +454,9 @@ class FitsProviderProxy(DataProvider):
         return self
 
     @property
+    @deprecated("Access to headers through this property is deprecated and will be removed in the future")
     def header(self):
-        return [self._provider._header[idx] for idx in [0] + [n+1 for n in self._mapping]]
+        return self._provider._get_raw_headers(with_phu=True, indices=self._mapping)
 
     @property
     def data(self):
@@ -524,14 +506,10 @@ class FitsProviderProxy(DataProvider):
 
     @property
     def variance(self):
-        def variance_for(un):
-            if un is not None:
-                return un.array**2
-
         if self.is_single:
-            return variance_for(self.uncertainty)
+            return self._mapped_nddata(0).variance
         else:
-            return [variance_for(un) for un in self.uncertainty]
+            return [nd.variance for nd in self._mapped_nddata()]
 
     @variance.setter
     def variance(self, value):
@@ -550,9 +528,10 @@ class FitsProviderProxy(DataProvider):
         else:
             return self._mapped_nddata(0)
 
-    @property
-    def ext_manipulator(self):
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True, single=self.is_single)
+    def hdr(self):
+        headers = self._provider._get_raw_headers(indices=self._mapping)
+
+        return headers[0] if self.is_single else FitsHeaderCollection(headers)
 
     def set_name(self, ext, name):
         self._provider.set_name(self._mapping[ext], name)
@@ -568,7 +547,7 @@ class FitsProviderProxy(DataProvider):
             raise TypeError("Can't append objects to a slice without an extension name")
         target = self._mapped_nddata(0)
 
-        return self._provider._append(ext, name=name, add_to=target)
+        return self._provider.append(ext, name=name, add_to=target)
 
     def extver_map(self):
         """
@@ -592,14 +571,6 @@ class FitsProviderProxy(DataProvider):
     def info(self, tags):
         self._provider.info(tags, indices=self._mapping)
 
-def force_load(fn):
-    @wraps(fn)
-    def wrapper(self, *args, **kw):
-        # Force the loading of data, we may need it later
-        self._lazy_populate_object()
-        return fn(self, *args, **kw)
-    return wrapper
-
 class FitsProvider(DataProvider):
     default_extension = 'SCI'
     def __init__(self):
@@ -608,9 +579,8 @@ class FitsProvider(DataProvider):
         self.__dict__.update({
             '_sliced': False,
             '_single': False,
-            '_header': None,
-            '_nddata': None,
-            '_hdulist': None,
+            '_phu': None,
+            '_nddata': [],
             '_path': None,
             '_orig_filename': None,
             '_tables': {},
@@ -628,21 +598,24 @@ class FitsProvider(DataProvider):
 
     def __deepcopy__(self, memo):
         nfp = FitsProvider()
-        to_copy = ('_sliced', '_single', '_header', '_nddata', '_hdulist',
+        to_copy = ('_sliced', '_phu', '_single', '_nddata',
                    '_path', '_orig_filename', '_tables', '_exposed',
                    '_resetting')
         for attr in to_copy:
             nfp.__dict__[attr] = deepcopy(self.__dict__[attr])
 
+        # Top-level tables
+        for key in set(self.__dict__) - set(nfp.__dict__):
+            nfp.__dict__[key] = nfp.__dict__['_tables'][key]
+
         return nfp
 
-    @force_load
     def _clone(self, mapping=None):
         if mapping is None:
             mapping = range(len(self))
 
         dp = FitsProvider()
-        dp._header = [deepcopy(self._header[0])]
+        dp._phu = deepcopy(self._phu)
         for n in mapping:
             dp.append(deepcopy(self._nddata[n]))
         for t in self._tables.values():
@@ -653,7 +626,6 @@ class FitsProvider(DataProvider):
     def is_settable(self, attr):
         return attr in self._fixed_settable or attr.isupper()
 
-    @force_load
     def _getattr_impl(self, attribute, nds):
         # Exposed objects are part of the normal object interface. We may have
         # just lazy-loaded them, and that's why we get here...
@@ -667,7 +639,6 @@ class FitsProvider(DataProvider):
 
         raise AttributeError("Not found")
 
-    @force_load
     def __getattr__(self, attribute):
         try:
             return self._getattr_impl(attribute, self._nddata)
@@ -686,14 +657,12 @@ class FitsProvider(DataProvider):
         # if self._resetting is there, because otherwise we enter a loop..
         if '_resetting' in self.__dict__ and not self._resetting and not _my_attribute(attribute):
             if attribute.isupper():
-                self._lazy_populate_object()
-                self._append(value, name=attribute, add_to=None)
+                self.append(value, name=attribute, add_to=None)
                 return
 
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
 
-    @force_load
     def __delattr__(self, attribute):
         # TODO: So far we're only deleting tables by name.
         #       Figure out what to do with aliases
@@ -701,10 +670,10 @@ class FitsProvider(DataProvider):
             raise ValueError("Can't delete non-capitalized attributes")
         try:
             del self._tables[attribute]
+            del self.__dict__[attribute]
         except KeyError:
             raise AttributeError("'{}' is not a global table for this instance".format(attribute))
 
-    @force_load
     def _oper(self, operator, operand, indices=None):
         if indices is None:
             indices = tuple(range(len(self._nddata)))
@@ -746,6 +715,11 @@ class FitsProvider(DataProvider):
         self._standard_nddata_op(NDDataObject.divide, operand)
         return self
 
+    __itruediv__ = __idiv__
+
+    def set_phu(self, phu):
+        self._phu = phu
+
     def info(self, tags, indices=None):
         print("Filename: {}".format(self.path if self.path else "Unknown"))
         # This is fixed. We don't support opening for update
@@ -763,7 +737,6 @@ class FitsProvider(DataProvider):
         print(tag_line)
 
         # Let's try to be generic. Could it be that some file contains only tables?
-        self._lazy_populate_object()
         if indices is None:
             indices = tuple(range(len(self._nddata)))
         if indices:
@@ -787,7 +760,6 @@ class FitsProvider(DataProvider):
                 print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
 
     def _pixel_info(self, indices):
-        self._lazy_populate_object()
         for idx, obj in ((n, self._nddata[k]) for (n, k) in enumerate(indices)):
             header = obj.meta['header']
             other_objects = []
@@ -841,10 +813,8 @@ class FitsProvider(DataProvider):
 
     @property
     def exposed(self):
-        self._lazy_populate_object()
         return self._exposed.copy()
 
-    @force_load
     def _slice(self, indices, multi=True):
         return FitsProviderProxy(self, indices, single=not multi)
 
@@ -852,55 +822,16 @@ class FitsProvider(DataProvider):
         for n in range(len(self)):
             yield self._slice((n,), multi=False)
 
-    @force_load
     def __getitem__(self, slc):
-        nitems = len(self._header) - 1 # The Primary HDU does not count
+        nitems = len(self._nddata)
         indices, multiple = normalize_indices(slc, nitems=nitems)
         return self._slice(indices, multi=multiple)
 
-    @force_load
     def __delitem__(self, idx):
-        nitems = len(self._header) - 1 # The Primary HDU does not count
-        if idx >= nitems or idx < (-nitems):
-            raise IndexError("Index out of range")
-
-        del self._header[idx + 1]
         del self._nddata[idx]
 
     def __len__(self):
-#        self._lazy_populate_object()
-#        return len(self._nddata)
-        return len(self._header) - 1
-
-#    def _set_headers(self, hdulist, update=True):
-#        new_headers = [hdulist[0].header] + [x.header for x in hdulist[1:] if
-#                                                (x.header.get('EXTNAME') in ('SCI', None))]
-#        # When update is True, self._header should NEVER be None, but check anyway
-#        if update and self._header is not None:
-#            assert len(self._header) == len(new_headers)
-#            self._header = [update_header(ha, hb) for (ha, hb) in zip(new_headers, self._header)]
-#        else:
-#            self._header = new_headers
-#        tables = [unit for unit in hdulist if isinstance(unit, BinTableHDU)]
-#        for table in tables:
-#            name = table.header.get('EXTNAME')
-#            if name == 'OBJCAT':
-#                continue
-#            self._tables[name] = None
-#            self._exposed.add(name)
-
-    def _set_headers(self, hdulist):
-        new_headers = [hdulist[0].header] + [x.header for x in hdulist[1:] if
-                                                (x.header.get('EXTNAME') in (FitsProvider.default_extension, None))]
-
-        self._header = new_headers
-        tables = [unit for unit in hdulist if isinstance(unit, BinTableHDU)]
-        for table in tables:
-            name = table.header.get('EXTNAME')
-            if name == 'OBJCAT':
-                continue
-            self._tables[name] = None
-            self._exposed.add(name)
+        return len(self._nddata)
 
     # NOTE: This one does not make reference to self at all. May as well
     #       move it out
@@ -989,64 +920,13 @@ class FitsProvider(DataProvider):
 
         return nd
 
-    def _reset_members(self, hdulist):
-        prev_reset = self._resetting
-        self._resetting = True
-        def_ext = FitsProvider.default_extension
-        try:
-            self._tables = {}
-            seen = set([hdulist[0]])
-
-            skip_names = set([def_ext, 'REFCAT', 'MDF'])
-
-            def search_for_associated(ver):
-                return [x for x in hdulist
-                          if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
-
-            self._nddata = []
-            sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == def_ext]
-
-            # We've loaded the SCI headers *beforehand*. Use those instead of the ones
-            # coming from the file. The user may have manipulated them by now.
-            for idx, unit in enumerate(sci_units, 1):
-                seen.add(unit)
-                prev_header = self._header[idx]
-                ver = prev_header.get('EXTVER', -1)
-                # Use the header that we had saved in memory as a template, no the
-                # one that came from disk
-                new_unit = ImageHDU(unit.data, prev_header)
-                # ImageHDU generates a new header instance! Replace it in the internal cache
-                self._header[idx] = new_unit.header
-                nd = self._append(new_unit, name=def_ext, reset_ver=False)
-
-                for extra_unit in search_for_associated(ver):
-                    seen.add(extra_unit)
-                    name = extra_unit.header.get('EXTNAME')
-                    self._append(extra_unit, name=name, add_to=nd)
-
-            for other in hdulist:
-                if other in seen:
-                    continue
-                name = other.header['EXTNAME']
-                if name in self._tables:
-                    continue
-    # TODO: Fix it
-    # NOTE: This happens with GPI. Let's leave it for later...
-    #            if other.header.get('EXTVER', -1) >= 0:
-    #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
-                added = self._append(other, name=name, reset_ver=False)
-        finally:
-            self._resetting = prev_reset
-
     @property
     def path(self):
         return self._path
 
     @path.setter
     def path(self, value):
-        if self._path is not None:
-            self._lazy_populate_object()
-        elif value is not None:
+        if self._path is None and value is not None:
             self._orig_filename = os.path.basename(value)
         self._path = value
 
@@ -1069,56 +949,46 @@ class FitsProvider(DataProvider):
     def orig_filename(self):
         return self._orig_filename
 
+    def _ext_header(self, obj):
+        if isinstance(obj, int):
+            # Assume that 'obj' is an index
+            obj = self.nddata[obj]
+        return obj.meta['header']
+
+    def _get_raw_headers(self, with_phu=False, indices=None):
+        if indices is None:
+            indices = range(len(self.nddata))
+        extensions = [self._ext_header(self.nddata[n]) for n in indices]
+
+        if with_phu:
+            return [self._phu] + extensions
+
+        return extensions
+
     @property
+    @deprecated("Access to headers through this property is deprecated and will be removed in the future")
     def header(self):
-        return self._header
-
-    def _lazy_populate_object(self):
-        prev_reset = self._resetting
-        if self._nddata is None:
-            self._resetting = True
-            try:
-                if self.path:
-                    hdulist = FitsLoader._prepare_hdulist(fits.open(self.path))
-                else:
-                    hdulist = self._hdulist
-                # Make sure that we have an HDUList to work with. Maybe we're creating
-                # an object from scratch
-                if hdulist is not None:
-                    self._reset_members(hdulist)
-                    self._hdulist = None
-                else:
-                    self._nddata = []
-            finally:
-                self._resetting = prev_reset
+        return self._get_raw_headers(with_phu=True)
 
     @property
-    @force_load
     def nddata(self):
         return self._nddata
 
-    @property
     def phu(self):
-        return self.header[0]
+        return self._phu
 
-    @property
-    def phu_manipulator(self):
-        return FitsKeywordManipulator(self.header[:1])
+    def hdr(self):
+        if not self.nddata:
+            return None
+        return FitsHeaderCollection(self._get_raw_headers())
 
-    @property
-    def ext_manipulator(self):
-        assert len(self.header) > 1, "There are no SCI extensions"
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True)
-
-    @force_load
     def set_name(self, ext, name):
         self._nddata[ext].meta['name'] = name
 
-    @force_load
     def to_hdulist(self):
 
         hlst = HDUList()
-        hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
+        hlst.append(PrimaryHDU(header=self.phu(), data=DELAYED))
 
         for ext in self._nddata:
             meta = ext.meta
@@ -1146,7 +1016,6 @@ class FitsProvider(DataProvider):
 
         return hlst
 
-    @force_load
     def table(self):
         return self._tables.copy()
 
@@ -1155,7 +1024,6 @@ class FitsProvider(DataProvider):
         return set(self._tables.keys())
 
     @property
-    @force_load
     def data(self):
         return [nd.data for nd in self._nddata]
 
@@ -1164,7 +1032,6 @@ class FitsProvider(DataProvider):
         raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
-    @force_load
     def uncertainty(self):
         return [nd.uncertainty for nd in self._nddata]
 
@@ -1173,7 +1040,6 @@ class FitsProvider(DataProvider):
         raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
-    @force_load
     def mask(self):
         return [nd.mask for nd in self._nddata]
 
@@ -1182,7 +1048,6 @@ class FitsProvider(DataProvider):
         raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
-    @force_load
     def variance(self):
         def variance_for(nd):
             if nd.uncertainty is not None:
@@ -1300,13 +1165,6 @@ class FitsProvider(DataProvider):
         hd = new_nddata.meta['header']
         hname = hd.get('EXTNAME', def_ext)
         if hname == def_ext:
-            try:
-                # If we're lazy-loading data, it may be that the header is already there. Check for existance first
-                # and do a sanity check to make sure that both header and the data will match positions
-                hdpos = self.header.index(hd) - 1
-                assert (hdpos == len(self._nddata)), "Appending new data with existing header, which does not match positions"
-            except ValueError:
-                self.header.append(hd)
             if reset_ver:
                 self._reset_ver(new_nddata)
             self._nddata.append(new_nddata)
@@ -1316,7 +1174,6 @@ class FitsProvider(DataProvider):
         return new_nddata
 
     def _set_nddata(self, n, new_nddata):
-        self.header[n+1] = new_nddata.meta['header']
         self._nddata[n] = new_nddata
 
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
@@ -1347,8 +1204,11 @@ class FitsProvider(DataProvider):
 
         return self._append_nddata(new_nddata, name=None, add_to=None, reset_ver=True)
 
-    def _append(self, ext, name=None, header=None, add_to=None, reset_ver=True):
-        self._lazy_populate_object()
+    def append(self, ext, name=None, header=None, reset_ver=True, add_to=None):
+        # NOTE: Most probably, if we want to copy the input argument, we
+        #       should do it here...
+        if isinstance(ext, PrimaryHDU):
+            raise ValueError("Only one Primary HDU allowed. Use set_phu if you really need to set one")
 
         dispatcher = (
                 (NDData, self._append_raw_nddata),
@@ -1363,16 +1223,6 @@ class FitsProvider(DataProvider):
         else:
             # Assume that this is an array for a pixel plane
             return self._append_array(ext, name=name, header=header, add_to=add_to)
-
-    def append(self, ext, name=None, header=None, reset_ver=True):
-        # TODO: Most probably, if we want to copy the input argument, we
-        #       should do it here...
-        if isinstance(ext, PrimaryHDU):
-            raise ValueError("Only one Primary HDU allowed")
-
-        self._lazy_populate_object()
-
-        return self._append(ext, name=name, header=header, add_to=None, reset_ver=reset_ver)
 
     def _extver_impl(self, nds=None):
         if nds is None:
@@ -1432,25 +1282,61 @@ def fits_ext_comp_key(ext):
 
     return ret
 
+class FitsLazyLoadable(object):
+    def __init__(self, obj):
+        self._obj = obj
+        self.lazy = True
+
+    def _create_result(self, shape):
+        return np.empty(shape, dtype=self.dtype)
+
+    def _scale(self, data):
+        return ((self._obj._orig_bscale * data) + self._obj._orig_bzero).astype(self.dtype)
+
+    def __getitem__(self, sl):
+        # TODO: We may want (read: should) create an empty result array before scaling
+        return self._scale(self._obj.section[sl])
+
+    @property
+    def header(self):
+        return self._obj.header
+
+    @property
+    def data(self):
+        res = self._create_result(self.shape)
+        res[:] = self._scale(self._obj.data)
+        return res
+
+    @property
+    def shape(self):
+        return self._obj.shape
+
+    @property
+    def dtype(self):
+        dtype = self._obj._dtype_for_bitpix()
+        if dtype is None:
+            bitpix = self._obj._orig_bitpix
+            if bitpix < 0:
+                dtype = np.dtype('float{}'.format(abs(bitpix)))
+        if self._obj.header['EXTNAME'] == 'DQ':
+            dtype = np.uint16
+        return dtype
+
 class FitsLoader(object):
-    @staticmethod
-    def provider_for_hdulist(hdulist):
-        """
-        Returns an instance of the appropriate DataProvider class,
-        according to the HDUList object
-        """
-
-        return FitsProvider()
+    def __init__(self, cls = FitsProvider):
+        self._cls = cls
 
     @staticmethod
-    def _prepare_hdulist(hdulist):
+    def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
         new_list = []
         highest_ver = 0
         recognized = set()
 
-        if len(hdulist) > 1:
+        if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
             # MEF file
             for n, unit in enumerate(hdulist):
+                if extname_parser:
+                    extname_parser(unit)
                 ev = unit.header.get('EXTVER')
                 eh = unit.header.get('EXTNAME')
                 if ev not in (-1, None) and eh is not None:
@@ -1467,7 +1353,7 @@ class FitsLoader(object):
                 elif isinstance(unit, ImageHDU):
                     highest_ver += 1
                     if 'EXTNAME' not in unit.header:
-                        unit.header['EXTNAME'] = (FitsProvider.default_extension, 'Added by AstroData')
+                        unit.header['EXTNAME'] = (default_extension, 'Added by AstroData')
                     if unit.header.get('EXTVER') in (-1, None):
                         unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
@@ -1480,32 +1366,135 @@ class FitsLoader(object):
             for keyw in ('SIMPLE', 'EXTEND'):
                 if keyw in image.header:
                     del image.header[keyw]
-            image.header['EXTNAME'] = (FitsProvider.default_extension, 'Added by AstroData')
+            # TODO: Remove self here (static method)
+            image.header['EXTNAME'] = (default_extension, 'Added by AstroData')
             image.header['EXTVER'] = (1, 'Added by AstroData')
             new_list.append(image)
 
         return HDUList(sorted(new_list, key=fits_ext_comp_key))
 
-    @staticmethod
-    def from_path(path):
-        hdulist = fits.open(path, memmap=True, do_not_scale_image_data=True)
-        hdulist = FitsLoader._prepare_hdulist(hdulist)
-        provider = FitsLoader.provider_for_hdulist(hdulist)
-        provider.path = path
-        provider._set_headers(hdulist)
-        # Note: we don't call _reset_members, to allow for lazy loading...
+    def load(self, source, extname_parser=None):
+        """
+        Takes either a string (with the path to a file) or an HDUList as input, and
+        tries to return a populated FitsProvider (or descendant) instance.
+
+        It will raise exceptions if the file is not found, or if there is no match
+        for the HDUList, among the registered AstroData classes.
+        """
+
+        provider = self._cls()
+
+        if isinstance(source, (str if PY3 else basestring)):
+            hdulist = fits.open(source, memmap=True, do_not_scale_image_data=True, mode='readonly')
+            provider.path = source
+        else:
+            hdulist = source
+            provider.path = None
+
+        def_ext = self._cls.default_extension
+        _file = hdulist._file
+        hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext,
+                                        extname_parser=extname_parser)
+        if _file is not None:
+            hdulist._file = _file
+
+        # Initialize the object containers to a bare minimum
+        provider.set_phu(hdulist[0].header)
+
+        seen = set([hdulist[0]])
+
+        skip_names = set([def_ext, 'REFCAT', 'MDF'])
+
+        def associated_extensions(ver):
+            for unit in hdulist:
+                header = unit.header
+                if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
+                    yield unit
+
+        sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == def_ext]
+
+        for idx, unit in enumerate(sci_units):
+            seen.add(unit)
+            ver = unit.header.get('EXTVER', -1)
+            parts = {'data': unit, 'uncertainty': None, 'mask': None, 'other': []}
+
+            for extra_unit in associated_extensions(ver):
+                seen.add(extra_unit)
+                name = extra_unit.header.get('EXTNAME')
+                if name == 'DQ':
+                    parts['mask'] = extra_unit
+                elif name == 'VAR':
+                    parts['uncertainty'] = extra_unit
+                else:
+                    parts['other'].append(extra_unit)
+
+            if hdulist._file is not None and hdulist._file.memmap:
+                nd = NDDataObject(
+                        data = FitsLazyLoadable(parts['data']),
+                        uncertainty = None if parts['uncertainty'] is None else FitsLazyLoadable(parts['uncertainty']),
+                        mask = None if parts['mask'] is None else FitsLazyLoadable(parts['mask'])
+                        )
+                provider.append(nd, name=def_ext, reset_ver=False)
+            else:
+                nd = provider.append(parts['data'], name=def_ext, reset_ver=False)
+                for item_name in ('mask', 'uncertainty'):
+                    item = parts[item_name]
+                    if item is not None:
+                        provider.append(item, name=item.header['EXTNAME'], add_to=nd)
+
+            for other in parts['other']:
+                provider.append(other, name=other.header['EXTNAME'], add_to=nd)
+
+        for other in hdulist:
+            if other in seen:
+                continue
+            name = other.header['EXTNAME']
+            added = provider.append(other, name=name, reset_ver=False)
 
         return provider
 
-    @staticmethod
-    def from_hdulist(hdulist, path=None):
-        provider = FitsLoader.provider_for_hdulist(hdulist)
-        provider.path = path
-        provider._hdulist = hdulist
-        provider._set_headers(hdulist)
-        provider._reset_members(hdulist)
+def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=False, with_mask=False):
+    def generate_boxes(shape, kernel):
+        if len(shape) != len(kernel):
+            raise AssertionError("Incompatible shape ({}) and kernel ({})".format(shape, kernel))
 
-        return provider
+        ticks = []
+        for axis, step in list(zip(shape, kernel)):
+            if (axis % step) == 0:
+                end_value = axis
+            else:
+                end_value = axis + (axis % step)
+            ticks.append([(x, x+step) for x in range(0, end_value, step)])
+
+        return cart_product(*ticks)
+
+    if shape is None:
+        if len(set(x.shape for x in sequence)) > 1:
+            raise ValueError("Can't calculate final shape: sequence elements disagree on shape, and none was provided")
+        shape = sequence[0].shape
+
+    if dtype is None:
+        dtype = sequence[0].window[:1,:1].data.dtype
+
+    result = NDDataObject(np.empty(shape, dtype=dtype),
+                          uncertainty=(new_variance_uncertainty_instance(np.zeros(shape, dtype=dtype))
+                                       if with_uncertainty else None),
+                          mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
+                          meta=sequence[0].meta)
+
+    # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
+    log_level = astropy.logger.conf.log_level
+    astropy.log.setLevel(astropy.logger.WARNING)
+    for coords in generate_boxes(shape, kernel):
+        # The coordinates come as ((x1, x2, ..., xn), (y1, y2, ..., yn), ...)
+        # Zipping them will get us a more desirable ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
+        # box = list(zip(*coords))
+        section = tuple([slice(start, end) for (start, end) in coords])
+        result.set_section(section, fn((element.window[section] for element in sequence)))
+        gc.collect()
+    astropy.log.setLevel(log_level)  # and reset
+
+    return result
 
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
@@ -1517,6 +1506,16 @@ class AstroDataFits(AstroData):
         'telescope': 'TELESCOP',
         'ut_date': 'DATE-OBS'
     }
+
+    @classmethod
+    def load(cls, source):
+        """
+        Implementation of the abstract method `load`.
+
+        It takes an `HDUList` and returns a fully instantiated `AstroData` instance.
+        """
+
+        return cls(FitsLoader(FitsProvider).load(source))
 
     def _keyword_for(self, name):
         """
@@ -1555,21 +1554,25 @@ class AstroDataFits(AstroData):
 
     @property
     def phu(self):
-        return self._dataprov.phu_manipulator
+        return self._dataprov.phu()
 
     @property
     def hdr(self):
-        return self._dataprov.ext_manipulator
+        return self._dataprov.hdr()
 
     def info(self):
         self._dataprov.info(self.tags)
 
-    def write(self, fileobj=None, clobber=False):
-        if fileobj is None:
+    def write(self, filename=None, overwrite=False):
+        if filename is None:
             if self.path is None:
-                raise ValueError("A file name needs to be specified")
-            fileobj = self.path
-        self._dataprov.to_hdulist().writeto(fileobj, clobber=clobber)
+                raise ValueError("A filename needs to be specified")
+            filename = self.path
+        # Cope with astropy v1 and v2
+        if 'overwrite' in inspect.getargspec(HDUList.writeto).args:
+            self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
+        else:
+            self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
 
     def update_filename(self, prefix='', suffix='', strip=False):
         if strip:
@@ -1605,7 +1608,6 @@ class AstroDataFits(AstroData):
             instrument name
         """
         return self.phu.get(self._keyword_for('instrument'))
-
 
     @astro_data_descriptor
     def object(self):
@@ -1650,7 +1652,6 @@ class AstroDataFits(AstroData):
         IndexError
             If the provided EXTVER doesn't exist
         """
-
         try:
             if isinstance(ver, int):
                 return self[self._dataprov.extver_map()[ver]]

@@ -319,7 +319,7 @@ class Register(PrimitivesBASE):
 
                 # The reference coordinates are always (x,y) pixels in the OBJCAT
                 # Set up the input coordinates
-                wcs = WCS(ad.header[index + 1])
+                wcs = WCS(ad[index].hdr)
                 xref, yref = refcat['RAJ2000'], refcat['DEJ2000']
                 if not full_wcs:
                     xref, yref = wcs.all_world2pix(xref, yref, 1)
@@ -474,7 +474,7 @@ class Register(PrimitivesBASE):
                                  format(delta_dec, ddec_std))
                     info_list.append({"dra": delta_ra, "dra_std": dra_std,
                                       "ddec": delta_dec, "ddec_std": ddec_std,
-                                      "nsamples": num_matched})
+                                      "nsamples": int(num_matched)})
                 else:
                     log.stdinfo("Could not determine astrometric offset for "
                                 "{}:{}".format(ad.filename, extver))
@@ -538,7 +538,7 @@ def _create_wcs_from_offsets(adinput, adref, center_of_rotation=None):
             center_of_rotation = (630.0, 520.0) if 'GNIRS' in adref.tags \
                 else tuple(0.5*x for x in extref.data.shape[::-1])
 
-        wcsref = WCS(extref.header[1])
+        wcsref = WCS(extref.hdr)
         ra0, dec0 = wcsref.all_pix2world(center_of_rotation[0],
                                          center_of_rotation[1], 1)
         extin.hdr['CRVAL1'] = float(ra0)
@@ -589,7 +589,7 @@ def _apply_model_to_wcs(adinput, transform=None, keyword_comments=None):
                             for p in model.param_names if 'angle' in p])
 
         cdmatrix = [[ad.hdr['CD{}_{}'.format(i,j)][0] / magnification
-                     for j in 1, 2] for i in 1, 2]
+                     for j in [1, 2]] for i in [1, 2]]
         m = models.Rotation2D(-rotation)
         newcdmatrix = m(*cdmatrix)
         for ax in 1, 2:

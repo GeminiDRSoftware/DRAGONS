@@ -18,8 +18,8 @@ class AstroDataGmos(AstroDataGemini):
                           )
 
     @staticmethod
-    def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME', '').upper() in ('GMOS-N', 'GMOS-S')
+    def _matches_data(source):
+        return source[0].header.get('INSTRUME', '').upper() in ('GMOS-N', 'GMOS-S')
 
     @astro_data_tag
     def _tag_instrument(self):
@@ -909,7 +909,7 @@ class AstroDataGmos(AstroDataGemini):
         overscan_levels = self.hdr.get('OVERSCAN')
 
         detname = self.detector_name(pretty=True)
-        detector = self.header[0]['DETECTOR']  # the only way to distinguish GMOS-S Ham pre/post video board work.
+        detector = self.phu['DETECTOR']  # the only way to distinguish GMOS-S Ham pre/post video board work.
         xbin = self.detector_x_bin()
         ybin = self.detector_y_bin()
         bin_factor = xbin * ybin

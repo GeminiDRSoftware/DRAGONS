@@ -907,9 +907,9 @@ class Preprocess(PrimitivesBASE):
         # manually (or that's what's in the headers). We can't do anything
         # sensible to rectify that, so just discard the unclassified ones and
         # complain about it.
-        missing = filter(lambda ad: ad not in objects | skies, adinputs)
+        missing = [ad for ad in adinputs if ad not in objects | skies]
         if missing:
-            log.warning("ignoring the following input file(s), which could "
+            log.warning("Ignoring the following input file(s), which could "
               "not be classified as object or sky after applying incomplete "
               "prior classifications from the input:")
             for ad in missing:
@@ -918,8 +918,8 @@ class Preprocess(PrimitivesBASE):
         # Construct object & sky lists (preserving order in adinputs) from
         # the classifications, making a complete copy of the input for any
         # duplicate entries:
-        ad_objects = filter(lambda ad: ad in objects, adinputs)
-        ad_skies = filter(lambda ad: ad in skies, adinputs)
+        ad_objects = [ad for ad in adinputs if ad in objects]
+        ad_skies = [ad for ad in adinputs if ad in skies]
         #ad_skies = [deepcopy(ad) if ad in objects else ad for ad in ad_skies]
 
         log.stdinfo("Science frames:")

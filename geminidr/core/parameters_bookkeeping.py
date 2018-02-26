@@ -21,7 +21,7 @@ class ParametersBookkeeping(ParametersBASE):
         "purpose"               : 'all',
     }
     writeOutputs = {
-        "clobber"               : True,
+        "overwrite"             : True,
         "outfilename"           : None,
         "prefix"                : '',
         "strip"                 : False,

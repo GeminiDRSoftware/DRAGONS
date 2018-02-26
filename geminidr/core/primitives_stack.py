@@ -3,14 +3,14 @@
 #
 #                                                            primitives_stack.py
 # ------------------------------------------------------------------------------
-import numpy as np
-from copy import deepcopy
+import astrodata
+from astrodata.fits import windowedOp
 
+import numpy as np
 from astropy import table
+from functools import partial
 
 from gempy.gemini import gemini_tools as gt
-from gempy.gemini.eti import gemcombineeti
-from gempy.utils import logutils
 
 from geminidr import PrimitivesBASE
 from .parameters_stack import ParametersStack
@@ -64,30 +64,40 @@ class Stack(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         apply_dq: bool
             apply DQ mask to data before combining?
-
         nhigh: int
             number of high pixels to reject
-
         nlow: int
             number of low pixels to reject
-
         operation: str
             combine method
-
         reject_method: str
             type of pixel rejection (passed to gemcombine)
-
         zero: bool
             apply zero-level offset to match background levels?
-
         """
+        from gempy.library.nddops import NDStacker
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackFrames"]
         sfx = params["suffix"]
+
+        zero = params["zero"]
+        scale = params["scale"]
+        apply_dq = params["apply_dq"]
+        separate_ext = params["separate_ext"]
+        statsec = params["statsec"]
+        if statsec:
+            try:
+                statsec = tuple([slice(int(start)-1, int(end))
+                             for x in reversed(statsec.strip('[]').split(','))
+                             for start, end in [x.split(':')]])
+            except ValueError:
+                log.warning("Cannot parse statistics section {}. Using full "
+                            "frame.".format(statsec))
+                statsec = None
 
         if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
@@ -114,14 +124,67 @@ class Stack(PrimitivesBASE):
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
 
-        # Match the background levels
-        if params["zero"]:
-            adinputs = self.correctBackgroundToReference(adinputs,
-                                remove_background=params["remove_background"])
 
-        # Instantiate ETI and then run the task
-        gemcombine_task = gemcombineeti.GemcombineETI(adinputs, params)
-        ad_out = gemcombine_task.run()
+        # Compute the scale and offset values by accessing the memmapped data
+        # so we can pass those to the stacking function
+        # TODO: Should probably be done better to consider only the overlap
+        # regions between frames
+        num_img = len(adinputs)
+        num_ext = len(adinputs[0])
+        zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
+        scale_factors = np.ones_like(zero_offsets)
+        if scale or zero:
+            levels = np.empty((num_img, num_ext), dtype=np.float32)
+            for i, ad in enumerate(adinputs):
+                for index in range(num_ext):
+                    nddata = (ad[index].nddata.window[:] if statsec is None
+                              else ad[i][index].nddata.window[statsec])
+                    # TODO: measure_bg_from_image?
+                    levels[i, index] = np.median(nddata.data)
+            if scale and zero:
+                log.warning("Both scale and zero are set. Setting scale=False.")
+                scale = False
+            if separate_ext:
+                # Target value is corresponding extension of first image
+                if scale:
+                    scale_factors = (levels[0] / levels).T
+                else:  # zero=True
+                    zero_offsets = (levels[0] - levels).T
+            else:
+                # Target value is mean of all extensions of first image
+                target = np.mean(levels[0])
+                if scale:
+                    scale_factors = np.tile(target / np.mean(levels, axis=1),
+                                              num_ext).reshape(num_ext, num_img)
+                else:  # zero=True
+                    zero_offsets = np.tile(target - np.mean(levels, axis=1),
+                                           num_ext).reshape(num_ext, num_img)
+            if scale and np.min(scale_factors) < 0:
+                log.warning("Some scale factors are negative. Not scaling.")
+                scale_factors = np.ones_like(scale_factors)
+            if scale and np.isinf(np.max(scale_factors)):
+                log.warning("Some scale factors are infinite. Not scaling.")
+                scale_factors = np.ones_like(scale_factors)
+
+        stack_function = NDStacker(combine=params["operation"], reject=params["reject_method"],
+                                   log=self.log, **params)
+
+        # NDStacker uses DQ if it exists; if we don't want that, delete the DQs!
+        if not apply_dq:
+            [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
+
+        # Let's be a bit lazy here. Let's compute the stack outputs and stuff
+        # the NDData objects into the first (reference) image
+        ad_out = astrodata.create(adinputs[0].phu)
+        for index, (scale, zero) in enumerate(zip(scale_factors, zero_offsets)):
+            with_uncertainty = True  # Since all stacking methods return variance
+            with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
+                                             for ad in adinputs)
+            result = windowedOp(partial(stack_function, scale=scale, zero=zero),
+                                [ad[index].nddata for ad in adinputs],
+                                kernel=(2048,2048), dtype=np.float32,
+                                with_uncertainty=with_uncertainty, with_mask=with_mask)
+            ad_out.append(result)
 
         # Propagate REFCAT as the union of all input REFCATs
         refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
@@ -131,11 +194,8 @@ class Stack(PrimitivesBASE):
             out_refcat['Cat_Id'] = list(range(1, len(out_refcat)+1))
             ad_out.REFCAT = out_refcat
 
-        # Gemcombine sets the GAIN keyword to the sum of the gains;
-        # reset it to the average instead. Set the RDNOISE to the
-        # sum in quadrature of the input read noise. Set the keywords in
-        # the variance and data quality extensions to be the same as the
-        # science extensions.
+        # Set GAIN to the average of input gains. Set the RDNOISE to the
+        # sum in quadrature of the input read noises.
         for ext, gain, rn in zip(ad_out, gain_list, read_noise_list):
             ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
             ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])

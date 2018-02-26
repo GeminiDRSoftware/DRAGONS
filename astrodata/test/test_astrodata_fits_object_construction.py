@@ -27,8 +27,8 @@ def test_append_array_to_root_no_name():
     ad.append(ones)
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
-    assert ad.header[-1]['EXTNAME'] == 'SCI'
-    assert ad.header[-1]['EXTVER'] == len(ad)
+    assert ad[-1].hdr['EXTNAME'] == 'SCI'
+    assert ad[-1].hdr['EXTVER'] == len(ad)
 
 def test_append_array_to_root_with_name_sci():
     ad = from_test_data('GMOS/N20160524S0119.fits')
@@ -37,8 +37,8 @@ def test_append_array_to_root_with_name_sci():
     ad.append(ones, name='SCI')
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
-    assert ad.header[-1]['EXTNAME'] == 'SCI'
-    assert ad.header[-1]['EXTVER'] == len(ad)
+    assert ad[-1].hdr['EXTNAME'] == 'SCI'
+    assert ad[-1].hdr['EXTVER'] == len(ad)
 
 def test_append_array_to_root_with_arbitrary_name():
     ad = from_test_data('GMOS/N20160524S0119.fits')

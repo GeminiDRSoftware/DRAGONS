@@ -99,7 +99,7 @@ class Resample(PrimitivesBASE):
 
         # --------------------  BEGIN establish reference frame  -------------------
         ref_image = adinputs[0]
-        ref_wcs = WCS(ref_image.header[1])
+        ref_wcs = WCS(ref_image[0].hdr)
         ref_shape = ref_image[0].data.shape
         ref_corners = at.get_corners(ref_shape)
         naxis = len(ref_shape)
@@ -126,7 +126,7 @@ class Resample(PrimitivesBASE):
 
         for key in area_keys:
             ref_image[0].hdr.set(*key)
-        out_wcs = WCS(ref_image.header[1])
+        out_wcs = WCS(ref_image[0].hdr)
         ref_image.update_filename(suffix=sfx, strip=True)
         # -------------------- END establish reference frame -----------------------
 
@@ -184,7 +184,7 @@ def _transform_corners(ads, all_corners, ref_wcs, interpolator):
     xy_img_corners = []
 
     for ad in ads:
-        img_wcs = WCS(ad.header[1])
+        img_wcs = WCS(ad[0].hdr)
         img_shape = ad[0].data.shape
         img_corners = at.get_corners(img_shape)
         xy_corners  = [(corner[1],corner[0]) for corner in img_corners]
@@ -272,7 +272,7 @@ def _build_area_keys(corners):
 
 def _composite_transformation_matrix(ad, out_wcs, keyword_comments):
     log = logutils.get_logger(__name__)
-    img_wcs = WCS(ad.header[1])
+    img_wcs = WCS(ad[0].hdr)
     # get transformation matrix from composite of wcs's
     # matrix = in_sky2pix*out_pix2sky (converts output to input)
     xy_matrix = np.dot(np.linalg.inv(img_wcs.wcs.cd), out_wcs.wcs.cd)
@@ -317,7 +317,7 @@ def _composite_transformation_matrix(ad, out_wcs, keyword_comments):
 
 def _composite_from_ref_wcs(ad, out_wcs, keyword_comments):
     log = logutils.get_logger(__name__)
-    img_wcs = WCS(ad.header[1])
+    img_wcs = WCS(ad[0].hdr)
     img_shape = ad[0].data.shape
 
     # recalculate shift from new reference wcs

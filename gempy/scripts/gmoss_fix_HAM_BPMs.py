@@ -220,7 +220,7 @@ def _get_key_value(ext, key, raise_exceptions=False):
     """
     err = None
     try:
-        value = ext.header[key]
+        value = ext.hdr[key]
     except KeyError as err:
         value = None
     except Exception as err:
@@ -239,7 +239,7 @@ def _set_key_value(ext, key, value):
         Keyword value; None if KeyError
 
     """
-    ext.header[key] = value
+    ext.hdr[key] = value
 
 # IRAF handling functions
 def _set_iraf_section(section_list):

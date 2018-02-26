@@ -48,7 +48,7 @@ class TestGMU:
 
     def test_sectionStrToIntList(self):
         section = '[1:2,3:4]'
-        expected = [0, 2, 2, 4]
+        expected = (0, 2, 2, 4)
         assert expected == gmu.sectionStrToIntList(section)
 
     def test_parse_percentile1(self):

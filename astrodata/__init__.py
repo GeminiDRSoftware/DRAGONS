@@ -1,4 +1,4 @@
-__all__ = ['AstroData', 'AstroDataError', 'TagSet',
+__all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
            'descriptor_list',
            'open', 'create', '__version__']
@@ -11,6 +11,8 @@ from .fits import AstroDataFits, KeywordCallableWrapper
 from .fits import add_header_to_table
 
 from .factory import AstroDataFactory
+
+from .nddata import NDAstroData
 
 keyword = KeywordCallableWrapper
 

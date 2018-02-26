@@ -508,54 +508,51 @@ class AstroData(object):
         --------
         A set of strings
         """
-        try:
-            # This prevents infinite recursion
-            if self._processing_tags:
-                return set()
-            self._processing_tags = True
-            try:
-                results = []
-                # Calling inspect.getmembers on `self` would trigger all the properties (tags,
-                # phu, hdr, etc.), and that's undesirable. To prevent that, we'll inspect the
-                # *class*. But that returns us unbound methods. We use `method.__get__(self)` to
-                # get a bound version.
-                #
-                # It's a bit of a roundabout way to get to what we want, but it's better than
-                # the option...
-                for mname, method in inspect.getmembers(self.__class__, lambda x: hasattr(x, 'tag_method')):
-                    ts = method.__get__(self)()
-                    plus, minus, blocked_by, blocks, if_present = ts
-                    if plus or minus or blocks:
-                        results.append(ts)
-
-                # Sort by the length of substractions... those that substract from others go first
-                results = sorted(results, key=lambda x: len(x.remove) + len(x.blocks), reverse=True)
-                # Sort by length of blocked_by... those that are never disabled go first
-                results = sorted(results, key=lambda x: len(x.blocked_by))
-                # Sort by length of if_present... those that need other tags to be present go last
-                results = sorted(results, key=lambda x: len(x.if_present))
-
-                tags = set()
-                removals = set()
-                blocked = set()
-                for plus, minus, blocked_by, blocks, is_present in results:
-                    if is_present:
-                        # If this TagSet requires other tags to be present, make sure that all of
-                        # them are. Otherwise, skip...
-                        if len(tags & is_present) != len(is_present):
-                            continue
-                    allowed = (len(tags & blocked_by) + len(plus & blocked)) == 0
-                    if allowed:
-                        # This set is not being blocked by others...
-                        removals.update(minus)
-                        tags.update(plus - removals)
-                        blocked.update(blocks)
-            finally:
-                self._processing_tags = False
-
-            return tags
-        except AttributeError as e:
+        # This prevents infinite recursion
+        if self._processing_tags:
             return set()
+        self._processing_tags = True
+        try:
+            results = []
+            # Calling inspect.getmembers on `self` would trigger all the properties (tags,
+            # phu, hdr, etc.), and that's undesirable. To prevent that, we'll inspect the
+            # *class*. But that returns us unbound methods. We use `method.__get__(self)` to
+            # get a bound version.
+            #
+            # It's a bit of a roundabout way to get to what we want, but it's better than
+            # the option...
+            for mname, method in inspect.getmembers(self.__class__, lambda x: hasattr(x, 'tag_method')):
+                ts = method.__get__(self)()
+                plus, minus, blocked_by, blocks, if_present = ts
+                if plus or minus or blocks:
+                    results.append(ts)
+
+            # Sort by the length of substractions... those that substract from others go first
+            results = sorted(results, key=lambda x: len(x.remove) + len(x.blocks), reverse=True)
+            # Sort by length of blocked_by... those that are never disabled go first
+            results = sorted(results, key=lambda x: len(x.blocked_by))
+            # Sort by length of if_present... those that need other tags to be present go last
+            results = sorted(results, key=lambda x: len(x.if_present))
+
+            tags = set()
+            removals = set()
+            blocked = set()
+            for plus, minus, blocked_by, blocks, is_present in results:
+                if is_present:
+                    # If this TagSet requires other tags to be present, make sure that all of
+                    # them are. Otherwise, skip...
+                    if len(tags & is_present) != len(is_present):
+                        continue
+                allowed = (len(tags & blocked_by) + len(plus & blocked)) == 0
+                if allowed:
+                    # This set is not being blocked by others...
+                    removals.update(minus)
+                    tags.update(plus - removals)
+                    blocked.update(blocks)
+        finally:
+            self._processing_tags = False
+
+        return tags
 
     @property
     def tags(self):
@@ -856,10 +853,22 @@ class AstroData(object):
         self._dataprov /= oper
         return self
 
+    __itruediv__ = __idiv__
     add = __iadd__
     subtract = __isub__
     multiply = __imul__
     divide = __idiv__
+
+    # This method needs to be implemented as classmethod
+    @abstractmethod
+    def load(cls, source):
+        """
+        Class method that returns an instance of this same class, properly initialized
+        with a `DataProvider` that can deal with the object passed as `source`
+
+        This method is abstract and has to be implemented by derived classes.
+        """
+        pass
 
     def append(self, extension, name=None, *args, **kw):
         """

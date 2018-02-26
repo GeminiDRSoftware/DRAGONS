@@ -98,8 +98,8 @@ class AstroDataGemini(AstroDataFits):
     __keyword_dict = gemini_keyword_names
 
     @staticmethod
-    def _matches_data(data_provider):
-        obs = data_provider.header[0].get('OBSERVAT', '').upper()
+    def _matches_data(source):
+        obs = source[0].header.get('OBSERVAT', '').upper()
         # This covers variants like 'Gemini-North', 'Gemini North', etc.
         return obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
 
@@ -185,7 +185,7 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _status_prepared(self):
-        if any(('PREPAR' in kw) for kw in self.phu.keywords):
+        if any(('PREPAR' in kw) for kw in self.phu):
             return TagSet(['PREPARED'])
         else:
             return TagSet(['UNPREPARED'])
@@ -194,7 +194,7 @@ class AstroDataGemini(AstroDataFits):
     def _status_overscan(self):
         found = []
         for pattern, tag in (('TRIMOVER', 'OVERSCAN_TRIMMED'), ('SUBOVER', 'OVERSCAN_SUBTRACTED')):
-            if any((pattern in kw) for kw in self.phu.keywords):
+            if any((pattern in kw) for kw in self.phu):
                 found.append(tag)
         if found:
             return TagSet(found)
@@ -204,13 +204,13 @@ class AstroDataGemini(AstroDataFits):
         kwords = set(['PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
                       'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG'])
 
-        if set(self.phu.keywords) & kwords:
+        if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])
 
     @astro_data_tag
     def _status_processed_science(self):
         for pattern in ('GMOSAIC', 'PREPAR'):
-            if not any((pattern in kw) for kw in self.phu.keywords):
+            if not any((pattern in kw) for kw in self.phu):
                 return
 
         if self.phu['OBSTYPE'] == 'OBJECT':
@@ -1350,6 +1350,18 @@ class AstroDataGemini(AstroDataFits):
         return self.hdr.get(self._keyword_for('read_noise'))
 
     @astro_data_descriptor
+    def read_speed_setting(self):
+        """
+        Returns the read speed setting for the observation
+
+        Returns
+        -------
+        str
+            the read speed setting
+        """
+        return self.phu.get(self._keyword_for('read_speed_setting'))
+
+    @astro_data_descriptor
     def requested_bg(self):
         """
         Returns the BG, background brightness, requested by the PI.
@@ -1860,21 +1872,21 @@ class AstroDataGemini(AstroDataFits):
             # header[0] is PHU, header[1] is first extension HDU
             # If no CTYPE1 in first HDU, try PHU
             try:
-                ctypes = (self.header[1]['CTYPE1'], self.header[1]['CTYPE2'])
+                ctypes = (self[0].hdr['CTYPE1'], self[0].hdr['CTYPE2'])
             except KeyError:
                 try:
                     ctypes = (self.phu['CTYPE1'], self.phu['CTYPE2'])
                 except KeyError:
                     return (None, None)
                 else:
-                    wcs = WCS(self.header[0])
+                    wcs = WCS(self.phu)
             else:
-                wcs = WCS(self.header[1])
+                wcs = WCS(self[0].hdr)
 
             if not (ctypes[0].startswith('RA') and ctypes[1].startswith('DEC')):
                 return (None, None)
 
-            x, y = [0.5 * self.header[1][naxis]
+            x, y = [0.5 * self[0].hdr[naxis]
                     for naxis in ('NAXIS1', 'NAXIS2')]
             result = wcs.wcs_pix2world(x,y, 1)
         ra, dec = float(result[0]), float(result[1])

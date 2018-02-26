@@ -34,7 +34,7 @@ class SExtractorETIFile(ETIFile):
         # copy the data plane in case we edit it
         self.data = input.data.copy()
         self.mask = input.mask
-        self.header = input.header[1]
+        self.header = input.hdr
         if mask_dq_bits and self.mask is not None:
             self.data[self.mask & mask_dq_bits>0] = np.median(
                 self.data[self.mask & mask_dq_bits==0])
@@ -60,7 +60,7 @@ class SExtractorETIFile(ETIFile):
         #    # Need a dummy DQ array because .param file needs a FLAG_IMAGE
         #    hdulist.append(fits.ImageHDU(np.zeros_like(self.data, dtype=np.int16),
         #                                 header=self.header, name='DQ'))
-        hdulist.writeto(filename, clobber=True)
+        hdulist.writeto(filename, overwrite=True)
         self._disk_file = filename
 
     def recover(self):

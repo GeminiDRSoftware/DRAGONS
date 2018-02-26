@@ -58,7 +58,7 @@ def set_caches():
 
 def load_cache(cachefile):
     if os.path.exists(cachefile):
-        return pickle.load(open(cachefile, 'r'))
+        return pickle.load(open(cachefile, 'rb'))
     else:
         return {}
 

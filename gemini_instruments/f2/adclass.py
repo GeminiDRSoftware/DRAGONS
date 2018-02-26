@@ -20,8 +20,8 @@ class AstroDataF2(AstroDataGemini):
                           )
 
     @staticmethod
-    def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME', '').upper() in ('F2', 'FLAM')
+    def _matches_data(source):
+        return source[0].header.get('INSTRUME', '').upper() in ('F2', 'FLAM')
 
     @astro_data_tag
     def _tag_instrument(self):
@@ -619,8 +619,7 @@ class AstroDataF2(AstroDataGemini):
         x, y = 1034, 1054
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=FITSFixedWarning)
-            # header[0] is PHU, header[1] is first (and only) extension HDU
-            wcs = WCS(self.header[1])
+            wcs = WCS(self[0].hdr)
             result = wcs.wcs_pix2world(x,y,1, 1) if wcs.naxis==3 \
                 else wcs.wcs_pix2world(x,y, 1)
         ra, dec = float(result[0]), float(result[1])

@@ -1,17 +1,22 @@
 #
-#                                                                  gemini_python
+#                                                                        DRAGONS
 #
 #                                                                   gempy.gemini
 #                                                                   qap_tools.py
 # ------------------------------------------------------------------------------
-__version__ = 'beta (new hope)'
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from concurrent.futures import TimeoutError
+# ------------------------------------------------------------------------------
+__version__ = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 import os
 import sys
 import json
 import getpass
 import socket
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from ..utils import logutils
 
@@ -35,11 +40,11 @@ def ping_adcc():
     site = None
     url = "http://localhost:8777/rqsite.json"
     try:
-        request = urllib2.Request(url)
-        adcc_file = urllib2.urlopen(request)
+        request = urllib.request.Request(url)
+        adcc_file = urllib.request.urlopen(request)
         site = adcc_file.read()
         adcc_file.close()
-    except (urllib2.HTTPError, urllib2.URLError):
+    except (urllib.error.HTTPError, urllib.error.URLError):
         pass
 
     if site:
@@ -68,13 +73,14 @@ def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
     evman = EventsManager()
     evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)
     event_pkt = evman.event_list.pop()
-    postdata = json.dumps(event_pkt)
+    jdata = json.dumps(event_pkt).encode('utf-8')
+    postdata = jdata
     try:
-        post_request = urllib2.Request(URL)
-        postr = urllib2.urlopen(post_request, postdata)
+        post_request = urllib.request.Request(URL)
+        postr = urllib.request.urlopen(post_request, postdata)
         postr.read()
         postr.close()
-    except urllib2.HTTPError:
+    except urllib.error.HTTPError:
         log.warning("Attempt to deliver metrics to adcc failed.")
 
     return
@@ -108,13 +114,13 @@ def status_report(status):
     evman = EventsManager()
     evman.append_event(ad=ad, name='status', mdict=mdict, msgtype='reduce_status')
     event_pkt = evman.event_list.pop()
-    postdata = json.dumps(event_pkt)
+    postdata = json.dumps(event_pkt).encode('utf-8')
     try:
-        post_request = urllib2.Request(URL)
-        postr = urllib2.urlopen(post_request, postdata)
+        post_request = urllib.request.Request(URL)
+        postr = urllib.request.urlopen(post_request, postdata)
         postr.read()
         postr.close()
-    except urllib2.HTTPError:
+    except urllib.error.HTTPError:
         log.warning("Attempt to deliver status report to adcc failed.")
 
     return
@@ -199,22 +205,35 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, mode, upload=False):
 
 def send_fitsstore_report(qareport, calurl_dict):
     """
-    Sends a QA report to the FITSStore for ingestion
+    Send a QA report to the FITSStore for ingestion.
 
     Parameters
     ----------
-    qareport: dict
-        the QA report
-    calurl_dict: dict
-        information about the FITSstore
+    qareport: <dict>
+        QA metrics report
+
+    calurl_dict: <dict>
+        Provides FITSstore URLs. See the DRAGONS file, 
+        recipe_system.cal_service.calurl_dict
+
+    Return
+    ------
+    <void>
 
     """
+    tout_msg = "{} - Could not deliver metrics to fitsstore. "
+    tout_msg += "Server failed to respond."
     qalist = [qareport]
+    jdata = json.dumps(qalist).encode('utf-8')
     try:
-        req = urllib2.Request(url=calurl_dict["QAMETRICURL"], data=json.dumps(qalist))
-        f = urllib2.urlopen(req)
+        req = urllib.request.Request(url=calurl_dict["QAMETRICURL"], data=jdata)
+        f = urllib.request.urlopen(req)
         f.close()
-    except urllib2.HTTPError, urllib2.URLError:
+    except TimeoutError as err:
+        log.warning(tout_msg.format('TimeoutError'))
+    except urllib.error.HTTPError as xxx_todo_changeme:
+        urllib.error.URLError = xxx_todo_changeme
         log.warning("Attempt to deliver metrics to fitsstore failed.")
-
+    except Exception as err:
+        log.warning(str(err))
     return

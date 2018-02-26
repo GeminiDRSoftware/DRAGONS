@@ -9,8 +9,8 @@ class AstroDataBhros(AstroDataGemini):
                           overscan_section = 'BIASSEC')
 
     @staticmethod
-    def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME', '').upper() == 'BHROS'
+    def _matches_data(source):
+        return source[0].header.get('INSTRUME', '').upper() == 'BHROS'
 
     @astro_data_tag
     def _tag_instrument(self):

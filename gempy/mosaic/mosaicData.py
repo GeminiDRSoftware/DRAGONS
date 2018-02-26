@@ -1,3 +1,7 @@
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import numpy as np
 
 class MosaicData(object):
@@ -201,9 +205,9 @@ class MosaicData(object):
         coordx1 = [sec[0] for sec in ampmcoord]  # x1 location from each tuple
         coordy1 = [sec[2] for sec in ampmcoord]  # y1 location from each tuple
 
-        anumbers = range(len(coordx1))
+        anumbers = list(range(len(coordx1)))
         # Find the order of x and y coords.
-        ampsorder = np.array(zip(anumbers, coordx1, coordy1),
+        ampsorder = np.array(list(zip(anumbers, coordx1, coordy1)),
                              dtype=[('ext', np.int), ('coordx1', np.int),
                                     ('coordy1', np.int)])
 

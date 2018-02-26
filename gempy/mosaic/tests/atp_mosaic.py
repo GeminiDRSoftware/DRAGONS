@@ -551,7 +551,7 @@ def atd3():
 
     #    Save to a filename
     nn = os.path.basename(ad.filename)
-    outad.write(path.splitext(nn)[0]+'_AD.fits', clobber=True)
+    outad.write(path.splitext(nn)[0]+'_AD.fits', overwrite=True)
 
     #    Verify that (X,Y) values in the merged tables correspond
     #    the object positions. 

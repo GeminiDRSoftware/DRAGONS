@@ -135,9 +135,8 @@ class MosaicAD(Mosaic):
         type: <str> Supported values are 'wcs', 'transform'. Default is 'wcs'.
 
         """
-        adout = astrodata.create(self.ad.header[0])
-        adout.phu.set('TILED', ['FALSE', 'TRUE'][tile])
-        adout.phu.set_comment('TILED', 'True: tiled; False: Image Mosaicked')
+        adout = astrodata.create(self.ad.phu)
+        adout.phu['TILED'] = (repr(tile).upper(), 'True: tiled; False: Image Mosaicked')
 
         # image arrays mosaicked: 'data', 'variance', 'mask', 'OBJMASK'.
         # SCI
@@ -185,7 +184,7 @@ class MosaicAD(Mosaic):
         # Propagate any REFCAT
         if not doimg:
             if hasattr(self.ad, 'REFCAT'):
-                adout[0].REFCAT = getattr(self.ad, 'REFCAT')
+                adout.REFCAT = self.ad.REFCAT
 
         return adout
 
@@ -214,7 +213,7 @@ class MosaicAD(Mosaic):
         # If there is no WCS return 1 list of 1.s
         self.set_ref_extn()
         try:
-           ref_wcs = wcs.WCS(self.ad.header[self.refext])
+           ref_wcs = wcs.WCS(self.ad[self.refext].hdr)
         except:
            self.jfactor = [1.0] * len(self.ad)
            return
@@ -223,7 +222,7 @@ class MosaicAD(Mosaic):
         # matrix from composite of the reference cd matrix and the current one.
         self.jfactor.append(1.0)
         for ext in self.ad[1:]:
-            header = ext.header[1]
+            header = ext.hdr
             if 'CD1_1' not in header:
                 self.jfactor.append(1.0)
                 continue
@@ -334,7 +333,7 @@ class MosaicAD(Mosaic):
         fmat1 = "[{}:{},{}:{}]"
         fmat2 = "[1:{},1:{}]"
 
-        mosaic_hd = self.ad.header[self.refext].copy()         # ref ext header.
+        mosaic_hd = self.ad[self.refext].hdr.copy()         # ref ext header.
         ref_block = self.geometry.ref_block  
         amps_per_block = self._amps_per_block
 
@@ -430,11 +429,7 @@ class MosaicAD(Mosaic):
         ref_block_number = ref_block[0] + ref_block[1]*nblocks_x
 
         # Reference header.
-        if amps_per_block == 1:
-            self.refext = ref_block_number + 1   # EXTVERs starts from 1)
-        else:
-            # Get the first amplifier in the block
-            self.refext = amps_per_block*ref_block_number + 1
+        self.refext = amps_per_block*ref_block_number
 
         return
     # --------------------------------------------------------------------------

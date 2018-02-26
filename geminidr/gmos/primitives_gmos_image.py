@@ -1,8 +1,11 @@
+from __future__ import division
+from __future__ import print_function
 #
 #                                                                  gemini_python
 #
 #                                                        primtives_gmos_image.py
 #  ------------------------------------------------------------------------------
+from builtins import zip
 import numpy as np
 from copy import deepcopy
 import scipy.ndimage as ndimage
@@ -83,7 +86,7 @@ class GMOSImage(GMOS, Image, Photometry):
             gs_index = -1
             for index in ampsorder:
                 ext = ad[index]
-                wcs = WCS(ext.header[1])
+                wcs = WCS(ext.hdr)
                 x, y = wcs.all_world2pix([[oira, oidec]], 0)[0]
                 if x < datasec_list[index].x2 + 0.5:
                     gs_index = index
@@ -360,6 +363,7 @@ class GMOSImage(GMOS, Image, Photometry):
             log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
                          "statistics".format(xborder,ext.data.shape[1]-xborder,
                           yborder,ext.data.shape[0]-yborder))
+
             stat_region = ext.data[yborder:-yborder, xborder:-xborder]
                         
             # Remove DQ-flagged values (including saturated values)
@@ -372,7 +376,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Find the mode and standard deviation
             hist,edges = np.histogram(stat_region,
-                                      bins=int(np.max(ext.data)/0.1))
+                                      bins=int(np.max(ext.data)/ 0.1))
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)
             
@@ -427,6 +431,7 @@ class GMOSImage(GMOS, Image, Photometry):
             log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
                          "statistics".format(xborder, data.shape[1] - xborder,
                                              yborder, data.shape[0] - yborder))
+
             stat_region = data[yborder:-yborder, xborder:-xborder]
             mean = np.mean(stat_region)
 
@@ -665,7 +670,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
             adinputs = self.scaleByIntensity(adinputs)
-            adinputs = self.stackFrames(adinputs, zero=False,
+            adinputs = self.stackFrames(adinputs, zero=False, scale=False,
                                         suffix=params["suffix"],
                                         operation=params["operation"],
                                         apply_dq=params["apply_dq"],
