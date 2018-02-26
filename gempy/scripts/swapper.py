@@ -4,7 +4,7 @@
 #
 #                                                                     swapper.py
 # ------------------------------------------------------------------------------
-__version__  = 'v2.0 (new hope)'
+__version__  = 'v2.0'
 # ------------------------------------------------------------------------------
 #
 #    functional tasks
@@ -20,8 +20,8 @@ __version__  = 'v2.0 (new hope)'
 # (escape chars, color codes). more the log to get highlighting text.
 #
 # $ swapper -h
-# usage: swapper [-h] [-a] [-c] [-d] [-l LOGNAME] [-m MODULE]
-#                [-r] [-u USERPATH]
+# usage: swapper [-h] [-a] [-c] [-d] [-f] [-r] [-l LOGNAME] [-m MODULE]
+#                [-u USERPATH]
 #                ostring nstring
 #
 # positional arguments:
@@ -34,6 +34,7 @@ __version__  = 'v2.0 (new hope)'
 #                must request auto execute
 #   -c           Switch on color high lighting. Default is Off.
 #   -d           Document line changes w/ swapper comments.
+#   -f           Search FitsStorage package.
 #   -l LOGNAME   Set the logfile name. Default is 'swap.log'.
 #   -m MODULE    Execute swaps in <module> only. Default is all.
 #   -r           Report potential swaps only. Default is 'False'.
@@ -51,13 +52,13 @@ Description:
     gempy/
     recipe_system/
 
-  Search paths are based upon an environment variable, $NGEM, OR on the path
-  passed with the '-u USERPATH' option. $NGEM defines a path to a user's 
-  gemini_python installation as pulled from the GDPSG repository, and which
+  Search paths are based upon an environment variable, $DRAGONS, OR on the path
+  passed with the '-u USERPATH' option. $DRAGONS defines a path to a user's
+  DRAGONS installation as pulled from the GDPSG GitHub repository, and which
   nominally contains the 'branches' and 'trunk' directories as they appear 
   in the gemini_python repo. I.e.,
 
-    export NGEM=/user/path/to/gemini_python
+    export DRAGONS=/user/path/to/dragons
 
   If a user has a non-standard or partial gemini_python installation, or has 
   otherwise changed the above organisation, the -u option should be used to 
@@ -68,13 +69,31 @@ Description:
 
   -- a standard gemini_python repo checkout in ~ :
 
-      $ export NGEM=~/gemini_python
+      $ export DRAGONS=~/dragons
       $ swapper -c -r "old string" "new string"
 
   -- astrodata, gempy, and other gemini_python packages are in directory
      ~/foobar/. Use -u:
 
       $ swapper -r -c -u ~/foobar "old string" "new string"
+
+  swapper can search the trunk of the FitsStorage code base, provided it is
+  installed. Search paths are based upon an environment variable, $FITSSTORE,
+  which currently is held in an svn repo.
+
+  The $FITSSTORE env var should be defined to include the trunk or branch of the
+  repository a user wishes to search.
+
+  E.g.,
+
+  export FITSSTORE=/path/to/fitsstore/trunk
+
+  or using a branch name,
+
+  export FITSSTORE=/path/to/fitsstore/branch/2017-1
+
+  Users must use the '-f' option on the swapper command to search the code base 
+  defined by $FITSSTORE.
 
 """
 import os
@@ -91,6 +110,93 @@ from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
 from gempy.utils import logutils
+
+# ------------------------------------------------------------------------------
+dragons_set = {"apaths": [ 'astrodata',
+                              'gemini_instruments',
+                              'gemini_instruments/bhros',
+                              'gemini_instruments/f2',
+                              'gemini_instruments/gemini',
+                              'gemini_instruments/gmos',
+                              'gemini_instruments/gnirs',
+                              'gemini_instruments/gpi',
+                              'gemini_instruments/graces',
+                              'gemini_instruments/gsaoi',
+                              'gemini_instruments/michelle',
+                              'gemini_instruments/nici',
+                              'gemini_instruments/nifs',
+                              'gemini_instruments/niri',
+                              'gemini_instruments/phoenix',
+                              'gemini_instruments/test',
+                              'gemini_instruments/trecs'
+                  ],
+                  "gdr_paths": [ 'geminidr',
+                                 'geminidr/core',
+                                 'geminidr/f2',
+                                 'geminidr/f2/lookups',
+                                 'geminidr/f2/recipes/qa',
+                                 'geminidr/f2/recipes/sq',
+                                 'geminidr/gemini',
+                                 'geminidr/gemini/lookups',
+                                 'geminidr/gmos',
+                                 'geminidr/gmos/lookups',
+                                 'geminidr/gmos/recipes/qa',
+                                 'geminidr/gmos/recipes/sq',
+                                 'geminidr/gnirs',
+                                 'geminidr/gnirs/lookups',
+                                 'geminidr/gnirs/recipes/qa',
+                                 'geminidr/gnirs/recipes/sq',
+                                 'geminidr/gsaoi',
+                                 'geminidr/gsaoi/lookups',
+                                 'geminidr/gsaoi/recipes/qa',
+                                 'geminidr/gsaoi/recipes/sq',
+                                 'geminidr/niri',
+                                 'geminidr/niri/lookups',
+                                 'geminidr/niri/recipes/qa',
+                                 'geminidr/niri/recipes/sq',
+                  ],
+                  "rpaths": [ 'recipe_system',
+                              'recipe_system/adcc',
+                              'recipe_system/adcc/servers',
+                              'recipe_system/cal_service',
+                              'recipe_system/mappers',
+                              'recipe_system/reduction',
+                              'recipe_system/scripts',
+                              'recipe_system/stacks',
+                              'recipe_system/utils',
+                  ],
+                  "gpaths": [ 'gempy/adlibrary',
+                              'gempy/eti_core',
+                              'gempy/gemini',
+                              'gempy/gemini/eti',
+                              'gempy/gemini/eti/tests',
+                              'gempy/gemini/tests',
+                              'gempy/library',
+                              'gempy/mosaic',
+                              'gempy/mosaic/tests/mosaic',
+                              'gempy/scripts',
+                              'gempy/utils',
+                  ],
+}
+
+fits_set = { 'db_paths': [ 'dbmigration',
+	                   'dbmigration/versions'
+             ],
+             'fits_paths' : [ 'fits_storage',
+                              'fits_storage/cal',
+                              'fits_storage/orm',
+                              'fits_storage/scripts/',
+                              'fits_storage/utils',
+                              #'fits_storage/utils/web',
+                              #'fits_storage/web'
+             ],
+             'test_paths': [ 'test',
+                             'test/orm',
+                             'test/utils',
+                             'test/web'
+             ],
+             'userc_paths': ['user-clients']
+}
 
 # ------------------------------------------------------------------------------
 def handleCLArgs():
@@ -110,9 +216,8 @@ def handleCLArgs():
     parser.add_argument("-d", dest="doc", action="store_true",
                         help="Document line changes w/ swapper comments.")
 
-    parser.add_argument("-l", dest="logname", default="swap.log",
-                        help="Set the logfile name."
-                        " Default is 'swap.log'.")
+    parser.add_argument("-f", dest="fitss", action="store_true",
+                        help="Search FitsStorage package.")
 
     parser.add_argument("-m", dest="module", default=None,
                         help="Execute swaps in <module> only."
@@ -155,21 +260,23 @@ class Faces(object):
 class Swap(object):
 
     def __init__(self, args):
-        """ Instance definitions."""
-        
-        # Get the gemini_python location. Users should define $NGEM
-        # set up with report only flag. TBR
-        # E.g., NGEM=~/Gemini/gitlab/gemini_python
-        try:
-            self.GEM = os.path.abspath(os.environ['NGEM'])
-        except KeyError:
-            self.GEM = None
+        """
+        Instance definitions.
 
-        self.doc      = args.doc
+        Parameters:
+        ----------
+        args : <Namespace>
+               An argparse namespace object or one that provides an equivalent
+               interface.
+
+        """
+        self.DRAGONS  = None
+        self.FITS     = None
         self.auto_run = args.auto
-        self.focus    = args.module
         self.colorize = args.color
         self.cur_str  = args.ostring
+        self.doc      = args.doc
+        self.focus    = args.module
         self.new_str  = args.nstring
         if args.userpath:
             self.userpath = os.path.abspath(args.userpath)
@@ -179,84 +286,28 @@ class Swap(object):
         self.pymods = []
         self.full_paths = []
         self.swap_summary = ()
+        self.search_fits = args.fitss
+        self.search_set = None
 
     # paths in a package
     def setup_search(self):
-        self.search_set = {"apaths": [ 'astrodata',
-                                       'gemini_instruments',
-                                       'gemini_instruments/bhros',
-                                       'gemini_instruments/f2',
-                                       'gemini_instruments/gemini',
-                                       'gemini_instruments/gmos',
-                                       'gemini_instruments/gnirs',
-                                       'gemini_instruments/gpi',
-                                       'gemini_instruments/graces',
-                                       'gemini_instruments/gsaoi',
-                                       'gemini_instruments/michelle',
-                                       'gemini_instruments/nici',
-                                       'gemini_instruments/nifs',
-                                       'gemini_instruments/niri',
-                                       'gemini_instruments/phoenix',
-                                       'gemini_instruments/test',
-                                       'gemini_instruments/trecs'
-                                   ],
-                           "gdr_paths": [ 'geminidr',
-                                          'geminidr/core',
-                                          'geminidr/f2',
-                                          'geminidr/f2/lookups',
-                                          'geminidr/f2/recipes/qa',
-                                          'geminidr/f2/recipes/sq',
-                                          'geminidr/gemini',
-                                          'geminidr/gemini/lookups',
-                                          'geminidr/gmos',
-                                          'geminidr/gmos/lookups',
-                                          'geminidr/gmos/recipes/qa',
-                                          'geminidr/gmos/recipes/sq',
-                                          'geminidr/gnirs',
-                                          'geminidr/gnirs/lookups',
-                                          'geminidr/gnirs/recipes/qa',
-                                          'geminidr/gnirs/recipes/sq',
-                                          'geminidr/gsaoi',
-                                          'geminidr/gsaoi/lookups',
-                                          'geminidr/gsaoi/recipes/qa',
-                                          'geminidr/gsaoi/recipes/sq',
-                                          'geminidr/niri',
-                                          'geminidr/niri/lookups',
-                                          'geminidr/niri/recipes/qa',
-                                          'geminidr/niri/recipes/sq',
-                                      ],
-                           "rpaths": [ 'recipe_system',
-                                       'recipe_system/adcc',
-                                       'recipe_system/adcc/servers',
-                                       'recipe_system/cal_service',
-                                       'recipe_system/mappers',
-                                       'recipe_system/reduction',
-                                       'recipe_system/scripts',
-                                       'recipe_system/stacks',
-                                       'recipe_system/utils',
-                                   ],
-                           "gpaths": [ 'gempy/adlibrary', 
-                                       'gempy/eti_core',
-                                       'gempy/gemini',
-                                       'gempy/gemini/eti',
-                                       'gempy/gemini/eti/tests',
-                                       'gempy/gemini/tests',
-                                       'gempy/library',
-                                       'gempy/mosaic',
-                                       'gempy/mosaic/tests/mosaic',
-                                       'gempy/scripts',
-                                       'gempy/utils',
-                                   ],
-                       }
+        if self.search_fits:
+            try:
+                self.FITS = os.path.abspath(os.environ['FITSSTORE'])
+            except KeyError:
+                pass
+
+            self.search_set = fits_set
+        else:
+            try:
+                self.DRAGONS = os.path.abspath(os.environ['DRAGONS'])
+            except KeyError:
+                pass
+
+            self.search_set = dragons_set
         return
 
     def set_full_paths(self):
-        """ Sets the instance var 'full_paths' with the fulls paths
-        for the search.
-
-        parameters: <void>
-        return:     <void>
-        """
         gem_path = self._determine_gem_path()
         try:
             assert exists(gem_path)
@@ -264,6 +315,22 @@ class Swap(object):
             msg = "Supplied path '" + gem_path + "' cannot be found."
             raise SystemExit(msg)
 
+        if self.search_fits:
+            self.set_fitsstore_paths(gem_path)
+        else:
+            self.set_dragon_paths(gem_path)
+
+        return
+
+
+    def set_dragon_paths(self, gem_path):
+        """ Sets the instance var 'full_paths' with the fulls paths
+        for the search on DRAGONS.
+
+        parameters: <void>
+        return:     <void>
+
+        """
         astro_paths = self.search_set['apaths']
         gemp_paths  = self.search_set['gpaths']
         rs_paths    = self.search_set['rpaths']
@@ -276,6 +343,31 @@ class Swap(object):
         for path in rs_paths:
             self.full_paths.append(join(gem_path, path))
         for path in dr_paths:
+            fpath = join(gem_path, path)
+            if exists(fpath):
+                self.full_paths.append(fpath)
+        return
+
+    def set_fitsstore_paths(self, gem_path):
+        """ Sets the instance var 'full_paths' with the fulls paths
+        for the search on FitsStorage.
+
+        parameters: <void>
+        return:     <void>
+
+        """
+        db_paths    = self.search_set['db_paths']
+        fits_paths  = self.search_set['fits_paths']
+        test_paths  = self.search_set['test_paths']
+        userc_paths = self.search_set['userc_paths']
+
+        for path in db_paths:
+            self.full_paths.append(join(gem_path, path))
+        for path in fits_paths:
+            self.full_paths.append(join(gem_path, path))
+        for path in test_paths:
+            self.full_paths.append(join(gem_path, path))
+        for path in userc_paths:
             fpath = join(gem_path, path)
             if exists(fpath):
                 self.full_paths.append(fpath)
@@ -304,8 +396,10 @@ class Swap(object):
             fpath, tail  = os.path.split(mod)
             if self.userpath:
                 head = fpath.split(self.userpath)[-1]
-            else:
-                head = fpath.split(self.GEM)[-1]
+            elif self.FITS:
+                head = fpath.split(self.FITS)[-1]
+            elif self.DRAGONS:
+                head = fpath.split(self.DRAGONS)[-1]
 
             match_lines = self._search_and_report(mod, self.cur_str)
             if match_lines:
@@ -381,27 +475,34 @@ class Swap(object):
             log.stdinfo("\tNote: User edits are not tallied")
         return
 
+    
     # ------------------------------ prive -------------------------------------
     def _echo_header(self):
         log.stdinfo("\n" + basename(__file__) + " \t" + __version__)
         if self.userpath:
             log.stdinfo("USERPATH\t" + Faces.BOLD + self.userpath + Faces.END)
-        elif self.GEM:
-            log.stdinfo("Searching\t" + Faces.BOLD + "gemini_python ..." + Faces.END)
+        elif self.FITS:
+            log.stdinfo("Searching\t" + Faces.BOLD + "FitsStorage ..." + Faces.END)
+        elif self.DRAGONS:
+            log.stdinfo("Searching\t" + Faces.BOLD + "DRAGONS ..." + Faces.END)
         return
 
     def _determine_gem_path(self):
         """ Build the instance gem_path variable. """
         gem_path = None
-        if not self.userpath and not self.GEM:
-            msg = "Specify -u USERPATH or define $NGEM. -h for help."
+        if not self.userpath and not self.DRAGONS and not self.FITS:
+            msg = "Specify -u USERPATH OR define $DRAGONS OR define $FITS. "
+            msg += "-h for help."
             raise SystemExit(msg)
 
         # Override gem_path if userpath has been specified.
         if self.userpath:
             gem_path = self.userpath
-        else:
-            gem_path = self.GEM
+        elif self.FITS:
+            gem_path = self.FITS
+        elif self.DRAGONS:
+            gem_path = self.DRAGONS
+
         return gem_path
 
     def _get_py_modules(self, path):
@@ -570,7 +671,6 @@ def main(args):
 # ____________________
 if __name__ == "__main__":
     args = handleCLArgs()
-    # Comfig the logger.
-    logutils.config(file_name=args.logname)
+    logutils.config(file_name='swap.log')
     log = logutils.get_logger(__name__)
     sys.exit(main(args))
