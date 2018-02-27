@@ -13,8 +13,8 @@ Import Astrodata and the Gemini instruments configurations.
 
 ::
 
-    import astrodata
-    import gemini_instruments
+    >>> import astrodata
+    >>> import gemini_instruments
 
 Basic read and write operations
 ===============================
@@ -68,29 +68,29 @@ a 2D mask matching the sources in the image.
 
 ::
 
-    ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
-    ad.info()
+    >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
+    >>> ad.info()
     Filename: ../playdata/N20170609S0154_varAdded.fits
     Tags: ACQUISITION GEMINI GMOS IMAGE NORTH OVERSCAN_SUBTRACTED OVERSCAN_TRIMMED
         PREPARED SIDEREAL
     Pixels Extensions
     Index  Content                  Type              Dimensions     Format
-    [ 0]   science                  NDDataRef         (2112, 256)    float32
+    [ 0]   science                  NDAstroData       (2112, 256)    float32
               .variance             ndarray           (2112, 256)    float32
               .mask                 ndarray           (2112, 256)    int16
               .OBJCAT               Table             (6, 43)        n/a
               .OBJMASK              ndarray           (2112, 256)    uint8
-    [ 1]   science                  NDDataRef         (2112, 256)    float32
+    [ 1]   science                  NDAstroData       (2112, 256)    float32
               .variance             ndarray           (2112, 256)    float32
               .mask                 ndarray           (2112, 256)    int16
               .OBJCAT               Table             (8, 43)        n/a
               .OBJMASK              ndarray           (2112, 256)    uint8
-    [ 2]   science                  NDDataRef         (2112, 256)    float32
+    [ 2]   science                  NDAstroData       (2112, 256)    float32
               .variance             ndarray           (2112, 256)    float32
               .mask                 ndarray           (2112, 256)    int16
               .OBJCAT               Table             (7, 43)        n/a
               .OBJMASK              ndarray           (2112, 256)    uint8
-    [ 3]   science                  NDDataRef         (2112, 256)    float32
+    [ 3]   science                  NDAstroData       (2112, 256)    float32
               .variance             ndarray           (2112, 256)    float32
               .mask                 ndarray           (2112, 256)    int16
               .OBJCAT               Table             (5, 43)        n/a
@@ -124,7 +124,7 @@ Delete an extension::
 
     >>> del adcopy[5]
 
-Add and delete variance and mask planes::
+Delete and add variance and mask planes::
 
     >>> var = adcopy[4].variance
     >>> adcopy[4].variance = None
@@ -152,17 +152,11 @@ Astrodata tags
 
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
     >>> ad.tags
-    {'GEMINI',
-     'GMOS',
-     'IMAGE',
-     'NORTH',
-     'OVERSCAN_SUBTRACTED',
-     'OVERSCAN_TRIMMED',
-     'PREPARED',
-     'PROCESSED_SCIENCE',
-     'SIDEREAL'}
+    set(['PROCESSED_SCIENCE', 'GEMINI', 'NORTH', 'SIDEREAL', 'OVERSCAN_TRIMMED',
+    'IMAGE', 'OVERSCAN_SUBTRACTED', 'GMOS', 'PREPARED'])
+
     >>> type(ad.tags)
-    set
+    <type 'set'>
 
     >>> {'IMAGE', 'PREPARED'}.issubset(ad.tags)
     True
@@ -195,8 +189,7 @@ Descriptors
     2.03
 
     >>> astrodata.descriptor_list(ad)
-    ('airmass',
-     'amp_read_area',
+    ('airmass', 'amp_read_area', 'ao_seeing', ...
      ...)
 
 
@@ -378,7 +371,7 @@ Selecting value from criterion::
 Rejecting ``nan`` before doing something with the values::
 
     >>> t = ad.REFCAT   # to save typing.
-    >>> t['zmag'][np.where(np.isnan(t['zmag'], 99, t['zmag']) < 18.)]
+    >>> t['zmag'][np.where(np.isnan(t['zmag']), 99, t['zmag']) < 18.]
 
     >>> t['zmag'].mean()
     nan
@@ -399,9 +392,9 @@ To retrieve a specific FITS table header::
     >>> ad[0].OBJCAT.meta['header']['TTYPE3']
     'Y_IMAGE'
 
-To retrieve all the column names::
+To retrieve all the keyword names matching a selection::
 
-    >>> colnames = [key for key in ad.REFCAT.meta['header'] if key.startswith('TTYPE')]
+    >>> keynames = [key for key in ad.REFCAT.meta['header'] if key.startswith('TTYPE')]
 
 
 Create new astrodata object
@@ -409,7 +402,7 @@ Create new astrodata object
 
 Basic header and data array set to zeros::
 
-    >>> from astrodata.io import fits
+    >>> from astropy.io import fits
     >>> phu = fits.PrimaryHDU()
     >>> pixel_data = np.zeros((100,100))
 
