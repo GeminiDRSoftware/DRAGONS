@@ -397,7 +397,7 @@ To retrieve all the keyword names matching a selection::
     >>> keynames = [key for key in ad.REFCAT.meta['header'] if key.startswith('TTYPE')]
 
 
-Create new astrodata object
+Create new AstroData object
 ===========================
 
 Basic header and data array set to zeros::

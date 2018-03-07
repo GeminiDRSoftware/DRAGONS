@@ -6,6 +6,21 @@
 Metadata and Headers
 ********************
 
+**Try it yourself**
+
+Download the data package if you wish to follow along and run the
+examples.  Then ::
+
+    $ cd <path>/dragons_datapkg-v1.0/playground
+    $ python
+
+You need to import Astrodata and the Gemini instrument configuration package.
+
+::
+
+    >>> import astrodata
+    >>> import gemini_instruments
+
 Astrodata Descriptors
 =====================
 
