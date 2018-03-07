@@ -212,6 +212,9 @@ class DataSpider(object):
                     except IOError:
                         print("Could not open file: %s" % fname)
                         continue
+                    except ValueError as err:
+                        print(str(err))
+                        continue
                     except AstroDataError:
                         print("AstroData failed to open file: %s" % fname)
                         continue
