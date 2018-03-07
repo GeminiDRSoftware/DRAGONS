@@ -210,10 +210,10 @@ class DataSpider(object):
                         fl = astrodata.open(fname)
                         dtypes = list(fl.tags)
                     except IOError:
-                        print("Could not open file: %s" % fname)
+                        print("     Could not open file: %s" % fname)
                         continue
                     except ValueError as err:
-                        print(str(err))
+                        print("     Failed to open: {}, {}".format(fname, str(err)))
                         continue
                     except AstroDataError:
                         print("AstroData failed to open file: %s" % fname)
