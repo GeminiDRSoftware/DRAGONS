@@ -1576,7 +1576,7 @@ class AstroDataFits(AstroData):
         if 'overwrite' in inspect.getargspec(HDUList.writeto).args:
             self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
         else:
-            self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
+            self._dataprov.to_hdulist().writeto(filename, clobber=overwrite)
 
     def update_filename(self, prefix='', suffix='', strip=False):
         if strip:
