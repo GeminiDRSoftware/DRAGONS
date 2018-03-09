@@ -1363,6 +1363,10 @@ class FitsLoader(object):
             # Uh-oh, a single image FITS file
             new_list.append(PrimaryHDU(header=hdulist[0].header))
             image = ImageHDU(header=hdulist[0].header, data=hdulist[0].data)
+            # Fudge due to apparent issues with assigning ImageHDU from data
+            image._orig_bscale = hdulist[0]._orig_bscale
+            image._orig_bzero = hdulist[0]._orig_bzero
+
             for keyw in ('SIMPLE', 'EXTEND'):
                 if keyw in image.header:
                     del image.header[keyw]
