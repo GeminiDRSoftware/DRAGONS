@@ -25,8 +25,8 @@ class AstroDataIgrins(AstroDataGemini):
         observation_type = 'OBJTYPE',
         ra = 'TELRA',
         dec = 'TELDEC',
-        slit_cx = 'SLIT_CX',
-        slit_cy = 'SLIT_CY',
+        slit_x_center = 'SLIT_CX',
+        slit_y__center = 'SLIT_CY',
         slit_width = 'SLIT_WID',
         slit_length = 'SLIT_LEN',
         slit_angle = 'SLIT_ANG'
@@ -163,7 +163,7 @@ class AstroDataIgrins(AstroDataGemini):
         Returns
         -------
         <str>:
-            Name of the bandpass.
+            right ascension
 
         """
         return self.phu.get(self._keyword_for('ra'))
@@ -176,7 +176,7 @@ class AstroDataIgrins(AstroDataGemini):
         Returns
         -------
         <str>:
-            Name of the bandpass.
+            declination
 
         """
         return self.phu.get(self._keyword_for('dec'))
@@ -195,7 +195,7 @@ class AstroDataIgrins(AstroDataGemini):
         return self.phu.get(self._keyword_for(('wavelength_band')))
 
     @astro_data_descriptor
-    def slit_cx(self):
+    def slit_x_enter(self):
         """
         Returns Center x position of slit in the SVC image
 
@@ -205,10 +205,10 @@ class AstroDataIgrins(AstroDataGemini):
             center x position in pixels
 
         """
-        return self.phu.get(self._keyword_for(('slit_cx')))
+        return self.phu.get(self._keyword_for(('slit_x_center')))
 
     @astro_data_descriptor
-    def slit_cy(self):
+    def slit_y_center(self):
         """
         Returns Center y position of slit in the SVC image
 
@@ -218,7 +218,7 @@ class AstroDataIgrins(AstroDataGemini):
             center y position in pixels
 
         """
-        return self.phu.get(self._keyword_for(('slit_cy')))
+        return self.phu.get(self._keyword_for(('slit_y_center')))
 
     @astro_data_descriptor
     def slit_width(self):
