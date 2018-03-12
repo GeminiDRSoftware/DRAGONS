@@ -18,6 +18,7 @@ from ..gemini import AstroDataGemini
 # ------------------------------------------------------------------------------
 class AstroDataIgrins(AstroDataGemini):
     __keyword_dict = dict(
+        airmass = 'AMSTART',
         wavelength_band = 'BAND',
         detector_name = 'DETECTOR',
         observation_class = 'OBJTYPE',
@@ -74,6 +75,9 @@ class AstroDataIgrins(AstroDataGemini):
         if self.phu.get('OBJTYPE') == 'TAR':
             return TagSet(['SCIENCE'])
 
+    @astro_data_descriptor
+    def airmass(self):
+        return self.phu.get(self._keyword_for('airmass'))
 
     @astro_data_descriptor
     def detector_name(self):
@@ -105,6 +109,7 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for('instrument'))
 
+    @astro_data_descriptor
     def observation_class(self):
         """
         Returns 'class' the observation; one of,
@@ -131,6 +136,7 @@ class AstroDataIgrins(AstroDataGemini):
 
         return oclass
 
+    @astro_data_descriptor
     def observation_type(self):
         """
         Returns 'type' the observation. For IGRINS, this will be one of,
@@ -149,6 +155,7 @@ class AstroDataIgrins(AstroDataGemini):
 
         return otype
 
+    @astro_data_descriptor
     def ra(self):
         """
         Returns the name of the 
@@ -161,6 +168,7 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for('ra'))
 
+    @astro_data_descriptor
     def dec(self):
         """
         Returns the name of the 
@@ -238,6 +246,7 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for(('slit_length')))
 
+    @astro_data_descriptor
     def slit_angle(self):
         """
         Returns slit length in the SVC image
@@ -250,8 +259,10 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for(('slit_angle')))        
 
+    @astro_data_descriptor
     def target_ra(self):
         return self.wcs_ra()
 
+    @astro_data_descriptor
     def target_dec(self):
         return self.wcs_dec()
