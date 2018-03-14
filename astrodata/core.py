@@ -859,6 +859,15 @@ class AstroData(object):
     multiply = __imul__
     divide = __idiv__
 
+    __radd__ = __add__
+    __rmul__ = __mul__
+    def __rsub__(self, oper):
+        copy = (deepcopy(self) - oper) * -1
+        return copy
+    def __rdiv__(self, oper):
+        self._dataprov.__rdiv__(oper)
+        return self
+
     # This method needs to be implemented as classmethod
     @abstractmethod
     def load(cls, source):

@@ -453,6 +453,10 @@ class FitsProviderProxy(DataProvider):
         self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
         return self
 
+    def __rdiv__(self, operand):
+        self._provider._oper(self._provider._rdiv, operand, self._mapping)
+        return self
+
     @property
     @deprecated("Access to headers through this property is deprecated and will be removed in the future")
     def header(self):
@@ -716,6 +720,14 @@ class FitsProvider(DataProvider):
         return self
 
     __itruediv__ = __idiv__
+
+    def __rdiv__(self, operand):
+        self._oper(self._rdiv, operand)
+        return self
+
+    def _rdiv(self, ndd, operand):
+        # Divide method works with the operand first
+        return NDDataObject.divide(operand, ndd)
 
     def set_phu(self, phu):
         self._phu = phu
