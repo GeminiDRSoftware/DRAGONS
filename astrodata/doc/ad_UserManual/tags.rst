@@ -125,10 +125,10 @@ might help some readers better understand Astrodata Tags, or serve as a
 quick reference for those who have written Astrodata Tags in the past but need
 a little refresher.
 
-The Astrodata Tags are define in an ``AstroData`` class.  The ``AstroData``
-class specific to an instrument is located in a separate module, not in
+The Astrodata Tags are defined in an ``AstroData`` class.  The ``AstroData``
+class specific to an instrument is located in a separate package, not in
 ``astrodata``.  For example, for Gemini instruments, all the various ``AstroData``
-classes are contained in the ``gemini_instruments`` module.
+classes are contained in the ``gemini_instruments`` package.
 
 An Astrodata Tag is a function within the instrument's ``AstroData`` class.
 The tag function is distinguished from normal functions by applying the
