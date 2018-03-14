@@ -187,8 +187,8 @@ fits_set = { 'db_paths': [ 'dbmigration',
                               'fits_storage/orm',
                               'fits_storage/scripts/',
                               'fits_storage/utils',
-                              #'fits_storage/utils/web',
-                              #'fits_storage/web'
+                              'fits_storage/utils/web',
+                              'fits_storage/web'
              ],
              'test_paths': [ 'test',
                              'test/orm',

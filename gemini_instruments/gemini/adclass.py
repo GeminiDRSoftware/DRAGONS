@@ -1243,12 +1243,13 @@ class AstroDataGemini(AstroDataFits):
         str
             Gemini quality assessment flags.
         """
-        rawpireq = self.phu.get(self._keyword_for('raw_pi_requirements_met'))
-        rawgemqa = self.phu.get(self._keyword_for('raw_gemini_qa'))
+        rawpireq = self.phu.get(self._keyword_for('raw_pi_requirements_met'),
+                                'UNKNOWN')
+        rawgemqa = self.phu.get(self._keyword_for('raw_gemini_qa'), 'UNKNOWN')
         pair = rawpireq.upper(), rawgemqa.upper()
 
         # Calculate the derived QA state
-        ret_qa_state = "%s:%s" % (rawpireq, rawgemqa)
+        ret_qa_state = "{}:{}".format(rawpireq, rawgemqa)
         if 'UNKNOWN' in pair:
                         ret_qa_state = "Undefined"
         elif pair == ('YES', 'USABLE'):
@@ -1259,9 +1260,6 @@ class AstroDataGemini(AstroDataFits):
                         ret_qa_state = "Fail"
         elif 'CHECK' in pair:
                         ret_qa_state = "CHECK"
-        else:
-            ret_qa_state = "%s:%s" % (rawpireq, rawgemqa)
-
         return ret_qa_state
 
     @astro_data_descriptor

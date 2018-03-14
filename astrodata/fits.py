@@ -453,6 +453,10 @@ class FitsProviderProxy(DataProvider):
         self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
         return self
 
+    def __rdiv__(self, operand):
+        self._provider._oper(self._provider._rdiv, operand, self._mapping)
+        return self
+
     @property
     @deprecated("Access to headers through this property is deprecated and will be removed in the future")
     def header(self):
@@ -716,6 +720,14 @@ class FitsProvider(DataProvider):
         return self
 
     __itruediv__ = __idiv__
+
+    def __rdiv__(self, operand):
+        self._oper(self._rdiv, operand)
+        return self
+
+    def _rdiv(self, ndd, operand):
+        # Divide method works with the operand first
+        return NDDataObject.divide(operand, ndd)
 
     def set_phu(self, phu):
         self._phu = phu
@@ -1363,6 +1375,10 @@ class FitsLoader(object):
             # Uh-oh, a single image FITS file
             new_list.append(PrimaryHDU(header=hdulist[0].header))
             image = ImageHDU(header=hdulist[0].header, data=hdulist[0].data)
+            # Fudge due to apparent issues with assigning ImageHDU from data
+            image._orig_bscale = hdulist[0]._orig_bscale
+            image._orig_bzero = hdulist[0]._orig_bzero
+
             for keyw in ('SIMPLE', 'EXTEND'):
                 if keyw in image.header:
                     del image.header[keyw]
@@ -1572,7 +1588,7 @@ class AstroDataFits(AstroData):
         if 'overwrite' in inspect.getargspec(HDUList.writeto).args:
             self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
         else:
-            self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
+            self._dataprov.to_hdulist().writeto(filename, clobber=overwrite)
 
     def update_filename(self, prefix='', suffix='', strip=False):
         if strip:
