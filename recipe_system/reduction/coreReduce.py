@@ -332,6 +332,8 @@ class Reduce(object):
                             list(red_namespace.__dict__.keys())
                         )
                         is_reduce = True
+                    except AttributeError:
+                        pass
                     except AssertionError:
                         log.stdinfo("A non-reduce command line was detected.")
                         pass
