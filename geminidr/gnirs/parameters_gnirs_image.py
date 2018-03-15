@@ -9,6 +9,7 @@ class ParametersGNIRSImage(ParametersGNIRS, ParametersImage, ParametersPhotometr
         "suffix"                : "_dqAdded",
         "bpm"                   : None,
         "illum_mask"            : True,
+        "latency"               : False,
     }
     addReferenceCatalog = {
         "suffix"                : "_refcatAdded",

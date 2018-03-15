@@ -148,13 +148,21 @@ class Standardize(PrimitivesBASE):
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0).astype(DQ.datatype)
 
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+        # Handle latency if reqested
+        if params["latency"]:
+            try:
+                adinputs = self.addLatencyToDQ(adinputs)
+            except AttributeError:
+                log.warning("addLatencyToDQ() not defined in this primitivesClass.")
 
         # Add the illumination mask if requested
         if params['illum_mask']:
-            self.addIllumMaskToDQ(adinputs)
+            adinputs = self.addIllumMaskToDQ(adinputs)
+
+        # Timestamp and update filenames
+        for ad in adinputs:
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
