@@ -26,7 +26,7 @@ class AstroDataIgrins(AstroDataGemini):
         ra = 'TELRA',
         dec = 'TELDEC',
         slit_x_center = 'SLIT_CX',
-        slit_y__center = 'SLIT_CY',
+        slit_y_center = 'SLIT_CY',
         slit_width = 'SLIT_WID',
         slit_length = 'SLIT_LEN',
         slit_angle = 'SLIT_ANG'
@@ -192,10 +192,10 @@ class AstroDataIgrins(AstroDataGemini):
             Name of the bandpass.
 
         """
-        return self.phu.get(self._keyword_for(('wavelength_band')))
+        return self.phu.get(self._keyword_for('wavelength_band'))
 
     @astro_data_descriptor
-    def slit_x_enter(self):
+    def slit_x_center(self):
         """
         Returns Center x position of slit in the SVC image
 
@@ -205,7 +205,7 @@ class AstroDataIgrins(AstroDataGemini):
             center x position in pixels
 
         """
-        return self.phu.get(self._keyword_for(('slit_x_center')))
+        return self.phu.get(self._keyword_for('slit_x_center'))
 
     @astro_data_descriptor
     def slit_y_center(self):
@@ -218,7 +218,7 @@ class AstroDataIgrins(AstroDataGemini):
             center y position in pixels
 
         """
-        return self.phu.get(self._keyword_for(('slit_y_center')))
+        return self.phu.get(self._keyword_for('slit_y_center'))
 
     @astro_data_descriptor
     def slit_width(self):
@@ -231,7 +231,7 @@ class AstroDataIgrins(AstroDataGemini):
             slit width in pixels
 
         """
-        return self.phu.get(self._keyword_for(('slit_width')))
+        return self.phu.get(self._keyword_for('slit_width'))
 
     @astro_data_descriptor
     def slit_length(self):
@@ -244,7 +244,7 @@ class AstroDataIgrins(AstroDataGemini):
             slit length in pixels
 
         """
-        return self.phu.get(self._keyword_for(('slit_length')))
+        return self.phu.get(self._keyword_for('slit_length'))
 
     @astro_data_descriptor
     def slit_angle(self):
@@ -257,7 +257,7 @@ class AstroDataIgrins(AstroDataGemini):
             slit length in pixels
 
         """
-        return self.phu.get(self._keyword_for(('slit_angle')))        
+        return self.phu.get(self._keyword_for('slit_angle'))      
 
     @astro_data_descriptor
     def target_ra(self):
