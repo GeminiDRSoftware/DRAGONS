@@ -92,6 +92,27 @@ class AstroDataIgrins(AstroDataGemini):
         return self.phu.get(self._keyword_for('detector_name'))
 
     @astro_data_descriptor
+    def filter_name(self, pretty=False):
+        """
+        IGRINS has no filters or filter names. But this descriptor is
+        used to display 'WaveBand' in the archive. So, IGRINS data
+        needs to "fake it." wavelength_band() returns a string exactly
+        equal to a call on filter_name(pretty=True).
+
+        Parameters
+        ----------
+        pretty: <bool>
+            This keyword parameter is present for API purposes.
+            It has no effect for this descriptor.
+
+        Returns
+        -------
+        <str>:
+             wavelength band substituting for filter_name(pretty=True)
+        """
+        return self.wavelength_band()
+
+    @astro_data_descriptor
     def instrument(self, generic=False):
         """
         Returns the name of the instrument making the observation
