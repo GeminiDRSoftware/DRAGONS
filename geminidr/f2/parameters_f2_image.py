@@ -9,6 +9,7 @@ class ParametersF2Image(ParametersF2, ParametersImage, ParametersPhotometry):
         "suffix"            : "_dqAdded",
         "bpm"               : None,
         "illum_mask"        : True,
+        "latency"           : False,
     }
     associateSky = {
         "suffix"            : "_skyAssociated",

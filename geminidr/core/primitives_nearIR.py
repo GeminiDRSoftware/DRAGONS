@@ -178,6 +178,15 @@ class NearIR(PrimitivesBASE):
         adinputs = self.lampOnLampOff(adinputs)
         return adinputs
 
+    def removeFirstFrame(self, adinputs=None):
+        """
+        This removes the first frame (according to timestamp) from the input
+        list. It is intended for use with NIRI.
+        """
+        adinputs = self.sortInputs(adinputs, descriptor="ut_datetime")
+        adinputs = self.rejectInputs(adinputs, at_start=1)
+        return adinputs
+
     def separateFlatsDarks(self, adinputs=None, **params):
         """
         This primitive produces two streams, one containing flats, and one

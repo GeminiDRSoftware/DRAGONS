@@ -8,6 +8,7 @@ class ParametersStandardize(ParametersBASE):
         "suffix"            : "_dqAdded",
         "bpm"               : None,
         "illum_mask"        : False,
+        "latency"           : False
     }
     addIllumMaskToDQ = {
         "mask"              : None,

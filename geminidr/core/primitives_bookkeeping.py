@@ -217,6 +217,45 @@ class Bookkeeping(PrimitivesBASE):
                 log.status("No datasets in list")
         return adinputs
 
+    def sortInputs(self, adinputs=None, descriptor=None, reverse=False):
+        """
+        This sorts the input list according to the values returned by the
+        descriptor parameter.
+        
+        Parameters
+        ----------
+        descriptor: str
+            name of descriptor on which to sort (can also be "filename")
+        reverse: bool
+            return list sorted in reverse order?
+        """
+        log = self.log
+        if descriptor is None:
+            log.warning("No descriptor provided. Cannot sort input list.")
+            return adinputs
+
+        # Check the attribute/descriptor exists
+        try:
+            attr_list = [getattr(ad, descriptor) for ad in adinputs]
+        except AttributeError:
+            log.warning("Invalid sorting descriptor/attribute. Cannot sort "
+                        "input list.")
+            return adinputs
+
+        # Might be callable (a descriptor) or not ("filename")
+        try:
+            list_to_sort = [attr() for attr in attr_list]
+        except TypeError:
+            list_to_sort = attr_list
+
+        log.stdinfo("Sorting input list according to {}".format(descriptor))
+        # Sort (equivalent of np.argsort)
+        index_order = sorted(range(len(adinputs)), key=list_to_sort.__getitem__)
+        if reverse:
+            index_order = list(reversed(index_order))
+        return [adinputs[i] for i in index_order]
+
+
     def transferAttribute(self, adinputs=None, source=None, attribute=None):
         """
         This primitive takes an attribute (e.g., "mask", or "OBJCAT") from
@@ -273,6 +312,28 @@ class Bookkeeping(PrimitivesBASE):
             log.warning("Did not find any {} attributes to transfer".format(attribute))
 
         return adinputs
+
+    def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
+        """
+        This primitive removes a set number of frames from the start and end of the
+        input list.
+        
+        Parameters
+        ----------
+        at_start: int
+            Number of frames to cull from start of input list
+        at_end: int
+            Number of frames to cull from end of input list
+        """
+        log = self.log
+        start_text = ("{} file(s) from start of list".format(at_start)
+                      if at_start > 0 else "")
+        end_text = ("{} file(s) from end of list".format(at_end)
+                    if at_end > 0 else "")
+        conjunction = " and " if start_text and end_text else ""
+        log.stdinfo("Removing " + start_text + conjunction + end_text + ".")
+        return adinputs[at_start:len(adinputs)-at_end]
+
 
     def writeOutputs(self, adinputs=None, **params):
         """

@@ -189,9 +189,12 @@ def new_imagehdu(data, header, name=None):
 #    i.data = data
     return ImageHDU(data=data, header=header.copy(), name=name)
 
-def table_to_bintablehdu(table):
+def table_to_bintablehdu(table, extname=None):
+    add_header_to_table(table)
     array = table.as_array()
     header = table.meta['header'].copy()
+    if extname:
+        header['EXTNAME'] = (extname, 'added by AstroData')
     coldefs = []
     for n, name in enumerate(array.dtype.names, 1):
         coldefs.append(Column(
@@ -258,7 +261,12 @@ def header_for_table(table):
 
         columns.append(fits.Column(array=col.data, **descr))
 
-    return fits.BinTableHDU.from_columns(columns).header
+    fits_header = fits.BinTableHDU.from_columns(columns).header
+    try:
+        table.meta['header'].update(fits_header)
+    except (AttributeError, KeyError):
+        table.meta['header'] = fits_header
+    return table.meta['header']
 
 def add_header_to_table(table):
     header = header_for_table(table)
@@ -1024,7 +1032,7 @@ class FitsProvider(DataProvider):
 
         if self._tables is not None:
             for name, table in sorted(self._tables.items()):
-                hlst.append(table_to_bintablehdu(table))
+                hlst.append(table_to_bintablehdu(table, extname=name))
 
         return hlst
 
@@ -1191,14 +1199,24 @@ class FitsProvider(DataProvider):
     def _append_table(self, new_table, name, header, add_to, reset_ver=True):
         tb = self._process_table(new_table, name, header)
         hname = tb.meta['header'].get('EXTNAME') if name is None else name
-        if hname is None:
-            raise ValueError("Can't attach a table without a name!")
+        #if hname is None:
+        #    raise ValueError("Can't attach a table without a name!")
         if add_to is None:
+            if hname is None:
+                table_num = 1
+                while 'TABLE{}'.format(table_num) in self._tables:
+                    table_num += 1
+                hname = 'TABLE{}'.format(table_num)
             # Don't use setattr, which is overloaded and may case problems
             self.__dict__[hname] = tb
             self._tables[hname] = tb
             self._exposed.add(hname)
         else:
+            if hname is None:
+                table_num = 1
+                while getattr(add_to, 'TABLE{}'.format(table_num), None):
+                    table_num += 1
+                hname = 'TABLE{}'.format(table_num)
             setattr(add_to, hname, tb)
             self._add_to_other(add_to, hname, tb, tb.meta['header'])
             add_to.meta['other'][hname] = tb
@@ -1427,7 +1445,7 @@ class FitsLoader(object):
                 if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
                     yield unit
 
-        sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == def_ext]
+        sci_units = [x for x in hdulist[1:] if x.header.get('EXTNAME') == def_ext]
 
         for idx, unit in enumerate(sci_units):
             seen.add(unit)
@@ -1464,7 +1482,7 @@ class FitsLoader(object):
         for other in hdulist:
             if other in seen:
                 continue
-            name = other.header['EXTNAME']
+            name = other.header.get('EXTNAME')
             added = provider.append(other, name=name, reset_ver=False)
 
         return provider
@@ -1584,14 +1602,14 @@ class AstroDataFits(AstroData):
             if self.path is None:
                 raise ValueError("A filename needs to be specified")
             filename = self.path
-        # Cope with astropy v1 and v2
-        print(inspect.getargspec(HDUList.writeto).args)
-        if 'overwrite' in inspect.getargspec(HDUList.writeto).args:
-            self._dataprov.to_hdulist().writeto(filename, overwrite=overwrite)
-            print('overwrite')
-        else:
-            self._dataprov.to_hdulist().writeto(filename, clobber=overwrite)
-            print('clobber')
+
+        # Cope with astropy v1 and v2; can't use inspect because the
+        # writeto() method is decorated in astropy v2+
+        hdulist = self._dataprov.to_hdulist()
+        try:
+            hdulist.writeto(filename, overwrite=overwrite)
+        except TypeError:
+            hdulist.writeto(filename, clobber=overwrite)
 
     def update_filename(self, prefix='', suffix='', strip=False):
         if strip:

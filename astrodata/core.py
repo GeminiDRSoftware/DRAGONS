@@ -865,8 +865,9 @@ class AstroData(object):
         copy = (deepcopy(self) - oper) * -1
         return copy
     def __rdiv__(self, oper):
-        self._dataprov.__rdiv__(oper)
-        return self
+        copy = deepcopy(self)
+        copy._dataprov.__rdiv__(oper)
+        return copy
 
     # This method needs to be implemented as classmethod
     @abstractmethod

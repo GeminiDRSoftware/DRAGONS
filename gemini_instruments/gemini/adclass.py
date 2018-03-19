@@ -347,6 +347,7 @@ class AstroDataGemini(AstroDataFits):
         -------
         float
             azimuth
+
         """
         return self.phu.get(self._keyword_for('azimuth'))
 
@@ -363,8 +364,13 @@ class AstroDataGemini(AstroDataFits):
         -------
         string
             identifier
+
         """
-        return self.data_label().replace('_stack', '')
+        calk = self.data_label()
+        try:
+            return calk.replace('_stack', '')
+        except AttributeError:
+            return calk
 
     @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
