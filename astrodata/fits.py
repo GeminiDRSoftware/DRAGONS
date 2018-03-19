@@ -190,6 +190,7 @@ def new_imagehdu(data, header, name=None):
     return ImageHDU(data=data, header=header.copy(), name=name)
 
 def table_to_bintablehdu(table, extname=None):
+    add_header_to_table(table)
     array = table.as_array()
     header = table.meta['header'].copy()
     if extname:
