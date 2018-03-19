@@ -5,37 +5,144 @@
 **********
 Table Data
 **********
+**Try it yourself**
 
-(focus on FITS table as those are the ones we use.  astrodata just stores
-them, it doesn't provide special wrappers.  astrodata could store other
-types of table.   so... should this section be called "FITS Table Data"?)
+If you wish to follow along and try the commands yourself, download the
+data package ``dragons_datapkg-v1.0``, go to the ``playground`` directory
+and launch python.
 
-Read from a FITS Table
-======================
+::
 
-Create a FITS Table
-===================
+    $ cd <path>/dragons_datapkg-v1.0/playground
+    $ python
 
-Operate on a FITS Table
-=======================
+Then import core astrodata and the Gemini astrodata configurations. ::
 
-Preparation for the Examples
-----------------------------
+    >>> import astrodata
+    >>> import gemini_instruments
+
+Tables and Astrodata
+====================
+Tables are stored as ``astropy.table`` ``Table`` class.   FITS tables too
+are represented in Astrodata as ``Table`` and FITS headers are stored in
+the NDAstroData `.meta` attribute.  Most table access should be done
+through the ``Table`` interface.   The best reference on ``Table`` is the
+Astropy documentation itself.  In this chapter we covers some common
+examples to get the reader started.
+
+
+Operate on a Table
+==================
+
+Let us open a file with tables.  Some tables are associated with specific
+extensions, and there is one table that is global to the `AstroData` object.
+
+::
+
+    >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
+    >>> ad.info()
+
+To access the global table named ``REFCAT``::
+
+    >>> ad.REFCAT
+
+To access the ``OBJCAT`` table in the first extension ::
+
+    >>> ad[0].OBJCAT
+
+
+Column and Row Operations
+-------------------------
+Columns are named.  Those names are used to access the data as columns.
+Rows are not names and are simply represented as a sequential list.
+
+Read columns and rows
++++++++++++++++++++++
+To get the names of the columns present in the table::
+
+    >>> ad.REFCAT.colnames
+    ['Id', 'Cat_Id', 'RAJ2000', 'DEJ2000', 'umag', 'umag_err', 'gmag',
+    'gmag_err', 'rmag', 'rmag_err', 'imag', 'imag_err', 'zmag', 'zmag_err',
+    'filtermag', 'filtermag_err']
+
+Then it is easy to request the values for specific columns::
+
+    >>> ad.REFCAT['zmag']
+    >>> ad.REFCAT['zmag', 'zmag_err']
+
+To get the content of a specific row, row 10 in this case::
+
+    >>> ad.REFCAT[9]
+
+To get the content of a specific row(s) from a specific column(s)::
+
+    >>> ad.REFCAT['zmag'][4]
+    >>> ad.REFCAT['zmag'][4:10]
+    >>> ad.REFCAT['zmag', 'zmag_err'][4:10]
+
+Change values
++++++++++++++
+Assigning new values works in a similar way.  When working on multiple elements
+it is important to feed a list that matches in size with the number of elements
+to replace.
+
+::
+
+    >>> ad.REFCAT['imag'][4] = 20.999
+    >>> ad.REFCAT['imag'][4:10] = [5, 6, 7, 8, 9, 10]
+
+    >>> overwrite_col = [0] * len(ad.REFCAT)  # a list of zeros, size = nb of rows
+    >>> ad.REFCAT['imag_err'] = overwrite_col
+
+Add a row
++++++++++
+To append a row, there is the ``add_row()`` method.  The length of the row
+should match the number of columns::
+
+    >>> new_row = [0] * len(ad.REFCAT.colnames)
+    >>> ad.REFCAT.add_row(new_row)
+
+Add a column
+++++++++++++
+Adding a new column can be more involved.  If you need full control, please
+see the AstroPy Table documentation.  For a quick addition, which might be
+sufficient for your use case, we simply use the "dictionary" technique.  Please
+note that when adding a column, it is important to ensure that all the
+elements are of the same type.  Also, if you are planning to use that table
+in IRAF/PyRAF, we recommend not using 64-bit types.
+
+::
+
+    >>> import numpy as np
+
+    >>> new_column = [0] * len(ad.REFCAT)
+    >>> # Ensure that the type is int32, otherwise it will default to int64
+    >>> # which IRAF 32-bit does not like.
+    >>> new_column = np.array(new_column).astype(np.int32)
+    >>> ad.REFCAT['my_column'] = new_column
+
+If you are going to write that table back to disk as a FITS Bintable, then
+some additional headers need to be set.  Astrodata will take care of that
+under the hood when the `write` method is invoked.
+
+::
+
+    >>> ad.write('myfile_with_modified_table.fits')
+
+
+Selection and Rejection Operations
+----------------------------------
+Normally, one does not exactly where the information needed is located in a
+table.  Rather some sort of selection needs to be done.
+
+Changing a Value
+----------------
+
 
 Merging Tables
 --------------
 
-Appending and Deleting Columns
-------------------------------
 
-Inserting Columns
------------------
 
-Changing the Name of a Column
------------------------------
-
-Appending and Deleting Rows
----------------------------
-
-Changing a Value
-----------------
+Create a Table
+==============

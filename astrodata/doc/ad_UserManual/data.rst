@@ -202,33 +202,254 @@ Let's look into an example.
     >>> adout[1].variance[50,50]
     607826.62
 
+Data Quality Plane
+==================
+
+.. todo::
+    This needs to be introduced here.  There's a section later on how
+    to use it that needs to be after numpy and scipy are introduced.
+    Here, it's about how to access it, .mask, how it is propagated
+    automatically (binary operations), and what the value means.
+
 
 Display
 =======
+Since the data is stored in the ``AstroData`` object as a nummpy ``ndarray``
+any tool that works on ``ndarray`` can be used.  To display to DS9 there
+is the ``imexam`` package.  The ``numdisplay`` is still available but it is
+no longer supported by STScI.  We will show
+how to use ``imexam`` to display and read the cursor position.  Read the
+documentations on that tool to learn more about what else it has
+to offer.
 
-Displaying
-----------
+Displaying with imexam
+----------------------
 
-Retrieving cursor position
---------------------------
+Here is an example how to display pixel data to DS9 with ``imexam``.
 
-Useful tools from the Numpy and SciPy Modules
-=============================================
+::
+
+    >>> import imexam
+    >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
+
+    # Connect to the DS9 window (should already be opened.)
+    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
+
+    >>> ds9.view(ad[0].data)
+
+    # To scale "a la IRAF"
+    >>> ds9.view(ad[0].data)
+    >>> ds9.scale('zscale')
+
+    # To set the mininum and maximum scale values
+    >>> ds9.view(ad[0].data)
+    >>> ds9.scale('limits 0 2000')
+
+
+Retrieving cursor position with imexam
+--------------------------------------
+
+The function ``numdisplay.readcursor()`` can be used to retrieve cursor
+position in pixel coordinates.  Note that it will **not** respond to
+mouse clicks, **only** keyboard entries are acknowledged.
+
+When invoked, ``readcursor()`` will stop the flow of the program and wait
+for the user to put the cursor on top of the image and type a key.  A
+tuple with three values will be returned:  the x and
+y coordinates **in 0-based system**, and the value of the key the user
+hit.
+
+::
+
+    >>> import imexam
+    >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
+
+    # Connect to the DS9 window (should already be opened.)
+    # and display
+    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
+    >>> ds9.view(ad[0].data)
+    >>> ds9.scale(zscale)
+
+
+    >>> cursor_coo = ds9.readcursor()
+    >>> print(cursor_coo)
+
+    # To extract only the x,y coordinates  (as strings)
+    >>> (xcoo, ycoo) = cursor_coo[:2]
+    >>> print(xcoo, ycoo)
+
+    # If you are also interested in the keystroke
+    >>> keystroke = cursor_coo[2]
+    >>> print('You pressed this key: %s' % keystroke)
+
+
+Useful tools from the NumPy, SciPy, and Astropy Packages
+========================================================
+Like for the Display section, this section is not really specific to
+Astrodata but is rather a quick show-and-tell of a few things that can
+be done on the pixel with the big scientific packages NumPy, SciPy,
+and Astropy.
+
+Those three packages are very large and rich.  They have their own
+extensive documentation and highly recommend the users to learn about what
+they have to offer.  It might save you from re-inventing the wheel.
+
+The pixels, the variance, and the mask are stored as NumPy ``ndarray``s.
+Let us go through some basic examples, just to get a feel for how the
+data in an ``AstroData`` object can be manipulated.
 
 ndarray
 -------
+The data are contained in NumPy ``ndarray`` objects.  Any tools that works
+on an ``ndarray`` can be used with Astrodata.
+
+::
+
+    >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
+
+    >>> data = ad[0].data
+
+    >>> # Shape of the array.  (equivalent to NAXIS2, NAXIS1)
+    >>> data.shape
+    (2112, 288)
+
+    >>> # Value of a pixel at "IRAF" or DS9 coordinates (100, 50)
+    >>> data[49,99]
+    455
+
+    >>> # Data type
+    >>> data.dtype
+    dtype('uint16')
+
+The two most important thing to remember for users coming from the IRAF
+world or the Fortran world are that the array has the y-axis in the first
+index, the x-axis in the second, and that the array indices are zero-indexed,
+not one-indexed.  The examples above illustrate those two critical
+differences.
+
+It is sometimes useful to know the data type of the values stored in the
+array.  Here, the file is a raw dataset, fresh off the telescope.  No
+operations has been done on the pixels yet.  The data type of Gemini raw
+datasets is always "Unsigned integer (0 to 65535)", ``uint16``.
+
+.. todo::
+    Add the warning about uint16 math here.
+
 
 Simple Numpy Statistics
 -----------------------
+A lot of functions and methods are available in NumPy to probe the array,
+too many to cover here, but here are a couple examples.
+
+::
+
+    >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
+    >>> data = ad[0].data
+
+    >>> data.mean()
+    >>> np.average(data)
+    >>> np.median(data)
+
+Note how ``mean()`` is called differently from the other two. ``mean()``
+is a ``ndarray`` method, the others are numpy functions. The implementation
+details are clearly well beyond the scope of this manual, but when looking
+for the tool you need, keep in mind that there are two sets of functions to
+look into. Duplications like ``.mean()`` and ``np.average()`` can happen,
+but they are not the norm. The readers are strongly encouraged to refer to
+the numpy documentation to find the tool they need.
+
 
 Clipped Statistics
 ------------------
+It is common in astronomy to apply clipping to the statistics, a clipped
+average, for example.   The NumPy ``ma`` module can be used to create masks
+of the values to reject.  In the examples below, we calculated the clipped
+average of the first pixel extension with a rejection threshold set to
++/- 3 times the standard deviation.
+
+Before Astropy, it was possible to do something like that with only
+NumPy tools, like in this example::
+
+    >>> import numpy as np
+
+    >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
+    >>> data = ad[0].data
+
+    >> stddev = data.std()
+    >> mean = data.mean()
+
+    >>> clipped_mean = np.ma.masked_outside(data, mean-3*stddev, mean+3*stddev).mean()
+
+There is no iteration in that example.  It is a straight one-time clipping.
+
+For something more robust, there is an Astropy function that can help, in
+particular by adding an iterative process to the calculation.  Here is
+how it is done::
+
+    >>> import numpy as np
+    >>> from astropy.stats import sigma_clip
+
+    >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
+    >>> data = ad[0].data
+
+    >>> clipped_mean = np.ma.mean(sigma_clip(data, sigma=3))
+
 
 Filters with SciPy
 ------------------
+Another common operatino is the filtering of an image, for example convolving
+with a gaussian filter.  The SciPy module ``ndimage.filters`` offers
+several functions for image processing.  See the SciPy documentation for
+more information.
+
+The example below applies a gaussian filter to the pixel array.
+
+::
+
+    >>> from scipy.ndimage import filters
+    >>> import imexam
+
+    >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
+    >>> data = ad[0].data
+
+    >>> # We need to prepare an array of the same size and shape and
+    >>> # the data array.  The result will be put in there.
+    >>> convolved_data = np.zeros(data.size).reshape(data.shape)
+
+    >>> # We now apply the convolution filter.
+    >>> sigma = 10.
+    >>> filters.gaussian_filter(data, sigma, output=convolved_data)
+
+    >>> # Let's visually compare the convolved image with the original
+    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
+    >>> ds9.view(data)
+    >>> ds9.scale('zscale')
+    >>> ds9.frame(2)
+    >>> ds9.view(convolved_data)
+    >>> ds9.scale('zscale')
+    >>> ds9.blink()
+    >>> # when you are convinced it's been convolved, stop the blinking.
+    >>> ds9.blink(blink=False)
+
+Note that there is an Astropy way to do this convolution, with tools in
+``astropy.convolution`` package.  Beware that for this particular kernel
+we have found that the Astropy ``convolve`` function is extremely slow
+compared to the SciPy solution.
+This is because the SciPy function is optimized for a Gaussian convolution
+while the generic ``convolve`` function in Astropy can take in any kernel.
+Being able to take in any kernel is a very powerful feature, but the cost
+is time.  The lesson here is do your research, and find the best tool for
+your needs.
+
 
 Many other tools
 ----------------
+There many, many other tools available out there.  Here are the links to the
+three big projects we have featured in this section.
+
+* NumPy: `www.numpy.org <http://www.numpy.org>`_
+* SciPy: `www.scipy.org <http://www.scipy.org>`_
+* Astropy:  `www.astropy.org <http://www.astropy.org>`_
 
 Using the Astrodata Data Quality Plane
 ======================================
@@ -239,15 +460,355 @@ Using the Astrodata Data Quality Plane
 
 Manipulate Data Sections
 ========================
+So far we have shown examples using the entire data array.  It is possible
+to work on sections of that array.  If you are already familiar with
+Python, you probably already know how to do most if not all of what is in
+this section.  For readers new to Python, and especially those coming
+from IRAF, there are a few things that are worth explaining.
+
+When indexing a NumPy ``ndarray``, the left most number refers to the
+highest dimension's axis.  For example, in a 2D array, the IRAF section
+are in (x-axis, y-axis) format, while in Python they are in
+(y-axis, x-axis) format.  Also important to remember is that the ``ndarray``
+is 0-indexed, rather than 1-indexed like in Fortran or IRAF.
+
+Putting it all together, a pixel position (x,y) = (50,75) in IRAF or from
+the cursor on a DS9 frame, is accessed in Python as ``data[74,49]``.
+Similarly, the IRAF section [10:20, 30:40] translate in Python to
+[9:20, 29:40].  Also remember that when slicing in Python, the upper limit
+of the slice is not included in the slice.  This is why here we request
+20 and 40 rather 19 and 39.
+
+Let's put it in action.
 
 Basic Statistics on Section
 ---------------------------
+In this example, we do simple statistics on a section of the image.
+
+::
+
+    >>> import numpy as np
+
+    >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
+    >>> data = ad[0].data
+
+    >>> # Get statistics for a 25x25 pixel-wide box centered on pixel
+    >>> # (50,75)  (DS9 frame coordinate)
+    >>> xc = 49
+    >>> yc = 74
+    >>> buffer = 25
+    >>> (xlow, xhigh) = (xc - buffer/2, xc + buffer/2 + 1)
+    >>> (ylow, yhigh) = (yc - buffer/2, yc + buffer/2 + 1)
+    >>> # The section is [62:87, 37:62]
+    >>> stamp = data[ylow:yhigh, xlow:xhigh]
+    >>> mean = stamp.mean()
+    >>> median = np.median(stamp)
+    >>> stddev = stamp.std()
+    >>> minimum = stamp.min()
+    >>> maximum = stamp.max()
+
+    >>> print(' Mean   Median  Stddev  Min   Max\n \
+    ... %.2f  %.2f   %.2f    %.2f  %.2f' % \
+    ... (mean, median, stddev, minimum, maximum))
+
+Have you noticed that the median is calculated with a function rather
+than a method?  This is simply because the ``ndarray`` object does not
+have a method to calculate the median.
 
 Example - Overscan Subtraction with Trimming
 --------------------------------------------
+Several concepts from previous sections and chapters are used in this
+example.  The Descriptors are used to retrieve the overscan section and
+the data section information from the headers.  Statistics are done on the
+NumPy ``ndarray`` representing the pixel data.  Astrodata arithmetics is
+used to subtract the overscan level.  Finally, the overscan section is
+trimmed off and the modified ``AstroData`` object is written to a new file
+on disk.
+
+To make the example more complete, and to show that when the pixel data
+array is trimmed, the variance (and mask) arrays are also trimmed, let us
+add a variance plane to our raw data frame.
+
+::
+
+    >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
+
+    >>> for (extension, gain) in zip(ad, ad.gain()):
+    ...    extension.variance = extension.data / gain
+    ...
+
+    >>> # Here is how the data structure looks like before the trimming.
+    >>> ad.info()
+    Filename: ../playdata/N20170609S0154.fits
+    Tags: ACQUISITION GEMINI GMOS IMAGE NORTH RAW SIDEREAL UNPREPARED
+
+    Pixels Extensions
+    Index  Content                  Type              Dimensions     Format
+    [ 0]   science                  NDAstroData       (2112, 288)    uint16
+              .variance             ndarray           (2112, 288)    float64
+    [ 1]   science                  NDAstroData       (2112, 288)    uint16
+              .variance             ndarray           (2112, 288)    float64
+    [ 2]   science                  NDAstroData       (2112, 288)    uint16
+              .variance             ndarray           (2112, 288)    float64
+    [ 3]   science                  NDAstroData       (2112, 288)    uint16
+              .variance             ndarray           (2112, 288)    float64
+
+    >>> # Let's operate on the first extension.
+    >>>
+    >>> # The section descriptors return the section in a Python format
+    >>> # ready to use, 0-indexed.
+    >>> oversec = ad[0].overscan_section()
+    >>> datasec = ad[0].data_section()
+
+    >>> # Measure the overscan level
+    >>> mean_overscan = ad[0].data[oversec.y1: oversec.y2, oversec.x1: oversec.x2].mean()
+
+    >>> # Subtract the overscan level.  The variance will be propagated.
+    >>> ad[0].sub(mean_overscan)
+
+    >>> # Trim the data to remove the overscan section and keep only
+    >>> # the data section.
+    >>> #
+    >>> # Here we work on the NDAstroData object to have the variance
+    >>> # trimmed automatically to the same size as the science array.
+    >>> # To reassign the cropped NDAstroData, we use the reset() method.
+    >>> ad[0].reset(ad[0].nddata[datasec.y1:datasec.y2, datasec.x1:datasec.x2])
+
+    >>> # Now look at the dimensions of the first extension, science
+    >>> # and variance.  That extension is smaller than the others.
+    >>> ad.info()
+    Filename: ../playdata/N20170609S0154.fits
+    Tags: ACQUISITION GEMINI GMOS IMAGE NORTH RAW SIDEREAL UNPREPARED
+
+    Pixels Extensions
+    Index  Content                  Type              Dimensions     Format
+    [ 0]   science                  NDAstroData       (2112, 256)    float64
+              .variance             ndarray           (2112, 256)    float64
+    [ 1]   science                  NDAstroData       (2112, 288)    uint16
+              .variance             ndarray           (2112, 288)    float64
+    [ 2]   science                  NDAstroData       (2112, 288)    uint16
+              .variance             ndarray           (2112, 288)    float64
+    [ 3]   science                  NDAstroData       (2112, 288)    uint16
+              .variance             ndarray           (2112, 288)    float64
+
+    >>> # We can write this to a new file
+    >>> ad.write('partly_overscan_corrected.fits')
+
+A new feature presented in this example is the ability to work on the
+``NDAstroData`` object directly.  This is particularly useful when cropping
+the science pixel array as one will want the variance and the mask arrays
+cropped exactly the same way.  Taking a section of the ``NDAstroData``
+object (ad[0].nddata[y1:y2, x1:x2]), instead of just the `.data` array,
+does all that for us.
+
+To reassign the cropped ``NDAstroData`` to the extension one uses the
+``.reset()`` method as shown in the example.
+
+Of course to do the overscan correction correctly and completely, one would
+loop over all four extensions.  But that's the only difference.
 
 Data Cubes
 ==========
+Reduced Integral Field Unit (IFU) data is commonly represented as a cube,
+a three-dimensional array.  The ``data`` component of an ``AstroData``
+object extension can be such a cube, and it can be manipulated and explored
+with NumPy, AstroPy, SciPy, imexam, like we did already in this section
+with 2D arrays.  We can use matplotlib to plot the 1D spectra represented
+in the third dimension.
+
+In Gemini IFU cubes, the first axis is the X-axis, the second, the Y-axis,
+and the wavelength is in the third axis.  Remember that in a ``ndarray``
+that order is reversed (wlen, y, x).
+
+In the example below we "collapse" the cube along the wavelenth axis to
+create a "white light" image and display it.  Then we plot a 1D spectrum
+from a given (x,y) position.
+
+.. todo::
+    Get another cube from my stuff to replace gmosifu_cube.fits. This
+    one is full of cosmic rays and bad stuff that makes the white light
+    image looks awful.  I have better cubes.  (Don't use a final cube.)
+
+::
+
+    >>> import imexam
+    >>> import matplotlib.pyplot as plt
+
+    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
+
+    >>> adcube = astrodata.open('../playdata/gmosifu_cube.fits')
+    >>> adcube.info()
+
+    >>> # Sum along the wavelength axis to create a "white light" image
+    >>> summed_image = adcube[0].data.sum(axis=0)
+    >>> ds9.view(summed_image)
+
+    >>> # Plot a 1-D spectrum from the spatial position (7,30).
+    >>> plt.plot(adcube[0].data[:,29,6])
+    >>> plt.show()   # might be needed, depends on matplotlibrc interactive setting
+
+
+Now that is nice but it would be nicer if we could plot the x-axis in units
+of Angstroms instead of pixels.  We use ``astropy.wcs`` to convert the pixels
+into wavelengths.  Now a particularity of ``astropy.wcs`` is that it refers
+to the axes in the "natural" way, (x, y, wlen) contrary to Python's (wlen, y, x).
+It truly requires to pay attention.
+
+::
+
+    >>> import numpy as np
+    >>> from astropy import wcs
+    >>> import matplotlib.pyplot as plt
+
+    >>> adcube = astrodata.open('../playdata/gmosifu_cube.fits')
+
+    >>> # First get the World Coordinate System from the header
+    >>> cube_wcs = wcs.WCS(adcube[0].hdr)
+
+    >>> # Then get an array of the coordinates for that spectrum in
+    >>> # pixel coordinates, at position (7,30)
+    >>> length_wlen_axis = adcube[0].data.shape[0]
+    >>> spectrum_pix_coord = np.array([ [6,29,i] for i in range(length_wlen_axis) ])
+
+    >>> # Transform pixel coordinates in to Angstroms and keep only
+    >>> # the wavelength axis.
+    >>> wavelengths = cube_wcs.wcs_pix2world(spectrum_pix_coord, 0)[:,2]
+
+    >>> # Finally plot the spectrum at position (7,30)
+    >>> plt.clf()  # just to clear the plot
+    >>> plt.plot(wavelengths, adcube[0].data[:,29,6])
+    >>> plt.show()
+
 
 Plot Data
 =========
+The main plotting package in Python is ``matplotlib``.  We have used it in the
+previous section on data cubes to plot a spectrum.  There is also relatively
+new project called ``imexam`` which provides astronomy-specific tools for the
+exploration and measurement of data.  We have also used that package above to
+display images to DS9.
+
+In this section we absolutely do not aim at covering all the features of
+either package but rather to give a few examples that can get the readers
+started in their exploration of the data and of the visualization packages.
+
+Refer to the projects web pages for full documentation.
+
+* Matplotlib: `https://matplotlib.org <https://matplotlib.org/>`_
+* imexam: `https://github.com/spacetelescope/imexam <https://github.com/spacetelescope/imexam>`_
+
+Matplotlib
+----------
+With Matplotlib you have full control on your plot.  You do have to do a bit
+for work to get it perfect though.  However it can produce publication
+quality plots.  Here we just scratch the surface of Matplotlib.
+
+::
+
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> from astropy import wcs
+
+    >>> ad_image = astrodata.open('../playdata/N20170521S0925_forStack.fits')
+    >>> ad_spectrum = astrodata.open('../playdata/estgsS20080220S0078.fits')
+
+    >>> # Line plot from image.  Row #1044 (y-coordinate)
+    >>> line_index = 1043
+    >>> line = ad_image[0].data[line_index, :]
+    >>> plt.clf()
+    >>> plt.plot(line)
+    >>> plt.show()
+
+    >>> # Column plot from image, averaging across 11 pixels around colum #327
+    >>> col_index = 326
+    >>> width = 5
+    >>> xlow = col_index - width
+    >>> xhigh = col_index + width + 1
+    >>> thick_column = ad_image[0].data[:, xlow:xhigh]
+    >>> plt.clf()
+    >>> plt.plot(thick_column.mean(axis=1))  # mean along the width.
+    >>> plt.show()
+    >>> plt.ylim(0, 50)     # Set the y-axis range
+    >>> plt.plot(thick_column.mean(axis=1))
+    >>> plt.show()
+
+    >>> # Contour plot for a section of an image.
+    >>> center = (1646, 2355)
+    >>> width = 15
+    >>> xrange = (center[1]-width/2, center[1] + width/2 + 1)
+    >>> yrange = (center[0]-width/2, center[0] + width/2 + 1)
+    >>> blob = ad_image[0].data[yrange[0]:yrange[1], xrange[0]:xrange[1]]
+    >>> plt.clf()
+    >>> plt.imshow(blob, cmap='gray', origin='lower')
+    >>> plt.contour(blob)
+    >>> plt.show()
+
+    >>> # Spectrum in pixels
+    >>> plt.clf()
+    >>> plt.plot(ad_spectrum[0].data)
+    >>> plt.show()
+
+    >>> # Spectrum in Angstroms
+    >>> spec_wcs = wcs.WCS(ad_spectrum[0].hdr)
+    >>> pixcoords = np.array(range(ad_spectrum[0].data.shape[0]))
+    >>> wlen = spec_wcs.wcs_pix2world(pixcoords, 0)[0]
+    >>> plt.clf()
+    >>> plt.plot(wlen, ad_spectrum[0].data)
+    >>> plt.show()
+
+
+imexam
+------
+For those who have used IRAF, ``imexam`` is a well-known tool.  The Python
+``imexam`` reproduces many of its IRAF predecesor, the interactive mode of
+course, but it also offers programmatic tools.  One can even control DS9
+from Python.  As for Matplotlib, here we really just scratch the surface of
+what ``imexam`` has to offer.
+
+.. todo::
+    Check imexam again closer to release.  It's full of bugs.  The
+    interactive 'c' and 'l' don't work.  The x and y axis in the contour
+    plot have bogus values.  The image appears to be cropped correctly tough.
+    Again, the contour plot, it should be square if the box is square,
+    currently the aspect ratio is squished.
+
+::
+
+    >>> import imexam
+    >>> from imexam.imexamine import Imexamine
+
+    >>> ad_image = astrodata.open('../playdata/N20170521S0925_forStack.fits')
+
+    # Display the image
+    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
+    >>> ds9.view(ad_image[0].data)
+
+    # Run in interactive mode.  Try the various commands.
+   >>> ds9.imexam()
+
+    # Use the programmatic interface
+    # First initialize an Imexamine object.
+    >>> plot = Imexamine()
+
+    # Line plot from image.  Row #1044 (y-coordinate)
+    >>> line_index = 1043
+    >>> plot.plot_line(0, line_index, ad_image[0].data)
+
+    # Column plot from image, averaging across 11 pixels around colum #327
+    # There is no setting for this, so we have to do something similar
+    # to what we did with matplotlib.
+    >>> col_index = 326
+    >>> width = 5
+    >>> xlow = col_index - width
+    >>> xhigh = col_index + width + 1
+    >>> thick_column = ad_image[0].data[:, xlow:xhigh]
+    >>> mean_column = thick_column.mean(axis=1)
+    >>> plot.plot_column(0, 0, np.expand_dims(mean_column, 1))
+
+    >>> # Contour plot for a section of an image.
+    >>> center = (1646, 2355)  # in python coordinates
+    >>> width = 15
+    >>> plot.contour_pars['ncolumns'][0] = width
+    >>> plot.contour_pars['nlines'][0] = width
+    >>> plot.contour(center[1], center[0], ad_image[0].data)
+

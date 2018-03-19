@@ -26,7 +26,7 @@ files.  (Other representations can be implemented.)
 Installing Astrodata
 ====================
 The astrodata package has a few dependencies, ``astropy``, ``numpy`` and others.
-  The best way to get everything you need is to install Anaconda, and the
+The best way to get everything you need is to install Anaconda, and the
 ``gemini`` stack from the AstroConda channel.
 
 Astrodata itself is part of ``DRAGONS``.  It is available from the
