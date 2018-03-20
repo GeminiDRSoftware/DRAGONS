@@ -30,6 +30,8 @@ through the ``Table`` interface.   The best reference on ``Table`` is the
 Astropy documentation itself.  In this chapter we covers some common
 examples to get the reader started.
 
+The ``astropy.table`` documentation can be found at: `<http://docs.astropy.org/en/stable/table/index.html>`_
+
 
 Operate on a Table
 ==================
@@ -132,17 +134,101 @@ under the hood when the `write` method is invoked.
 
 Selection and Rejection Operations
 ----------------------------------
-Normally, one does not exactly where the information needed is located in a
-table.  Rather some sort of selection needs to be done.
+Normally, one does not know exactly where the information needed is located
+in a table.  Rather some sort of selection needs to be done.  This can also
+be combined with various calculations.  We show two such examples here.
 
-Changing a Value
-----------------
+Select a table element from criterion
++++++++++++++++++++++++++++++++++++++
+
+::
+
+    >>> # Get the magnitude of a star selected by ID number
+    >>> ad.REFCAT['zmag'][ad.REFCAT['Cat_Id'] == '1237662500002005475']
+
+    >>> # Get the ID and magnitude of all the stars brighter than zmag 18.
+    >>> ad.REFCAT['Cat_Id', 'zmag'][ad.REFCAT['zmag'] < 18.]
 
 
-Merging Tables
---------------
+Rejection and selection before statistics
++++++++++++++++++++++++++++++++++++++++++
+
+::
+
+    >>> t = ad.REFCAT   # to save typing
+
+    >>> # The table has "NaN" values.  ("Not a number")  We need to ignore them.
+    >>> t['zmag'].mean()
+    nan
+    >>> # applying rejection of NaN values:
+    >>> t['zmag'][np.where(~np.isnan(t['zmag']))].mean()
+    20.377306
+
+
+
+Accessing FITS table headers directly
+-------------------------------------
+If for some reason you need to access the FITS table headers directly, here
+is how to do it.  It is very unlikely that you will need this.
+
+To see the FITS headers::
+
+    >>> ad.REFCAT.meta
+    >>> ad[0].OBJCAT.meta
+
+To retrieve a specific FITS table header::
+
+    >>> ad.REFCAT.meta['header']['TTYPE3']
+    'RAJ2000'
+    >>> ad[0].OBJCAT.meta['header']['TTYPE3']
+    'Y_IMAGE'
+
+To retrieve all the keyword names matching a selection::
+
+    >>> keynames = [key for key in ad.REFCAT.meta['header'] if key.startswith('TTYPE')]
 
 
 
 Create a Table
 ==============
+
+Show how to create an astropy table.  I probably have something from the old
+manual that I can convert from pyfits to table.  Then, it's the stuff from
+the cheatsheet.
+
+To create a table that can be added to an ``AstroData`` object and eventually
+written to disk as a FITS file, the first step is to create an Astropy
+``Table``.
+
+Let us first add our data to NumPy arrays, one array per column::
+
+    >>> import numpy as np
+
+    >>> snr_id = np.array(['S001', 'S002', 'S003'])
+    >>> feii = np.array([780., 78., 179.])
+    >>> pabeta = np.array([740., 307., 220.])
+    >>> ratio = pabeta / feii
+
+Then build the table from that data::
+
+    >>> from astropy.table import Table
+
+    >>> my_astropy_table = Table([snr_id, feii, pabeta, ratio],
+    ...                          names=('SNR_ID', 'FeII', 'PaBeta', 'ratio'))
+
+
+Now we append this Astropy ``Table`` to a new ``AstroData`` object.
+
+::
+
+    >>> # Since we are going to write a FITS, we build the AstroData object
+    >>> # from FITS objects.
+    >>> from astropy.io import fits
+
+    >>> phu = fits.PrimaryHDU()
+    >>> ad = astrodata.create(phu)
+    >>> ad.append(my_astropy_table, name='MYTABLE')
+    >>> ad.info()
+    >>> ad.MYTABLE
+
+    >>> ad.write('new_table.fits')
