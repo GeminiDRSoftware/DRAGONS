@@ -1140,6 +1140,18 @@ class AstroDataGemini(AstroDataFits):
         return self.phu.get('OBSID')
 
     @astro_data_descriptor
+    def observation_epoch(self):
+        """
+        Returns the observation's epoch, as derived from the header.
+
+        Returns
+        -------
+        str
+            the observation's epoch
+        """
+        return self.phu.get(self._keyword_for('observation_epoch'))
+
+    @astro_data_descriptor
     def observation_type(self):
         """
         Returns the type of an observation, e.g., 'OBJECT', 'FLAT', 'ARC'
