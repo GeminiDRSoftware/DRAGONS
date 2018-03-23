@@ -252,6 +252,8 @@ class AstroDataGemini(AstroDataFits):
             Airmass value.
         """
         am = self.phu.get(self._keyword_for('airmass'), -1)
+        if isinstance(am, str) and gmu.isBlank(am):
+            return None
         return am if am >= 1 else None
 
     @astro_data_descriptor
@@ -1448,10 +1450,15 @@ class AstroDataGemini(AstroDataFits):
         float
             Right Ascension of the target in degrees.
         """
+
         try:
             ra = self.phu['RA']
         except KeyError:
             return None
+
+        if isinstance(ra, str) and gmu.isBlank(ra):
+            return None
+
         raoffset = self.phu.get('RAOFFSET', 0)
         targ_raoffset = self.phu.get('RATRGOFF', 0)
         pmra = self.phu.get('PMRA', 0)
@@ -1517,6 +1524,10 @@ class AstroDataGemini(AstroDataFits):
             dec = self.phu['DEC']
         except KeyError:
             return None
+
+        if isinstance(dec, str) and gmu.isBlank(dec):
+            return None
+
         decoffset = self.phu.get('DECOFFSE', 0)
         targ_decoffset = self.phu.get('DECTRGOF', 0)
         pmdec = self.phu.get('PMDEC', 0)
