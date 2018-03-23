@@ -14,7 +14,7 @@ from recipe_system.cal_service.calrequestlib import process_cal_requests
 from recipe_system.cal_service.transport_request import upload_calibration
 
 from geminidr import PrimitivesBASE
-from .parameters_calibdb import ParametersCalibDB
+from . import parameters_calibdb
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ class CalibDB(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(CalibDB, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersCalibDB
+        self._param_update(parameters_calibdb)
         self._not_found = "Calibration not found for {}"
 
     def _get_cal(self, adinput, caltype):

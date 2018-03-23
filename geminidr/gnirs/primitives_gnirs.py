@@ -8,7 +8,7 @@ from gempy.gemini import gemini_tools as gt
 
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
-from .parameters_gnirs import ParametersGNIRS
+from . import parameters_gnirs
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ class GNIRS(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(GNIRS, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gnirs.lookups'
-        self.parameters = ParametersGNIRS
+        self._param_update(parameters_gnirs)
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
         """

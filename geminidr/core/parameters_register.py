@@ -1,23 +1,30 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GEMINI.py file, in alphabetical order.
+from gempy.library import config
 
-from geminidr import ParametersBASE
+class matchWCSToReferenceConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wcsCorrected")
+    method = config.ChoiceField("Alignment method", str,
+                                allowed={"header": "Use WCS in header",
+                                         "sources": "Match sources in images"},
+                                default="sources")
+    fallback = config.ChoiceField("Fallback method", str,
+                                  allowed={"header": "Use WCS in header"},
+                                  default=None, optional=True)
+    use_wcs = config.Field("Use absolute WCS information for initial guess?",
+                           bool, True)
+    first_pass = config.RangeField("Search radius for source matching (arcseconds)",
+                              float, 5., min=0)
+    min_sources = config.RangeField("Minimum number of sources required to use source matching",
+                               int, 3, min=1)
+    cull_sources = config.Field("Use only point sources for alignment?", bool, False)
+    rotate = config.Field("Allow rotation for alignment?", bool, False)
+    scale = config.Field("Allow magnification for alignment?", bool, False)
 
-class ParametersRegister(ParametersBASE):
-    matchWCSToReference = {
-        "suffix"            : "_wcsCorrected",
-        "method"            : "sources",
-        "fallback"          : None,
-        "use_wcs"           : True,
-        "first_pass"        : 5.0,
-        "min_sources"       : 3,
-        "cull_sources"      : False,
-        "rotate"            : False,
-        "scale"             : False,
-    }
-    determineAstrometricSolution = {
-        "suffix"            : "_astrometryCorrected",
-        "full_wcs"          : None,
-        "initial"           : 5.0,
-        "final"             : 1.0,
-    }
+class determineAstrometricSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_astrometryCorrected")
+    # None => False if 'qa' in mode else True
+    full_wcs = config.Field("Recompute positions using full WCS rather than offsets?",
+                            bool, None, optional=True)
+    initial = config.RangeField("Search radius for cross-correlation (arcseconds)", float, 5., min=1)
+    final = config.RangeField("Search radius for object matching (arcseconds)", float, 1., min=0)

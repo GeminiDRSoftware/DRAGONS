@@ -9,7 +9,7 @@ from geminidr.core import Bookkeeping, CalibDB, Preprocess
 from geminidr.core import Visualize, Standardize, Stack
 
 from .primitives_qa import QA
-from .parameters_gemini import ParametersGemini
+from . import parameters_gemini
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
     def __init__(self, adinputs, **kwargs):
         super(Gemini, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gemini.lookups'
-        self.parameters = ParametersGemini
+        self._param_update(parameters_gemini)
 
     def standardizeObservatoryHeaders(self, adinputs=None, **params):
         """

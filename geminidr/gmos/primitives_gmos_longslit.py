@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
-from .parameters_gmos_longslit import ParametersGMOSLongslit
+from . import parameters_gmos_longslit
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -20,4 +20,4 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOSLongslit, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGMOSLongslit
+        self._param_update(parameters_gmos_longslit)

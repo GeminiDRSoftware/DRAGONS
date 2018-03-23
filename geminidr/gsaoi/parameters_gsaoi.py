@@ -1,27 +1,21 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gsaoi.py file, in alphabetical order.
-from ..gemini.parameters_gemini import ParametersGemini
-from ..core.parameters_nearIR import ParametersNearIR
+from geminidr.core import parameters_photometry, parameters_preprocess, parameters_standardize, parameters_visualize
 
-class ParametersGSAOI(ParametersGemini, ParametersNearIR):
-    addReferenceCatalog = {
-        "suffix"                : "_refcatAdded",
-        "radius"                : 0.033,
-        "source"                : "2mass",
-    }
-    associateSky = {
-        "suffix"                : "_skyAssociated",
-        "time"                  : 900.,
-        "distance"              : 1.,
-        "max_skies"             : None,
-        "use_all"               : False,
-    }
-    tileArrays = {
-        "suffix"                : "_tiled",
-        "tile_all"              : True,
-    }
-    validateData = {
-        "suffix"            : "_dataValidated",
-        "num_exts"          : 4,
-        "repair"            : False,
-    }
+class addReferenceCatalogConfig(parameters_photometry.addReferenceCatalogConfig):
+    def setDefaults(self):
+        self.radius = 0.033
+        self.source = "2mass"
+
+class associateSkyConfig(parameters_preprocess.associateSkyConfig):
+    def setDefaults(self):
+        self.distance = 1.
+        self.time = 900.
+
+class tileArraysConfig(parameters_visualize.tileArraysConfig):
+    def setDefaults(self):
+        self.tile_all = True
+
+class validateDataConfig(parameters_standardize.validateDataConfig):
+    def setDefaults(self):
+        self.num_exts = 4

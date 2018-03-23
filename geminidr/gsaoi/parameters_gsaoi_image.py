@@ -1,20 +1,12 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gsaoi_image.py file, in alphabetical order.
-from .parameters_gsaoi import ParametersGSAOI
-from ..core.parameters_image import ParametersImage
-from ..core.parameters_photometry import ParametersPhotometry
+from geminidr.core import parameters_photometry
 
-class ParametersGSAOIImage(ParametersGSAOI, ParametersImage, ParametersPhotometry):
-    detectSources = {
-        "suffix"                : "_sourcesDetected",
-        "mask"                  : False,
-        "replace_flags"         : 249,
-        "set_saturation"        : False,
-        "detect_minarea"        : 20,
-        "detect_thresh"         : 5.0,
-        "analysis_thresh"       : 5.0,
-        "deblend_mincont"       : 0.005,
-        "phot_min_radius"       : 1.0,
-        "back_size"             : 128,
-        "back_filtersize"       : 5,
-    }
+class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
+    def setDefaults(self):
+        self.detect_minarea = 20
+        self.detect_thresh = 5.
+        self.analysis_thresh = 5.
+        self.phot_min_radius = 1.
+        self.back_size = 128
+        self.back_filter_size = 5

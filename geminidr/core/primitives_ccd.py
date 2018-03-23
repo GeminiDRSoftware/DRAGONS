@@ -11,7 +11,7 @@ from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
-from .parameters_ccd import ParametersCCD
+from . import parameters_ccd
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ class CCD(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(CCD, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersCCD
+        self._param_update(parameters_ccd)
 
     def biasCorrect(self, adinputs=None, **params):
         """

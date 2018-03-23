@@ -22,7 +22,7 @@ from gempy.gemini import hdr_fixing as hdrfix
 
 from geminidr.core import CCD
 from ..gemini.primitives_gemini import Gemini
-from .parameters_gmos import ParametersGMOS
+from . import parameters_gmos
 from .lookups.array_gaps import gmosArrayGaps
 from .lookups import maskdb
 
@@ -42,7 +42,7 @@ class GMOS(Gemini, CCD):
     def __init__(self, adinputs, **kwargs):
         super(GMOS, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gmos.lookups'
-        self.parameters = ParametersGMOS
+        self._param_update(parameters_gmos)
 
     def mosaicDetectors(self, adinputs=None, **params):
         """

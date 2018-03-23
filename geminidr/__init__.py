@@ -19,7 +19,9 @@ E.g.,
 import os
 import pickle
 import warnings
-from inspect import stack
+from inspect import stack, isclass
+
+from gempy.library import config
 
 from astropy.io.fits.verify import VerifyWarning
 
@@ -142,7 +144,7 @@ class PrimitivesBASE(object):
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None):
         self.streams          = {'main': adinputs}
         self.mode             = mode
-        self.parameters       = ParametersBASE
+        self.parameters       = {}
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = uparms if uparms else {}
@@ -177,3 +179,31 @@ class PrimitivesBASE(object):
         elif isinstance(upl, list):
             self._upload = upl
         return
+
+    def _param_update(self, module):
+        # Create/update an entry in the primitivesClass's parameters dict
+        # using Config classes in the module provided
+        for attr in dir(module):
+            obj = getattr(module, attr)
+            if isclass(obj) and issubclass(obj, config.Config):
+                # We need to check if we're redefining a Config that has
+                # already been inherited by another Config
+                for k, v in self.parameters.items():
+                    if attr in repr(v.__class__.mro()):
+                        # Yes! So, update the existing Config with fields
+                        # and re-instantiate it
+                        self.parameters[k]._fields.update(obj._fields)
+                        self.parameters[k] = self.parameters[k].__class__()
+                        # Call the new version's setDefaults to apply to
+                        # the parameters it has provided
+                        obj.setDefaults.__func__(self.parameters[k])
+                self.parameters[attr.replace("Config", "")] = obj()
+
+    def _inherit_params(self, params, primname, use_original_suffix=True):
+        # Create a dict of params for a primitive from a larger dict,
+        # using only those that the primitive needs
+        passed_params = {k: v for k, v in params.items()
+                    if k in list(self.parameters[primname])}
+        if use_original_suffix:
+            passed_params.update({'suffix': self.parameters[primname].suffix})
+        return passed_params

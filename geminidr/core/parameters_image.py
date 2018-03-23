@@ -1,33 +1,30 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_image.py file, in alphabetical order.
+from gempy.library import config
+from astrodata import AstroData
 
-from geminidr.core.parameters_register import ParametersRegister
-from geminidr.core.parameters_resample import ParametersResample
+class fringeCorrectConfig(config.Config):
+    pass
 
-class ParametersImage(ParametersRegister, ParametersResample):
-    fringeCorrect = {
-    }
-    makeFringe = {
-        "subtract_median_image" : None,
-    }
-    makeFringeFrame = {
-        "suffix"                : "_fringe",
-        "operation"             : "median",
-        "reject_method"         : "avsigclip",
-        "subtract_median_image" : True,
-    }
-    scaleByIntensity = {
-        "suffix"                : "_scaled",
-        "scaling"               : "mean",
-        "section"               : None,
-        "separate_ext"          : False,
-    }
-    scaleFringeToScience = {
-        "suffix"                : "_fringeScaled",
-        "science"               : None,
-        "stats_scale"           : False,
-    }
-    subtractFringe = {
-        "suffix"                : "_fringeSubtracted",
-        "fringe"                : None,
-    }
+class makeFringeConfig(config.Config):
+    pass
+
+class makeFringeFrameConfig(config.Config):
+    pass
+
+class ScaleByIntensityConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_scaled")
+    scaling = config.ChoiceField("Statistic for scaling", str,
+                                 allowed = {"mean": "Scale by mean",
+                                            "median": "Scale by median"},
+                                 default = "mean")
+    section = config.Field("Statistics section", str, None, optional=True)
+    separate_ext = config.Field("Scale extensions separately?", bool, False)
+
+class scaleFringeToScienceConfig(config.Config):
+    pass
+
+class subtractFringeConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_fringeSubtracted")
+    fringe = config.Field("Fringe frame to subtract", (str, AstroData),
+                          None, optional=True)

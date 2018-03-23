@@ -7,7 +7,7 @@ from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Image, Photometry
 from .primitives_f2 import F2
-from .parameters_f2_image import ParametersF2Image
+from . import parameters_f2_image
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ class F2Image(F2, Image, Photometry):
 
     def __init__(self, adinputs, **kwargs):
         super(F2Image, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersF2Image
+        self._param_update(parameters_f2_image)
 
     def makeLampFlat(self, adinputs=None, **params):
         """

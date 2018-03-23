@@ -15,7 +15,7 @@ from gempy.utils import logutils
 from gempy.library.matching import match_catalogs, align_images_from_wcs, Pix2Sky
 
 from geminidr import PrimitivesBASE
-from .parameters_register import ParametersRegister
+from . import parameters_register
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ class Register(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Register, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersRegister
+        self._param_update(parameters_register)
 
     def matchWCSToReference(self, adinputs=None, **params):
         """ 

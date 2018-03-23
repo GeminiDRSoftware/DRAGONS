@@ -1,14 +1,21 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gmos_image.py file, in alphabetical order.
+from gempy.library import config
+from geminidr.core import parameters_stack, parameters_photometry, parameters_standardize
 
-from geminidr.gmos.parameters_gmos import ParametersGMOS
-from geminidr.core.parameters_image import ParametersImage
-from geminidr.core.parameters_photometry import ParametersPhotometry
+class addOIWFCToDQConfig(config.Config):
+    pass
 
-class ParametersGMOSImage(ParametersGMOS, ParametersImage, ParametersPhotometry):
-    # Override attach_mdf=True
-    standardizeStructure = {
-        "suffix"                : "_structureStandardized",
-        "attach_mdf"            : False,
-        "mdf"                   : None,
-    }
+class makeFringeFrameConfig(parameters_stack.stackFramesConfig, parameters_photometry.detectSourcesConfig):
+    subtract_median_image = config.Field("Subtract median image?", bool, True)
+    def setDefaults(self):
+        self.suffix = "_fringe"
+
+class scaleFringeToScience(config.Config):
+    suffix = config.Field("Filename suffix", str, "_fringeScaled")
+    science = None # TODO
+    stats_scale = config.Field("Scale by statistics rather than exposure time?", bool, False)
+
+class standardizeStructureConfig(parameters_standardize.standardizeStructureConfig):
+    def setDefaults(self):
+        attach_mdf = False

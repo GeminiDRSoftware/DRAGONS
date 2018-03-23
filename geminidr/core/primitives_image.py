@@ -9,7 +9,7 @@ from gempy.gemini import gemini_tools as gt
 
 from .primitives_register import Register
 from .primitives_resample import Resample
-from .parameters_image import ParametersImage
+from . import parameters_image
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ class Image(Register, Resample):
 
     def __init__(self, adinputs, **kwargs):
         super(Image, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersImage
+        self._param_update(parameters_image)
 
     def fringeCorrect(self, adinputs=None, **params):
         self.getProcessedFringe(adinputs)

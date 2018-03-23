@@ -10,7 +10,7 @@ from gempy.adlibrary.manipulate_ad import remove_single_length_dimension
 
 from geminidr.core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
-from .parameters_f2 import ParametersF2
+from . import parameters_f2
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ class F2(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(F2, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.f2.lookups'
-        self.parameters = ParametersF2
+        self._param_update(parameters_f2)
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
         """

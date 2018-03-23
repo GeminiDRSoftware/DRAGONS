@@ -10,7 +10,7 @@ from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Spect
 from .primitives_gmos import GMOS
-from .parameters_gmos_spect import ParametersGMOSSpect
+from . import parameters_gmos_spect
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ class GMOSSpect(GMOS, Spect):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOSSpect, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGMOSSpect
+        self._param_update(parameters_gmos_spect)
 
     def findAcquisitionSlits(self, adinputs=None, **params):
         """

@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 from .primitives_niri import NIRI
 from ..core import Image, Photometry
-from .parameters_niri_image import ParametersNIRIImage
+from . import parameters_niri_image
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -20,4 +20,4 @@ class NIRIImage(NIRI, Image, Photometry):
 
     def __init__(self, adinputs, **kwargs):
         super(NIRIImage, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersNIRIImage
+        self._param_update(parameters_niri_image)

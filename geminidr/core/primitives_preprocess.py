@@ -17,7 +17,7 @@ from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
-from .parameters_preprocess import ParametersPreprocess
+from . import parameters_preprocess
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ class Preprocess(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Preprocess, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersPreprocess
+        self._param_update(parameters_preprocess)
 
     def addObjectMaskToDQ(self, adinputs=None, **params):
         """
@@ -969,7 +969,7 @@ class Preprocess(PrimitivesBASE):
 
         # Parameters to be passed to stackSkyFrames
         stack_params = {k: v for k,v in params.items() if
-                        k in self.parameters.stackSkyFrames and k != "suffix"}
+                        k in list(self.parameters['stackSkyFrames']) and k != "suffix"}
 
         # We'll need to process the sky frames so collect them all up and do
         # this first, to avoid repeating it every time one is reused
@@ -999,8 +999,8 @@ class Preprocess(PrimitivesBASE):
         for filename in skies:
             for sky in self.streams["sky"]:
                 if sky.filename in [filename,
-                        filename.replace(self.parameters.separateSky["suffix"],
-                                         self.parameters.associateSky["suffix"])]:
+                        filename.replace(self.parameters['separateSky'].suffix,
+                                         self.parameters['associateSky'].suffix)]:
                     break
             else:
                 try:

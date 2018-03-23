@@ -15,7 +15,7 @@ from .lookups import FOV as fov
 
 from .primitives_gnirs import GNIRS
 from ..core import Image, Photometry
-from .parameters_gnirs_image import ParametersGNIRSImage
+from . import parameters_gnirs_image
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
 
     def __init__(self, adinputs, **kwargs):
         super(GNIRSImage, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGNIRSImage
+        self._param_update(parameters_gnirs_image)
 
     def addIllumMaskToDQ(self, adinputs=None, **params):
         """

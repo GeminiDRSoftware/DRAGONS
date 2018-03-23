@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
-from .parameters_gmos_ifu import ParametersGMOSIFU
+from . import parameters_gmos_ifu
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -18,4 +18,4 @@ class GMOSIFU(GMOSSpect, GMOSNodAndShuffle):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOSIFU, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGMOSIFU
+        self._param_update(parameters_gmos_ifu)

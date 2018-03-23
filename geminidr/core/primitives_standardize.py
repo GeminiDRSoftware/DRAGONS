@@ -15,7 +15,7 @@ from gempy.utils import logutils
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
-from .parameters_standardize import ParametersStandardize
+from . import parameters_standardize
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ class Standardize(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Standardize, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersStandardize
+        self._param_update(parameters_standardize)
 
     def addDQ(self, adinputs=None, **params):
         """
@@ -153,11 +153,12 @@ class Standardize(PrimitivesBASE):
             try:
                 adinputs = self.addLatencyToDQ(adinputs)
             except AttributeError:
-                log.warning("addLatencyToDQ() not defined in this primitivesClass.")
+                log.warning("addLatencyToDQ() not defined in primitivesClass "
+                            + self.__class__.__name__)
 
         # Add the illumination mask if requested
         if params['illum_mask']:
-            adinputs = self.addIllumMaskToDQ(adinputs)
+            adinputs = self.addIllumMaskToDQ(adinputs, mask=params["mask"])
 
         # Timestamp and update filenames
         for ad in adinputs:

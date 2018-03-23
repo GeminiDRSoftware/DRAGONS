@@ -11,7 +11,8 @@ from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from .parameters_nearIR import ParametersNearIR
+from . import parameters_nearIR
+
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
@@ -21,7 +22,7 @@ class NearIR(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(NearIR, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersNearIR
+        self._param_update(parameters_nearIR)
 
     def addLatencyToDQ(self, adinputs=None, **params):
         """

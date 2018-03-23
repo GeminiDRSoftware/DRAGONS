@@ -1,11 +1,15 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GEMINI.py file, in alphabetical order.
+from gempy.library import config
 
-from geminidr import ParametersBASE
-
-class ParametersResample(ParametersBASE):
-    resampleToCommonFrame = {
-        "suffix"                : "_align",
-        "interpolator"          : "nearest",
-        "trim_data"             : False,
-    }
+class resampleToCommonFrameConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_align")
+    interpolator = config.ChoiceField("Type of pixel interpolation", str,
+                                      allowed={"nearest": "nearest pixel",
+                                               "linear": "linear interpolation",
+                                               "spline2": "quadratic spline",
+                                               "spline3": "cubic spline",
+                                               "spline4": "quartic spline",
+                                               "spline5": "qunitic spline"},
+                                      default="nearest")
+    trim_data = config.Field("Trim to field of view of reference image?", bool, False)
