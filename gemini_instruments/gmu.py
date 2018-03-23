@@ -13,6 +13,8 @@ unitDict = {
     'angstroms': -10,
 }
 
+def isBlank(bstring):
+    return not (bstring and bstring.strip())
 
 def removeComponentID(instr):
     """
