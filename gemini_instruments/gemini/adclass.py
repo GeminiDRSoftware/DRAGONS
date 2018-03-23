@@ -935,7 +935,7 @@ class AstroDataGemini(AstroDataFits):
                 return 'Off'
             return lamps
         except KeyError:
-            return 'None'
+            return None
 
     @astro_data_descriptor
     def group_id(self):
