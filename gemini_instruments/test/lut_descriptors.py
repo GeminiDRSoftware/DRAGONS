@@ -426,7 +426,7 @@ fixture_data = {
         ('focal_plane_mask', 'FPM_H_G6225'),
         ('gain', [None]),
         ('gain_setting', None),
-        ('gcal_lampgcal_lamp', None),
+        ('gcal_lamp', None),
         ('group_id', 'GS-2015B-Q-500-722'),
         ('instrument', 'GPI'),
         ('is_ao', False),
