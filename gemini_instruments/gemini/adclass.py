@@ -88,7 +88,6 @@ gemini_keyword_names = dict(
     wavefront_sensor = 'WFS',
     wavelength = 'WAVELENG',
     wavelength_band = 'WAVEBAND',
-    wavelength_reference_pixel = 'WREFPIX',
     well_depth_setting = 'WELDEPTH',
     telescope_x_offset = 'XOFFSET',
     telescope_y_offset = 'YOFFSET',
@@ -939,18 +938,6 @@ class AstroDataGemini(AstroDataFits):
             return 'None'
 
     @astro_data_descriptor
-    def grating(self):
-        """
-        Returns the grating used for the observation
-
-        Returns
-        -------
-        str
-            Grating used for the observation
-        """
-        return self.phu.get(self._keyword_for('grating'))
-
-    @astro_data_descriptor
     def group_id(self):
         """
         Returns a string representing a group of data that are compatible
@@ -1204,18 +1191,6 @@ class AstroDataGemini(AstroDataFits):
             the pixel scale
         """
         return self._get_wcs_pixel_scale(mean=True)
-
-    @astro_data_descriptor
-    def prism(self):
-        """
-        Returns the name of the prism used for the observation
-
-        Returns
-        -------
-        str
-            the prism
-        """
-        return self.phu.get(self._keyword_for('prism'))
 
     @astro_data_descriptor
     def program_id(self):
@@ -1815,18 +1790,6 @@ class AstroDataGemini(AstroDataFits):
         band = min(wavelength_band.items(), key=wavelength_diff)[0]
         return band
 
-    @astro_data_descriptor
-    def wavelength_reference_pixel(self):
-        """
-        Returns the wavelength reference pixel for each extension
-
-        Returns
-        -------
-        list
-            wavelength reference pixels
-        """
-        return self.hdr.get(self._keyword_for('wavelength_reference_pixel'))
-
     # TODO: Move RA/dec stuff to AstroDataFITS?
     @astro_data_descriptor
     def wcs_ra(self):
@@ -1949,6 +1912,29 @@ class AstroDataGemini(AstroDataFits):
                 return sum(pixel_scale_list) / len(pixel_scale_list)
             else:
                 return pixel_scale_list
+
+    def _grating(self):
+        """
+        Returns the grating used for the observation
+
+        Returns
+        -------
+        str
+            Grating used for the observation
+        """
+        return self.phu.get(self._keyword_for('grating'))
+
+    def _prism(self):
+        """
+        Returns the name of the prism used for the observation
+
+        Returns
+        -------
+        str
+            the prism
+        """
+        return self.phu.get(self._keyword_for('prism'))
+
 
     def _raw_to_percentile(self, descriptor, raw_value):
         """

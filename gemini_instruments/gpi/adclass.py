@@ -1,4 +1,7 @@
+import re
+
 from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
+from astrodata.fits import FitsLoader, FitsProvider
 from ..gemini import AstroDataGemini
 from .. import gmu
 
@@ -10,6 +13,16 @@ class AstroDataGpi(AstroDataGemini):
                           filter = 'IFSFILT',
                           focal_plane_mask = 'OCCULTER',
                           pupil_mask = 'APODIZER')
+
+    @classmethod
+    def load(cls, source):
+        def gpi_parser(hdu):
+            if hdu.header.get('EXTNAME') == 'DQ' and hdu.header.get('EXTVER') == 3:
+                hdu.header['EXTNAME'] = ('SCI', 'BPM renamed by AstroData')
+                hdu.header['EXTVER'] = (int(2), 'BPM renamed by AstroData')
+
+        return cls(FitsLoader(FitsProvider).load(source, extname_parser=gpi_parser))
+
 
     @staticmethod
     def _matches_data(source):

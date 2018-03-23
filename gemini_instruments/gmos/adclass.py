@@ -14,7 +14,6 @@ class AstroDataGmos(AstroDataGemini):
                           array_section = 'CCDSEC',
                           camera = 'INSTRUME',
                           overscan_section = 'BIASSEC',
-                          wavelength_reference_pixel = 'CRPIX1',
                           )
 
     @staticmethod
