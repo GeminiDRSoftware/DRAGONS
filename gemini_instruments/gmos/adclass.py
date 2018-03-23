@@ -696,7 +696,7 @@ class AstroDataGmos(AstroDataGemini):
         return (ayoff, byoff)
 
     @astro_data_descriptor
-    def nod_pixels(self):
+    def shuffle_pixels(self):
         """
         Returns the number of rows that the charge has been shuffled, in
         nod-and-shuffle data
