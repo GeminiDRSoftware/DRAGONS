@@ -63,14 +63,17 @@ class AstroDataBhros(AstroDataGemini):
     @astro_data_descriptor
     def dec(self):
         """
-        Returns the Declination of the target, using the target_dec
-        descriptor since the WCS is not sky coords
+        Returns the Declination of the center of field in degrees.  Since a
+        fiber is used it coincides with the position of the target. For code
+        re-used, use target_dec() if you really want the position of the target
+        rather than the center of the field.
 
         Returns
         -------
         float
             right ascension in degrees
         """
+        # using the target_dec descriptor since the WCS is not sky coords
         return self.target_dec(offset=True, icrs=True)
 
     @astro_data_descriptor
@@ -95,12 +98,15 @@ class AstroDataBhros(AstroDataGemini):
     @astro_data_descriptor
     def ra(self):
         """
-        Returns the Right ascensionion of the target, using the target_ra
-        descriptor since the WCS is not sky coords
+        Returns the Right Ascension of the center of field in degrees.
+        Since a fiber is used it coincides with the position of the target.
+        For code re-used, use target_ra() if you really want the position of
+        the target rather than the center of the field.
 
         Returns
         -------
         float
             right ascension in degrees
         """
-        return self.target_dec(offset=True, icrs=True)
+        # using the target_ra descriptor since the WCS is not sky coords
+        return self.target_ra(offset=True, icrs=True)

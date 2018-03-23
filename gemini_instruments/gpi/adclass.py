@@ -43,13 +43,16 @@ class AstroDataGpi(AstroDataGemini):
     @astro_data_descriptor
     def dec(self):
         """
-        Returns the Declination of the target, using the target_ra descriptor
-        because the WCS is completely bogus.
+        Returns the Declination of the center of the field in degrees.
+        It coincides with the position of the target, so that is used since
+        the WCS in GPI data is completely bogus. For code re-used, use
+        target_dec() if you really want the position of the target rather
+        than the center of the field.
 
         Returns
         -------
         float
-            right ascension in degrees
+            declination in degrees
         """
         return self.target_dec(offset=True, icrs=True)
 
@@ -101,8 +104,11 @@ class AstroDataGpi(AstroDataGemini):
     @astro_data_descriptor
     def ra(self):
         """
-        Returns the Right Ascension of the target, using the target_ra descriptor
-        because the WCS is completely bogus.
+        Returns the Right Ascension of the center of the field in degrees.
+        It coincides with the position of the target, so that is used since
+        the WCS in GPI data is completely bogus. For code re-used, use
+        target_ra() if you really want the position of the target rather
+        than the center of the field.
 
         Returns
         -------

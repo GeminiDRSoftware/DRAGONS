@@ -55,7 +55,10 @@ class AstroDataGraces(AstroDataGemini):
     @astro_data_descriptor
     def dec(self):
         """
-        Returns the Declination. Here, the target value is used.
+        Returns the Declination of the center of field in degrees.  Since a
+        fiber is used it coincides with the position of the target. For code
+        re-used, use target_dec() if you really want the position of the target
+        rather than the center of the field.
 
         Returns
         -------
@@ -88,7 +91,10 @@ class AstroDataGraces(AstroDataGemini):
     @astro_data_descriptor
     def ra(self):
         """
-        Returns the Right Ascension. Here, the target value is used.
+        Returns the Right Ascension of the center of field in degrees.  Since a
+        fiber is used it coincides with the position of the target. For code
+        re-used, use target_ra() if you really want the position of the target
+        rather than the center of the field.
 
         Returns
         -------

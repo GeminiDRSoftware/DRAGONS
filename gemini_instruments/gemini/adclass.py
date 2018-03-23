@@ -397,7 +397,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def cass_rotator_pa(self):
         """
-        Returns the position angle of the Cassegrain rotator.
+        Returns the position angle of the Cassegrain rotator, in degrees.
 
         Returns
         -------
@@ -510,7 +510,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def dec(self):
         """
-        Returns the Declination of the center of the field.
+        Returns the Declination of the center of the field, in degrees.
 
         Returns
         -------
@@ -1258,7 +1258,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def ra(self):
         """
-        Returns the Right Ascension of the center of the field
+        Returns the Right Ascension of the center of the field, in degrees.
 
         Returns
         -------
@@ -1556,26 +1556,24 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def telescope_x_offset(self):
         """
-        Returns the telescope offset along the x-axis, as defined
-        by the relevant header keyword (in arcseconds)
+        Returns the telescope offset along the telescope x-axis, in arcseconds.
 
         Returns
         -------
         float
-            the telescope offset along the x-axis
+            the telescope offset along the telescope x-axis (arcseconds)
         """
         return self.phu.get(self._keyword_for('telescope_x_offset'))
 
     @astro_data_descriptor
     def telescope_y_offset(self):
         """
-        Returns the telescope offset along the y-axis in, as defined by
-        the relevant header keyword (in arcseconds)
+        Returns the telescope offset along the telescope y-axis, in arcseconds.
 
         Returns
         -------
         float
-            the telescope offset along the y-axis
+            the telescope offset along the telescope y-axis (arcseconds)
         """
         return self.phu.get(self._keyword_for('telescope_y_offset'))
 

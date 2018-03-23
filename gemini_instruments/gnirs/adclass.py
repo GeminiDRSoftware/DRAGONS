@@ -422,6 +422,12 @@ class AstroDataGnirs(AstroDataGemini):
         float
             Right Ascension of the target in degrees.
         """
+        # In general, the GNIRS WCS is the way to go. But sometimes the DC
+        # has a bit of a senior moment and the WCS is miles off (presumably
+        # still has values from the previous observation or something.
+        # Who knows.  So we do a sanity check on it and use the target values
+        # if it's messed up
+
         wcs_ra = self.wcs_ra()
         tgt_ra = self.target_ra(offset=True, icrs=True)
         delta = abs(wcs_ra - tgt_ra)
@@ -448,13 +454,15 @@ class AstroDataGnirs(AstroDataGemini):
         Returns
         -------
         float
-            Declination of the target in degrees.
+            Declination of the center of the field in degrees.
 
         """
         # In general, the GNIRS WCS is the way to go. But sometimes the DC
         # has a bit of a senior moment and the WCS is miles off (presumably
-        # still has values from the previous observation or something. Who knows.
-        # So we do a sanity check on it and use the target values if it's messed up
+        # still has values from the previous observation or something.
+        # Who knows.  So we do a sanity check on it and use the target values
+        # if it's messed up
+
         wcs_dec = self.wcs_dec()
         tgt_dec = self.target_dec(offset=True, icrs=True)
         delta = abs(wcs_dec - tgt_dec)
