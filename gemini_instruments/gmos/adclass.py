@@ -6,6 +6,7 @@ from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSe
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
+from ..common import Section
 from ..gemini import AstroDataGemini
 
 class AstroDataGmos(AstroDataGemini):
@@ -257,7 +258,9 @@ class AstroDataGmos(AstroDataGemini):
             if x1 and xs and y1 and ys:
                 xs *= self.detector_x_bin()
                 ys *= self.detector_y_bin()
-                roi_list.append((x1, x1+xs-1, y1, y1+ys-1))
+                roi_section = Section(x1=x1-1, x2=x1+xs-1,
+                                      y1=y1-1, y2=y1+ys-1)
+                roi_list.append(roi_section)
             else:
                 break
         return roi_list
@@ -280,7 +283,8 @@ class AstroDataGmos(AstroDataGemini):
         if rois:
             roi_setting = 'Custom'
             for s in roi_dict:
-                if rois[0] in roi_dict[s]:
+                roi_tuple = (rois[0].y1, rois[0].y2, rois[0].x1, rois[0].x2)
+                if roi_tuple in roi_dict[s]:
                     roi_setting = s
         else:
             roi_setting = 'Undefined'
