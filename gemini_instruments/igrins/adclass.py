@@ -215,8 +215,8 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for('wavelength_band'))
 
-    @astro_data_descriptor
-    def slit_x_center(self):
+    #@astro_data_descriptor
+    def _slit_x_center(self):
         """
         Returns Center x position of slit in the SVC image
 
@@ -228,8 +228,8 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for('slit_x_center'))
 
-    @astro_data_descriptor
-    def slit_y_center(self):
+    #@astro_data_descriptor
+    def _slit_y_center(self):
         """
         Returns Center y position of slit in the SVC image
 
@@ -241,8 +241,8 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for('slit_y_center'))
 
-    @astro_data_descriptor
-    def slit_width(self):
+    #@astro_data_descriptor
+    def _slit_width(self):
         """
         Returns slit width in the SVC image
 
@@ -254,8 +254,8 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for('slit_width'))
 
-    @astro_data_descriptor
-    def slit_length(self):
+    #@astro_data_descriptor
+    def _slit_length(self):
         """
         Returns slit length in the SVC image
 
@@ -267,8 +267,8 @@ class AstroDataIgrins(AstroDataGemini):
         """
         return self.phu.get(self._keyword_for('slit_length'))
 
-    @astro_data_descriptor
-    def slit_angle(self):
+    #@astro_data_descriptor
+    def _slit_angle(self):
         """
         Returns slit length in the SVC image
 
