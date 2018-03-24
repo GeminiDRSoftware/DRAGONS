@@ -183,21 +183,42 @@ class PrimitivesBASE(object):
     def _param_update(self, module):
         # Create/update an entry in the primitivesClass's parameters dict
         # using Config classes in the module provided
+        print '*'*5, module.__name__
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
-                # We need to check if we're redefining a Config that has
-                # already been inherited by another Config
-                for k, v in self.parameters.items():
-                    if attr in repr(v.__class__.mro()):
-                        # Yes! So, update the existing Config with fields
-                        # and re-instantiate it
-                        self.parameters[k]._fields.update(obj._fields)
-                        self.parameters[k] = self.parameters[k].__class__()
-                        # Call the new version's setDefaults to apply to
-                        # the parameters it has provided
-                        obj.setDefaults.__func__(self.parameters[k])
                 self.parameters[attr.replace("Config", "")] = obj()
+                if attr=='validateDataConfig':
+                    print "Building dict"
+                    print obj().items()
+
+        # We need to check if we're redefining a Config that has
+        # already been inherited by another Config
+        for k, v in sorted(self.parameters.items(), key=lambda x: len(x[1].__class__.mro())):
+            print "In iterator", k
+            self.parameters[k] = v.__class__()
+            #for key in list(self.parameters[k]._fields):
+            #    del self.parameters[k]._fields[key]
+            if k == 'validateData':
+                print v.__class__.mro()
+                print self.parameters[k].items()
+            for cls in reversed(v.__class__.mro()):
+                if cls.__name__.find('Config') > 0 and cls.__name__!=k+'Config':
+                    new_cls = self.parameters[cls.__name__.replace("Config", "")].__class__
+                    self.parameters[k]._fields.update(new_cls._fields)
+                    if k=='validateData':
+                        print cls.__name__, self.parameters[k].items()
+                    #new_cls.setDefaults.__func__(self.parameters[k])
+        #    if attr in repr(v.__class__.mro()):
+        #        # Yes! So, update the existing Config with fields
+        #        # and re-instantiate it
+        #        #self.parameters[k] = self.parameters[k].__class__()
+        #        self.parameters[k]._fields.update(obj._fields)
+        #        if k == 'prepare':
+        #            print(attr, list(self.parameters[k]._fields))
+        #        # Call the new version's setDefaults to apply to
+        #        # the parameters it has provided
+        #        obj.setDefaults.__func__(self.parameters[k])
 
     def _inherit_params(self, params, primname, use_original_suffix=True):
         # Create a dict of params for a primitive from a larger dict,

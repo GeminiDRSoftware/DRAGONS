@@ -3,7 +3,7 @@
 from gempy.library import config
 from geminidr.core import parameters_stack, parameters_photometry, parameters_standardize
 
-class addOIWFCToDQConfig(config.Config):
+class addOIWFSToDQConfig(config.Config):
     pass
 
 class makeFringeFrameConfig(parameters_stack.stackFramesConfig, parameters_photometry.detectSourcesConfig):
@@ -18,4 +18,4 @@ class scaleFringeToScience(config.Config):
 
 class standardizeStructureConfig(parameters_standardize.standardizeStructureConfig):
     def setDefaults(self):
-        attach_mdf = False
+        self.attach_mdf = False
