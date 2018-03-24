@@ -110,10 +110,9 @@ class AstroDataTrecs(AstroDataGemini):
     def dispersion(self, asMicrometers=False, asNanometers=False,
                    asAngstroms=False):
         """
-        Returns the dispersion (wavelength units per pixel) in meters
-        or specified units, as a list (one value per extension) or a
-        float if used on a single-extension slice, or if the keyword
-        is in the PHU
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice.  It is
+        possible to control the units of wavelength using the input arguments.
 
         Parameters
         ----------

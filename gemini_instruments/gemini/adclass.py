@@ -470,8 +470,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def data_label(self):
         """
-        Returns the data label of an observation, as derived from the relevant
-        header keyword
+        Returns the data label of an observation.
 
         Returns
         -------
@@ -670,8 +669,11 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
-        Returns the name of the disperser.  The component ID can be removed
-        with either 'stripID' or 'pretty' set to True.
+        Returns the name of the disperser.  The "disperser" is a combination of
+        all the dispersing elements along the light path.
+
+        The component ID can be removed with either 'stripID' or 'pretty' set
+        to True.
 
         Parameters
         ----------
@@ -693,9 +695,9 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
         """
-        Returns the dispersion (wavelength units per pixel) in meters
-        or specified units, as a list (one value per extension) or a
-        float if used on a single-extension slice.
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice.  It is
+        possible to control the units of wavelength using the input arguments.
 
         Parameters
         ----------
@@ -923,7 +925,8 @@ class AstroDataGemini(AstroDataFits):
     def gcal_lamp(self):
         """
         Returns the name of the GCAL lamp being used, or "Off" if no lamp is
-        in used.
+        in used.  This applies to flats and arc observations when a lamp is
+        used.  For other types observation, None is returned.
 
         Returns
         -------
@@ -1097,16 +1100,15 @@ class AstroDataGemini(AstroDataFits):
 
         Returns
         -------
-        list/float
-            non-lienarity level level in ADU
+        int/list
+            non-linearity level level in ADU
         """
         return self.hdr.get(self._keyword_for('non_linear_level'))
 
     @astro_data_descriptor
     def observation_class(self):
         """
-        Returns the class of an observation, e.g., 'science', 'acq', 'dayCal'
-        as derived from the relevant header keyword
+        Returns the class of an observation, e.g., 'science', 'acq', 'dayCal'.
 
         Returns
         -------
@@ -1118,8 +1120,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def observation_id(self):
         """
-        Returns the ID of an observation, as derived from the relevant
-        header keyword
+        Returns the ID of an observation.
 
         Returns
         -------
@@ -1131,7 +1132,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def observation_epoch(self):
         """
-        Returns the observation's epoch, as derived from the header.
+        Returns the observation's epoch.
 
         Returns
         -------
@@ -1143,8 +1144,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def observation_type(self):
         """
-        Returns the type of an observation, e.g., 'OBJECT', 'FLAT', 'ARC'
-        as derived from the relevant header keyword
+        Returns the type of an observation, e.g., 'OBJECT', 'FLAT', 'ARC'.
 
         Returns
         -------
@@ -1272,48 +1272,52 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def raw_bg(self):
         """
-        Returns the BG, background brightness, of the observation.
+        Returns the BG percentile band of the observation.  BG refers to the
+        sky/background brightness.
 
         Returns
         -------
         str
-            BG, background brightness, of the observation.
+            BG percentile band of the observation.
         """
         return self._raw_to_percentile('raw_bg', self.phu.get('RAWBG'))
 
     @astro_data_descriptor
     def raw_cc(self):
         """
-        Returns the CC, cloud coverage, of the observation.
+        Returns the CC percentile band of the observation.  CC refers to the
+        cloud coverage.
 
         Returns
         -------
         str
-            CC, cloud coverage of the observation.
+            CC percentile band of the observation.
         """
         return self._raw_to_percentile('raw_cc', self.phu.get('RAWCC'))
 
     @astro_data_descriptor
     def raw_iq(self):
         """
-        Returns the , image quality, of the observation.
+        Returns the IQ percentile band of the observation.  IQ refers to the
+        image quality or seeing.
 
         Returns
         -------
         str
-            IQ, image quality, of the observation.
+            IQ percentile band of the observation.
         """
         return self._raw_to_percentile('raw_iq', self.phu.get('RAWIQ'))
 
     @astro_data_descriptor
     def raw_wv(self):
         """
-        Returns the WV, water vapor, of the observation.
+        Returns the WV percentile band of the observation.  WV refers to the
+        water vapor.
 
         Returns
         -------
         str
-            WV, water vapor, of the observation.
+            WV percentile band of the observation.
         """
         return self._raw_to_percentile('raw_wv', self.phu.get('RAWWV'))
 
@@ -1357,48 +1361,52 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def requested_bg(self):
         """
-        Returns the BG, background brightness, requested by the PI.
+        Returns the BG percentile band requested by the PI.  BG refers to the
+        sky/background brightness.
 
         Returns
         -------
         str
-            BG, background brightness, requested by the PI.
+            BG percentile band requested by the PI.
         """
         return self._raw_to_percentile('requested_bg', self.phu.get('REQBG'))
 
     @astro_data_descriptor
     def requested_cc(self):
         """
-        Returns the CC, cloud coverage, requested by the PI.
+        Returns the CC percentile band requested by the PI.  CC refers to the
+        cloud coverage.
 
         Returns
         -------
         str
-            CC, cloud coverage, requested by the PI.
+            CC percentile band requested by the PI.
         """
         return self._raw_to_percentile('requested_cc', self.phu.get('REQCC'))
 
     @astro_data_descriptor
     def requested_iq(self):
         """
-        Returns the IQ, image quality, requested by the PI.
+        Returns the IQ percentile band requested by the PI.  IQ refers to the
+        image quality or seeing.
 
         Returns
         -------
         str
-            IQ, image quality, requested by the PI.
+            IQ percentile band requested by the PI.
         """
         return self._raw_to_percentile('requested_iq', self.phu.get('REQIQ'))
 
     @astro_data_descriptor
     def requested_wv(self):
         """
-        Returns the WV, water vapor, requested by the PI.
+        Returns the WV percentile band requested by the PI.  WV refers to the
+        water vapor.
 
         Returns
         -------
         str
-            WV, water vapor, requested by the PI.
+            WV percentile band requested by the PI.
         """
         return self._raw_to_percentile('requested_wv', self.phu.get('REQWV'))
 

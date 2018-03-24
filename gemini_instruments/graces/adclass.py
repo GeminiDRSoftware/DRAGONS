@@ -70,8 +70,8 @@ class AstroDataGraces(AstroDataGemini):
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
-        Returns the name of the disperser.  The component ID can be removed
-        with either 'stripID' or 'pretty' set to True.
+        Returns the name of the disperser.  For GRACES, this is always
+        "GRACES".
 
         Parameters
         ----------
@@ -83,7 +83,7 @@ class AstroDataGraces(AstroDataGemini):
         Returns
         -------
         str
-            The name of the disperser with or without the component ID.
+            The name of the disperser, "GRACES".
 
         """
         return 'GRACES'

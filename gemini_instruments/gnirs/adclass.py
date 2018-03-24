@@ -353,7 +353,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         Returns
         -------
-        int
+        int/list
             Level in ADU at which the non-linear regime starts.
 
         """
@@ -494,7 +494,7 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the detector read noise, in electrons, for the observation.
+        Returns the detector read noise, in electrons.
         A lookup table indexed on read_mode and well_depth_setting is
         used to retrieve the read noise.
 
@@ -525,7 +525,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         Returns
         -------
-        int
+        int/list
             Saturation level in ADUs.
         """
         gain = self.gain()

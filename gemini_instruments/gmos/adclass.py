@@ -379,7 +379,8 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
-        Returns the name of the grating used for the observation
+        Returns the name of the disperser used for the observation.  In GMOS,
+        the disperser is a grating.
 
         Parameters
         ----------
@@ -408,9 +409,9 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
         """
-        Returns the dispersion (wavelength units per pixel) in meters
-        or specified units, as a list (one value per extension) or a
-        float if used on a single-extension slice.
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice.  It is
+        possible to control the units of wavelength using the input arguments.
 
         Parameters
         ----------
@@ -541,9 +542,7 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def gain_setting(self):
         """
-        Returns the gain settings of the extensions. These could be different
-        but the old system couldn't handle that so we'll return a string but
-        check that they're all the same
+        Returns the gain settings of the observation.
 
         Returns
         -------
@@ -750,7 +749,7 @@ class AstroDataGmos(AstroDataGemini):
 
         Returns
         -------
-        float/list
+        int/list
             Value(s) at which the data become non-linear
         """
         return self.saturation_level()
@@ -827,8 +826,8 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the read noise (as a list if multiple extensions, or
-        a float if a single-extension slice)
+        Returns the read noise in electrons. Returns a list if multiple
+        extensions, or a float on a single-extension slice.
 
         Returns
         -------
@@ -892,7 +891,7 @@ class AstroDataGmos(AstroDataGemini):
 
         Returns
         -------
-        list/float
+        int/list
             saturation level
         """
         def _well_depth(detector, amp, bin, gain, bunit):
