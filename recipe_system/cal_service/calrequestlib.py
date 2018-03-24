@@ -21,7 +21,6 @@ from gempy.utils import logutils
 from geminidr  import set_caches
 from recipe_system.cal_service import cal_search_factory, handle_returns_factory
 from .file_getter import get_file_iterator, GetterError
-from astrodata import descriptor_list
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
@@ -116,7 +115,7 @@ def get_cal_requests(inputs, caltype):
         rq = CalibrationRequest(ad, caltype)
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
-        for desc_name in descriptor_list(ad):
+        for desc_name in ad.descriptors:
             try:
                 descriptor = getattr(ad, desc_name)
             except AttributeError:

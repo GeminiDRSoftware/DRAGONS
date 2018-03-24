@@ -262,11 +262,9 @@ def header_for_table(table):
         columns.append(fits.Column(array=col.data, **descr))
 
     fits_header = fits.BinTableHDU.from_columns(columns).header
-    try:
-        table.meta['header'].update(fits_header)
-    except (AttributeError, KeyError):
-        table.meta['header'] = fits_header
-    return table.meta['header']
+    if 'header' in table.meta:
+        fits_header = update_header(table.meta['header'], fits_header)
+    return fits_header
 
 def add_header_to_table(table):
     header = header_for_table(table)

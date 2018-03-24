@@ -394,7 +394,7 @@ class AstroDataNiri(AstroDataGemini):
 
         Returns
         -------
-        list/namedtuple
+        namedtuple/list
             nonlinearity info (max counts, exptime correction, gamma, eta)
         """
         read_mode = self.read_mode()
@@ -415,7 +415,7 @@ class AstroDataNiri(AstroDataGemini):
 
         Returns
         -------
-        list/int
+        int/list
             non-linearity level in ADU
         """
         sat_level = self.saturation_level()
@@ -472,7 +472,7 @@ class AstroDataNiri(AstroDataGemini):
     def read_noise(self):
         """
         Returns the read noise in electrons, as a list unless called on
-        a single-extension slice
+        a single-extension slice.
 
         Returns
         -------
@@ -500,7 +500,7 @@ class AstroDataNiri(AstroDataGemini):
 
         Returns
         -------
-        list/float
+        int/list
             saturation level in ADU
         """
         coadds = self.coadds()

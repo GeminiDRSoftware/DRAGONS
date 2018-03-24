@@ -6,6 +6,7 @@ from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSe
 from .pixel_functions import get_bias_level
 from . import lookup
 from .. import gmu
+from ..common import Section
 from ..gemini import AstroDataGemini
 
 class AstroDataGmos(AstroDataGemini):
@@ -14,7 +15,6 @@ class AstroDataGmos(AstroDataGemini):
                           array_section = 'CCDSEC',
                           camera = 'INSTRUME',
                           overscan_section = 'BIASSEC',
-                          wavelength_reference_pixel = 'CRPIX1',
                           )
 
     @staticmethod
@@ -258,7 +258,9 @@ class AstroDataGmos(AstroDataGemini):
             if x1 and xs and y1 and ys:
                 xs *= self.detector_x_bin()
                 ys *= self.detector_y_bin()
-                roi_list.append((x1, x1+xs-1, y1, y1+ys-1))
+                roi_section = Section(x1=x1-1, x2=x1+xs-1,
+                                      y1=y1-1, y2=y1+ys-1)
+                roi_list.append(roi_section)
             else:
                 break
         return roi_list
@@ -281,7 +283,8 @@ class AstroDataGmos(AstroDataGemini):
         if rois:
             roi_setting = 'Custom'
             for s in roi_dict:
-                if rois[0] in roi_dict[s]:
+                roi_tuple = (rois[0].y1, rois[0].y2, rois[0].x1, rois[0].x2)
+                if roi_tuple in roi_dict[s]:
                     roi_setting = s
         else:
             roi_setting = 'Undefined'
@@ -376,7 +379,8 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
-        Returns the name of the grating used for the observation
+        Returns the name of the disperser used for the observation.  In GMOS,
+        the disperser is a grating.
 
         Parameters
         ----------
@@ -405,9 +409,9 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
         """
-        Returns the dispersion (wavelength units per pixel) in meters
-        or specified units, as a list (one value per extension) or a
-        float if used on a single-extension slice.
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice.  It is
+        possible to control the units of wavelength using the input arguments.
 
         Parameters
         ----------
@@ -538,9 +542,7 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def gain_setting(self):
         """
-        Returns the gain settings of the extensions. These could be different
-        but the old system couldn't handle that so we'll return a string but
-        check that they're all the same
+        Returns the gain settings of the observation.
 
         Returns
         -------
@@ -693,7 +695,7 @@ class AstroDataGmos(AstroDataGemini):
         return (ayoff, byoff)
 
     @astro_data_descriptor
-    def nod_pixels(self):
+    def shuffle_pixels(self):
         """
         Returns the number of rows that the charge has been shuffled, in
         nod-and-shuffle data
@@ -747,7 +749,7 @@ class AstroDataGmos(AstroDataGemini):
 
         Returns
         -------
-        float/list
+        int/list
             Value(s) at which the data become non-linear
         """
         return self.saturation_level()
@@ -824,8 +826,8 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the read noise (as a list if multiple extensions, or
-        a float if a single-extension slice)
+        Returns the read noise in electrons. Returns a list if multiple
+        extensions, or a float on a single-extension slice.
 
         Returns
         -------
@@ -889,7 +891,7 @@ class AstroDataGmos(AstroDataGemini):
 
         Returns
         -------
-        list/float
+        int/list
             saturation level
         """
         def _well_depth(detector, amp, bin, gain, bunit):

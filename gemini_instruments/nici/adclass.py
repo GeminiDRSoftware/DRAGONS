@@ -95,8 +95,8 @@ class AstroDataNici(AstroDataGemini):
         # in each HDU
         try:
             filters = [r if b is None else b for r,b in zip(filt_r, filt_b)]
-            return [gmu.removeComponentID(f) if pretty or stripID else
-                        f for f in filters]
+            return "+".join([gmu.removeComponentID(f) if pretty or stripID else
+                        f for f in filters])
         except TypeError:
             filter = filt_r if filt_b is None else filt_b
             return gmu.removeComponentID(filter) if pretty or stripID else filter

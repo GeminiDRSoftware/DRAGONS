@@ -119,21 +119,6 @@ def returns_list(fn):
                 return [ret] * len(self)
     return wrapper
 
-def descriptor_list(ad):
-    """
-    Returns a sequence of names for the methods that have been
-    decorated as descriptors.
-
-    Args
-    -----
-    ad : an `AstroData` instance
-
-    Returns
-    --------
-    A tuple of str
-    """
-    members = inspect.getmembers(ad.__class__, lambda x: hasattr(x, 'descriptor_method'))
-    return tuple(mname for (mname, method) in members)
 
 def astro_data_tag(fn):
     """
@@ -560,6 +545,21 @@ class AstroData(object):
         A set of strings that represent the tags defining this instance
         """
         return self.__process_tags()
+
+    @property
+    def descriptors(self):
+        """
+        Returns a sequence of names for the methods that have been
+        decorated as descriptors.
+
+        Returns
+        --------
+        A tuple of str
+        """
+        members = inspect.getmembers(self.__class__,
+                                     lambda x: hasattr(x, 'descriptor_method'))
+        return tuple(mname for (mname, method) in members)
+
 
     def __iter__(self):
         for single in self._dataprov:

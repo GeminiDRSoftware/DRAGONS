@@ -50,7 +50,7 @@ class GMOSNodAndShuffle():
                 continue
 
             # Determine N&S offset in (binned) pixels
-            shuffle = ad.nod_pixels() // ad.detector_y_bin()
+            shuffle = ad.shuffle_pixels() // ad.detector_y_bin()
             a_nod_count, b_nod_count = ad.nod_count()
 
             ad_nodded = deepcopy(ad)

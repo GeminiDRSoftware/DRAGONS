@@ -1114,7 +1114,7 @@ def fit_continuum(ad):
                     log.warning("No MDF is attached. Did addMDF find one?")
                 continue
             else:
-                shuffle = int(old_div(ad.nod_pixels(), ad.detector_y_bin()))
+                shuffle = int(old_div(ad.shuffle_pixels(), ad.detector_y_bin()))
                 centers = [shuffle + np.argmax(signal[shuffle:shuffle*2])]
                 half_widths = [ybox]
         else:
@@ -1199,7 +1199,7 @@ def fit_continuum(ad):
                     # N&S; background should be close to zero
                     bg = models.Const1D(0.)
                     # Fix background=0 if slit is in region where sky-subtraction will occur 
-                    if center > old_div(ad.nod_pixels(),ad.detector_y_bin()):
+                    if center > old_div(ad.shuffle_pixels(), ad.detector_y_bin()):
                             bg.amplitude.fixed = True
                 else:
                     # Not N&S; background estimated from image

@@ -78,7 +78,7 @@ class GMOSSpect(GMOS, Spect):
             slits_profile = np.zeros_like(spatial_profile)
             image_pix_scale = ad.pixel_scale()
 
-            shuffle = ad.nod_pixels() // ad.detector_y_bin()
+            shuffle = ad.shuffle_pixels() // ad.detector_y_bin()
             # It is possible to use simply the MDF information in mm to get
             # the necessary slit position data, but this relies on knowing
             # the distortion correction. It seems better to use the MDF
