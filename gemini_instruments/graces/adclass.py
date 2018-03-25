@@ -4,6 +4,9 @@ from .. import gmu
 
 class AstroDataGraces(AstroDataGemini):
 
+    __keyword_dict = dict(detector = 'DETECTOR',
+                          )
+
     @staticmethod
     def _matches_data(source):
         return source[0].header.get('INSTRUME', '').upper() == 'GRACES'
@@ -12,6 +15,24 @@ class AstroDataGraces(AstroDataGemini):
     def _tag_instrument(self):
         return TagSet(['GRACES'])
 
+    @astro_data_tag
+    def _tag_spect(self):
+        return TagSet(['SPECT'])
+
+    @astro_data_tag
+    def _tag_arc(self):
+        if self.phu.get('OBSTYPE') == 'ARC':
+            return TagSet(['ARC', 'CAL'])
+
+    @astro_data_tag
+    def _tag_flat(self):
+        if self.phu.get('OBSTYPE') == 'FLAT':
+            return TagSet(['FLAT', 'CAL'])
+
+    @astro_data_tag
+    def _tag_flat(self):
+        if self.phu.get('OBSTYPE') == 'BIAS':
+            return TagSet(['BIAS', 'CAL'])
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
@@ -66,6 +87,10 @@ class AstroDataGraces(AstroDataGemini):
             declination in degrees
         """
         return self.target_dec()
+
+    @astro_data_descriptor
+    def detector(self):
+        return self.phu.get(self._keyword_for('detector'))
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
