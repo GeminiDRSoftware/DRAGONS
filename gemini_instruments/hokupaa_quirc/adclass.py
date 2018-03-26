@@ -42,7 +42,7 @@ class AstroDataHokupaaQUIRC(AstroDataGemini):
 
     @astro_data_tag
     def _tag_flat(self):
-        if 'flat' in self.phu.get('OBJECT'):
+        if 'flat' in self.phu.get('OBJECT').lower():
             return TagSet(['FLAT', 'CAL'])
 
     @astro_data_descriptor
