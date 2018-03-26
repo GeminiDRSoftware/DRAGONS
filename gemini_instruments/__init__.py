@@ -19,3 +19,4 @@ from . import niri
 from . import phoenix
 from . import trecs
 from . import igrins
+from . import flamingos
