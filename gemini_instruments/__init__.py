@@ -20,3 +20,4 @@ from . import phoenix
 from . import trecs
 from . import igrins
 from . import flamingos
+from . import hokupaa_quirc
