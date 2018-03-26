@@ -7,6 +7,7 @@ class AstroDataFlamingos(AstroDataGemini):
     __keyword_dict = dict(detector = 'DETECTOR',
                           filter_name = 'FILTER',
                           disperser = 'GRISM',
+                          exposure_time = 'EXP_TIME',
                           )
 
     @staticmethod
@@ -122,6 +123,18 @@ class AstroDataFlamingos(AstroDataGemini):
         else:
             return None
         return
+
+    @astro_data_descriptor
+    def exposure_time(self):
+        """
+        Returns the exposure time in seconds.
+
+        Returns
+        -------
+        float
+            Exposure time.
+        """
+        return self.phu.get(self._keyword_for('exposure_time'), None)
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
