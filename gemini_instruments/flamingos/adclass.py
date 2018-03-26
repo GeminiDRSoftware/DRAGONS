@@ -124,7 +124,7 @@ class AstroDataFlamingos(AstroDataGemini):
         return
 
     @astro_data_descriptor
-    def filter_name(self):
+    def filter_name(self, stripID=False, pretty=False):
         return self.phu.get(self._keyword_for('filter_name'))    
 
     @astro_data_descriptor
