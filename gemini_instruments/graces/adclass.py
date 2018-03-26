@@ -30,7 +30,7 @@ class AstroDataGraces(AstroDataGemini):
             return TagSet(['FLAT', 'CAL'])
 
     @astro_data_tag
-    def _tag_flat(self):
+    def _tag_bias(self):
         if self.phu.get('OBSTYPE') == 'BIAS':
             return TagSet(['BIAS', 'CAL'])
 
