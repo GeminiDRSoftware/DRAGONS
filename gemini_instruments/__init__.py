@@ -22,3 +22,4 @@ from . import igrins
 from . import flamingos
 from . import hokupaa_quirc
 from . import hrwfs
+from . import cirpass
