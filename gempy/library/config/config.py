@@ -144,11 +144,13 @@ class FieldValidationError(ValueError):
         self.history = config.history.setdefault(field.name, [])
         self.fieldSource = field.source
         self.configSource = config._source
-        error = "%s '%s' failed validation: %s\n"\
-                "For more information read the Field definition at:\n%s"\
-                "And the Config definition at:\n%s" % \
-            (self.fieldType.__name__, self.fullname, msg,
-             self.fieldSource.format(), self.configSource.format())
+        #error = "%s '%s' failed validation: %s\n"\
+        #        "For more information read the Field definition at:\n%s"\
+        #        "And the Config definition at:\n%s" % \
+        #    (self.fieldType.__name__, self.fullname, msg,
+        #     self.fieldSource.format(), self.configSource.format())
+        error = ("{} '{}' ({}) failed validation: {}".
+                 format(self.fieldType.__name__, self.fullname, field.doc, msg))
         ValueError.__init__(self, error)
 
 
@@ -345,7 +347,9 @@ class Field(object):
         instance._storage[self.name] = value
         if at is None:
             at = getCallStack()
-        history.append((value, at, label))
+        # We don't want to put an actual AD object here, so just the filename
+        value_to_append = value.filename if isinstance(value, AstroData) else value
+        history.append((value_to_append, at, label))
 
     def __delete__(self, instance, at=None, label='deletion'):
         """
@@ -355,9 +359,7 @@ class Field(object):
         """
         if at is None:
             at = getCallStack()
-        print("Deleting")
-        #self.__set__(instance, None, at=at, label=label)
-        del instance._storage[self.name]
+        self.__set__(instance, None, at=at, label=label)
 
     def _compare(self, instance1, instance2, shortcut, rtol, atol, output):
         """Helper function for Config.compare; used to compare two fields for equality.
@@ -434,6 +436,9 @@ class Config(with_metaclass(ConfigMeta, object)):
     attributes.
 
     Config also emulates a dict of field name: field value
+    
+    CJS: Edited these so only the _fields are exposed. _storage retains
+    items that have been deleted 
     """
 
     def __iter__(self):
@@ -444,39 +449,39 @@ class Config(with_metaclass(ConfigMeta, object)):
     def keys(self):
         """!Return the list of field names
         """
-        return list(self._storage.keys())
+        return list(self._fields)
 
     def values(self):
         """!Return the list of field values
         """
-        return list(self._storage.values())
+        return [self._storage[k] for k in self.keys()]
 
     def items(self):
         """!Return the list of (field name, field value) pairs
         """
-        return list(self._storage.items())
+        return [(k, self._storage[k]) for k in self.keys()]
 
     def iteritems(self):
         """!Iterate over (field name, field value) pairs
         """
-        return iter(self._storage.items())
+        return iter(self.items())
 
     def itervalues(self):
         """!Iterate over field values
         """
-        return iter(self.storage.values())
+        return iter(self.values())
 
     def iterkeys(self):
         """!Iterate over field names
         """
-        return iter(self.storage.keys())
+        return iter(self.keys())
 
     def __contains__(self, name):
         """!Return True if the specified field exists in this config
 
         @param[in] name  field name to test for
         """
-        return self._storage.__contains__(name)
+        return self._storage.__contains__(name) and name in self._fields
 
     def __new__(cls, *args, **kw):
         """!Allocate a new Config object.
@@ -546,7 +551,8 @@ class Config(with_metaclass(ConfigMeta, object)):
                 field = self._fields[name]
                 field.__set__(self, value, at=at, label=label)
             except KeyError:
-                raise KeyError("No field of name %s exists in config type %s" % (name, _typeStr(self)))
+                #raise KeyError("No field of name %s exists in config type %s" % (name, _typeStr(self)))
+                raise KeyError("{} has no field named {}".format(type(self).__name__.replace('Config', ''), name))
 
     def load(self, filename, root="config"):
         """!Modify this config in place by executing the Python code in the named file.
@@ -697,14 +703,14 @@ class Config(with_metaclass(ConfigMeta, object)):
         for field in self._fields.values():
             field.validate(self)
 
-    def formatHistory(self, name, **kwargs):
+    def formatHistory(self, name=None, **kwargs):
         """!Format the specified config field's history to a more human-readable format
 
         @param[in] name  name of field whose history is wanted
         @param[in] kwargs  keyword arguments for lsst.pex.config.history.format
         @return a string containing the formatted history
         """
-        import lsst.pex.config.history as pexHist
+        from . import history as pexHist
         return pexHist.format(self, name, **kwargs)
 
     """
