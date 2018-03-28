@@ -131,10 +131,11 @@ def _colorize(text, category):
     return str(text)
 
 
-def format(config, name=None, writeSourceLine=True, prefix="", verbose=False):
+def format(config, name=None, writeSourceLine=True, prefix="", verbose=False, debug=False):
     """Format the history record for config.name"""
 
     msg = []
+    verbose |= debug  # verbose=False and debug=True seems wrong!
     if name is None:
         for i, name in enumerate(config.history.keys()):
             if i > 0:
@@ -146,9 +147,9 @@ def format(config, name=None, writeSourceLine=True, prefix="", verbose=False):
     for value, stack, label in config.history[name]:
         output = []
         for frame in stack:
-            if frame.function in ("__new__", "__set__", "__setattr__", "execfile", "wrapper") or \
-                    os.path.split(frame.filename)[1] in ("argparse.py", "argumentParser.py"):
-                if not verbose:
+            if (frame.function in ("__new__", "__set__", "__setattr__", "execfile", "wrapper") or
+                    os.path.split(frame.filename)[1] in ("argparse.py", "argumentParser.py")):
+                if not debug:
                     continue
 
             line = []
@@ -160,6 +161,9 @@ def format(config, name=None, writeSourceLine=True, prefix="", verbose=False):
                 line.append([frame.function, "FUNCTION_NAME", ])
 
             output.append(line)
+
+            if not verbose:
+                break
 
         outputs.append([value, output])
     #
