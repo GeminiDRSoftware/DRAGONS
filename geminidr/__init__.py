@@ -168,8 +168,8 @@ class PrimitivesBASE(object):
         return
 
     def _param_update(self, module):
-        # Create/update an entry in the primitivesClass's parameters dict
-        # using Config classes in the module provided
+        """Create/update an entry in the primitivesClass's parameters dict
+        using Config classes in the module provided"""
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
@@ -193,16 +193,25 @@ class PrimitivesBASE(object):
                         pass
                     else:
                         # Delete history from previous passes through this code
-                        for field in new_cls._fields:
+                        for field in new_cls():
                             self.parameters[k]._history[field] = []
                         self.parameters[k].update(**dict(new_cls().items()))
                         new_cls.setDefaults.__func__(self.parameters[k])
 
     def _inherit_params(self, params, primname, use_original_suffix=True):
         """Create a dict of params for a primitive from a larger dict,
-        using only those that the primitive needs"""
+        using only those that the primitive needs
+        
+        Parameters
+        ----------
+        params: dict
+            parent parameter dictionary
+        primname: str
+            name of primitive to be called
+        use_original_suffix: bool
+            if True, don't pass "suffix" parameter
+        """
         passed_params = {k: v for k, v in params.items()
-                    if k in list(self.parameters[primname])}
-        if use_original_suffix:
-            passed_params.update({'suffix': self.parameters[primname].suffix})
+                    if k in list(self.parameters[primname]) and
+                         not (k == "suffix" and use_original_suffix)}
         return passed_params
