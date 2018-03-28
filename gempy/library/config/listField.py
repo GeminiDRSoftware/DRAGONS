@@ -253,7 +253,10 @@ class ListField(Field):
 
     def toDict(self, instance):
         value = self.__get__(instance)
-        return list(value) if value is not None else None
+        try:
+            return list(value)
+        except TypeError:
+            return value
 
     def _compare(self, instance1, instance2, shortcut, rtol, atol, output):
         """Helper function for Config.compare; used to compare two fields for equality.
