@@ -4,11 +4,11 @@ from gempy.library import config
 
 class addIllumMaskToDQConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_illumMaskAdded")
-    mask = config.Field("Name of illumination mask", str, None, optional=True)
+    illum_mask = config.Field("Name of illumination mask", str, None, optional=True)
 
 class addDQConfig(addIllumMaskToDQConfig):
     bpm = config.Field("Name of bad pixel mask", str, None, optional=True)
-    illum_mask = config.Field("Apply illumination mask?", bool, False)
+    add_illum_mask = config.Field("Apply illumination mask?", bool, False)
     latency = config.Field("Apply latency for saturated pixels?", bool, False)
 
     def setDefaults(self):
@@ -44,8 +44,6 @@ class validateDataConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dataValidated")
     num_exts = config.ListField("Allowed number of extensions", int, 1, optional=True, single=True)
     repair = config.Field("Repair data?", bool, False)
-    def setDefaults(self):
-        print "OLD VALIDATEDATACONFIG"
 
 class prepareConfig(standardizeHeadersConfig, standardizeStructureConfig, validateDataConfig):
     def setDefaults(self):

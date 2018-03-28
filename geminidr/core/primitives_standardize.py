@@ -157,8 +157,8 @@ class Standardize(PrimitivesBASE):
                             + self.__class__.__name__)
 
         # Add the illumination mask if requested
-        if params['illum_mask']:
-            adinputs = self.addIllumMaskToDQ(adinputs, mask=params["mask"])
+        if params['add_illum_mask']:
+            adinputs = self.addIllumMaskToDQ(adinputs, mask=params["illum_mask"])
 
         # Timestamp and update filenames
         for ad in adinputs:
@@ -185,7 +185,7 @@ class Standardize(PrimitivesBASE):
 
         # Getting all the filenames first prevents reopening the same file
         # for each science AD
-        illum_list = params['mask']
+        illum_list = params['illum_mask']
         if illum_list is None:
             illum_list = [self._get_illum_mask_filename(ad) for ad in adinputs]
 
