@@ -134,11 +134,13 @@ def _colorize(text, category):
 def format(config, name=None, writeSourceLine=True, prefix="", verbose=False):
     """Format the history record for config.name"""
 
+    msg = []
     if name is None:
         for i, name in enumerate(config.history.keys()):
             if i > 0:
-                print()
-            print(format(config, name))
+                msg.append('')
+            msg.append(format(config, name))
+        return '\n'.join(msg)
 
     outputs = []
     for value, stack, label in config.history[name]:
@@ -173,7 +175,6 @@ def format(config, name=None, writeSourceLine=True, prefix="", verbose=False):
     #
     # actually generate the config history
     #
-    msg = []
     fullname = "%s.%s" % (config._name, name) if config._name is not None else name
     msg.append(_colorize(re.sub(r"^root\.", "", fullname), "NAME"))
     for value, output in outputs:
