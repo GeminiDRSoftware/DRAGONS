@@ -10,7 +10,6 @@ Calibrations() also uses the caches functions, which are now directly available
 here.
 
 E.g.,
->>> from geminidr import ParametersBASE
 >>> from geminidr import PrimitivesBASE
 
 """
@@ -107,18 +106,6 @@ class Calibrations(dict):
         save_cache(self, self._calindfile)
         return
 # ------------------------------------------------------------------------------
-class ParametersBASE(object):
-    """
-    Base class for all Gemini package parameter sets.
-
-    Most other parameter classes will be separate from their
-    matching primitives class. Here, we incorporate the parameter
-    class, ParametersBASE, into the mod.
-
-    """
-    pass
-
-# ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesBASE(object):
     """
@@ -183,46 +170,37 @@ class PrimitivesBASE(object):
     def _param_update(self, module):
         # Create/update an entry in the primitivesClass's parameters dict
         # using Config classes in the module provided
-        print '*'*5, module.__name__
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
                 self.parameters[attr.replace("Config", "")] = obj()
-                if attr=='validateDataConfig':
-                    print "Building dict"
-                    print obj().items()
 
-        # We need to check if we're redefining a Config that has
-        # already been inherited by another Config
-        for k, v in sorted(self.parameters.items(), key=lambda x: len(x[1].__class__.mro())):
-            print "In iterator", k
+        # Play a bit fast and loose with python's inheritance. We need to check
+        # if we're redefining a Config that has already been inherited by
+        # another Config and, if so, update the child Config
+        # Do this in the correct inheritance order
+        for k, v in sorted(self.parameters.items(),
+                           key=lambda x: len(x[1].__class__.mro())):
             self.parameters[k] = v.__class__()
-            #for key in list(self.parameters[k]._fields):
-            #    del self.parameters[k]._fields[key]
-            if k == 'validateData':
-                print v.__class__.mro()
-                print self.parameters[k].items()
             for cls in reversed(v.__class__.mro()):
-                if cls.__name__.find('Config') > 0 and cls.__name__!=k+'Config':
-                    new_cls = self.parameters[cls.__name__.replace("Config", "")].__class__
-                    self.parameters[k]._fields.update(new_cls._fields)
-                    if k=='validateData':
-                        print cls.__name__, self.parameters[k].items()
-                    #new_cls.setDefaults.__func__(self.parameters[k])
-        #    if attr in repr(v.__class__.mro()):
-        #        # Yes! So, update the existing Config with fields
-        #        # and re-instantiate it
-        #        #self.parameters[k] = self.parameters[k].__class__()
-        #        self.parameters[k]._fields.update(obj._fields)
-        #        if k == 'prepare':
-        #            print(attr, list(self.parameters[k]._fields))
-        #        # Call the new version's setDefaults to apply to
-        #        # the parameters it has provided
-        #        obj.setDefaults.__func__(self.parameters[k])
+                if cls.__name__.find('Config') > 0:
+                    # We may not have yet imported a Config from which we inherit.
+                    # In fact, we may never do so, in which case what's already
+                    # there from standard inheritance is fine and we move on.
+                    try:
+                        new_cls = self.parameters[cls.__name__.replace("Config", "")].__class__
+                    except KeyError:
+                        pass
+                    else:
+                        # Delete history from previous passes through this code
+                        for field in new_cls._fields:
+                            self.parameters[k]._history[field] = []
+                        self.parameters[k].update(**dict(new_cls().items()))
+                        new_cls.setDefaults.__func__(self.parameters[k])
 
     def _inherit_params(self, params, primname, use_original_suffix=True):
-        # Create a dict of params for a primitive from a larger dict,
-        # using only those that the primitive needs
+        """Create a dict of params for a primitive from a larger dict,
+        using only those that the primitive needs"""
         passed_params = {k: v for k, v in params.items()
                     if k in list(self.parameters[primname])}
         if use_original_suffix:
