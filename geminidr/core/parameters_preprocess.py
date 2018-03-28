@@ -3,6 +3,10 @@
 from gempy.library import config
 from astrodata import AstroData
 
+def replace_valueCheck(value):
+    """validate applyDQPlane.replace_value"""
+    return (value in ('mean', 'median') or isinstance(value, float))
+
 class addObjectMaskToDQConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_objectMaskAdded")
 
@@ -12,7 +16,8 @@ class ADUToElectronsConfig(config.Config):
 class applyDQPlaneConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dqPlaneApplied")
     replace_flags = config.RangeField("DQ bitmask for pixels to replace", int, 255, min=0)
-    replace_value = config.Field("Replacement value", (str, float), "median")
+    replace_value = config.Field("Replacement value [mean|median|<value>]",
+                                 (str, float), "median", check=replace_valueCheck)
 
 class associateSkyConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyassociated")

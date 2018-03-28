@@ -119,7 +119,7 @@ class Preprocess(PrimitivesBASE):
             The DQ bits, of which one needs to be set for a pixel to be replaced
 
         replace_value: str/float
-            "median" or "average" to replace with that value of the good pixels,
+            "median" or "mean" to replace with that value of the good pixels,
             or a value
 
         """
@@ -141,22 +141,17 @@ class Preprocess(PrimitivesBASE):
                                                            ext.hdr['EXTVER']))
                     continue
 
-                if replace_value in ['median', 'average']:
+                try:
+                    rep_value = float(replace_value)
+                    log.fullinfo("Replacing bad pixels in {}:{} with the "
+                                 "user value {}".format(ad.filename,
+                                                        ext.hdr['EXTVER'], rep_value))
+                except ValueError:  # already validated so must be "mean" or "median"
                     oper = getattr(np, replace_value)
                     rep_value = oper(ext.data[ext.mask & replace_flags == 0])
                     log.fullinfo("Replacing bad pixels in {}:{} with the {} "
                                  "of the good data".format(ad.filename,
                                             ext.hdr['EXTVER'], replace_value))
-                else:
-                    try:
-                        rep_value = float(replace_value)
-                        log.fullinfo("Replacing bad pixels in {}:{} with the "
-                                     "user value {}".format(ad.filename,
-                                           ext.hdr['EXTVER'], rep_value))
-                    except:
-                        log.warning("Value for replacement should be 'median', "
-                                    "'average', or a number")
-                        continue
 
                 ext.data[ext.mask & replace_flags != 0] = rep_value
 
