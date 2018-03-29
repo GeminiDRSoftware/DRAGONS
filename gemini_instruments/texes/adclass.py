@@ -74,7 +74,7 @@ class AstroDataTexes(AstroDataGemini):
         if 'bias' in self.phu.get('OBSTYPE').lower():
             return TagSet(['BIAS', 'CAL'], blocks=['SPECT'])
 
-   @astro_data_descriptor
+    @astro_data_descriptor
     def exposure_time(self):
         """
         Returns
