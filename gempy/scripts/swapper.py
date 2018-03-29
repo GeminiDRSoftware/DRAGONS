@@ -432,8 +432,10 @@ class Swap(object):
 
             if self.userpath:
                 head = fpath.split(self.userpath)[-1]
-            else:
-                head = split(self.GEM)[-1]
+            elif self.FITS:
+                head = fpath.split(self.FITS)[-1]
+            elif self.DRAGONS:
+                head = fpath.split(self.DRAGONS)[-1]                
 
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
             if match_lines:

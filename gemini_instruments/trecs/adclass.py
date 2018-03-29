@@ -72,7 +72,7 @@ class AstroDataTrecs(AstroDataGemini):
             wave_in_microns = self.phu.get('HRCENWL')
         else:
             return None
-        return gmu.convert_units('microns', wave_in_microns, output_units)
+        return gmu.convert_units('micrometers', wave_in_microns, output_units)
 
     @astro_data_descriptor
     def detector_x_offset(self):
