@@ -65,9 +65,11 @@ def _autocast(x, dtype):
     If appropriate perform type casting of value x to type dtype,
     otherwise return the original value x
     """
-    if dtype == float and isinstance(x, int):
+    if isinstance(x, int) and (dtype == float or (isinstance(dtype, tuple)
+                               and float in dtype and int not in dtype)):
         return float(x)
-    if dtype == int and isinstance(x, long):
+    if isinstance(x, long) and (dtype == int or (isinstance(dtype, tuple)
+                                                 and int in dtype)):
         return int(x)
     if isinstance(x, str):
         return oldStringType(x)
@@ -180,6 +182,8 @@ class Field(object):
                      method; this will be ignored if set to None.
         optional --- When False, Config validate() will fail if value is None
         """
+        if isinstance(dtype, list):
+            dtype = tuple(dtype)
         if isinstance(dtype, tuple):
             if any([x not in self.supportedTypes for x in dtype]):
                 raise ValueError("Unsupported Field dtype in %s" % repr(dtype))
@@ -189,6 +193,8 @@ class Field(object):
         # Use standard string type if we are given a future str
         if dtype == str:
             dtype = oldStringType
+        elif isinstance(dtype, tuple):
+            dtype = tuple(oldStringType if dt==str else dt for dt in dtype)
 
         source = getStackFrame()
         self._setup(doc=doc, dtype=dtype, default=default, check=check, optional=optional, source=source)

@@ -171,6 +171,9 @@ class ListField(Field):
     def __init__(self, doc, dtype, default=None, optional=False,
                  listCheck=None, itemCheck=None,
                  length=None, minLength=None, maxLength=None, single=False):
+
+        if isinstance(dtype, list):
+            dtype = tuple(dtype)
         if isinstance(dtype, tuple):
             if any([x not in self.supportedTypes for x in dtype]):
                 raise ValueError("Unsupported Field dtype in %s" % repr(dtype))
