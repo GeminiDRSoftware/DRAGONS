@@ -1,5 +1,7 @@
+from __future__ import print_function
+
 #
-#                                                            Gemini Observatory
+#                                                             Gemini Observatory
 #
 #                                                                        Dragons
 #                                                             gemini_instruments
@@ -7,11 +9,13 @@
 # ------------------------------------------------------------------------------
 __version__      = "0.1 (beta)"
 # ------------------------------------------------------------------------------
-
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
 from astrodata import returns_list
 from astrodata import TagSet
+
+from astrodata.fits import FitsLoader
+from astrodata.fits import FitsProvider
 
 from ..gemini import AstroDataGemini
 
@@ -23,6 +27,22 @@ class AstroDataTexes(AstroDataGemini):
         target_ra = 'TARGRA',
         target_dec = 'TARGDEC',
         )
+
+    @classmethod
+    def load(cls, source):
+        def texes_parser(hdu):
+            xnam, xver = hdu.header.get('EXTNAME'), hdu.header.get('EXTVER')
+            if 'RAWFRAME' in [xnam] and xver:
+                hdu.header.set('EXTNAME0', xnam, 'EXTNAME Orig (AstroData)',before='EXTNAME')
+                hdu.header.set('EXTNAME', 'SCI', 'Renamed by AstroData')
+            elif 'SCAN-FRAME' in [xnam] and xver:
+                hdu.header.set('EXTNAME0', xnam, 'EXTNAME Orig (AstroData)',before='EXTNAME')
+                hdu.header.set('EXTNAME', 'SCI', 'Renamed by AstroData')
+            elif xnam and not xver:
+                hdu.header.set('EXTVER', 1, 'Versioned by AstroData', after='EXTNAME')
+
+        return cls(FitsLoader(FitsProvider).load(source, extname_parser=texes_parser))
+
     @staticmethod
     def _matches_data(source):
         return source[0].header.get('INSTRUME', '') == 'TEXES'
@@ -33,12 +53,12 @@ class AstroDataTexes(AstroDataGemini):
 
     @astro_data_tag
     def _tag_image(self):
-        return TagSet(['IMAGE'])
+        return TagSet(['SPECT'])
 
     @astro_data_tag
     def _tag_dark(self):
         if 'dark' in self.phu.get('OBSTYPE').lower():
-            return TagSet(['DARK', 'CAL'], blocks=['IMAGE'])
+            return TagSet(['DARK', 'CAL'], blocks=['SPECT'])
 
     @astro_data_tag
     def _tag_flat(self):
@@ -48,4 +68,4 @@ class AstroDataTexes(AstroDataGemini):
     @astro_data_tag
     def _tag_bias(self):
         if 'bias' in self.phu.get('OBSTYPE').lower():
-            return TagSet(['BIAS', 'CAL'], blocks=['IMAGE'])
+            return TagSet(['BIAS', 'CAL'], blocks=['SPECT'])
