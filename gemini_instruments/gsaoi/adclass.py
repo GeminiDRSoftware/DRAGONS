@@ -241,7 +241,7 @@ class AstroDataGsaoi(AstroDataGemini):
 
         Returns
         -------
-        list/float
+        int/list
             Value at which the data become non-linear
         """
         # Column 3 gives the fraction of the saturation level at which
@@ -261,7 +261,8 @@ class AstroDataGsaoi(AstroDataGemini):
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the read noise of each extension, as a float or list of floats
+        Returns the read noise of each extension in electrons, as a float or
+        a list of floats
 
         Returns
         -------
@@ -301,7 +302,7 @@ class AstroDataGsaoi(AstroDataGemini):
 
         Returns
         -------
-        float/list
+        int/list
             saturation level in ADU
         """
         return self._look_up_arr_property('welldepth')

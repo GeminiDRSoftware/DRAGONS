@@ -476,7 +476,7 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        int
+        list/int
             Value at which the data become non-linear
         """
         # Element [3] gives the fraction of the saturation level at which
@@ -540,7 +540,7 @@ class AstroDataF2(AstroDataGemini):
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the read noise in electrons
+        Returns the read noise in electrons.
 
         Returns
         -------
@@ -559,7 +559,7 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float/list
+        int/float
             saturation level
         """
         well_depth = getattr(array_properties.get(self.read_mode(), None),
@@ -576,6 +576,12 @@ class AstroDataF2(AstroDataGemini):
         return saturation_adu
 
     # TODO: document why these are reversed
+    # Ruben Diaz thinks it has to do with the fact that the F2 long slit,
+    # and the N-S direction in imaging at PA0, are along the X detector axis.
+    # So if they wanted to keep the XOFFSET motion still referring to the
+    # motion you see in the detector, then it will be perpendicular respect
+    # to the designation in other instruments for which the slit is along the
+    # detector Y axis.  (March 2018)
     @astro_data_descriptor
     def telescope_x_offset(self):
         """

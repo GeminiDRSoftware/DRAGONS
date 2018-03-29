@@ -113,7 +113,7 @@ class AstroDataNifs(AstroDataGemini):
 
         Returns
         -------
-        list/int
+        int/list
             Level in ADU at which the non-linear regime starts.
         """
         saturation_level = self.saturation_level()
@@ -165,10 +165,11 @@ class AstroDataNifs(AstroDataGemini):
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the detector read noise, in electrons, for the observation.
+        Returns the detector read noise, in electrons.
         A lookup table is used.  The read noise depends on the gain setting
         and is affected by the number of coadds and non-destructive pairs.
         A list is returned unless called on a single-extension slice.
+
         Returns
         -------
         list/float
@@ -191,7 +192,7 @@ class AstroDataNifs(AstroDataGemini):
 
         Returns
         -------
-        list/int
+        int/list
             Saturation level in ADUs.
 
         """

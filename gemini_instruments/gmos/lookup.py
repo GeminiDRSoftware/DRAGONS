@@ -1498,39 +1498,72 @@ gmosPixelScales = {
     ("GMOS-S", "S10892") : 0.0800
 }
 
-# lists the valid ROIs for each ROI name
-# The ROIs here are given in physical (ie unbinned) pixels, and are 1- based.
-# We provide a list of rois for each name as the definitions get changed once
-# once in a while and we don't change the name.
-##M The addition of the Hamamatsu values may actually be a bit of a hack
+
+# Associate ROI names with the standard ROIs sections
+# The ROIs here are given in unbinned pixels, in Python section format,
+# meaning (y1, y2, x1, x2) and 0-indexed.
 # Format is: { "ROI Name" : [(list of), (rois for), (this ROI name)]}
 gmosRoiSettings = {
-    "Full Frame" : [
+    "Full Frame": [
         # EEV / e2vDD CCDs
-        (1, 6144, 1, 4608),
-        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?  Looks okay.
-        (1, 6144, 1, 4224)
-        ],
-    "CCD2" :[
+        (0, 4608, 0, 6144),
+        # Hamamatsu
+        (0, 4224, 0, 6144),
+    ],
+    "CCD2": [
         # EEV / e2vDD CCDs
-        (2049, 4096, 1, 4608),
-        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?  Looks okay.
-        (2049, 4096, 1, 4224)
+        (0, 4608, 2048, 4096),
+        # Hamamatsu
+        (0, 4224, 2048, 4096),
     ],
-    "Central Spectrum" : [
-        # This got adjusted by 1 pixel sometime circa 2010
-        (1, 6144, 1793, 2816),
-        (1, 6144, 1792, 2815),
-        # Hamamatsu GMOS-S  !!KL!! and GMOS-N?
-        (1, 6144, 1625, 2648)
+    "Central Spectrum": [
+        # EEV / e2vDD CCDs (adjustment circa 2010)
+        (1792, 2816, 0, 6144),
+        (1791, 2815, 0, 6144),
+        # Hamamatsu
+        (1624, 2648, 0, 6144),
     ],
-    "Central Stamp" : [
-        # EEV and e2vDD CCDs
-        (2923, 3222, 2155, 2454),
-        # GMOS-S Hamamatsu CCDs  !!KL!! and GMOS-N?  Looks okay.
-        (2923, 3222, 1987, 2286)
-    ]
+    "Central Stamp": [
+        # EEV / e2vDD CCDs
+        (2154, 2454, 2922, 3222),
+        # Hamamatsu
+        (1986, 2286, 2922, 3222),
+    ],
 }
+
+# # lists the valid ROIs for each ROI name
+# # The ROIs here are given in physical (ie unbinned) pixels, and are 1- based.
+# # We provide a list of rois for each name as the definitions get changed once
+# # once in a while and we don't change the name.
+# ##M The addition of the Hamamatsu values may actually be a bit of a hack
+# # Format is: { "ROI Name" : [(list of), (rois for), (this ROI name)]}
+# gmosRoiSettings = {
+#     "Full Frame" : [
+#         # EEV / e2vDD CCDs
+#         (1, 6144, 1, 4608),
+#         # Hamamatsu GMOS-S  !!KL!! and GMOS-N?  Looks okay.
+#         (1, 6144, 1, 4224)
+#         ],
+#     "CCD2" :[
+#         # EEV / e2vDD CCDs
+#         (2049, 4096, 1, 4608),
+#         # Hamamatsu GMOS-S  !!KL!! and GMOS-N?  Looks okay.
+#         (2049, 4096, 1, 4224)
+#     ],
+#     "Central Spectrum" : [
+#         # This got adjusted by 1 pixel sometime circa 2010
+#         (1, 6144, 1793, 2816),
+#         (1, 6144, 1792, 2815),
+#         # Hamamatsu GMOS-S  !!KL!! and GMOS-N?
+#         (1, 6144, 1625, 2648)
+#     ],
+#     "Central Stamp" : [
+#         # EEV and e2vDD CCDs
+#         (2923, 3222, 2155, 2454),
+#         # GMOS-S Hamamatsu CCDs  !!KL!! and GMOS-N?  Looks okay.
+#         (2923, 3222, 1987, 2286)
+#     ]
+# }
 
 # GMOS read modes. Dict for EEV previously defined in GMOS_Descriptors.py
 # for descriptor read_mode().

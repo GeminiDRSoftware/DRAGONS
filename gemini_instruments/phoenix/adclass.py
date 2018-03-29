@@ -21,12 +21,12 @@ class AstroDataPhoenix(AstroDataGemini):
     @astro_data_descriptor
     def dec(self):
         """
-        Returns the Declination of the center of the field
+        Returns the Declination of the center of the field, in degrees.
 
         Returns
         -------
         float
-            right ascension in degrees
+            declination in degrees
         """
         return Angle(self.phu.get('DEC', 0), unit=u.degree).degree
 
@@ -58,7 +58,7 @@ class AstroDataPhoenix(AstroDataGemini):
     @astro_data_descriptor
     def ra(self):
         """
-        Returns the Right Ascension of the center of the field
+        Returns the Right Ascension of the center of the field, in degrees.
 
         Returns
         -------

@@ -2,37 +2,43 @@ from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSe
 from ..gemini import AstroDataGemini
 from .. import gmu
 
-class AstroDataGraces(AstroDataGemini):
+class AstroDataFlamingos(AstroDataGemini):
 
     __keyword_dict = dict(detector = 'DETECTOR',
+                          filter_name = 'FILTER',
+                          disperser = 'GRISM',
+                          exposure_time = 'EXP_TIME',
                           )
 
     @staticmethod
     def _matches_data(source):
-        return source[0].header.get('INSTRUME', '').upper() == 'GRACES'
+        return source[0].header.get('INSTRUME', '').upper() == 'FLAMINGOS'
 
     @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(['GRACES'])
+        return TagSet(['FLAMINGOS'])
 
     @astro_data_tag
     def _tag_spect(self):
-        return TagSet(['SPECT'])
-
-    @astro_data_tag
-    def _tag_arc(self):
-        if self.phu.get('OBSTYPE') == 'ARC':
-            return TagSet(['ARC', 'CAL'])
+        if self.phu.get('BIAS') == 1.0:
+            return TagSet(['IMAGE'])
+        else:
+            return TagSet(['SPECT'])
 
     @astro_data_tag
     def _tag_flat(self):
-        if self.phu.get('OBSTYPE') == 'FLAT':
+        if 'flat' in self.phu.get('OBJECT').lower():
             return TagSet(['FLAT', 'CAL'])
 
     @astro_data_tag
-    def _tag_bias(self):
-        if self.phu.get('OBSTYPE') == 'BIAS':
-            return TagSet(['BIAS', 'CAL'])
+    def _tag_twilight(self):
+        if 'twilight' in self.phu.get('OBJECT').lower():
+            return TagSet(['TWILIGHT', 'CAL'])    
+
+    @astro_data_tag
+    def _tag_dark(self):
+        if 'dark' in self.phu.get('OBJECT').lower():
+            return TagSet(['DARK', 'CAL'])
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
@@ -71,7 +77,7 @@ class AstroDataGraces(AstroDataGemini):
             # return the central wavelength in the default units of meters.
             output_units = "meters"
 
-        return gmu.convert_units('micrometers', 0.7, output_units)
+        return gmu.convert_units('micrometers', 1.5, output_units)
 
     @astro_data_descriptor
     def dec(self):
@@ -95,23 +101,44 @@ class AstroDataGraces(AstroDataGemini):
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         """
-        Returns the name of the disperser.  For GRACES, this is always
-        "GRACES".
+        Returns the name of the disperser.
 
         Parameters
         ----------
-        stripID : bool
+        stripID : <bool>
             Does nothing.
-        pretty : bool
+
+        pretty : <bool>
             Also does nothing.
 
         Returns
         -------
-        str
-            The name of the disperser, "GRACES".
+        <str>:
+            Name of the disperser.
 
         """
-        return 'GRACES'
+        dispr = self.phu.get(self._keyword_for('disperser'))
+        if 'open' not in dispr and 'dark' not in dispr:
+            return dispr
+        else:
+            return None
+        return
+
+    @astro_data_descriptor
+    def exposure_time(self):
+        """
+        Returns the exposure time in seconds.
+
+        Returns
+        -------
+        float
+            Exposure time.
+        """
+        return self.phu.get(self._keyword_for('exposure_time'), None)
+
+    @astro_data_descriptor
+    def filter_name(self, stripID=False, pretty=False):
+        return self.phu.get(self._keyword_for('filter_name'))    
 
     @astro_data_descriptor
     def ra(self):

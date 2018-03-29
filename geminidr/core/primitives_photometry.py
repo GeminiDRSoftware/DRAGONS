@@ -268,9 +268,9 @@ def _calculate_magnitudes(refcat, formulae):
                                  dtype='f4', unit='mag'))
         refcat.add_column(Column(data=dummy_data, name='filtermag_err',
                                  dtype='f4', unit='mag'))
-    hdr = refcat.meta['header']
-    add_header_to_table(refcat)
-    refcat.meta['header'] = hdr
+    # hdr = refcat.meta['header']
+    # hdr.update(add_header_to_table(refcat))
+    # refcat.meta['header'] = hdr
     if not formulae:
         return refcat
 

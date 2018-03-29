@@ -214,8 +214,8 @@ class AstroDataGnirs(AstroDataGemini):
         if self.phu.get('ACQMIR') == 'In':
             return 'MIRROR'
 
-        grating = self.grating(stripID=stripID, pretty=pretty)
-        prism = self.prism(stripID=stripID, pretty=pretty)
+        grating = self._grating(stripID=stripID, pretty=pretty)
+        prism = self._prism(stripID=stripID, pretty=pretty)
         if prism.startswith('MIR'):
             return grating
         else:
@@ -281,37 +281,6 @@ class AstroDataGnirs(AstroDataGemini):
 
         return getattr(detector_properties.get((read_mode, well_depth)),
                        'gain', None)
-
-    @astro_data_descriptor
-    def grating(self, stripID=False, pretty=False):
-        """
-        Returns the name of the grating used for the observation.
-        The component ID can be removed with either 'stripID' or 'pretty'
-        set to True.
-
-        Parameters
-        ----------
-        stripID : bool
-            If True, removes the component ID and returns only the name of
-            the disperser.
-        pretty : bool
-            Same as for stripID.  Pretty here does not do anything more.
-
-        Returns
-        -------
-        str
-            The name of the grating with or without the component ID.
-        """
-        grating = self.phu.get('GRATING')
-        try:
-            match = re.match("([\d/m]+)[A-Z]*(_G)(\d+)", grating)
-            ret_grating = "{}{}{}".format(*match.groups())
-        except (TypeError, AttributeError):
-            ret_grating = grating
-
-        if stripID or pretty:
-            return gmu.removeComponentID(ret_grating)
-        return ret_grating
 
     @astro_data_descriptor
     def group_id(self):
@@ -384,7 +353,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         Returns
         -------
-        int
+        int/list
             Level in ADU at which the non-linear regime starts.
 
         """
@@ -439,35 +408,6 @@ class AstroDataGnirs(AstroDataGemini):
             except TypeError:
                 return None
 
-    @astro_data_descriptor
-    def prism(self, stripID=False, pretty=False):
-        """
-        Returns the name of the prism.  The component ID can be removed
-        with either 'stripID' or 'pretty' set to True.
-
-        Parameters
-        ----------
-        stripID : bool
-            If True, removes the component ID and returns only the name of
-            the prism.
-        pretty : bool
-            Same as for stripID.  Pretty here does not do anything more.
-
-        Returns
-        -------
-        str
-            The name of the prism with or without the component ID.
-        """
-        prism = self.phu.get('PRISM')
-        try:
-            match = re.match("[LBSR]*\+*([A-Z]*_G\d+)", prism)
-            ret_prism = match.group(1)
-        except (TypeError, AttributeError):  # prism=None, no match
-            return None
-
-        if stripID or pretty:
-            ret_prism = gmu.removeComponentID(ret_prism)
-        return ret_prism
 
     @astro_data_descriptor
     def ra(self):
@@ -482,6 +422,12 @@ class AstroDataGnirs(AstroDataGemini):
         float
             Right Ascension of the target in degrees.
         """
+        # In general, the GNIRS WCS is the way to go. But sometimes the DC
+        # has a bit of a senior moment and the WCS is miles off (presumably
+        # still has values from the previous observation or something.
+        # Who knows.  So we do a sanity check on it and use the target values
+        # if it's messed up
+
         wcs_ra = self.wcs_ra()
         tgt_ra = self.target_ra(offset=True, icrs=True)
         delta = abs(wcs_ra - tgt_ra)
@@ -508,13 +454,15 @@ class AstroDataGnirs(AstroDataGemini):
         Returns
         -------
         float
-            Declination of the target in degrees.
+            Declination of the center of the field in degrees.
 
         """
         # In general, the GNIRS WCS is the way to go. But sometimes the DC
         # has a bit of a senior moment and the WCS is miles off (presumably
-        # still has values from the previous observation or something. Who knows.
-        # So we do a sanity check on it and use the target values if it's messed up
+        # still has values from the previous observation or something.
+        # Who knows.  So we do a sanity check on it and use the target values
+        # if it's messed up
+
         wcs_dec = self.wcs_dec()
         tgt_dec = self.target_dec(offset=True, icrs=True)
         delta = abs(wcs_dec - tgt_dec)
@@ -546,7 +494,7 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the detector read noise, in electrons, for the observation.
+        Returns the detector read noise, in electrons.
         A lookup table indexed on read_mode and well_depth_setting is
         used to retrieve the read noise.
 
@@ -577,7 +525,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         Returns
         -------
-        int
+        int/list
             Saturation level in ADUs.
         """
         gain = self.gain()
@@ -645,3 +593,65 @@ class AstroDataGnirs(AstroDataGemini):
             return "Deep"
         else:
             return "Unknown"
+
+    # --------------------------------------
+    # Private methods
+    def _grating(self, stripID=False, pretty=False):
+        """
+        Returns the name of the grating used for the observation.
+        The component ID can be removed with either 'stripID' or 'pretty'
+        set to True.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the disperser.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
+
+        Returns
+        -------
+        str
+            The name of the grating with or without the component ID.
+        """
+        grating = self.phu.get('GRATING')
+        try:
+            match = re.match("([\d/m]+)[A-Z]*(_G)(\d+)", grating)
+            ret_grating = "{}{}{}".format(*match.groups())
+        except (TypeError, AttributeError):
+            ret_grating = grating
+
+        if stripID or pretty:
+            return gmu.removeComponentID(ret_grating)
+        return ret_grating
+
+
+    def _prism(self, stripID=False, pretty=False):
+        """
+        Returns the name of the prism.  The component ID can be removed
+        with either 'stripID' or 'pretty' set to True.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the prism.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
+
+        Returns
+        -------
+        str
+            The name of the prism with or without the component ID.
+        """
+        prism = self.phu.get('PRISM')
+        try:
+            match = re.match("[LBSR]*\+*([A-Z]*_G\d+)", prism)
+            ret_prism = match.group(1)
+        except (TypeError, AttributeError):  # prism=None, no match
+            return None
+
+        if stripID or pretty:
+            ret_prism = gmu.removeComponentID(ret_prism)
+        return ret_prism
