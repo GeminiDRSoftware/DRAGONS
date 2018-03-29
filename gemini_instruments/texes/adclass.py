@@ -26,6 +26,7 @@ class AstroDataTexes(AstroDataGemini):
         dec = 'DEC',
         target_ra = 'TARGRA',
         target_dec = 'TARGDEC',
+        exposure_time = 'OBSTIME',
         )
 
     @classmethod
@@ -33,13 +34,16 @@ class AstroDataTexes(AstroDataGemini):
         def texes_parser(hdu):
             xnam, xver = hdu.header.get('EXTNAME'), hdu.header.get('EXTVER')
             if 'RAWFRAME' in [xnam] and xver:
-                hdu.header.set('EXTNAME0', xnam, 'EXTNAME Orig (AstroData)',before='EXTNAME')
+                hdu.header.set('EXTNAME0', xnam,
+                               'EXTNAME Orig (AstroData)',before='EXTNAME')
                 hdu.header.set('EXTNAME', 'SCI', 'Renamed by AstroData')
             elif 'SCAN-FRAME' in [xnam] and xver:
-                hdu.header.set('EXTNAME0', xnam, 'EXTNAME Orig (AstroData)',before='EXTNAME')
+                hdu.header.set('EXTNAME0', xnam,
+                               'EXTNAME Orig (AstroData)',before='EXTNAME')
                 hdu.header.set('EXTNAME', 'SCI', 'Renamed by AstroData')
             elif xnam and not xver:
-                hdu.header.set('EXTVER', 1, 'Versioned by AstroData', after='EXTNAME')
+                hdu.header.set('EXTVER', 1, 'Versioned by AstroData',
+                               after='EXTNAME')
 
         return cls(FitsLoader(FitsProvider).load(source, extname_parser=texes_parser))
 
@@ -69,3 +73,15 @@ class AstroDataTexes(AstroDataGemini):
     def _tag_bias(self):
         if 'bias' in self.phu.get('OBSTYPE').lower():
             return TagSet(['BIAS', 'CAL'], blocks=['SPECT'])
+
+   @astro_data_descriptor
+    def exposure_time(self):
+        """
+        Returns
+        -------
+        exposure_time: <float>
+            Exposure time.
+
+        """
+        return self.phu.get(self._keyword_for('exposure_time'))
+        
