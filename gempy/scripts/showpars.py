@@ -37,7 +37,7 @@ def showpars(pobj, primname, tags):
         if i.startswith("_"):
             continue
 
-    pars = getattr(pobj, primname)
+    pars = pobj[primname]
     print("Dataset tagged as {}".format(tags))
     print("Settable parameters on '{}':".format(primname))
     print("="*40)
