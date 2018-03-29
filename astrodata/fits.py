@@ -1481,7 +1481,10 @@ class FitsLoader(object):
             if other in seen:
                 continue
             name = other.header.get('EXTNAME')
-            added = provider.append(other, name=name, reset_ver=False)
+            try:
+                added = provider.append(other, name=name, reset_ver=False)
+            except ValueError as e:
+                print(str(e)+". Discarding "+name)
 
         return provider
 
