@@ -204,12 +204,47 @@ Let's look into an example.
 
 Data Quality Plane
 ==================
+The NDData ``mask`` stores the data quality plane.  The simplest form is a
+True/False array of the same size at the pixel array.  In Astrodata we favor
+a bit array that allows for additional information about why the pixel is being
+masked.   For example at Gemini here is our bit mapping for bad pixels.
 
-.. todo::
-    This needs to be introduced here.  There's a section later on how
-    to use it that needs to be after numpy and scipy are introduced.
-    Here, it's about how to access it, .mask, how it is propagated
-    automatically (binary operations), and what the value means.
++---------------+-------+
+| Meaning       | Value |
++===============+=======+
+| Bad pixel     |   1   |
++---------------+-------+
+| Non Linear    |   2   |
++---------------+-------+
+| Saturated     |   4   |
++---------------+-------+
+| Cosmic Ray    |   8   |
++---------------+-------+
+| No Data       |  16   |
++---------------+-------+
+| Overlap       |  32   |
++---------------+-------+
+| Unilluminated |  64   |
++---------------+-------+
+
+(These definitions are located in `geminidr.lookups.DQ_definitions`.)
+
+So a pixel marked 10 in the mask, would be a "non-linear" "cosmic ray".  The
+``AstroData`` mask are propagated with bitwise-OR operation.  For example, let
+say that we are stacking frames. A pixel is set as bad (value 1)
+in one frame, saturated in another (value 4), fine is all the rest of
+the frames (value 0).  The mask of the resulting stack will be assigned
+a value of 5 for that pixel.
+
+These bitmasks will work like any other numpy True/False mask.  There is a
+usage example below using the mask.
+
+The mask can be accessed as follow::
+
+    >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
+    >>> ad.info()
+
+    >>> ad[2].mask
 
 
 Display
@@ -332,8 +367,20 @@ array.  Here, the file is a raw dataset, fresh off the telescope.  No
 operations has been done on the pixels yet.  The data type of Gemini raw
 datasets is always "Unsigned integer (0 to 65535)", ``uint16``.
 
-.. todo::
-    Add the warning about uint16 math here.
+.. warning::
+    Beware that doing arithmetic on ``uint16`` can lead to unexpected
+    results.  This is a NumPy behavior.  If the result of an operation
+    is higher than the range allowed by ``uint16``, the output value will
+    be "wrong".  The data type will not be modified to accommodate the large
+    value.  A workaround, and a safety net, is to multiply the array by
+    ``1.0`` to force the conversion to a ``float64``. ::
+
+        >>> a = np.array([65535], dtype='uint16')
+        >>> a + a
+        array([65534], dtype=uint16)
+        >>> 1.0*a + a
+        array([ 131070.])
+
 
 
 Simple Numpy Statistics
@@ -453,10 +500,63 @@ three big projects we have featured in this section.
 
 Using the Astrodata Data Quality Plane
 ======================================
+Let us look at an example where the use of the Astrodata mask is
+necessary to get correct statistics.  A GMOS imaging frame has large sections
+of unilluminated pixels; the edges are not illuminated and there are two
+bands between the three CCDs that represent the physical gap between the
+CCDs.  Let us have a look at the pixels to have a better sense of the
+data::
 
-.. todo::
-   Write examples that use the mask.  Eg. put mask plan in numpy mask and
-   do statistics.
+    >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
+    >>> import imexam
+    >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
+
+    >>> ds9.view(ad[0].data)
+    >>> ds9.scale('zscale')
+
+See how the right and left portions of the frame are not exposed to the sky,
+and the 45 degree angle cuts of the four corners.  The chip gaps too.
+If we wanted to do statistics on the whole frames, we certainly would not want
+to include those unilluminated areas.  We would want to mask them out.
+
+Let us have a look at the mask associated with that image::
+
+    >>> ds9.view(ad[0].mask)
+
+The bad sections are all white (pixel value > 0).  There are even some
+illuminated pixels that have been marked as bad for a reason or another.
+
+Let us use that mask to reject the pixels with no or bad information and
+do calculations only on the good pixels.  For the sake of simplicity we will
+just do an average.  This is just illustrative.  We show various ways to
+accomplish the task; choose the one that best suits your need or that you
+find most readable.
+
+::
+
+    >>> import numpy as np
+
+    >>> # For clarity...
+    >>> data = ad[0].data
+    >>> mask = ad[0].mask
+
+    >>> # Reject all flagged pixels and calculate the mean
+    >>> np.mean(data[mask == 0])
+    >>> np.ma.masked_array(data, mask).mean()
+
+    >>> # Reject only the pixels flagged "no_data" (bit 16)
+    >>> np.mean(data[(mask & 16) == 0])
+    >>> np.ma.masked_array(data, mask & 16).mean()
+    >>> np.ma.masked_where(mask & 16, data).mean()
+
+The "long" form with ``np.ma.masked_*`` is useful if you are planning to do
+more than one operation on the masked array.  For example::
+
+    >>> clean_data = np.ma.masked_array(data, mask)
+    >>> clean_data.mean()
+    >>> np.ma.median(clean_data)
+    >>> clean_data.max()
+
 
 Manipulate Data Sections
 ========================
@@ -624,11 +724,6 @@ In the example below we "collapse" the cube along the wavelenth axis to
 create a "white light" image and display it.  Then we plot a 1D spectrum
 from a given (x,y) position.
 
-.. todo::
-    Get another cube from my stuff to replace gmosifu_cube.fits. This
-    one is full of cosmic rays and bad stuff that makes the white light
-    image looks awful.  I have better cubes.  (Don't use a final cube.)
-
 ::
 
     >>> import imexam
@@ -642,9 +737,10 @@ from a given (x,y) position.
     >>> # Sum along the wavelength axis to create a "white light" image
     >>> summed_image = adcube[0].data.sum(axis=0)
     >>> ds9.view(summed_image)
+    >>> ds9.scale('minmax')
 
-    >>> # Plot a 1-D spectrum from the spatial position (7,30).
-    >>> plt.plot(adcube[0].data[:,29,6])
+    >>> # Plot a 1-D spectrum from the spatial position (14,25).
+    >>> plt.plot(adcube[0].data[:,24,13])
     >>> plt.show()   # might be needed, depends on matplotlibrc interactive setting
 
 
@@ -666,9 +762,9 @@ It truly requires to pay attention.
     >>> cube_wcs = wcs.WCS(adcube[0].hdr)
 
     >>> # Then get an array of the coordinates for that spectrum in
-    >>> # pixel coordinates, at position (7,30)
+    >>> # pixel coordinates, at position (14,25)
     >>> length_wlen_axis = adcube[0].data.shape[0]
-    >>> spectrum_pix_coord = np.array([ [6,29,i] for i in range(length_wlen_axis) ])
+    >>> spectrum_pix_coord = np.array([ [13,24,i] for i in range(length_wlen_axis) ])
 
     >>> # Transform pixel coordinates in to Angstroms and keep only
     >>> # the wavelength axis.
@@ -676,7 +772,7 @@ It truly requires to pay attention.
 
     >>> # Finally plot the spectrum at position (7,30)
     >>> plt.clf()  # just to clear the plot
-    >>> plt.plot(wavelengths, adcube[0].data[:,29,6])
+    >>> plt.plot(wavelengths, adcube[0].data[:,24,13])
     >>> plt.show()
 
 
