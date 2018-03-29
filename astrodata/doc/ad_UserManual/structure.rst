@@ -6,8 +6,11 @@
 The AstroData Object
 ********************
 
+
+
 .. todo::
  (based on nddata, with variance and mask. how tables are stored, how headers
  are stored, etc.  Try to be as MEF-agnostic as possible.  there's another
- section for the MEF mapping.)  iomef.rst refers to this chapter twice, if not
+ section for the MEF mapping.)  Also a word about the memory mapping.
+ iomef.rst refers to this chapter twice, if not
  written, those references will need to be removed.
