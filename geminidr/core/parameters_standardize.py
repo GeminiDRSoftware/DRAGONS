@@ -40,7 +40,6 @@ class standardizeStructureConfig(addMDFConfig):
         self.suffix = "_structureStandardized"
 
 class validateDataConfig(config.Config):
-    fake_param = config.Field("Totally made up!", int, 7)
     suffix = config.Field("Filename suffix", str, "_dataValidated")
     num_exts = config.ListField("Allowed number of extensions", int, 1, optional=True, single=True)
     repair = config.Field("Repair data?", bool, False)
