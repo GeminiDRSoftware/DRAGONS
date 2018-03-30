@@ -6,8 +6,8 @@ class addToListConfig(config.Config):
     purpose = config.Field("Purpose of list", str, None, optional=True)
 
 class getListConfig(config.Config):
-    max_frames = config.RangeField("Maximum number of frames", int, None, min=1, optional=True)
     purpose = config.Field("Purpose of list", str, None, optional=True)
+    max_frames = config.RangeField("Maximum number of frames", int, None, min=1, optional=True)
 
 class rejectInputsConfig(config.Config):
     at_start = config.RangeField("Number of files to remove from start of list", int, 0, min=0)
@@ -30,5 +30,5 @@ class writeOutputsConfig(config.Config):
     overwrite = config.Field("Overwrite exsting files?", bool, True)
     outfilename = config.Field("Output filename", str, None, optional=True)
     prefix = config.Field("Prefix for output files", str, '')
-    strip = config.Field("Strip prefix/suffix from filenames?", bool, False)
     suffix = config.Field("Suffix for output files", str, '')
+    strip = config.Field("Strip prefix/suffix from filenames?", bool, False)

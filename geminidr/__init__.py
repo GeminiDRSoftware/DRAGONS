@@ -196,7 +196,7 @@ class PrimitivesBASE(object):
                         for field in new_cls():
                             self.parameters[k]._history[field] = []
                         self.parameters[k].update(**dict(new_cls().items()))
-                        new_cls.setDefaults.__func__(self.parameters[k])
+                        cls.setDefaults.__func__(self.parameters[k])
 
     def _inherit_params(self, params, primname, use_original_suffix=True):
         """Create a dict of params for a primitive from a larger dict,

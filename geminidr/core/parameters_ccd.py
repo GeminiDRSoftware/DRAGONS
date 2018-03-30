@@ -21,7 +21,7 @@ class subtractOverscanConfig(overscanCorrectConfig):
     function = config.ChoiceField("Type of function", str,
                                   allowed = {"spline": "Cublic spline",
                                              "poly":   "Polynomial",
-                                             "none": "Row-by-row"},
+                                             "none":   "Row-by-row"},
                                   default="spline", optional=True)
     nbiascontam = config.RangeField("Number of columns to exclude from averaging",
                                int, None, min=0, optional=True)

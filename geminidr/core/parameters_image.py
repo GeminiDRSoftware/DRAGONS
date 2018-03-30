@@ -14,11 +14,11 @@ class makeFringeFrameConfig(config.Config):
 
 class ScaleByIntensityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scaled")
+    section = config.Field("Statistics section", str, None, optional=True)
     scaling = config.ChoiceField("Statistic for scaling", str,
                                  allowed = {"mean": "Scale by mean",
                                             "median": "Scale by median"},
                                  default = "mean")
-    section = config.Field("Statistics section", str, None, optional=True)
     separate_ext = config.Field("Scale extensions separately?", bool, False)
 
 class scaleFringeToScienceConfig(config.Config):
