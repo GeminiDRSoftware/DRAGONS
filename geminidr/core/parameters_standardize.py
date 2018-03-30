@@ -12,7 +12,6 @@ class addDQConfig(addIllumMaskToDQConfig):
     latency = config.Field("Apply latency for saturated pixels?", bool, False)
 
     def setDefaults(self):
-        print "HELLO"
         self.suffix = "_dqAdded"
 
 class addMDFConfig(config.Config):
