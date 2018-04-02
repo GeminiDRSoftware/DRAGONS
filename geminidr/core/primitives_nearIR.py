@@ -93,7 +93,7 @@ class NearIR(PrimitivesBASE):
 
         # Get the stacked flat and dark; these are single-element lists
         try:
-            flat = self.streams['lampOn'][0]
+            flat = adinputs[0]
         except (KeyError, TypeError):
             raise IOError("A SET OF FLATS IS REQUIRED INPUT")
         try:
