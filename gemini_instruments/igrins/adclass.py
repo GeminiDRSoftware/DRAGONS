@@ -23,8 +23,8 @@ class AstroDataIgrins(AstroDataGemini):
         detector_name = 'DETECTOR',
         observation_class = 'OBJTYPE',
         observation_type = 'OBJTYPE',
-        ra = 'TELRA',
-        dec = 'TELDEC',
+        ra = 'OBJRA',
+        dec = 'OBJDEC',
         slit_x_center = 'SLIT_CX',
         slit_y_center = 'SLIT_CY',
         slit_width = 'SLIT_WID',
@@ -145,6 +145,7 @@ class AstroDataIgrins(AstroDataGemini):
             observation class.
 
         """
+        oclass = None
         otype = self.phu.get(self._keyword_for('observation_class'))
 
         if 'S' in self.wavelength_band():

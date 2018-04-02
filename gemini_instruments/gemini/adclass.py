@@ -1,11 +1,26 @@
+#
+#                                                            Gemini Observatory
+#
+#                                                                        Dragons
+#                                                             gemini_instruments
+#                                                              gemini.adclass.py
+# ------------------------------------------------------------------------------
+__version__      = "0.1 (beta)"
+# ------------------------------------------------------------------------------
 import re
 import math
 import datetime
 import dateutil.parser
 import warnings
 
-from astropy.wcs import WCS, FITSFixedWarning
-from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
+from astropy.wcs import WCS
+from astropy.wcs import FITSFixedWarning
+from astropy.wcs._wcs import InconsistentAxisTypesError
+
+from astrodata import AstroDataFits
+from astrodata import astro_data_tag
+from astrodata import astro_data_descriptor
+from astrodata import TagSet
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 from ..common import section_to_tuple
@@ -14,6 +29,7 @@ from ..common import section_to_tuple
 #       won't work with this implementation
 from .. import gmu
 
+# ------------------------------------------------------------------------------
 # TODO: Some of these should go to AstroDataFITS
 gemini_keyword_names = dict(
     airmass = 'AIRMASS',
@@ -93,6 +109,7 @@ gemini_keyword_names = dict(
     telescope_y_offset = 'YOFFSET',
 )
 
+# ------------------------------------------------------------------------------
 class AstroDataGemini(AstroDataFits):
     __keyword_dict = gemini_keyword_names
 
@@ -1822,7 +1839,7 @@ class AstroDataGemini(AstroDataFits):
         # Return None if the WCS isn't sky coordinates
         try:
             return self._get_wcs_coords()[0]
-        except AssertionError:
+        except InconsistentAxisTypesError:
             return None
 
     @astro_data_descriptor
@@ -1839,7 +1856,7 @@ class AstroDataGemini(AstroDataFits):
         # Return None if the WCS isn't sky coordinates
         try:
             return self._get_wcs_coords()[1]
-        except AssertionError:
+        except InconsistentAxisTypesError:
             return None
 
     @astro_data_descriptor
