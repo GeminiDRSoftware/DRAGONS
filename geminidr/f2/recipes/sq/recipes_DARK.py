@@ -1,9 +1,9 @@
 """
-Recipes available to data with tags 'NIRI', 'CAL', 'DARK'].
+Recipes available to data with tags 'F2', 'CAL', 'DARK'].
 Default is "makeProcessedDark".
 """
 
-recipe_tags = set(['NIRI', 'CAL', 'DARK'])
+recipe_tags = set(['F2', 'CAL', 'DARK'])
 
 def makeProcessedDark(p):
     """
