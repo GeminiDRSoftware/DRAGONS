@@ -206,7 +206,7 @@ class ConfigObject(object):
 
         cp = SafeConfigParser()
 
-        cp.read(list(map(os.path.expanduser, filenames)))
+        cp.read(list(map(os.path.expanduser, (filenames,))))
 
         translate = Converter(self._conv.copy(), cp)
 
