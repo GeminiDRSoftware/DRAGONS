@@ -240,7 +240,7 @@ class ListField(Field):
             at = getCallStack()
 
         if value is not None:
-            if not self.single or isinstance(value, collections.Iterable):
+            if not self.single or isinstance(value, (list, tuple)):
                 value = List(instance, self, value, at, label)
             else:
                 value = _autocast(value, self.dtype)
