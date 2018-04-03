@@ -73,13 +73,15 @@ def _autocast(x, dtype):
     if isinstance(x, long) and (dtype == int or (isinstance(dtype, tuple)
                                                  and int in dtype)):
         return int(x)
+    #if isinstance(x, str) or isinstance(x, oldStringType):
+    #    for type in (oldStringType, int, float, bool):
+    #        if dtype == type or (isinstance(dtype, tuple) and type in dtype):
+    #            try:
+    #                return type(x)
+    #            except ValueError:  # Carry on and try a different coercion
+    #                pass
     if isinstance(x, str):
-        for type in (oldStringType, int, float, bool):
-            if dtype == type or (isinstance(dtype, tuple) and type in dtype):
-                try:
-                    return type(x)
-                except ValueError:  # Carry on and try a different coercion
-                    pass
+        return oldStringType(x)
     return x
 
 
@@ -469,27 +471,27 @@ class Config(with_metaclass(ConfigMeta, object)):
     def values(self):
         """!Return the list of field values
         """
-        return [self._storage[k] for k in self.keys()]
+        return self.toDict().values()
 
     def items(self):
         """!Return the list of (field name, field value) pairs
         """
-        return [(k, self._storage[k]) for k in self.keys()]
+        return self.toDict().items()
 
     def iteritems(self):
         """!Iterate over (field name, field value) pairs
         """
-        return iter(self.items())
+        return self.toDict().iteritems()
 
     def itervalues(self):
         """!Iterate over field values
         """
-        return iter(self.values())
+        return self.toDict().itervalues()
 
     def iterkeys(self):
         """!Iterate over field names
         """
-        return iter(self.keys())
+        return self.toDict().iterkeys()
 
     def iterfields(self):
         """!Iterate over field objects
