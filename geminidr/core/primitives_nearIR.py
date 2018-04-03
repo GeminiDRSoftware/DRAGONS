@@ -82,6 +82,7 @@ class NearIR(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         # To exclude hot pixels from stddev calculation
         DARK_CLIP_THRESH = 5.0
@@ -134,6 +135,7 @@ class NearIR(PrimitivesBASE):
 
         flat.update_filename(suffix="_bpm", strip=True)
         flat.phu.set('OBJECT', 'BPM')
+        gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
         return [flat]
 
     def lampOnLampOff(self, adinputs=None, **params):

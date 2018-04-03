@@ -31,6 +31,7 @@ timestamp_keys = {
     "extract1DSpectra": "EXTRACT",
     "findAcquisitionSlits": "FINDACQS",
     "flatCorrect": "FLATCORR",
+    "makeBPM": "BPMASK",
     "makeFlat": "MAKEFLAT",
     "makeFringeFrame": "FRINGE",
     "makeIRAFCompatible": "IRAFCOMP",
