@@ -7,6 +7,7 @@ class ParametersCCD(ParametersBASE):
     biasCorrect = {
         "suffix"            : "_biasCorrected",
         "bias"              : None,
+        "do_bias"           : True,
     }
     overscanCorrect = {
         "suffix"            : "_overscanCorrected",

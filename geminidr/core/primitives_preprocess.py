@@ -381,6 +381,10 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
+        if not params["do_dark"]:
+            log.warning("Dark correction has been turned off.")
+            return adinputs
+
         dark_list = params["dark"]
         if dark_list is None:
             self.getProcessedDark(refresh=False)
@@ -493,6 +497,10 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        if not params["do_flat"]:
+            log.warning("Flat correction has been turned off.")
+            return adinputs
 
         flat_list = params["flat"]
         if flat_list is None:

@@ -29,6 +29,7 @@ class ParametersPreprocess(ParametersBASE):
     darkCorrect = {
         "suffix"            : '_darkCorrected',
         "dark"              : None,
+        "do_dark"           : True,
     }
     dilateObjectMask = {
         "suffix"            : '_objmaskDilated',
@@ -38,6 +39,7 @@ class ParametersPreprocess(ParametersBASE):
     flatCorrect = {
         "suffix"            : '_flatCorrected',
         "flat"              : None,
+        "do_flat"           : True,
     }
     makeSky = {
         "max_skies"         : None,
