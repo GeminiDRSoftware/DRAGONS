@@ -6,7 +6,8 @@ from ..core.parameters_nearIR import ParametersNearIR
 class ParametersNIRI(ParametersGemini, ParametersNearIR):
     addDQ = {
         "suffix"            : "_dqAdded",
-        "bpm"               : None,
+        "static_bpm"        : "default",
+        "user_bpm"          : None,
         "illum_mask"        : False,
         "latency"           : True,
     }

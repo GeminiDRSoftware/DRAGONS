@@ -132,7 +132,7 @@ class NearIR(PrimitivesBASE):
             data_mask = np.ma.mask_or(dark_mask.mask, flat_mask.mask)
             flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
-        flat.update_filename(suffix="_bpm")
+        flat.update_filename(suffix="_bpm", strip=True)
         flat.phu.set('OBJECT', 'BPM')
         return [flat]
 

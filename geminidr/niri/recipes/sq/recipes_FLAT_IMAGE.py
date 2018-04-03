@@ -41,7 +41,7 @@ def makeProcessedBPM(p):
     p.ADUToElectrons()
     p.selectFromInputs(tags="DARK", outstream="darks")
     p.selectFromInputs(tags="FLAT")
-    p.stack(stream="darks")
+    p.stackFrames(stream="darks")
     p.lampOnLampOff()
     p.normalizeFlat()
     p.makeBPM()

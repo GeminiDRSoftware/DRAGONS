@@ -7,7 +7,8 @@ from ..core.parameters_photometry import ParametersPhotometry
 class ParametersF2Image(ParametersF2, ParametersImage, ParametersPhotometry):
     addDQ = {
         "suffix"            : "_dqAdded",
-        "bpm"               : None,
+        "static_bpm"        : "default",
+        "user_bpm"          : None,
         "illum_mask"        : True,
         "latency"           : False,
     }

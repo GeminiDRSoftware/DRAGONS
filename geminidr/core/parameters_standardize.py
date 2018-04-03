@@ -6,7 +6,8 @@ from geminidr import ParametersBASE
 class ParametersStandardize(ParametersBASE):
     addDQ = {
         "suffix"            : "_dqAdded",
-        "bpm"               : None,
+        "static_bpm"        : "default",
+        "user_bpm"          : None,
         "illum_mask"        : False,
         "latency"           : False
     }
