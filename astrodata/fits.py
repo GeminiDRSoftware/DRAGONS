@@ -1481,7 +1481,10 @@ class FitsLoader(object):
             if other in seen:
                 continue
             name = other.header.get('EXTNAME')
-            added = provider.append(other, name=name, reset_ver=False)
+            try:
+                added = provider.append(other, name=name, reset_ver=False)
+            except ValueError as e:
+                print(str(e)+". Discarding "+name)
 
         return provider
 
@@ -1600,6 +1603,7 @@ class AstroDataFits(AstroData):
             if self.path is None:
                 raise ValueError("A filename needs to be specified")
             filename = self.path
+
         # Cope with astropy v1 and v2; can't use inspect because the
         # writeto() method is decorated in astropy v2+
         hdulist = self._dataprov.to_hdulist()

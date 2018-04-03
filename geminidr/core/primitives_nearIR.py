@@ -83,6 +83,7 @@ class NearIR(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         # To exclude hot pixels from stddev calculation
         DARK_CLIP_THRESH = 5.0
@@ -94,7 +95,7 @@ class NearIR(PrimitivesBASE):
 
         # Get the stacked flat and dark; these are single-element lists
         try:
-            flat = self.streams['lampOn'][0]
+            flat = adinputs[0]
         except (KeyError, TypeError):
             raise IOError("A SET OF FLATS IS REQUIRED INPUT")
         try:
@@ -133,8 +134,9 @@ class NearIR(PrimitivesBASE):
             data_mask = np.ma.mask_or(dark_mask.mask, flat_mask.mask)
             flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
-        flat.update_filename(suffix="_bpm")
+        flat.update_filename(suffix="_bpm", strip=True)
         flat.phu.set('OBJECT', 'BPM')
+        gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
         return [flat]
 
     def lampOnLampOff(self, adinputs=None, **params):

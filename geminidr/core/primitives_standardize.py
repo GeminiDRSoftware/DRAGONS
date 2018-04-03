@@ -43,8 +43,12 @@ class Standardize(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        bpm: str/None
-            name of bad pixel mask (None -> use default)
+        static_bpm: str
+            Name of bad pixel mask ("default" -> use default from look-up table)
+            If set to None, no static_bpm will be added.
+        user_bpm: str
+            Name of the bad pixel mask created by the user from flats and
+            darks.  It is an optional BPM that can be added to the static one.
         illum_mask: bool
             add illumination mask?
         """
@@ -55,27 +59,41 @@ class Standardize(PrimitivesBASE):
 
         # Getting all the filenames first prevents reopening the same file
         # for each science AD
-        bpm_list = params['bpm']
-        if bpm_list is None:
-            bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+        static_bpm_list = params['static_bpm']
+        user_bpm_list = params['user_bpm']
 
-        for ad, bpm in zip(*gt.make_lists(adinputs, bpm_list, force_ad=True)):
+        if static_bpm_list == "default":
+            static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
+
+        _, statics = gt.make_lists(adinputs, static_bpm_list, force_ad=True)
+        _, users = gt.make_lists(adinputs, user_bpm_list, force_ad=True)
+
+        for ad, static, user in zip(adinputs, statics, users):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                     'already been processed by addDQ'.format(ad.filename))
                 continue
 
-            if bpm is None:
+            if static is None:
                 # So it can be zipped with the AD
-                final_bpm = [None] * len(ad)
+                final_static = [None] * len(ad)
             else:
-                log.fullinfo("Using {} as BPM".format(bpm.filename))
+                log.fullinfo("Using {} as static BPM".format(static.filename))
                 clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
                     else gt.clip_auxiliary_data
-                final_bpm = clip_method(ad, aux=bpm, aux_type='bpm',
+                final_static = clip_method(ad, aux=static, aux_type='bpm',
                     return_dtype=DQ.datatype)
 
-            for ext, bpm_ext in zip(ad, final_bpm):
+            if user is None:
+                final_user = [None] * len(ad)
+            else:
+                log.fullinfo("Using {} as user BPM".format(user.filename))
+                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
+                    else gt.clip_auxiliary_data
+                final_user = clip_method(ad, aux=user, aux_type='bpm',
+                    return_dtype=DQ.datatype)
+
+            for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 extver = ext.hdr['EXTVER']
                 if ext.mask is not None:
                     log.warning('A mask already exists in extver {}'.
@@ -87,8 +105,10 @@ class Standardize(PrimitivesBASE):
 
                 # Need to create the array first for 3D raw F2 data, with 2D BPM
                 ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
-                if bpm_ext is not None:
-                    ext.mask |= bpm_ext.data
+                if static_ext is not None:
+                    ext.mask |= static_ext.data
+                if user_ext is not None:
+                    ext.mask |= user_ext.data
 
                 if saturation_level:
                     log.fullinfo('Flagging saturated pixels in {}:{} '
@@ -147,6 +167,7 @@ class Standardize(PrimitivesBASE):
                                             non_linear_level))
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0).astype(DQ.datatype)
+
 
         # Handle latency if reqested
         if params["latency"]:

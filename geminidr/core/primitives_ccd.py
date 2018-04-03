@@ -46,6 +46,10 @@ class CCD(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        if not params["do_bias"]:
+            log.warning("Bias correction has been turned off.")
+            return adinputs
+
         bias_list = params["bias"]
         if bias_list is None:
             self.getProcessedBias(refresh=False)

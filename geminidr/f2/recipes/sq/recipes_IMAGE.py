@@ -1,8 +1,8 @@
 """
-Recipes available to data with tags ['NIRI', 'IMAGE'].
+Recipes available to data with tags ['F2', 'IMAGE'].
 Default is "reduce".
 """
-recipe_tags = set(['NIRI', 'IMAGE'])
+recipe_tags = set(['F2', 'IMAGE'])
 
 def reduce(p):
     """

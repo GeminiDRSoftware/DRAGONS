@@ -99,7 +99,7 @@ def get_logger(name=None):
         customize_log(log)
     return log
         
-def config(mode='standard', file_name='dragons.log', file_lvl=15, stomp=False):
+def config(mode='standard', file_name=None, file_lvl=15, stomp=False):
     """
     Controls Dragons logging configuration.
 
