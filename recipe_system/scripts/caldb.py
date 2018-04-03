@@ -177,6 +177,8 @@ if __name__ == '__main__':
     argp, subp = buildArgumentParser()
     args = argp.parse_args(sys.argv[1:])
 
+    conf = load_calconf()
+
     # Override some options if the user has specified the path to
     # a database
     if args.db_path is not None:
@@ -184,8 +186,7 @@ if __name__ == '__main__':
             standalone=True,
             database_dir=args.db_path
         ))
-
-    conf = load_calconf()
+        conf = get_calconf()
 
     ret = -1
     try:
@@ -193,6 +194,7 @@ if __name__ == '__main__':
             usage(argp, message="The database is not configured as standalone.")
         else:
             act = args.action
+            print(conf.database_dir)
             lm = LocalManager(expanduser(conf.database_dir))
             logstream = sys.stderr if args.verbose else None
             disp = Dispatcher(subp.choices[act], lm,
