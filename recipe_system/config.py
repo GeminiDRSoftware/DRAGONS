@@ -4,11 +4,11 @@
 #                                                                  recipe_system
 #                                                                      config.py
 # ------------------------------------------------------------------------------
-from future import standard_library
-standard_library.install_aliases()
-from builtins import map
-from builtins import str
-from builtins import object
+#from future import standard_library
+#standard_library.install_aliases()
+#from builtins import map
+#from builtins import str
+#gitfrom builtins import object
 
 # ------------------------------------------------------------------------------
 __version__      = '2.0 (beta)'
@@ -206,7 +206,7 @@ class ConfigObject(object):
 
         cp = SafeConfigParser()
 
-        cp.read(list(map(os.path.expanduser, (filenames,))))
+        cp.read(list(map(os.path.expanduser, filenames)))
 
         translate = Converter(self._conv.copy(), cp)
 
