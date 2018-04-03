@@ -963,8 +963,7 @@ class Preprocess(PrimitivesBASE):
             zero = False
 
         # Parameters to be passed to stackSkyFrames
-        stack_params = {k: v for k,v in params.items() if
-                        k in list(self.parameters['stackSkyFrames']) and k != "suffix"}
+        stack_params = self._inherit_params(params, 'stackSkyFrames')
 
         # We'll need to process the sky frames so collect them all up and do
         # this first, to avoid repeating it every time one is reused
