@@ -287,6 +287,12 @@ class ListField(Field):
         if not compareScalars("size for %s" % name, len(l1), len(l2), output=output):
             return False
         equal = True
+        if not isinstance(l1, List):
+            if not isinstance(l2, List):
+                return compareScalars(name, l1, l2, dtype=self.dtype[1], rtol=rtol,
+                                      atol=atol, output=output)
+            else:
+                return False
         for n, v1, v2 in zip(range(len(l1)), l1, l2):
             result = compareScalars("%s[%d]" % (name, n), v1, v2, dtype=self.dtype,
                                     rtol=rtol, atol=atol, output=output)
