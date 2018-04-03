@@ -284,8 +284,6 @@ class ListField(Field):
             return False
         if l1 is None and l2 is None:
             return True
-        if not compareScalars("size for %s" % name, len(l1), len(l2), output=output):
-            return False
         equal = True
         if not isinstance(l1, List):
             if not isinstance(l2, List):
@@ -293,6 +291,8 @@ class ListField(Field):
                                       atol=atol, output=output)
             else:
                 return False
+        if not compareScalars("size for %s" % name, len(l1), len(l2), output=output):
+            return False
         for n, v1, v2 in zip(range(len(l1)), l1, l2):
             result = compareScalars("%s[%d]" % (name, n), v1, v2, dtype=self.dtype,
                                     rtol=rtol, atol=atol, output=output)
