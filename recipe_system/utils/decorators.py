@@ -45,7 +45,7 @@ the decorated class.
 """
 from builtins import zip
 from functools import wraps
-from copy import deepcopy
+from copy import copy, deepcopy
 
 from gempy.utils import logutils
 import inspect
@@ -116,7 +116,8 @@ def parameter_override(fn):
     def gn(pobj, *args, **kwargs):
         pname = fn.__name__
         # Start with the config file to get list of parameters
-        config = pobj.parameters[pname]
+        # Copy to avoid permanent changes; shallow copy is OK
+        config = copy(pobj.parameters[pname])
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
         # Override with values in the function call
