@@ -2,6 +2,9 @@
 # in the primitives_visualize.py file, in alphabetical order.
 from gempy.library import config
 
+def thresholdCheck(value):
+    return (isinstance(value, float) or value == 'auto')
+
 class displayConfig(config.Config):
     extname = config.Field("EXTNAME to display", str, "SCI")
     frame = config.RangeField("Starting frame for display", int, 1, min=1)
@@ -9,7 +12,7 @@ class displayConfig(config.Config):
     overlay = config.ListField("Overlays for display", tuple, None, optional=True)
     remove_bias = config.Field("Remove estimated bias level before displaying?", bool, False)
     threshold = config.Field("Threshold level for indicating saturation",
-                             (str, float), "auto", optional=True)
+                             (str, float), "auto", optional=True, check=thresholdCheck)
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)
     zscale = config.Field("Use zscale algorithm?", bool, True)
 
