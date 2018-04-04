@@ -5,7 +5,7 @@ from geminidr.core import parameters_standardize, parameters_photometry
 
 class addDQConfig(parameters_standardize.addDQConfig):
     def setDefaults(self):
-        self.illum_mask = True
+        self.add_illum_mask = True
 
 class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
     def setDefaults(self):
