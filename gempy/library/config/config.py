@@ -73,15 +73,13 @@ def _autocast(x, dtype):
     if isinstance(x, long) and (dtype == int or (isinstance(dtype, tuple)
                                                  and int in dtype)):
         return int(x)
-    #if isinstance(x, str) or isinstance(x, oldStringType):
-    #    for type in (oldStringType, int, float, bool):
-    #        if dtype == type or (isinstance(dtype, tuple) and type in dtype):
-    #            try:
-    #                return type(x)
-    #            except ValueError:  # Carry on and try a different coercion
-    #                pass
-    if isinstance(x, str):
-        return oldStringType(x)
+    if isinstance(x, str) or isinstance(x, oldStringType):
+        for type in (oldStringType, int, float, bool):
+            if dtype == type or (isinstance(dtype, tuple) and type in dtype):
+                try:
+                    return type(x)
+                except ValueError:  # Carry on and try a different coercion
+                    pass
     return x
 
 
