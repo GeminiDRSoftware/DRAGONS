@@ -20,6 +20,9 @@ class makeLampFlatConfig(config.Config):
 class lampOnLampOffConfig(config.Config):
     pass
 
+class removeFirstFrameConfig(config.Config):
+    pass
+
 class separateFlatsDarksConfig(config.Config):
     pass
 
