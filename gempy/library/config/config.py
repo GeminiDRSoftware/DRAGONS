@@ -265,6 +265,11 @@ class Field(object):
         if value is None:
             return
 
+        if isinstance(self.dtype, tuple):
+            if type(value) not in self.dtype:
+                msg = "Value %s is of incorrect type %s. Expected types %s" % \
+                    (value, _typeStr(value), [_typeStr(dt) for dt in self.dtype])
+                raise TypeError(msg)
         if not isinstance(value, self.dtype):
             msg = "Value %s is of incorrect type %s. Expected type %s" % \
                 (value, _typeStr(value), _typeStr(self.dtype))
