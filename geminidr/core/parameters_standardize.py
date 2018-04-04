@@ -1,13 +1,15 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_standardize.py file, in alphabetical order.
 from gempy.library import config
+from astrodata import AstroData
 
 class addIllumMaskToDQConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_illumMaskAdded")
     illum_mask = config.Field("Name of illumination mask", str, None, optional=True)
 
 class addDQConfig(addIllumMaskToDQConfig):
-    bpm = config.Field("Name of bad pixel mask", str, None, optional=True)
+    static_bpm = config.Field("Static bad pixel mask", (str, AstroData), "default", optional=True)
+    user_bpm = config.Field("User bad pixel mask", (str, AstroData), None, optional=True)
     add_illum_mask = config.Field("Apply illumination mask?", bool, False)
     latency = config.Field("Apply latency for saturated pixels?", bool, False)
 

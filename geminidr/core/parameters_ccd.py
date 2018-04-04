@@ -6,6 +6,7 @@ from astrodata import AstroData
 class biasCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_biasCorrected")
     bias = config.Field("Name of bias", (AstroData, str), None, optional=True)
+    do_bias = config.Field("Perform bias subtraction?", bool, True)
 
 class overscanCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_overscanCorrected")

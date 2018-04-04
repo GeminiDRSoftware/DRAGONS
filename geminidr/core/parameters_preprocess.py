@@ -34,6 +34,7 @@ class correctBackgroundToReferenceConfig(config.Config):
 class darkCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_darkCorrected")
     dark = config.Field("Dark frame", (str, AstroData), None, optional=True)
+    do_dark = config.Field("Perform dark subtraction?", bool, True)
 
 class dilateObjectMaskConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_objmaskDilated")
@@ -43,6 +44,7 @@ class dilateObjectMaskConfig(config.Config):
 class flatCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_flatCorrected")
     flat = config.Field("Flatfield frame", (str, AstroData), None, optional=True)
+    do_flat = config.Field("Perform flatfield correction?", bool, True)
 
 class nonlinearityCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_nonlinearityCorrect")
