@@ -134,6 +134,7 @@ def parameter_override(fn):
                 pass
         # Can update config now it only has parameters it knows about
         config.update(**params)
+        config.validate()
 
         if len(args) == 0 and adinputs is None:
             # Use appropriate stream input/output
@@ -144,12 +145,10 @@ def parameter_override(fn):
             else:
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])
-            config.validate()
             ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
             # And place the outputs in the appropriate stream
             pobj.streams[outstream] = ret_value
         else:
-            config.validate()
             if args:  # if not, adinputs has already been assigned from params
                 adinputs = args[0]
             ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
