@@ -262,14 +262,15 @@ class GMOS(Gemini, CCD):
             order of Chebyshev fit or spline/None
         """
         detname = adinputs[0].detector_name(pretty=True)
-        if params["order"] is None and params["function"].startswith('poly'):
+        func = (params["function"] or 'none').lower()
+        if params["order"] is None and func.startswith('poly'):
             params["order"] = 6 if detname.startswith('Hamamatsu') else 0
         if params["nbiascontam"] is None:
             params["nbiascontam"] = 5 if detname == 'e2vDD' else 4
 
         # Set the overscan_section and data_section keywords to chop off the
         # bottom 48 (unbinned) rows, as Gemini-IRAF does
-        if detname.startswith('Hamamatsu') and params["function"].startswith('poly'):
+        if detname.startswith('Hamamatsu') and func.startswith('poly'):
             for ad in adinputs:
                 y1 = 48 // ad.detector_y_bin()
                 dsec_list = ad.data_section()
