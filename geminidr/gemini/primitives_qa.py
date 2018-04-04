@@ -22,7 +22,7 @@ from .lookups import DQ_definitions as DQ
 from .lookups import qa_constraints as qa
 
 from geminidr import PrimitivesBASE
-from geminidr import ParametersBASE
+from . import parameters_qa
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -38,10 +38,9 @@ class QA(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(QA, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersBASE
+        self._param_update(parameters_qa)
 
-    def measureBG(self, adinputs=None, suffix='_bgMeasured', remove_bias=False,
-                  separate_ext=False):
+    def measureBG(self, adinputs=None, **params):
         """
         This primitive measures the sky background level for an image by
         sampling the non-object unflagged pixels in each extension.
@@ -63,6 +62,10 @@ class QA(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        suffix = params["suffix"]
+        remove_bias = params["remove_bias"]
+        separate_ext = params["separate_ext"]
 
         for ad in adinputs:
             bias_level = None
@@ -194,7 +197,7 @@ class QA(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def measureCC(self, adinputs=None, suffix='_ccMeasured'):
+    def measureCC(self, adinputs=None, **params):
         """
         This primitive will determine the zeropoint by looking at sources in
         the OBJCAT for which a reference catalog magnitude has been determined
@@ -233,6 +236,8 @@ class QA(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        suffix = params["suffix"]
 
         for ad in adinputs:
             nom_phot_zpt = ad.nominal_photometric_zeropoint()
@@ -400,8 +405,7 @@ class QA(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def measureIQ(self, adinputs=None, suffix='_iqMeasured', remove_bias=False,
-                  separate_ext=False, display=False):
+    def measureIQ(self, adinputs=None, **params):
         """
         This primitive is for use with sextractor-style source-detection.
         FWHM (from _profile_sources()) and CLASS_STAR (from SExtractor)
@@ -413,7 +417,7 @@ class QA(PrimitivesBASE):
         suffix: str
             suffix to be added to output files
         remove_bias: bool
-            remove the bias level (if present) before measuring background?
+            remove the bias level (if present) before displaying?
         separate_ext: bool
             report one value per extension, instead of a global value?
         display: bool
@@ -422,6 +426,11 @@ class QA(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        suffix = params["suffix"]
+        remove_bias = params["remove_bias"]
+        separate_ext = params["separate_ext"]
+        display = params["display"]
 
         frame = 1
         for ad in adinputs:

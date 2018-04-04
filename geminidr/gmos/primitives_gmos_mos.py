@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
-from .parameters_gmos_mos import ParametersGMOSMOS
+from . import parameters_gmos_mos
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -20,4 +20,4 @@ class GMOSMOS(GMOSSpect, GMOSNodAndShuffle):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOSMOS, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGMOSMOS
+        self._param_update(parameters_gmos_mos)

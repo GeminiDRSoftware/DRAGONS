@@ -13,7 +13,7 @@ from functools import partial
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
-from .parameters_stack import ParametersStack
+from . import parameters_stack
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ class Stack(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Stack, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersStack
+        self._param_update(parameters_stack)
 
     def alignAndStack(self, adinputs=None, **params):
         """
@@ -44,9 +44,9 @@ class Stack(PrimitivesBASE):
                         "for alignAndStack")
             return adinputs
         else:
-            adinputs = self.matchWCSToReference(adinputs, **params)
-            adinputs = self.resampleToCommonFrame(adinputs, **params)
-            adinputs = self.stackFrames(adinputs, **params)
+            adinputs = self.matchWCSToReference(adinputs, **self._inherit_params(params, 'matchWCSToReference'))
+            adinputs = self.resampleToCommonFrame(adinputs, **self._inherit_params(params, 'resampleToCommonFrame'))
+            adinputs = self.stackFrames(adinputs, **self._inherit_params(params, 'stackFrames'))
         return adinputs
 
     def stackFlats(self, adinputs=None, **params):
@@ -249,7 +249,7 @@ class Stack(PrimitivesBASE):
 
         # Parameters to be passed to stackFrames
         stack_params = {k: v for k,v in params.items() if
-                        k in self.parameters.stackFrames and k != "suffix"}
+                        k in list(self.parameters['stackFrames']) and k != "suffix"}
         # We're taking care of the varying sky levels here so stop
         # stackFrames from getting involved
         stack_params.update({'zero': False,

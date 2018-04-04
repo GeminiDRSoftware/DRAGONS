@@ -11,7 +11,7 @@ from gempy.gemini import gemini_tools as gt
 from geminidr import PrimitivesBASE
 from geminidr import save_cache, stkindfile
 
-from .parameters_bookkeeping import ParametersBookkeeping
+from . import parameters_bookkeeping
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -27,7 +27,7 @@ class Bookkeeping(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Bookkeeping, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersBookkeeping
+        self._param_update(parameters_bookkeeping)
 
     def addToList(self, adinputs=None, purpose=None, **params):
         """

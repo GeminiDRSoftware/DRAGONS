@@ -4,7 +4,7 @@
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
 from geminidr import PrimitivesBASE
-from .parameters_spect import ParametersSpect
+from . import parameters_spect
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -19,7 +19,7 @@ class Spect(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Spect, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersSpect
+        self._param_update(parameters_spect)
 
 #    def determineWavelengthSolution(self, adinputs, **params):
 #

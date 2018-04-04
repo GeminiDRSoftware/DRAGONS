@@ -11,7 +11,8 @@ from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from .parameters_nearIR import ParametersNearIR
+from . import parameters_nearIR
+
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
@@ -21,7 +22,7 @@ class NearIR(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(NearIR, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersNearIR
+        self._param_update(parameters_nearIR)
 
     def addLatencyToDQ(self, adinputs=None, **params):
         """
@@ -82,6 +83,7 @@ class NearIR(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         # To exclude hot pixels from stddev calculation
         DARK_CLIP_THRESH = 5.0
@@ -134,6 +136,7 @@ class NearIR(PrimitivesBASE):
 
         flat.update_filename(suffix="_bpm", strip=True)
         flat.phu.set('OBJECT', 'BPM')
+        gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
         return [flat]
 
     def lampOnLampOff(self, adinputs=None, **params):

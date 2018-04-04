@@ -10,7 +10,7 @@ from gempy.gemini import gemini_tools as gt
 
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
-from .parameters_niri import ParametersNIRI
+from . import parameters_niri
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ class NIRI(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(NIRI, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.niri.lookups'
-        self.parameters = ParametersNIRI
+        self._param_update(parameters_niri)
 
     def nonlinearityCorrect(self, adinputs=None, **params):
         """

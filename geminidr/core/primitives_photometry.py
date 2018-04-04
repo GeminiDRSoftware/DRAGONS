@@ -17,7 +17,7 @@ from gempy.gemini.eti.sextractoreti import SExtractorETI
 from geminidr.gemini.lookups import color_corrections
 
 from geminidr import PrimitivesBASE
-from .parameters_photometry import ParametersPhotometry
+from . import parameters_photometry
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ class Photometry(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Photometry, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersPhotometry
+        self._param_update(parameters_photometry)
 
     def addReferenceCatalog(self, adinputs=None, **params):
         """

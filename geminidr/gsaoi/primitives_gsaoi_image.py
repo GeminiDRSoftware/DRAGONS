@@ -7,7 +7,7 @@ from gempy.gemini import gemini_tools as gt
 
 from ..core import Image, Photometry
 from .primitives_gsaoi import GSAOI
-from .parameters_gsaoi_image import ParametersGSAOIImage
+from . import parameters_gsaoi_image
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
     def __init__(self, adinputs, **kwargs):
         super(GSAOIImage, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGSAOIImage
+        self._param_update(parameters_gsaoi_image)
 
     def makeLampFlat(self, adinputs=None, **params):
         """

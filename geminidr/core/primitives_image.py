@@ -6,10 +6,11 @@
 import numpy as np
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 
 from .primitives_register import Register
 from .primitives_resample import Resample
-from .parameters_image import ParametersImage
+from . import parameters_image
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -22,7 +23,7 @@ class Image(Register, Resample):
 
     def __init__(self, adinputs, **kwargs):
         super(Image, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersImage
+        self._param_update(parameters_image)
 
     def fringeCorrect(self, adinputs=None, **params):
         self.getProcessedFringe(adinputs)
@@ -69,20 +70,7 @@ class Image(Register, Resample):
                         "different sizes. Turning off.")
             separate_ext = False
 
-        if scaling not in ("mean", "median"):
-            log.warning("Scaling {} not known. Using mean.".format(scaling))
-            scaling = "mean"
-
-        if section is not None:
-            try:
-                x1, x2, y1, y2 = map(int, section.replace(',', ':').split(':'))
-            except (AttributeError, ValueError):
-                log.warning("Cannot parse section. Using full frame for "
-                            "statistics")
-                section = None
-            else:
-                x2 += 1
-                y2 += 1
+        section = at.section_str_to_tuple(section)
 
         # I'm not making the assumption that all extensions are the same shape
         # This makes things more complicated, but more general
@@ -94,6 +82,8 @@ class Image(Register, Resample):
                 if section is None:
                     x1, y1 = 0, 0
                     y2, x2 = ext.data.shape
+                else:
+                    x1, x2, y1, y2 = section
                 data = ext.data[y1:y2, x1:x2]
                 if data.size:
                     mask = None if ext.mask is None else ext.mask[y1:y2, x1:x2]

@@ -10,12 +10,12 @@ from copy import deepcopy
 from gempy.gemini import gemini_tools as gt
 
 from .primitives_gmos import GMOS
-from .parameters_gmos_nodandshuffle import ParametersGMOSNodAndShuffle
+from . import parameters_gmos_nodandshuffle
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class GMOSNodAndShuffle():
+class GMOSNodAndShuffle(GMOS):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSImage level of the type hierarchy tree. It inherits all
@@ -25,7 +25,7 @@ class GMOSNodAndShuffle():
 
     def __init__(self, adinputs, **kwargs):
         #super(GMOSNodAndShuffle, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGMOSNodAndShuffle
+        self._param_update(parameters_gmos_nodandshuffle)
 
     def skyCorrectNodAndShuffle(self, adinputs=None, **params):
         """

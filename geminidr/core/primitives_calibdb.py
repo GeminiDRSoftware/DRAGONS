@@ -14,7 +14,7 @@ from recipe_system.cal_service.calrequestlib import process_cal_requests
 from recipe_system.cal_service.transport_request import upload_calibration
 
 from geminidr import PrimitivesBASE
-from .parameters_calibdb import ParametersCalibDB
+from . import parameters_calibdb
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ class CalibDB(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(CalibDB, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersCalibDB
+        self._param_update(parameters_calibdb)
         self._not_found = "Calibration not found for {}"
 
     def _get_cal(self, adinput, caltype):
@@ -204,7 +204,7 @@ class CalibDB(PrimitivesBASE):
                     log.stdinfo(msg.format(os.path.basename(ad.filename)))
         return adinputs
 
-    def markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
+    def _markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
                           primname=None, keyword=None):
         """
         Updates filenames, datalabels (if asked) and adds header keyword
@@ -222,7 +222,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_arc'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCARC")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
@@ -231,7 +231,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_bias'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCBIAS")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
@@ -240,7 +240,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'bpm'
         sfx = '_bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                     primname=self.myself(), update_datalab=False, keyword="BPM")
         self.storeCalibration(adinputs, caltype)
         return adinputs
@@ -249,7 +249,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_dark'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCDARK")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
@@ -258,7 +258,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_flat'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCFLAT")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs

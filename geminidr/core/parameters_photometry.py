@@ -1,24 +1,26 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_photometry.py file, in alphabetical order.
+from gempy.library import config
 
-from geminidr import ParametersBASE
+class addReferenceCatalogConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_refcatAdded")
+    radius = config.RangeField("Search radius (degrees)", float, 0.067, min=0.)
+    source = config.ChoiceField("Name of catalog to search", str,
+                                allowed = {"gmos": "Gemini optical catalog",
+                                           "2mass": "2MASS Infrared catalog",
+                                           "sdss9": "SDSS DR9 optical catalog",
+                                           "ukidss9": "UKIDSS DR9 infrared catalog"},
+                                default = "gmos")
 
-class ParametersPhotometry(ParametersBASE):
-    addReferenceCatalog = {
-        "suffix"                : "_refcatAdded",
-        "radius"                : 0.067,
-        "source"                : "gmos",
-    }
-    detectSources = {
-        "suffix"                : "_sourcesDetected",
-        "mask"                  : False,
-        "replace_flags"         : 249,
-        "set_saturation"        : False,
-        "detect_minarea"        : 8,
-        "detect_thresh"         : 2.0,
-        "analysis_thresh"       : 2.0,
-        "deblend_mincont"       : 0.005,
-        "phot_min_radius"       : 3.5,
-        "back_size"             : 32,
-        "back_filtersize"       : 8,
-    }
+class detectSourcesConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_sourcesDetected")
+    mask = config.Field("Replace DQ-flagged pixels with median of image?", bool, False)
+    replace_flags = config.RangeField("DQ bitmask for flagging if mask=True", int, 249, min=0)
+    set_saturation = config.Field("Inform SExtractor of saturation level?", bool, False)
+    detect_minarea = config.RangeField("Minimum object detection area (pixels)", int, 8, min=1)
+    detect_thresh = config.RangeField("Detection threshold (standard deviations)", float, 2., min=0.1)
+    analysis_thresh = config.RangeField("Analysis threshold (standard deviations)", float, 2., min=0.1)
+    deblend_mincont = config.RangeField("Minimum deblending contrast", float, 0.005, min=0.)
+    phot_min_radius = config.RangeField("Minimum radius for photometry (pixels)", float, 3.5, min=0.1)
+    back_size = config.RangeField("Background mesh size (pixels)", int, 32, min=1)
+    back_filter_size = config.RangeField("Filtering scale for background", int, 8, min=1)

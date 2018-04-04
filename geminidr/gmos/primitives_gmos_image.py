@@ -16,7 +16,7 @@ from gempy.utils import logutils
 
 from geminidr.core import Image, Photometry
 from .primitives_gmos import GMOS
-from .parameters_gmos_image import ParametersGMOSImage
+from . import parameters_gmos_image
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from recipe_system.utils.decorators import parameter_override
@@ -32,7 +32,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
     def __init__(self, adinputs, **kwargs):
         super(GMOSImage, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersGMOSImage
+        self._param_update(parameters_gmos_image)
 
     def addOIWFSToDQ(self, adinputs=None, **params):
         """

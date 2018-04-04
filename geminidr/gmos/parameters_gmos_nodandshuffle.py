@@ -1,9 +1,6 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gmos_nodandshuffle.py file, in alphabetical order.
+from gempy.library import config
 
-from .parameters_gmos import ParametersGMOS
-
-class ParametersGMOSNodAndShuffle(ParametersGMOS):
-    skyCorrectNodAndShuffle = {
-        "suffix"                : "_skyCorrected",
-    }
+class skyCorrectNodAndShuffleConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_skyCorrected")

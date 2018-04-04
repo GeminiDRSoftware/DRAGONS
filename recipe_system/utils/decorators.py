@@ -45,7 +45,7 @@ the decorated class.
 """
 from builtins import zip
 from functools import wraps
-from copy import deepcopy
+from copy import copy, deepcopy
 
 from gempy.utils import logutils
 import inspect
@@ -113,23 +113,31 @@ def make_class_wrapper(wrapped):
 @make_class_wrapper
 def parameter_override(fn):
     @wraps(fn)
-    def gn(*args, **kwargs):
-        pobj = args[0]
+    def gn(pobj, *args, **kwargs):
         pname = fn.__name__
-        # Start with parameters listed in the function definition
-        params = getattr(getattr(pobj, pname), 'parameters').copy()
-        # Override with those in the parameters file
-        params.update(getattr(pobj.parameters, pname, {}))
-        # Override with user inputs
-        params.update(userpar_override(pname, list(params.keys()),
-                      pobj.user_params))
+        # Start with the config file to get list of parameters
+        # Copy to avoid permanent changes; shallow copy is OK
+        config = copy(pobj.parameters[pname])
+        # Find user parameter overrides
+        params = userpar_override(pname, list(config), pobj.user_params)
         # Override with values in the function call
         params.update(kwargs)
         set_logging(pname)
-        if len(args) == 1 and 'adinputs' not in params:
+        # config doesn't know about streams or adinputs
+        instream = params.get('instream', params.get('stream', 'main'))
+        outstream = params.get('outstream', params.get('stream', 'main'))
+        adinputs = params.get('adinputs')
+        for k in ('adinputs', 'stream', 'instream', 'outstream'):
+            try:
+                del params[k]
+            except KeyError:
+                pass
+        # Can update config now it only has parameters it knows about
+        config.update(**params)
+        config.validate()
+
+        if len(args) == 0 and adinputs is None:
             # Use appropriate stream input/output
-            instream = params.get('instream', params.get('stream', 'main'))
-            outstream = params.get('outstream', params.get('stream', 'main'))
             # Many primitives operate on AD instances in situ, so need to
             # copy inputs if they're going to a new output stream
             if instream != outstream:
@@ -137,16 +145,17 @@ def parameter_override(fn):
             else:
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])
-            params.update({'adinputs': adinputs})
-            ret_value = fn(*args, **params)
+            ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
             # And place the outputs in the appropriate stream
             pobj.streams[outstream] = ret_value
         else:
-            ret_value = fn(*args, **params)
+            if args:  # if not, adinputs has already been assigned from params
+                adinputs = args[0]
+            ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
 
         unset_logging()
         return ret_value
     # Make dict of default values (ignore args[0]='self', args[1]='adinputs')
-    argspec = inspect.getargspec(fn)
-    gn.parameters = dict(list(zip(argspec.args[2:], argspec.defaults[1:])))
+    #argspec = inspect.getargspec(fn)
+    #gn.parameters = dict(list(zip(argspec.args[2:], argspec.defaults[1:])))
     return gn

@@ -11,7 +11,7 @@ from gempy.gemini import gemini_tools as gt
 
 from ..core import NearIR
 from geminidr.gemini.primitives_gemini import Gemini
-from .parameters_gsaoi import ParametersGSAOI
+from . import parameters_gsaoi
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ class GSAOI(Gemini, NearIR):
     def __init__(self, adinputs, **kwargs):
         super(GSAOI, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gsaoi.lookups'
-        self.parameters = ParametersGSAOI
+        self._param_update(parameters_gsaoi)
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
         """

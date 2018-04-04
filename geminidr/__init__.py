@@ -10,7 +10,6 @@ Calibrations() also uses the caches functions, which are now directly available
 here.
 
 E.g.,
->>> from geminidr import ParametersBASE
 >>> from geminidr import PrimitivesBASE
 
 """
@@ -19,7 +18,9 @@ E.g.,
 import os
 import pickle
 import warnings
-from inspect import stack
+from inspect import stack, isclass
+
+from gempy.library import config
 
 from astropy.io.fits.verify import VerifyWarning
 
@@ -105,18 +106,6 @@ class Calibrations(dict):
         save_cache(self, self._calindfile)
         return
 # ------------------------------------------------------------------------------
-class ParametersBASE(object):
-    """
-    Base class for all Gemini package parameter sets.
-
-    Most other parameter classes will be separate from their
-    matching primitives class. Here, we incorporate the parameter
-    class, ParametersBASE, into the mod.
-
-    """
-    pass
-
-# ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesBASE(object):
     """
@@ -142,7 +131,7 @@ class PrimitivesBASE(object):
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None):
         self.streams          = {'main': adinputs}
         self.mode             = mode
-        self.parameters       = ParametersBASE
+        self.parameters       = {}
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = uparms if uparms else {}
@@ -177,3 +166,52 @@ class PrimitivesBASE(object):
         elif isinstance(upl, list):
             self._upload = upl
         return
+
+    def _param_update(self, module):
+        """Create/update an entry in the primitivesClass's parameters dict
+        using Config classes in the module provided"""
+        for attr in dir(module):
+            obj = getattr(module, attr)
+            if isclass(obj) and issubclass(obj, config.Config):
+                self.parameters[attr.replace("Config", "")] = obj()
+
+        # Play a bit fast and loose with python's inheritance. We need to check
+        # if we're redefining a Config that has already been inherited by
+        # another Config and, if so, update the child Config
+        # Do this in the correct inheritance order
+        for k, v in sorted(self.parameters.items(),
+                           key=lambda x: len(x[1].__class__.mro())):
+            self.parameters[k] = v.__class__()
+            for cls in reversed(v.__class__.mro()):
+                if cls.__name__.find('Config') > 0:
+                    # We may not have yet imported a Config from which we inherit.
+                    # In fact, we may never do so, in which case what's already
+                    # there from standard inheritance is fine and we move on.
+                    try:
+                        new_cls = self.parameters[cls.__name__.replace("Config", "")].__class__
+                    except KeyError:
+                        pass
+                    else:
+                        # Delete history from previous passes through this code
+                        for field in new_cls():
+                            self.parameters[k]._history[field] = []
+                        self.parameters[k].update(**dict(new_cls().items()))
+                        cls.setDefaults.__func__(self.parameters[k])
+
+    def _inherit_params(self, params, primname, use_original_suffix=True):
+        """Create a dict of params for a primitive from a larger dict,
+        using only those that the primitive needs
+        
+        Parameters
+        ----------
+        params: dict
+            parent parameter dictionary
+        primname: str
+            name of primitive to be called
+        use_original_suffix: bool
+            if True, don't pass "suffix" parameter
+        """
+        passed_params = {k: v for k, v in params.items()
+                    if k in list(self.parameters[primname]) and
+                         not (k == "suffix" and use_original_suffix)}
+        return passed_params

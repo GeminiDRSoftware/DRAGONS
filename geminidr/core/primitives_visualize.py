@@ -22,7 +22,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 
 from geminidr import PrimitivesBASE
-from .parameters_visualize import ParametersVisualize
+from . import parameters_visualize
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ class Visualize(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Visualize, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersVisualize
+        self._param_update(parameters_visualize)
 
     def display(self, adinputs=None, **params):
         """

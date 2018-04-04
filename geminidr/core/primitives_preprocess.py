@@ -17,7 +17,7 @@ from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
-from .parameters_preprocess import ParametersPreprocess
+from . import parameters_preprocess
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ class Preprocess(PrimitivesBASE):
 
     def __init__(self, adinputs, **kwargs):
         super(Preprocess, self).__init__(adinputs, **kwargs)
-        self.parameters = ParametersPreprocess
+        self._param_update(parameters_preprocess)
 
     def addObjectMaskToDQ(self, adinputs=None, **params):
         """
@@ -119,7 +119,7 @@ class Preprocess(PrimitivesBASE):
             The DQ bits, of which one needs to be set for a pixel to be replaced
 
         replace_value: str/float
-            "median" or "average" to replace with that value of the good pixels,
+            "median" or "mean" to replace with that value of the good pixels,
             or a value
 
         """
@@ -141,22 +141,17 @@ class Preprocess(PrimitivesBASE):
                                                            ext.hdr['EXTVER']))
                     continue
 
-                if replace_value in ['median', 'average']:
+                try:
+                    rep_value = float(replace_value)
+                    log.fullinfo("Replacing bad pixels in {}:{} with the "
+                                 "user value {}".format(ad.filename,
+                                                        ext.hdr['EXTVER'], rep_value))
+                except ValueError:  # already validated so must be "mean" or "median"
                     oper = getattr(np, replace_value)
                     rep_value = oper(ext.data[ext.mask & replace_flags == 0])
                     log.fullinfo("Replacing bad pixels in {}:{} with the {} "
                                  "of the good data".format(ad.filename,
                                             ext.hdr['EXTVER'], replace_value))
-                else:
-                    try:
-                        rep_value = float(replace_value)
-                        log.fullinfo("Replacing bad pixels in {}:{} with the "
-                                     "user value {}".format(ad.filename,
-                                           ext.hdr['EXTVER'], rep_value))
-                    except:
-                        log.warning("Value for replacement should be 'median', "
-                                    "'average', or a number")
-                        continue
 
                 ext.data[ext.mask & replace_flags != 0] = rep_value
 
@@ -381,6 +376,10 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
+        if not params["do_dark"]:
+            log.warning("Dark correction has been turned off.")
+            return adinputs
+
         dark_list = params["dark"]
         if dark_list is None:
             self.getProcessedDark(refresh=False)
@@ -493,6 +492,10 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
+        if not params["do_flat"]:
+            log.warning("Flat correction has been turned off.")
+            return adinputs
 
         flat_list = params["flat"]
         if flat_list is None:
@@ -968,8 +971,7 @@ class Preprocess(PrimitivesBASE):
             zero = False
 
         # Parameters to be passed to stackSkyFrames
-        stack_params = {k: v for k,v in params.items() if
-                        k in self.parameters.stackSkyFrames and k != "suffix"}
+        stack_params = self._inherit_params(params, 'stackSkyFrames')
 
         # We'll need to process the sky frames so collect them all up and do
         # this first, to avoid repeating it every time one is reused
@@ -999,8 +1001,8 @@ class Preprocess(PrimitivesBASE):
         for filename in skies:
             for sky in self.streams["sky"]:
                 if sky.filename in [filename,
-                        filename.replace(self.parameters.separateSky["suffix"],
-                                         self.parameters.associateSky["suffix"])]:
+                        filename.replace(self.parameters['separateSky'].suffix,
+                                         self.parameters['associateSky'].suffix)]:
                     break
             else:
                 try:

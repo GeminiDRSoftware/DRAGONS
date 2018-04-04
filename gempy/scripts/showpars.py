@@ -37,19 +37,14 @@ def showpars(pobj, primname, tags):
         if i.startswith("_"):
             continue
 
-    pars = getattr(pobj, primname)
+    pars = pobj[primname]
     print("Dataset tagged as {}".format(tags))
     print("Settable parameters on '{}':".format(primname))
     print("="*40)
     print(" Name\t\t\tCurrent setting")
     print()
     for k,v in pars.items():
-        if len(k) <= 4:
-            print("{} :\t\t\t{}".format(k,v))
-        elif len(k) > 12:
-            print("{} : \t{}".format(k,v))
-        else:
-            print("{} : \t\t{}".format(k,v))
+        print("{:20s} {:20s} {}".format(k, repr(v), pars.doc(k)))
     print()
     return
 

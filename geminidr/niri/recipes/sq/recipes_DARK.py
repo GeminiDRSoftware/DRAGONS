@@ -1,5 +1,5 @@
 """
-Recipes available to data with tags 'GMOS', 'CAL', 'DARK'].
+Recipes available to data with tags 'NIRI', 'CAL', 'DARK'].
 Default is "makeProcessedDark".
 """
 
@@ -20,7 +20,7 @@ def makeProcessedDark(p):
     """
 
     p.prepare()
-    p.addDQ(illum_mask=False)
+    p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.nonlinearityCorrect()
     p.ADUToElectrons()

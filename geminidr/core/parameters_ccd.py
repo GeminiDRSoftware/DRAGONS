@@ -1,31 +1,33 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_ccd.py file, in alphabetical order.
+from gempy.library import config
+from astrodata import AstroData
 
-from geminidr import ParametersBASE
+class biasCorrectConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_biasCorrected")
+    bias = config.Field("Name of bias", (AstroData, str), None, optional=True)
+    do_bias = config.Field("Perform bias subtraction?", bool, True)
 
-class ParametersCCD(ParametersBASE):
-    biasCorrect = {
-        "suffix"            : "_biasCorrected",
-        "bias"              : None,
-    }
-    overscanCorrect = {
-        "suffix"            : "_overscanCorrected",
-        "niterate"          : 2,
-        "high_reject"       : 3.0,
-        "low_reject"        : 3.0,
-        "function"          : "spline",
-        "nbiascontam"       : None,
-        "order"             : None,
-    }
-    subtractOverscan = {
-        "suffix"            : "_overscanSubtracted",
-        "niterate"          : 2,
-        "high_reject"       : 3.0,
-        "low_reject"        : 3.0,
-        "function"          : "spline",
-        "nbiascontam"       : None,
-        "order"             : None,
-    }
-    trimOverscan = {
-        "suffix"            : "_overscanTrimmed",
-    }
+class overscanCorrectConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_overscanCorrected")
+    # Inherits everything else from subtractOverscanConfig()
+
+class subtractOverscanConfig(overscanCorrectConfig):
+    suffix = config.Field("Filename suffix", str, "_overscanSubtracted")
+    niterate = config.RangeField("Maximum number of interations", int, 2, min=1)
+    high_reject = config.RangeField("High rejection limit (standard deviations)",
+                               float, 3., min=0., optional=True)
+    low_reject = config.RangeField("Low rejection limit (standard deviations)",
+                              float, 3., min=0., optional=True)
+    function = config.ChoiceField("Type of function", str,
+                                  allowed = {"spline": "Cublic spline",
+                                             "poly":   "Polynomial",
+                                             "none":   "Row-by-row"},
+                                  default="spline", optional=True)
+    nbiascontam = config.RangeField("Number of columns to exclude from averaging",
+                               int, None, min=0, optional=True)
+    order = config.RangeField("Order of fitting function", int, None, min=0,
+                              optional=True)
+
+class trimOverscanConfig(overscanCorrectConfig):
+    suffix = config.Field("Filename suffix", str, "_overscanTrimmed")
