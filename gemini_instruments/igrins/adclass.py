@@ -45,10 +45,10 @@ class AstroDataIgrins(AstroDataGemini):
         if self.phu.get('BAND') == 'S':
             return TagSet(['IMAGE', 'ACQUISITION'])
 
-    @astro_data_tag
-    def _tag_spect(self):
-        if self.phu.get('BAND') in ['K', 'H']:
-            return TagSet(['SPECT'])
+    # @astro_data_tag
+    # def _tag_spect(self):
+    #     if self.phu.get('BAND') in ['K', 'H']:
+    #         return TagSet(['SPECT'])
 
     @astro_data_tag
     def _tag_dark(self):
@@ -71,7 +71,7 @@ class AstroDataIgrins(AstroDataGemini):
             return TagSet(['STANDARD', 'CAL'])
 
     @astro_data_tag
-    def _tag_standard(self):
+    def _tag_science(self):
         if self.phu.get('OBJTYPE') == 'TAR':
             return TagSet(['SCIENCE'])
 
