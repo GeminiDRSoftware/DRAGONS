@@ -204,7 +204,7 @@ class CalibDB(PrimitivesBASE):
                     log.stdinfo(msg.format(os.path.basename(ad.filename)))
         return adinputs
 
-    def markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
+    def _markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
                           primname=None, keyword=None):
         """
         Updates filenames, datalabels (if asked) and adds header keyword
@@ -222,7 +222,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_arc'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCARC")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
@@ -231,7 +231,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_bias'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCBIAS")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
@@ -240,7 +240,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'bpm'
         sfx = '_bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                     primname=self.myself(), update_datalab=False, keyword="BPM")
         self.storeCalibration(adinputs, caltype)
         return adinputs
@@ -249,7 +249,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_dark'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCDARK")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
@@ -258,7 +258,7 @@ class CalibDB(PrimitivesBASE):
         caltype = 'processed_flat'
         sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.markAsCalibration(adinputs, suffix=sfx,
+        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                                     primname=self.myself(), keyword="PROCFLAT")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
