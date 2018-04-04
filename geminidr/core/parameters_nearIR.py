@@ -14,6 +14,9 @@ class addDQConfig(addLatencyToDQConfig, parameters_standardize.addDQConfig):
 class makeBPMConfig(config.Config):
     pass
 
+class makeLampFlatConfig(config.Config):
+    pass
+
 class lampOnLampOffConfig(config.Config):
     pass
 
