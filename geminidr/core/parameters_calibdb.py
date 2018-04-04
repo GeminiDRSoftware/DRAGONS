@@ -51,3 +51,11 @@ class storeProcessedFlatConfig(config.Config):
 
 class storeProcessedFringeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_fringe")
+
+class storeCalibration(config.Config):
+    caltype = config.ChoiceField("Type of calibration", str,
+                                  allowed = {"processed_arc": "processed ARC",
+                                            "processed_bias": "procsessed BIAS",
+                                            "processed_dark": "processed DARK",
+                                            "processed_flat": "processed FLAT",
+                                            "processed_fringe": "processed fringe"})
