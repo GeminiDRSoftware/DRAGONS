@@ -45,10 +45,19 @@ class AstroDataSkyCam(AstroDataGemini):
     def exposure_time(self):
         hdr = self.TABLE1.meta.get('header')
         return hdr.get('EXPTIME')
+    
+    def ra(self):
+        hdr = self.TABLE1.meta.get('header')
+        return hdr.get('RA')
 
+    def dec(self):
+        hdr = self.TABLE1.meta.get('header')
+        return hdr.get('DEC')
+    
     def ut_datetime(self):
         hdr = self.TABLE1.meta.get('header')
         return dateutil.parser.parse(hdr.get('DATE-OBS'))
+        
 
     def ut_time(self):
         return self.ut_datetime().time()
