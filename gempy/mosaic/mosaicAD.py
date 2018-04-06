@@ -428,8 +428,9 @@ class MosaicAD(Mosaic):
         nblocks_x      = self.geometry.mosaic_grid[0]
         ref_block_number = ref_block[0] + ref_block[1]*nblocks_x
 
-        # Reference header.
+        # Reference extension.
         self.refext = amps_per_block*ref_block_number
+        self.refext = len(self.ad) // 2 - 1
 
         return
     # --------------------------------------------------------------------------
