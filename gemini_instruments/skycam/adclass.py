@@ -27,7 +27,11 @@ class AstroDataSkyCam(AstroDataGemini):
 
     @staticmethod
     def _matches_data(source):
-        return source[1].header.get('TELESCOP', '') == '"GS_ALLSKYCAMERA"'
+        try:
+            match = source[1].header.get('TELESCOP', '') == '"GS_ALLSKYCAMERA"'
+        except IndexError:
+            match = False
+        return match
 
     @astro_data_tag
     def _tag_instrument(self):
