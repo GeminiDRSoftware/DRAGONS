@@ -194,7 +194,7 @@ class DataSpider(object):
             firstfile = True
             for tfile in files:
                 if filemask is None:
-                    mask = r".*?\.(fits|FITS)$"
+                    mask = r".*?\.(fits|FITS|fz)$"
                 else:
                     mask = filemask
 
