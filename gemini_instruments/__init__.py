@@ -24,3 +24,4 @@ from . import hokupaa_quirc
 from . import hrwfs
 from . import cirpass
 from . import texes
+from . import skycam
