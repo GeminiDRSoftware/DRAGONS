@@ -549,9 +549,9 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def makeSky(self, adinputs=None, **params):
-        adinputs = self.separateSky(adinputs, **params)
-        adinputs = self.associateSky(adinputs, **params)
-        #adinputs = self.stackSkyFrames(adinputs, **params)
+        adinputs = self.separateSky(adinputs, **self._inherit_params(params, "separateSky"))
+        adinputs = self.associateSky(adinputs, **self._inherit_params(params, "associateSky"))
+        #adinputs = self.stackSkyFrames(adinputs, **self._inherit_params(params, "stackSkyFrames"))
         #self.makeMaskedSky()
         return adinputs
 
@@ -1020,7 +1020,8 @@ class Preprocess(PrimitivesBASE):
         if params["mask_objects"]:
             ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
                         else self.detectSources([ad])[0] for ad in ad_skies]
-            ad_skies = self.dilateObjectMask(ad_skies, **params)
+            dilate_params = self._inherit_params(params, "dilateObjectMask")
+            ad_skies = self.dilateObjectMask(ad_skies, **dilate_params)
             #ad_skies = self.addObjectMaskToDQ(ad_skies)
         sky_dict = dict(zip(skies, ad_skies))
 

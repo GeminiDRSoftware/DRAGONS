@@ -440,8 +440,11 @@ class Standardize(PrimitivesBASE):
                 ad.phu.set('ORIGNAME', ad.orig_filename,
                            'Original filename prior to processing')
 
-        adinputs = self.standardizeObservatoryHeaders(adinputs, **params)
-        adinputs = self.standardizeInstrumentHeaders(adinputs, **params)
+        adinputs = self.standardizeObservatoryHeaders(adinputs,
+                    **self._inherit_params(params, "standardizeObservatoryHeaders"))
+        adinputs = self.standardizeInstrumentHeaders(adinputs,
+                    **self._inherit_params(params, "standardizeInstrumentHeaders",
+                                           use_original_suffix=False))
         return adinputs
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):

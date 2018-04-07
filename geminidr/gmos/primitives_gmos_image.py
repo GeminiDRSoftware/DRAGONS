@@ -326,7 +326,8 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Add object mask to DQ plane and stack with masking
             frinputs = self.addObjectMaskToDQ(frinputs)
-            frinputs = self.stackFrames(frinputs, **params)
+            frinputs = self.stackFrames(frinputs,
+                        **self._inherit_params(params, "stackFrames"))
         return frinputs
 
     def normalizeFlat(self, adinputs=None, **params):

@@ -90,8 +90,11 @@ class CCD(PrimitivesBASE):
         return adinputs
 
     def overscanCorrect(self, adinputs=None, **params):
-        adinputs = self.subtractOverscan(adinputs, **params)
-        adinputs = self.trimOverscan(adinputs, **params)
+        adinputs = self.subtractOverscan(adinputs,
+                    **self._inherit_params(params, "subtractOverscan"))
+        adinputs = self.trimOverscan(adinputs,
+                    **self._inherit_params(params, "trimOverscan",
+                                           use_original_suffix=False))
         return adinputs
 
     def subtractOverscan(self, adinputs=None, **params):
