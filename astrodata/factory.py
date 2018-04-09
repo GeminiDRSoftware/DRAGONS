@@ -66,7 +66,13 @@ class AstroDataFactory(object):
         """
 
         opened = self._openFile(source)
-        candidates = [x for x in self._registry if x._matches_data(opened)]
+        candidates = []
+        for adclass in self._registry:
+            try:
+                if adclass._matches_data(opened):
+                    candidates.append(adclass)
+            except:  # Some problem opening this
+                pass
 
         # For every candidate in the list, remove the ones that are base classes
         # for other candidates. That way we keep only the more specific ones.
