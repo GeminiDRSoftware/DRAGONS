@@ -29,7 +29,7 @@ class Bookkeeping(PrimitivesBASE):
         super(Bookkeeping, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_bookkeeping)
 
-    def addToList(self, adinputs=None, purpose=None, **params):
+    def addToList(self, adinputs=None, purpose=None):
         """
         This primitive will update the lists of files to be stacked
         that have the same observationID with the current inputs.
@@ -42,8 +42,6 @@ class Bookkeeping(PrimitivesBASE):
             purpose/name of this list, used as suffix for files
         """
         log = self.log
-        if purpose is None:
-            purpose = ''
         suffix = '_{}'.format(purpose) if purpose else '_list'
 
         # Update file names and write the files to disk to ensure the right
@@ -63,7 +61,7 @@ class Bookkeeping(PrimitivesBASE):
         save_cache(self.stacks, stkindfile)
         return adinputs
 
-    def clearAllStreams(self, adinputs=None, **params):
+    def clearAllStreams(self, adinputs=None):
         """
         This primitive clears all streams (except "main") by setting them
         to empty lists.
@@ -98,9 +96,7 @@ class Bookkeeping(PrimitivesBASE):
             maximum number of frames to return
         """
         log = self.log
-        purpose = params["purpose"]
-        if purpose is None:
-                purpose = ''
+        purpose = params["purpose"] or '_list'
         # Make comparison checks easier if there's no limit
         max_frames = params['max_frames'] or 1000000
 
@@ -146,22 +142,22 @@ class Bookkeeping(PrimitivesBASE):
         # Return sorted list
         return sorted(adinputs, key=lambda ad: ad.filename)
 
-    def selectFromInputs(self, adinputs=None, **params):
+    def selectFromInputs(self, adinputs=None, tags=None):
         """
         Selects frames whose tags match any one of a list of supplied tags.
         The user is likely to want to redirect the output list.
 
         Parameters
         ----------
-        tags: str/list
+        tags: str/None
             Tags which frames must match to be selected
         """
-        required_tags = params.get("tags") or []
-        if isinstance(required_tags, str):
-            required_tags = required_tags.split(',')
+        if tags is None:
+            return adinputs
+        required_tags = tags.split(',')
 
-        # This selects AD that match *all* the tags. While possibly the most
-        # natural, one can achieve this by a series of matches to each tag
+        # Commented lines select AD that match *all* the tags. While possibly
+        # more natural, one can achieve this by a series of matches to each tag
         # individually. There is, however, no way to combine lists produced
         # this way to create one as if produced by matching *any* of the tags.
         # Hence a match to *any* tag makes more sense as the implementation.
@@ -170,7 +166,7 @@ class Bookkeeping(PrimitivesBASE):
         adoutputs = [ad for ad in adinputs if set(required_tags) & ad.tags]
         return adoutputs
 
-    def showInputs(self, adinputs=None, **params):
+    def showInputs(self, adinputs=None, purpose=None):
         """
         A simple primitive to show the filenames for the current inputs to
         this primitive.
@@ -181,15 +177,13 @@ class Bookkeeping(PrimitivesBASE):
             Brief description for output
         """
         log = self.log
-        purpose = params["purpose"] or "primitive"
+        purpose = purpose or "primitive"
         log.stdinfo("Inputs for {}".format(purpose))
         for ad in adinputs:
             log.stdinfo("  {}".format(ad.filename))
         return adinputs
 
-    showFiles = showInputs
-
-    def showList(self, adinputs=None, purpose=None, **params):
+    def showList(self, adinputs=None, purpose='all'):
         """
         This primitive will log the list of files in the stacking list matching
         the current inputs and 'purpose' value.
@@ -204,8 +198,7 @@ class Bookkeeping(PrimitivesBASE):
         if purpose == 'all':
             [sidset.add(sid) for sid in self.stacks]
         else:
-            if purpose is None:
-                purpose = ''
+            purpose = purpose or '_list'
             [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
         for sid in sidset:
             stacklist = self.stacks.get(sid, [])
@@ -217,7 +210,7 @@ class Bookkeeping(PrimitivesBASE):
                 log.status("No datasets in list")
         return adinputs
 
-    def sortInputs(self, adinputs=None, descriptor=None, reverse=False):
+    def sortInputs(self, adinputs=None, descriptor='filename', reverse=False):
         """
         This sorts the input list according to the values returned by the
         descriptor parameter.
@@ -230,9 +223,6 @@ class Bookkeeping(PrimitivesBASE):
             return list sorted in reverse order?
         """
         log = self.log
-        if descriptor is None:
-            log.warning("No descriptor provided. Cannot sort input list.")
-            return adinputs
 
         # Check the attribute/descriptor exists
         try:
@@ -272,14 +262,6 @@ class Bookkeeping(PrimitivesBASE):
         """
         log = self.log
 
-        if source is None:
-            log.info("No source stream specified so nothing to transfer")
-            return adinputs
-
-        if attribute is None:
-            log.info("No attribute specified so nothing to transfer")
-            return adinputs
-
         if source not in self.streams.keys():
             log.info("Stream {} does not exist so nothing to transfer".format(source))
             return adinputs
@@ -310,7 +292,6 @@ class Bookkeeping(PrimitivesBASE):
 
         if not found:
             log.warning("Did not find any {} attributes to transfer".format(attribute))
-
         return adinputs
 
     def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
@@ -326,6 +307,10 @@ class Bookkeeping(PrimitivesBASE):
             Number of frames to cull from end of input list
         """
         log = self.log
+        if at_start == 0 and at_end == 0:
+            log.stdinfo("No files being removed. Both at_start and at_end are zero.")
+            return adinputs
+
         start_text = ("{} file(s) from start of list".format(at_start)
                       if at_start > 0 else "")
         end_text = ("{} file(s) from end of list".format(at_end)
@@ -333,7 +318,6 @@ class Bookkeeping(PrimitivesBASE):
         conjunction = " and " if start_text and end_text else ""
         log.stdinfo("Removing " + start_text + conjunction + end_text + ".")
         return adinputs[at_start:len(adinputs)-at_end]
-
 
     def writeOutputs(self, adinputs=None, **params):
         """
