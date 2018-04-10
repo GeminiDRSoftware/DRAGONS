@@ -142,6 +142,31 @@ class Bookkeeping(PrimitivesBASE):
         # Return sorted list
         return sorted(adinputs, key=lambda ad: ad.filename)
 
+    def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
+        """
+        This primitive removes a set number of frames from the start and end of the
+        input list.
+
+        Parameters
+        ----------
+        at_start: int
+            Number of frames to cull from start of input list
+        at_end: int
+            Number of frames to cull from end of input list
+        """
+        log = self.log
+        if at_start == 0 and at_end == 0:
+            log.stdinfo("No files being removed. Both at_start and at_end are zero.")
+            return adinputs
+
+        start_text = ("{} file(s) from start of list".format(at_start)
+                      if at_start > 0 else "")
+        end_text = ("{} file(s) from end of list".format(at_end)
+                    if at_end > 0 else "")
+        conjunction = " and " if start_text and end_text else ""
+        log.stdinfo("Removing " + start_text + conjunction + end_text + ".")
+        return adinputs[at_start:len(adinputs) - at_end]
+
     def selectFromInputs(self, adinputs=None, tags=None):
         """
         Selects frames whose tags match any one of a list of supplied tags.
@@ -293,31 +318,6 @@ class Bookkeeping(PrimitivesBASE):
         if not found:
             log.warning("Did not find any {} attributes to transfer".format(attribute))
         return adinputs
-
-    def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
-        """
-        This primitive removes a set number of frames from the start and end of the
-        input list.
-        
-        Parameters
-        ----------
-        at_start: int
-            Number of frames to cull from start of input list
-        at_end: int
-            Number of frames to cull from end of input list
-        """
-        log = self.log
-        if at_start == 0 and at_end == 0:
-            log.stdinfo("No files being removed. Both at_start and at_end are zero.")
-            return adinputs
-
-        start_text = ("{} file(s) from start of list".format(at_start)
-                      if at_start > 0 else "")
-        end_text = ("{} file(s) from end of list".format(at_end)
-                    if at_end > 0 else "")
-        conjunction = " and " if start_text and end_text else ""
-        log.stdinfo("Removing " + start_text + conjunction + end_text + ".")
-        return adinputs[at_start:len(adinputs)-at_end]
 
     def writeOutputs(self, adinputs=None, **params):
         """

@@ -5,6 +5,12 @@ from gempy.library import config
 class addToListConfig(config.Config):
     purpose = config.Field("Purpose of list", str, None, optional=True)
 
+class clearAllStreamsConfig(config.Config):
+    pass
+
+class clearStreamConfig(config.Config):
+    pass
+
 class getListConfig(config.Config):
     purpose = config.Field("Purpose of list", str, None, optional=True)
     max_frames = config.RangeField("Maximum number of frames", int, None, min=1, optional=True)
