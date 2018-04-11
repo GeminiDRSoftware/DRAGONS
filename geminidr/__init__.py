@@ -182,6 +182,7 @@ class PrimitivesBASE(object):
         for k, v in sorted(self.parameters.items(),
                            key=lambda x: len(x[1].__class__.mro())):
             self.parameters[k] = v.__class__()
+
             for cls in reversed(v.__class__.mro()):
                 if cls.__name__.find('Config') > 0:
                     # We may not have yet imported a Config from which we inherit.
@@ -195,7 +196,9 @@ class PrimitivesBASE(object):
                         # Delete history from previous passes through this code
                         for field in new_cls():
                             self.parameters[k]._history[field] = []
-                        self.parameters[k].update(**dict(new_cls().items()))
+                        # Don't try to update parameters which have been deleted
+                        self.parameters[k].update(**{k2: v2 for k2, v2 in new_cls().items()
+                                                         if k2 in self.parameters[k]})
                         cls.setDefaults.__func__(self.parameters[k])
 
     def _inherit_params(self, params, primname, use_original_suffix=True):
