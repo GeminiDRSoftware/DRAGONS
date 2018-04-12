@@ -188,7 +188,7 @@ class Standardize(PrimitivesBASE):
 
         return adinputs
 
-    def addIllumMaskToDQ(self, adinputs=None, **params):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
         """
         Adds an illumination mask to each AD object
 
@@ -202,15 +202,13 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
         # Getting all the filenames first prevents reopening the same file
         # for each science AD
-        illum_list = params['illum_mask']
-        if illum_list is None:
-            illum_list = [self._get_illum_mask_filename(ad) for ad in adinputs]
+        if illum_mask is None:
+            illum_mask = [self._get_illum_mask_filename(ad) for ad in adinputs]
 
-        for ad, illum in zip(*gt.make_lists(adinputs, illum_list, force_ad=True)):
+        for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                     'already been processed by addIllumMaskToDQ'.
@@ -235,11 +233,11 @@ class Standardize(PrimitivesBASE):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
-    def addMDF(self, adinputs=None, **params):
+    def addMDF(self, adinputs=None, suffix=None, mdf=None):
         """
         This primitive is used to add an MDF extension to the input AstroData
         object. If only one MDF is provided, that MDF will be add to all input
@@ -258,12 +256,12 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
-        mdf_list = params["mdf"]
-        if mdf_list is None:
+        if mdf is None:
             self.getMDF(adinputs)
             mdf_list = [self._get_cal(ad, 'mask') for ad in adinputs]
+        else:
+            mdf_list = mdf
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
@@ -302,7 +300,7 @@ class Standardize(PrimitivesBASE):
                                                              ad.filename))
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def addVAR(self, adinputs=None, **params):
@@ -418,9 +416,11 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", "prepare", "starting"))
         timestamp_key = self.timestamp_keys["prepare"]
         sfx = params["suffix"]
-        adinputs = self.validateData(adinputs)
-        adinputs = self.standardizeStructure(adinputs)
-        adinputs = self.standardizeHeaders(adinputs)
+        for primitive in ('validateData', 'standardizeStructure',
+                          'standardizeHeaders'):
+            passed_params = self._inherit_params(params, primitive)
+            adinputs = getattr(self, primitive)(adinputs, **passed_params)
+
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)

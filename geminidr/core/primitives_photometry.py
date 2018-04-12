@@ -7,10 +7,6 @@ import numpy as np
 from astropy.stats import sigma_clip
 from astropy.table import Column
 
-from astrodata.fits import add_header_to_table
-
-from datetime import datetime
-
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
 from gempy.gemini.eti.sextractoreti import SExtractorETI
@@ -114,16 +110,7 @@ class Photometry(PrimitivesBASE):
                     log.warning("Filter {} not in catalogs - unable to flux "
                                 "calibrate".format(filter_name))
                     formulae = []
-                # Call even if magnitudes can't be calculated since adds
-                # a proper FITS header
                 ad.REFCAT = _calculate_magnitudes(refcat, formulae)
-
-                # Match the object catalog against the reference catalog
-                # Update the refid and refmag columns in the object catalog
-                #if any(hasattr(ext, 'OBJCAT') for ext in ad):
-                #    ad = _match_objcat_refcat(ad, self.mode)
-                #else:
-                #    log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -143,8 +130,24 @@ class Photometry(PrimitivesBASE):
             suffix to be added to output files
         mask: bool
             apply DQ plane as a mask before detection?
+        replace_flags: int
+            DQ | replace_flags has to be non-zero to be masked
         set_saturation: bool
             set the saturation level of the data for SExtractor?
+        detect_minarea: int
+            minimum area of detection (pixels)
+        detect_thresh: float
+            detection threshold (standard deviations)
+        analysis_thresh: float
+            analysis threshold (standard deviations)
+        deblend_mincont: float
+            minimum deblending contrast
+        phot_min_radius: float
+            minimum photometry radius (arcseconds)
+        back_size : int
+            background mesh size (pixels)
+        back_filter_size: int
+            background filtering scale
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -184,7 +187,8 @@ class Photometry(PrimitivesBASE):
                 elif value is False:
                     value = 'N'
                 if key == 'phot_min_radius':
-                    sexpars.update({"PHOT_AUTOPARAMS": "2.5,{}".format(value)})
+                    sexpars.update({"PHOT_AUTOPARAMS":
+                                    "2.5,{}".format(value/ad.pixel_scale())})
                 else:
                     sexpars.update({key.upper(): value})
 
@@ -268,10 +272,7 @@ def _calculate_magnitudes(refcat, formulae):
                                  dtype='f4', unit='mag'))
         refcat.add_column(Column(data=dummy_data, name='filtermag_err',
                                  dtype='f4', unit='mag'))
-    # hdr = refcat.meta['header']
-    # hdr.update(add_header_to_table(refcat))
-    # refcat.meta['header'] = hdr
-    if not formulae:
+    else:
         return refcat
 
     # This is a bit ugly: we want to iterate over formulae so we must

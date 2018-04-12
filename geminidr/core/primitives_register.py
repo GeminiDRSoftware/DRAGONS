@@ -89,9 +89,9 @@ class Register(PrimitivesBASE):
             backup method, if the primary one fails
         use_wcs: bool
             use the header's WCS for initial alignment guess, rather than
-            shifts and rotation information in the header
+            shifts and rotation information in the header?
         first_pass: float
-            search radius (UNITS???????) for the initial alignment matching
+            search radius (arcsec) for the initial alignment matching
         min_sources: int
             minimum number of matched sources required to apply a WCS shift
         cull_sources: bool
@@ -123,12 +123,6 @@ class Register(PrimitivesBASE):
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
         scale = params["scale"]
-
-        assert method=='header' or method=='sources', \
-            "Invalid method specified: {}".format(method)
-
-        assert fallback=='header' or fallback is None, \
-            "Invalid fallback method specified: {}".format(fallback)
 
         # Use first image in list as reference
         ref_image = adinputs[0]
@@ -259,6 +253,10 @@ class Register(PrimitivesBASE):
 
         Parameters
         ----------
+        initial: float
+            search radius for cross-correlation (arcsec)
+        final: float
+            search radius for object matching (arcsec)
         full_wcs: bool (or None)
             use an updated WCS for each matching iteration, rather than simply
             applying pixel-based corrections to the initial mapping?

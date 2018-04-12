@@ -139,7 +139,7 @@ class NearIR(PrimitivesBASE):
         gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
         return [flat]
 
-    def lampOnLampOff(self, adinputs=None, **params):
+    def lampOnLampOff(self, adinputs=None):
         """
         This separates the lamp-on and lamp-off flats, stacks them, and subtracts
         one from the other, and returns that single frame. It uses streams to
@@ -169,7 +169,7 @@ class NearIR(PrimitivesBASE):
             else:
                 return []
 
-    def makeLampFlat(self, adinputs=None, **params):
+    def makeLampFlat(self, adinputs=None):
         """
         This is the generic primitive to make a flatfield from lamp flats.
         The default behaviour is to be fed some lamp-on flats and lamp-off
@@ -190,7 +190,7 @@ class NearIR(PrimitivesBASE):
         adinputs = self.rejectInputs(adinputs, at_start=1)
         return adinputs
 
-    def separateFlatsDarks(self, adinputs=None, **params):
+    def separateFlatsDarks(self, adinputs=None):
         """
         This primitive produces two streams, one containing flats, and one
         containing darks
@@ -221,7 +221,7 @@ class NearIR(PrimitivesBASE):
         self.streams.update({"darks" : dark_list})
         return adinputs
 
-    def stackDarks(self, adinputs=None, **params):
+    def stackDarks(self, adinputs=None):
         """
         This primitive stacks the files in the "darks" stream, after checking
         they have the same exposure time, and returns the output there.

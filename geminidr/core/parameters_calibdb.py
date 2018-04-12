@@ -38,6 +38,18 @@ class getProcessedFlatConfig(config.Config):
 class getProcessedFringeConfig(config.Config):
     refresh = config.Field("Refresh existing calibration associations?", bool, True)
 
+class getMDFConfig(config.Config):
+    pass
+
+class storeCalibrationConfig(config.Config):
+    caltype = config.ChoiceField("Type of calibration", str,
+                                 allowed = {"processed_arc": "processed ARC",
+                                            "processed_bias": "procsessed BIAS",
+                                            "processed_dark": "processed DARK",
+                                            "processed_flat": "processed FLAT",
+                                            "processed_fringe": "processed fringe"},
+                                 optional=False)
+
 class storeProcessedArcConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_arc")
 
@@ -52,12 +64,3 @@ class storeProcessedFlatConfig(config.Config):
 
 class storeProcessedFringeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_fringe")
-
-class storeCalibrationConfig(config.Config):
-    caltype = config.ChoiceField("Type of calibration", str,
-                                 allowed = {"processed_arc": "processed ARC",
-                                            "processed_bias": "procsessed BIAS",
-                                            "processed_dark": "processed DARK",
-                                            "processed_flat": "processed FLAT",
-                                            "processed_fringe": "processed fringe"},
-                                 optional=False)

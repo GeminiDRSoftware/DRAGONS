@@ -4,7 +4,7 @@ from gempy.library import config
 from . import parameters_standardize
 
 class addLatencyToDQConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_latencyAdded")
+    suffix = config.Field("Filename suffix", str, "_latencyAdded", optional=True)
     non_linear = config.Field("Flag non-linear pixels?", bool, False)
     time = config.RangeField("Persistence time (seconds)", float, 120., min=0.)
 
@@ -27,7 +27,4 @@ class separateFlatsDarksConfig(config.Config):
     pass
 
 class stackDarksConfig(config.Config):
-    pass
-
-class thermalEmissionCorrectConfig(config.Config):
     pass

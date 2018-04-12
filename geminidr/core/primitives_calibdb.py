@@ -61,16 +61,10 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
-        caltype = params.get('caltype')
-        calfile = params.get('calfile')
-        log = self.log
-        if caltype is None or calfile is None:
-            log.error("getCalibration: Received no caltype or calfile")
-            raise TypeError("getCalibration: Received no caltype or calfile.")
-
+        caltype = params["caltype"]
+        calfile = params["calfile"]
         for ad in adinputs:
             self.calibrations[ad, caltype] = calfile
-
         return adinputs
 
     def getCalibration(self, adinputs=None, caltype=None, refresh=True,
@@ -93,10 +87,6 @@ class CalibDB(PrimitivesBASE):
             the filename of one, rather than a list of filenames)
         """
         log = self.log
-        if caltype is None:
-            log.error("getCalibration: Received no caltype")
-            raise TypeError("getCalibration: Received no caltype.")
-
         ad_rq = adinputs if refresh else [ad for ad in adinputs
                                           if not self._get_cal(ad, caltype)]
         cal_requests = get_cal_requests(ad_rq, caltype)
@@ -143,7 +133,7 @@ class CalibDB(PrimitivesBASE):
             log.warning(wstr)
         return adinputs
 
-    def getMDF(self, adinputs=None, **params):
+    def getMDF(self, adinputs=None):
         caltype = "mask"
         log = self.log
         inst_lookups = self.inst_lookups

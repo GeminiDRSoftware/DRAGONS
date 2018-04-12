@@ -20,7 +20,6 @@ class stackFramesConfig(config.Config):
     nhigh = config.RangeField("Number of high pixels to reject", int, 1, min=0)
     remove_background = config.Field("Remove background from images?", bool, False)
 
-
 class stackSkyFramesConfig(stackFramesConfig):
     mask_objects = config.Field("Mask objects before stacking?", bool, True)
     dilation = config.RangeField("Object dilation radius (pixels)", float, 2., min=0)
@@ -40,6 +39,6 @@ class stackFlatsConfig(stackFramesConfig):
     def setDefaults(self):
         self.reject_method = "minmax"
         self.scale = True
-        self.zero = False
+        del self.zero
 
 # TODO: Do we want stackSkyFlats with object removal?

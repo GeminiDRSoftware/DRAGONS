@@ -27,7 +27,7 @@ class CCD(PrimitivesBASE):
         super(CCD, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_ccd)
 
-    def biasCorrect(self, adinputs=None, **params):
+    def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_bias=True):
         """
         The biasCorrect primitive will subtract the science extension of the
         input bias frames from the science extension of the input science
@@ -41,19 +41,22 @@ class CCD(PrimitivesBASE):
             suffix to be added to output files
         bias: str/list of str
             bias(es) to subtract
+        do_bias: bool
+            perform bias subtraction?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if not params["do_bias"]:
+        if not do_bias:
             log.warning("Bias correction has been turned off.")
             return adinputs
 
-        bias_list = params["bias"]
-        if bias_list is None:
+        if bias is None:
             self.getProcessedBias(refresh=False)
             bias_list = self._get_cal(adinputs, 'processed_bias')
+        else:
+            bias_list = bias
 
         # Provide a bias AD object for every science frame
         for ad, bias in zip(*gt.make_lists(adinputs, bias_list, force_ad=True)):
@@ -86,15 +89,13 @@ class CCD(PrimitivesBASE):
             # Record bias used, timestamp, and update filename
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def overscanCorrect(self, adinputs=None, **params):
         adinputs = self.subtractOverscan(adinputs,
                     **self._inherit_params(params, "subtractOverscan"))
-        adinputs = self.trimOverscan(adinputs,
-                    **self._inherit_params(params, "trimOverscan",
-                                           use_original_suffix=False))
+        adinputs = self.trimOverscan(adinputs, suffix=params["suffix"])
         return adinputs
 
     def subtractOverscan(self, adinputs=None, **params):
@@ -112,14 +113,12 @@ class CCD(PrimitivesBASE):
             number of standard deviations above which to reject high pixels
         low_reject: float
             number of standard deviations above which to reject low pixels
-        overscan_section: str/None
-            comma-separated list of IRAF-style overscan sections
         nbiascontam: int/None
             number of columns adjacent to the illuminated region to reject
-        function: str
+        function: str/None
             function to fit ("polynomial" | "spline" | "none")
         order: int
-            order of Chebyshev fit or spline/None
+            order of fit or spline/None
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -133,19 +132,6 @@ class CCD(PrimitivesBASE):
         func = (params["function"] or 'none').lower()
         nbiascontam = params["nbiascontam"]
 
-        if lo_rej < 0:
-            log.warning("Low rejection threshold set to invalid value. "
-                        "Ignorning.")
-            lo_rej = None
-        if hi_rej < 0:
-            log.warning("High rejection threshold set to invalid value. "
-                        "Ignorning.")
-            hi_rej = None
-
-        if not(func.startswith('poly') or func == 'spline' or func=='none'):
-            log.warning("Unrecognized function {}.".format(func))
-            func = 'none'
-
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -155,7 +141,6 @@ class CCD(PrimitivesBASE):
 
             osec_list = ad.overscan_section()
             dsec_list = ad.data_section()
-            ybinning = ad.detector_y_bin()
             for i, (ext, osec, dsec) in enumerate(zip(ad, osec_list, dsec_list)):
                 x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
                 if x1 > dsec.x1:  # Bias on right
@@ -234,7 +219,7 @@ class CCD(PrimitivesBASE):
 
         return adinputs
 
-    def trimOverscan(self, adinputs=None, **params):
+    def trimOverscan(self, adinputs=None, suffix=None):
         """
         The trimOverscan primitive trims the overscan region from the input
         AstroData object and updates the headers.
@@ -247,7 +232,6 @@ class CCD(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key) is not None:
@@ -262,5 +246,5 @@ class CCD(PrimitivesBASE):
             # Set keyword, timestamp, and update filename
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
