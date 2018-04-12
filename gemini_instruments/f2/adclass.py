@@ -464,6 +464,7 @@ class AstroDataF2(AstroDataGemini):
                    if zpt and g else None
                    for g, b in zip(gain, bunit)]
 
+    @returns_list
     @astro_data_descriptor
     def nonlinearity_coeffs(self):
         return getattr(array_properties.get(self.read_mode()), 'coeffs', None)
