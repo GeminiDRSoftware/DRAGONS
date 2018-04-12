@@ -35,15 +35,16 @@ class GSAOIImage(GSAOI, Image, Photometry):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # Since this primitive needs a reference, it must no-op without any
+        # Leave now with empty list to avoid error when looking at adinputs[0]
         if not adinputs:
             return adinputs
 
         if adinputs[0].effective_wavelength(output_units='micrometers') < 1.4:
             log.stdinfo('Using stackFrames to make flatfield')
-            adinputs = self.stackFrames(adinputs)
+            params.update({'scale': False, 'zero': False})
+            adinputs = self.stackFrames(adinputs, *params)
         else:
-            log.stdinfo('Using lampOnLampOff to make flatfield')
-            adinputs = self.lampOnLampOff(adinputs)
+            log.stdinfo('Using standard makeLampFlat primitive to make flatfield')
+            adinputs = super(GSAOIImage, self).makeLampFlat(adinputs, **params)
 
         return adinputs
