@@ -360,7 +360,12 @@ class Field(object):
         if instance._frozen:
             raise FieldValidationError(self, instance, "Cannot modify a frozen Config")
 
+        if at is None:
+            at = getCallStack()
+        # setDefaults() gets a free pass due to our mashing of inheritance
         if self.name not in instance._fields:
+            if any('setDefaults' in stk.function for stk in at):
+                return
             raise AttributeError("{} has no attribute {}".format(instance.__class__.__name__, self.name))
 
         history = instance._history.setdefault(self.name, [])
@@ -372,8 +377,6 @@ class Field(object):
                 raise FieldValidationError(self, instance, str(e))
 
         instance._storage[self.name] = value
-        if at is None:
-            at = getCallStack()
         # We don't want to put an actual AD object here, so just the filename
         value_to_append = value.filename if isinstance(value, AstroData) else value
         history.append((value_to_append, at, label))
@@ -788,7 +791,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         if attr in self._fields:
             #self._fields[attr].__delete__(self, at=at, label=label)
             del self._fields[attr]
-        elif at[-1].function != 'setDefaults':
+        elif not any(stk.function== 'setDefaults' for stk in at):
             object.__delattr__(self, attr)
 
     def __eq__(self, other):

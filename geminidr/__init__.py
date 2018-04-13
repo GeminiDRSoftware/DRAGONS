@@ -175,7 +175,8 @@ class PrimitivesBASE(object):
             if isclass(obj) and issubclass(obj, config.Config):
                 primname = attr.replace("Config", "")
                 # Allow classes purely for inheritance purposes to be ignored
-                if hasattr(self, primname):
+                # Wanted to use hasattr(self) but things like NearIR don't inherit
+                if attr.endswith("Config"):
                     self.parameters[primname] = obj()
 
         # Play a bit fast and loose with python's inheritance. We need to check
@@ -196,13 +197,18 @@ class PrimitivesBASE(object):
                     except KeyError:
                         pass
                     else:
+                        # Inherit Fields from the latest version of the Config
                         # Delete history from previous passes through this code
                         for field in new_cls():
-                            self.parameters[k]._history[field] = []
-                        # Don't try to update parameters which have been deleted
-                        self.parameters[k].update(**{k2: v2 for k2, v2 in new_cls().items()
-                                                         if k2 in self.parameters[k]})
-                    cls.setDefaults.__func__(self.parameters[k])
+                            if field in self.parameters[k]:
+                                self.parameters[k]._fields[field] = new_cls._fields[field]
+                                self.parameters[k]._history[field] = []
+                    # Call inherited setDefaults from configs with the same name
+                    # but final versions of others
+                    if cls.__name__ == k+'Config':
+                        cls.setDefaults.__func__(self.parameters[k])
+                    else:
+                        new_cls.setDefaults.__func__(self.parameters[k])
 
     def _inherit_params(self, params, primname, pass_suffix=False):
         """Create a dict of params for a primitive from a larger dict,
