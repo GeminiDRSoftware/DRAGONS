@@ -16,6 +16,14 @@ class AstroDataOscir(AstroDataGemini):
         return TagSet(['OSCIR'])
 
     @astro_data_descriptor
+    def airmass(self):
+        return float(self.phu.get('AIRMASS1'))
+
+    @astro_data_descriptor
+    def exposure_time(self):
+        return float(self.phu.get('EXPTIME'))
+
+    @astro_data_descriptor
     def dec(self):
         """
         Returns the Declination of the center of the field, in degrees.
