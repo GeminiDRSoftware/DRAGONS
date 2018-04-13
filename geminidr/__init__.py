@@ -201,14 +201,14 @@ class PrimitivesBASE(object):
                         # Delete history from previous passes through this code
                         for field in new_cls():
                             if field in self.parameters[k]:
-                                self.parameters[k]._fields[field] = new_cls._fields[field]
                                 self.parameters[k]._history[field] = []
-                    # Call inherited setDefaults from configs with the same name
-                    # but final versions of others
-                    if cls.__name__ == k+'Config':
-                        cls.setDefaults.__func__(self.parameters[k])
-                    else:
-                        new_cls.setDefaults.__func__(self.parameters[k])
+                                self.parameters[k]._fields[field] = new_cls._fields[field]
+                        # Call inherited setDefaults from configs with the same name
+                        # but final versions of others
+                        if cls.__name__ == k+'Config':
+                            cls.setDefaults.__func__(self.parameters[k])
+                        else:
+                            new_cls.setDefaults.__func__(self.parameters[k])
 
     def _inherit_params(self, params, primname, pass_suffix=False):
         """Create a dict of params for a primitive from a larger dict,
