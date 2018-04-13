@@ -27,6 +27,7 @@ class AstroDataTexes(AstroDataGemini):
         target_ra = 'TARGRA',
         target_dec = 'TARGDEC',
         exposure_time = 'OBSTIME',
+        observation_type = 'OBSTYPE',
         )
 
     @classmethod
@@ -86,9 +87,15 @@ class AstroDataTexes(AstroDataGemini):
         return self.phu.get(self._keyword_for('exposure_time'))
 
     @astro_data_descriptor
+    def observation_type(self):
+        return self.phu.get(self._keyword_for('observation_type'))
+    
+    @astro_data_descriptor
     def ra(self):
         return self.phu.get(self._keyword_for('ra'))
 
     @astro_data_descriptor
     def dec(self):
         return self.phu.get(self._keyword_for('dec'))
+
+    
