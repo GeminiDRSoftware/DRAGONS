@@ -88,7 +88,7 @@ class AstroDataTexes(AstroDataGemini):
 
     @astro_data_descriptor
     def observation_type(self):
-        return self.phu.get(self._keyword_for('observation_type'))
+        return self.phu.get('OBSTYPE').upper()
     
     @astro_data_descriptor
     def ra(self):
