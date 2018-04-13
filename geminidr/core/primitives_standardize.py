@@ -170,7 +170,7 @@ class Standardize(PrimitivesBASE):
 
 
         # Handle latency if reqested
-        if params["latency"]:
+        if params.get("latency", False):
             try:
                 adinputs = self.addLatencyToDQ(adinputs)
             except AttributeError:
@@ -179,7 +179,7 @@ class Standardize(PrimitivesBASE):
 
         # Add the illumination mask if requested
         if params['add_illum_mask']:
-            adinputs = self.addIllumMaskToDQ(adinputs, mask=params["illum_mask"])
+            adinputs = self.addIllumMaskToDQ(adinputs, illum_mask=params["illum_mask"])
 
         # Timestamp and update filenames
         for ad in adinputs:
@@ -444,7 +444,7 @@ class Standardize(PrimitivesBASE):
                     **self._inherit_params(params, "standardizeObservatoryHeaders"))
         adinputs = self.standardizeInstrumentHeaders(adinputs,
                     **self._inherit_params(params, "standardizeInstrumentHeaders",
-                                           use_original_suffix=False))
+                                           pass_suffix=True))
         return adinputs
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):

@@ -173,7 +173,10 @@ class PrimitivesBASE(object):
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
-                self.parameters[attr.replace("Config", "")] = obj()
+                primname = attr.replace("Config", "")
+                # Allow classes purely for inheritance purposes to be ignored
+                if hasattr(self, primname):
+                    self.parameters[primname] = obj()
 
         # Play a bit fast and loose with python's inheritance. We need to check
         # if we're redefining a Config that has already been inherited by
@@ -199,9 +202,9 @@ class PrimitivesBASE(object):
                         # Don't try to update parameters which have been deleted
                         self.parameters[k].update(**{k2: v2 for k2, v2 in new_cls().items()
                                                          if k2 in self.parameters[k]})
-                        cls.setDefaults.__func__(self.parameters[k])
+                    cls.setDefaults.__func__(self.parameters[k])
 
-    def _inherit_params(self, params, primname, use_original_suffix=True):
+    def _inherit_params(self, params, primname, pass_suffix=False):
         """Create a dict of params for a primitive from a larger dict,
         using only those that the primitive needs
         
@@ -211,10 +214,10 @@ class PrimitivesBASE(object):
             parent parameter dictionary
         primname: str
             name of primitive to be called
-        use_original_suffix: bool
-            if True, don't pass "suffix" parameter
+        pass_suffix: bool
+            pass "suffix" parameter?
         """
         passed_params = {k: v for k, v in params.items()
-                    if k in list(self.parameters[primname]) and
-                         not (k == "suffix" and use_original_suffix)}
+                         if k in list(self.parameters[primname]) and
+                         not (k == "suffix" and not pass_suffix)}
         return passed_params

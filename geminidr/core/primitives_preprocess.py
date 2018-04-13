@@ -560,7 +560,7 @@ class Preprocess(PrimitivesBASE):
             log.status("Applying nonlinearity correction to {}".
                        format(ad.filename))
             for ext, coeffs in zip(ad, nonlin_coeffs):
-                log.status("   nonlinearity correction for EXTVER {} is {:s}".
+                log.status("   nonlinearity correction for EXTVER {} is {}".
                            format(ext.hdr['EXTVER'], coeffs))
                 pixel_data = np.zeros_like(ext.data)
 

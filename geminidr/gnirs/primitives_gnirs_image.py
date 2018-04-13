@@ -55,7 +55,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
         # next to no signal in the lamp-off.
         #
         # BEWARE: See note on the only GCAL_IR_OFF case below this block.   
-        lampons = [ad for ad in adinputs if 'GCAL_IR_ON' in ad.tags]
+        lampons = self.selectFromInputs(adinputs, 'GCAL_IR_ON')
         reference = lampons[0] if lampons else adinputs[0]
                    
         # When only a GCAL_IR_OFF is available:

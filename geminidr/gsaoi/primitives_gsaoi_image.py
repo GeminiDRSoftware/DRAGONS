@@ -42,7 +42,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
         if adinputs[0].effective_wavelength(output_units='micrometers') < 1.4:
             log.stdinfo('Using stackFrames to make flatfield')
             params.update({'scale': False, 'zero': False})
-            adinputs = self.stackFrames(adinputs, *params)
+            adinputs = self.stackFrames(adinputs, **params)
         else:
             log.stdinfo('Using standard makeLampFlat primitive to make flatfield')
             adinputs = super(GSAOIImage, self).makeLampFlat(adinputs, **params)

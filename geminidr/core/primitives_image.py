@@ -28,8 +28,8 @@ class Image(Register, Resample):
     def fringeCorrect(self, adinputs=None, **params):
         self.getProcessedFringe(adinputs)
         adinputs = self.subtractFringe(adinputs,
-                    **self._inherit_params(params, "subtractFringe",
-                                           use_original_suffix=False))
+                                       **self._inherit_params(params, "subtractFringe",
+                                                              pass_suffix=False))
         return adinputs
 
     def makeFringe(self, adinputs=None, **params):

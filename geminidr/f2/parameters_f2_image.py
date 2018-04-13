@@ -2,9 +2,9 @@
 # in the primitives_f2.py file, in alphabetical order.
 from gempy.library import config
 from astrodata import AstroData
-from geminidr.core import parameters_photometry, parameters_stack, parameters_standardize
+from geminidr.core import parameters_photometry, parameters_stack, parameters_nearIR
 
-class addDQConfig(parameters_standardize.addDQConfig):
+class addDQConfig(parameters_nearIR.addDQConfig):
     def setDefaults(self):
         self.add_illum_mask = True
 

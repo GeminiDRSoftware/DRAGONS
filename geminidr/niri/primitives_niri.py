@@ -28,7 +28,7 @@ class NIRI(Gemini, NearIR):
         self.inst_lookups = 'geminidr.niri.lookups'
         self._param_update(parameters_niri)
 
-    def nonlinearityCorrect(self, adinputs=None, **params):
+    def nonlinearityCorrect(self, adinputs=None, suffix=None):
         """
         Run on raw or nprepared Gemini NIRI data, this script calculates and
         applies a per-pixel linearity correction based on the counts in the
@@ -117,10 +117,10 @@ class NIRI(Gemini, NearIR):
             
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
     
-    def standardizeInstrumentHeaders(self, adinputs=None, **params):
+    def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """
         This primitive is used to make the changes and additions to the
         keywords in the headers of NIRI data, specifically.
@@ -177,5 +177,5 @@ class NIRI(Gemini, NearIR):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs

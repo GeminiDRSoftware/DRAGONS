@@ -10,7 +10,6 @@ class displayConfig(config.Config):
     frame = config.RangeField("Starting frame for display", int, 1, min=1)
     ignore = config.Field("Turn off display?", bool, False)
     overlay = config.ListField("Overlays for display", tuple, None, optional=True)
-    remove_bias = config.Field("Remove estimated bias level before displaying?", bool, False)
     threshold = config.Field("Threshold level for indicating saturation",
                              (str, float), "auto", optional=True, check=thresholdCheck)
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)

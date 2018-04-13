@@ -51,6 +51,7 @@ class Stack(PrimitivesBASE):
 
     def stackFlats(self, adinputs=None, **params):
         """Default behaviour is just to stack images as normal"""
+        params["zero"] = False
         return self.stackFrames(adinputs, **params)
 
     def stackFrames(self, adinputs=None, **params):
@@ -247,13 +248,11 @@ class Stack(PrimitivesBASE):
                         "Setting zero=False.")
             zero = False
 
-        # Parameters to be passed to stackFrames
-        stack_params = {k: v for k,v in params.items() if
-                        k in list(self.parameters['stackFrames']) and k != "suffix"}
-        # We're taking care of the varying sky levels here so stop
+        # We're taking care of the varying sky levels here (using a more
+        # accurate determination of the sky level) so we need to stop
         # stackFrames from getting involved
-        stack_params.update({'zero': False,
-                             'remove_background': False})
+        stack_params = self._inherit_params(params, 'stackFrames')
+        stack_params.update({'zero': False, 'scale': False})
 
         # Run detectSources() on any frames without any OBJMASKs
         if params["mask_objects"]:

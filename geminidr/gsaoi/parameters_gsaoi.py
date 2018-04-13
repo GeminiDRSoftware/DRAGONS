@@ -14,7 +14,7 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
 
 class tileArraysConfig(parameters_visualize.tileArraysConfig):
     def setDefaults(self):
-        self.tile_all = True
+        del self.tile_all
 
 class validateDataConfig(parameters_standardize.validateDataConfig):
     def setDefaults(self):

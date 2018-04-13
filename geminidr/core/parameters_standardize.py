@@ -11,7 +11,6 @@ class addDQConfig(addIllumMaskToDQConfig):
     static_bpm = config.Field("Static bad pixel mask", (str, AstroData), "default", optional=True)
     user_bpm = config.Field("User bad pixel mask", (str, AstroData), None, optional=True)
     add_illum_mask = config.Field("Apply illumination mask?", bool, False)
-    latency = config.Field("Apply latency for saturated pixels?", bool, False)
 
     def setDefaults(self):
         self.suffix = "_dqAdded"

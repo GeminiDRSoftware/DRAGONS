@@ -6,8 +6,7 @@ from __future__ import print_function
 #                                                             primitives_gmos.py
 # ------------------------------------------------------------------------------
 from builtins import zip
-from builtins import range
-from past.utils import old_div
+
 import os
 import numpy as np
 from copy import deepcopy
@@ -147,7 +146,7 @@ class GMOS(Gemini, CCD):
             adoutputs.append(ad_out)
         return adoutputs
 
-    def standardizeInstrumentHeaders(self, adinputs=None, **params):
+    def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """
         This primitive is used to make the changes and additions to the
         keywords in the headers of GMOS data, specifically.
@@ -232,7 +231,7 @@ class GMOS(Gemini, CCD):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad)
         return adoutputs
 

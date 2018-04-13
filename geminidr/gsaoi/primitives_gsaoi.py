@@ -29,7 +29,7 @@ class GSAOI(Gemini, NearIR):
         self.inst_lookups = 'geminidr.gsaoi.lookups'
         self._param_update(parameters_gsaoi)
 
-    def standardizeInstrumentHeaders(self, adinputs=None, **params):
+    def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """
         This primitive is used to make the changes and additions to the
         keywords in the headers of GSAOI data, specifically.
@@ -93,10 +93,10 @@ class GSAOI(Gemini, NearIR):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def tileArrays(self, adinputs=None, **params):
+    def tileArrays(self, adinputs=None, suffix=None):
         """
         This primitive tiles the four GSAOI arrays, producing a single
         extension. The tiling is very approximate, and primarily for display
@@ -106,25 +106,12 @@ class GSAOI(Gemini, NearIR):
         ----------
         suffix: str
             suffix to be added to output files
-        tile_all: bool
-            not relevant here (False no-ops)
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        tile_all = params["tile_all"]
 
         for ad in adinputs:
-            if not tile_all or len(ad) == 1:
-                log.fullinfo("Only one science extension found or tile_all "
-                        "disabled;\n no tiling done for {}".format(ad.filename))
-                continue
-
-            # First trim off any unused border regions still present
-            # so they won't get tiled with science data:
-            log.fullinfo("Trimming to data section:")
-            ad = gt.trim_to_data_section(ad, keyword_comments=self.keyword_comments)
-
             # Determine output size and info to determine locations of arrays
             # Gap size estimated at 3.0 arcsec from Disco-Stu output tiles
             detsec_list = ad.detector_section()
@@ -193,7 +180,7 @@ class GSAOI(Gemini, NearIR):
 
             # Timestamp and update header
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
