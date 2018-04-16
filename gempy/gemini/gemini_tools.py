@@ -15,6 +15,7 @@ import re
 import sys
 import numbers
 import warnings
+import itertools
 import numpy as np
 
 from copy import deepcopy
@@ -1285,93 +1286,54 @@ def log_message(function=None, name=None, message_type=None):
         message = 'The {} {} completed successfully'.format(name, function)
     return message
 
-def make_dict(key_list=None, value_list=None):
+def make_lists(*args, **kwargs):
     """
-    The make_dict function creates a dictionary with the elements in 'key_list'
-    as the key and the elements in 'value_list' as the value to create an
-    association between the input science dataset (the 'key_list') and a, for
-    example, dark that is needed to be subtracted from the input science
-    dataset. This function also does some basic checks to ensure that the
-    filters, exposure time etc are the same. No it doesn't.
+    The make_lists function attaches auxiliary things to an input key_list
+    of (normally) AD objects. Each key gets exactly one auxilary thing from
+    each other list -- these lists can be as long as the key_list, or have
+    only one item in (in which case they don't have to be lists at all).
 
     Parameters
     ----------
-    key_list: list of AstroData objects
-        the keys for the dict
-    value_list: list of AstroData objects
-        the values for the dict
-
-    Returns
-    -------
-    dict
-        the dict made from the keys and values
-    """
-    # Check the inputs have matching filters, binning and SCI shapes.
-    ret_dict = {}
-    if not isinstance(key_list, list):
-        key_list = [key_list]
-    if not isinstance(value_list, list):
-        value_list = [value_list]
-    # We allow only one value that can be assigned to multiple keys
-    if len(value_list) == 1:
-        value_list *= len(key_list)
-
-    for key, value in zip(key_list, value_list):
-        ret_dict[key] = value
-        # Old error for incompatible list lengths
-        #   msg = """Number of AstroData objects in key_list does not match
-        #   with the number of AstroData objects in value_list. Please provide
-        #   lists containing the same number of AstroData objects. Please
-        #   supply either a single AstroData object in value_list to be applied
-        #   to all AstroData objects in key_list OR the same number of
-        #   AstroData objects in value_list as there are in key_list"""
-    
-    return ret_dict
-
-def make_lists(key_list=None, value_list=None, force_ad=False):
-    """
-    The make_list function returns two lists, one of the keys and one of the
-    values. It ensures that both inputs are made into lists if they weren't
-    originally. It also expands the list of values to be the same length as
-    the list of keys, if only one value was given.
-
-    Parameters
-    ----------
-    key_list: list of AstroData objects
-        the keys for the dict
-    value_list: list of AstroData objects
-        the values for the dict
-    force_ad: bool
+    args: lists of str/AD (or single str/AD)
+        key_list and auxiliary things to be matched to each AD
+    kwargs["force_ad"]: bool
         coerce strings into AD objects?
 
     Returns
     -------
-    2-tuple of lists
+    tuple of lists
         the lists made from the keys and values
     """
-    if not isinstance(key_list, list):
-        key_list = [key_list]
-    if not isinstance(value_list, list):
-        value_list = [value_list]
+    force_ad = kwargs.pop("force_ad", False)
+    if kwargs:
+        raise TypeError("make_lists() got unexpected keyword arguments "
+                        "{}".format(kwargs.keys()))
+
+    ret_value = [arg if isinstance(arg, (list, tuple)) else [arg]
+                 for arg in args]
+
     # We allow only one value that can be assigned to multiple keys
-    if len(value_list) == 1:
-        value_list *= len(key_list)
+    len_list = len(ret_value[0])
+    if len_list > 1:
+        for i in range(1, len(ret_value)):
+            if len(ret_value[i]) == 1:
+                ret_value[i] *= len_list
+
     if force_ad:
-        key_list = [x if isinstance(x, astrodata.AstroData) or x is None else
-                    astrodata.open(x) for x in key_list]
-        # We only want to open as many AD objects as there are unique entries
-        # in value_list, so collapse to set and multiple keys with the same
-        # value will be assigned references to the same open AD object
+        # We only want to open as many AD objects as there are unique entries,
+        # so collapse all items in lists to a set and multiple keys with the
+        # same value will be assigned references to the same open AD object
         ad_map_dict = {}
-        for x in set(value_list):
+        for x in set(itertools.chain(*ret_value)):
             try:
                 ad_map_dict.update({x: x if isinstance(x, astrodata.AstroData)
                                         or x is None else astrodata.open(x)})
             except:
                 ad_map_dict.update({x: None})
-        value_list = [ad_map_dict[x] for x in value_list]
+        ret_value = [[ad_map_dict[x] for x in List] for List in ret_value]
 
-    return key_list, value_list
+    return ret_value
 
 @handle_single_adinput
 def mark_history(adinput=None, keyword=None, primname=None, comment=None):
