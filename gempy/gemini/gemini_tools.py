@@ -9,7 +9,6 @@ from builtins import str
 from builtins import zip
 from builtins import range
 from builtins import object
-from past.utils import old_div
 import os
 import re
 import sys
@@ -39,7 +38,7 @@ from astrodata import __version__ as ad_version
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
-    return 0.5*(1.0+erf(old_div((x-mean),(1.414213562*stddev))))
+    return 0.5*(1.0+erf((x-mean) / (1.414213562*stddev)))
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -498,8 +497,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
             # Array section is unbinned; to use as indices for
             # extracting data, need to divide by the binning
             arraysec = [
-              old_div(arraysec[0], sci_xbin), old_div(arraysec[1], sci_xbin),
-              old_div(arraysec[2], sci_ybin), old_div(arraysec[3], sci_ybin)]
+              arraysec[0] // sci_xbin, arraysec[1] // sci_xbin,
+              arraysec[2] // sci_ybin, arraysec[3] // sci_ybin]
 
             # Check whether science data has been overscan-trimmed
             science_shape = ext.data.shape[-2:]
@@ -516,8 +515,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                 # Array section is unbinned; to use as indices for
                 # extracting data, need to divide by the binning
                 aarraysec = [
-                    old_div(aarraysec[0], sci_xbin), old_div(aarraysec[1], sci_xbin),
-                    old_div(aarraysec[2], sci_ybin), old_div(aarraysec[3], sci_ybin)]
+                    aarraysec[0] // sci_xbin, aarraysec[1] // sci_xbin,
+                    aarraysec[2] // sci_ybin, aarraysec[3] // sci_ybin]
 
                 # Check whether auxiliary detector section contains
                 # science detector section
@@ -844,7 +843,7 @@ def clip_sources(ad):
             good_sources.append(Table())
             continue
 
-        stellar = np.fabs(old_div(objcat['FWHM_IMAGE'],1.08) - objcat['PROFILE_FWHM']
+        stellar = np.fabs((objcat['FWHM_IMAGE'] / 1.08) - objcat['PROFILE_FWHM']
                           ) < 0.2*objcat['FWHM_IMAGE'] if is_ao else \
                     objcat['CLASS_STAR'] > 0.8
 
@@ -1080,16 +1079,16 @@ def fit_continuum(ad):
     pixel_scale = ad.pixel_scale()
     
     # Set full aperture to 4 arcsec
-    ybox = int(old_div(2.0, pixel_scale))
+    ybox = int(2.0 / pixel_scale)
 
     # Average 512 unbinned columns together
-    xbox = old_div(256, ad.detector_x_bin())
+    xbox = 256 // ad.detector_x_bin()
 
     # Average 16 unbinned background rows together
-    bgbox = old_div(8, ad.detector_x_bin())
+    bgbox = 8 // ad.detector_x_bin()
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
-    init_width = old_div(1.2, (pixel_scale * (2 * np.sqrt(2 * np.log(2)))))
+    init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
 
     # Ignore spectrum if not >1.5*background
     s2n_bg = 1.5
@@ -1115,7 +1114,7 @@ def fit_continuum(ad):
                     log.warning("No MDF is attached. Did addMDF find one?")
                 continue
             else:
-                shuffle = int(old_div(ad.shuffle_pixels(), ad.detector_y_bin()))
+                shuffle = ad.shuffle_pixels() // ad.detector_y_bin()
                 centers = [shuffle + np.argmax(signal[shuffle:shuffle*2])]
                 half_widths = [ybox]
         else:
@@ -1177,7 +1176,7 @@ def fit_continuum(ad):
                 dqcol = np.sum(dqbox==0, axis=1)
                 if np.any(dqcol==0):
                     continue
-                col = old_div(np.sum(databox, axis=1), dqcol)
+                col = np.sum(databox, axis=1) / dqcol
                 maxflux = np.max(abs(col))
                 
                 # Crude SNR test; is target bright enough in this wavelength range?
@@ -1200,7 +1199,7 @@ def fit_continuum(ad):
                     # N&S; background should be close to zero
                     bg = models.Const1D(0.)
                     # Fix background=0 if slit is in region where sky-subtraction will occur 
-                    if center > old_div(ad.shuffle_pixels(), ad.detector_y_bin()):
+                    if center > ad.shuffle_pixels() // ad.detector_y_bin():
                             bg.amplitude.fixed = True
                 else:
                     # Not N&S; background estimated from image
@@ -1943,7 +1942,7 @@ class ExposureGroup(object):
         # Update the group centroid to account for the new points:
         new_vals = list(addict.values())
         newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_cen = [old_div((cval * ngroups + nval), ntot) \
+        self.group_cen = [(cval * ngroups + nval) / ntot \
           for cval, nval in zip(self.group_cen, newsum)]
 
 def group_exposures(adinput, pkg=None, frac_FOV=1.0):
