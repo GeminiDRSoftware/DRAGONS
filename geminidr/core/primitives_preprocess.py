@@ -496,12 +496,8 @@ class Preprocess(PrimitivesBASE):
             except ValueError:
                 # Else try to clip the flat frame to the size of the science
                 # data (e.g., for GMOS, this allows a full frame flat to
-                # be used for a CCD2-only science frame. 
-                if 'GSAOI' in ad.tags:
-                    flat = gt.clip_auxiliary_data_GSAOI(adinput=ad, 
-                                    aux=flat, aux_type="cal")
-                else:
-                    flat = gt.clip_auxiliary_data(adinput=ad, 
+                # be used for a CCD2-only science frame.
+                flat = gt.clip_auxiliary_data(adinput=ad,
                                     aux=flat, aux_type="cal")
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, flat)

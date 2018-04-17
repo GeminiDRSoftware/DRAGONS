@@ -77,19 +77,15 @@ class Standardize(PrimitivesBASE):
                 final_static = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as static BPM".format(static.filename))
-                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                    else gt.clip_auxiliary_data
-                final_static = clip_method(ad, aux=static, aux_type='bpm',
-                    return_dtype=DQ.datatype)
+                final_static = gt.clip_auxiliary_data(ad, aux=static,
+                                        aux_type='bpm', return_dtype=DQ.datatype)
 
             if user is None:
                 final_user = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as user BPM".format(user.filename))
-                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                    else gt.clip_auxiliary_data
-                final_user = clip_method(ad, aux=user, aux_type='bpm',
-                    return_dtype=DQ.datatype)
+                final_user = gt.clip_auxiliary_data(ad, aux=user,
+                                        aux_type='bpm', return_dtype=DQ.datatype)
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 extver = ext.hdr['EXTVER']
@@ -218,9 +214,7 @@ class Standardize(PrimitivesBASE):
                 final_illum = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
-                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                    else gt.clip_auxiliary_data
-                final_illum = clip_method(ad, aux=illum, aux_type='bpm',
+                final_illum = gt.clip_auxiliary_data(ad, aux=illum, aux_type='bpm',
                                           return_dtype=DQ.datatype)
 
             for ext, illum_ext in zip(ad, final_illum):

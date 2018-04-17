@@ -464,16 +464,15 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     """
     log = logutils.get_logger(__name__)
 
-    if not isinstance(aux, list):
-        aux = [aux]
-    
     # Initialize the list of output AstroData objects
     aux_output_list = []
 
     # Loop over each input AstroData object in the input list
-    for ad, this_aux in zip(adinput, aux):
+    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
         # Make a new auxiliary file for appending to, starting with PHU
         new_aux = astrodata.create(this_aux.phu)
+        new_aux.filename = this_aux.filename
+        new_aux.update_filename(suffix="_clipped", strip=False)
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -493,12 +492,10 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
         for ext, detsec, datasec, arraysec in zip(ad, sci_detsec,
                                             sci_datasec, sci_arraysec):
-
             # Array section is unbinned; to use as indices for
             # extracting data, need to divide by the binning
-            arraysec = [
-              arraysec[0] // sci_xbin, arraysec[1] // sci_xbin,
-              arraysec[2] // sci_ybin, arraysec[3] // sci_ybin]
+            arraysec = [arraysec[0] // sci_xbin, arraysec[1] // sci_xbin,
+                        arraysec[2] // sci_ybin, arraysec[3] // sci_ybin]
 
             # Check whether science data has been overscan-trimmed
             science_shape = ext.data.shape[-2:]
@@ -511,6 +508,9 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
             found = False
             for auxext, adetsec, adatasec, aarraysec in zip(this_aux,
                                 aux_detsec, aux_datasec, aux_arraysec):
+                if not (auxext.detector_x_bin() == sci_xbin and
+                        auxext.detector_y_bin() == sci_ybin):
+                    continue
 
                 # Array section is unbinned; to use as indices for
                 # extracting data, need to divide by the binning
@@ -520,11 +520,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # Check whether auxiliary detector section contains
                 # science detector section
-                if (adetsec[0] <= detsec[0] and # x lower
-                    adetsec[1] >= detsec[1] and # x upper
-                    adetsec[2] <= detsec[2] and # y lower
-                    adetsec[3] >= detsec[3]):   # y upper
-                    # Auxiliary data contains or is equal to science data
+                if (adetsec[0] <= detsec[0] and adetsec[1] >= detsec[1] and
+                    adetsec[2] <= detsec[2] and adetsec[3] >= detsec[3]):
                     found = True
                 else:
                     continue

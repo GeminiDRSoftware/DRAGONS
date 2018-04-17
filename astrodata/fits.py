@@ -1622,7 +1622,7 @@ class AstroDataFits(AstroData):
                 self.phu.set('ORIGNAME', filename,
                                 'Original filename prior to processing')
         else:
-            filename = self.filename
+            filename = self.filename or self.phu.get('ORIGNAME')
 
         # Possibly, filename could be None
         try:
