@@ -65,10 +65,8 @@ class Standardize(PrimitivesBASE):
         if static_bpm_list == "default":
             static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
 
-        _, statics = gt.make_lists(adinputs, static_bpm_list, force_ad=True)
-        _, users = gt.make_lists(adinputs, user_bpm_list, force_ad=True)
-
-        for ad, static, user in zip(adinputs, statics, users):
+        for ad, static, user in zip(*gt.make_lists(adinputs, static_bpm_list,
+                                                   user_bpm_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                     'already been processed by addDQ'.format(ad.filename))
