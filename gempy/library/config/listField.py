@@ -198,7 +198,11 @@ class ListField(Field):
             raise ValueError("'itemCheck' must be callable")
 
         source = getStackFrame()
-        self._setup(doc=doc, dtype=(List, dtype) if single else List,
+        if single:
+            dtype_setup = (List,) + dtype if isinstance(dtype, tuple) else (List, dtype)
+        else:
+            dtype_setup = List
+        self._setup(doc=doc, dtype=dtype_setup,
                     default=default, check=None, optional=optional, source=source)
         self.listCheck = listCheck
         self.itemCheck = itemCheck
@@ -256,9 +260,9 @@ class ListField(Field):
 
     def toDict(self, instance):
         value = self.__get__(instance)
-        try:
+        if isinstance(value, List):
             return list(value)
-        except TypeError:
+        else:
             return value
 
     def _compare(self, instance1, instance2, shortcut, rtol, atol, output):
