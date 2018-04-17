@@ -514,22 +514,20 @@ class Standardize(PrimitivesBASE):
             adoutputs.append(ad)
         return adoutputs
 
-    def validateData(self, adinputs=None, **params):
+    def validateData(self, adinputs=None, suffix=None):
         """
-        This is the generic data validation primitive, for data which do not
-        require any specific validation checks. It timestamps and moves on.
+        This is the data validation primitive. It checks that the instrument
+        matches the primitivesClass and that there are the correct number
+        of extensions.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        num_exts: int/list/None
-            valid number of extensions for the data
         """
         log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        prim_class_name = self.__class__.__name__
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -540,8 +538,9 @@ class Standardize(PrimitivesBASE):
 
             # Check that the input is appropriate for this primitivesClass
             # Only the instrument is checked
-            inst_name = 'GMOS' if 'GMOS' in ad.tags else ad.instrument()
-            if not inst_name in prim_class_name:
+            inst_name = ad.instrument(generic=True)
+            if not inst_name in self.tagset:
+                prim_class_name = self.__class__.__name__
                 raise IOError("Input file {} is {} data and not suitable for "
                     "{} class".format(ad.filename, inst_name, prim_class_name))
 
@@ -553,27 +552,23 @@ class Standardize(PrimitivesBASE):
                     log.warning("Image {} is {} x {} binned data".
                                 format(ad.filename, xbin, ybin))
 
-            valid_num_ext = params.get('num_exts')
-            if valid_num_ext is None:
-                log.status("No validation required for {}".format(ad.filename))
+            if self._has_valid_extensions(ad):
+                log.fullinfo("The input file has been validated: {} contains "
+                             "{} extension(s)".format(ad.filename, len(ad)))
             else:
-                if not isinstance(valid_num_ext, list):
-                    valid_num_ext = [valid_num_ext]
-                num_ext = len(ad)
-                if num_ext in valid_num_ext:
-                    log.fullinfo("The input file has been validated: {} "
-                             "contains {} extension(s)".format(ad.filename,
-                                                               num_ext))
-                else:
-                    raise IOError("The number of extensions in {} does not "
-                                "match the number of extensions expected "
-                                "in raw {} data.".format(ad.filename,
-                                                         ad.instrument()))
+                raise IOError("The {} extension(s) in {} does not match the "
+                              "number of extensions expected in raw {} "
+                              "data.".format(ad.filename, inst_name))
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
+
+    @staticmethod
+    def _has_valid_extensions(ad):
+        """Check the AD has a valid number of extensions"""
+        return len(ad) == 1
 
     def _get_bpm_filename(self, ad):
         """

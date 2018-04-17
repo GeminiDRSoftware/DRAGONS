@@ -493,6 +493,11 @@ class GMOS(Gemini, CCD):
 #             adoutputs.append(adoutput)
 #         return adoutputs
 
+    @staticmethod
+    def _has_valid_extensions(ad):
+        """Check the AD has a valid number of extensions"""
+        return len(ad) in [1, 2, 3, 4, 6, 12]
+
     def _get_bpm_filename(self, ad):
         """
         Gets bad pixel mask for input GMOS science frame.

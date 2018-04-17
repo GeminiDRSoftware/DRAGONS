@@ -184,6 +184,12 @@ class GSAOI(Gemini, NearIR):
 
         return adinputs
 
+    @staticmethod
+    def _has_valid_extensions(ad):
+        """Check the AD has a valid number of extensions"""
+        return len(ad) == 4
+
+
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #
 ##############################################################################
