@@ -188,12 +188,14 @@ class PrimitivesBASE(object):
             self.parameters[k] = v.__class__()
 
             for cls in reversed(v.__class__.mro()):
-                if cls.__name__.find('Config') > 0:
+                cls_name = cls.__name__
+                if cls_name.find('Config') > 0:
                     # We may not have yet imported a Config from which we inherit.
                     # In fact, we may never do so, in which case what's already
                     # there from standard inheritance is fine and we move on.
+                    cls_name = cls_name.replace("Config", "")
                     try:
-                        new_cls = self.parameters[cls.__name__.replace("Config", "")].__class__
+                        new_cls = self.parameters[cls_name].__class__
                     except KeyError:
                         pass
                     else:
@@ -204,11 +206,15 @@ class PrimitivesBASE(object):
                                 self.parameters[k]._history[field] = []
                                 self.parameters[k]._fields[field] = new_cls._fields[field]
                         # Call inherited setDefaults from configs with the same name
-                        # but final versions of others
-                        if cls.__name__ == k+'Config':
-                            cls.setDefaults.__func__(self.parameters[k])
+                        # but simply copy parameter values from others
+                        #if cls.__name__ == k+'Config':
+                        #    cls.setDefaults.__func__(self.parameters[k])
+                        #else:
+                        #    new_cls.setDefaults.__func__(self.parameters[k])
+                        if cls_name == k:
+                            cls.setDefaults(self.parameters[k])
                         else:
-                            new_cls.setDefaults.__func__(self.parameters[k])
+                            self.parameters[k].update(**self._inherit_params(dict(self.parameters[cls_name].items()), k))
 
     def _inherit_params(self, params, primname, pass_suffix=False):
         """Create a dict of params for a primitive from a larger dict,

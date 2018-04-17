@@ -708,7 +708,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         Correct behavior is dependent on proper implementation of  Field.toDict. If implementing a new
         Field type, you may need to implement your own toDict method.
         """
-        dict_ = {}
+        dict_ = OrderedDict()
         for name, field in self._fields.items():
             dict_[name] = field.toDict(self)
         return dict_
