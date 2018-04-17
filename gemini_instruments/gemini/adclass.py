@@ -988,17 +988,14 @@ class AstroDataGemini(AstroDataFits):
         ----------
         generic: boolean
             If set, don't specify the specific instrument if there are clones
-            (e.g., return "GMOS" rather than "GMOS-N" or "GMOS-S")
+            (but that is handled by the instrument-level descriptors)
 
         Returns
         -------
         str
             instrument name
         """
-        inst = self.phu.get(self._keyword_for('instrument'))
-        if generic and 'GMOS-' in inst:
-            return 'GMOS'
-        return inst
+        return self.phu.get(self._keyword_for('instrument'))
 
     @astro_data_descriptor
     def is_ao(self):
