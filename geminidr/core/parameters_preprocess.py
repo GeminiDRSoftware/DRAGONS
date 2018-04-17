@@ -1,6 +1,7 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_preprocess.py file, in alphabetical order.
 from gempy.library import config
+from . import parameters_stack
 from astrodata import AstroData
 
 def replace_valueCheck(value):
@@ -73,18 +74,7 @@ class subtractSkyConfig(config.Config):
     zero = config.Field("Apply offset to sky frame to match science frame?", bool, False)
     sky = config.ListField("Sky frame to subtract", (str, AstroData), None, optional=True, single=True)
 
-class skyCorrectConfig(subtractSkyConfig):
-    statsec = config.Field("Section for statistics", str, None, optional=True)
-    mask_objects = config.Field("Use OBJMASK when making sky?", bool, True)
-    dilation = config.RangeField("Object mask dilation radius (pixels)", float, 2., min=0)
-    operation = config.Field("Averaging operation", str, "median")
-    reject_method = config.Field("Rejection method", str, "sigclip")
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    mclip = config.Field("Use median for sigma-clipping?", bool, True)
-    nlow = config.RangeField("Number of low pixels to reject", int, 1, min=0)
-    nhigh = config.RangeField("Number of high pixels to reject", int, 1, min=0)
-
+class skyCorrectConfig(parameters_stack.stackSkyFramesConfig, subtractSkyConfig):
     def setDefaults(self):
         self.suffix = "_skyCorrected"
         #del self.sky

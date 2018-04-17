@@ -39,6 +39,6 @@ class transferAttributeConfig(config.Config):
 class writeOutputsConfig(config.Config):
     overwrite = config.Field("Overwrite exsting files?", bool, True)
     outfilename = config.Field("Output filename", str, None, optional=True)
-    prefix = config.Field("Prefix for output files", str, '')
-    suffix = config.Field("Suffix for output files", str, '')
+    prefix = config.Field("Prefix for output files", str, '', optional=True)
+    suffix = config.Field("Suffix for output files", str, '', optional=True)
     strip = config.Field("Strip prefix/suffix from filenames?", bool, False)

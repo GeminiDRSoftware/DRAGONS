@@ -11,7 +11,3 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
     def setDefaults(self):
         self.distance = 1.
         self.time = 900.
-
-class tileArraysConfig(parameters_visualize.tileArraysConfig):
-    def setDefaults(self):
-        del self.tile_all
