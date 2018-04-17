@@ -523,8 +523,8 @@ class Standardize(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        repair: bool
-            Repair the data, if necessary? This does not work yet!
+        num_exts: int/list/None
+            valid number of extensions for the data
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -565,9 +565,6 @@ class Standardize(PrimitivesBASE):
                              "contains {} extension(s)".format(ad.filename,
                                                                num_ext))
                 else:
-                    if params['repair']:
-                        # Something could be done here
-                        pass
                     raise IOError("The number of extensions in {} does not "
                                 "match the number of extensions expected "
                                 "in raw {} data.".format(ad.filename,

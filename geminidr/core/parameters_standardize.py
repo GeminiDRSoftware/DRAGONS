@@ -43,7 +43,6 @@ class standardizeStructureConfig(addMDFConfig):
 class validateDataConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dataValidated")
     num_exts = config.ListField("Allowed number of extensions", int, 1, optional=True, single=True)
-    repair = config.Field("Repair data?", bool, False)
 
 class prepareConfig(standardizeHeadersConfig, standardizeStructureConfig, validateDataConfig):
     def setDefaults(self):
