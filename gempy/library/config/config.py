@@ -363,8 +363,8 @@ class Field(object):
             at = getCallStack()
         # setDefaults() gets a free pass due to our mashing of inheritance
         if self.name not in instance._fields:
-            if any('setDefaults' in stk.function for stk in at):
-                return
+            #if any('setDefaults' in stk.function for stk in at):
+            #    return
             raise AttributeError("{} has no attribute {}".format(instance.__class__.__name__, self.name))
 
         history = instance._history.setdefault(self.name, [])
