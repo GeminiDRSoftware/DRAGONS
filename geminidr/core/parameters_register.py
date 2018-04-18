@@ -11,8 +11,6 @@ class matchWCSToReferenceConfig(config.Config):
     fallback = config.ChoiceField("Fallback method", str,
                                   allowed={"header": "Use WCS in header"},
                                   default="header", optional=True)
-    use_wcs = config.Field("Use absolute WCS information for initial guess?",
-                           bool, True)
     first_pass = config.RangeField("Search radius for source matching (arcseconds)",
                               float, 5., min=0)
     min_sources = config.RangeField("Minimum number of sources required to use source matching",

@@ -87,9 +87,6 @@ class Register(PrimitivesBASE):
             to align images, 'header' uses POFFSET and QOFFSET keywords
         fallback: 'header' or None
             backup method, if the primary one fails
-        use_wcs: bool
-            use the header's WCS for initial alignment guess, rather than
-            shifts and rotation information in the header?
         first_pass: float
             search radius (arcsec) for the initial alignment matching
         min_sources: int
@@ -117,7 +114,6 @@ class Register(PrimitivesBASE):
 
         method = params["method"]
         fallback = params["fallback"]
-        use_wcs = params["use_wcs"]
         first_pass = params["first_pass"]
         min_sources = params["min_sources"]
         cull_sources = params["cull_sources"]
@@ -179,10 +175,6 @@ class Register(PrimitivesBASE):
                     # image's WCS and the telescope offsets
                     #if ad.instrument() == 'GNIRS' and not use_wcs:
                     #    ad = _create_wcs_from_offsets(ad, ref_image)
-
-                    if not use_wcs:
-                        log.warning("Parameter 'use_wcs' is False.")
-                        log.warning("Using source correlation anyway.")
                     firstpasspix = first_pass / ad.pixel_scale()
 
                     # Calculate the offsets quickly using only a translation
