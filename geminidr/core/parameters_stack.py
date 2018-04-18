@@ -29,8 +29,18 @@ class core_stacking_config(config.Config):
     apply_dq = config.Field("Use DQ to mask bad pixels?", bool, True)
     separate_ext = config.Field("Handle extensions separately?", bool, True)
     statsec = config.Field("Section for statistics", str, None, optional=True, check=statsec_check)
-    operation = config.Field("Averaging operation", str, "mean")
-    reject_method = config.Field("Pixel rejection method", str, "varclip")
+    operation = config.choiceField("Averaging operation", str,
+                                   allowed = {"mean": "arithmetic mean",
+                                              "wtmean": "variance-weighted mean",
+                                              "median": "median",
+                                              "lmedian": "low-median"},
+                                   default="mean", optional=False)
+    reject_method = config.choiceField("Pixel rejection method", str,
+                                       allowed={"none": "no rejection",
+                                                "minmax": "reject highest and lowest pixels",
+                                                "sigclip": "reject pixels based on scatter",
+                                                "varclip": "reject pixels based on variance array"},
+                                       default="varclip", optional=False)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     mclip = config.Field("Use median for sigma-clipping?", bool, True)
