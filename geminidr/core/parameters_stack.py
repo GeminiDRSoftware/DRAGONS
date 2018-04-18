@@ -72,7 +72,6 @@ class stackFlatsConfig(core_stacking_config):
         self.reject_method = "minmax"
         self.nlow = 1
         self.nhigh = 1
-        self.scale = True
         self.separate_ext = False
 
 # TODO: Do we want stackSkyFlats with object removal?

@@ -11,7 +11,7 @@ class biasCorrectConfig(config.Config):
 
 class subtractOverscanConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_overscanSubtracted", optional=True)
-    niterate = config.RangeField("Maximum number of interations", int, 2, min=1)
+    niterate = config.RangeField("Maximum number of iterations", int, 2, min=1)
     high_reject = config.RangeField("High rejection limit (standard deviations)",
                                float, 3., min=0., optional=True)
     low_reject = config.RangeField("Low rejection limit (standard deviations)",
@@ -25,6 +25,12 @@ class subtractOverscanConfig(config.Config):
                                int, None, min=0, optional=True)
     order = config.RangeField("Order of fitting function", int, None, min=0,
                               optional=True)
+
+    def validate(self):
+        config.Config.validate(self)
+        if self.function == "poly" and self.order is None:
+            raise ValueError("Polynomial order must be specified")
+
 
 class trimOverscanConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_overscanTrimmed", optional=True)

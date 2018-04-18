@@ -154,7 +154,7 @@ class CCD(PrimitivesBASE):
                 data = np.mean(ext.data[y1:y2, x1:x2], axis=1)
                 # Weights are used to determine number of spline pieces
                 # should be the estimate of the mean
-                wt = np.sqrt(x2-x1-1) / ext.read_noise()
+                wt = np.sqrt(x2 - x1) / ext.read_noise()
                 if ext.hdr.get('BUNIT', 'adu').lower() == 'adu':
                     wt *= ext.gain()
 
@@ -172,12 +172,12 @@ class CCD(PrimitivesBASE):
                         runmed = np.ma.median(np.ma.masked_where(np.isnan(medarray),
                                                                  medarray), axis=0)
                         residuals = data - runmed
-                        sigma = np.sqrt(x2 - x1 + 1) / wt  # read noise
+                        sigma = np.sqrt(x2 - x1) / wt  # read noise
 
-                    mask = np.where(np.logical_or(residuals > hi_rej * sigma
+                    mask = np.logical_or(residuals > hi_rej * sigma
                                         if hi_rej is not None else False,
                                         residuals < -lo_rej * sigma
-                                        if lo_rej is not None else False), True, False)
+                                        if lo_rej is not None else False)
 
                     # Don't clip any pixels if iter==0
                     if func == 'none' and iter < niterate:
