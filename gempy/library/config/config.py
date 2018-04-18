@@ -545,9 +545,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         instance._history = {}
         instance._imports = set()
         # load up defaults
-        for field in instance._fields.values():
-            instance._history[field.name] = []
-            field.__set__(instance, field.default, at=at + [field.source], label="default")
+        instance.reset(at=at)
         # set custom default-overides
         instance.setDefaults()
         # set constructor overides
@@ -564,6 +562,14 @@ class Config(with_metaclass(ConfigMeta, object)):
         stream = io.StringIO()
         self.saveToStream(stream)
         return (unreduceConfig, (self.__class__, stream.getvalue().encode()))
+
+    def reset(self, at=None):
+        """Reset all values to their defaults"""
+        if at is None:
+            at = getCallStack()
+        for field in self._fields.values():
+            self._history[field.name] = []
+            field.__set__(self, field.default, at=at + [field.source], label="default")
 
     def setDefaults(self):
         """

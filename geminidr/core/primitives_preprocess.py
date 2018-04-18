@@ -970,8 +970,8 @@ class Preprocess(PrimitivesBASE):
         for filename in skies:
             for sky in self.streams["sky"]:
                 if sky.filename in [filename,
-                        filename.replace(self.parameters['separateSky'].suffix,
-                                         self.parameters['associateSky'].suffix)]:
+                        filename.replace(self.params['separateSky'].suffix,
+                                         self.params['associateSky'].suffix)]:
                     break
             else:
                 try:
