@@ -11,6 +11,7 @@ from astropy import table
 from functools import partial
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library.nddops import NDStacker
 
 from geminidr import PrimitivesBASE
 from . import parameters_stack
@@ -78,8 +79,6 @@ class Stack(PrimitivesBASE):
         zero: bool
             apply zero-level offset to match background levels?
         """
-        from gempy.library.nddops import NDStacker
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackFrames"]
@@ -91,14 +90,9 @@ class Stack(PrimitivesBASE):
         separate_ext = params["separate_ext"]
         statsec = params["statsec"]
         if statsec:
-            try:
-                statsec = tuple([slice(int(start)-1, int(end))
+            statsec = tuple([slice(int(start)-1, int(end))
                              for x in reversed(statsec.strip('[]').split(','))
                              for start, end in [x.split(':')]])
-            except ValueError:
-                log.warning("Cannot parse statistics section {}. Using full "
-                            "frame.".format(statsec))
-                statsec = None
 
         if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
@@ -167,7 +161,8 @@ class Stack(PrimitivesBASE):
                 log.warning("Some scale factors are infinite. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
 
-        stack_function = NDStacker(combine=params["operation"], reject=params["reject_method"],
+        stack_function = NDStacker(combine=params["operation"],
+                                   reject=params["reject_method"],
                                    log=self.log, **params)
 
         # NDStacker uses DQ if it exists; if we don't want that, delete the DQs!

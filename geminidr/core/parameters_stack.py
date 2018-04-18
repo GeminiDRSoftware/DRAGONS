@@ -1,15 +1,34 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_ccd.py file, in alphabetical order.
+import re
 from gempy.library import config
 from .parameters_register import matchWCSToReferenceConfig
 from .parameters_resample import resampleToCommonFrameConfig
+
+def statsec_check(value):
+    """Confirm that the statsec Field is given a value consisting of 4
+       integers, x1:x2,y1:y2 with optional []"""
+    m = re.match('\[?(\d+):(\d+),(\d+):(\d+)\]?', value)
+    if m is None:
+        return False
+    try:
+        coords = [int(v) for v in m.groups()]
+    except ValueError:
+        return False
+    try:
+        assert len(coords) == 4
+        assert coords[0] < coords[1]
+        assert coords[2] < coords[3]
+    except AssertionError:
+        return False
+    return True
 
 class core_stacking_config(config.Config):
     """Parameters relevant to ALL stacking primitives"""
     suffix = config.Field("Filename suffix", str, "_stack")
     apply_dq = config.Field("Use DQ to mask bad pixels?", bool, True)
     separate_ext = config.Field("Handle extensions separately?", bool, True)
-    statsec = config.Field("Section for statistics", str, None, optional=True)
+    statsec = config.Field("Section for statistics", str, None, optional=True, check=statsec_check)
     operation = config.Field("Averaging operation", str, "mean")
     reject_method = config.Field("Pixel rejection method", str, "varclip")
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
@@ -35,7 +54,6 @@ class stackSkyFramesConfig(stackFramesConfig):
 
 class alignAndStackConfig(stackFramesConfig, resampleToCommonFrameConfig,
                           matchWCSToReferenceConfig):
-    # TODO: Think about whether we need all these
     pass
 
 class stackFlatsConfig(core_stacking_config):
