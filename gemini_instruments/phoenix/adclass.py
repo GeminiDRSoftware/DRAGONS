@@ -17,6 +17,31 @@ class AstroDataPhoenix(AstroDataGemini):
     def _tag_instrument(self):
         return TagSet(['PHOENIX'])
 
+    @astro_data_tag
+    def _tag_image(self):
+        if "image" in self.phu.get('VIEW_POS').lower():
+            return TagSet(['IMAGE'])
+
+    @astro_data_tag
+    def _tag_spect(self):
+        if "open" in self.phu.get('VIEW_POS').lower():
+            return TagSet(['SPECT'])
+
+    @astro_data_tag
+    def _tag_dark(self):
+        if "dark" in self.phu.get('VIEW_POS').lower():
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE'])
+
+    @astro_data_tag
+    def _tag_flat(self):
+        if "flat" in self.object().lower():
+            return TagSet(['FLAT', 'CAL'])
+
+    @astro_data_tag
+    def _tag_acquisition(self):
+        if "acq" in self.object().lower():
+            return TagSet(['ACQUISITION'])
+
 
     @astro_data_descriptor
     def dec(self):
