@@ -942,6 +942,10 @@ class Preprocess(PrimitivesBASE):
         # Parameters to be passed to stackSkyFrames
         stack_params = self._inherit_params(params, 'stackSkyFrames')
 
+        # To avoid a crash in certain methods of operation
+        if "sky" not in self.streams:
+            self.streams["sky"] = []
+
         # We'll need to process the sky frames so collect them all up and do
         # this first, to avoid repeating it every time one is reused
         skies = set()
