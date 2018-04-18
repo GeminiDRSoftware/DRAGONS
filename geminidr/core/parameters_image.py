@@ -9,7 +9,7 @@ class makeFringeConfig(config.Config):
 class makeFringeFrameConfig(config.Config):
     pass
 
-class ScaleByIntensityConfig(config.Config):
+class scaleByIntensityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scaled", optional=True)
     section = config.Field("Statistics section", str, None, optional=True)
     scaling = config.ChoiceField("Statistic for scaling", str,
