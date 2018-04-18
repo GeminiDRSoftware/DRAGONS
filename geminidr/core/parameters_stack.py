@@ -29,13 +29,13 @@ class core_stacking_config(config.Config):
     apply_dq = config.Field("Use DQ to mask bad pixels?", bool, True)
     separate_ext = config.Field("Handle extensions separately?", bool, True)
     statsec = config.Field("Section for statistics", str, None, optional=True, check=statsec_check)
-    operation = config.choiceField("Averaging operation", str,
+    operation = config.ChoiceField("Averaging operation", str,
                                    allowed = {"mean": "arithmetic mean",
                                               "wtmean": "variance-weighted mean",
                                               "median": "median",
                                               "lmedian": "low-median"},
                                    default="mean", optional=False)
-    reject_method = config.choiceField("Pixel rejection method", str,
+    reject_method = config.ChoiceField("Pixel rejection method", str,
                                        allowed={"none": "no rejection",
                                                 "minmax": "reject highest and lowest pixels",
                                                 "sigclip": "reject pixels based on scatter",
