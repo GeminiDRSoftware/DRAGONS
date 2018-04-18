@@ -3,4 +3,4 @@
 from gempy.library import config
 
 class findAcquisitionSlitsConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_acqSlitsAdded")
+    suffix = config.Field("Filename suffix", str, "_acqSlitsAdded", optional=True)

@@ -25,7 +25,7 @@ def statsec_check(value):
 
 class core_stacking_config(config.Config):
     """Parameters relevant to ALL stacking primitives"""
-    suffix = config.Field("Filename suffix", str, "_stack")
+    suffix = config.Field("Filename suffix", str, "_stack", optional=Trie)
     apply_dq = config.Field("Use DQ to mask bad pixels?", bool, True)
     separate_ext = config.Field("Handle extensions separately?", bool, True)
     statsec = config.Field("Section for statistics", str, None, optional=True, check=statsec_check)
