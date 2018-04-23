@@ -265,14 +265,13 @@ class Field(object):
         if value is None:
             return
 
-        if isinstance(self.dtype, tuple):
-            if type(value) not in self.dtype:
-                msg = "Value %s is of incorrect type %s. Expected types %s" % \
-                    (value, _typeStr(value), [_typeStr(dt) for dt in self.dtype])
-                raise TypeError(msg)
         if not isinstance(value, self.dtype):
-            msg = "Value %s is of incorrect type %s. Expected type %s" % \
-                (value, _typeStr(value), _typeStr(self.dtype))
+            if isinstance(self.dtype, tuple):
+                msg = "Value %s is of incorrect type %s. Expected types %s" % \
+                  ( value, _typeStr(value), [_typeStr(dt) for dt in self.dtype])
+            else:
+                msg = "Value %s is of incorrect type %s. Expected type %s" % \
+                    (value, _typeStr(value), _typeStr(self.dtype))
             raise TypeError(msg)
         if self.check is not None and not self.check(value):
             msg = "Value %s is not a valid value" % str(value)
@@ -329,7 +328,11 @@ class Field(object):
         if instance is None or not isinstance(instance, Config):
             return self
         else:
-            return instance._storage[self.name]
+            if self.name in instance:
+                return instance._storage[self.name]
+            else:
+                raise AttributeError("'{}' object has no attribute '{}'".
+                                     format(instance.__class__.__name__, self.name))
 
     def __set__(self, instance, value, at=None, label='assignment'):
         """
@@ -355,6 +358,9 @@ class Field(object):
         """
         if instance._frozen:
             raise FieldValidationError(self, instance, "Cannot modify a frozen Config")
+
+        if self.name not in instance._fields:
+            raise AttributeError("{} has no attribute {}".format(instance.__class__.__name__, self.name))
 
         history = instance._history.setdefault(self.name, [])
         if value is not None:
@@ -775,19 +781,14 @@ class Config(with_metaclass(ConfigMeta, object)):
             raise AttributeError("%s has no attribute %s" % (_typeStr(self), attr))
 
     def __delattr__(self, attr, at=None, label="deletion"):
-        print '--', self._fields
-        print '--', self._storage
+        # CJS: Hacked to allow setDefaults() to delete non-existent fields
+        if at is None:
+            at = getCallStack()
         if attr in self._fields:
-            if at is None:
-                at = getCallStack()
             #self._fields[attr].__delete__(self, at=at, label=label)
             del self._fields[attr]
-            #del self._storage[attr]
-        else:
+        elif at[-1].function != 'setDefaults':
             object.__delattr__(self, attr)
-        print '==', self._fields
-        print '==', self._storage
-
 
     def __eq__(self, other):
         if type(other) == type(self):

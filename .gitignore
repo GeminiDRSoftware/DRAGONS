@@ -62,6 +62,7 @@ target/
 
 # PyCharm
 .idea
+.pycharm-bash
 
 #Mac junk
 .DS_Store

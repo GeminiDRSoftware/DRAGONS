@@ -104,6 +104,31 @@ class AstroDataNifs(AstroDataGemini):
         return self._from_biaspwr("gain")
 
     @astro_data_descriptor
+    def gcal_lamp(self):
+        """
+        Returns the name of the GCAL lamp being used, or "Off" if no lamp is
+        in used.  This applies to flats and arc observations when a lamp is
+        used.  For other types observation, None is returned.
+
+        This overrides the gemini level descriptor, as NIFS has more lamp names
+        than are accommodated by that descriptor function.
+
+        Returns
+        -------
+        lamps: <str>
+            Name of the GCAL lamp, or "Off"
+
+        """
+        lamps, shut = self.phu.get('GCALLAMP'), self.phu.get('GCALSHUT')
+        if lamps is None:
+            return None
+        
+        if shut and "CLOSED" in shut.upper():
+            return 'Off'
+        elif lamps and "OPEN" in shut.upper():
+            return lamps
+
+    @astro_data_descriptor
     def non_linear_level(self):
         """
         Returns the level at which the array becomes non-linear.  The

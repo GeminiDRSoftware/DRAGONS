@@ -27,41 +27,48 @@ class AstroDataSkyCam(AstroDataGemini):
 
     @staticmethod
     def _matches_data(source):
-        try:
-            match = source[1].header.get('TELESCOP', '') == '"GS_ALLSKYCAMERA"'
-        except IndexError:
-            match = False
+        match = source[1].header.get('TELESCOP', '') == '"GS_ALLSKYCAMERA"'
         return match
 
     @astro_data_tag
     def _tag_instrument(self):
         return TagSet(['GS_ALLSKYCAMERA'])
 
+    @astro_data_tag
+    def _tag_site(self):
+        return TagSet(['SOUTH'])
+
     @astro_data_descriptor
     def instrument(self):
         hdr = self.TABLE1.meta.get('header')
-        return "_".join(hdr.get('INSTRUME').split()[:2])
+        return hdr.get('TELESCOP')
 
+    @astro_data_descriptor
     def object(self):
         hdr = self.TABLE1.meta.get('header')
         return 'ZENITH'
 
+    @astro_data_descriptor
     def exposure_time(self):
         hdr = self.TABLE1.meta.get('header')
         return hdr.get('EXPTIME')
-    
+
+    @astro_data_descriptor
     def ra(self):
         hdr = self.TABLE1.meta.get('header')
         return hdr.get('RA')
 
+    @astro_data_descriptor
     def dec(self):
         hdr = self.TABLE1.meta.get('header')
         return hdr.get('DEC')
     
+    @astro_data_descriptor
     def ut_datetime(self):
         hdr = self.TABLE1.meta.get('header')
         return dateutil.parser.parse(hdr.get('DATE-OBS'))
         
 
+    @astro_data_descriptor
     def ut_time(self):
         return self.ut_datetime().time()

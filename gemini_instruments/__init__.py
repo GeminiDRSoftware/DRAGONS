@@ -17,6 +17,7 @@ from . import nici
 from . import nifs
 from . import niri
 from . import phoenix
+from . import oscir
 from . import trecs
 from . import igrins
 from . import flamingos
