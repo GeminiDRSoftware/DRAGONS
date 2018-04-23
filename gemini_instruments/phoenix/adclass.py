@@ -1,10 +1,25 @@
+#
+#                                                            Gemini Observatory
+#
+#                                                                        Dragons
+#                                                             gemini_instruments
+#                                                             phoenix.adclass.py
+# ------------------------------------------------------------------------------
+__version__      = "0.1 (beta)"
+# ------------------------------------------------------------------------------
+import re
+import datetime
+import dateutil
+
 from astropy import units as u
 from astropy.coordinates import Angle
 
 from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
 from ..gemini import AstroDataGemini
+
 from .. import gmu
 
+# ------------------------------------------------------------------------------
 class AstroDataPhoenix(AstroDataGemini):
 
     __keyword_dict = dict(focal_plane_mask = 'SLIT_POS')
@@ -91,3 +106,28 @@ class AstroDataPhoenix(AstroDataGemini):
             right ascension in degrees
         """
         return Angle(self.phu.get('RA', 0), unit=u.hour).degree
+
+    @astro_data_descriptor
+    def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
+        utd = super(AstroDataPhoenix, self).ut_datetime(strict=strict,
+                                                        dateonly=dateonly,
+                                                        timeonly=timeonly)
+        if utd is None:
+            utime = self[0].hdr.get('UT')
+            udate = self[0].hdr.get('UTDATE')
+        else:
+            return utd
+
+        if not utime and not udate:
+            return None
+
+        if utime and udate:
+            dt_utime = dateutil.parser.parse(utime).time()
+            dt_udate = dateutil.parser.parse(udate).date()
+
+        if dateonly:
+            return dt_udate
+        elif timeonly:
+            return dt_utime
+        else:
+            return datetime.datetime.combine(dt_udate, dt_utime)
