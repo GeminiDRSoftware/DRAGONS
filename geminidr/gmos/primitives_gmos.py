@@ -44,108 +44,108 @@ class GMOS(Gemini, CCD):
         self.inst_lookups = 'geminidr.gmos.lookups'
         self._param_update(parameters_gmos)
 
-    def mosaicDetectors(self, adinputs=None, **params):
-        """
-        This primitive will mosaic the frames of the input images. It uses
-        the the ETI and pyraf to call gmosaic from the gemini IRAF package.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        tile: bool
-            tile images instead of a proper mosaic?
-        interpolate_gaps: bool
-            interpolate across gaps?
-        interpolator: str
-            type of interpolation to use across chip gaps
-            (linear, nearest, poly3, poly5, spline3, sinc)
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        adoutputs = []
-        for ad in adinputs:
-            # Data validation
-            if 'PREPARED' not in ad.tags:
-                raise IOError('{} must be prepared'.format(ad.filename))
-
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by mosaicDetectors".
-                            format(ad.filename))
-                continue
-
-            if len(ad) == 1:
-                log.stdinfo("No changes will be made to {}, since it "
-                            "contains only one extension".format(ad.filename))
-                continue
-
-            # Save keywords for restoration after gmosaic
-            bunit = set(ad.hdr.get('BUNIT'))
-            if len(bunit) > 1:
-                raise IOError("BUNIT needs to be the same for all extensions")
-            else:
-                bunit = bunit.pop()
-            try:
-                avg_overscan = np.mean([overscan for overscan in
-                                ad.hdr.get('OVERSCAN') if overscan is not None])
-            except TypeError:
-                avg_overscan = None
-            all_ampname = ','.join(ampname for ampname in ad.hdr.get('AMPNAME')
-                                   if ampname is not None)
-
-            old_detsec = min(ad.detector_section(), key=lambda x: x.x1)
-
-            # Instantiate ETI and then run the task
-            gmosaic_task = eti.gmosaiceti.GmosaicETI([], params, ad)
-            ad_out = gmosaic_task.run()
-
-            # Get new DATASEC keyword, using the full shape
-            data_shape = ad_out[0].data.shape
-            new_datasec = "[1:{1},1:{0}]".format(*data_shape)
-
-            # Make new DETSEC keyword
-            xbin = ad_out.detector_x_bin()
-            unbin_width = data_shape[1] if xbin is None else data_shape[1]*xbin
-            new_detsec = "" if old_detsec is None else "[{}:{},{}:{}]".format(
-                                    old_detsec.x1+1, old_detsec.x1+unbin_width,
-                                    old_detsec.y1+1, old_detsec.y2)
-
-            # Truncate long comments to avoid an error
-            if all_ampname is not None:
-                ampcomment = self.keyword_comments["AMPNAME"]
-                if len(all_ampname)>=65:
-                    ampcomment = ""
-                else:
-                    ampcomment = ampcomment[0:65-len(all_ampname)]
-            else:
-                ampcomment = ""
-
-            # Restore keywords to extension header
-            if bunit:
-                ad_out.hdr.set('BUNIT', bunit, self.keyword_comments["BUNIT"])
-            if avg_overscan:
-                ad_out.hdr.set('OVERSCAN', avg_overscan,
-                               comment=self.keyword_comments["OVERSCAN"])
-            if all_ampname:
-                ad_out.hdr.set('AMPNAME', all_ampname, comment=ampcomment)
-            ad_out.hdr.set("DETSEC", new_detsec,
-                              comment=self.keyword_comments["DETSEC"])
-            ad_out.hdr.set("CCDSEC", new_detsec,
-                              comment=self.keyword_comments["CCDSEC"])
-            ad_out.hdr.set("DATASEC", new_datasec,
-                              comment=self.keyword_comments["DATASEC"])
-            ad_out.hdr.set("CCDNAME", ad.detector_name(),
-                              comment=self.keyword_comments["CCDNAME"])
-
-            if hasattr(ad, 'REFCAT'):
-                ad_out.REFCAT = deepcopy(ad.REFCAT)
-
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            adoutputs.append(ad_out)
-        return adoutputs
+    # def mosaicDetectors(self, adinputs=None, **params):
+    #     """
+    #     This primitive will mosaic the frames of the input images. It uses
+    #     the the ETI and pyraf to call gmosaic from the gemini IRAF package.
+    #
+    #     Parameters
+    #     ----------
+    #     suffix: str
+    #         suffix to be added to output files
+    #     tile: bool
+    #         tile images instead of a proper mosaic?
+    #     interpolate_gaps: bool
+    #         interpolate across gaps?
+    #     interpolator: str
+    #         type of interpolation to use across chip gaps
+    #         (linear, nearest, poly3, poly5, spline3, sinc)
+    #     """
+    #     log = self.log
+    #     log.debug(gt.log_message("primitive", self.myself(), "starting"))
+    #     timestamp_key = self.timestamp_keys[self.myself()]
+    #
+    #     adoutputs = []
+    #     for ad in adinputs:
+    #         # Data validation
+    #         if 'PREPARED' not in ad.tags:
+    #             raise IOError('{} must be prepared'.format(ad.filename))
+    #
+    #         if ad.phu.get(timestamp_key):
+    #             log.warning("No changes will be made to {}, since it has "
+    #                         "already been processed by mosaicDetectors".
+    #                         format(ad.filename))
+    #             continue
+    #
+    #         if len(ad) == 1:
+    #             log.stdinfo("No changes will be made to {}, since it "
+    #                         "contains only one extension".format(ad.filename))
+    #             continue
+    #
+    #         # Save keywords for restoration after gmosaic
+    #         bunit = set(ad.hdr.get('BUNIT'))
+    #         if len(bunit) > 1:
+    #             raise IOError("BUNIT needs to be the same for all extensions")
+    #         else:
+    #             bunit = bunit.pop()
+    #         try:
+    #             avg_overscan = np.mean([overscan for overscan in
+    #                             ad.hdr.get('OVERSCAN') if overscan is not None])
+    #         except TypeError:
+    #             avg_overscan = None
+    #         all_ampname = ','.join(ampname for ampname in ad.hdr.get('AMPNAME')
+    #                                if ampname is not None)
+    #
+    #         old_detsec = min(ad.detector_section(), key=lambda x: x.x1)
+    #
+    #         # Instantiate ETI and then run the task
+    #         gmosaic_task = eti.gmosaiceti.GmosaicETI([], params, ad)
+    #         ad_out = gmosaic_task.run()
+    #
+    #         # Get new DATASEC keyword, using the full shape
+    #         data_shape = ad_out[0].data.shape
+    #         new_datasec = "[1:{1},1:{0}]".format(*data_shape)
+    #
+    #         # Make new DETSEC keyword
+    #         xbin = ad_out.detector_x_bin()
+    #         unbin_width = data_shape[1] if xbin is None else data_shape[1]*xbin
+    #         new_detsec = "" if old_detsec is None else "[{}:{},{}:{}]".format(
+    #                                 old_detsec.x1+1, old_detsec.x1+unbin_width,
+    #                                 old_detsec.y1+1, old_detsec.y2)
+    #
+    #         # Truncate long comments to avoid an error
+    #         if all_ampname is not None:
+    #             ampcomment = self.keyword_comments["AMPNAME"]
+    #             if len(all_ampname)>=65:
+    #                 ampcomment = ""
+    #             else:
+    #                 ampcomment = ampcomment[0:65-len(all_ampname)]
+    #         else:
+    #             ampcomment = ""
+    #
+    #         # Restore keywords to extension header
+    #         if bunit:
+    #             ad_out.hdr.set('BUNIT', bunit, self.keyword_comments["BUNIT"])
+    #         if avg_overscan:
+    #             ad_out.hdr.set('OVERSCAN', avg_overscan,
+    #                            comment=self.keyword_comments["OVERSCAN"])
+    #         if all_ampname:
+    #             ad_out.hdr.set('AMPNAME', all_ampname, comment=ampcomment)
+    #         ad_out.hdr.set("DETSEC", new_detsec,
+    #                           comment=self.keyword_comments["DETSEC"])
+    #         ad_out.hdr.set("CCDSEC", new_detsec,
+    #                           comment=self.keyword_comments["CCDSEC"])
+    #         ad_out.hdr.set("DATASEC", new_datasec,
+    #                           comment=self.keyword_comments["DATASEC"])
+    #         ad_out.hdr.set("CCDNAME", ad.detector_name(),
+    #                           comment=self.keyword_comments["CCDNAME"])
+    #
+    #         if hasattr(ad, 'REFCAT'):
+    #             ad_out.REFCAT = deepcopy(ad.REFCAT)
+    #
+    #         gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+    #         adoutputs.append(ad_out)
+    #     return adoutputs
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
         """

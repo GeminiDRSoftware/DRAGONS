@@ -76,6 +76,7 @@ def reduce_nostack(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
+    p.writeOutputs()
     p.mosaicDetectors()
     p.makeFringe()
     p.fringeCorrect()

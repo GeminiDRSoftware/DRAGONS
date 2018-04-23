@@ -12,9 +12,9 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
         self.distance = 1.
         self.time = 900.
 
-class tileArraysConfig(parameters_visualize.tileArraysConfig):
-    def setDefaults(self):
-        self.tile_all = True
+# class tileArraysConfig(parameters_visualize.tileArraysConfig):
+#     def setDefaults(self):
+#         self.tile_all = True
 
 class validateDataConfig(parameters_standardize.validateDataConfig):
     def setDefaults(self):

@@ -227,10 +227,10 @@ class Visualize(PrimitivesBASE):
 
         return adinputs
 
-    def mosaicDetectors(self, adinputs=None, **params):
-        return adinputs
+#    def mosaicDetectors(self, adinputs=None, **params):
+#        return adinputs
 
-    def mosaicADdetectors(self, adinputs=None, **params):
+    def mosaicDetectors(self, adinputs=None, **params):
         """
         This primitive will use the gempy MosaicAD class to mosaic the frames
         of the input images.
@@ -241,7 +241,7 @@ class Visualize(PrimitivesBASE):
             suffix to be added to output files. Default is '_mosaicAD'
         tile: bool
             tile images instead of a proper mosaic. Default is False.
-        doimg: bool
+        sci_only: bool
             mosaic only SCI image data. Default is False
         interpolator: <str>
             type of interpolation to use across chip gaps
@@ -249,7 +249,7 @@ class Visualize(PrimitivesBASE):
 
         """
         fmat1 = "No changes will be made to {}, since it has "
-        fmat1 += "already been processed by mosaicADdetectors"
+        fmat1 += "already been processed by mosaicDetectors"
         fmat2 = "No changes will be made to {}; only one extension present."
 
         def _compat(tlist):
@@ -264,7 +264,7 @@ class Visualize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         
-        do_img = params['doimg']
+        sci_only = params['sci_only']
         suffix = params['suffix']
         tile = params['tile']
 
@@ -290,7 +290,7 @@ class Visualize(PrimitivesBASE):
             mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
 
             log.stdinfo("\tBuilding mosaic, converting data ...")
-            ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
+            ad_out = mos.as_astrodata(tile=tile, doimg=sci_only)
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
@@ -318,7 +318,7 @@ class Visualize(PrimitivesBASE):
 
         # Using mosaicADdetectors rather than tileArrays()
         # mosaicADdetectors() handles both GSAOI and GMOS,
-        adoutputs = self.mosaicADdetectors(adinputs, tile=True)
+        adoutputs = self.mosaicDetectors(adinputs, tile=True)
         return adoutputs
 
 ##############################################################################

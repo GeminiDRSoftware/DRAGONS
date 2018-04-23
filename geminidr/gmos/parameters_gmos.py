@@ -8,11 +8,11 @@ class displayConfig(parameters_visualize.displayConfig):
     def setDefaults(self):
         self.remove_bias = True
 
-class mosaicDetectorsConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_mosaicked")
-    tile = config.Field("Tile rather than mosaic?", bool, False)
-    interpolate_gaps = config.Field("Interpolate across chip gaps?", bool, False)
-    interpolator = config.Field("Type of interpolation", str, "linear")
+# class mosaicDetectorsConfig(config.Config):
+#     suffix = config.Field("Filename suffix", str, "_mosaic")
+#     tile = config.Field("Tile rather than mosaic?", bool, False)
+#     interpolate_gaps = config.Field("Interpolate across chip gaps?", bool, False)
+#     interpolator = config.Field("Type of interpolation", str, "linear")
 
 class measureBGConfig(parameters_qa.measureBGConfig):
     def setDefaults(self):

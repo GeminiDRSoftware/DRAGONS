@@ -16,13 +16,13 @@ class displayConfig(config.Config):
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)
     zscale = config.Field("Use zscale algorithm?", bool, True)
 
-class mosaicDetectorsConfig(config.Config):
-    pass
+#class mosaicDetectorsConfig(config.Config):
+#    pass
 
-class mosaicADdetectorsConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_mosaicked")
+class mosaicDetectorsConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_mosaic")
     tile = config.Field("Tile rather than mosaic?", bool, False)
-    doimg = config.Field("Mosaic only SCI extensions?", bool, False)
+    sci_only = config.Field("Mosaic only SCI extensions?", bool, False)
     interpolator = config.Field("Type of interpolation", str, "linear")
 
 class tileArraysConfig(config.Config):
