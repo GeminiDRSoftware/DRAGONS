@@ -20,7 +20,7 @@ import os.path
 import re
 
 
-from distutils.core import setup
+from setuptools import setup
 
 PACKAGENAME = 'dragons'
 
