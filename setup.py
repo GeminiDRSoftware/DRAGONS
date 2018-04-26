@@ -202,12 +202,16 @@ setup ( name='dragons',
         scripts=SCRIPTS,
         ext_modules=EXTENSIONS,
         classifiers=[
-            'Development Status :: Beta',
+            'Development Status :: 4 - Beta',
             'Intended Audience :: Gemini Ops',
+            'Intended Audience :: Science/Research',
+            'License :: OSI Approved :: BSD License',
+            'Operating System :: POSIX :: Linux',
             'Operating System :: Linux :: CentOS',
+            'Operating System :: MacOS :: MacOS X',
             'Programming Language :: Python',
             'Topic :: Gemini',
             'Topic :: Data Reduction',
-            'Topic :: Astronomy',
+            'Topic :: Scientific/Engineering :: Astronomy',
         ]
       )
