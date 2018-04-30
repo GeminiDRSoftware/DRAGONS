@@ -53,7 +53,7 @@ class CCD(PrimitivesBASE):
             return adinputs
 
         if bias is None:
-            self.getProcessedBias(refresh=False)
+            self.getProcessedBias(adinputs, refresh=False)
             bias_list = self._get_cal(adinputs, 'processed_bias')
         else:
             bias_list = bias

@@ -352,7 +352,7 @@ class Preprocess(PrimitivesBASE):
             return adinputs
 
         if dark is None:
-            self.getProcessedDark(refresh=False)
+            self.getProcessedDark(adinputs, refresh=False)
             dark_list = self._get_cal(adinputs, 'processed_dark')
         else:
             dark_list = dark
@@ -466,7 +466,7 @@ class Preprocess(PrimitivesBASE):
             return adinputs
 
         if flat is None:
-            self.getProcessedFlat(refresh=False)
+            self.getProcessedFlat(adinputs, refresh=False)
             flat_list = self._get_cal(adinputs, 'processed_flat')
         else:
             flat_list = flat
