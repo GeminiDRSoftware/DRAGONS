@@ -188,7 +188,7 @@ class Photometry(PrimitivesBASE):
                     value = 'N'
                 if key == 'phot_min_radius':
                     sexpars.update({"PHOT_AUTOPARAMS":
-                                    "2.5,{}".format(value/ad.pixel_scale())})
+                                    "2.5,{}".format(value)})
                 else:
                     sexpars.update({key.upper(): value})
 

@@ -8,4 +8,4 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
         self.detect_minarea = 40
         self.detect_thresh = 1.5
         self.analysis_thresh = 1.5
-        self.back_filter_size = 3
+        self.back_filtersize = 3

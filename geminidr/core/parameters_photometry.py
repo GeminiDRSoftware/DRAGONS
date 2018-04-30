@@ -21,6 +21,6 @@ class detectSourcesConfig(config.Config):
     detect_thresh = config.RangeField("Detection threshold (standard deviations)", float, 2., min=0.1)
     analysis_thresh = config.RangeField("Analysis threshold (standard deviations)", float, 2., min=0.1)
     deblend_mincont = config.RangeField("Minimum deblending contrast", float, 0.005, min=0.)
-    phot_min_radius = config.RangeField("Minimum radius for photometry (arcseconds)", float, 3.5, min=0.1)
+    phot_min_radius = config.RangeField("Minimum radius for photometry (pixels)", float, 3.5, min=0.1)
     back_size = config.RangeField("Background mesh size (pixels)", int, 32, min=1)
-    back_filter_size = config.RangeField("Filtering scale for background", int, 8, min=1)
+    back_filtersize = config.RangeField("Filtering scale for background", int, 8, min=1)
