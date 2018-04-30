@@ -2,7 +2,7 @@
 # in primitives_calibdb.py, in alphabetical order.
 from gempy.library import config
 
-class addCalibration(config.Config):
+class addCalibrationConfig(config.Config):
     caltype = config.ChoiceField("Type of calibration required", str,
                                  allowed = {"processed_arc": "processed ARC",
                                             "processed_bias": "procsessed BIAS",
@@ -12,7 +12,7 @@ class addCalibration(config.Config):
                                  )
     calfile = config.Field("Filename of calibration", str)
 
-class getCalibration(config.Config):
+class getCalibrationConfig(config.Config):
     caltype = config.ChoiceField("Type of calibration required", str,
                                  allowed = {"processed_arc": "processed ARC",
                                             "processed_bias": "procsessed BIAS",
