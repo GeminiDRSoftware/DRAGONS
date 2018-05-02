@@ -62,8 +62,9 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 def _log_traceback():
-    tblist = traceback.format_tb(sys.exc_info()[-1])
-    [log.error(str(line)) for line in tblist]
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    tblist =traceback.format_exception(exc_type, exc_value, exc_traceback)
+    [log.error(line.rstrip()) for line in tblist]
     return
 # ------------------------------------------------------------------------------
 class Reduce(object):
