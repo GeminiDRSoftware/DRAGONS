@@ -20,7 +20,7 @@ import os.path
 import re
 
 
-from distutils.core import setup
+from setuptools import setup
 
 PACKAGENAME = 'dragons'
 
@@ -189,7 +189,7 @@ SCRIPTS.extend(GEMPY_SCRIPTS)
 EXTENSIONS = None
 
 setup ( name='dragons',
-        version='2.0.8-alpha',
+        version='2.0.8a0',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
         author_email='sus_inquiries@gemini.edu',
@@ -202,12 +202,16 @@ setup ( name='dragons',
         scripts=SCRIPTS,
         ext_modules=EXTENSIONS,
         classifiers=[
-            'Development Status :: Beta',
+            'Development Status :: 4 - Beta',
             'Intended Audience :: Gemini Ops',
+            'Intended Audience :: Science/Research',
+            'License :: OSI Approved :: BSD License',
+            'Operating System :: POSIX :: Linux',
             'Operating System :: Linux :: CentOS',
+            'Operating System :: MacOS :: MacOS X',
             'Programming Language :: Python',
             'Topic :: Gemini',
             'Topic :: Data Reduction',
-            'Topic :: Astronomy',
+            'Topic :: Scientific/Engineering :: Astronomy',
         ]
       )
