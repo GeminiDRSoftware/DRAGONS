@@ -28,7 +28,7 @@ def reduce(p):
     p.flatCorrect()
     p.separateSky()
     p.associateSky()
-    p.skyCorrect(mask_objects=False)
+    p.skyCorrect()
     p.detectSources()
     p.alignAndStack()
     p.writeOutputs()
