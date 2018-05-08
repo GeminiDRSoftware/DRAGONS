@@ -41,7 +41,7 @@ class AstroDataSkyCam(AstroDataGemini):
     @astro_data_descriptor
     def instrument(self):
         hdr = self.TABLE1.meta.get('header')
-        return hdr.get('TELESCOP')
+        return hdr.get('TELESCOP').strip('"')
 
     @astro_data_descriptor
     def object(self):
