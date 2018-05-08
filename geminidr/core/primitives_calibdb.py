@@ -228,7 +228,7 @@ class CalibDB(PrimitivesBASE):
 
     def storeBPM(self, adinputs=None, **params):
         caltype = 'bpm'
-        sfx = '_bpm'
+        sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adinputs = self._markAsCalibration(adinputs, suffix=sfx,
                     primname=self.myself(), update_datalab=False, keyword="BPM")

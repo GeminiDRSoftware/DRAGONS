@@ -51,16 +51,19 @@ class storeCalibrationConfig(config.Config):
                                  optional=False)
 
 class storeProcessedArcConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_arc")
+    suffix = config.Field("Filename suffix", str, "_arc", optional=True)
 
 class storeProcessedBiasConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_bias")
+    suffix = config.Field("Filename suffix", str, "_bias", optional=True)
+
+class storeBPMConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_bpm", optional=True)
 
 class storeProcessedDarkConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_dark")
+    suffix = config.Field("Filename suffix", str, "_dark", optional=True)
 
 class storeProcessedFlatConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_flat")
+    suffix = config.Field("Filename suffix", str, "_flat", optional=True)
 
 class storeProcessedFringeConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_fringe")
+    suffix = config.Field("Filename suffix", str, "_fringe", optional=True)
