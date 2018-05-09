@@ -18,6 +18,7 @@ E.g.,
 import os
 import pickle
 import warnings
+from copy import deepcopy
 from inspect import stack, isclass
 
 from gempy.library import config
@@ -184,10 +185,10 @@ class PrimitivesBASE(object):
         # another Config and, if so, update the child Config
         # Do this in the correct inheritance order
         for k, v in sorted(self.params.items(),
-                           key=lambda x: len(x[1].__class__.mro())):
+                           key=lambda x: len(x[1].__class__.__bases__)):
             self.params[k] = v.__class__()
 
-            for cls in reversed(v.__class__.mro()):
+            for cls in reversed(v.__class__.__bases__):
                 cls_name = cls.__name__
                 if cls_name.find('Config') > 0:
                     # We may not have yet imported a Config from which we inherit.
@@ -204,7 +205,7 @@ class PrimitivesBASE(object):
                         for field in new_cls():
                             if field in self.params[k]:
                                 self.params[k]._history[field] = []
-                                self.params[k]._fields[field] = new_cls._fields[field]
+                                self.params[k]._fields[field] = deepcopy(new_cls._fields[field])
                         # Call inherited setDefaults from configs with the same name
                         # but simply copy parameter values from others
                         #if cls.__name__ == k+'Config':
