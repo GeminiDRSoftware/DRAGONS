@@ -962,7 +962,16 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
 
         # Set class, type, object to generic defaults
         ad.phu.set("OBSCLASS", "partnerCal", keyword_comments["OBSCLASS"])
-        if "fringe" in caltype:
+        if "arc" in caltype:
+            ad.phu.set("OBSTYPE", "ARC", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "Arc spectrum", keyword_comments["OBJECT"])
+        elif "bias" in caltype:
+            ad.phu.set("OBSTYPE", "BIAS", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "Bias Frame", keyword_comments["OBJECT"])
+        elif "dark" in caltype:
+            ad.phu.set("OBSTYPE", "DARK", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "Dark Frame", keyword_comments["OBJECT"])
+        elif "fringe" in caltype:
             ad.phu.set("OBSTYPE", "FRINGE", keyword_comments["OBSTYPE"])
             ad.phu.set("OBJECT", "Fringe Frame", keyword_comments["OBJECT"])
         elif "sky" in caltype:
@@ -971,6 +980,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         elif "flat" in caltype:
             ad.phu.set("OBSTYPE", "FLAT", keyword_comments["OBSTYPE"])
             ad.phu.set("OBJECT", "Flat Frame", keyword_comments["OBJECT"])
+        elif "bpm" in caltype:
+            ad.phu.set("BPMASK", True, "Bad pixel mask")
         else:
             raise ValueError("Caltype {} not supported".format(caltype))
 
