@@ -62,7 +62,7 @@ def makeSkyFlat(p):
     p.writeOutputs(stream='flattened')
     p.transferAttribute(source='flattened', attribute='mask')
     p.scaleByIntensity()
-    p.stackFrames(operation='average', reject_method="minmax", nlow=0, nhigh=1)
+    p.stackFrames(operation='mean', reject_method="minmax", nlow=0, nhigh=1)
     p.normalizeFlat()
     p.thresholdFlatfield()
     p.storeProcessedFlat()
