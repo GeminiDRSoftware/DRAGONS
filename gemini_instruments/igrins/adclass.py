@@ -157,7 +157,7 @@ class AstroDataIgrins(AstroDataGemini):
         Returns
         -------
         oclass: <str>
-            One of the above enumerate names for observation class.
+            One of the above enumerated names for observation class.
 
         """
         oclass = None
@@ -185,13 +185,13 @@ class AstroDataIgrins(AstroDataGemini):
 
         Returns
         -------
-        <str>: 
-            observation class.
+        otype: <str>
+            Observation type.
 
         """
         otype = self.phu.get(self._keyword_for('observation_type'))
         if not otype:
-            otype = self[0].hdr.get(self._keyword_for('observation_class'))
+            otype = self[0].hdr.get(self._keyword_for('observation_type'))
 
         if otype in ['STD', 'TAR']:
             otype = 'OBJECT'
@@ -201,12 +201,12 @@ class AstroDataIgrins(AstroDataGemini):
     @astro_data_descriptor
     def ra(self):
         """
-        Returns the name of the 
+        Returns the RA of the observation.
 
         Returns
         -------
-        <str>:
-            right ascension
+        rad: <str>
+            Right Ascension
 
         """
         rad = self.phu.get(self._keyword_for('ra'))
@@ -217,12 +217,12 @@ class AstroDataIgrins(AstroDataGemini):
     @astro_data_descriptor
     def dec(self):
         """
-        Returns the name of the 
+        Returns the declination of observation.
 
         Returns
         -------
-        <str>:
-            declination
+        decd: <str>
+            Declination
 
         """
         decd = self.phu.get(self._keyword_for('dec'))
