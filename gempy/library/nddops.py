@@ -6,6 +6,8 @@ from functools import wraps
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
+BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
+
 import inspect
 
 def take_along_axis(arr, ind, axis):
@@ -168,7 +170,7 @@ class NDStacker(object):
     @staticmethod
     def _num_good(mask):
         # Return the number of unflagged pixels at each output pixel
-        return mask.shape[0] - np.sum(mask, axis=0)
+        return np.sum(mask==False, axis=0)
 
     @staticmethod
     def _divide0(numerator, denominator):
@@ -218,31 +220,59 @@ class NDStacker(object):
     @combiner
     def median(data, mask=None, variance=None):
         # Median
-        mask, out_mask = NDStacker._process_mask(mask)
-        out_data = np.ma.median(np.ma.masked_array(data, mask=mask), axis=0)
-        out_var = NDStacker.calculate_variance(data, mask, out_data)
+        if mask is None:
+            num_img = data.shape[0]
+            if num_img % 2:
+                med_index = num_img // 2
+                index = np.argpartition(data, med_index, axis=0)[med_index]
+                out_data = take_along_axis(data, index, axis=0)
+                out_var = (None if variance is None else
+                           take_along_axis(variance, index, axis=0))
+                #out_data = np.expand_dims(take_along_axis(data, index, axis=0), axis=0).mean(axis=0)
+            else:
+                med_index = num_img // 2 - 1
+                indices = np.argpartition(data, [med_index, med_index+1],
+                                          axis=0)[med_index:med_index+2]
+                out_data = take_along_axis(data, indices, axis=0).mean(axis=0)
+                # Not strictly correct when taking the mean of the middle two
+                # but it seems more appropriate
+                out_var = (None if variance is None else
+                           take_along_axis(variance, indices, axis=0).mean(axis=0))
+            out_mask = None
+        else:
+            arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
+            num_img = NDStacker._num_good(mask & BAD)
+            med_index = num_img // 2
+            med_indices = np.array([np.where(num_img % 2, med_index, med_index-1),
+                                    np.where(num_img % 2, med_index, med_index)])
+            indices = take_along_axis(arg, med_indices, axis=0)
+            out_data = take_along_axis(data, indices, axis=0).mean(axis=0)
+            out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
+            out_var = (None if variance is None else
+                       take_along_axis(variance, indices, axis=0).mean(axis=0))
         return out_data, out_mask, out_var
 
     @staticmethod
     @combiner
     def lmedian(data, mask=None, variance=None):
         # Low median: i.e., if even number, take lower of 2 middle items
-        mask, out_mask = NDStacker._process_mask(mask)
+        #mask, out_mask = NDStacker._process_mask(mask)
         num_img = data.shape[0]
         if mask is None:
-            index = (num_img - 1) // 2
-            out_data = np.partition(data, index)[index]
+            med_index = (num_img - 1) // 2
+            index = np.argpartition(data, med_index, axis=0)[med_index]
+            out_mask = None
         else:
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # np.choose() can't handle more than 32 input images
-            data = np.where(mask, np.inf, data)
-            data.sort(axis=0)
-            index = (NDStacker._num_good(mask) - 1) // 2
-            out_data = take_along_axis(data, index, axis=0)
-            #out_data = np.empty(data.shape[1:], dtype=np.float32)
-            #for i in range((num_img-1) // 2 + 1):
-            #    out_data[index==i] = data[i][index==i]
-        out_var = NDStacker.calculate_variance(data, mask, out_data)
+            # Partitioning the bottom half is slower than a full sort
+            arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
+            med_index = (NDStacker._num_good(mask & BAD) - 1) // 2
+            index = take_along_axis(arg, med_index, axis=0)
+            out_mask = take_along_axis(mask, index, axis=0)
+        out_data = take_along_axis(data, index, axis=0)
+        out_var = None if variance is None else take_along_axis(variance, index, axis=0)
+        #out_var = NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
 
     #------------------------ REJECTOR METHODS ----------------------------
@@ -290,10 +320,10 @@ class NDStacker(object):
     def sigclip(data, mask=None, variance=None, mclip=True, lsigma=3.0, hsigma=3.0):
         # Iterative sigma-clipping based on input pixel scatter
         cenfunc = np.ma.median if mclip else np.ma.mean
-        data = np.ma.masked_array(data, mask=mask)
+        data = np.ma.masked_array(data, mask=mask & BAD)
         clipped_data = sigma_clip(data, sigma_lower=lsigma, sigma_upper=hsigma,
                                   cenfunc=cenfunc, iters=None, axis=0, copy=False)
-        return clipped_data.data, clipped_data.mask, variance
+        return clipped_data.data, clipped_data.mask | mask, variance
 
     @staticmethod
     @rejector
@@ -305,7 +335,7 @@ class NDStacker(object):
                                      lsigma=lsigma, hsigma=hsigma)
 
         cenfunc = np.ma.median  # Always median for first pass
-        clipped_data = np.ma.masked_array(data, mask=mask)
+        clipped_data = np.ma.masked_array(data, mask=mask & BAD)
         nmasked = np.sum(clipped_data.mask)
         while True:  # Write it this way in case we decide to have maxiters
             avg = cenfunc(clipped_data, axis=0)
@@ -317,4 +347,4 @@ class NDStacker(object):
             cenfunc = np.ma.median if mclip else np.ma.mean
             nmasked = new_nmasked
 
-        return clipped_data.data, clipped_data.mask, variance
+        return clipped_data.data, clipped_data.mask | mask, variance
