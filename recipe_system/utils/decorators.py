@@ -83,20 +83,20 @@ def userpar_override(pname, args, upars):
     return parset
 
 def set_logging(pname):
-   global LOGINDENT
-   LOGINDENT += 1
-   logutils.update_indent(LOGINDENT)
-   stat_msg = "PRIMITIVE: {}".format(pname)
-   log.status(stat_msg)
-   log.status("-" * len(stat_msg))
-   return
+    global LOGINDENT
+    LOGINDENT += 1
+    logutils.update_indent(LOGINDENT)
+    stat_msg = "PRIMITIVE: {}".format(pname)
+    log.status(stat_msg)
+    log.status("-" * len(stat_msg))
+    return
 
 def unset_logging():
-   global LOGINDENT
-   log.status(".")
-   LOGINDENT -= 1
-   logutils.update_indent(LOGINDENT)
-   return    
+    global LOGINDENT
+    log.status(".")
+    LOGINDENT -= 1
+    logutils.update_indent(LOGINDENT)
+    return
 
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
