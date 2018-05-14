@@ -179,7 +179,7 @@ class Standardize(PrimitivesBASE):
 
         # Add the illumination mask if requested
         if params['add_illum_mask']:
-            adinputs = self.addIllumMaskToDQ(adinputs, mask=params["illum_mask"])
+            adinputs = self.addIllumMaskToDQ(adinputs, illum_mask=params["illum_mask"])
 
         # Timestamp and update filenames
         for ad in adinputs:
