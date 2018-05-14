@@ -25,16 +25,10 @@ class EventsManager(object):
         # (\.fits)(\[SCI,)(\d+)(\])$')
         # For quick reductions for the GUI, we are assuming that the same
         # images are combined for all extensions
+        # Depracated:
+        # raw_rgx = re.compile(r'tmp\d+gemcombine[NS]\d{8}S\d{4}\.fits\[SCI,\d+\]')
 
-        raw_rgx = re.compile(r'tmp\d+gemcombine[NS]\d{8}S\d{4}\.fits\[SCI,\d+\]')
-        raw_list = ad[0].hdr.get('IMCMB***')
-        if raw_list:
-            stack_list = []
-            for item in raw_list:
-                tempfile = raw_list[item]
-                if raw_rgx.match(raw_list[item]):
-                    stack_list.append(''.join(re.split(raw_rgx, raw_list[item])[4:9]))
-        return stack_list
+        return ad.phu.get('IMCMB***').values()
 
     def get_metadict(self, ad):
         # Key: metadata dictionary key, Value: descriptor name
