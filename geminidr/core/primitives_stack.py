@@ -207,6 +207,11 @@ class Stack(PrimitivesBASE):
         ad_out.phu.set('DATALAB', "{}{}".format(ad_out.data_label(), sfx),
                    self.keyword_comments['DATALAB'])
 
+        # Add other keywords to the PHU about the stacking inputs
+        ad_out.phu.set('NCOMBINE', len(adinputs), self.keyword_comments['NCOMBINE'])
+        for i, ad in enumerate(adinputs, start=1):
+            ad_out.phu.set('IMCMB{:03d}'.format(i), ad.phu.get('ORIGNAME', ad.filename))
+
         # Timestamp and update filename and prepare to return single output
         gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
         ad_out.update_filename(suffix=sfx, strip=True)

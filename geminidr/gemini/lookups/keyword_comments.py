@@ -37,6 +37,7 @@ keyword_comments = {
     "MEANZP": "Mean zero point",
     "NAXIS1": "Axis length",
     "NAXIS2": "Axis length",
+    "NCOMBINE": "Number of input images",
     "NEXTEND": "Number of extensions",
     "NONLINEA": "Non-linear regime [ADU]",
     "NSCIEXT": "Number of science extensions",
