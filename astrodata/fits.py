@@ -1341,12 +1341,15 @@ class FitsLazyLoadable(object):
 
     @property
     def dtype(self):
+        """Need to to some overriding of astropy.io.fits since it doesn't
+           know about BITPIX=8"""
         dtype = self._obj._dtype_for_bitpix()
+        bitpix = self._obj._orig_bitpix
         if dtype is None:
-            bitpix = self._obj._orig_bitpix
             if bitpix < 0:
                 dtype = np.dtype('float{}'.format(abs(bitpix)))
-        if self._obj.header['EXTNAME'] == 'DQ':
+        if (self._obj.header['EXTNAME'] == 'DQ' or self._obj._uint and
+                self._obj._orig_bscale == 1 and bitpix == 8):
             dtype = np.uint16
         return dtype
 
