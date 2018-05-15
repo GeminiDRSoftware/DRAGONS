@@ -25,7 +25,7 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
         self.detect_minarea = 40
         self.detect_thresh = 3.
         self.deblend_mincont = 0.001
-        self.back_filter_size = 3
+        self.back_filtersize = 3
 
 class determineAstrometricSolutionConfig(parameters_register.determineAstrometricSolutionConfig):
     def setDefaults(self):
