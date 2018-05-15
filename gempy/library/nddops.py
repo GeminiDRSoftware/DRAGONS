@@ -320,7 +320,7 @@ class NDStacker(object):
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # Have to keep all values if all values are masked!
             # Sorts variance and mask with data
-            arg = np.argsort(np.where(mask, np.inf, data), axis=0)
+            arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
             data = take_along_axis(data, arg, axis=0)
             variance = take_along_axis(variance, arg, axis=0)
             mask = take_along_axis(mask, arg, axis=0)
