@@ -146,7 +146,7 @@ class NDStacker(object):
             getattr(self._log, level)(msg)
 
     @staticmethod
-    def _process_mask(mask, bad_bits=BAD):
+    def _process_mask(mask):
         # This manipulates the mask array so we use it to do the required
         # calculations. It creates the output mask (where bits are set only
         # if all the input pixels are flagged) and then unflags pixels in
@@ -155,8 +155,13 @@ class NDStacker(object):
         if mask is None:
             return None, None
 
-        out_mask = np.full(mask.shape[1:], 0, dtype=DQ.datatype)
+        # It it's a boolean mask we don't need to do much
+        if mask.dtype == bool:
+            out_mask = np.bitwise_and.reduce(mask, axis=0)
+            mask ^= out_mask  # Set mask=0 if all pixels have mask=1
+            return mask, out_mask
 
+        out_mask = np.full(mask.shape[1:], 0, dtype=DQ.datatype)
         for consider_bits in reversed(DQhierarchy):
             out_mask |= (np.bitwise_or.reduce(mask, axis=0) & consider_bits)
             mask &= 65535 ^ consider_bits
