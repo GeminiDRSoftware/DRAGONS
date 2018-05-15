@@ -7,6 +7,8 @@ from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
+DQhierarchy = (DQ.no_data, DQ.unilluminated, DQ.bad_pixel, DQ.overlap,
+               DQ.cosmic_ray, DQ.non_linear | DQ.saturated)
 
 import inspect
 
@@ -144,21 +146,33 @@ class NDStacker(object):
             getattr(self._log, level)(msg)
 
     @staticmethod
-    def _process_mask(mask, ignore_bits=0):
+    def _process_mask(mask, bad_bits=BAD):
         # This manipulates the mask array so we use it to do the required
         # calculations. It creates the output mask (where bits are set only
         # if all the input pixels are flagged) and then unflags pixels in
         # the inputs when they are all bad (because it's better to provide a
         # number than stick a NaN in the output).
-        # TODO: Smarter handling of nonlinear/saturation flags
         if mask is None:
             return None, None
-        mask = (mask & (65535-ignore_bits)) > 0
-        out_mask = np.all(mask, axis=0)
-        # XOR: mask unaffected where out_mask=False but where out_mask=True
-        # all the input pixels (which are all True) will become False
-        mask = mask ^ out_mask
-        return mask, out_mask
+
+        out_mask = np.full(mask.shape[1:], 0, dtype=DQ.datatype)
+
+        for consider_bits in reversed(DQhierarchy):
+            out_mask |= (np.bitwise_or.reduce(mask, axis=0) & consider_bits)
+            mask &= 65535 ^ consider_bits
+            ngood = NDStacker._num_good(mask>0)
+
+            # Set DQ=32768 for bad pixels where we've already found good ones
+            # so that they won't get included in future iterations of loop
+            mask = np.where(np.logical_and(ngood>0, mask>0), DQ.datatype(32768), mask)
+            # 32768 in output mask means we have an output pixel
+            out_mask[ngood>0] |= 32768
+
+            # If we've found "good' pixels for all output pixels, leave
+            if np.all(out_mask & 32768):
+                break
+
+        return mask, out_mask & 32767
 
     @staticmethod
     def calculate_variance(data, mask, out_data):
