@@ -15,7 +15,7 @@ import os
 import os.path
 import astrodata
 import gemini_instruments
-from gempy.gemini import eti
+from gempy.gemini.eti import gemcombineeti
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 # TESTGMOSLIST = [
@@ -83,7 +83,7 @@ class TestGemcombine(object):
             inputs.append(ad)
         parameters = TESTDEFAULTPARAMS
         gemcombine_task = \
-            eti.gemcombineeti.GemcombineETI(inputs, parameters)
+            gemcombineeti.GemcombineETI(inputs, parameters)
         ad_stack = gemcombine_task.run()
         ad_stack.write(overwrite=True)
         del inputs
