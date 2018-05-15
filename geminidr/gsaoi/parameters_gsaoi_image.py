@@ -9,4 +9,4 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
         self.analysis_thresh = 5.
         self.phot_min_radius = 1.
         self.back_size = 128
-        self.back_filter_size = 5
+        self.back_filtersize = 5
