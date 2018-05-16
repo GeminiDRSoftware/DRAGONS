@@ -192,7 +192,7 @@ class Stack(PrimitivesBASE):
                 status += " Applying offsets."
                 numbers = zfactors
             log.stdinfo(status)
-            if (index == 0 or separate_ext):
+            if ((scale or zero) and (index == 0 or separate_ext)):
                 for ad, value in zip(adinputs, numbers):
                     log.stdinfo("{:40s}{:10.3f}".format(ad.filename, value))
 
