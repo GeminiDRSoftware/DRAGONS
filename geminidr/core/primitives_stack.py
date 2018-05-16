@@ -17,6 +17,8 @@ from geminidr import PrimitivesBASE
 from . import parameters_stack
 
 from recipe_system.utils.decorators import parameter_override
+
+STACKSIZE = 2000000000  # 2GB for stacking
 # ------------------------------------------------------------------------------
 @parameter_override
 class Stack(PrimitivesBASE):
@@ -99,10 +101,15 @@ class Stack(PrimitivesBASE):
                         "input AstroData objects are required for stackFrames")
             return adinputs
 
-        # Ensure that each input AstroData object has been prepared
+        # Perform various checks on inputs
         for ad in adinputs:
             if not "PREPARED" in ad.tags:
                 raise IOError("{} must be prepared" .format(ad.filename))
+
+        if len(set(len(ad) for ad in adinputs)) > 1:
+            raise IOError("Not all inputs have the same number of extensions")
+        if len(set([ext.nddata.shape for ad in adinputs for ext in ad])) > 1:
+            raise IOError("Not all inputs images have the same shape")
 
         # Determine the average gain from the input AstroData objects and
         # add in quadrature the read noise
@@ -157,9 +164,11 @@ class Stack(PrimitivesBASE):
             if scale and np.min(scale_factors) < 0:
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
+                scale = False
             if scale and np.isinf(np.max(scale_factors)):
                 log.warning("Some scale factors are infinite. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
+                scale = False
 
         stack_function = NDStacker(combine=params["operation"],
                                    reject=params["reject_method"],
@@ -172,15 +181,34 @@ class Stack(PrimitivesBASE):
         # Let's be a bit lazy here. Let's compute the stack outputs and stuff
         # the NDData objects into the first (reference) image
         ad_out = astrodata.create(adinputs[0].phu)
-        for index, (scale, zero) in enumerate(zip(scale_factors, zero_offsets)):
+        for index, (extver, sfactors, zfactors) in enumerate(zip(adinputs[0].hdr.get('EXTVER'),
+                                                          scale_factors, zero_offsets)):
+            status = ("Combining EXTVER {}.".format(extver) if num_ext > 1 else
+                      "Combining images.")
+            if scale:
+                status += " Applying scale factors."
+                numbers = sfactors
+            elif zero:
+                status += " Applying offsets."
+                numbers = zfactors
+            log.stdinfo(status)
+            if (index == 0 or separate_ext):
+                for ad, value in zip(adinputs, numbers):
+                    log.stdinfo("{:40s}{:10.3f}".format(ad.filename, value))
+
+            # Determine kernel size from offered memory (10=SCI+VAR+DQ bytes)
+            shape = adinputs[0][index].nddata.shape
+            kernel = (min(STACKSIZE // (10 * num_img *
+                      np.multiply.reduce(shape[1:])),shape[0]),) + shape[1:]
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
                                              for ad in adinputs)
-            result = windowedOp(partial(stack_function, scale=scale, zero=zero),
+            result = windowedOp(partial(stack_function, scale=sfactors, zero=zfactors),
                                 [ad[index].nddata for ad in adinputs],
-                                kernel=(2048,2048), dtype=np.float32,
+                                kernel=kernel, dtype=np.float32,
                                 with_uncertainty=with_uncertainty, with_mask=with_mask)
             ad_out.append(result)
+            log.stdinfo("")
 
         # Propagate REFCAT as the union of all input REFCATs
         refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
