@@ -21,7 +21,7 @@ class applyDQPlaneConfig(config.Config):
                                  (str, float), "median", check=replace_valueCheck)
 
 class associateSkyConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_skyassociated", optional=True)
+    suffix = config.Field("Filename suffix", str, "_skyAssociated", optional=True)
     time = config.RangeField("Maximum association time (seconds)", float, 600., min=0)
     distance = config.RangeField("Minimum association distance (arcsec)", float, 3., min=0)
     max_skies = config.RangeField("Maximum number of sky frames to associate",
