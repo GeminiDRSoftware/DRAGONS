@@ -1519,6 +1519,9 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
                                        if with_uncertainty else None),
                           mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
                           meta=sequence[0].meta)
+    # Delete other extensions because we don't know what to do with them
+    result.meta['other'] = OrderedDict()
+    result.meta['other_header'] = {}
 
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
