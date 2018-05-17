@@ -343,7 +343,7 @@ class NDStacker(object):
             data = np.ma.masked_array(data, mask=mask & BAD)
         clipped_data = sigma_clip(data, sigma_lower=lsigma, sigma_upper=hsigma,
                                   cenfunc=cenfunc, iters=None, axis=0, copy=False)
-        return clipped_data.data, clipped_data.mask | (mask or 0), variance
+        return clipped_data.data, clipped_data.mask | (mask if mask is None else 0), variance
 
     @staticmethod
     @rejector
@@ -355,7 +355,8 @@ class NDStacker(object):
                                      lsigma=lsigma, hsigma=hsigma)
 
         cenfunc = np.ma.median  # Always median for first pass
-        clipped_data = np.ma.masked_array(data, mask=(mask or 0) & BAD)
+        clipped_data = np.ma.masked_array(data, mask=None if mask is None else
+                                                     (mask & BAD))
         nmasked = np.sum(clipped_data.mask)
         while True:  # Write it this way in case we decide to have maxiters
             avg = cenfunc(clipped_data, axis=0)
@@ -367,4 +368,4 @@ class NDStacker(object):
             cenfunc = np.ma.median if mclip else np.ma.mean
             nmasked = new_nmasked
 
-        return clipped_data.data, clipped_data.mask | mask, variance
+        return clipped_data.data, clipped_data.mask | (mask if mask is None else 0), variance
