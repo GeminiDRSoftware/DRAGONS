@@ -279,7 +279,8 @@ class Stack(PrimitivesBASE):
         # We're taking care of the varying sky levels here (using a more
         # accurate determination of the sky level) so we need to stop
         # stackFrames from getting involved
-        stack_params = self._inherit_params(params, 'stackFrames')
+        stack_params = self._inherit_params(params, 'stackFrames',
+                                            pass_suffix=True)
         stack_params.update({'zero': False, 'scale': False})
 
         # Run detectSources() on any frames without any OBJMASKs

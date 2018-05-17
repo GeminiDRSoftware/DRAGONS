@@ -188,7 +188,7 @@ class PrimitivesBASE(object):
                            key=lambda x: len(x[1].__class__.__bases__)):
             self.params[k] = v.__class__()
 
-            for cls in reversed(v.__class__.__bases__):
+            for cls in reversed((v.__class__,) + v.__class__.__bases__):
                 cls_name = cls.__name__
                 if cls_name.find('Config') > 0:
                     # We may not have yet imported a Config from which we inherit.
