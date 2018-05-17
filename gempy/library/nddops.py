@@ -343,7 +343,11 @@ class NDStacker(object):
             data = np.ma.masked_array(data, mask=mask & BAD)
         clipped_data = sigma_clip(data, sigma_lower=lsigma, sigma_upper=hsigma,
                                   cenfunc=cenfunc, iters=None, axis=0, copy=False)
-        return clipped_data.data, clipped_data.mask | (mask if mask is None else 0), variance
+        if mask is None:
+            mask = clipped_data.mask
+        else:
+            mask |= clipped_data.mask
+        return clipped_data.data, mask, variance
 
     @staticmethod
     @rejector
@@ -368,4 +372,8 @@ class NDStacker(object):
             cenfunc = np.ma.median if mclip else np.ma.mean
             nmasked = new_nmasked
 
-        return clipped_data.data, clipped_data.mask | (mask if mask is None else 0), variance
+        if mask is None:
+            mask = clipped_data.mask
+        else:
+            mask |= clipped_data.mask
+        return clipped_data.data, mask, variance
