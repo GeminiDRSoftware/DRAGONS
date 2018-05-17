@@ -1,0 +1,76 @@
+# Setup & utility functions for testing recipe system command-line interface.
+
+# Variable defaults set here can be overridden in the reduction script
+# afterwards, especially: log atol rtol ignore_kw.
+
+# Default log filename:
+if [ -z "$log" ]; then
+    log="reduce.log"
+fi
+
+# Define where to look for raw data and reference files (for comparison with
+# the results). I have no idea how this is structured for existing Python tests
+# but we can adapt that later.
+if [ -n "$GEMPYTHON_TESTDATA" ]; then
+    data_dir=$GEMPYTHON_TESTDATA/$test_dir
+    (cd $data_dir) || exit 1
+else
+    echo "GEMPYTHON_TESTDATA undefined; looking for data in ." >&2
+    data_dir=.
+fi
+ref_dir=$data_dir/ref
+
+work_dir=$(pwd)
+
+# Defaults for fitsdiff comparison:
+atol=1.e-6
+rtol=1.e-6
+ignore_kw="ADDDQ,ADDVAR,ADUTOELE,ASSOCSKY,CORRWCS,DARKCORR,DETECSRC,FLATCORR,\
+GEM-TLM,LINCORR,PREPARE,SDZHDRSG,SDZHDRSI,SDZSTRUC,SEPSKY,STACKFRM,SUBSKY,\
+VALDATA"
+
+# Ensure failure status starts off empty (where applicable):
+nerr=""
+
+# Adapt the first filename from a file list to construct a calibration name.
+# NB. Not all steps name the output after the first listed file, in which case
+# there is "last_result_filename" below.
+first_filename() {  # list_file type
+    grep -Ev "^[ \t]*(#|$)" "$1" | head -1 | sed -e "s|.*/||" -e "s|\([.]fits\)|_$2\1|"
+}
+
+# Parse an output filename from the end of the log (which is rather hackish but
+# works for now):
+last_result_filename() {  # suffix
+    local fn
+    fn=$(tail "$log" | grep -E "(Wrote|Writing to file)[ \t]*N2.*_${1}.fits")
+    if [ -n "$fn" ]; then
+        echo "$fn" | sed -ne "s/.*\(N2.*_${1}.fits\).*/\1/gp"
+    else
+        echo "Failed to parse output filename of type $1 from log" >&2
+        return 1
+    fi
+}
+
+# Compare a named file with a reference version:
+compare_file() {  # name
+    local fn=$1
+    fn=$(tail "$log" | sed -ne "/\(Writing to file N2.*_stack.fits\)/s/.*\(N2.*_stack.fits\).*/\1/gp")
+    fitsdiff "$ref_dir/$fn" "$fn" -k "$ignore_kw" -r "$rtol" -a "$atol"
+}
+
+# Delimit STDOUT log section:
+start_test_set() {  # name
+    echo "START TESTS: $1"
+}
+
+# Delimit STDOUT log section & report status:
+end_test_set() {  # name nerr
+    local name=$1
+    local nerr=$2
+    nerr=$(echo "$nerr" | tr -d '\n' |wc -c)
+    echo "END TESTS $name with $nerr failure(s)"
+    echo
+    exit $nerr
+}
+
