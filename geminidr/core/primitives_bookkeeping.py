@@ -286,6 +286,7 @@ class Bookkeeping(PrimitivesBASE):
             attribute to transfer from ADs in other stream
         """
         log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         if source not in self.streams.keys():
             log.info("Stream {} does not exist so nothing to transfer".format(source))
@@ -296,6 +297,8 @@ class Bookkeeping(PrimitivesBASE):
             log.warning("Incompatible stream lengths: {} and {}".
                         format(len(adinputs), source_length))
             return adinputs
+
+        log.stdinfo("Transferring attribute {} from stream {}".format(attribute, source))
 
         # Keep track of whether we find anything to transfer, as failing to
         # do so might indicate a problem and we should warn the user
