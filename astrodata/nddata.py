@@ -154,8 +154,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
             self.uncertainty = uncertainty
 
     def __deepcopy__(self, memo):
-        return self.__class__(self.data, self.uncertainty, self.mask, self.wcs,
-                              deepcopy(self.meta), self.unit)
+        return self.__class__(self.data if is_lazy(self.data) else deepcopy(self.data),
+                              self.uncertainty if is_lazy(self.uncertainty) else deepcopy(self.uncertainty),
+                              self.mask if is_lazy(self.mask) else deepcopy(self.mask),
+                              deepcopy(self.wcs), deepcopy(self.meta), self.unit)
 
     @property
     def window(self):
