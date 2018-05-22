@@ -33,7 +33,6 @@ def reduce(p):
     p.transferAttribute(source='skysub', attribute='OBJMASK')
     p.clearStream(stream='skysub')
     p.separateSky()
-    p.associateSky()
     p.skyCorrect(mask_objects=True)
     p.detectSources()
     p.alignAndStack()
