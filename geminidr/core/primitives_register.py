@@ -168,7 +168,7 @@ class Register(PrimitivesBASE):
                 else:
                     log.fullinfo("Number of objects in image {}: {}".format(
                                  ad.filename, nobj))
-                    log.fullinfo("Cross-correlating sources in {}, {}".
+                    log.stdinfo("Cross-correlating sources in {}, {}".
                                  format(ref_image.filename, ad.filename))
 
                     # GNIRS WCS is dubious, so update WCS by using the ref
