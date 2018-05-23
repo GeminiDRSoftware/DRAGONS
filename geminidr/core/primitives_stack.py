@@ -49,6 +49,8 @@ class Stack(PrimitivesBASE):
         else:
             adinputs = self.matchWCSToReference(adinputs, **self._inherit_params(params, 'matchWCSToReference'))
             adinputs = self.resampleToCommonFrame(adinputs, **self._inherit_params(params, 'resampleToCommonFrame'))
+            if params["save"]:
+                self.writeOutputs(adinputs)
             adinputs = self.stackFrames(adinputs, **self._inherit_params(params, 'stackFrames'))
         return adinputs
 
