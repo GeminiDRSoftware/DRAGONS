@@ -932,12 +932,12 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         reset_sky = params["reset_sky"]
-        scale = params["scale"]
-        zero = params["zero"]
-        if scale and zero:
+        scale_sky = params["scale_sky"]
+        offset_sky = params["offset_sky"]
+        if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
-            zero = False
+            params["zero"] = False
 
         # Parameters to be passed to stackSkyFrames
         stack_params = self._inherit_params(params, 'stackSkyFrames',
@@ -1031,8 +1031,8 @@ class Preprocess(PrimitivesBASE):
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
-        adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale=scale,
-                                    zero=zero, reset_sky=reset_sky)
+        adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
+                                    offset_sky=offset_sky, reset_sky=reset_sky)
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
