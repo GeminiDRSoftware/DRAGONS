@@ -304,7 +304,7 @@ class NDStacker(object):
     @staticmethod
     @rejector
     def minmax(data, mask=None, variance=None, nlow=0, nhigh=0):
-        # minhigh rejection, following IRAF rules when pixels are rejected
+        # minmax rejection, following IRAF rules when pixels are rejected
         if mask is None:
             nlo = int(nlow+0.001)
             nhi = data.shape[0] - int(nhigh+0.001)
