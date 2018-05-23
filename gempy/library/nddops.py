@@ -303,11 +303,11 @@ class NDStacker(object):
 
     @staticmethod
     @rejector
-    def minmax(data, mask=None, variance=None, nmin=0, nmax=0):
-        # minmax rejection, following IRAF rules when pixels are rejected
+    def minmax(data, mask=None, variance=None, nlow=0, nhigh=0):
+        # minhigh rejection, following IRAF rules when pixels are rejected
         if mask is None:
-            nlo = int(nmin+0.001)
-            nhi = data.shape[0] - int(nmax+0.001)
+            nlo = int(nlow+0.001)
+            nhi = data.shape[0] - int(nhigh+0.001)
             # Sorts variance with data
             arg = np.argsort(data, axis=0)
             data = take_along_axis(data, arg, axis=0)
@@ -326,12 +326,12 @@ class NDStacker(object):
             mask = take_along_axis(mask, arg, axis=0)
             # IRAF imcombine maths
             num_good = NDStacker._num_good(mask)
-            nlo = (num_good * float(nmin) / num_img + 0.001).astype(int)
-            nhi = num_good - (num_good * float(nmax) / num_img + 0.001).astype(int) - 1
+            nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
+            nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
             mask = np.zeros_like(data, dtype=bool)
             for i in range(num_img):
-                mask[i][i<nlo] = True
-                mask[i][i>nhi] = True
+                mask[i][i<nlo] = DQ.datatype(1)
+                mask[i][i>nhi] = DQ.datatype(1)
         return data, mask, variance
 
     @staticmethod
