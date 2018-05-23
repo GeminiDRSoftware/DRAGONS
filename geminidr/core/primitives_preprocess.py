@@ -196,7 +196,12 @@ class Preprocess(PrimitivesBASE):
                            astrodata.open(ad) for ad in ad_skies]
         else:  # get from sky stream (put there by separateSky)
             ad_skies = self.streams.get('sky', [])
-        
+
+        # Timestamp and update filenames. Do now so filenames agree at end
+        for ad in set(adinputs + ad_skies):
+            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+
         if not adinputs or not ad_skies:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
@@ -252,11 +257,6 @@ class Preprocess(PrimitivesBASE):
                 else:
                     log.warning("No sky frames available for {}".format(ad.filename))
 
-        # Timestamp and update filenames of science frames only
-        for ad in adinputs:
-            ad.update_filename(suffix=sfx, strip=True)
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-        
         # Need to update sky stream in case it came from the "sky" parameter
         self.streams['sky'] = ad_skies
         return adinputs
@@ -940,11 +940,15 @@ class Preprocess(PrimitivesBASE):
             zero = False
 
         # Parameters to be passed to stackSkyFrames
-        stack_params = self._inherit_params(params, 'stackSkyFrames')
+        stack_params = self._inherit_params(params, 'stackSkyFrames',
+                                            pass_suffix=True)
+        #stack_params['mask_objects'] = False  # We're doing this en masse
 
         # To avoid a crash in certain methods of operation
         if "sky" not in self.streams:
-            self.streams["sky"] = []
+            log.warning("Sky stream is empty. Will search for sky frames in"
+                        " main stream.")
+            self.streams["sky"] = adinputs
 
         # We'll need to process the sky frames so collect them all up and do
         # this first, to avoid repeating it every time one is reused
@@ -973,14 +977,12 @@ class Preprocess(PrimitivesBASE):
         ad_skies = []
         for filename in skies:
             for sky in self.streams["sky"]:
-                if sky.filename in [filename,
-                        filename.replace(self.params['separateSky'].suffix,
-                                         self.params['associateSky'].suffix)]:
+                if sky.filename == filename:
                     break
             else:
                 try:
                     sky = astrodata.open(filename)
-                except IOError:
+                except astrodata.AstroDataError:
                     log.warning("Cannot find a sky file named {}. "
                             "Ignoring it.".format(filename))
                     skies.remove(filename)
@@ -989,14 +991,17 @@ class Preprocess(PrimitivesBASE):
 
         # We've got all the sky frames in sky_dict, so delete the sky stream
         # to eliminate references to the original frames before we modify them
+        # Note that we can edit the OBJMASK even if the sky is also a science
+        # frame because we expect detectSources() to be run again on the
+        # sky-subtracted image.
         del self.streams["sky"]
         if params["mask_objects"]:
             ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
                         else self.detectSources([ad])[0] for ad in ad_skies]
             dilate_params = self._inherit_params(params, "dilateObjectMask")
             ad_skies = self.dilateObjectMask(ad_skies, **dilate_params)
-            #ad_skies = self.addObjectMaskToDQ(ad_skies)
         sky_dict = dict(zip(skies, ad_skies))
+        stack_params["dilation"] = 0  # We've already dilated
 
         # Make a list of stacked sky frames, but use references if the same
         # frames are used for more than one adinput. Use a value "0" to
@@ -1009,8 +1014,8 @@ class Preprocess(PrimitivesBASE):
                 stacked_sky = self.stackSkyFrames([deepcopy(sky_dict[sky]) for sky in
                                                   skytable], **stack_params)
                 if len(stacked_sky) == 1:
-                    # Provide a more intelligent filename
                     stacked_sky = stacked_sky[0]
+                    # Provide a more intelligent filename
                     stacked_sky.phu['ORIGNAME'] = ad.phu['ORIGNAME']
                     stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
@@ -1055,11 +1060,11 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         reset_sky = params["reset_sky"]
-        scale = params["scale"]
-        zero = params["zero"]
+        scale = params["scale_sky"]
+        zero = params["offset_sky"]
         if scale and zero:
-            log.warning("Both the scale and zero parameters are set. "
-                        "Setting zero=False.")
+            log.warning("Both the scale_sky and offset_sky parameters are set. "
+                        "Setting offset_sky=False.")
             zero = False
 
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
@@ -1092,7 +1097,7 @@ class Preprocess(PrimitivesBASE):
                 if reset_sky:
                     new_bg = gt.measure_bg_from_image(ad, value_only=True)
                     for ext, new_level, old_level in zip(ad, new_bg, old_bg):
-                        sky_offset = new_level - old_level
+                        sky_offset = old_level - new_level
                         log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
                                             ad.filename, ext.hdr['EXTVER']))
                         ext.add(sky_offset)

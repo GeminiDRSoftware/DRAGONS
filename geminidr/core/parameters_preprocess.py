@@ -70,14 +70,13 @@ class makeSkyConfig(associateSkyConfig, separateSkyConfig):
 class subtractSkyConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skySubtracted", optional=True)
     reset_sky = config.Field("Replace lost sky counts?", bool, False)
-    scale = config.Field("Scale sky frame to science frame?", bool, True)
-    zero = config.Field("Apply offset to sky frame to match science frame?", bool, False)
+    scale_sky = config.Field("Scale sky frame to science frame?", bool, True)
+    offset_sky = config.Field("Apply offset to sky frame to match science frame?", bool, False)
     sky = config.ListField("Sky frame to subtract", (str, AstroData), None, optional=True, single=True)
 
 class skyCorrectConfig(parameters_stack.stackSkyFramesConfig, subtractSkyConfig):
     def setDefaults(self):
         self.suffix = "_skyCorrected"
-        #del self.sky
 
 class subtractSkyBackgroundConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyBackgroundSubtracted", optional=True)
