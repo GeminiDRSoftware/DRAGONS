@@ -80,7 +80,8 @@ def unpack_nddata(fn):
 
         # Can't instantiate NDAstroData with variance
         ret_value = NDAstroData(out_data, mask=out_mask)
-        ret_value.variance = out_var
+        if out_var is not None:
+            ret_value.variance = out_var
         return ret_value
     return wrapper
 
