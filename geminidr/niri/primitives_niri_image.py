@@ -59,6 +59,7 @@ class NIRIImage(NIRI, Image, Photometry):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         hsigma, lsigma = params["hsigma"], params["lsigma"]
         pxsize, pysize = params["pattern_x_size"], params["pattern_y_size"]
@@ -70,6 +71,12 @@ class NIRIImage(NIRI, Image, Photometry):
         zeros = None  # will remain unchanged if not subtract_background
 
         for ad in adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by ADUToElectrons".
+                            format(ad.filename))
+                continue
+
             for ext in ad:
                 qysize, qxsize = [size // 2 for size in ext.data.shape]
                 yticks = [(y, y + pysize) for y in range(0, qysize, pysize)]
@@ -83,19 +90,27 @@ class NIRIImage(NIRI, Image, Photometry):
                                              for (start, end) in coords)]
                                   for coords in cart_product(yticks, xticks)]
                         if bgsub:
-                            # If all pixels are masked in a box, we'll try to
-                            # take the mean of an empty slice. Suppress warning.
+                            # If all pixels are masked in a box, we'll get no
+                            # result from the mean. Suppress warning.
                             with warnings.catch_warnings():
-                                warnings.simplefilter("ignore", category=RuntimeWarning)
-                                zeros = np.nan_to_num([-np.mean(block.data[block.mask == 0])
+                                warnings.simplefilter("ignore", category=UserWarning)
+                                zeros = np.nan_to_num([-np.ma.masked_array(block.data, block.mask).mean()
                                                        for block in blocks])
                         out = stack_function(blocks, zero=zeros).data
                         out_quad = (quad.data + np.mean(out) -
                                     np.tile(out, (len(yticks), len(xticks))))
                         sigma_out = sigclip(np.ma.masked_array(out_quad, quad.mask)).std()
-                        print sigma_in, sigma_out
-                        if sigma_out < sigma_in or force:
-                            ext.data[ystart:ystart + qysize, xstart:xstart + qxsize] = out_quad
+                        if sigma_out > sigma_in:
+                            qstr = "{}:{} quadrant ({},{})".format(ad.filename,
+                                                                   ext.hdr['EXTVER'], xstart, ystart)
+                            if force:
+                                log.stdinfo("Forcing cleaning on " + qstr)
+                            else:
+                                log.stdinfo("No improvement for "+qstr)
+                                continue
+                        ext.data[ystart:ystart + qysize, xstart:xstart + qxsize] = out_quad
 
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
