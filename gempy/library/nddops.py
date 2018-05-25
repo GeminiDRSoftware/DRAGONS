@@ -270,6 +270,8 @@ class NDStacker(object):
             out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
             out_var = (None if variance is None else
                        take_along_axis(variance, indices, axis=0).mean(axis=0))
+        if variance is None:  # IRAF gemcombine calculation
+            out_var = NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -291,8 +293,10 @@ class NDStacker(object):
             index = take_along_axis(arg, med_index, axis=0)
             out_mask = take_along_axis(mask, index, axis=0)
         out_data = take_along_axis(data, index, axis=0)
-        out_var = None if variance is None else take_along_axis(variance, index, axis=0)
-        #out_var = NDStacker.calculate_variance(data, mask, out_data)
+        if variance is None:  # IRAF gemcombine calculation
+            out_var = NDStacker.calculate_variance(data, mask, out_data)
+        else:
+            out_var = take_along_axis(variance, index, axis=0)
         return out_data, out_mask, out_var
 
     #------------------------ REJECTOR METHODS ----------------------------
@@ -348,6 +352,7 @@ class NDStacker(object):
             mask = clipped_data.mask
         else:
             mask |= clipped_data.mask
+        #return clipped_data.data, mask, variance
         return clipped_data.data, mask, variance
 
     @staticmethod
