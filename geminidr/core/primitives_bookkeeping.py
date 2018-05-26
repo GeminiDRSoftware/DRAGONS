@@ -94,53 +94,62 @@ class Bookkeeping(PrimitivesBASE):
             purpose/name of list to access
         max_frames: int
             maximum number of frames to return
+        time_check: bool
+            open all files and sort by time, rather than filename?
         """
         log = self.log
         purpose = params["purpose"] or '_list'
         # Make comparison checks easier if there's no limit
         max_frames = params['max_frames'] or 1000000
+        time_check = params["time_check"]
+        sorting_desc = 'ut_datetime' if time_check else 'filename'
 
-        # Since adinputs takes priority over cached files, can exit now
-        # if we already have enough/too many files.
-        if len(adinputs) >= max_frames:
-            del adinputs[:len(adinputs)-max_frames]
-            log.stdinfo("Input list is longer than/equal to max_frames. "
-                        "Returning the following files:")
-            for ad in adinputs:
-                log.stdinfo("   {}".format(ad.filename))
-            return adinputs
-
-        # Get ID for all inputs; want to preserve order of stacking lists
-        sid_list = []
-        for ad in adinputs:
-            sid = _stackid(purpose, ad)
-            if sid not in sid_list:
-                sid_list.append(sid)
+        # Get stack IDs for all inputs
+        sid_list = set(_stackid(purpose, ad) for ad in adinputs)
+        if len(sid_list) > 1:
+            log.warning("The input includes frames from {} different stack"
+                        " ids".format(len(sid_list)))
 
         # Import inputs from all lists
         all_files = []
         for sid in sid_list:
             stacklist = self.stacks[sid]
-            log.debug("List for stack id {}(...):".format(sid[:35]))
+            log.debug("List for stack id {} ({}):".format(sid[:35],
+                                                          len(stacklist)))
             for f in stacklist:
                 log.debug("   {}".format(f))
             all_files.extend(stacklist)
 
-        # Get most recent frames first
+        if len(sid_list) > 1 and time_check:
+            # Open all files, sort by time, return max_frames most recent
+            # with earliest at start of list
+            adinputs = []
+            for f in all_files:
+                try:
+                    adinputs.append(astrodata.open(f))
+                except astrodata.AstroDataError:
+                    log.stdinfo("   Cannot open {}".format(f))
+            adinputs = self.sortInputs(adinputs, descriptor=sorting_desc,
+                                       reverse=False)[-max_frames:]
+        else:
+            # Combine 2 or more lists in filename order (time_check=False)
+            # If only one list, just take the last max_frames files
+            if len(sid_list) > 1:
+                all_files.sort()
+            adinputs = []
+            for f in reversed(all_files):
+                try:
+                    adinputs.append(astrodata.open(f))
+                except astrodata.AstroDataError:
+                    log.stdinfo("   Cannot open {}".format(f))
+                if len(adinputs) >= max_frames:
+                    break
+            adinputs = self.sortInputs(adinputs, descriptor=sorting_desc,
+                                       reverse=False)
+
         log.stdinfo("Using the following files:")
-        for f in sorted(all_files, reverse=True):
-            # Add each file to adinputs if not already there and there's room
-            if f not in [ad.filename for ad in adinputs]:
-                if len(adinputs) < max_frames:
-                    try:
-                        adinputs.append(astrodata.open(f))
-                        log.stdinfo("   {}".format(f))
-                    except IOError:
-                        log.stdinfo("   {} NOT FOUND".format(f))
-            else:
-                log.stdinfo("   {} (in memory)".format(f))
-        # Return sorted list
-        return sorted(adinputs, key=lambda ad: ad.filename)
+        adinputs = self.showInputs(adinputs)
+        return adinputs
 
     def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
         """
@@ -202,8 +211,8 @@ class Bookkeeping(PrimitivesBASE):
             Brief description for output
         """
         log = self.log
-        purpose = purpose or "primitive"
-        log.stdinfo("Inputs for {}".format(purpose))
+        if purpose:
+            log.stdinfo("Inputs for {}".format(purpose))
         for ad in adinputs:
             log.stdinfo("  {}".format(ad.filename))
         return adinputs
