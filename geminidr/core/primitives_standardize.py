@@ -596,9 +596,9 @@ class Standardize(PrimitivesBASE):
             try:
                 bpm = bpm_dict[key]
             except KeyError:
-                log.warning('No BPM found for {}'.format(ad.filename))
+                log.warning('No static BPM found for {}'.format(ad.filename))
         except:
-            log.warning('No BPMs defined')
+            log.warning('No static BPMs defined')
 
         if bpm is not None:
             # Prepend standard path if the filename doesn't start with '/'
