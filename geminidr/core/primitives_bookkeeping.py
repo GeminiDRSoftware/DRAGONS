@@ -86,7 +86,10 @@ class Bookkeeping(PrimitivesBASE):
         """
         This primitive will check the files in the stack lists are on disk,
         and then update the inputs list to include all members that belong
-        to the same stack(s) as the input(s).
+        to the same stack(s) as the input(s). All images are cleared from
+        memory. If the input(s) come from different stacks, images will be
+        collected from the stacks in the order of the inputs, until the
+        maximum number of frames is reached.
 
         Parameters
         ----------
@@ -94,23 +97,23 @@ class Bookkeeping(PrimitivesBASE):
             purpose/name of list to access
         max_frames: int
             maximum number of frames to return
-        time_check: bool
-            open all files and sort by time, rather than filename?
         """
         log = self.log
         purpose = params["purpose"] or '_list'
         # Make comparison checks easier if there's no limit
         max_frames = params['max_frames'] or 1000000
-        time_check = params["time_check"]
-        sorting_desc = 'ut_datetime' if time_check else 'filename'
 
-        # Get stack IDs for all inputs
-        sid_list = set(_stackid(purpose, ad) for ad in adinputs)
+        # Get stack IDs for all inputs, preserve order
+        sid_list = []
+        for ad in adinputs:
+            sid = _stackid(purpose, ad)
+            if sid not in sid_list:
+                sid_list.append(sid)
         if len(sid_list) > 1:
             log.warning("The input includes frames from {} different stack"
                         " ids".format(len(sid_list)))
 
-        # Import inputs from all lists
+        # LIFO stacklists, so reverse and combine
         all_files = []
         for sid in sid_list:
             stacklist = self.stacks[sid]
@@ -118,37 +121,19 @@ class Bookkeeping(PrimitivesBASE):
                                                           len(stacklist)))
             for f in stacklist:
                 log.debug("   {}".format(f))
-            all_files.extend(stacklist)
+            all_files.extend(reversed(stacklist))
 
-        if len(sid_list) > 1 and time_check:
-            # Open all files, sort by time, return max_frames most recent
-            # with earliest at start of list
-            adinputs = []
-            for f in all_files:
-                try:
-                    adinputs.append(astrodata.open(f))
-                except astrodata.AstroDataError:
-                    log.stdinfo("   Cannot open {}".format(f))
-            adinputs = self.sortInputs(adinputs, descriptor=sorting_desc,
-                                       reverse=False)[-max_frames:]
-        else:
-            # Combine 2 or more lists in filename order (time_check=False)
-            # If only one list, just take the last max_frames files
-            if len(sid_list) > 1:
-                all_files.sort()
-            adinputs = []
-            for f in reversed(all_files):
-                try:
-                    adinputs.append(astrodata.open(f))
-                except astrodata.AstroDataError:
-                    log.stdinfo("   Cannot open {}".format(f))
-                if len(adinputs) >= max_frames:
-                    break
-            adinputs = self.sortInputs(adinputs, descriptor=sorting_desc,
-                                       reverse=False)
+        adinputs = []
+        for f in all_files:
+            try:
+                adinputs.insert(0, astrodata.open(f))
+            except astrodata.AstroDataError:
+                log.stdinfo("   Cannot open {}".format(f))
+            if len(adinputs) >= max_frames:
+                break
 
         log.stdinfo("Using the following files:")
-        adinputs = self.showInputs(adinputs)
+        adinputs = self.showInputs(adinputs, purpose=None)
         return adinputs
 
     def rejectInputs(self, adinputs=None, at_start=0, at_end=0):

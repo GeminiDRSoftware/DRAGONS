@@ -14,7 +14,6 @@ class clearStreamConfig(config.Config):
 class getListConfig(config.Config):
     purpose = config.Field("Purpose of list", str, None, optional=True)
     max_frames = config.RangeField("Maximum number of frames", int, None, min=1, optional=True)
-    time_check = config.Field("Open files to sort by time rather than filename?", bool, False)
 
 class rejectInputsConfig(config.Config):
     at_start = config.RangeField("Number of files to remove from start of list", int, 0, min=0)
