@@ -49,7 +49,7 @@ class core_stacking_config(config.Config):
 
 class stackFramesConfig(core_stacking_config):
     scale = config.Field("Scale images to the same intensity?", bool, False)
-    zero = config.Field("Apply additive offsets to images to match intensity?", bool, True)
+    zero = config.Field("Apply additive offsets to images to match intensity?", bool, False)
 
 class stackSkyFramesConfig(stackFramesConfig):
     mask_objects = config.Field("Mask objects before stacking?", bool, True)
