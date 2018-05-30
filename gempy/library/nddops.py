@@ -333,10 +333,9 @@ class NDStacker(object):
             num_good = NDStacker._num_good(mask)
             nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
             nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
-            mask = np.zeros_like(data, dtype=bool)
             for i in range(num_img):
-                mask[i][i<nlo] = DQ.datatype(1)
-                mask[i][i>nhi] = DQ.datatype(1)
+                mask[i][i<nlo] |= DQ.datatype(1)
+                mask[i][i>nhi] |= DQ.datatype(1)
         return data, mask, variance
 
     @staticmethod
