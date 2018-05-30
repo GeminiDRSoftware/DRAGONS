@@ -234,6 +234,7 @@ class Stack(PrimitivesBASE):
                    self.keyword_comments['DATALAB'])
 
         # Add other keywords to the PHU about the stacking inputs
+        ad_out.orig_filename = ad_out.phu.get('ORIGNAME')
         ad_out.phu.set('NCOMBINE', len(adinputs), self.keyword_comments['NCOMBINE'])
         for i, ad in enumerate(adinputs, start=1):
             ad_out.phu.set('IMCMB{:03d}'.format(i), ad.phu.get('ORIGNAME', ad.filename))
