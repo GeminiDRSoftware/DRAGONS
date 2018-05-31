@@ -1319,7 +1319,11 @@ class FitsLazyLoadable(object):
         return np.empty(shape, dtype=self.dtype)
 
     def _scale(self, data):
-        return ((self._obj._orig_bscale * data) + self._obj._orig_bzero).astype(self.dtype)
+        bscale = self._obj._orig_bscale
+        bzero = self._obj._orig_bzero
+        if bscale == 1 and bzero == 0:
+            return data
+        return (bscale * data + bzero).astype(self.dtype)
 
     def __getitem__(self, sl):
         # TODO: We may want (read: should) create an empty result array before scaling
