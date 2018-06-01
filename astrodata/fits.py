@@ -1499,15 +1499,8 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
     def generate_boxes(shape, kernel):
         if len(shape) != len(kernel):
             raise AssertionError("Incompatible shape ({}) and kernel ({})".format(shape, kernel))
-
-        ticks = []
-        for axis, step in list(zip(shape, kernel)):
-            if (axis % step) == 0:
-                end_value = axis
-            else:
-                end_value = axis + (axis % step)
-            ticks.append([(x, x+step) for x in range(0, end_value, step)])
-
+        ticks = [[(x, x+step) for x in range(0, axis, step)]
+                 for axis, step in zip(shape, kernel)]
         return cart_product(*ticks)
 
     if shape is None:
