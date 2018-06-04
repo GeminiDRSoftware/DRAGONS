@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import astrodata
 import gemini_instruments
+import numpy as np
 
 from gempy.gemini import gemini_tools as gt
 
@@ -81,6 +82,38 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
         return []
+
+    def flushPixels(self, adinputs=None, force=False):
+        """
+        This primitive saves the inputs to disk and then reopens them so
+        the pixel data are out of memory
+        """
+        def is_lazy(ad):
+            """Determine whether an AD object is lazily-loaded"""
+            for ndd in ad.nddata:
+                for attr in ('_data', '_mask', '_uncertainty'):
+                    item = getattr(ndd, attr)
+                    if not (hasattr(item, 'lazy') and item.lazy):
+                        return False
+            return True
+
+        log = self.log
+
+        for i, ad in enumerate(adinputs):
+            if not force and is_lazy(ad):
+                log.debug("{} is lazily-loaded; not writing to "
+                          "disk".format(ad.filename))
+            else:
+                log.debug("Writing {} to disk and reopening".format(ad.filename))
+                ad.write(overwrite=True)
+                # We directly edit elements in the list to ensure the versions
+                # in the primitivesClass stream are affected too. We also want
+                # the files to retain their orig_filename attributes, which
+                # would otherwise change upon loading.
+                orig_filename = ad.orig_filename
+                adinputs[i] = astrodata.open(ad.filename)
+                adinputs[i].orig_filename = orig_filename
+        return adinputs
 
     def getList(self, adinputs=None, **params):
         """

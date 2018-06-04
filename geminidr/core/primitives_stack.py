@@ -19,6 +19,7 @@ from . import parameters_stack
 from recipe_system.utils.decorators import parameter_override
 
 STACKSIZE = 2000000000  # 2GB for stacking
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class Stack(PrimitivesBASE):
@@ -128,7 +129,6 @@ class Stack(PrimitivesBASE):
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
 
-
         # Compute the scale and offset values by accessing the memmapped data
         # so we can pass those to the stacking function
         # TODO: Should probably be done better to consider only the overlap
@@ -137,6 +137,7 @@ class Stack(PrimitivesBASE):
         num_ext = len(adinputs[0])
         zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
         scale_factors = np.ones_like(zero_offsets)
+        adinputs = self.flushPixels(adinputs)
         if scale or zero:
             levels = np.empty((num_img, num_ext), dtype=np.float32)
             for i, ad in enumerate(adinputs):
@@ -167,8 +168,12 @@ class Stack(PrimitivesBASE):
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
-            if scale and np.isinf(np.max(scale_factors)):
+            if scale and any(np.isinf(scale_factors)):
                 log.warning("Some scale factors are infinite. Not scaling.")
+                scale_factors = np.ones_like(scale_factors)
+                scale = False
+            if scale and any(np.isnan(scale_factors)):
+                log.warning("Some scale factors are undefined. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
 
@@ -180,8 +185,6 @@ class Stack(PrimitivesBASE):
         if not apply_dq:
             [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
 
-        # Let's be a bit lazy here. Let's compute the stack outputs and stuff
-        # the NDData objects into the first (reference) image
         ad_out = astrodata.create(adinputs[0].phu)
         for index, (extver, sfactors, zfactors) in enumerate(zip(adinputs[0].hdr.get('EXTVER'),
                                                           scale_factors, zero_offsets)):

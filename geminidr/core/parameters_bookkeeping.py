@@ -11,6 +11,9 @@ class clearAllStreamsConfig(config.Config):
 class clearStreamConfig(config.Config):
     pass
 
+class flushPixelsConfig(config.Config):
+    force = config.Field("Force write-to-disk?", bool, False)
+
 class getListConfig(config.Config):
     purpose = config.Field("Purpose of list", str, None, optional=True)
     max_frames = config.RangeField("Maximum number of frames", int, None, min=1, optional=True)
