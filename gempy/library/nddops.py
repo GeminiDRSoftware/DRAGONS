@@ -65,16 +65,27 @@ def unpack_nddata(fn):
     # The returned arrays are then stuffed back into an NDAstroData object.
     @wraps(fn)
     def wrapper(sequence, scale=None, zero=None, *args, **kwargs):
-        nddata_list = [element for element in sequence]
+        nddata_list = list(sequence)
         if scale is None:
             scale = [1.0] * len(nddata_list)
         if zero is None:
             zero = [0.0] * len(nddata_list)
-        data = np.stack(ndd.data*s+z for ndd, s, z in zip(nddata_list, scale, zero))
-        mask = None if any(ndd.mask is None for ndd in nddata_list) \
-            else np.stack(ndd.mask for ndd in nddata_list)
-        variance = None if any(ndd.variance is None for ndd in nddata_list) \
-            else np.stack(ndd.variance*s*s for ndd, s in zip(nddata_list, scale))
+        dtype = nddata_list[0].data.dtype
+        data = np.empty((len(nddata_list),)+nddata_list[0].data.shape, dtype=dtype)
+        for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
+            data[i] = ndd.data * s + z
+        if any(ndd.mask is None for ndd in nddata_list):
+            mask = None
+        else:
+            mask = np.empty_like(data, dtype=DQ.datatype)
+            for i, ndd in enumerate(nddata_list):
+                mask[i] = ndd.mask
+        if any(ndd.variance is None for ndd in nddata_list):
+            variance = None
+        else:
+            variance = np.empty_like(data)
+            for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
+                variance[i] = ndd.variance * s*s
         out_data, out_mask, out_var = fn(data=data, mask=mask,
                                     variance=variance, *args, **kwargs)
 
