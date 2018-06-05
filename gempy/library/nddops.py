@@ -13,6 +13,8 @@ DQhierarchy = (DQ.no_data, DQ.unilluminated, DQ.bad_pixel, DQ.overlap,
 import inspect
 
 def take_along_axis(arr, ind, axis):
+    if arr is None:
+        return None
     # Swiped from stackoverflow
     if axis < 0:
        if axis >= -arr.ndim:
