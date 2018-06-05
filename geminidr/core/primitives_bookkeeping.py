@@ -104,8 +104,9 @@ class Bookkeeping(PrimitivesBASE):
                 log.debug("{} is lazily-loaded; not writing to "
                           "disk".format(ad.filename))
             else:
+                # Write in current directory (hence ad.filename specified)
                 log.debug("Writing {} to disk and reopening".format(ad.filename))
-                ad.write(overwrite=True)
+                ad.write(ad.filename, overwrite=True)
                 # We directly edit elements in the list to ensure the versions
                 # in the primitivesClass stream are affected too. We also want
                 # the files to retain their orig_filename attributes, which
