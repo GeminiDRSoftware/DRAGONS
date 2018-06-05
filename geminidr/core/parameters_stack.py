@@ -46,6 +46,7 @@ class core_stacking_config(config.Config):
     mclip = config.Field("Use median for sigma-clipping?", bool, True)
     nlow = config.RangeField("Number of low pixels to reject", int, 0, min=0)
     nhigh = config.RangeField("Number of high pixels to reject", int, 0, min=0)
+    memory = config.RangeField("Memory available for stacking (GB)", float, None, min=0.1, optional=True)
 
 class stackFramesConfig(core_stacking_config):
     scale = config.Field("Scale images to the same intensity?", bool, False)

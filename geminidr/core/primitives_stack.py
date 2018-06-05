@@ -18,8 +18,6 @@ from . import parameters_stack
 
 from recipe_system.utils.decorators import parameter_override
 
-STACKSIZE = 2000000000  # 2GB for stacking
-
 # ------------------------------------------------------------------------------
 @parameter_override
 class Stack(PrimitivesBASE):
@@ -88,6 +86,7 @@ class Stack(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackFrames"]
         sfx = params["suffix"]
+        memory = params["memory"]
 
         zero = params["zero"]
         scale = params["scale"]
@@ -201,10 +200,27 @@ class Stack(PrimitivesBASE):
                 for ad, value in zip(adinputs, numbers):
                     log.stdinfo("{:40s}{:10.3f}".format(ad.filename, value))
 
-            # Determine kernel size from offered memory (10=SCI+VAR+DQ bytes)
+            # Determine kernel size from offered memory and bytes per pixel
             shape = adinputs[0][index].nddata.shape
-            kernel = (min(STACKSIZE // (10 * num_img *
-                      np.multiply.reduce(shape[1:])),shape[0]),) + shape[1:]
+            bytes = 0
+            for attr in ('_data', '_mask', '_uncertainty'):
+                item = getattr(adinputs[0][index].nddata, attr)
+                if item is not None:
+                    # A bit of numpy weirdness in the difference between normal
+                    # python types ("float32") and numpy types ("np.uint16")
+                    try:
+                        bytes += item.dtype.itemsize
+                    except TypeError:
+                        bytes += item.dtype().itemsize
+            if memory is None:
+                kernel = shape
+            else:
+                # Chop the image horizontally into equal-sized chunks to process
+                # This uses the minimum number of steps and uses minimum memory
+                # per step.
+                oversubscription = int(bytes * num_img * np.multiply.reduce(shape)
+                                       // int(memory * 1000000000)) + 1
+                kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
                                              for ad in adinputs)
