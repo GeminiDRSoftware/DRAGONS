@@ -298,35 +298,10 @@ class Standardize(PrimitivesBASE):
 
     def addVAR(self, adinputs=None, **params):
         """
-        This primitive calculates the variance of each science extension in the
-        input AstroData object and adds the variance as an additional
-        extension. This primitive will determine the units of the pixel data in
-        the input science extension and calculate the variance in the same
-        units. The two main components of the variance can be calculated and
-        added separately, if desired, using the following formula:
-
-        variance(read_noise) [electrons] = (read_noise [electrons])^2
-        variance(read_noise) [ADU] = ((read_noise [electrons]) / gain)^2
-
-        variance(poisson_noise) [electrons] =
-            (number of electrons in that pixel)
-        variance(poisson_noise) [ADU] =
-            ((number of electrons in that pixel) / gain)
-
-        The pixel data in the variance extensions will be the same size as the
-        pixel data in the science extension.
-
-        The read noise component of the variance can be calculated and added to
-        the variance extension at any time, but should be done before
-        performing operations with other datasets.
-
-        The Poisson noise component of the variance can be calculated and added
-        to the variance extension only after any bias levels have been
-        subtracted from the pixel data in the science extension.
-
-        The variance of a raw bias frame contains only a read noise component
-        (which represents the uncertainty in the bias level of each pixel),
-        since the Poisson noise component of a bias frame is meaningless.
+        This primitive adds noise components to the VAR plane of each extension
+        of each input AstroData object (creating the VAR plane if necessary).
+        The calculations for these components are abstracted out to separate
+        methods that operate on an individual AD object in-place.
 
         Parameters
         ----------
@@ -359,21 +334,12 @@ class Standardize(PrimitivesBASE):
                 return adinputs
 
         for ad in adinputs:
-            tags = ad.tags
-            if poisson_noise and 'BIAS' in tags:
-                log.warning("It is not recommended to add a poisson noise "
-                            "component to the variance of a bias frame")
-            if (poisson_noise and 'GMOS' in tags and
-                ad.phu.get(self.timestamp_keys['biasCorrect']) is None and
-                ad.phu.get(self.timestamp_keys['subtractOverscan']) is None):
-                log.warning("It is not recommended to calculate a poisson "
-                            "noise component of the variance using data that "
-                            "still contains a bias level")
-
-            _calculate_var(ad, read_noise, poisson_noise)
+            if read_noise:
+                self._addReadNoise(ad)
+            if poisson_noise:
+                self._addPoissonNoise(ad)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-
         return adinputs
 
     def makeIRAFCompatible(self, adinputs=None, stream='main', **params):
@@ -570,6 +536,93 @@ class Standardize(PrimitivesBASE):
     def _has_valid_extensions(ad):
         """Check the AD has a valid number of extensions"""
         return len(ad) == 1
+
+    def _addPoissonNoise(self, ad):
+        """
+        This primitive calculates the variance due to Poisson noise for each
+        science extension in the input AstroData list. A variance plane is
+        added, if it doesn't exist, or else the variance is added to the
+        existing plane if there is no header keyword indicating this operation
+        has already been performed.
+
+        This primitive should be invoked by calling addVAR(poisson_noise=True)
+        """
+        log = self.log
+
+        log.fullinfo("Adding Poisson noise to {}".format(ad.filename))
+        tags = ad.tags
+        if 'BIAS' in tags:
+            log.warning("It is not recommended to add Poisson noise "
+                        "to the variance of a bias frame")
+        elif ('GMOS' in tags and
+                      self.timestamp_keys["biasCorrect"] not in ad.phu and
+                      self.timestamp_keys["subtractOverscan"] not in ad.phu):
+            log.warning("It is not recommended to add Poisson noise to the"
+                        " variance of data that still contain a bias level")
+        gain_list = ad.gain()
+        for ext, gain in zip(ad, gain_list):
+            extver = ext.hdr['EXTVER']
+            if 'poisson' in ext.hdr.get('VARNOISE', '').lower():
+                log.warning("Poisson noise already added for "
+                            "{}:{}".format(ad.filename, extver))
+                continue
+            var_array = np.where(ext.data > 0, ext.data, 0)
+            if not ext.is_coadds_summed():
+                var_array /= ext.coadds()
+            if ext.hdr.get('BUNIT', 'ADU').upper() == 'ADU':
+                var_array /= ext.gain()
+            if ext.variance is None:
+                ext.variance = var_array
+            else:
+                ext.variance += var_array
+            varnoise = ext.hdr.get('VARNOISE')
+            if varnoise is None:
+                ext.hdr.set('VARNOISE', 'Poisson',
+                            self.keyword_comments['VARNOISE'])
+            else:
+                ext.hdr['VARNOISE'] += ', Poisson'
+
+    def _addReadNoise(self, ad):
+        """
+        This primitive calculates the variance due to read noise for each
+        science extension in the input AstroData list. A variance plane is
+        added, if it doesn't exist, or else the variance is added to the
+        existing plane if there is no header keyword indicating this operation
+        has already been performed.
+
+        This primitive should be invoked by calling addVAR(read_noise=True)
+        """
+        log = self.log
+
+        log.fullinfo("Adding read noise to {}".format(ad.filename))
+        gain_list = ad.gain()
+        read_noise_list = ad.read_noise()
+        for ext, gain, read_noise in zip(ad, gain_list, read_noise_list):
+            extver = ext.hdr['EXTVER']
+            if 'read' in ext.hdr.get('VARNOISE', '').lower():
+                log.warning("Read noise already added for "
+                            "{}:{}".format(ad.filename, extver))
+                continue
+            if read_noise is None:
+                log.warning("Read noise for {}:{} = None. Setting to "
+                            "zero".format(ad.filename, extver))
+                read_noise = 0.0
+            else:
+                log.fullinfo('Read noise for {}:{} = {} electrons'.
+                             format(ad.filename, extver, read_noise))
+            if ext.hdr.get('BUNIT', 'ADU').upper() == 'ADU':
+                read_noise /= gain
+            var_array = np.full_like(ext.data, read_noise * read_noise)
+            if ext.variance is None:
+                ext.variance = var_array
+            else:
+                ext.variance += var_array
+            varnoise = ext.hdr.get('VARNOISE')
+            if varnoise is None:
+                ext.hdr.set('VARNOISE', 'read',
+                            self.keyword_comments['VARNOISE'])
+            else:
+                ext.hdr['VARNOISE'] += ', read'
 
     def _get_bpm_filename(self, ad):
         """
