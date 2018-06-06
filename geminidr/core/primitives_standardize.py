@@ -342,7 +342,7 @@ class Standardize(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def makeIRAFCompatible(self, adinputs=None, stream='main', **params):
+    def makeIRAFCompatible(self, adinputs=None):
         """
         Add keywords to make the pipeline-processed file compatible
         with the tasks in the Gemini IRAF package.

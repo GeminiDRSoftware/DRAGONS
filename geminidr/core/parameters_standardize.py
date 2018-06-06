@@ -24,6 +24,9 @@ class addVARConfig(config.Config):
     read_noise = config.Field("Add read noise?", bool, False)
     poisson_noise = config.Field("Add Poisson noise?", bool, False)
 
+class makeIRAFCompatibleConfig(config.Config):
+    pass
+
 class standardizeInstrumentHeadersConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_instrumentHeadersStandardized", optional=True)
 
