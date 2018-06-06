@@ -12,5 +12,5 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
     def setDefaults(self):
         self.mask = True
 
-class makeLampFlatConfig(parameters_stack.stackFlatsConfig):
+class makeLampFlatConfig(parameters_nearIR.makeLampFlatConfig):
     dark = config.Field("Name of dark frame (for K-band flats)", (str, AstroData), None, optional=True)
