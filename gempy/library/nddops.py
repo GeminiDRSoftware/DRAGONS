@@ -215,7 +215,12 @@ class NDStacker(object):
     def __call__(self, data, mask=None, variance=None):
         rej_args = {arg: self._dict[arg] for arg in self._rejector.required_args
                     if arg in self._dict}
-        data, mask, variance = self._rejector(data, mask, variance, **rej_args)
+        try:
+            data, mask, variance = self._rejector(data, mask, variance, **rej_args)
+        except Exception as e:
+            self._logmsg(str(e), level='warning')
+            self._logmsg("Continuing without pixel rejection")
+            self._rejector = self.none
         comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
                      if arg in self._dict}
         out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
@@ -323,6 +328,10 @@ class NDStacker(object):
     @rejector
     def minmax(data, mask=None, variance=None, nlow=0, nhigh=0):
         # minmax rejection, following IRAF rules when pixels are rejected
+        num_img = data.shape[0]
+        if nlow+nhigh >= num_img:
+            raise ValueError("Only {} images but nlow={} and nhigh={}"
+                             .format(num_img, nlow, nhigh))
         if mask is None:
             nlo = int(nlow+0.001)
             nhi = data.shape[0] - int(nhigh+0.001)
@@ -334,7 +343,6 @@ class NDStacker(object):
             mask[:nlo] = True
             mask[nhi:] = True
         else:
-            num_img = data.shape[0]
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # Have to keep all values if all values are masked!
             # Sorts variance and mask with data
