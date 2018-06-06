@@ -93,7 +93,7 @@ class Bookkeeping(PrimitivesBASE):
             for ndd in ad.nddata:
                 for attr in ('_data', '_mask', '_uncertainty'):
                     item = getattr(ndd, attr)
-                    if not (hasattr(item, 'lazy') and item.lazy):
+                    if item is not None and not (hasattr(item, 'lazy') and item.lazy):
                         return False
             return True
 
@@ -101,11 +101,11 @@ class Bookkeeping(PrimitivesBASE):
 
         for i, ad in enumerate(adinputs):
             if not force and is_lazy(ad):
-                log.debug("{} is lazily-loaded; not writing to "
+                log.fullinfo("{} is lazily-loaded; not writing to "
                           "disk".format(ad.filename))
             else:
                 # Write in current directory (hence ad.filename specified)
-                log.debug("Writing {} to disk and reopening".format(ad.filename))
+                log.fullinfo("Writing {} to disk and reopening".format(ad.filename))
                 ad.write(ad.filename, overwrite=True)
                 # We directly edit elements in the list to ensure the versions
                 # in the primitivesClass stream are affected too. We also want
