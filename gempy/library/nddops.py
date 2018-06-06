@@ -372,7 +372,6 @@ class NDStacker(object):
             mask = clipped_data.mask
         else:
             mask |= clipped_data.mask
-        #return clipped_data.data, mask, variance
         return clipped_data.data, mask, variance
 
     @staticmethod
