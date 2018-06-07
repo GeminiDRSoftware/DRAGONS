@@ -388,7 +388,7 @@ class NDStacker(object):
                                                      (mask & BAD))
         iter = 0
         ngood = clipped_data.count()
-        while iter < max_iters:
+        while iter < max_iters and ngood > 0:
             avg = cenfunc(clipped_data, axis=0)
             if variance is None or sigclip:
                 deviation = clipped_data - avg
