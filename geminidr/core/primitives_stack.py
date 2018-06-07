@@ -87,6 +87,8 @@ class Stack(PrimitivesBASE):
         timestamp_key = self.timestamp_keys["stackFrames"]
         sfx = params["suffix"]
         memory = params["memory"]
+        if memory is not None:
+            memory = int(memory * 1000000000)
 
         zero = params["zero"]
         scale = params["scale"]
@@ -128,15 +130,39 @@ class Stack(PrimitivesBASE):
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
 
-        # Compute the scale and offset values by accessing the memmapped data
-        # so we can pass those to the stacking function
-        # TODO: Should probably be done better to consider only the overlap
-        # regions between frames
         num_img = len(adinputs)
         num_ext = len(adinputs[0])
         zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
         scale_factors = np.ones_like(zero_offsets)
-        adinputs = self.flushPixels(adinputs)
+
+        # Try to determine how much memory we're going to need to stack and
+        # whether it's necessary to flush pixel data to disk first
+        bytes_per_ext = []
+        for ext in adinputs[0]:
+            # Determine kernel size from offered memory and bytes per pixel
+            bytes = 0
+            for attr in ('_data', '_mask', '_uncertainty'):
+                item = getattr(ext.nddata, attr)
+                if item is not None:
+                    # A bit of numpy weirdness in the difference between normal
+                    # python types ("float32") and numpy types ("np.uint16")
+                    try:
+                        bytes += item.dtype.itemsize
+                    except TypeError:
+                        bytes += item.dtype().itemsize
+                    except AttributeError:  # For non-lazy VAR
+                        bytes += item._array.dtype.itemsize
+                if attr == '_data':
+                    bytes *= 2  # Temporary arrays with same dtype as data
+            bytes_per_ext.append(bytes * np.multiply.reduce(ext.nddata.shape))
+
+        if memory is not None and (num_img * max(bytes_per_ext) > memory):
+            adinputs = self.flushPixels(adinputs)
+
+        # Compute the scale and offset values by accessing the memmapped data
+        # so we can pass those to the stacking function
+        # TODO: Should probably be done better to consider only the overlap
+        # regions between frames
         if scale or zero:
             levels = np.empty((num_img, num_ext), dtype=np.float32)
             for i, ad in enumerate(adinputs):
@@ -200,26 +226,14 @@ class Stack(PrimitivesBASE):
                 for ad, value in zip(adinputs, numbers):
                     log.stdinfo("{:40s}{:10.3f}".format(ad.filename, value))
 
-            # Determine kernel size from offered memory and bytes per pixel
             shape = adinputs[0][index].nddata.shape
-            bytes = 0
-            for attr in ('_data', '_mask', '_uncertainty'):
-                item = getattr(adinputs[0][index].nddata, attr)
-                if item is not None:
-                    # A bit of numpy weirdness in the difference between normal
-                    # python types ("float32") and numpy types ("np.uint16")
-                    try:
-                        bytes += item.dtype.itemsize
-                    except TypeError:
-                        bytes += item.dtype().itemsize
             if memory is None:
                 kernel = shape
             else:
                 # Chop the image horizontally into equal-sized chunks to process
                 # This uses the minimum number of steps and uses minimum memory
                 # per step.
-                oversubscription = int(bytes * num_img * np.multiply.reduce(shape)
-                                       // int(memory * 1000000000)) + 1
+                oversubscription = (bytes_per_ext[index] * num_img) // memory + 1
                 kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
