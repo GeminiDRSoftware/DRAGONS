@@ -361,41 +361,53 @@ class NDStacker(object):
 
     @staticmethod
     @rejector
-    def sigclip(data, mask=None, variance=None, mclip=True, lsigma=3.0, hsigma=3.0):
-        # Iterative sigma-clipping based on input pixel scatter
-        cenfunc = np.ma.median if mclip else np.ma.mean
-        if mask is not None:
-            data = np.ma.masked_array(data, mask=mask & BAD)
-        clipped_data = sigma_clip(data, sigma_lower=lsigma, sigma_upper=hsigma,
-                                  cenfunc=cenfunc, iters=None, axis=0, copy=False)
-        if mask is None:
-            mask = clipped_data.mask
-        else:
-            mask |= clipped_data.mask
-        return clipped_data.data, mask, variance
+    def sigclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
+                hsigma=3.0, max_iters=None):
+        return NDStacker._iterclip(data, mask=mask, variance=variance,
+                                  mclip=mclip, lsigma=lsigma, hsigma=hsigma,
+                                  max_iters=max_iters, sigclip=True)
 
     @staticmethod
     @rejector
-    def varclip(data, mask=None, variance=None, mclip=True, lsigma=3.0, hsigma=3.0):
-        # Iterative sigma-clipping where the input variance array provides
-        # the statistical properties of the data
-        if variance is None:  # Need variance array for this!
-            return NDStacker.sigclip(data, mask=mask, variance=None, mclip=mclip,
-                                     lsigma=lsigma, hsigma=hsigma)
+    def varclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
+                hsigma=3.0, max_iters=None):
+        return NDStacker._iterclip(data, mask=mask, variance=variance,
+                                  mclip=mclip, lsigma=lsigma, hsigma=hsigma,
+                                  max_iters=max_iters, sigclip=False)
 
+    @staticmethod
+    def _iterclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
+                 hsigma=3.0, max_iters=None, sigclip=False):
+        """Mildly generic iterative clipping algorithm, called by both sigclip
+        and varclip. We don't use the astropy.stats.sigma_clip() because it
+        doesn't check for convergence if max_iters is not None."""
+        if max_iters is None:
+            max_iters = 100
         cenfunc = np.ma.median  # Always median for first pass
         clipped_data = np.ma.masked_array(data, mask=None if mask is None else
                                                      (mask & BAD))
-        nmasked = np.sum(clipped_data.mask)
-        while True:  # Write it this way in case we decide to have maxiters
+        iter = 0
+        ngood = clipped_data.count()
+        while iter < max_iters:
             avg = cenfunc(clipped_data, axis=0)
-            sigmas = (clipped_data - avg) / np.sqrt(variance)
-            clipped_data.mask |= np.logical_or(sigmas > hsigma, sigmas < -lsigma)
-            new_nmasked = np.sum(clipped_data.mask)
-            if new_nmasked == nmasked:
+            if variance is None or sigclip:
+                deviation = clipped_data - avg
+                sig = np.ma.std(clipped_data, axis=0)
+                high_limit = hsigma * sig
+                low_limit = lsigma * sig
+            else:
+                deviation = (clipped_data - avg) / np.sqrt(variance)
+                high_limit = hsigma
+                low_limit = lsigma
+            clipped_data.mask |= deviation > high_limit
+            clipped_data.mask |= deviation < -low_limit
+            new_ngood = clipped_data.count()
+            if new_ngood == ngood:
                 break
-            cenfunc = np.ma.median if mclip else np.ma.mean
-            nmasked = new_nmasked
+            if not mclip:
+                cenfunc = np.ma.mean
+            ngood = new_ngood
+            iter += 1
 
         if mask is None:
             mask = clipped_data.mask
