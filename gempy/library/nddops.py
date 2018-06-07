@@ -198,7 +198,7 @@ class NDStacker(object):
         # gemcombine-style estimate of variance about the returned value
         ngood = data.shape[0] if mask is None else NDStacker._num_good(mask)
         return NDStacker._divide0(np.ma.masked_array(np.square(data - out_data),
-                                            mask=mask).sum(axis=0), ngood*(ngood-1))
+                                            mask=mask).sum(axis=0).astype(data.dtype), ngood*(ngood-1))
 
     @staticmethod
     def _num_good(mask):
@@ -232,12 +232,12 @@ class NDStacker(object):
     def mean(data, mask=None, variance=None):
         # Regular arithmetic mean
         mask, out_mask = NDStacker._process_mask(mask)
-        out_data = np.ma.masked_array(data, mask=mask).mean(axis=0).data
+        out_data = np.ma.masked_array(data, mask=mask).mean(axis=0).data.astype(data.dtype)
         ngood = data.shape[0] if mask is None else NDStacker._num_good(mask)
         if variance is None:  # IRAF gemcombine calculation
             out_var = NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = np.ma.masked_array(variance, mask=mask).mean(axis=0).data / ngood
+            out_var = np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / ngood
         return out_data, out_mask, out_var
 
     average = mean  # Formally, these are all averages
@@ -250,8 +250,8 @@ class NDStacker(object):
             return NDStacker.mean(data, mask, variance)
         mask, out_mask = NDStacker._process_mask(mask)
         out_data = (np.ma.masked_array(data/variance, mask=mask).sum(axis=0).data /
-                    np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data)
-        out_var = 1.0 / np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data
+                    np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data).astype(data.dtype)
+        out_var = 1.0 / np.ma.masked_array(1.0/variance, mask=mask).sum(axis=0).data.astype(data.dtype)
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -271,11 +271,11 @@ class NDStacker(object):
                 med_index = num_img // 2 - 1
                 indices = np.argpartition(data, [med_index, med_index+1],
                                           axis=0)[med_index:med_index+2]
-                out_data = take_along_axis(data, indices, axis=0).mean(axis=0)
+                out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
                 # Not strictly correct when taking the mean of the middle two
                 # but it seems more appropriate
                 out_var = (None if variance is None else
-                           take_along_axis(variance, indices, axis=0).mean(axis=0))
+                           take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
             out_mask = None
         else:
             arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
@@ -284,10 +284,10 @@ class NDStacker(object):
             med_indices = np.array([np.where(num_img % 2, med_index, med_index-1),
                                     np.where(num_img % 2, med_index, med_index)])
             indices = take_along_axis(arg, med_indices, axis=0)
-            out_data = take_along_axis(data, indices, axis=0).mean(axis=0)
-            out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
+            out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
+            out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0).astype(data.dtype))
             out_var = (None if variance is None else
-                       take_along_axis(variance, indices, axis=0).mean(axis=0))
+                       take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
         if variance is None:  # IRAF gemcombine calculation
             out_var = NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
