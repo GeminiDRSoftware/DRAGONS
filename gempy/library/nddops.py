@@ -1,10 +1,10 @@
 from __future__ import print_function
 
 import numpy as np
-from astropy.stats import sigma_clip
 from functools import wraps
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from . import cyclip
 
 BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
 DQhierarchy = (DQ.no_data, DQ.unilluminated, DQ.bad_pixel, DQ.overlap,
@@ -72,7 +72,10 @@ def unpack_nddata(fn):
             scale = [1.0] * len(nddata_list)
         if zero is None:
             zero = [0.0] * len(nddata_list)
-        dtype = nddata_list[0].data.dtype
+        # Coerce all data to 32-bit floats. FITS data on disk is big-endian
+        # and preserving that datatype will cause problems with Cython
+        # stacking if the compiler is little-endian.
+        dtype = np.float32
         data = np.empty((len(nddata_list),)+nddata_list[0].data.shape, dtype=dtype)
         for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
             data[i] = ndd.data * s + z
@@ -215,12 +218,13 @@ class NDStacker(object):
     def __call__(self, data, mask=None, variance=None):
         rej_args = {arg: self._dict[arg] for arg in self._rejector.required_args
                     if arg in self._dict}
-        try:
-            data, mask, variance = self._rejector(data, mask, variance, **rej_args)
-        except Exception as e:
-            self._logmsg(str(e), level='warning')
-            self._logmsg("Continuing without pixel rejection")
-            self._rejector = self.none
+        data, mask, variance = self._rejector(data, mask, variance, **rej_args)
+        #try:
+        #    data, mask, variance = self._rejector(data, mask, variance, **rej_args)
+        #except Exception as e:
+        #    self._logmsg(str(e), level='warning')
+        #    self._logmsg("Continuing without pixel rejection")
+        #    self._rejector = self.none
         comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
                      if arg in self._dict}
         out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
@@ -363,7 +367,7 @@ class NDStacker(object):
     @rejector
     def sigclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
                 hsigma=3.0, max_iters=None):
-        return NDStacker._iterclip(data, mask=mask, variance=variance,
+        return NDStacker._cyclip(data, mask=mask, variance=variance,
                                   mclip=mclip, lsigma=lsigma, hsigma=hsigma,
                                   max_iters=max_iters, sigclip=True)
 
@@ -371,18 +375,43 @@ class NDStacker(object):
     @rejector
     def varclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
                 hsigma=3.0, max_iters=None):
-        return NDStacker._iterclip(data, mask=mask, variance=variance,
+        return NDStacker._cyclip(data, mask=mask, variance=variance,
                                   mclip=mclip, lsigma=lsigma, hsigma=hsigma,
                                   max_iters=max_iters, sigclip=False)
 
     @staticmethod
+    def _cyclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
+                 hsigma=3.0, max_iters=None, sigclip=False):
+        # Prepares data for Cython iterative-clippingroutine
+        if mask is None:
+            mask = np.zeros_like(data, dtype=DQ.datatype)
+        if variance is None:
+            variance = np.empty((1,), dtype=np.float32)
+            has_var = False
+        else:
+            has_var = True
+        if max_iters is None:
+            max_iters = 0
+        shape = data.shape
+        num_img = shape[0]
+        data_size = np.multiply.reduce(data.shape[1:])
+        data, mask, variance = cyclip.iterclip(data.ravel(), mask.ravel(), variance.ravel(),
+                                               has_var=has_var, num_img=num_img, data_size=data_size,
+                                               mclip=int(mclip), lsigma=lsigma, hsigma=hsigma,
+                                               max_iters=max_iters, sigclip=int(sigclip))
+        return data.reshape(shape), mask.reshape(shape), (None if not has_var else variance.reshape(shape))
+
+    @staticmethod
     def _iterclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
                  hsigma=3.0, max_iters=None, sigclip=False):
+        # SUPERSEDED BY CYTHON ROUTINE
         """Mildly generic iterative clipping algorithm, called by both sigclip
         and varclip. We don't use the astropy.stats.sigma_clip() because it
         doesn't check for convergence if max_iters is not None."""
         if max_iters is None:
             max_iters = 100
+        high_limit = hsigma
+        low_limit = -lsigma
         cenfunc = np.ma.median  # Always median for first pass
         clipped_data = np.ma.masked_array(data, mask=None if mask is None else
                                                      (mask & BAD))
@@ -394,13 +423,11 @@ class NDStacker(object):
                 deviation = clipped_data - avg
                 sig = np.ma.std(clipped_data, axis=0)
                 high_limit = hsigma * sig
-                low_limit = lsigma * sig
+                low_limit = -lsigma * sig
             else:
                 deviation = (clipped_data - avg) / np.sqrt(variance)
-                high_limit = hsigma
-                low_limit = lsigma
             clipped_data.mask |= deviation > high_limit
-            clipped_data.mask |= deviation < -low_limit
+            clipped_data.mask |= deviation < low_limit
             new_ngood = clipped_data.count()
             if new_ngood == ngood:
                 break
@@ -413,4 +440,4 @@ class NDStacker(object):
             mask = clipped_data.mask
         else:
             mask |= clipped_data.mask
-        return clipped_data.data, mask, variance
+        return data, mask, variance
