@@ -3,16 +3,22 @@
 #
 #                                                                    mosaicAD.py
 # ------------------------------------------------------------------------------
-import numpy as np
-import astropy.wcs as wcs
-
-from astropy.io import fits
 from copy import copy
+from os.path import join
+from os.path import dirname
+
+import numpy as np
+
+import astropy.wcs as wcs
+from astropy.io import fits
 
 import astrodata
 import gemini_instruments
 
 from gempy.utils import logutils
+from gempy.gemini.gemini_tools import tile_objcat
+from geminidr.gemini.lookups.source_detection import sextractor_dict
+
 from .mosaic import Mosaic
 
 # ------------------------------------------------------------------------------
@@ -96,6 +102,10 @@ class MosaicAD(Mosaic):
         self.calculate_jfactor()        # Fill the jfactor vector with the
                                         # jacobian of transformation matrix.
         self.mosaic_shape = None        # Shape of the mosaicked output frame.
+        self.sx_dict = sextractor_dict.sx_dict.copy()
+        # Prepend paths to SExtractor input files now
+        self.sx_dict.update({k: join(dirname(sextractor_dict.__file__), v)
+                             for k, v in self.sx_dict.items()})
 
     # --------------------------------------------------------------------------
     def as_astrodata(self, block=None, tile=False, doimg=False, return_ROI=True,
@@ -181,6 +191,11 @@ class MosaicAD(Mosaic):
                 adout[0].OBJMASK = self.mosaic_image_data(block=block,
                                                           return_ROI=return_ROI,
                                                           tile=tile, dq_data=True)
+
+        # When tiling, tile OBJCATS
+        if not doimg and tile:
+            adout = self._tile_objcats(adout)
+
         # Propagate any REFCAT
         if not doimg:
             if hasattr(self.ad, 'REFCAT'):
@@ -485,3 +500,21 @@ class MosaicAD(Mosaic):
             crpix2 = o_crpix2 + yoff + ygap_sum
 
         return (crpix1, crpix2)
+
+    def _tile_objcats(self, adout):
+        ampsorder = np.argsort([detsec.x1 for detsec in self.ad.detector_section()])
+        ccdx1 = np.array([ccdsec.x1 for ccdsec in self.ad.array_section()])[ampsorder]
+
+        # Make a list of the output extensions where each array goes
+        num_ccd = 1
+        ccd_map = [num_ccd]
+        for i in range(1, len(ccdx1)):
+            if ccdx1[i] <= ccdx1[i-1]:
+                num_ccd += 1
+            ccd_map.append(num_ccd)
+
+        ccd_map = np.array(ccd_map)
+        adoutput = tile_objcat(adinput=self.ad, adoutput=adout, ext_mapping=ccd_map,
+                               sx_dict=self.sx_dict)
+
+        return adoutput
