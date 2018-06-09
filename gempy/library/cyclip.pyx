@@ -1,3 +1,4 @@
+# cythonize -a -i cyclip.pyx
 import numpy as np
 from libc.math cimport sqrt
 cimport cython
