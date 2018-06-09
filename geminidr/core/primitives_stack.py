@@ -141,9 +141,10 @@ class Stack(PrimitivesBASE):
         for ext in adinputs[0]:
             # Determine kernel size from offered memory and bytes per pixel
             bytes = 0
-            for attr in ('_data', '_mask', '_uncertainty'):
+            # Count _data twice to handle temporary arrays
+            for attr in ('_data', '_data', '_uncertainty'):
                 item = getattr(ext.nddata, attr)
-                if item is not None:
+                if not item is not None:
                     # A bit of numpy weirdness in the difference between normal
                     # python types ("float32") and numpy types ("np.uint16")
                     try:
@@ -152,8 +153,7 @@ class Stack(PrimitivesBASE):
                         bytes += item.dtype().itemsize
                     except AttributeError:  # For non-lazy VAR
                         bytes += item._array.dtype.itemsize
-                if attr == '_data':
-                    bytes *= 2  # Temporary arrays with same dtype as data
+            bytes += 2  #  mask always created
             bytes_per_ext.append(bytes * np.multiply.reduce(ext.nddata.shape))
 
         if memory is not None and (num_img * max(bytes_per_ext) > memory):
