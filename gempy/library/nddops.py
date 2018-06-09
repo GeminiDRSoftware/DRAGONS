@@ -4,7 +4,10 @@ import numpy as np
 from functools import wraps
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from . import cyclip
+try:
+    from . import cyclip
+except ImportError:
+    raise ImportError("Run 'cythonize -a -i cyclip.pyx' in gempy/library")
 
 BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
 DQhierarchy = (DQ.no_data, DQ.unilluminated, DQ.bad_pixel, DQ.overlap,
