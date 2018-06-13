@@ -16,13 +16,13 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
     TagSet(add=None, remove=None, blocked_by=None, blocks=None, if_present=None)
 
-    Named tuple that is used by tag methods to return which actions should be
+    Named tuple that is used by tag methods to return the actions that should be
     performed on a tag set. All the attributes are optional, and any combination
     of them can be used, allowing to create complex tag structures. Read the
-    documentation on the tag-generating algorithm if you want to better understand
-    the interactions.
+    :ref:`documentation on the tag-generating algorithm <ad_tags>` if you want
+    to better understand the interactions.
 
-    The simplest TagSet, though, tends to just add tags to the global set.
+    The simplest ``TagSet``, though, tends to just add tags to the global set.
 
     It can be initialized by position, like any other tuple (the order of the
     arguments is the one in which the attributes are listed below). It can
@@ -30,16 +30,16 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
 
     Attributes
     ----------
-    add : set of str, or None
+    add : set of strings, or ``None``
         Tags to be added to the global set
-    remove : set of str, or None
+    remove : set of strings, or ``None``
         Tags to be removed from the global set
-    blocked_by : set of str, or None
-        Tags that will prevent this `TagSet` to be applied
-    blocks : set of str, or None
-        Other `TagSet`s containing these won't be applied
-    if_present : set of str, or None
-        This `TagSet` will be applied only **all** of these tags are present
+    blocked_by : set of strings, or ``None``
+        Tags that will prevent this ``TagSet`` to be applied
+    blocks : set of strings, or ``None``
+        Other ``TagSet``\ s containing these won't be applied
+    if_present : set of strings, or ``None``
+        This ``TagSet`` will be applied only **all** of these tags are present
 
     Examples
     ---------
@@ -122,13 +122,13 @@ def returns_list(fn):
 
 def astro_data_tag(fn):
     """
-    Decorator that marks methods of an `AstroData` derived class as part of the
+    Decorator that marks methods of an ``AstroData`` derived class as part of the
     tag-producing system.
 
     It wraps the method around a function that will ensure a consistent return
     value: the wrapped method can return any sequence of sequences of strings,
-    and they will be converted to a `TagSet` of `set`. If the wrapped method
-    returns `None`, it will be turned into an empty `TagSet`.
+    and they will be converted to a ``TagSet`` of ``set``. If the wrapped method
+    returns ``None``, it will be turned into an empty ``TagSet``.
 
     Args
     -----
@@ -451,10 +451,9 @@ class AstroData(object):
     Base class for the AstroData software package. It provides an interface to manipulate
     astronomical data sets.
 
-    Parameters
-    -----------
-    provider : DataProvider
-        The data that will be manipulated through the `AstroData` instance.
+    Parameters:
+       provider (DataProvider):  The data that will be manipulated through the
+          :py:class:`AstroData` instance.
     """
 
     # Simply a value that nobody is going to try to set an NDData attribute to
@@ -470,14 +469,11 @@ class AstroData(object):
         """
         Returns a new instance of this class, initialized with a deep copy of the associted `DataProvider`
 
-        Args
-        -----
-        memo : dict
-            See the documentation on `deepcopy` for an explanation on how this works
+        Parameters:
+           memo (dict): See the documentation on :py:class:`copy.deepcopy` for an explanation on how this works
 
-        Returns
-        --------
-        A deep copy of this instance
+        Returns:
+           AstroData: A deep copy of this instance
         """
         # Force the data provider to load data, if needed
         len(self._dataprov)
@@ -489,9 +485,8 @@ class AstroData(object):
         """
         Determines the tag set for the current instance
 
-        Returns
-        --------
-        A set of strings
+        Returns:
+           set: A :py:class:`set` of strings
         """
         # This prevents infinite recursion
         if self._processing_tags:
@@ -552,9 +547,8 @@ class AstroData(object):
         Returns a sequence of names for the methods that have been
         decorated as descriptors.
 
-        Returns
-        --------
-        A tuple of str
+        Returns:
+           tuple: A tuple of str
         """
         members = inspect.getmembers(self.__class__,
                                      lambda x: hasattr(x, 'descriptor_method'))
@@ -769,17 +763,14 @@ class AstroData(object):
 
     def __div__(self, oper):
         """
-        Implements the binary arithmetic operation `/` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation ``/`` with :py:class:`AstroData` as the left operand.
 
-        Args
-        -----
-        oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+        Args:
+            oper (number or object): The operand to be added to this instance. The accepted
+               types depend on the :py:class:`DataProvider`
 
-        Returns
-        --------
-        A new `AstroData` instance
+        Returns:
+            AstroData: a new :py:class:`AstroData`  instance
         """
         copy = deepcopy(self)
         copy /= oper
@@ -932,7 +923,7 @@ class AstroData(object):
         It will be applied to the mask and variance of each extension, too, if
         they exist.
 
-        This is a convenience method, which is equivalent to:
+        This is a convenience method, which is equivalent to::
 
             for ext in ad:
                 ad.ext.data = operator(ad.ext.data, *args, **kwargs)
