@@ -51,6 +51,9 @@ class NDWindowing(object):
 
 class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
+    Allows "windowed" access to some properties of an ``NDAstroData`` instance.
+    In particular, ``data``, ``uncertainty``, ``variance``, and ``mask`` return
+    clipped data.
     """
     def __init__(self, target, window):
         self._target = target
@@ -162,6 +165,22 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def window(self):
+        """
+        Interface to access a section of the data, using lazy access whenever possible.
+
+        Returns
+        --------
+        An instance of ``NDWindowing``, which provides ``__getitem__``, to allow the use
+        of square brackets when specifying the window. Ultimately, an
+        ``NDWindowingAstrodata`` instance is returned
+
+        Examples
+        ---------
+
+        >>> ad[0].window[100:200, 100:200]
+        <NDWindowingAstrodata .....>
+
+        """
         return NDWindowing(self)
 
     @property
@@ -202,6 +221,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def data(self):
+        """
+        An array representing the raw data stored in this instance.
+        It implements a setter.
+        """
         return self._get_simple('_data')
 
     @data.setter
@@ -215,6 +238,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def uncertainty(self):
+
         return self._get_uncertainty()
 
     @uncertainty.setter
@@ -235,6 +259,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def variance(self):
+        """
+        A convenience property to access the contents of ``uncertainty``,
+        squared (as the uncertainty data is stored as standard deviation).
+        """
         arr = self._get_uncertainty()
         if arr is not None:
             return arr.array**2
@@ -244,6 +272,21 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         self.uncertainty = new_variance_uncertainty_instance(value)
 
     def set_section(self, section, input):
+        """
+        Sets only a section of the data. This method is meant to prevent
+        fragmentation in the Python heap, by reusing the internal structures
+        instead of replacing them with new ones.
+
+        Args
+        -----
+        section : ``slice``
+            The area that will be replaced
+        input : ``NDData``-like instance
+            This object needs to implement at least ``data``, ``uncertainty``,
+            and ``mask``. Their entire contents will replace the data in the
+            area defined by ``section``.
+
+        """
         self.data[section] = input.data
         if self.uncertainty is not None:
             self.uncertainty.array[section] = input.uncertainty.array

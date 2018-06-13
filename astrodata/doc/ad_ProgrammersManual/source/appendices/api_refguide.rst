@@ -31,6 +31,8 @@ API Reference Guide
 .. autoclass:: astrodata.nddata.NDAstroData
    :members: window, set_section, data, variance
 
+.. autoclass:: astrodata.nddata.NDWindowingAstroData
+
 Decorators and other helper functions
 =====================================
 
