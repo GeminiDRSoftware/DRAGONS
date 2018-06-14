@@ -292,7 +292,7 @@ class NDStacker(object):
                                     np.where(num_img % 2, med_index, med_index)])
             indices = take_along_axis(arg, med_indices, axis=0)
             out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-            out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0).astype(data.dtype))
+            out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
             out_var = (None if variance is None else
                        take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
         if variance is None:  # IRAF gemcombine calculation
