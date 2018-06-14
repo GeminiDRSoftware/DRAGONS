@@ -87,11 +87,8 @@ class Register(PrimitivesBASE):
             to align images, 'header' uses POFFSET and QOFFSET keywords
         fallback: 'header' or None
             backup method, if the primary one fails
-        use_wcs: bool
-            use the header's WCS for initial alignment guess, rather than
-            shifts and rotation information in the header
         first_pass: float
-            search radius (UNITS???????) for the initial alignment matching
+            search radius (arcsec) for the initial alignment matching
         min_sources: int
             minimum number of matched sources required to apply a WCS shift
         cull_sources: bool
@@ -117,18 +114,11 @@ class Register(PrimitivesBASE):
 
         method = params["method"]
         fallback = params["fallback"]
-        use_wcs = params["use_wcs"]
         first_pass = params["first_pass"]
         min_sources = params["min_sources"]
         cull_sources = params["cull_sources"]
         rotate = params["rotate"]
         scale = params["scale"]
-
-        assert method=='header' or method=='sources', \
-            "Invalid method specified: {}".format(method)
-
-        assert fallback=='header' or fallback is None, \
-            "Invalid fallback method specified: {}".format(fallback)
 
         # Use first image in list as reference
         ref_image = adinputs[0]
@@ -178,17 +168,13 @@ class Register(PrimitivesBASE):
                 else:
                     log.fullinfo("Number of objects in image {}: {}".format(
                                  ad.filename, nobj))
-                    log.fullinfo("Cross-correlating sources in {}, {}".
+                    log.stdinfo("Cross-correlating sources in {}, {}".
                                  format(ref_image.filename, ad.filename))
 
                     # GNIRS WCS is dubious, so update WCS by using the ref
                     # image's WCS and the telescope offsets
                     #if ad.instrument() == 'GNIRS' and not use_wcs:
                     #    ad = _create_wcs_from_offsets(ad, ref_image)
-
-                    if not use_wcs:
-                        log.warning("Parameter 'use_wcs' is False.")
-                        log.warning("Using source correlation anyway.")
                     firstpasspix = first_pass / ad.pixel_scale()
 
                     # Calculate the offsets quickly using only a translation
@@ -259,6 +245,10 @@ class Register(PrimitivesBASE):
 
         Parameters
         ----------
+        initial: float
+            search radius for cross-correlation (arcsec)
+        final: float
+            search radius for object matching (arcsec)
         full_wcs: bool (or None)
             use an updated WCS for each matching iteration, rather than simply
             applying pixel-based corrections to the initial mapping?

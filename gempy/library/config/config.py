@@ -359,7 +359,12 @@ class Field(object):
         if instance._frozen:
             raise FieldValidationError(self, instance, "Cannot modify a frozen Config")
 
+        if at is None:
+            at = getCallStack()
+        # setDefaults() gets a free pass due to our mashing of inheritance
         if self.name not in instance._fields:
+            #if any('setDefaults' in stk.function for stk in at):
+            #    return
             raise AttributeError("{} has no attribute {}".format(instance.__class__.__name__, self.name))
 
         history = instance._history.setdefault(self.name, [])
@@ -371,8 +376,6 @@ class Field(object):
                 raise FieldValidationError(self, instance, str(e))
 
         instance._storage[self.name] = value
-        if at is None:
-            at = getCallStack()
         # We don't want to put an actual AD object here, so just the filename
         value_to_append = value.filename if isinstance(value, AstroData) else value
         history.append((value_to_append, at, label))
@@ -542,9 +545,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         instance._history = {}
         instance._imports = set()
         # load up defaults
-        for field in instance._fields.values():
-            instance._history[field.name] = []
-            field.__set__(instance, field.default, at=at + [field.source], label="default")
+        instance.reset(at=at)
         # set custom default-overides
         instance.setDefaults()
         # set constructor overides
@@ -561,6 +562,14 @@ class Config(with_metaclass(ConfigMeta, object)):
         stream = io.StringIO()
         self.saveToStream(stream)
         return (unreduceConfig, (self.__class__, stream.getvalue().encode()))
+
+    def reset(self, at=None):
+        """Reset all values to their defaults"""
+        if at is None:
+            at = getCallStack()
+        for field in self._fields.values():
+            self._history[field.name] = []
+            field.__set__(self, field.default, at=at + [field.source], label="default")
 
     def setDefaults(self):
         """
@@ -705,7 +714,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         Correct behavior is dependent on proper implementation of  Field.toDict. If implementing a new
         Field type, you may need to implement your own toDict method.
         """
-        dict_ = {}
+        dict_ = OrderedDict()
         for name, field in self._fields.items():
             dict_[name] = field.toDict(self)
         return dict_
@@ -787,7 +796,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         if attr in self._fields:
             #self._fields[attr].__delete__(self, at=at, label=label)
             del self._fields[attr]
-        elif at[-1].function != 'setDefaults':
+        elif not any(stk.function== 'setDefaults' for stk in at):
             object.__delattr__(self, attr)
 
     def __eq__(self, other):

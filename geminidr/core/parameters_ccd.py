@@ -4,17 +4,14 @@ from gempy.library import config
 from astrodata import AstroData
 
 class biasCorrectConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_biasCorrected")
-    bias = config.Field("Name of bias", (AstroData, str), None, optional=True)
+    suffix = config.Field("Filename suffix", str, "_biasCorrected", optional=True)
+    bias = config.ListField("Bias(es) to subtract", (AstroData, str), None,
+                            optional=True, single=True)
     do_bias = config.Field("Perform bias subtraction?", bool, True)
 
-class overscanCorrectConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_overscanCorrected")
-    # Inherits everything else from subtractOverscanConfig()
-
-class subtractOverscanConfig(overscanCorrectConfig):
-    suffix = config.Field("Filename suffix", str, "_overscanSubtracted")
-    niterate = config.RangeField("Maximum number of interations", int, 2, min=1)
+class subtractOverscanConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_overscanSubtracted", optional=True)
+    niterate = config.RangeField("Maximum number of iterations", int, 2, min=1)
     high_reject = config.RangeField("High rejection limit (standard deviations)",
                                float, 3., min=0., optional=True)
     low_reject = config.RangeField("Low rejection limit (standard deviations)",
@@ -29,5 +26,15 @@ class subtractOverscanConfig(overscanCorrectConfig):
     order = config.RangeField("Order of fitting function", int, None, min=0,
                               optional=True)
 
-class trimOverscanConfig(overscanCorrectConfig):
-    suffix = config.Field("Filename suffix", str, "_overscanTrimmed")
+    def validate(self):
+        config.Config.validate(self)
+        if self.function == "poly" and self.order is None:
+            raise ValueError("Polynomial order must be specified")
+
+
+class trimOverscanConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_overscanTrimmed", optional=True)
+
+class overscanCorrectConfig(subtractOverscanConfig, trimOverscanConfig):
+    def setDefaults(self):
+        self.suffix = "_overscanCorrected"

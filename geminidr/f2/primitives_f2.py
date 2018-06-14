@@ -82,7 +82,7 @@ class F2(Gemini, NearIR):
 
     def standardizeStructure(self, adinputs=None, **params):
         """
-        This primitive is used to standardize the structure of GMOS data,
+        This primitive is used to standardize the structure of F2 data,
         specifically.
 
         Parameters

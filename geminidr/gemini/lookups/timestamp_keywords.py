@@ -45,6 +45,7 @@ timestamp_keys = {
     "normalizeFlat": "NORMLIZE",
     "prepare": "PREPARE",
     "rejectCosmicRays": "REJECTCR",
+    "removePatternNoise": "RMPTNNSE",
     "resampleToLinearCoords": "LINCOORD",
     "wcalResampleToLinearCoords": "LINCOORD",
 #    "scaleByExposureTime": "EXPSCALE",

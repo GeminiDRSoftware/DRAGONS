@@ -62,4 +62,5 @@ keyword_comments = {
     "SUBSKYBG": "Sky background subtracted",
     "TRIMMED": "Overscan section trimmed",
     "TRIMSEC": "Data section prior to trimming",
+    "VARNOISE": "Types of noise included in VAR plane"
 }

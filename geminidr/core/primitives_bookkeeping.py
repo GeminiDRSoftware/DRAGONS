@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import astrodata
 import gemini_instruments
+import numpy as np
 
 from gempy.gemini import gemini_tools as gt
 
@@ -82,11 +83,47 @@ class Bookkeeping(PrimitivesBASE):
         log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
         return []
 
+    def flushPixels(self, adinputs=None, force=False):
+        """
+        This primitive saves the inputs to disk and then reopens them so
+        the pixel data are out of memory
+        """
+        def is_lazy(ad):
+            """Determine whether an AD object is lazily-loaded"""
+            for ndd in ad.nddata:
+                for attr in ('_data', '_mask', '_uncertainty'):
+                    item = getattr(ndd, attr)
+                    if item is not None and not (hasattr(item, 'lazy') and item.lazy):
+                        return False
+            return True
+
+        log = self.log
+
+        for i, ad in enumerate(adinputs):
+            if not force and is_lazy(ad):
+                log.fullinfo("{} is lazily-loaded; not writing to "
+                          "disk".format(ad.filename))
+            else:
+                # Write in current directory (hence ad.filename specified)
+                log.fullinfo("Writing {} to disk and reopening".format(ad.filename))
+                ad.write(ad.filename, overwrite=True)
+                # We directly edit elements in the list to ensure the versions
+                # in the primitivesClass stream are affected too. We also want
+                # the files to retain their orig_filename attributes, which
+                # would otherwise change upon loading.
+                orig_filename = ad.orig_filename
+                adinputs[i] = astrodata.open(ad.filename)
+                adinputs[i].orig_filename = orig_filename
+        return adinputs
+
     def getList(self, adinputs=None, **params):
         """
         This primitive will check the files in the stack lists are on disk,
         and then update the inputs list to include all members that belong
-        to the same stack(s) as the input(s).
+        to the same stack(s) as the input(s). All images are cleared from
+        memory. If the input(s) come from different stacks, images will be
+        collected from the stacks in the order of the inputs, until the
+        maximum number of frames is reached.
 
         Parameters
         ----------
@@ -100,47 +137,38 @@ class Bookkeeping(PrimitivesBASE):
         # Make comparison checks easier if there's no limit
         max_frames = params['max_frames'] or 1000000
 
-        # Since adinputs takes priority over cached files, can exit now
-        # if we already have enough/too many files.
-        if len(adinputs) >= max_frames:
-            del adinputs[:len(adinputs)-max_frames]
-            log.stdinfo("Input list is longer than/equal to max_frames. "
-                        "Returning the following files:")
-            for ad in adinputs:
-                log.stdinfo("   {}".format(ad.filename))
-            return adinputs
-
-        # Get ID for all inputs; want to preserve order of stacking lists
+        # Get stack IDs for all inputs, preserve order
         sid_list = []
         for ad in adinputs:
             sid = _stackid(purpose, ad)
             if sid not in sid_list:
                 sid_list.append(sid)
+        if len(sid_list) > 1:
+            log.warning("The input includes frames from {} different stack"
+                        " ids".format(len(sid_list)))
 
-        # Import inputs from all lists
+        # LIFO stacklists, so reverse and combine
         all_files = []
         for sid in sid_list:
             stacklist = self.stacks[sid]
-            log.debug("List for stack id {}(...):".format(sid[:35]))
+            log.debug("List for stack id {} ({}):".format(sid[:35],
+                                                          len(stacklist)))
             for f in stacklist:
                 log.debug("   {}".format(f))
-            all_files.extend(stacklist)
+            all_files.extend(reversed(stacklist))
 
-        # Get most recent frames first
+        adinputs = []
+        for f in all_files:
+            try:
+                adinputs.insert(0, astrodata.open(f))
+            except astrodata.AstroDataError:
+                log.stdinfo("   Cannot open {}".format(f))
+            if len(adinputs) >= max_frames:
+                break
+
         log.stdinfo("Using the following files:")
-        for f in sorted(all_files, reverse=True):
-            # Add each file to adinputs if not already there and there's room
-            if f not in [ad.filename for ad in adinputs]:
-                if len(adinputs) < max_frames:
-                    try:
-                        adinputs.append(astrodata.open(f))
-                        log.stdinfo("   {}".format(f))
-                    except IOError:
-                        log.stdinfo("   {} NOT FOUND".format(f))
-            else:
-                log.stdinfo("   {} (in memory)".format(f))
-        # Return sorted list
-        return sorted(adinputs, key=lambda ad: ad.filename)
+        adinputs = self.showInputs(adinputs, purpose=None)
+        return adinputs
 
     def rejectInputs(self, adinputs=None, at_start=0, at_end=0):
         """
@@ -202,8 +230,8 @@ class Bookkeeping(PrimitivesBASE):
             Brief description for output
         """
         log = self.log
-        purpose = purpose or "primitive"
-        log.stdinfo("Inputs for {}".format(purpose))
+        if purpose:
+            log.stdinfo("Inputs for {}".format(purpose))
         for ad in adinputs:
             log.stdinfo("  {}".format(ad.filename))
         return adinputs
@@ -286,6 +314,7 @@ class Bookkeeping(PrimitivesBASE):
             attribute to transfer from ADs in other stream
         """
         log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         if source not in self.streams.keys():
             log.info("Stream {} does not exist so nothing to transfer".format(source))
@@ -296,6 +325,8 @@ class Bookkeeping(PrimitivesBASE):
             log.warning("Incompatible stream lengths: {} and {}".
                         format(len(adinputs), source_length))
             return adinputs
+
+        log.stdinfo("Transferring attribute {} from stream {}".format(attribute, source))
 
         # Keep track of whether we find anything to transfer, as failing to
         # do so might indicate a problem and we should warn the user

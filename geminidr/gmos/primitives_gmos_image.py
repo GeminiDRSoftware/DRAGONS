@@ -306,6 +306,7 @@ class GMOSImage(GMOS, Image, Photometry):
         if len(adinputs) < 3:
             log.stdinfo('Fewer than 3 frames provided as input. '
                         'Not making fringe frame.')
+            return []
         else:
             frinputs = self.correctBackgroundToReference([deepcopy(ad)
                             for ad in adinputs], remove_zero_level=True)
@@ -321,7 +322,8 @@ class GMOSImage(GMOS, Image, Photometry):
                                     ad in frinputs]), axis=2), None, None)
                 # Subtract median, detect sources, add median back
                 frinputs = [ad.subtract(median_ad) for ad in frinputs]
-                frinputs = self.detectSources(frinputs)
+                frinputs = self.detectSources(frinputs,
+                            **self._inherit_params(params, "detectSources"))
                 frinputs = [ad.add(median_ad) for ad in frinputs]
 
             # Add object mask to DQ plane and stack with masking
@@ -654,7 +656,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # to be used with minmax rejection. Note: if reject_method
             # parameter is overridden, these parameters will just be
             # ignored
-            reject_method = params["reject_method"]
+            stack_params = self._inherit_params(params, "stackFrames")
             nlow, nhigh = 0, 0
             if nframes <= 2:
                 reject_method = None
@@ -664,6 +666,8 @@ class GMOSImage(GMOS, Image, Photometry):
                 nlow, nhigh = 2, 2
             else:
                 nlow, nhigh = 2, 3
+            stack_params.update({'nlow': nlow, 'nhigh': nhigh,
+                                 'zero': False, 'scale': False})
             log.fullinfo("For {} input frames, using reject_method={}, "
                          "nlow={}, nhigh={}".format(nframes,
                                         reject_method, nlow, nhigh))
@@ -671,12 +675,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
             adinputs = self.scaleByIntensity(adinputs)
-            adinputs = self.stackFrames(adinputs, zero=False, scale=False,
-                                        suffix=params["suffix"],
-                                        operation=params["operation"],
-                                        apply_dq=params["apply_dq"],
-                                        reject_method=reject_method,
-                                        nlow=nlow, nhigh=nhigh)
+            adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
 def _needs_fringe_correction(ad, mode):

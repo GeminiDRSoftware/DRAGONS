@@ -83,7 +83,6 @@ class Resample(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["stackSkyFrames"]
         interpolator = params["interpolator"]
         trim_data = params["trim_data"]
         sfx = params["suffix"]
@@ -173,9 +172,7 @@ class Resample(PrimitivesBASE):
                 ref_image[0].hdr.set(*key)
 
             # Timestamp and update filename
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
-
         return adinputs
 
 # =================================== prive ====================================

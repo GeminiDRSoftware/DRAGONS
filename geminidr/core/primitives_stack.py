@@ -11,11 +11,13 @@ from astropy import table
 from functools import partial
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library.nddops import NDStacker
 
 from geminidr import PrimitivesBASE
 from . import parameters_stack
 
 from recipe_system.utils.decorators import parameter_override
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class Stack(PrimitivesBASE):
@@ -46,11 +48,14 @@ class Stack(PrimitivesBASE):
         else:
             adinputs = self.matchWCSToReference(adinputs, **self._inherit_params(params, 'matchWCSToReference'))
             adinputs = self.resampleToCommonFrame(adinputs, **self._inherit_params(params, 'resampleToCommonFrame'))
+            if params["save"]:
+                self.writeOutputs(adinputs)
             adinputs = self.stackFrames(adinputs, **self._inherit_params(params, 'stackFrames'))
         return adinputs
 
     def stackFlats(self, adinputs=None, **params):
         """Default behaviour is just to stack images as normal"""
+        params["zero"] = False
         return self.stackFrames(adinputs, **params)
 
     def stackFrames(self, adinputs=None, **params):
@@ -77,12 +82,13 @@ class Stack(PrimitivesBASE):
         zero: bool
             apply zero-level offset to match background levels?
         """
-        from gempy.library.nddops import NDStacker
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys["stackFrames"]
         sfx = params["suffix"]
+        memory = params["memory"]
+        if memory is not None:
+            memory = int(memory * 1000000000)
 
         zero = params["zero"]
         scale = params["scale"]
@@ -90,24 +96,24 @@ class Stack(PrimitivesBASE):
         separate_ext = params["separate_ext"]
         statsec = params["statsec"]
         if statsec:
-            try:
-                statsec = tuple([slice(int(start)-1, int(end))
+            statsec = tuple([slice(int(start)-1, int(end))
                              for x in reversed(statsec.strip('[]').split(','))
                              for start, end in [x.split(':')]])
-            except ValueError:
-                log.warning("Cannot parse statistics section {}. Using full "
-                            "frame.".format(statsec))
-                statsec = None
 
         if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
                         "input AstroData objects are required for stackFrames")
             return adinputs
 
-        # Ensure that each input AstroData object has been prepared
+        # Perform various checks on inputs
         for ad in adinputs:
             if not "PREPARED" in ad.tags:
                 raise IOError("{} must be prepared" .format(ad.filename))
+
+        if len(set(len(ad) for ad in adinputs)) > 1:
+            raise IOError("Not all inputs have the same number of extensions")
+        if len(set([ext.nddata.shape for ad in adinputs for ext in ad])) > 1:
+            raise IOError("Not all inputs images have the same shape")
 
         # Determine the average gain from the input AstroData objects and
         # add in quadrature the read noise
@@ -124,15 +130,39 @@ class Stack(PrimitivesBASE):
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
                                      for i in range(nexts)]
 
+        num_img = len(adinputs)
+        num_ext = len(adinputs[0])
+        zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
+        scale_factors = np.ones_like(zero_offsets)
+
+        # Try to determine how much memory we're going to need to stack and
+        # whether it's necessary to flush pixel data to disk first
+        bytes_per_ext = []
+        for ext in adinputs[0]:
+            # Determine kernel size from offered memory and bytes per pixel
+            bytes = 0
+            # Count _data twice to handle temporary arrays
+            for attr in ('_data', '_data', '_uncertainty'):
+                item = getattr(ext.nddata, attr)
+                if not item is not None:
+                    # A bit of numpy weirdness in the difference between normal
+                    # python types ("float32") and numpy types ("np.uint16")
+                    try:
+                        bytes += item.dtype.itemsize
+                    except TypeError:
+                        bytes += item.dtype().itemsize
+                    except AttributeError:  # For non-lazy VAR
+                        bytes += item._array.dtype.itemsize
+            bytes += 2  #  mask always created
+            bytes_per_ext.append(bytes * np.multiply.reduce(ext.nddata.shape))
+
+        if memory is not None and (num_img * max(bytes_per_ext) > memory):
+            adinputs = self.flushPixels(adinputs)
 
         # Compute the scale and offset values by accessing the memmapped data
         # so we can pass those to the stacking function
         # TODO: Should probably be done better to consider only the overlap
         # regions between frames
-        num_img = len(adinputs)
-        num_ext = len(adinputs[0])
-        zero_offsets = np.zeros((num_ext, num_img), dtype=np.float32)
-        scale_factors = np.ones_like(zero_offsets)
         if scale or zero:
             levels = np.empty((num_img, num_ext), dtype=np.float32)
             for i, ad in enumerate(adinputs):
@@ -162,29 +192,58 @@ class Stack(PrimitivesBASE):
             if scale and np.min(scale_factors) < 0:
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
-            if scale and np.isinf(np.max(scale_factors)):
+                scale = False
+            if scale and any(np.isinf(scale_factors)):
                 log.warning("Some scale factors are infinite. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
+                scale = False
+            if scale and any(np.isnan(scale_factors)):
+                log.warning("Some scale factors are undefined. Not scaling.")
+                scale_factors = np.ones_like(scale_factors)
+                scale = False
 
-        stack_function = NDStacker(combine=params["operation"], reject=params["reject_method"],
+        stack_function = NDStacker(combine=params["operation"],
+                                   reject=params["reject_method"],
                                    log=self.log, **params)
 
         # NDStacker uses DQ if it exists; if we don't want that, delete the DQs!
         if not apply_dq:
             [setattr(ext, 'mask', None) for ad in adinputs for ext in ad]
 
-        # Let's be a bit lazy here. Let's compute the stack outputs and stuff
-        # the NDData objects into the first (reference) image
         ad_out = astrodata.create(adinputs[0].phu)
-        for index, (scale, zero) in enumerate(zip(scale_factors, zero_offsets)):
+        for index, (extver, sfactors, zfactors) in enumerate(zip(adinputs[0].hdr.get('EXTVER'),
+                                                          scale_factors, zero_offsets)):
+            status = ("Combining EXTVER {}.".format(extver) if num_ext > 1 else
+                      "Combining images.")
+            if scale:
+                status += " Applying scale factors."
+                numbers = sfactors
+            elif zero:
+                status += " Applying offsets."
+                numbers = zfactors
+            log.stdinfo(status)
+            if ((scale or zero) and (index == 0 or separate_ext)):
+                for ad, value in zip(adinputs, numbers):
+                    log.stdinfo("{:40s}{:10.3f}".format(ad.filename, value))
+
+            shape = adinputs[0][index].nddata.shape
+            if memory is None:
+                kernel = shape
+            else:
+                # Chop the image horizontally into equal-sized chunks to process
+                # This uses the minimum number of steps and uses minimum memory
+                # per step.
+                oversubscription = (bytes_per_ext[index] * num_img) // memory + 1
+                kernel = ((shape[0] + oversubscription - 1) // oversubscription,) + shape[1:]
             with_uncertainty = True  # Since all stacking methods return variance
             with_mask = apply_dq and not any(ad[index].nddata.window[:].mask is None
                                              for ad in adinputs)
-            result = windowedOp(partial(stack_function, scale=scale, zero=zero),
+            result = windowedOp(partial(stack_function, scale=sfactors, zero=zfactors),
                                 [ad[index].nddata for ad in adinputs],
-                                kernel=(2048,2048), dtype=np.float32,
+                                kernel=kernel, dtype=np.float32,
                                 with_uncertainty=with_uncertainty, with_mask=with_mask)
             ad_out.append(result)
+            log.stdinfo("")
 
         # Propagate REFCAT as the union of all input REFCATs
         refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
@@ -253,13 +312,12 @@ class Stack(PrimitivesBASE):
                         "Setting zero=False.")
             zero = False
 
-        # Parameters to be passed to stackFrames
-        stack_params = {k: v for k,v in params.items() if
-                        k in list(self.parameters['stackFrames']) and k != "suffix"}
-        # We're taking care of the varying sky levels here so stop
+        # We're taking care of the varying sky levels here (using a more
+        # accurate determination of the sky level) so we need to stop
         # stackFrames from getting involved
-        stack_params.update({'zero': False,
-                             'remove_background': False})
+        stack_params = self._inherit_params(params, 'stackFrames',
+                                            pass_suffix=True)
+        stack_params.update({'zero': False, 'scale': False})
 
         # Run detectSources() on any frames without any OBJMASKs
         if params["mask_objects"]:

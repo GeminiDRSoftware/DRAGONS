@@ -54,7 +54,7 @@ def degsextodec(string):
 
     return degs
 
-def section_str_to_int(section, log=None):
+def section_str_to_tuple(section, log=None):
     warn = log.warning if log else print
     if section is not None:
         try:

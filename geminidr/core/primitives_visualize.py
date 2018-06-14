@@ -71,7 +71,7 @@ class Visualize(PrimitivesBASE):
             return
 
         threshold = params['threshold']
-        remove_bias = params['remove_bias']
+        remove_bias = params.get('remove_bias', False)
         extname = params['extname']
         tile = params['tile']
         zscale = params['zscale']

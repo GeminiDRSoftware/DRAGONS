@@ -139,11 +139,11 @@ class NearIR(PrimitivesBASE):
         gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
         return [flat]
 
-    def lampOnLampOff(self, adinputs=None, **params):
+    def makeLampFlat(self, adinputs=None, **params):
         """
-        This separates the lamp-on and lamp-off flats, stacks them, and subtracts
-        one from the other, and returns that single frame. It uses streams to
-        propagate the frames, hence there's no need to send/collect adinputs.
+        This separates the lamp-on and lamp-off flats, stacks them, subtracts
+        one from the other, and returns that single frame. Since they are lamp
+        flats, no scaling is performed during the stacking.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -152,13 +152,16 @@ class NearIR(PrimitivesBASE):
         lamp_off_list = self.selectFromInputs(adinputs, tags='LAMPOFF')
         self.showInputs(lamp_on_list, stream='lampOn')
         self.showInputs(lamp_off_list, stream='lampOff')
-        ad_on = self.stackFrames(lamp_on_list)
-        ad_off = self.stackFrames(lamp_off_list)
+
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
+        ad_on = self.stackFrames(lamp_on_list, **stack_params)
+        ad_off = self.stackFrames(lamp_off_list, **stack_params)
 
         if ad_on and ad_off:
             log.fullinfo("Subtracting lampOff stack from lampOn stack")
             flat = ad_on[0] - ad_off[0]
-            flat.update_filename(suffix="lampOnOff")
+            flat.update_filename(suffix="_lampOnOff")
             return [flat]
         else:
             log.warning("Cannot subtract lamp on - lamp off flats as do not "
@@ -168,18 +171,6 @@ class NearIR(PrimitivesBASE):
                 return ad_on
             else:
                 return []
-
-    def makeLampFlat(self, adinputs=None, **params):
-        """
-        This is the generic primitive to make a flatfield from lamp flats.
-        The default behaviour is to be fed some lamp-on flats and lamp-off
-        flats and difference the two stacks, so it just calls the
-        lampOnLampOff() primitive.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self.lampOnLampOff(adinputs)
-        return adinputs
 
     def removeFirstFrame(self, adinputs=None):
         """
@@ -238,9 +229,11 @@ class NearIR(PrimitivesBASE):
 
         if not all(dark.exposure_time()==dark_list[0].exposure_time()
                    for dark in dark_list[1:]):
-                raise IOError("DARKS ARE NOT OF EQUAL EXPTIME")
+                raise IOError("Darks are not of equal exposure time")
 
         # stack the darks stream
         self.showInputs(purpose='darks')
-        self.streams['darks'] = self.stackFrames(self.streams['darks'])
+        stack_params = self._inherit_params(params, "stackFrames")
+        stack_params.update({'zero': False, 'scale': False})
+        self.streams['darks'] = self.stackFrames(self.streams['darks'], **stack_params)
         return adinputs
