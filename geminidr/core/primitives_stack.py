@@ -144,7 +144,7 @@ class Stack(PrimitivesBASE):
             # Count _data twice to handle temporary arrays
             for attr in ('_data', '_data', '_uncertainty'):
                 item = getattr(ext.nddata, attr)
-                if not item is not None:
+                if item is not None:
                     # A bit of numpy weirdness in the difference between normal
                     # python types ("float32") and numpy types ("np.uint16")
                     try:

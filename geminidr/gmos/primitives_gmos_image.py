@@ -307,29 +307,28 @@ class GMOSImage(GMOS, Image, Photometry):
             log.stdinfo('Fewer than 3 frames provided as input. '
                         'Not making fringe frame.')
             return []
-        else:
-            frinputs = self.correctBackgroundToReference([deepcopy(ad)
-                            for ad in adinputs], remove_zero_level=True)
 
-            # If needed, do a rough median on all frames, subtract,
-            # and then redetect to help distinguish sources from fringes
-            if params["subtract_median_image"]:
-                # TODO: When stackFrames stops using gemcombine, we can
-                # maybe use that
-                median_ad = deepcopy(frinputs[0])
-                for slice, ext in enumerate(median_ad):
-                    ext.reset(np.median(np.dstack([ad[slice].data for
-                                    ad in frinputs]), axis=2), None, None)
-                # Subtract median, detect sources, add median back
-                frinputs = [ad.subtract(median_ad) for ad in frinputs]
-                frinputs = self.detectSources(frinputs,
-                            **self._inherit_params(params, "detectSources"))
-                frinputs = [ad.add(median_ad) for ad in frinputs]
+        frinputs = self.correctBackgroundToReference([deepcopy(ad) for ad in adinputs],
+                                            suffix='_fringe', remove_background=True)
 
-            # Add object mask to DQ plane and stack with masking
-            frinputs = self.addObjectMaskToDQ(frinputs)
-            frinputs = self.stackFrames(frinputs,
-                        **self._inherit_params(params, "stackFrames"))
+        # If needed, construct a median image and subtract from all frames to
+        # do a first-order fringe removal and hence better detect real objects
+        if params["subtract_median_image"]:
+            median_image = self.stackFrames(frinputs, scale=False,
+                            zero=False, operation="median", mask_objects=False,
+                            reject_method="minmax", nlow=1, nhigh=1)
+            if len(median_image) > 1:
+                raise ValueError("Problem with creating median image")
+            median_image = median_image[0]
+            frinputs = [ad.subtract(median_image) for ad in frinputs]
+            frinputs = self.detectSources(frinputs,
+                        **self._inherit_params(params, "detectSources"))
+            frinputs = [ad.add(median_image) for ad in frinputs]
+
+        # Add object mask to DQ plane and stack with masking
+        frinputs = self.addObjectMaskToDQ(frinputs, suffix=None)
+        frinputs = self.stackFrames(frinputs,
+                    **self._inherit_params(params, "stackFrames"))
         return frinputs
 
     def normalizeFlat(self, adinputs=None, **params):
