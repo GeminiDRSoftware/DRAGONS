@@ -977,7 +977,9 @@ class Preprocess(PrimitivesBASE):
         ad_skies = []
         for filename in skies:
             for sky in self.streams["sky"]:
-                if sky.filename == filename:
+                if sky.filename in [filename,
+                        filename.replace(self.params["associateSky"].suffix,
+                                         self.params["separateSky"].suffix)]:
                     break
             else:
                 try:
