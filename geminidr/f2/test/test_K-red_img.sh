@@ -7,7 +7,7 @@ script_dir=$(cd $(dirname "$0"); pwd)
 start_test_set "$name"
 
 # GS-2018A-DD-101-2:
-"$script_dir/reduce_img.sh" "$name" "S2018(0303|0207)S" "S20180211S" 25 || nerr=${nerr}1
+"$script_dir/reduce_img.sh" "$name" "S2018(0303S|0207S00[23])" "S2018(0211S|0207S004)" 25 || nerr=${nerr}1
 
 end_test_set "$name" $nerr
 
