@@ -291,9 +291,10 @@ class Visualize(PrimitivesBASE):
 
             log.stdinfo("\tBuilding mosaic, converting data ...")
             ad_out = mos.as_astrodata(tile=tile, doimg=do_img)
-
+            ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
+            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
             adoutputs.append(ad_out)
 
         return adoutputs
