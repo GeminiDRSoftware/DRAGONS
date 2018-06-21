@@ -30,7 +30,7 @@ def get_pars(filename):
     ad = astrodata.open(filename)
     pm = primitiveMapper.PrimitiveMapper([ad])
     p = pm.get_applicable_primitives()
-    return p.parameters, ad.tags
+    return p.params, ad.tags
 
 def showpars(pobj, primname, tags):
     for i in dir(pobj):

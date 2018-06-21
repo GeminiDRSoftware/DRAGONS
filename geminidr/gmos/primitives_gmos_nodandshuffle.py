@@ -27,7 +27,7 @@ class GMOSNodAndShuffle(GMOS):
         #super(GMOSNodAndShuffle, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_nodandshuffle)
 
-    def skyCorrectNodAndShuffle(self, adinputs=None, **params):
+    def skyCorrectNodAndShuffle(self, adinputs=None, suffix=None):
         """
         Perform sky correction on GMOS N&S images bytaking each image and
         subtracting from it a shifted version of the same image.
@@ -77,5 +77,5 @@ class GMOSNodAndShuffle(GMOS):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs

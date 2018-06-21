@@ -18,6 +18,7 @@ E.g.,
 import os
 import pickle
 import warnings
+from copy import deepcopy
 from inspect import stack, isclass
 
 from gempy.library import config
@@ -131,7 +132,7 @@ class PrimitivesBASE(object):
     def __init__(self, adinputs, mode='sq', ucals=None, uparms=None, upload=None):
         self.streams          = {'main': adinputs}
         self.mode             = mode
-        self.parameters       = {}
+        self.params           = {}
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = uparms if uparms else {}
@@ -168,40 +169,58 @@ class PrimitivesBASE(object):
         return
 
     def _param_update(self, module):
-        """Create/update an entry in the primitivesClass's parameters dict
+        """Create/update an entry in the primitivesClass's params dict
         using Config classes in the module provided"""
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
-                self.parameters[attr.replace("Config", "")] = obj()
+                primname = attr.replace("Config", "")
+                # Allow classes purely for inheritance purposes to be ignored
+                # Wanted to use hasattr(self) but things like NearIR don't inherit
+                if attr.endswith("Config"):
+                    self.params[primname] = obj()
 
         # Play a bit fast and loose with python's inheritance. We need to check
         # if we're redefining a Config that has already been inherited by
         # another Config and, if so, update the child Config
         # Do this in the correct inheritance order
-        for k, v in sorted(self.parameters.items(),
-                           key=lambda x: len(x[1].__class__.mro())):
-            self.parameters[k] = v.__class__()
+        for k, v in sorted(self.params.items(),
+                           key=lambda x: len(x[1].__class__.__bases__)):
+            self.params[k] = v.__class__()
 
-            for cls in reversed(v.__class__.mro()):
-                if cls.__name__.find('Config') > 0:
+            for cls in reversed((v.__class__,) + v.__class__.__bases__):
+                cls_name = cls.__name__
+                if cls_name.find('Config') > 0:
                     # We may not have yet imported a Config from which we inherit.
                     # In fact, we may never do so, in which case what's already
                     # there from standard inheritance is fine and we move on.
+                    cls_name = cls_name.replace("Config", "")
                     try:
-                        new_cls = self.parameters[cls.__name__.replace("Config", "")].__class__
+                        new_cls = self.params[cls_name].__class__
                     except KeyError:
                         pass
                     else:
+                        # Inherit Fields from the latest version of the Config
                         # Delete history from previous passes through this code
                         for field in new_cls():
-                            self.parameters[k]._history[field] = []
-                        # Don't try to update parameters which have been deleted
-                        self.parameters[k].update(**{k2: v2 for k2, v2 in new_cls().items()
-                                                         if k2 in self.parameters[k]})
-                        cls.setDefaults.__func__(self.parameters[k])
+                            if field in self.params[k]:
+                                self.params[k]._history[field] = []
+                                self.params[k]._fields[field] = deepcopy(new_cls._fields[field])
+                        # Call inherited setDefaults from configs with the same name
+                        # but simply copy parameter values from others
+                        #if cls.__name__ == k+'Config':
+                        #    cls.setDefaults.__func__(self.params[k])
+                        #else:
+                        #    new_cls.setDefaults.__func__(self.params[k])
+                        if cls_name == k:
+                            cls.setDefaults(self.params[k])
+                        else:
+                            self.params[k].update(**self._inherit_params(dict(self.params[cls_name].items()), k))
+            # Actually set the defaults that have been changed after setDefaults()!
+            for field in self.params[k]._fields.values():
+                field.default = self.params[k]._storage[field.name]
 
-    def _inherit_params(self, params, primname, use_original_suffix=True):
+    def _inherit_params(self, params, primname, pass_suffix=False):
         """Create a dict of params for a primitive from a larger dict,
         using only those that the primitive needs
         
@@ -211,10 +230,10 @@ class PrimitivesBASE(object):
             parent parameter dictionary
         primname: str
             name of primitive to be called
-        use_original_suffix: bool
-            if True, don't pass "suffix" parameter
+        pass_suffix: bool
+            pass "suffix" parameter?
         """
         passed_params = {k: v for k, v in params.items()
-                    if k in list(self.parameters[primname]) and
-                         not (k == "suffix" and use_original_suffix)}
+                         if k in list(self.params[primname]) and
+                         not (k == "suffix" and not pass_suffix)}
         return passed_params

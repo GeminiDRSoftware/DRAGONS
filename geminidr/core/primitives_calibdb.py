@@ -17,6 +17,13 @@ from geminidr import PrimitivesBASE
 from . import parameters_calibdb
 
 from recipe_system.utils.decorators import parameter_override
+
+REQUIRED_TAG_DICT = {'processed_arc':    ['PROCESSED', 'ARC'],
+                     'processed_bias':   ['PROCESSED', 'BIAS'],
+                     'processed_dark':   ['PROCESSED', 'DARK'],
+                     'processed_flat':   ['PROCESSED', 'FLAT'],
+                     'processed_fringe': ['PROCESSED', 'FRINGE'],
+                     'bpm':              ['BPM']}
 # ------------------------------------------------------------------------------
 @parameter_override
 class CalibDB(PrimitivesBASE):
@@ -61,16 +68,10 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
-        caltype = params.get('caltype')
-        calfile = params.get('calfile')
-        log = self.log
-        if caltype is None or calfile is None:
-            log.error("getCalibration: Received no caltype or calfile")
-            raise TypeError("getCalibration: Received no caltype or calfile.")
-
+        caltype = params["caltype"]
+        calfile = params["calfile"]
         for ad in adinputs:
             self.calibrations[ad, caltype] = calfile
-
         return adinputs
 
     def getCalibration(self, adinputs=None, caltype=None, refresh=True,
@@ -93,10 +94,6 @@ class CalibDB(PrimitivesBASE):
             the filename of one, rather than a list of filenames)
         """
         log = self.log
-        if caltype is None:
-            log.error("getCalibration: Received no caltype")
-            raise TypeError("getCalibration: Received no caltype.")
-
         ad_rq = adinputs if refresh else [ad for ad in adinputs
                                           if not self._get_cal(ad, caltype)]
         cal_requests = get_cal_requests(ad_rq, caltype)
@@ -143,7 +140,7 @@ class CalibDB(PrimitivesBASE):
             log.warning(wstr)
         return adinputs
 
-    def getMDF(self, adinputs=None, **params):
+    def getMDF(self, adinputs=None):
         caltype = "mask"
         log = self.log
         inst_lookups = self.inst_lookups
@@ -179,18 +176,22 @@ class CalibDB(PrimitivesBASE):
     def storeCalibration(self, adinputs=None, **params):
         """
         Will write calibrations in calibrations/<cal_type>/
-
         """ 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         storedcals = self.cachedict["calibrations"]
         caltype = params["caltype"]
+        required_tags = REQUIRED_TAG_DICT[caltype]
 
         # Create storage directory if it doesn't exist
         if not os.path.exists(os.path.join(storedcals, caltype)):
             os.mkdir(os.path.join(storedcals, caltype))
 
         for ad in adinputs:
+            if not ad.tags.issuperset(required_tags):
+                log.warning("File {} is not recognized as a {}. Not storing as"
+                            " a calibration.".format(ad.filename, caltype))
+                continue
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
             ad.write(fname, overwrite=True)
             log.stdinfo("Calibration stored as {}".format(fname))
@@ -218,62 +219,67 @@ class CalibDB(PrimitivesBASE):
             gt.mark_history(adinput=ad, primname=primname, keyword=keyword)
         return adinputs
 
-    def storeProcessedArc(self, adinputs=None, **params):
+    def storeProcessedArc(self, adinputs=None, suffix=None, force=False):
         caltype = 'processed_arc'
-        sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="arc",
+                                                keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                     primname=self.myself(), keyword="PROCARC")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedBias(self, adinputs=None, **params):
+    def storeProcessedBias(self, adinputs=None, suffix=None, force=False):
         caltype = 'processed_bias'
-        sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bias",
+                                                keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                     primname=self.myself(), keyword="PROCBIAS")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeBPM(self, adinputs=None, **params):
+    def storeBPM(self, adinputs=None, suffix=None):
         caltype = 'bpm'
-        sfx = '_bpm'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
+        adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
+                                            keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                     primname=self.myself(), update_datalab=False, keyword="BPM")
-        self.storeCalibration(adinputs, caltype)
+        self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedDark(self, adinputs=None, **params):
+    def storeProcessedDark(self, adinputs=None, suffix=None, force=False):
         caltype = 'processed_dark'
-        sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="dark",
+                                                keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                     primname=self.myself(), keyword="PROCDARK")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedFlat(self, adinputs=None, **params):
+    def storeProcessedFlat(self, adinputs=None, suffix=None, force=False):
         caltype = 'processed_flat'
-        sfx = params["suffix"]
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = self._markAsCalibration(adinputs, suffix=sfx,
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="flat",
+                                                keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                     primname=self.myself(), keyword="PROCFLAT")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
     
-    def storeProcessedFringe(self, adinputs=None, **params):
+    def storeProcessedFringe(self, adinputs=None, suffix=None):
         caltype = 'processed_fringe'
-        log = self.log
-        sfx = params["suffix"]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        for ad in adinputs:
-            ad.update_filename(suffix=sfx, strip=True)
-            ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe", 
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="fringe",
                                           keyword_comments=self.keyword_comments)
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFRNG")
-        
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
+                primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 

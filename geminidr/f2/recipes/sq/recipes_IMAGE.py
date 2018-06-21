@@ -20,7 +20,6 @@ def reduce(p):
 
     p.prepare()
     p.addDQ()
-    p.removeFirstFrame()
     p.ADUToElectrons()
     p.addVAR(read_noise=True, poisson_noise=True)
     p.nonlinearityCorrect()

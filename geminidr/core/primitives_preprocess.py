@@ -33,20 +33,18 @@ class Preprocess(PrimitivesBASE):
         super(Preprocess, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_preprocess)
 
-    def addObjectMaskToDQ(self, adinputs=None, **params):
+    def addObjectMaskToDQ(self, adinputs=None, suffix=None):
         """
         This primitive combines the object mask in a OBJMASK extension
         into the DQ plane.
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-
+        suffix: str/None
+            suffix to be added to output filenames
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        sfx = params["suffix"]
 
         for ad in adinputs:
             for ext in ad:
@@ -61,10 +59,10 @@ class Preprocess(PrimitivesBASE):
                     log.warning('No object mask present for {}:{}; cannot '
                                 'apply object mask'.format(ad.filename,
                                                            ext.hdr['EXTVER']))
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def ADUToElectrons(self, adinputs=None, **params):
+    def ADUToElectrons(self, adinputs=None, suffix=None):
         """
         This primitive will convert the units of the pixel data extensions
         of the input AstroData object from ADU to electrons by multiplying
@@ -72,14 +70,12 @@ class Preprocess(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-
+        suffix: str/None
+            suffix to be added to output filenames
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -102,7 +98,7 @@ class Preprocess(PrimitivesBASE):
             # has units of electrons so update the physical units keyword.
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx,  strip=True)
+            ad.update_filename(suffix=suffix,  strip=True)
         return adinputs
     
     def applyDQPlane(self, adinputs=None, **params):
@@ -114,14 +110,11 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         replace_flags: int
             The DQ bits, of which one needs to be set for a pixel to be replaced
-
         replace_value: str/float
             "median" or "mean" to replace with that value of the good pixels,
             or a value
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -153,7 +146,7 @@ class Preprocess(PrimitivesBASE):
                                  "of the good data".format(ad.filename,
                                             ext.hdr['EXTVER'], replace_value))
 
-                ext.data[ext.mask & replace_flags != 0] = rep_value
+                ext.data[(ext.mask & replace_flags) != 0] = rep_value
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
@@ -174,34 +167,16 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         distance: float
             minimum separation (in arcseconds) required to use an image as sky
-
         max_skies: int/None
             maximum number of skies to associate to each input frame
-
         sky: str/list
             name(s) of sky frame(s) to associate to each input
-
         time: float
             number of seconds
-
         use_all: bool
             use everything in the "sky" stream?
-
-        :param sky: The input sky frame(s) to be subtracted from the input
-                    science frame(s). The input sky frame(s) can be a list of
-                    sky filenames, a sky filename, a list of AstroData objects
-                    or a single AstroData object. Note: If there are multiple
-                    input science frames and one input sky frame provided, then
-                    the same sky frame will be applied to all inputs; otherwise
-                    the number of input sky frames must match the number of
-                    input science frames.
-
-        :type sky: string, Python list of string, AstroData or Python list of
-                   Astrodata 
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -221,7 +196,12 @@ class Preprocess(PrimitivesBASE):
                            astrodata.open(ad) for ad in ad_skies]
         else:  # get from sky stream (put there by separateSky)
             ad_skies = self.streams.get('sky', [])
-        
+
+        # Timestamp and update filenames. Do now so filenames agree at end
+        for ad in set(adinputs + ad_skies):
+            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+
         if not adinputs or not ad_skies:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
@@ -277,16 +257,12 @@ class Preprocess(PrimitivesBASE):
                 else:
                     log.warning("No sky frames available for {}".format(ad.filename))
 
-        # Timestamp and update filenames of science frames only
-        for ad in adinputs:
-            ad.update_filename(suffix=sfx, strip=True)
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-        
         # Need to update sky stream in case it came from the "sky" parameter
         self.streams['sky'] = ad_skies
         return adinputs
 
-    def correctBackgroundToReference(self, adinputs=None, **params):
+    def correctBackgroundToReference(self, adinputs=None, suffix=None,
+                                     remove_background=False):
         """
         This primitive does an additive correction to a set
         of images to put their sky background at the same level
@@ -296,17 +272,13 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         remove_background: bool
             if True, set the new background level to zero in all images
             if False, set it to the level of the first image
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        remove_bg = params["remove_background"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least "
@@ -323,7 +295,7 @@ class Preprocess(PrimitivesBASE):
                 bg_list = gt.measure_bg_from_image(ad, value_only=True)
                 # If this is the first (reference) image, set the reference bg levels
                 if not ref_bg_list:
-                    if remove_bg:
+                    if remove_background:
                         ref_bg_list = [0] * len(ad)
                     else:
                         ref_bg_list = bg_list
@@ -350,11 +322,11 @@ class Preprocess(PrimitivesBASE):
 
                 # Timestamp the header and update the filename
                 gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                ad.update_filename(suffix=sfx, strip=True)
+                ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
-    def darkCorrect(self, adinputs=None, **params):
+    def darkCorrect(self, adinputs=None, suffix=None, dark=None, do_dark=True):
         """
         This primitive will subtract each SCI extension of the inputs by those
         of the corresponding dark. If the inputs contain VAR or DQ frames,
@@ -366,24 +338,24 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         dark: str/list
             name(s) of the dark file(s) to be subtracted
-
+        do_dark: bool
+            perform dark correction?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
-        if not params["do_dark"]:
+        if not do_dark:
             log.warning("Dark correction has been turned off.")
             return adinputs
 
-        dark_list = params["dark"]
-        if dark_list is None:
-            self.getProcessedDark(refresh=False)
+        if dark is None:
+            self.getProcessedDark(adinputs, refresh=False)
             dark_list = self._get_cal(adinputs, 'processed_dark')
+        else:
+            dark_list = dark
 
         # Provide a dark AD object for every science frame
         for ad, dark in zip(*gt.make_lists(adinputs, dark_list,
@@ -422,10 +394,10 @@ class Preprocess(PrimitivesBASE):
             # Record dark used, timestamp, and update filename
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def dilateObjectMask(self, adinputs=None, **params):
+    def dilateObjectMask(self, adinputs=None, suffix=None, dilation=1, repeat=False):
         """
         Grows the influence of objects detected by dilating the OBJMASK using
         the binary_dilation routine
@@ -434,26 +406,22 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         dilation: float
             radius of dilation circle
-
         repeat: bool
             allow a repeated dilation? Unless set, the primitive will no-op
             if the appropriate header keyword timestamp is found
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
         # Nothing is going to happen so leave now!
-        dilation = params["dilation"]
         if dilation < 1:
             return adinputs
 
-        repeat = params["repeat"]
-        xgrid, ygrid = np.mgrid[-dilation:dilation+1, -dilation:dilation+1]
+        xgrid, ygrid = np.mgrid[-int(dilation):int(dilation+1),
+                       -int(dilation):int(dilation+1)]
         structure = np.where(xgrid*xgrid+ygrid*ygrid <= dilation*dilation,
                              True, False)
 
@@ -468,11 +436,11 @@ class Preprocess(PrimitivesBASE):
                     ext.OBJMASK = binary_dilation(ext.OBJMASK,
                                                   structure).astype(np.uint8)
 
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         return adinputs
 
-    def flatCorrect(self, adinputs=None, **params):
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_flat=True):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
@@ -484,23 +452,24 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         flat: str
             name of flatfield to use
-
+        do_flat: bool
+            perform flatfield correction?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        if not params["do_flat"]:
+        if not do_flat:
             log.warning("Flat correction has been turned off.")
             return adinputs
 
-        flat_list = params["flat"]
-        if flat_list is None:
-            self.getProcessedFlat(refresh=False)
+        if flat is None:
+            self.getProcessedFlat(adinputs, refresh=False)
             flat_list = self._get_cal(adinputs, 'processed_flat')
+        else:
+            flat_list = flat
 
         # Provide a flatfield AD object for every science frame
         for ad, flat in zip(*gt.make_lists(adinputs, flat_list,
@@ -527,12 +496,8 @@ class Preprocess(PrimitivesBASE):
             except ValueError:
                 # Else try to clip the flat frame to the size of the science
                 # data (e.g., for GMOS, this allows a full frame flat to
-                # be used for a CCD2-only science frame. 
-                if 'GSAOI' in ad.tags:
-                    flat = gt.clip_auxiliary_data_GSAOI(adinput=ad, 
-                                    aux=flat, aux_type="cal")
-                else:
-                    flat = gt.clip_auxiliary_data(adinput=ad, 
+                # be used for a CCD2-only science frame.
+                flat = gt.clip_auxiliary_data(adinput=ad,
                                     aux=flat, aux_type="cal")
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad, flat)
@@ -545,7 +510,7 @@ class Preprocess(PrimitivesBASE):
             # Update the header and filename
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def makeSky(self, adinputs=None, **params):
@@ -555,7 +520,7 @@ class Preprocess(PrimitivesBASE):
         #self.makeMaskedSky()
         return adinputs
 
-    def nonlinearityCorrect(self, adinputs=None, **params):
+    def nonlinearityCorrect(self, adinputs=None, suffix=None):
         """
         Apply a generic non-linearity correction to data.
         At present (based on GSAOI implementation) this assumes/requires that
@@ -566,12 +531,10 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -593,7 +556,7 @@ class Preprocess(PrimitivesBASE):
             log.status("Applying nonlinearity correction to {}".
                        format(ad.filename))
             for ext, coeffs in zip(ad, nonlin_coeffs):
-                log.status("   nonlinearity correction for EXTVER {} is {:s}".
+                log.status("   nonlinearity correction for EXTVER {} is {}".
                            format(ext.hdr['EXTVER'], coeffs))
                 pixel_data = np.zeros_like(ext.data)
 
@@ -623,7 +586,7 @@ class Preprocess(PrimitivesBASE):
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def normalizeFlat(self, adinputs=None, **params):
@@ -635,24 +598,17 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         scale: str
             type of scaling to use. Must be a numpy function
-
         separate_ext: bool
             Scale each extension individually?
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         separate_ext = params["separate_ext"]
-        operator = getattr(np, params["scale"], None)
-        if not callable(operator):
-            log.warning("Operator {} not found, defaulting to median".
-                        format(params["scale"]))
-            operator = np.median
+        operator = getattr(np, params["scale"])
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -754,18 +710,15 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         frac_FOV: float
             Proportion by which to scale the instrumental field of view when
             determining whether points are considered to be within the same
             field, for tweaking borderline cases (eg. to avoid co-adding
             target positions right at the edge of the field)
-
         ref_obj: str
             comma-separated list of filenames (as read from disk, without any
             additional suffixes appended) to be considered object/on-target
             exposures, as overriding guidance for any automatic classification.
-
         ref_sky: str
             comma-separated list of filenames to be considered as sky exposures
 
@@ -773,7 +726,6 @@ class Preprocess(PrimitivesBASE):
         also be respected as input (unless overridden by ref_obj/ref_sky) and
         these same keywords are set in the output, along with a group number
         with which each exposure is associated (EXPGROUP).
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -802,6 +754,7 @@ class Preprocess(PrimitivesBASE):
         # use "in" for filename comparison so user can specify rootname only
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
+
         missing = []
         for ad in adinputs:
             for obj_filename in ref_obj:
@@ -954,24 +907,48 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
-        sky: str/AD/list
-            sky frame(s) to be subtracted from each science input
-
+        statsec: str/None
+            region of image to use for statistics
+        mask_objects: bool
+            mask objects using OBJMASK?
+        dilation: float
+            dilation radius if objects are being masked
+        operation: str
+            type of combining operation for stacking sky frames
+        reject_method: str
+            type of rejection method for stacking sky frames
+        hsigma: float
+            high rejection threshold (standard deviations)
+        lsigma: float
+            low rejection threshold (standard deviations)
+        mclip: bool
+            use median (rather than mean) for sigma-clipping?
+        nlow: int
+            number of low pixels to reject (for "minmax")
+        nhigh: int
+            number of high pixels to reject (for "minmax")
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         reset_sky = params["reset_sky"]
-        scale = params["scale"]
-        zero = params["zero"]
-        if scale and zero:
+        scale_sky = params["scale_sky"]
+        offset_sky = params["offset_sky"]
+        if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
-            zero = False
+            params["zero"] = False
 
         # Parameters to be passed to stackSkyFrames
-        stack_params = self._inherit_params(params, 'stackSkyFrames')
+        stack_params = self._inherit_params(params, 'stackSkyFrames',
+                                            pass_suffix=True)
+        #stack_params['mask_objects'] = False  # We're doing this en masse
+
+        # To avoid a crash in certain methods of operation
+        if "sky" not in self.streams:
+            log.warning("Sky stream is empty. Will search for sky frames in"
+                        " main stream.")
+            self.streams["sky"] = adinputs
 
         # We'll need to process the sky frames so collect them all up and do
         # this first, to avoid repeating it every time one is reused
@@ -1001,13 +978,13 @@ class Preprocess(PrimitivesBASE):
         for filename in skies:
             for sky in self.streams["sky"]:
                 if sky.filename in [filename,
-                        filename.replace(self.parameters['separateSky'].suffix,
-                                         self.parameters['associateSky'].suffix)]:
+                        filename.replace(self.params["associateSky"].suffix,
+                                         self.params["separateSky"].suffix)]:
                     break
             else:
                 try:
                     sky = astrodata.open(filename)
-                except IOError:
+                except astrodata.AstroDataError:
                     log.warning("Cannot find a sky file named {}. "
                             "Ignoring it.".format(filename))
                     skies.remove(filename)
@@ -1016,14 +993,17 @@ class Preprocess(PrimitivesBASE):
 
         # We've got all the sky frames in sky_dict, so delete the sky stream
         # to eliminate references to the original frames before we modify them
+        # Note that we can edit the OBJMASK even if the sky is also a science
+        # frame because we expect detectSources() to be run again on the
+        # sky-subtracted image.
         del self.streams["sky"]
         if params["mask_objects"]:
             ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
                         else self.detectSources([ad])[0] for ad in ad_skies]
             dilate_params = self._inherit_params(params, "dilateObjectMask")
             ad_skies = self.dilateObjectMask(ad_skies, **dilate_params)
-            #ad_skies = self.addObjectMaskToDQ(ad_skies)
         sky_dict = dict(zip(skies, ad_skies))
+        stack_params["dilation"] = 0  # We've already dilated
 
         # Make a list of stacked sky frames, but use references if the same
         # frames are used for more than one adinput. Use a value "0" to
@@ -1036,8 +1016,8 @@ class Preprocess(PrimitivesBASE):
                 stacked_sky = self.stackSkyFrames([deepcopy(sky_dict[sky]) for sky in
                                                   skytable], **stack_params)
                 if len(stacked_sky) == 1:
-                    # Provide a more intelligent filename
                     stacked_sky = stacked_sky[0]
+                    # Provide a more intelligent filename
                     stacked_sky.phu['ORIGNAME'] = ad.phu['ORIGNAME']
                     stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
@@ -1053,8 +1033,8 @@ class Preprocess(PrimitivesBASE):
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
-        adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale=scale,
-                                    zero=zero, reset_sky=reset_sky)
+        adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
+                                    offset_sky=offset_sky, reset_sky=reset_sky)
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
@@ -1067,31 +1047,26 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         reset_sky: bool
             maintain the sky level by adding a constant to the science
-
             frame after subtracting the sky?
         scale: bool
             scale each extension of each sky frame to match the science frame?
-
         sky: str/AD/list
             sky frame(s) to subtract
-
         zero: bool
             apply offset to each extension of each sky frame to match science?
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
         reset_sky = params["reset_sky"]
-        scale = params["scale"]
-        zero = params["zero"]
+        scale = params["scale_sky"]
+        zero = params["offset_sky"]
         if scale and zero:
-            log.warning("Both the scale and zero parameters are set. "
-                        "Setting zero=False.")
+            log.warning("Both the scale_sky and offset_sky parameters are set. "
+                        "Setting offset_sky=False.")
             zero = False
 
         for ad, ad_sky in zip(*gt.make_lists(adinputs, params["sky"],
@@ -1124,7 +1099,7 @@ class Preprocess(PrimitivesBASE):
                 if reset_sky:
                     new_bg = gt.measure_bg_from_image(ad, value_only=True)
                     for ext, new_level, old_level in zip(ad, new_bg, old_bg):
-                        sky_offset = new_level - old_level
+                        sky_offset = old_level - new_level
                         log.stdinfo("  Adding {} to {}:{}".format(sky_offset,
                                             ad.filename, ext.hdr['EXTVER']))
                         ext.add(sky_offset)
@@ -1135,10 +1110,9 @@ class Preprocess(PrimitivesBASE):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-
         return adinputs
 
-    def subtractSkyBackground(self, adinputs=None, **params):
+    def subtractSkyBackground(self, adinputs=None, suffix=None):
         """
         This primitive is used to subtract the sky background specified by 
         the keyword SKYLEVEL.
@@ -1147,12 +1121,10 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -1175,7 +1147,7 @@ class Preprocess(PrimitivesBASE):
                     
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def thresholdFlatfield(self, adinputs=None, **params):
@@ -1190,13 +1162,10 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-
         lower: float
             value below which DQ pixels should be set to unilluminated
-
         upper: float
             value above which DQ pixels should be set to unilluminated
-
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1217,8 +1186,8 @@ class Preprocess(PrimitivesBASE):
                 # make sure the 64 is an int16 64 else it will promote the DQ
                 # plane to int64
                 unillum = np.where(((ext.data>upper) | (ext.data<lower)) &
-                                   (ext.mask & DQ.bad_pixel==0),
-                                  np.int16(DQ.unilluminated), np.int16(0))
+                                   ((ext.mask & DQ.bad_pixel)==0),
+                                   np.int16(DQ.unilluminated), np.int16(0))
                 ext.mask = unillum if ext.mask is None else ext.mask | unillum
                 log.fullinfo("ThresholdFlatfield set bit '64' for values "
                              "outside the range [{:.2f},{:.2f}]".
@@ -1226,10 +1195,10 @@ class Preprocess(PrimitivesBASE):
 
                 # Set the sci value to 1.0 where it is less that 0.001 and
                 # where the DQ says it's non-illuminated.
-                ext.data[ext.data < 0.001] = 1.0
-                ext.data[ext.mask==DQ.unilluminated] = 1.0
+                #ext.data[ext.data < 0.001] = 1.0
+                ext.data[(ext.mask & DQ.unilluminated)>0] = 1.0
                 log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 "
-                             "for values below 0.001 and non-illuminated pixels.")
+                             "for non-illuminated pixels.")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

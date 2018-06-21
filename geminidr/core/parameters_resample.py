@@ -3,7 +3,7 @@
 from gempy.library import config
 
 class resampleToCommonFrameConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_align")
+    suffix = config.Field("Filename suffix", str, "_align", optional=True)
     interpolator = config.ChoiceField("Type of pixel interpolation", str,
                                       allowed={"nearest": "nearest pixel",
                                                "linear": "linear interpolation",

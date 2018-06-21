@@ -1319,7 +1319,11 @@ class FitsLazyLoadable(object):
         return np.empty(shape, dtype=self.dtype)
 
     def _scale(self, data):
-        return ((self._obj._orig_bscale * data) + self._obj._orig_bzero).astype(self.dtype)
+        bscale = self._obj._orig_bscale
+        bzero = self._obj._orig_bzero
+        if bscale == 1 and bzero == 0:
+            return data
+        return (bscale * data + bzero).astype(self.dtype)
 
     def __getitem__(self, sl):
         # TODO: We may want (read: should) create an empty result array before scaling
@@ -1495,15 +1499,8 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
     def generate_boxes(shape, kernel):
         if len(shape) != len(kernel):
             raise AssertionError("Incompatible shape ({}) and kernel ({})".format(shape, kernel))
-
-        ticks = []
-        for axis, step in list(zip(shape, kernel)):
-            if (axis % step) == 0:
-                end_value = axis
-            else:
-                end_value = axis + (axis % step)
-            ticks.append([(x, x+step) for x in range(0, end_value, step)])
-
+        ticks = [[(x, x+step) for x in range(0, axis, step)]
+                 for axis, step in zip(shape, kernel)]
         return cart_product(*ticks)
 
     if shape is None:
@@ -1519,6 +1516,9 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
                                        if with_uncertainty else None),
                           mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
                           meta=sequence[0].meta)
+    # Delete other extensions because we don't know what to do with them
+    result.meta['other'] = OrderedDict()
+    result.meta['other_header'] = {}
 
     # The Astropy logger's "INFO" messages aren't warnings, so have to fudge
     log_level = astropy.logger.conf.log_level
@@ -1625,7 +1625,7 @@ class AstroDataFits(AstroData):
                 self.phu.set('ORIGNAME', filename,
                                 'Original filename prior to processing')
         else:
-            filename = self.filename
+            filename = self.filename or self.phu.get('ORIGNAME')
 
         # Possibly, filename could be None
         try:

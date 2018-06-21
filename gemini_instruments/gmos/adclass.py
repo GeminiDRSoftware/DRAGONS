@@ -656,6 +656,24 @@ class AstroDataGmos(AstroDataGemini):
         return '_'.join(descriptor_object_string_list)
 
     @astro_data_descriptor
+    def instrument(self, generic=False):
+        """
+        Returns the name of the instrument making the observation
+
+        Parameters
+        ----------
+        generic: boolean
+            If set, don't specify the specific instrument if there are clones
+            (e.g., return "GMOS" rather than "GMOS-N" or "GMOS-S")
+
+        Returns
+        -------
+        str
+            instrument name
+        """
+        return 'GMOS' if generic else self.phu.get('INSTRUME')
+
+    @astro_data_descriptor
     def nod_count(self):
         """
         Returns a tuple with the number of integrations made in each

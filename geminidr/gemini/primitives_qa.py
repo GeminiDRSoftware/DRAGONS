@@ -64,7 +64,7 @@ class QA(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params["suffix"]
-        remove_bias = params["remove_bias"]
+        remove_bias = params.get("remove_bias", False)
         separate_ext = params["separate_ext"]
 
         for ad in adinputs:
@@ -197,7 +197,7 @@ class QA(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def measureCC(self, adinputs=None, **params):
+    def measureCC(self, adinputs=None, suffix=None):
         """
         This primitive will determine the zeropoint by looking at sources in
         the OBJCAT for which a reference catalog magnitude has been determined
@@ -236,8 +236,6 @@ class QA(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-
-        suffix = params["suffix"]
 
         for ad in adinputs:
             nom_phot_zpt = ad.nominal_photometric_zeropoint()
@@ -428,7 +426,7 @@ class QA(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params["suffix"]
-        remove_bias = params["remove_bias"]
+        remove_bias = params.get("remove_bias", False)
         separate_ext = params["separate_ext"]
         display = params["display"]
 

@@ -3,4 +3,4 @@
 from gempy.library import config
 
 class skyCorrectNodAndShuffleConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_skyCorrected")
+    suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)

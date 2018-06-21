@@ -12,10 +12,6 @@ class makeFringeFrameConfig(parameters_stack.stackFramesConfig, parameters_photo
         self.suffix = "_fringe"
 
 class scaleFringeToScience(config.Config):
-    suffix = config.Field("Filename suffix", str, "_fringeScaled")
+    suffix = config.Field("Filename suffix", str, "_fringeScaled", optional=True)
     science = None # TODO
     stats_scale = config.Field("Scale by statistics rather than exposure time?", bool, False)
-
-class standardizeStructureConfig(parameters_standardize.standardizeStructureConfig):
-    def setDefaults(self):
-        self.attach_mdf = False
