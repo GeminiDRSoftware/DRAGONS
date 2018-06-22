@@ -85,7 +85,7 @@ class NIRIImage(NIRI, Image, Photometry):
                     for xstart in (0, qxsize):
                         quad = ext.nddata[ystart:ystart + qysize, xstart:xstart + qxsize]
                         sigma_in = sigclip(np.ma.masked_array(quad.data, quad.mask)).std()
-                        print sigma_in
+                        # print sigma_in
                         blocks = [quad[tuple(slice(start, end)
                                              for (start, end) in coords)]
                                   for coords in cart_product(yticks, xticks)]
