@@ -11,7 +11,7 @@ Installation
 .. note:: While the original Recipe System, v1.0, was written in such a way as
    to prevent migration to Python 3.x, Recipe System v2.0 has been written with
    efforts to ensure compatibility with both Python 2.7.x and Python 3.x. Because
-   of this, the Recipe System, and the larger *gemini_python* package, introduce a
+   of this, the Recipe System, and the larger DRAGONS package, introduce a
    dependency on the ``future`` module (currently, v0.16.0). Users may need to
    install this package (see http://python-future.org).
 
@@ -19,15 +19,15 @@ Installation
 	  once package naming and org. is finalized.
 
 In order to use ``reduce``, the ``Reduce`` class, and the Recipe System to 
-process data, the **gemini_python** package must be installed properly. The 
-*gemini_python* package provides all the components described herein, as well as
-those components, such as ``astrodata``, referred to in the :ref:`Introduction <intro>`. 
-In particular, though not the subject of this document, the *gemini_python* 
-``astrodata`` package has several dependencies, such as ``astropy``, 
-``scipy``, ``numpy``, and others.
+process data, the DRAGONS package must be installed properly. The 
+DRAGONS package provides all the components described herein, as well as
+those components, such as ``astrodata``, referred to in the
+:ref:`Introduction <intro>`. In particular, though not the subject of this
+document, the DRAGONS ``astrodata`` package has several dependencies, such
+as ``astropy``, ``scipy``, ``numpy``, and others.
 
-All dependencies of ``gemini_python`` and ``astrodata`` are provided
-by the Ureka package, and users are highly encouraged to install and use this
+All dependencies of DRAGONS and ``astrodata`` are provided by the Ureka package,
+and users are highly encouraged to install and use this
 very useful package. It is an easy and, perhaps, best way to get everything you
 need and then some. Ureka is available at http://ssb.stsci.edu/ureka/.
 

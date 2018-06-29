@@ -5,7 +5,7 @@
 ************
 Introduction
 ************
-The Recipe System is Gemini Observatory's data processing software platform.
+The DRAGONS Recipe System is Gemini Observatory's data processing software platform.
 The Recipe System is designed as a framework that accommodates both stepwise,
 interactive data processing and automated data reduction pipelines.
 
@@ -19,17 +19,24 @@ classes` and `recipe` functions. In this document, `instrument packages` may
 be referred to as `targets` of the Recipe System.
 
 This document presents information, discussion, and a wealth of examples of 
-the ``reduce`` command line, and the programmatic interface on ``Reduce`` class. 
-The ``reduce`` command and programmatic access to the ``Reduce`` class are the 
-primary ways that users can use the Recipe System to process and reduce their data.
+the ``reduce`` command line, and the programmatic interface on the ``Reduce``
+class. The ``reduce`` command and programmatic access to the ``Reduce`` class
+are the principle ways DRAGONS users can employ the Recipe System to process
+and reduce their data.
 
-The ``reduce`` application allows users to invoke the Gemini Recipe System from 
-the command line to perform complex data processing and reduction on one or more 
-astronomical datasets with a minimal set of parameters when default processing is 
-requested. This is possible because an astronomical dataset (Gemini or otherwise) 
-encapsulated by ``AstroData`` exposes dataset properties and populates a *tags* 
-attribute on an instance of the class to provide an interface to dataset 
-information and also to present a FITS file as a cohesive set of the data. 
+The ``reduce`` application lets users invoke the Gemini Recipe System from 
+the command line. As this document describes, the ``reduce`` command supports
+a wealth of options that allow users to select and "tune" complex data processing
+steps directly for one or more astronomical datasets.
+
+Or not. Without any command line options, ``reduce`` will almost certainly
+do the roughly correct thing by using well-tested default parameters for automated
+processing. This is possible because an astronomical dataset (Gemini or otherwise)
+encapsulated by ``AstroData`` exposes dataset properties and populates a *tags*
+attribute on an instance of ``AstroData``. This *tags* property is a set of data
+classifications describing the dataset, which is used by the Recipe System
+to select the appropriate processing.
+
 Defining the lexicon and coding the related actions allows ``AstroData`` and
 the Recipe System infrastructure to naturally bring the following benefits:
 
@@ -42,7 +49,13 @@ the Recipe System infrastructure to naturally bring the following benefits:
  • Support for building smart pipelines
 
 As a quick example of how the Recipe System and ``AstroData`` work together, 
-a typical reduce command can look deceptively simple::
+a typical reduce command can look deceptively simple, Without knowing the content
+of the FITS file, you can simply run `reduce` on the data and the Recipe System
+`mappers` automatically select the default recipe, ``reduce``, based upon the
+data classifications presented by the dataset and ``AstroData``. Furthermore,
+these data classifications have also been used to internally determine the most
+applicable class of primitives from the set of defined instrument packages
+(`targets`)::
 
  $ reduce S20161025S0111.fits
  			--- reduce, v2.0 (beta) ---
@@ -50,14 +63,9 @@ a typical reduce command can look deceptively simple::
  ===============================================================================
  RECIPE: reduce
  ===============================================================================
- ...
-
-Without knowing the content of the FITS file, you can simply run `reduce` on the 
-data and the DRAGONS Recipe System `mappers` automatically select the default recipe, 
-``reduce``, based upon the data classifications presented by the dataset 
-and ``AstroData``. Furthermore, these data classifications have also been used 
-to internally determine the most applicable class of primitives from the set of 
-defined instrument packages (`targets`).
+  PRIMITIVE: prepare
+  ------------------
+  ...
 
 There are three critical parameters the Recipe System needs to map a dataset to
 a primitive class and a recipe:
@@ -140,11 +148,11 @@ A mode is a label by which the recipe libraries are delineated and
 which are manifest in instrument packages as directories named with these 
 same labels. These mode names `should` indicate or hint at the purpose or 
 quality of the recipes contained therein. For example, Quality Assessment recipes
-are found in the ``qa`` recipes directory, Science Qauality recipes, in an 
+are found in the ``qa`` recipes directory, Science Quality recipes, in the
 ``sq`` recipes directory. There is no ``--mode`` option on the command line.
 Rather, mode is switched by two flags provided, ``--qa`` and ``--ql``, indicating
 that the Recipe System should map data to the Qaulity Assessment (``qa``)
-recipes or to what is called Quick Look (``ql``) recipes.
+recipes or to what are called Quick Look (``ql``) recipes.
 
 .. note:: (DRAGONS currently defines no ``ql`` recipes but these are anticipated
 	  in future development.)
@@ -160,21 +168,21 @@ class is the primary operation provided by ``reduce``.
 
 Recipe Library
 --------------
-A python module defined in an instrument package that comprises one or more 
-defined *recipes*. A recipe library (module) will have one (1) attribute
+A python module defined in an instrument package comprising one or more 
+defined recipe functions. A recipe library (module) will have one (1) attribute
 defined as ``recipe_tags``, which is a set of tags indicating the kind of
 data to which this recipe library applies.
 
 Primitive
 ---------
-A primitive is a defined method on a primitive class. A primitive function 
-is generally contrived to be a "science-oriented" data processing step, for
-example, "bias correction," though the Recipe System has no requirement
-that this be true.
+A primitive is a defined function (method) on a primitive class. Under DRAGONS,
+a primitive function is generally contrived to be a "science-oriented"
+data processing step; for example, "bias correction." This is purely convention.
+The Recipe System has no requirement that this be true.
 
 Primitive Class
 ---------------
-As defined under the *gemini_python* package, ``geminidr``, primitive classes 
+As defined under the DRAGONS package, ``geminidr``, primitive classes 
 are a large set of hierarchical classes exhibiting inheritance from generic to
 specific. Because they are real data, datasets will always have some 
 instrument/mode specific set of *tags* that will allow the Recipe System to pick
@@ -187,7 +195,7 @@ line switches that allow users to control the processing of their data.
 This document will further describe usage of the ``Reduce`` class' API. A 
 detailed presentation of the above components comprise Chapter 3, :ref:`howto`.
 
-The *gemin_python* packge must be installed and available, both at the command 
+The DRAGONS packge must be installed and available, both at the command 
 line and as importable Python packages. The :ref:`next chapter <install>` 
 takes readers through the install process.
 
@@ -208,7 +216,7 @@ Reference Documents
 
   - `Recipe System Programmer’s Manual`, Doc. ID: PIPE-USER-108_RSProgManual,
     Anderson, K.R., Gemini Observatory, 2017, 
-    gemini_python/recipe_system/doc/rs_ProgManual/.
+    DRAGONS/recipe_system/doc/rs_ProgManual/.
 
 .. _related:
 
@@ -221,7 +229,3 @@ Related Documents
   - `Astrodata User’s Manual`, Doc. ID:  PIPE-USER-106_AstrodataUserManual,
     Labrie, K., Gemini Observatory, 2017, astrodata/doc/ad_UserManual/.
 
-
-The Recipe System is Gemini's data processing software platform for end-users
-reducing data on their computer. However, the Recipe System is also designed to 
-form the heart of automated data reduction pipelines.
