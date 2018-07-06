@@ -29,7 +29,7 @@ class GSAOI(Gemini, NearIR):
         self.inst_lookups = 'geminidr.gsaoi.lookups'
         self._param_update(parameters_gsaoi)
 
-    def standardizeInstrumentHeaders(self, adinputs=None, **params):
+    def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """
         This primitive is used to make the changes and additions to the
         keywords in the headers of GSAOI data, specifically.
@@ -93,7 +93,7 @@ class GSAOI(Gemini, NearIR):
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     # def tileArrays(self, adinputs=None, **params):
@@ -196,6 +196,12 @@ class GSAOI(Gemini, NearIR):
     #         ad.update_filename(suffix=params["suffix"], strip=True)
     #
     #     return adinputs
+
+    @staticmethod
+    def _has_valid_extensions(ad):
+        """Check the AD has a valid number of extensions"""
+        return len(ad) == 4
+
 
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #

@@ -9,12 +9,12 @@ from builtins import str
 from builtins import zip
 from builtins import range
 from builtins import object
-from past.utils import old_div
 import os
 import re
 import sys
 import numbers
 import warnings
+import itertools
 import numpy as np
 
 from copy import deepcopy
@@ -38,7 +38,7 @@ from astrodata import __version__ as ad_version
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
-    return 0.5*(1.0+erf(old_div((x-mean),(1.414213562*stddev))))
+    return 0.5*(1.0+erf((x-mean) / (1.414213562*stddev)))
 
 # ------------------------------------------------------------------------------
 # Allows all functions to treat input as a list and return a list without the
@@ -464,16 +464,15 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     """
     log = logutils.get_logger(__name__)
 
-    if not isinstance(aux, list):
-        aux = [aux]
-    
     # Initialize the list of output AstroData objects
     aux_output_list = []
 
     # Loop over each input AstroData object in the input list
-    for ad, this_aux in zip(adinput, aux):
+    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
         # Make a new auxiliary file for appending to, starting with PHU
         new_aux = astrodata.create(this_aux.phu)
+        new_aux.filename = this_aux.filename
+        new_aux.update_filename(suffix="_clipped", strip=False)
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -493,12 +492,10 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
         for ext, detsec, datasec, arraysec in zip(ad, sci_detsec,
                                             sci_datasec, sci_arraysec):
-
             # Array section is unbinned; to use as indices for
             # extracting data, need to divide by the binning
-            arraysec = [
-              old_div(arraysec[0], sci_xbin), old_div(arraysec[1], sci_xbin),
-              old_div(arraysec[2], sci_ybin), old_div(arraysec[3], sci_ybin)]
+            arraysec = [arraysec[0] // sci_xbin, arraysec[1] // sci_xbin,
+                        arraysec[2] // sci_ybin, arraysec[3] // sci_ybin]
 
             # Check whether science data has been overscan-trimmed
             science_shape = ext.data.shape[-2:]
@@ -511,20 +508,20 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
             found = False
             for auxext, adetsec, adatasec, aarraysec in zip(this_aux,
                                 aux_detsec, aux_datasec, aux_arraysec):
+                if not (auxext.detector_x_bin() == sci_xbin and
+                        auxext.detector_y_bin() == sci_ybin):
+                    continue
 
                 # Array section is unbinned; to use as indices for
                 # extracting data, need to divide by the binning
                 aarraysec = [
-                    old_div(aarraysec[0], sci_xbin), old_div(aarraysec[1], sci_xbin),
-                    old_div(aarraysec[2], sci_ybin), old_div(aarraysec[3], sci_ybin)]
+                    aarraysec[0] // sci_xbin, aarraysec[1] // sci_xbin,
+                    aarraysec[2] // sci_ybin, aarraysec[3] // sci_ybin]
 
                 # Check whether auxiliary detector section contains
                 # science detector section
-                if (adetsec[0] <= detsec[0] and # x lower
-                    adetsec[1] >= detsec[1] and # x upper
-                    adetsec[2] <= detsec[2] and # y lower
-                    adetsec[3] >= detsec[3]):   # y upper
-                    # Auxiliary data contains or is equal to science data
+                if (adetsec[0] <= detsec[0] and adetsec[1] >= detsec[1] and
+                    adetsec[2] <= detsec[2] and adetsec[3] >= detsec[3]):
                     found = True
                 else:
                     continue
@@ -843,7 +840,7 @@ def clip_sources(ad):
             good_sources.append(Table())
             continue
 
-        stellar = np.fabs(old_div(objcat['FWHM_IMAGE'],1.08) - objcat['PROFILE_FWHM']
+        stellar = np.fabs((objcat['FWHM_IMAGE'] / 1.08) - objcat['PROFILE_FWHM']
                           ) < 0.2*objcat['FWHM_IMAGE'] if is_ao else \
                     objcat['CLASS_STAR'] > 0.8
 
@@ -965,7 +962,16 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
 
         # Set class, type, object to generic defaults
         ad.phu.set("OBSCLASS", "partnerCal", keyword_comments["OBSCLASS"])
-        if "fringe" in caltype:
+        if "arc" in caltype:
+            ad.phu.set("OBSTYPE", "ARC", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "Arc spectrum", keyword_comments["OBJECT"])
+        elif "bias" in caltype:
+            ad.phu.set("OBSTYPE", "BIAS", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "Bias Frame", keyword_comments["OBJECT"])
+        elif "dark" in caltype:
+            ad.phu.set("OBSTYPE", "DARK", keyword_comments["OBSTYPE"])
+            ad.phu.set("OBJECT", "Dark Frame", keyword_comments["OBJECT"])
+        elif "fringe" in caltype:
             ad.phu.set("OBSTYPE", "FRINGE", keyword_comments["OBSTYPE"])
             ad.phu.set("OBJECT", "Fringe Frame", keyword_comments["OBJECT"])
         elif "sky" in caltype:
@@ -974,6 +980,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         elif "flat" in caltype:
             ad.phu.set("OBSTYPE", "FLAT", keyword_comments["OBSTYPE"])
             ad.phu.set("OBJECT", "Flat Frame", keyword_comments["OBJECT"])
+        elif "bpm" in caltype:
+            ad.phu.set("BPMASK", True, "Bad pixel mask")
         else:
             raise ValueError("Caltype {} not supported".format(caltype))
 
@@ -1079,16 +1087,16 @@ def fit_continuum(ad):
     pixel_scale = ad.pixel_scale()
     
     # Set full aperture to 4 arcsec
-    ybox = int(old_div(2.0, pixel_scale))
+    ybox = int(2.0 / pixel_scale)
 
     # Average 512 unbinned columns together
-    xbox = old_div(256, ad.detector_x_bin())
+    xbox = 256 // ad.detector_x_bin()
 
     # Average 16 unbinned background rows together
-    bgbox = old_div(8, ad.detector_x_bin())
+    bgbox = 8 // ad.detector_x_bin()
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
-    init_width = old_div(1.2, (pixel_scale * (2 * np.sqrt(2 * np.log(2)))))
+    init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
 
     # Ignore spectrum if not >1.5*background
     s2n_bg = 1.5
@@ -1114,7 +1122,7 @@ def fit_continuum(ad):
                     log.warning("No MDF is attached. Did addMDF find one?")
                 continue
             else:
-                shuffle = int(old_div(ad.shuffle_pixels(), ad.detector_y_bin()))
+                shuffle = ad.shuffle_pixels() // ad.detector_y_bin()
                 centers = [shuffle + np.argmax(signal[shuffle:shuffle*2])]
                 half_widths = [ybox]
         else:
@@ -1176,7 +1184,7 @@ def fit_continuum(ad):
                 dqcol = np.sum(dqbox==0, axis=1)
                 if np.any(dqcol==0):
                     continue
-                col = old_div(np.sum(databox, axis=1), dqcol)
+                col = np.sum(databox, axis=1) / dqcol
                 maxflux = np.max(abs(col))
                 
                 # Crude SNR test; is target bright enough in this wavelength range?
@@ -1199,7 +1207,7 @@ def fit_continuum(ad):
                     # N&S; background should be close to zero
                     bg = models.Const1D(0.)
                     # Fix background=0 if slit is in region where sky-subtraction will occur 
-                    if center > old_div(ad.shuffle_pixels(), ad.detector_y_bin()):
+                    if center > ad.shuffle_pixels() // ad.detector_y_bin():
                             bg.amplitude.fixed = True
                 else:
                     # Not N&S; background estimated from image
@@ -1285,93 +1293,54 @@ def log_message(function=None, name=None, message_type=None):
         message = 'The {} {} completed successfully'.format(name, function)
     return message
 
-def make_dict(key_list=None, value_list=None):
+def make_lists(*args, **kwargs):
     """
-    The make_dict function creates a dictionary with the elements in 'key_list'
-    as the key and the elements in 'value_list' as the value to create an
-    association between the input science dataset (the 'key_list') and a, for
-    example, dark that is needed to be subtracted from the input science
-    dataset. This function also does some basic checks to ensure that the
-    filters, exposure time etc are the same. No it doesn't.
+    The make_lists function attaches auxiliary things to an input key_list
+    of (normally) AD objects. Each key gets exactly one auxilary thing from
+    each other list -- these lists can be as long as the key_list, or have
+    only one item in (in which case they don't have to be lists at all).
 
     Parameters
     ----------
-    key_list: list of AstroData objects
-        the keys for the dict
-    value_list: list of AstroData objects
-        the values for the dict
-
-    Returns
-    -------
-    dict
-        the dict made from the keys and values
-    """
-    # Check the inputs have matching filters, binning and SCI shapes.
-    ret_dict = {}
-    if not isinstance(key_list, list):
-        key_list = [key_list]
-    if not isinstance(value_list, list):
-        value_list = [value_list]
-    # We allow only one value that can be assigned to multiple keys
-    if len(value_list) == 1:
-        value_list *= len(key_list)
-
-    for key, value in zip(key_list, value_list):
-        ret_dict[key] = value
-        # Old error for incompatible list lengths
-        #   msg = """Number of AstroData objects in key_list does not match
-        #   with the number of AstroData objects in value_list. Please provide
-        #   lists containing the same number of AstroData objects. Please
-        #   supply either a single AstroData object in value_list to be applied
-        #   to all AstroData objects in key_list OR the same number of
-        #   AstroData objects in value_list as there are in key_list"""
-    
-    return ret_dict
-
-def make_lists(key_list=None, value_list=None, force_ad=False):
-    """
-    The make_list function returns two lists, one of the keys and one of the
-    values. It ensures that both inputs are made into lists if they weren't
-    originally. It also expands the list of values to be the same length as
-    the list of keys, if only one value was given.
-
-    Parameters
-    ----------
-    key_list: list of AstroData objects
-        the keys for the dict
-    value_list: list of AstroData objects
-        the values for the dict
-    force_ad: bool
+    args: lists of str/AD (or single str/AD)
+        key_list and auxiliary things to be matched to each AD
+    kwargs["force_ad"]: bool
         coerce strings into AD objects?
 
     Returns
     -------
-    2-tuple of lists
+    tuple of lists
         the lists made from the keys and values
     """
-    if not isinstance(key_list, list):
-        key_list = [key_list]
-    if not isinstance(value_list, list):
-        value_list = [value_list]
+    force_ad = kwargs.pop("force_ad", False)
+    if kwargs:
+        raise TypeError("make_lists() got unexpected keyword arguments "
+                        "{}".format(kwargs.keys()))
+
+    ret_value = [arg if isinstance(arg, (list, tuple)) else [arg]
+                 for arg in args]
+
     # We allow only one value that can be assigned to multiple keys
-    if len(value_list) == 1:
-        value_list *= len(key_list)
+    len_list = len(ret_value[0])
+    if len_list > 1:
+        for i in range(1, len(ret_value)):
+            if len(ret_value[i]) == 1:
+                ret_value[i] *= len_list
+
     if force_ad:
-        key_list = [x if isinstance(x, astrodata.AstroData) or x is None else
-                    astrodata.open(x) for x in key_list]
-        # We only want to open as many AD objects as there are unique entries
-        # in value_list, so collapse to set and multiple keys with the same
-        # value will be assigned references to the same open AD object
+        # We only want to open as many AD objects as there are unique entries,
+        # so collapse all items in lists to a set and multiple keys with the
+        # same value will be assigned references to the same open AD object
         ad_map_dict = {}
-        for x in set(value_list):
+        for x in set(itertools.chain(*ret_value)):
             try:
                 ad_map_dict.update({x: x if isinstance(x, astrodata.AstroData)
                                         or x is None else astrodata.open(x)})
             except:
                 ad_map_dict.update({x: None})
-        value_list = [ad_map_dict[x] for x in value_list]
+        ret_value = [[ad_map_dict[x] for x in List] for List in ret_value]
 
-    return key_list, value_list
+    return ret_value
 
 @handle_single_adinput
 def mark_history(adinput=None, keyword=None, primname=None, comment=None):
@@ -1457,6 +1426,9 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
             else getattr(ext, 'OBJMASK', None)
 
         bg_data = ext.data[flags==0] if flags is not None else ext.data
+        # Try to proceed in case all pixels are flagged
+        if len(bg_data) == 0:
+            bg_data == ext.data
         bg_data = bg_data.ravel()[::sampling]
         if len(bg_data) > 0:
             if gaussfit:
@@ -1469,24 +1441,6 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
                 fit_g = fitting.LevMarLSQFitter()
                 g = fit_g(g_init, bg_data, np.linspace(0.,1.,len(bg_data)+1)[1:])
                 bg, bg_std = g.mean.value, abs(g.stddev.value)
-
-                # --------------------------------------------------------------
-                #binsize = bg_std * 0.1
-                # Fit from -5 to +1 sigma
-                #bins = np.arange(bg - 5 * bg_std, bg + bg_std, binsize)
-                #histdata, _ = np.histogram(bg_data, bins)
-                # bin centers
-                #x = bins[:-1] + 0.5 * (bins[1] - bins[0])
-                # Eliminate bins with no data (e.g., if data are quantized)
-                #x = x[histdata > 0]
-                #histdata = histdata[histdata > 0]
-                #g_init = models.Gaussian1D(amplitude=np.max(histdata),
-                #                           mean=bg, stddev=bg_std)
-                #fit_g = fitting.LevMarLSQFitter()
-                #g = fit_g(g_init, x, histdata)
-                #bg, bg_std = g.mean.value, abs(g.stddev.value)
-                # --------------------------------------------------------------
-
             else:
                 # Sigma-clipping will screw up the stats of course!
                 bg_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
@@ -1981,7 +1935,7 @@ class ExposureGroup(object):
         # Update the group centroid to account for the new points:
         new_vals = list(addict.values())
         newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_cen = [old_div((cval * ngroups + nval), ntot) \
+        self.group_cen = [(cval * ngroups + nval) / ntot \
           for cval, nval in zip(self.group_cen, newsum)]
 
 def group_exposures(adinput, pkg=None, frac_FOV=1.0):

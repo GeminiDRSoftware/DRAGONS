@@ -52,7 +52,7 @@ def makeProcessedFlat(p):
     #     p.ADUToElectrons()
     #     p.separateFlatsDarks()
     #     p.stackDarks()
-    #     p.lampOnLampOff(stream=flats)
+    #     p.makeLampFlat(stream=flats)
     #     p.normalizeFlat()
     #     p.makeBPM()
     #     p.storeBPM()

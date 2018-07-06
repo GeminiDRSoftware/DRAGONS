@@ -71,7 +71,7 @@ class Visualize(PrimitivesBASE):
             return
 
         threshold = params['threshold']
-        remove_bias = params['remove_bias']
+        remove_bias = params.get('remove_bias', False)
         extname = params['extname']
         tile = params['tile']
         zscale = params['zscale']
@@ -291,9 +291,10 @@ class Visualize(PrimitivesBASE):
 
             log.stdinfo("\tBuilding mosaic, converting data ...")
             ad_out = mos.as_astrodata(tile=tile, doimg=sci_only)
-
+            ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
+            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
             adoutputs.append(ad_out)
 
         return adoutputs

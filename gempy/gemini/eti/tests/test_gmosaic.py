@@ -15,7 +15,7 @@ import os
 import os.path
 import astrodata
 import gemini_instruments
-from gempy.gemini import eti
+from gempy.gemini.eti import gmosaiceti
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 
@@ -61,7 +61,7 @@ class TestGmosaic(object):
         inputs = []
         parameters = TESTDEFAULTPARAMS
         gmosaic_task = \
-            eti.gmosaiceti.GmosaicETI(inputs, parameters, ad)
+            gmosaiceti.GmosaicETI(inputs, parameters, ad)
         ad_mosaic = gmosaic_task.run()
         ad_mosaic.write(overwrite=True)
         del ad

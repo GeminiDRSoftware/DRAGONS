@@ -4,6 +4,7 @@ from os.path import abspath, basename, dirname, isdir
 import warnings
 from collections import namedtuple
 import sys
+import pdb
 
 from sqlalchemy.exc import SAWarning, OperationalError
 from gemini_calmgr import fits_storage_config as fsc
@@ -16,7 +17,7 @@ from gemini_calmgr.orm import diskfile
 from gemini_calmgr.orm import preview
 from gemini_calmgr.cal import get_cal_object
 from gemini_calmgr.orm import createtables
-from gemini_calmgr.utils import ingest
+from gemini_calmgr.utils import dbtools
 
 __all__ = ['LocalManager, LocalManagerError']
 
@@ -93,7 +94,7 @@ class LocalManager(object):
         reload(preview)
         reload(diskfile)
         reload(createtables)
-        reload(ingest)
+        reload(dbtools)
 
         self.session = orm.sessionfactory()
 
@@ -133,26 +134,17 @@ class LocalManager(object):
             raise LocalManagerError(ERROR_CANT_CREATE, message)
 
     def remove_file(self, path):
-        directory = abspath(dirname(path))
-        filename = basename(path)
+        """
+        Removes a file from the database. Note that only the filename
+        is relevant. All duplicate copies in the database will be
+        removed
 
-        File, DiskFile, Header = file.File, diskfile.DiskFile, header.Header
-        objects_to_delete = []
-        try:
-            file_obj = self.session.query(File).filter(File.name == filename).one()
-            objects_to_delete.append(file_obj)
-        except NoResultFound:
-            raise LocalManagerError(ERROR_DIDNT_FIND,
-                                    "Could not find any {} file in the database".format(filename))
-        else:
-            diskfiles = self.session.query(DiskFile).filter(DiskFile.file_id == file_obj.id).all()
-            objects_to_delete.extend(diskfiles)
-            headers = []
-            for df_obj in diskfiles:
-                headers.extend(self.session.query(Header).filter(Header.diskfile_id == df_obj.id).all())
-            for obj in reversed(objects_to_delete):
-                self.session.delete(obj)
-            self.session.commit()
+        Parameters
+        ----------
+        path: string
+            Path to the file. It can be either absolute or relative
+        """
+        dbtools.remove_file(self.session, path)
 
     def ingest_file(self, path):
         """Registers a file into the database
@@ -166,7 +158,7 @@ class LocalManager(object):
         filename = basename(path)
 
         try:
-            ingest.ingest_file(self.session, filename, directory)
+            dbtools.ingest_file(self.session, filename, directory)
         except Exception as err:
             self.session.rollback()
             self.remove_file(path)

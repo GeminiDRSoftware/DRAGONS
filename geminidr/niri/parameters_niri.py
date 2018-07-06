@@ -1,10 +1,9 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_niri.py file, in alphabetical order.
-from geminidr.core import parameters_preprocess, parameters_photometry, parameters_standardize, parameters_nearIR
+from geminidr.core import parameters_preprocess, parameters_photometry, parameters_nearIR
 
-class addDQConfig(parameters_standardize.addDQConfig, parameters_nearIR.addLatencyToDQConfig):
+class addDQConfig(parameters_nearIR.addDQConfig):
     def setDefaults(self):
-        self.suffix = "_dqAdded"
         self.latency = True
 
 class addReferenceCatalogConfig(parameters_photometry.addReferenceCatalogConfig):

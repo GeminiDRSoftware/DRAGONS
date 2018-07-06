@@ -1,18 +1,24 @@
 #
-#                                                                  gemini_python
+#                                                                        DRAGONS
 #
 #                                                                    mosaicAD.py
 # ------------------------------------------------------------------------------
-import numpy as np
-import astropy.wcs as wcs
-
-from astropy.io import fits
 from copy import copy
+from os.path import join
+from os.path import dirname
+
+import numpy as np
+
+import astropy.wcs as wcs
+from astropy.io import fits
 
 import astrodata
 import gemini_instruments
 
 from gempy.utils import logutils
+from gempy.gemini.gemini_tools import tile_objcat
+from geminidr.gemini.lookups.source_detection import sextractor_dict
+
 from .mosaic import Mosaic
 
 # ------------------------------------------------------------------------------
@@ -92,10 +98,13 @@ class MosaicAD(Mosaic):
         mosaic_data, geometry = mosaic_ad_function(ad)
         Mosaic.__init__(self, mosaic_data, geometry)
         self.jfactor = []               # Jacobians applied to interpolated pixels.
-        self.refext = None              # reference extension, see set_ref_extn()
         self.calculate_jfactor()        # Fill the jfactor vector with the
                                         # jacobian of transformation matrix.
         self.mosaic_shape = None        # Shape of the mosaicked output frame.
+        self.sx_dict = sextractor_dict.sx_dict.copy()
+        # Prepend paths to SExtractor input files now
+        self.sx_dict.update({k: join(dirname(sextractor_dict.__file__), v)
+                             for k, v in self.sx_dict.items()})
 
     # --------------------------------------------------------------------------
     def as_astrodata(self, block=None, tile=False, doimg=False, return_ROI=True,
@@ -146,6 +155,7 @@ class MosaicAD(Mosaic):
             self.log.error(emsg.format(self.ad.filename))
             raise IOError("No science data found on file {}".format(self.ad.filename))
         else:
+            self.log.stdinfo("MosaicAD working on data arrays ...")
             darray = self.mosaic_image_data(block=block,return_ROI=return_ROI,tile=tile)
             self.mosaic_shape = darray.shape
             header = self.mosaic_header(darray.shape, block, tile)
@@ -158,6 +168,7 @@ class MosaicAD(Mosaic):
             if not self.data_list:
                 self.log.stdinfo("No VAR array on {} ".format(self.ad.filename))
             else:
+                self.log.stdinfo("Working on VAR arrays ...")
                 varray = self.mosaic_image_data(block=block,return_ROI=return_ROI,
                                                 tile=tile)
         # DQ
@@ -167,6 +178,7 @@ class MosaicAD(Mosaic):
             if not self.data_list:
                 self.log.stdinfo("No DQ array on {} ".format(self.ad.filename))
             else:
+                self.log.stdinfo("Working on DQ arrays ...")
                 marray= self.mosaic_image_data(block=block,return_ROI=return_ROI,
                                                tile=tile, dq_data=True)
 
@@ -178,12 +190,20 @@ class MosaicAD(Mosaic):
             if not self.data_list:
                 self.log.stdinfo("No OBJMASK on {} ".format(self.ad.filename))
             else:
+                self.log.stdinfo("Working on OBJMASK arrays ...")
                 adout[0].OBJMASK = self.mosaic_image_data(block=block,
                                                           return_ROI=return_ROI,
                                                           tile=tile, dq_data=True)
+
+        # When tiling, tile OBJCATS
+        if not doimg and tile:
+            self.log.stdinfo("Tiling OBJCATS ...")
+            adout = self._tile_objcats(adout)
+
         # Propagate any REFCAT
         if not doimg:
             if hasattr(self.ad, 'REFCAT'):
+                self.log.stdinfo("Keeping REFCAT ...")
                 adout.REFCAT = self.ad.REFCAT
 
         return adout
@@ -211,9 +231,8 @@ class MosaicAD(Mosaic):
 
         """
         # If there is no WCS return 1 list of 1.s
-        self.set_ref_extn()
         try:
-           ref_wcs = wcs.WCS(self.ad[self.refext].hdr)
+           ref_wcs = wcs.WCS(self.ad[0].hdr)
         except:
            self.jfactor = [1.0] * len(self.ad)
            return
@@ -333,7 +352,7 @@ class MosaicAD(Mosaic):
         fmat1 = "[{}:{},{}:{}]"
         fmat2 = "[1:{},1:{}]"
 
-        mosaic_hd = self.ad[self.refext].hdr.copy()         # ref ext header.
+        mosaic_hd = self.ad[0].hdr.copy()         # ref ext header.
         ref_block = self.geometry.ref_block  
         amps_per_block = self._amps_per_block
 
@@ -422,18 +441,6 @@ class MosaicAD(Mosaic):
         return info
 
     # --------------------------------------------------------------------------
-    def set_ref_extn(self):
-        amps_per_block = self._amps_per_block
-        ref_block      = self.geometry.ref_block                  # 0-based
-        nblocks_x      = self.geometry.mosaic_grid[0]
-        ref_block_number = ref_block[0] + ref_block[1]*nblocks_x
-
-        # Reference extension.
-        self.refext = amps_per_block*ref_block_number
-        self.refext = len(self.ad) // 2 - 1
-
-        return
-    # --------------------------------------------------------------------------
     def update_crpix(self, wcs, tile):
         """
         Update WCS elements CRPIX1 and CRPIX2 based on the input WCS header of
@@ -485,3 +492,21 @@ class MosaicAD(Mosaic):
             crpix2 = o_crpix2 + yoff + ygap_sum
 
         return (crpix1, crpix2)
+
+    def _tile_objcats(self, adout):
+        ampsorder = np.argsort([detsec.x1 for detsec in self.ad.detector_section()])
+        ccdx1 = np.array([ccdsec.x1 for ccdsec in self.ad.array_section()])[ampsorder]
+
+        # Make a list of the output extensions where each array goes
+        num_ccd = 1
+        ccd_map = [num_ccd]
+        for i in range(1, len(ccdx1)):
+            if ccdx1[i] <= ccdx1[i-1]:
+                num_ccd += 1
+            ccd_map.append(num_ccd)
+
+        ccd_map = np.array(ccd_map)
+        adoutput = tile_objcat(adinput=self.ad, adoutput=adout, ext_mapping=ccd_map,
+                               sx_dict=self.sx_dict)
+
+        return adoutput

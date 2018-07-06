@@ -5,103 +5,13 @@
 Supplemental tools
 ==================
 
-The DRAGONS package provides a number of command line tools that users may
-find helpful in executing reduce on their data.
-
-With the installation and configuration of DRAGONS comes some supplemental
-tools to help users discover information, not only about their own data, but
-about the Recipe System, such as available recipes, primitives, and defined
-tag sets.
+DRAGONS provides a number of command line tools that users shoul find helpful in
+executing ``reduce`` on their data. These supplemental tools can help users discover
+information, not only about their own data, but about the Recipe System, such as
+available recipes, primitives, and defined tags.
 
 If your environment has been configured correctly these applications will work
 directly.
-
-.. _adcc:
-
-adcc
-----
-The application that has been historically known as the ``adcc`` (Automated
-Data Communication Center), is an HTTP proxy server. The webservice provided
-by the ``adcc`` allows both the Recipe System and primitive functions to post
-data produced during data processing. These data comprise image quality and
-observing condition metrics, passed to the web server in the form of messages
-encapsulating Quality Assurance (QA) metrics data. The metrics themselves are
-produced by three specific primitive functions, ``measureIQ``, ``measuerBG``,
-and ``measureCC``, which respectively measure image quality, background level,
-and cloud cover (measured atmospheric extinction).
-
-Neither the Recipe System nor the primitives require the ``adcc`` to be
-running, but if an ``adcc`` instance is alive, then QA metrics will be reported
-to the service. The ``adcc`` provides an interactive graphical interface and
-renders metric "events" in real time. Metrics events are also directly reported
-to the :ref:`fitsstore` and stored in the fitsstore metrics database when the
-``reduce`` option, ``--upload_metrics``, is specified.
-
-The ``adcc`` is started with the command of the same name, and one may request
-the help (or the manpage), in order to see the possible controllers supplied::
-
-  $ adcc --help
-
-  usage: adcc [-h] [-d] [-v] [--startup-report ADCCSRN] [--http-port HTTPPORT]
-
-  Automated Data Communication Center (ADCC), v2.0 (beta)
-
-  optional arguments:
-    -h, --help            Show this help message and exit
-    -d, --dark            Use the adcc faceplate 'dark' theme.
-    -v, --verbose         Increase HTTP client messaging on GET requests.
-    --startup-report ADCCSRN
-                          File name for adcc startup report.
-    --http-port HTTPPORT  Response port for the web interface.
-                          Default port is 8777.
-
-The application provides a HTTP server that listens on either a user-provided
-port number (via ``--http-port``), or the default port of 8777. This webserver
-provides an interactive, graphical interface by which users can monitor incoming
-metrics that may be reported by recipe system pipelines (recipes), specifically,
-the Quality Assurance Pipeline (QAP). It is worth repeating that The near
-real-time QAP produces image quality and weather related metrics that are passed
-to the adcc as message events. Users wishing to use the adcc to monitor QA metrics
-need to simply open a web browser on the service's URL.
-
-.. figure:: images/adcc_dark_metrics.png
-
-   Snapshot of the Nighttime Metrics GUI, using the "dark" theme and displaying
-   the metrics retrieved from fitsstore for operational day 20170209.
-
-E.g., In a terminal window, start the adcc with default values::
-
-    $ adcc
-
-Or in a terminal window, start the adcc and request the "dark" theme and verbosity::
-
-    $ adcc -d -v
-
-The ``-v`` (verbose) option displays server messages to stdout. These messages
-will comprise GET requests made on the server and selected server responses.
-These messages are informational only, though may be of some interest to users.
-
-Once an adcc is up and running, open a browser window on
-
-    http://localhost:8777/qap/nighttime_metrics.html
-
-This will render any metrics received from the server for the current operational
-day. When metrics are produced and sent to the adcc, the display will automatically
-update with the latest metric event. If users are processing datasets taken on a
-day prior to the current operational day, the URL to monitor metrics produced
-for that day is
-
-     http://localhost:8777/qap/nighttime_metrics.html?date=YYYYMMDD
-
-When the adcc is started, certain information is written to a special file in
-a ``.adcc`` directory that records the process id (pid) of the adcc instance and
-port number on which the web server is listening.
-
-.. note::
-   Currently, only one adcc instance is permitted to run. Should users move to
-   another directory, another adcc will not be allowed to start. Users running
-   the QA pipeline, or other recipes that may produce metrics, should remain in
-   the directory containing the .adcc directory before starting ``reduce``.
 
 .. _showpars:
 
@@ -114,21 +24,14 @@ extrapolate those to all such named primitives and parameters. Primitives and th
 parameters are tied to the particular classes designed for those datasets identified
 as a particular kind of data.
 
-.. note::
-   ``showpars`` is not considered the final tool for users to examine and set
-   parameters for dataset reduction. Plans are in the works to develop a more
-   graphical tool to help users view and adjust parameters on primitive functions.
-   But it does show users the important information: the parameter names available
-   on the primitive's interface and the current (default) settings of the named
-   parameters.
-
 The ``showpars`` application is a simple command line utility allowing users
 to see the available parameters and defaults for a particular primitive
 function that is applicable to a given dataset. Since the applicable primitives
 for a particular dataset are dependent upon the `tagset` of the identified dataset
-(i.e. NIRI IMAGE, F2 IMAGE, F2 SPECT, GMOS BIAS, etc.), which is to say,
-the `kind` of data we are looking at, the parameters available on a named primitive
-function can vary across data types, as can the primitive function itself.
+(i.e. ``NIRI IMAGE`` , ``F2 SPECT`` , ``GMOS BIAS``, etc.), which is
+to say, the `kind` of data we are looking at, the parameters available on a
+named primitive function can vary across data types, as can the primitive function
+itself.
 
 We examine the help on the command line of showpars::
 
@@ -145,35 +48,74 @@ We examine the help on the command line of showpars::
    -h, --help     show this help message and exit
    -v, --version  show program's version number and exit
 
-Two arguments are requiered, the dataset filename, and the primitive name of interest ::
+As mentioned above, parameters and the primitive function itself can vary across
+instruments. For example, F2 IMAGE ``stackFlats`` uses the generic stackFlats
+function, while GMOS IMAGE ``stackFlats`` overrides that generic method.
 
-  $ showpars.py S20161025S0111.fits stackSkyFrames
-  Dataset tagged as
-  set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
-  Settable parameters on 'stackSkyFrames':
+Two arguments are requiered: the dataset filename, and the primitive name of
+interest. As readers will note, ``showpars`` provides a wealth of information
+about the available parameters on the specified primitive, including allowable
+values or ranges of values::
+
+  $ showpars FR39441/S20180516S0237.fits stackFlats
+  Dataset tagged as set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'FLAT', 'UNPREPARED',
+  'IMAGE', 'CAL', 'TWILIGHT', 'SOUTH'])
+  
+  Settable parameters on 'stackFlats':
   ========================================
   Name			Current setting
 
-  scale : 		True
-  reject_method : 	avsigclip
-  nhigh : 		1
-  nlow :		1
-  suffix : 		_skyStacked
-  apply_dq : 		True
-  operation : 		median
-  zero :		False
-  dilation : 		2
-  mask_objects : 	True
+  suffix               '_stack'             Filename suffix
+  apply_dq             True                 Use DQ to mask bad pixels?
+  separate_ext         False                Handle extensions separately?
+  statsec              None                 Section for statistics
+  operation            'mean'               Averaging operation
+  Allowed values:
+	wtmean	variance-weighted mean
+	mean	arithmetic mean
+	median	median
+	lmedian	low-median
+
+  reject_method        'minmax'             Pixel rejection method
+  Allowed values:
+	minmax	reject highest and lowest pixels
+	none	no rejection
+	varclip	reject pixels based on variance array
+	sigclip	reject pixels based on scatter
+
+  hsigma               3.0                  High rejection threshold (sigma)
+	Valid Range = [0,inf)
+  lsigma               3.0                  Low rejection threshold (sigma)
+	Valid Range = [0,inf)
+  mclip                True                 Use median for sigma-clipping?
+  max_iters            None                 Maximum number of clipping iterations
+	Valid Range = [1,inf)
+  nlow                 1                    Number of low pixels to reject
+	Valid Range = [0,inf)
+  nhigh                1                    Number of high pixels to reject
+	Valid Range = [0,inf)
+  memory               None                 Memory available for stacking (GB)
+	Valid Range = [0.1,inf)
+  scale                False                Scale images to the same intensity?
 
 Armed with this information, users can now confidently adjust parameters for
 particular primitive functions. As we have seen already, this can be done
 easily from the `reduce` command line. Building on material covered in this
 manual, and continuing our example from above::
 
-  $ reduce -p stackSkyFrames:nhigh=3 S20161025S0111.fits
+  $ reduce -p stackFlats:nhigh=3 <fitsfiles> [ <fitsfile>, ... ]
 
-And the reduction proceeds. When the ``stackSkyFrames`` primitive begins, the
+And the reduction proceeds. When the ``stackFlats`` primitive begins, the
 new value for nhigh will be used.
+
+.. note::
+   ``showpars`` is not considered the final tool for users to examine and set
+   parameters for dataset reduction. Plans are in the works to develop a more
+   graphical tool to help users view and adjust parameters on primitive functions.
+   But it does show users the important information: the parameters available
+   on a primitive's interface, the current (default) settings of the named
+   parameters, and allowed ranges of values where appropriate.
+
 
 .. _typewalk:
 
@@ -304,3 +246,92 @@ Exclude GMOS ACQUISITION images and GMOS IMAGE datasets that have been
 
 With **--tags** and **--xtags**, users may really tune their searches for very
 specific datasets.
+
+.. _adcc:
+
+adcc
+----
+The application that has been historically known as the ``adcc`` (Automated
+Data Communication Center), is an HTTP proxy server. The webservice provided
+by the ``adcc`` allows both the Recipe System and primitive functions to post
+data produced during data processing. These data comprise image quality and
+observing condition metrics, passed to the web server in the form of messages
+encapsulating Quality Assessment (QA) metrics data. The metrics themselves are
+produced by three specific primitive functions, ``measureIQ``, ``measuerBG``,
+and ``measureCC``, which respectively measure image quality, background level,
+and cloud cover (measured atmospheric extinction). These QA metrics are the
+priniciple product generated by the Quality Assessment Pipeline (QAP), that
+provides near real time assessments of observing conditions. 
+
+Neither the Recipe System nor the primitives require the ``adcc`` to be
+running, but if an ``adcc`` instance is alive, then QA metrics will be reported
+to the service. The ``adcc`` provides an interactive graphical interface and
+renders metric "events" in real time. Metrics events are also directly reported
+to the :ref:`fitsstore` and stored in the fitsstore metrics database when the
+``reduce`` option, ``--upload_metrics``, is specified.
+
+The ``adcc`` is started with the command of the same name, and one may request
+the help (or the manpage), in order to see the possible controllers supplied::
+
+  $ adcc --help
+
+  usage: adcc [-h] [-d] [-v] [--startup-report ADCCSRN] [--http-port HTTPPORT]
+
+  Automated Data Communication Center (ADCC), v2.0 (beta)
+
+  optional arguments:
+    -h, --help            Show this help message and exit
+    -d, --dark            Use the adcc faceplate 'dark' theme.
+    -v, --verbose         Increase HTTP client messaging on GET requests.
+    --startup-report ADCCSRN
+                          File name for adcc startup report.
+    --http-port HTTPPORT  Response port for the web interface.
+                          Default port is 8777.
+
+The application provides a HTTP server that listens on either a user-provided
+port number (via ``--http-port``), or the default port of 8777. This webserver
+provides an interactive, graphical interface by which users can monitor incoming
+metrics that may be reported by recipe system pipelines (recipes), specifically,
+the Quality Assurance Pipeline (QAP). It is worth repeating that The near
+real-time QAP produces image quality and weather related metrics that are passed
+to the adcc as message events. Users wishing to use the adcc to monitor QA metrics
+need to simply open a web browser on the service's URL.
+
+.. figure:: images/adcc_dark_metrics.png
+
+   Snapshot of the Nighttime Metrics GUI, using the "dark" theme and displaying
+   the metrics retrieved from fitsstore for operational day 20170209.
+
+E.g., In a terminal window, start the adcc with default values::
+
+    $ adcc
+
+Or in a terminal window, start the adcc and request the "dark" theme and verbosity::
+
+    $ adcc -d -v
+
+The ``-v`` (verbose) option displays server messages to stdout. These messages
+will comprise POST and GET requests made on the server and selected server responses.
+These messages are informational only, though may be of some interest to users.
+
+Once an adcc is up and running, open a browser window on
+
+    http://localhost:8777/qap/nighttime_metrics.html
+
+This will render any metrics received from the server for the current operational
+day. When metrics are produced and sent to the adcc, the display will automatically
+update with the latest metric event. If users are processing datasets taken on a
+day prior to the current operational day, the URL to monitor metrics produced
+for that day is
+
+     http://localhost:8777/qap/nighttime_metrics.html?date=YYYYMMDD
+
+When the adcc is started, certain information is written to a special file in
+a ``.adcc`` directory that records the process id (pid) of the adcc instance and
+port number on which the web server is listening.
+
+.. note::
+   Currently, only one adcc instance is permitted to run. Should users move to
+   another directory, another adcc will not be allowed to start. Users running
+   the QA pipeline, or other recipes that may produce metrics, should remain in
+   the directory containing the .adcc directory before starting ``reduce``.

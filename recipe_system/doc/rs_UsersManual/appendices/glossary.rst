@@ -33,6 +33,8 @@ Glossary
       E.g., ``ad.gain()``
 
   DRAGONS
+      Data Reduction for Astronomy from Gemini Observatory North and South.
+      
       A suite of packages comprising ``astrodata``, ``gemini_instruments``, the
       ``recipe_system`` and ``gempy``, all of which provide the full functionality
       needed to run recipe pipelines on observational datasets. DRAGONS can be
@@ -71,7 +73,7 @@ Glossary
   tags [or tagset]
       Represent a data classification. A dataset will be classified by a number
       of tags that describe both the data and its processing state. For example,
-      a typical unprocessed GMOS image would taken at Gemini-South have the 
+      a typical unprocessed GMOS image taken at Gemini-South would have the 
       following tagset::
 
        set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])

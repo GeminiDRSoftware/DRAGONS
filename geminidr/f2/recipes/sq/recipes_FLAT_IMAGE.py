@@ -42,7 +42,7 @@ def makeProcessedBPM(p):
     p.selectFromInputs(tags="DARK", outstream="darks")
     p.selectFromInputs(tags="FLAT")
     p.stackFrames(stream="darks")
-    p.lampOnLampOff()
+    p.makeLampFlat()
     p.normalizeFlat()
     p.makeBPM()
     #p.storeBPM()

@@ -65,10 +65,8 @@ class Standardize(PrimitivesBASE):
         if static_bpm_list == "default":
             static_bpm_list = [self._get_bpm_filename(ad) for ad in adinputs]
 
-        _, statics = gt.make_lists(adinputs, static_bpm_list, force_ad=True)
-        _, users = gt.make_lists(adinputs, user_bpm_list, force_ad=True)
-
-        for ad, static, user in zip(adinputs, statics, users):
+        for ad, static, user in zip(*gt.make_lists(adinputs, static_bpm_list,
+                                                   user_bpm_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                     'already been processed by addDQ'.format(ad.filename))
@@ -79,19 +77,15 @@ class Standardize(PrimitivesBASE):
                 final_static = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as static BPM".format(static.filename))
-                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                    else gt.clip_auxiliary_data
-                final_static = clip_method(ad, aux=static, aux_type='bpm',
-                    return_dtype=DQ.datatype)
+                final_static = gt.clip_auxiliary_data(ad, aux=static,
+                                        aux_type='bpm', return_dtype=DQ.datatype)
 
             if user is None:
                 final_user = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as user BPM".format(user.filename))
-                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                    else gt.clip_auxiliary_data
-                final_user = clip_method(ad, aux=user, aux_type='bpm',
-                    return_dtype=DQ.datatype)
+                final_user = gt.clip_auxiliary_data(ad, aux=user,
+                                        aux_type='bpm', return_dtype=DQ.datatype)
 
             for ext, static_ext, user_ext in zip(ad, final_static, final_user):
                 extver = ext.hdr['EXTVER']
@@ -170,7 +164,7 @@ class Standardize(PrimitivesBASE):
 
 
         # Handle latency if reqested
-        if params["latency"]:
+        if params.get("latency", False):
             try:
                 adinputs = self.addLatencyToDQ(adinputs)
             except AttributeError:
@@ -179,7 +173,7 @@ class Standardize(PrimitivesBASE):
 
         # Add the illumination mask if requested
         if params['add_illum_mask']:
-            adinputs = self.addIllumMaskToDQ(adinputs, mask=params["illum_mask"])
+            adinputs = self.addIllumMaskToDQ(adinputs, illum_mask=params["illum_mask"])
 
         # Timestamp and update filenames
         for ad in adinputs:
@@ -188,7 +182,7 @@ class Standardize(PrimitivesBASE):
 
         return adinputs
 
-    def addIllumMaskToDQ(self, adinputs=None, **params):
+    def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
         """
         Adds an illumination mask to each AD object
 
@@ -202,15 +196,13 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
         # Getting all the filenames first prevents reopening the same file
         # for each science AD
-        illum_list = params['illum_mask']
-        if illum_list is None:
-            illum_list = [self._get_illum_mask_filename(ad) for ad in adinputs]
+        if illum_mask is None:
+            illum_mask = [self._get_illum_mask_filename(ad) for ad in adinputs]
 
-        for ad, illum in zip(*gt.make_lists(adinputs, illum_list, force_ad=True)):
+        for ad, illum in zip(*gt.make_lists(adinputs, illum_mask, force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                     'already been processed by addIllumMaskToDQ'.
@@ -222,24 +214,23 @@ class Standardize(PrimitivesBASE):
                 final_illum = [None] * len(ad)
             else:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
-                clip_method = gt.clip_auxiliary_data_GSAOI if 'GSAOI' in ad.tags \
-                    else gt.clip_auxiliary_data
-                final_illum = clip_method(ad, aux=illum, aux_type='bpm',
+                final_illum = gt.clip_auxiliary_data(ad, aux=illum, aux_type='bpm',
                                           return_dtype=DQ.datatype)
 
             for ext, illum_ext in zip(ad, final_illum):
-                # Ensure we're only adding the unilluminated bit
-                iext = np.where(illum_ext.data > 0, DQ.unilluminated,
-                                0).astype(DQ.datatype)
-                ext.mask = iext if ext.mask is None else ext.mask | iext
+                if illum_ext is not None:
+                    # Ensure we're only adding the unilluminated bit
+                    iext = np.where(illum_ext.data > 0, DQ.unilluminated,
+                                    0).astype(DQ.datatype)
+                    ext.mask = iext if ext.mask is None else ext.mask | iext
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
-    def addMDF(self, adinputs=None, **params):
+    def addMDF(self, adinputs=None, suffix=None, mdf=None):
         """
         This primitive is used to add an MDF extension to the input AstroData
         object. If only one MDF is provided, that MDF will be add to all input
@@ -258,12 +249,12 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
 
-        mdf_list = params["mdf"]
-        if mdf_list is None:
+        if mdf is None:
             self.getMDF(adinputs)
             mdf_list = [self._get_cal(ad, 'mask') for ad in adinputs]
+        else:
+            mdf_list = mdf
 
         for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
             if ad.phu.get(timestamp_key):
@@ -302,40 +293,15 @@ class Standardize(PrimitivesBASE):
                                                              ad.filename))
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def addVAR(self, adinputs=None, **params):
         """
-        This primitive calculates the variance of each science extension in the
-        input AstroData object and adds the variance as an additional
-        extension. This primitive will determine the units of the pixel data in
-        the input science extension and calculate the variance in the same
-        units. The two main components of the variance can be calculated and
-        added separately, if desired, using the following formula:
-
-        variance(read_noise) [electrons] = (read_noise [electrons])^2
-        variance(read_noise) [ADU] = ((read_noise [electrons]) / gain)^2
-
-        variance(poisson_noise) [electrons] =
-            (number of electrons in that pixel)
-        variance(poisson_noise) [ADU] =
-            ((number of electrons in that pixel) / gain)
-
-        The pixel data in the variance extensions will be the same size as the
-        pixel data in the science extension.
-
-        The read noise component of the variance can be calculated and added to
-        the variance extension at any time, but should be done before
-        performing operations with other datasets.
-
-        The Poisson noise component of the variance can be calculated and added
-        to the variance extension only after any bias levels have been
-        subtracted from the pixel data in the science extension.
-
-        The variance of a raw bias frame contains only a read noise component
-        (which represents the uncertainty in the bias level of each pixel),
-        since the Poisson noise component of a bias frame is meaningless.
+        This primitive adds noise components to the VAR plane of each extension
+        of each input AstroData object (creating the VAR plane if necessary).
+        The calculations for these components are abstracted out to separate
+        methods that operate on an individual AD object in-place.
 
         Parameters
         ----------
@@ -368,24 +334,15 @@ class Standardize(PrimitivesBASE):
                 return adinputs
 
         for ad in adinputs:
-            tags = ad.tags
-            if poisson_noise and 'BIAS' in tags:
-                log.warning("It is not recommended to add a poisson noise "
-                            "component to the variance of a bias frame")
-            if (poisson_noise and 'GMOS' in tags and
-                ad.phu.get(self.timestamp_keys['biasCorrect']) is None and
-                ad.phu.get(self.timestamp_keys['subtractOverscan']) is None):
-                log.warning("It is not recommended to calculate a poisson "
-                            "noise component of the variance using data that "
-                            "still contains a bias level")
-
-            _calculate_var(ad, read_noise, poisson_noise)
+            if read_noise:
+                self._addReadNoise(ad)
+            if poisson_noise:
+                self._addPoissonNoise(ad)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-
         return adinputs
 
-    def makeIRAFCompatible(self, adinputs=None, stream='main', **params):
+    def makeIRAFCompatible(self, adinputs=None):
         """
         Add keywords to make the pipeline-processed file compatible
         with the tasks in the Gemini IRAF package.
@@ -418,9 +375,11 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", "prepare", "starting"))
         timestamp_key = self.timestamp_keys["prepare"]
         sfx = params["suffix"]
-        adinputs = self.validateData(adinputs)
-        adinputs = self.standardizeStructure(adinputs)
-        adinputs = self.standardizeHeaders(adinputs)
+        for primitive in ('validateData', 'standardizeStructure',
+                          'standardizeHeaders'):
+            passed_params = self._inherit_params(params, primitive)
+            adinputs = getattr(self, primitive)(adinputs, **passed_params)
+
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
@@ -444,7 +403,7 @@ class Standardize(PrimitivesBASE):
                     **self._inherit_params(params, "standardizeObservatoryHeaders"))
         adinputs = self.standardizeInstrumentHeaders(adinputs,
                     **self._inherit_params(params, "standardizeInstrumentHeaders",
-                                           use_original_suffix=False))
+                                           pass_suffix=True))
         return adinputs
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
@@ -522,22 +481,20 @@ class Standardize(PrimitivesBASE):
             adoutputs.append(ad)
         return adoutputs
 
-    def validateData(self, adinputs=None, **params):
+    def validateData(self, adinputs=None, suffix=None):
         """
-        This is the generic data validation primitive, for data which do not
-        require any specific validation checks. It timestamps and moves on.
+        This is the data validation primitive. It checks that the instrument
+        matches the primitivesClass and that there are the correct number
+        of extensions.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        repair: bool
-            Repair the data, if necessary? This does not work yet!
         """
         log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        prim_class_name = self.__class__.__name__
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
@@ -548,8 +505,9 @@ class Standardize(PrimitivesBASE):
 
             # Check that the input is appropriate for this primitivesClass
             # Only the instrument is checked
-            inst_name = 'GMOS' if 'GMOS' in ad.tags else ad.instrument()
-            if not inst_name in prim_class_name:
+            inst_name = ad.instrument(generic=True)
+            if not inst_name in self.tagset:
+                prim_class_name = self.__class__.__name__
                 raise IOError("Input file {} is {} data and not suitable for "
                     "{} class".format(ad.filename, inst_name, prim_class_name))
 
@@ -561,30 +519,110 @@ class Standardize(PrimitivesBASE):
                     log.warning("Image {} is {} x {} binned data".
                                 format(ad.filename, xbin, ybin))
 
-            valid_num_ext = params.get('num_exts')
-            if valid_num_ext is None:
-                log.status("No validation required for {}".format(ad.filename))
+            if self._has_valid_extensions(ad):
+                log.fullinfo("The input file has been validated: {} contains "
+                             "{} extension(s)".format(ad.filename, len(ad)))
             else:
-                if not isinstance(valid_num_ext, list):
-                    valid_num_ext = [valid_num_ext]
-                num_ext = len(ad)
-                if num_ext in valid_num_ext:
-                    log.fullinfo("The input file has been validated: {} "
-                             "contains {} extension(s)".format(ad.filename,
-                                                               num_ext))
-                else:
-                    if params['repair']:
-                        # Something could be done here
-                        pass
-                    raise IOError("The number of extensions in {} does not "
-                                "match the number of extensions expected "
-                                "in raw {} data.".format(ad.filename,
-                                                         ad.instrument()))
+                raise IOError("The {} extension(s) in {} does not match the "
+                              "number of extensions expected in raw {} "
+                              "data.".format(ad.filename, inst_name))
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
+
+    @staticmethod
+    def _has_valid_extensions(ad):
+        """Check the AD has a valid number of extensions"""
+        return len(ad) == 1
+
+    def _addPoissonNoise(self, ad):
+        """
+        This primitive calculates the variance due to Poisson noise for each
+        science extension in the input AstroData list. A variance plane is
+        added, if it doesn't exist, or else the variance is added to the
+        existing plane if there is no header keyword indicating this operation
+        has already been performed.
+
+        This primitive should be invoked by calling addVAR(poisson_noise=True)
+        """
+        log = self.log
+
+        log.fullinfo("Adding Poisson noise to {}".format(ad.filename))
+        tags = ad.tags
+        if 'BIAS' in tags:
+            log.warning("It is not recommended to add Poisson noise "
+                        "to the variance of a bias frame")
+        elif ('GMOS' in tags and
+                      self.timestamp_keys["biasCorrect"] not in ad.phu and
+                      self.timestamp_keys["subtractOverscan"] not in ad.phu):
+            log.warning("It is not recommended to add Poisson noise to the"
+                        " variance of data that still contain a bias level")
+        gain_list = ad.gain()
+        for ext, gain in zip(ad, gain_list):
+            extver = ext.hdr['EXTVER']
+            if 'poisson' in ext.hdr.get('VARNOISE', '').lower():
+                log.warning("Poisson noise already added for "
+                            "{}:{}".format(ad.filename, extver))
+                continue
+            var_array = np.where(ext.data > 0, ext.data, 0)
+            if not ext.is_coadds_summed():
+                var_array /= ext.coadds()
+            if ext.hdr.get('BUNIT', 'ADU').upper() == 'ADU':
+                var_array /= ext.gain()
+            if ext.variance is None:
+                ext.variance = var_array
+            else:
+                ext.variance += var_array
+            varnoise = ext.hdr.get('VARNOISE')
+            if varnoise is None:
+                ext.hdr.set('VARNOISE', 'Poisson',
+                            self.keyword_comments['VARNOISE'])
+            else:
+                ext.hdr['VARNOISE'] += ', Poisson'
+
+    def _addReadNoise(self, ad):
+        """
+        This primitive calculates the variance due to read noise for each
+        science extension in the input AstroData list. A variance plane is
+        added, if it doesn't exist, or else the variance is added to the
+        existing plane if there is no header keyword indicating this operation
+        has already been performed.
+
+        This primitive should be invoked by calling addVAR(read_noise=True)
+        """
+        log = self.log
+
+        log.fullinfo("Adding read noise to {}".format(ad.filename))
+        gain_list = ad.gain()
+        read_noise_list = ad.read_noise()
+        for ext, gain, read_noise in zip(ad, gain_list, read_noise_list):
+            extver = ext.hdr['EXTVER']
+            if 'read' in ext.hdr.get('VARNOISE', '').lower():
+                log.warning("Read noise already added for "
+                            "{}:{}".format(ad.filename, extver))
+                continue
+            if read_noise is None:
+                log.warning("Read noise for {}:{} = None. Setting to "
+                            "zero".format(ad.filename, extver))
+                read_noise = 0.0
+            else:
+                log.fullinfo('Read noise for {}:{} = {} electrons'.
+                             format(ad.filename, extver, read_noise))
+            if ext.hdr.get('BUNIT', 'ADU').upper() == 'ADU':
+                read_noise /= gain
+            var_array = np.full_like(ext.data, read_noise * read_noise)
+            if ext.variance is None:
+                ext.variance = var_array
+            else:
+                ext.variance += var_array
+            varnoise = ext.hdr.get('VARNOISE')
+            if varnoise is None:
+                ext.hdr.set('VARNOISE', 'read',
+                            self.keyword_comments['VARNOISE'])
+            else:
+                ext.hdr['VARNOISE'] += ', read'
 
     def _get_bpm_filename(self, ad):
         """
@@ -612,9 +650,9 @@ class Standardize(PrimitivesBASE):
             try:
                 bpm = bpm_dict[key]
             except KeyError:
-                log.warning('No BPM found for {}'.format(ad.filename))
+                log.warning('No static BPM found for {}'.format(ad.filename))
         except:
-            log.warning('No BPMs defined')
+            log.warning('No static BPMs defined')
 
         if bpm is not None:
             # Prepend standard path if the filename doesn't start with '/'

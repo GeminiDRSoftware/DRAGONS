@@ -40,11 +40,13 @@ class F2Image(F2, Image, Photometry):
             return adinputs
 
         if adinputs[0].wavelength_band() in ('K',):
-            log.stdinfo('Using darkCorrect and stackFrames to make flatfield')
-            adinputs = self.darkCorrect(adinputs)
-            adinputs = self.stackFrames(adinputs)
+            log.stdinfo('Using darkCorrect and stackFlats to make flatfield')
+            adinputs = self.darkCorrect(adinputs, dark=params["dark"], do_dark=True)
+            stack_params = self._inherit_params(params, "stackFlats")
+            stack_params["scale"] = False
+            adinputs = self.stackFlats(adinputs, **stack_params)
         else:
-            log.stdinfo('Using lampOnLampOff to make flatfield')
-            adinputs = self.lampOnLampOff(adinputs)
+            log.stdinfo('Using standard makeLampFlat primitive to make flatfield')
+            adinputs = super(F2Image, self).makeLampFlat(adinputs, **params)
 
         return adinputs

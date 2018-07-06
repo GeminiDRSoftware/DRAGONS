@@ -173,8 +173,8 @@ is how to do it.  It is very unlikely that you will need this.
 
 To see the FITS headers::
 
-    >>> ad.REFCAT.meta
-    >>> ad[0].OBJCAT.meta
+    >>> ad.REFCAT.meta['header']
+    >>> ad[0].OBJCAT.meta['header']
 
 To retrieve a specific FITS table header::
 

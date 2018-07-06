@@ -83,20 +83,20 @@ def userpar_override(pname, args, upars):
     return parset
 
 def set_logging(pname):
-   global LOGINDENT
-   LOGINDENT += 1
-   logutils.update_indent(LOGINDENT)
-   stat_msg = "PRIMITIVE: {}".format(pname)
-   log.status(stat_msg)
-   log.status("-" * len(stat_msg))
-   return
+    global LOGINDENT
+    LOGINDENT += 1
+    logutils.update_indent(LOGINDENT)
+    stat_msg = "PRIMITIVE: {}".format(pname)
+    log.status(stat_msg)
+    log.status("-" * len(stat_msg))
+    return
 
 def unset_logging():
-   global LOGINDENT
-   log.status(".")
-   LOGINDENT -= 1
-   logutils.update_indent(LOGINDENT)
-   return    
+    global LOGINDENT
+    log.status(".")
+    LOGINDENT -= 1
+    logutils.update_indent(LOGINDENT)
+    return
 
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
@@ -117,7 +117,7 @@ def parameter_override(fn):
         pname = fn.__name__
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
-        config = copy(pobj.parameters[pname])
+        config = copy(pobj.params[pname])
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
         # Override with values in the function call
@@ -155,7 +155,4 @@ def parameter_override(fn):
 
         unset_logging()
         return ret_value
-    # Make dict of default values (ignore args[0]='self', args[1]='adinputs')
-    #argspec = inspect.getargspec(fn)
-    #gn.parameters = dict(list(zip(argspec.args[2:], argspec.defaults[1:])))
     return gn

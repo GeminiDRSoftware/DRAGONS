@@ -140,7 +140,8 @@ MetricsViewer.prototype = {
     $("#date").html(this.date_str);
 
     // Instantiate scrolling table
-    // Define table columns
+	// Define table columns
+
     var columns = [
         {id:"datetime", name:"Time", field:"metadata-local_time", width:56,
          sort:true, hidden:true, disable_search:true},
@@ -148,9 +149,9 @@ MetricsViewer.prototype = {
          hidden:true},
         {id:"time", name:"LT", field:"metadata-local_time_str", width:50,
          swap: "metadata-ut_time_str", alt_name:"UT"},
-        {id:"imgnum", name:"Img#", field:"metadata-image_number", width:43},
+        {id:"imgnum", name:"Img#", field:"metadata-image_number", width:30},
         {id:"datalabel", name:"Data Label", field:"metadata-datalabel", width:180},
-        {id:"wlen", name:"Wvlen", field:"metadata-wavelength_str", width:60},
+        {id:"wlen", name:"  Wvlen", field:"metadata-wavelength_str", width:60},
         {id:"iq", name:"IQ", field:"iq-band_str", width:50},
         {id:"cc", name:"CC", field:"cc-band_str", width:100},
         {id:"bg", name:"BG", field:"bg-band_str", width:60},
