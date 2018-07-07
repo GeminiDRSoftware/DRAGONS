@@ -1,0 +1,3 @@
+recursive-include gempy *.pyx
+recursive-include gempy *.c
+
