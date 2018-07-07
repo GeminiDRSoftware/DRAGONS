@@ -414,7 +414,7 @@ class QA(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        remove_bias: bool
+        remove_bias: bool [only for some instruments]
             remove the bias level (if present) before displaying?
         separate_ext: bool
             report one value per extension, instead of a global value?
@@ -426,9 +426,17 @@ class QA(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params["suffix"]
-        remove_bias = params.get("remove_bias", False)
         separate_ext = params["separate_ext"]
         display = params["display"]
+
+        # remove_bias doesn't always exist in display() (only for GMOS)
+        display_params = {"tile": not separate_ext}
+        try:
+            remove_bias = params["remove_bias"]
+        except KeyError:
+            remove_bias = False
+        else:
+            display_params["remove_bias"] = remove_bias
 
         frame = 1
         for ad in adinputs:
@@ -646,8 +654,8 @@ class QA(PrimitivesBASE):
             if display:
                 # If separate_ext is True, we want the tile parameter
                 # for the display primitive to be False
-                self.display([adiq], tile=not separate_ext, remove_bias=remove_bias,
-                             overlay=iq_overlays if iq_overlays else None, frame=frame)
+                self.display([adiq], overlay=iq_overlays if iq_overlays else None,
+                             frame=frame, **display_params)
                 frame += len(adiq)
                 if any(ov is not None for ov in iq_overlays):
                     log.stdinfo("Sources used to measure IQ are marked "
