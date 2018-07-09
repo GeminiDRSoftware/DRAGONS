@@ -7,11 +7,11 @@ from geminidr.gemini import parameters_qa
 class displayConfig(parameters_visualize.displayConfig):
     remove_bias = config.Field("Remove estimated bias level before displaying?", bool, True)
 
-class mosaicDetectorsConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_mosaicked", optional=True)
-    tile = config.Field("Tile rather than mosaic?", bool, False)
-    interpolate_gaps = config.Field("Interpolate across chip gaps?", bool, False)
-    interpolator = config.Field("Type of interpolation", str, "linear")
+# class mosaicDetectorsConfig(config.Config):
+#     suffix = config.Field("Filename suffix", str, "_mosaic")
+#     tile = config.Field("Tile rather than mosaic?", bool, False)
+#     interpolate_gaps = config.Field("Interpolate across chip gaps?", bool, False)
+#     interpolator = config.Field("Type of interpolation", str, "linear")
 
 class measureBGConfig(parameters_qa.measureBGConfig):
     remove_bias = config.Field("Remove estimated bias level?", bool, True)

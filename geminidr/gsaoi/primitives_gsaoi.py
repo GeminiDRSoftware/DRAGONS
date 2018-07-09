@@ -96,93 +96,106 @@ class GSAOI(Gemini, NearIR):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def tileArrays(self, adinputs=None, suffix=None):
-        """
-        This primitive tiles the four GSAOI arrays, producing a single
-        extension. The tiling is very approximate, and primarily for display
-        purposes. Any attached OBJCAT has its pixel coordinates updated.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        for ad in adinputs:
-            # Determine output size and info to determine locations of arrays
-            # Gap size estimated at 3.0 arcsec from Disco-Stu output tiles
-            detsec_list = ad.detector_section()
-            gap_size = int(3.0 / ad.pixel_scale())
-            x1 = min(s.x1 for s in detsec_list)
-            x2 = max(s.x2 for s in detsec_list)
-            y1 = min(s.y1 for s in detsec_list)
-            y2 = max(s.y2 for s in detsec_list)
-            output_shape = (y2-y1+gap_size, x2-x1+gap_size)
-
-            shifts = [(d.x1-x1 if d.x1<1024 else d.x1-x1+gap_size,
-                       d.y1-y1 if d.y1<1024 else d.y1-y1+gap_size)
-                       for d in detsec_list]
-
-            # Annoyingly, it's not (yet) possible to assign data to a section
-            # of an NDData object, so have to treat data, mask, and variance
-            # as arrays separately
-            adout = {'data': None, 'mask': None, 'variance': None, 'OBJMASK': None}
-            for attr in adout:
-                if all(getattr(ext, attr, None) is not None for ext in ad):
-                    tiled = np.full(output_shape, 16, dtype=np.int16) if \
-                        attr=='mask' else np.zeros(output_shape, dtype=np.float32)
-                    for ext, shift in zip(ad, shifts):
-                        ox1, oy1 = shift
-                        ox2 = ox1 + ext.data.shape[1]
-                        oy2 = oy1 + ext.data.shape[0]
-                        tiled[oy1:oy2, ox1:ox2] = getattr(ext, attr)
-                    adout.update({attr: tiled})
-            tiled_objcat = _tile_objcat(ad, shifts)
-
-            # Reset the AD object. Do it in place... why not?
-            ad[0].reset(data=adout['data'], mask=adout['mask'],
-                        variance=adout['variance'])
-            if adout['OBJMASK'] is not None:
-                ad[0].OBJMASK = adout['OBJMASK']
-            # OBJCAT is left undefined if no input extension had one
-            if hasattr(ad[0], 'OBJCAT') or tiled_objcat:
-                ad[0].OBJCAT = tiled_objcat
-            for index in range(1, len(ad)):
-                del ad[1]
-
-            # These are no longer valid
-            del ad.hdr['CCDNAME']
-            try:
-                del ad.hdr['TRIMSEC']
-            except (KeyError, AttributeError):
-                pass
-
-            # Update geometry keywords
-            for kw in ('DATASEC', 'CCDSEC'):
-                ad.hdr.set(kw, '[1:{1},1:{0}]'.format(*ad[0].data.shape),
-                           comment=self.keyword_comments[kw])
-
-            # This doesn't match the array dimensions, due to the gaps, but
-            # it represents the range of the full, contiguous detector
-            # mosaic that is spanned by the tiled data.
-            ad.hdr.set('DETSEC', '[{}:{},{}:{}]'.format(x1+1,x2, y1+2,y2),
-                       comment=self.keyword_comments['DETSEC'])
-
-            # Update the CRPIXn keywords
-            for n, off in enumerate(shifts[0], start=1):
-                key = 'CRPIX{}'.format(n)
-                crpix = ad[0].hdr.get(key)
-                if crpix is not None:
-                    ad.hdr.set(key, crpix+off, self.keyword_comments[key])
-
-            # Timestamp and update header
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
-
-        return adinputs
+    # def tileArrays(self, adinputs=None, **params):
+    #     """
+    #     This primitive tiles the four GSAOI arrays, producing a single
+    #     extension. The tiling is very approximate, and primarily for display
+    #     purposes. Any attached OBJCAT has its pixel coordinates updated.
+    #
+    #     Parameters
+    #     ----------
+    #     suffix: str
+    #         suffix to be added to output files
+    #     tile_all: bool
+    #         not relevant here (False no-ops)
+    #     """
+    #     log = self.log
+    #     log.debug(gt.log_message("primitive", self.myself(), "starting"))
+    #     timestamp_key = self.timestamp_keys[self.myself()]
+    #     tile_all = params["tile_all"]
+    #
+    #     for ad in adinputs:
+    #         if not tile_all or len(ad) == 1:
+    #             log.fullinfo("Only one science extension found or tile_all "
+    #                     "disabled;\n no tiling done for {}".format(ad.filename))
+    #             continue
+    #
+    #         # First trim off any unused border regions still present
+    #         # so they won't get tiled with science data:
+    #         log.fullinfo("Trimming to data section:")
+    #         ad = gt.trim_to_data_section(ad, keyword_comments=self.keyword_comments)
+    #
+    #         # Determine output size and info to determine locations of arrays
+    #         # Gap size estimated at 3.0 arcsec from Disco-Stu output tiles
+    #         detsec_list = ad.detector_section()
+    #         gap_size = int(3.0 / ad.pixel_scale())
+    #         x1 = min(s.x1 for s in detsec_list)
+    #         x2 = max(s.x2 for s in detsec_list)
+    #         y1 = min(s.y1 for s in detsec_list)
+    #         y2 = max(s.y2 for s in detsec_list)
+    #         output_shape = (y2-y1+gap_size, x2-x1+gap_size)
+    #
+    #         shifts = [(d.x1-x1 if d.x1<1024 else d.x1-x1+gap_size,
+    #                    d.y1-y1 if d.y1<1024 else d.y1-y1+gap_size)
+    #                    for d in detsec_list]
+    #
+    #         # Annoyingly, it's not (yet) possible to assign data to a section
+    #         # of an NDData object, so have to treat data, mask, and variance
+    #         # as arrays separately
+    #         adout = {'data': None, 'mask': None, 'variance': None, 'OBJMASK': None}
+    #         for attr in adout:
+    #             if all(getattr(ext, attr, None) is not None for ext in ad):
+    #                 tiled = np.full(output_shape, 16, dtype=np.int16) if \
+    #                     attr=='mask' else np.zeros(output_shape, dtype=np.float32)
+    #                 for ext, shift in zip(ad, shifts):
+    #                     ox1, oy1 = shift
+    #                     ox2 = ox1 + ext.data.shape[1]
+    #                     oy2 = oy1 + ext.data.shape[0]
+    #                     tiled[oy1:oy2, ox1:ox2] = getattr(ext, attr)
+    #                 adout.update({attr: tiled})
+    #         tiled_objcat = _tile_objcat(ad, shifts)
+    #
+    #         # Reset the AD object. Do it in place... why not?
+    #         ad[0].reset(data=adout['data'], mask=adout['mask'],
+    #                     variance=adout['variance'])
+    #         if adout['OBJMASK'] is not None:
+    #             ad[0].OBJMASK = adout['OBJMASK']
+    #         # OBJCAT is left undefined if no input extension had one
+    #         if hasattr(ad[0], 'OBJCAT') or tiled_objcat:
+    #             ad[0].OBJCAT = tiled_objcat
+    #         for index in range(1, len(ad)):
+    #             del ad[1]
+    #
+    #         # These are no longer valid
+    #         del ad.hdr['CCDNAME']
+    #         try:
+    #             del ad.hdr['TRIMSEC']
+    #         except (KeyError, AttributeError):
+    #             pass
+    #
+    #         # Update geometry keywords
+    #         for kw in ('DATASEC', 'CCDSEC'):
+    #             ad.hdr.set(kw, '[1:{1},1:{0}]'.format(*ad[0].data.shape),
+    #                        comment=self.keyword_comments[kw])
+    #
+    #         # This doesn't match the array dimensions, due to the gaps, but
+    #         # it represents the range of the full, contiguous detector
+    #         # mosaic that is spanned by the tiled data.
+    #         ad.hdr.set('DETSEC', '[{}:{},{}:{}]'.format(x1+1,x2, y1+2,y2),
+    #                    comment=self.keyword_comments['DETSEC'])
+    #
+    #         # Update the CRPIXn keywords
+    #         for n, off in enumerate(shifts[0], start=1):
+    #             key = 'CRPIX{}'.format(n)
+    #             crpix = ad[0].hdr.get(key)
+    #             if crpix is not None:
+    #                 ad.hdr.set(key, crpix+off, self.keyword_comments[key])
+    #
+    #         # Timestamp and update header
+    #         gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+    #         ad.update_filename(suffix=params["suffix"], strip=True)
+    #
+    #     return adinputs
 
     @staticmethod
     def _has_valid_extensions(ad):

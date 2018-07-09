@@ -39,7 +39,6 @@ timestamp_keys = {
     "measureIQ": "MEASREIQ",
     "measureCC": "MEASRECC",
     "mosaicDetectors": "MOSAIC",
-    "mosaicADdetectors": "MOSAIC",
     "multiply": "MULTIPLY",
     "nonlinearityCorrect": "LINCORR",
     "normalizeFlat": "NORMLIZE",
