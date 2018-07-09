@@ -15,7 +15,6 @@ class matchWCSToReferenceConfig(parameters_register.matchWCSToReferenceConfig):
     def setDefaults(self):
         self.method = "header"
         self.fallback = None
-        self.use_wcs = False
         self.first_pass = 2.
         self.min_sources = 1
         self.rotate = True
