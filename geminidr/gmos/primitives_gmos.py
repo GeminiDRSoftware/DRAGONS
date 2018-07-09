@@ -14,7 +14,7 @@ from copy import deepcopy
 import astrodata
 import gemini_instruments
 
-from gempy.gemini import eti
+from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
 #from gempy.scripts.gmoss_fix_headers import correct_headers
 from gempy.gemini import hdr_fixing as hdrfix
@@ -98,7 +98,7 @@ class GMOS(Gemini, CCD):
             old_detsec = min(ad.detector_section(), key=lambda x: x.x1)
 
             # Instantiate ETI and then run the task
-            gmosaic_task = eti.gmosaiceti.GmosaicETI([], params, ad)
+            gmosaic_task = gmosaiceti.GmosaicETI([], params, ad)
             ad_out = gmosaic_task.run()
 
             # Get new DATASEC keyword, using the full shape
