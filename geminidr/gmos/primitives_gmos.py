@@ -14,7 +14,7 @@ from copy import deepcopy
 import astrodata
 import gemini_instruments
 
-from gempy.gemini import eti
+#from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
 #from gempy.scripts.gmoss_fix_headers import correct_headers
 from gempy.gemini import hdr_fixing as hdrfix
