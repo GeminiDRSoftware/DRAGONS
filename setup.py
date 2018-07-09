@@ -21,6 +21,14 @@ import re
 
 
 from setuptools import setup
+from setuptools.extension import Extension
+
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    use_cython = False
+else:
+    use_cython = True
 
 PACKAGENAME = 'dragons'
 
@@ -29,18 +37,26 @@ ASTRODATA_MODULES = ['astrodata']
 
 GEMINI_INST_MODULES = ['gemini_instruments',
                        'gemini_instruments.bhros',
+                       'gemini_instruments.cirpass',
                        'gemini_instruments.f2',
+                       'gemini_instruments.flamingos',
                        'gemini_instruments.gemini',
                        'gemini_instruments.gmos',
                        'gemini_instruments.gnirs',
                        'gemini_instruments.gpi',
                        'gemini_instruments.graces',
                        'gemini_instruments.gsaoi',
+                       'gemini_instruments.hokupaa_quirc',
+                       'gemini_instruments.hrwfs',
+                       'gemini_instruments.igrins',
                        'gemini_instruments.michelle',
                        'gemini_instruments.nici',
                        'gemini_instruments.nifs',
                        'gemini_instruments.niri',
+                       'gemini_instruments.oscir',
                        'gemini_instruments.phoenix',
+                       'gemini_instruments.skycam',
+                       'gemini_instruments.texes',
                        'gemini_instruments.trecs',
                        ]
 
@@ -82,6 +98,7 @@ GEMPY_MODULES = ['gempy',
                  'gempy.gemini',
                  'gempy.gemini.eti',
                  'gempy.library',
+                 'gempy.library.config',
                  'gempy.mosaic',
                  'gempy.utils',
                  ]
@@ -109,8 +126,6 @@ PACKAGE_DIRS[''] = '.'
 
 # PACKAGE_DATA
 PACKAGE_DATA = {}
-
-# BPMs, MDFs, gemini LUT source_detection
 
 # sextractor files in geminidr/gemini/lookups/source_detection
 gemdrdir = re.compile('geminidr/')
@@ -170,6 +185,7 @@ RS_SCRIPTS = [ os.path.join('recipe_system', 'scripts', 'adcc'),
 
 GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'automosaic.py'),
                   os.path.join('gempy', 'scripts', 'fwhm_histogram'),
+                  os.path.join('gempy', 'scripts', 'gmosn_fix_headers'),
                   os.path.join('gempy', 'scripts', 'gmoss_fix_HAM_BPMs.py'),
                   os.path.join('gempy', 'scripts', 'gmoss_fix_headers.py'),
                   os.path.join('gempy', 'scripts', 'pipeline2iraf'),
@@ -186,9 +202,26 @@ SCRIPTS = []
 SCRIPTS.extend(RS_SCRIPTS)
 SCRIPTS.extend(GEMPY_SCRIPTS)
 
-EXTENSIONS = None
+EXTENSIONS = []
 
-setup ( name='dragons',
+if use_cython:
+    suffix = 'pyx'
+else:
+    suffix = 'c'
+cyextensions = [Extension(
+                        "gempy.library.cyclip",
+                        [os.path.join('gempy', 'library', 'cyclip.'+suffix)],
+                        ),
+                ]
+if use_cython:
+    CYTHON_EXTENSIONS = cythonize(cyextensions)
+else:
+    CYTHON_EXTENSIONS = cyextensions
+
+EXTENSIONS.extend(CYTHON_EXTENSIONS)
+
+
+setup( name='dragons',
         version='2.0.8',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
