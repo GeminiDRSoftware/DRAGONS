@@ -658,7 +658,7 @@ class GMOSImage(GMOS, Image, Photometry):
             stack_params = self._inherit_params(params, "stackFrames")
             nlow, nhigh = 0, 0
             if nframes <= 2:
-                reject_method = None
+                stack_params["reject_method"] = "none"
             elif nframes <= 5:
                 nlow, nhigh = 1, 1
             elif nframes <= 10:
@@ -666,10 +666,11 @@ class GMOSImage(GMOS, Image, Photometry):
             else:
                 nlow, nhigh = 2, 3
             stack_params.update({'nlow': nlow, 'nhigh': nhigh,
-                                 'zero': False, 'scale': False})
+                                 'zero': False, 'scale': False,
+                                 'statsec': None, 'separate_ext': False})
             log.fullinfo("For {} input frames, using reject_method={}, "
                          "nlow={}, nhigh={}".format(nframes,
-                                        reject_method, nlow, nhigh))
+                         stack_params["reject_method"], nlow, nhigh))
 
             # Run the scaleByIntensity primitive to scale flats to the
             # same level, and then stack
