@@ -302,13 +302,9 @@ class Preprocess(PrimitivesBASE):
 
                 for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
                     if bg is None:
-                        if 'qa' in self.mode:
-                            log.warning("Could not get background level from "
-                                "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
-                            continue
-                        else:
-                            raise LookupError("Could not get background level "
-                            "from {}:{}".format(ad.filename, ext.hdr['EXTVER']))
+                        log.warning("Could not get background level from "
+                            "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
+                        continue
 
                     # Add the appropriate value to this extension
                     log.fullinfo("Background level is {:.0f} for {}:{}".
