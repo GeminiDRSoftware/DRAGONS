@@ -27,5 +27,4 @@ class subtractFringeConfig(config.Config):
                           None, optional=True, single=True)
 
 class fringeCorrectConfig(subtractFringeConfig):
-    def setDefaults(self):
-        self.suffix = '_fringeCorrected'
+    suffix = config.Field("Filename suffix", str, "_fringeCorrected", optional=True)
