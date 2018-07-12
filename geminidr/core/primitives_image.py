@@ -162,7 +162,7 @@ class Image(Register, Resample):
             ad.subtract(fringe)
 
             # Update the header and filename
-            ad.phu.set("FLATIM", fringe.filename, self.keyword_comments["FRINGEIM"])
+            ad.phu.set("FRINGEIM", fringe.filename, self.keyword_comments["FRINGEIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
