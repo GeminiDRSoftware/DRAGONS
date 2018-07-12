@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Recipe System Programmer's Manual documentation build configuration file,
+# DRAGONS Recipe System Programmer's Manual documentation build configuration file,
 # sphinx-quickstart on Thu Mar 20 15:06:19 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -49,8 +49,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u"Recipe System Programmer's Manual"
-copyright = u'Gemini Observatory (AURA), 2017'
+project = u"DRAGONS - Recipe System Programmer's Manual"
+copyright = u'Gemini Observatory (AURA), 2018'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -198,7 +198,9 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index-latex', 'RecipeSystemProgManual.tex', "Recipe System Programmer's Manual",
+  ('index-latex',
+   'RecipeSystemProgManual.tex',
+   "DRAGONS - Recipe System Programmer's Manual",
    'Kenneth Anderson', 'manual'),
 ]
 
@@ -230,7 +232,9 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'recipesystemprogmanual', u"Recipe System Programmer's Manual",
+    ('index',
+     'recipesystemprogmanual',
+     u"DRAGONS - Recipe System Programmer's Manual",
      [u'Kenneth Anderson'], 1)
 ]
 
@@ -244,9 +248,13 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'RecipeSystemProgManual', u"Recipe System Programmer's Manual",
-   u'Kenneth Anderson', 'RecipeSystemProgManual',
-   'Recipe System programming "how to"', 'Miscellaneous'),
+  ('index',
+   'RecipeSystemProgManual',
+   u"DRAGONS - Recipe System Programmer's Manual",
+   u'Kenneth Anderson',
+   'RecipeSystemProgManual',
+   'Recipe System programming "how to"',
+   'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.

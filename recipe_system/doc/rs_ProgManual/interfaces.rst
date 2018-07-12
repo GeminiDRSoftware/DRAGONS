@@ -23,12 +23,12 @@ passed by the caller::
 
   __init__(self,
            adinputs,             <list> AstroData objects.
-	   context=['sq'],       <list> Defines the recipe set or sets to search.
+	   mode='sq',             <str> Defines the recipe libraries to search.
 	   drpkg='geminidr',      <str> Defines the 'dr' package to map.
 	   recipename='default',  <str> The recipe name.
            usercals=None,        <dict> User provided calibration files.
 	   uparms=None,          <list> User parameters passed to primitives.
-	   upload_metrics=False, <bool> Send QA metrics to fitsstore
+	   upload=None           <list> Send these things to fitsstore
            )
 
 Once an instance of either a PrimitiveMapper or a RecipeMapper class is built, 
@@ -36,9 +36,9 @@ that instance has one (1) and only one public method, a method that invokes
 the search algorithm for the instance.
 
 It shall be noted here that the following discussion and examples are based on
-using the default data reduction package, *geminidr*. This Gemini Observatory
-"drpkg" defines recipes, contexts, and primitive classes for several instruments
-of the Observatory. With that in mind, the last :ref:`section of this chapter <drpkg>`
+using the default data reduction package, *geminidr*. The *geminidr* package
+defines all recipes, modes, and primitive classes for several instruments of the
+Observatory. With that in mind, the last :ref:`section of this chapter <drpkg>`
 will detail steps required to build your own "drpkg", whether for testing purposes
 or as a new, complete data reduction package. It will be the case that all examples
 presented herein will be perfectly applicable to any correctly implemented *drpkg*.
@@ -47,12 +47,12 @@ Selecting Primitives with PrimitiveMapper
 =========================================
 
 Primitive classes for Gemini Observatory instruments are defined in the *geminidr*
-package under *gemini_python*. This is specified as the default value on the ``drpkg``
-keyword argument shown above. These classes define methods to provide essential
-data processing functionality. Primitive classes in *geminidr* are structured
-hierarchically and employ multiple inheritance. (Hereafter, a Primitive class may
-be referred to as a set of "primitives" or just "primitives", which are just the
-defined or inherited methods on that class).
+package under DRAGONS. This is specified as the default value on the ``drpkg``
+keyword argument shown above. These primitive classes define methods to provide
+essential data processing functionality. Primitive classes in *geminidr* are
+structured hierarchically and employ multiple inheritance. (Hereafter, a Primitive
+class may be referred to as a set of "primitives" or just "primitives", which are
+just the defined or inherited methods on that class).
 
 "Generic" primitive classes in the ``geminidr`` package are defined under
 ``geminidr.core`` (see :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`. These
@@ -62,8 +62,8 @@ for some general task are grouped together. For example, the stacking functions
 are defined on the ``Stack`` class found in ``core.primitives_stack``.
 
 There are five (5) defined primitive classes in `core` that are not strictly
-generic but are what might be called "quasi-generic", that is, they define
-methods for data of a certain general kind, such imaging or spectroscopy.
+generic but are what might be called "quasi-generic". That is, these classes define
+methods for data of a certain general kind, like imaging or spectroscopy.
 :ref:`Figure 4.2 <gmoscls>` illustrates these classes by breaking them out of
 *core* to show what they are and where in the class structure they are used.
 
@@ -80,7 +80,7 @@ instrument data being processed.
    Hierarchy of Primitive classes defined under `geminidr`
 
 Because real data are produced by real instruments, the PrimitiveMapper will
-usually be pointed to and select primitive classes defined at the instrument-mode
+usually be selecting primitive classes defined at the instrument-mode
 level, i.e., one or more inheritance levels under an instrument primitive class.
 That sounds like gobble but :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`,
 illustrates that this is simple. For example, an F2 image will be processed with
@@ -126,11 +126,11 @@ understanding of this, and set their own attribute on Mapper instances called,
 
 Once a PrimtiveMapper instance is created, the public method, 
 ``get_applicable_primitives()`` can be invoked and the search for the most 
-appropriate primitive class begins. The search itself is concerned with finding
+appropriate primitive class begins. The search itself is focused on finding
 class objects that define a ``tagset`` attribute on the class.
 
-Continuing the example, let's see how primitive classes in the hierarchy are 
-tagged, beginning with the ``gemini`` primitives::
+Let's see how primitive classes in the hierarchy are tagged, beginning with
+``Gemini`` class::
 
   class Gemini( ...  ):
     tagset = set(["GEMINI"])
@@ -166,15 +166,15 @@ primitive class. Readers may correctly infer from this that naming primitive
 classes, and the modules containing them, is arbitrary; primitive classes and the
 containing modules can be named at the discretion of the developer. Indeed, the
 entire set of primitive classes could exist in a single file. For reasons too
-obvious to enumerate, such an "arrangement" is considered ill-advised.
+obvious to enumerate here, such an "arrangement" is considered ill-advised.
 
 .. _rselect:
 
 Selecting Recipes with RecipeMapper
 ===================================
 
-Recipes are pre-defined python functions that receive a single argument: a
-primitive class object (instance). Unlike primitive classes, recipes are much
+Recipes are pre-defined python functions that receive a single argument: an
+instance of a primitive class. Unlike primitive classes, recipes are much
 simpler; they are straight up functions with one argument. Recipe functions are
 not classes and do not (cannot) inherit. The recipe simply defines the set and
 order of primitive functions to be called on the data, references to which are
@@ -183,7 +183,7 @@ contained by the primitive instance. Essentially, a recipe is a pipeline.
 Recipe functions are defined in python modules (which may be referred to as
 recipe libraries, a collection of functions) that are placed in a *geminidr*
 instrument package. Recipes are only defined for instruments and exist under
-an instrument package in the directory in a ``recipes/`` directory like this::
+an instrument package in a ``recipes/`` directory like this::
 
   ../geminidr/f2/recipes
   ../geminidr/gmos/recipes
@@ -220,65 +220,24 @@ Here is a (current) listing of instrument recipe directories under *geminidr*::
 Readers will note the appearance of directories named ``qa`` and ``sq`` under
 recipes. These directories indicate a separation of recipe types, named to indicate
 the kinds of recipes contained therein. Any named directories defined under
-``recipes/`` are termed "contexts." 
+``recipes/`` are termed "modes." 
 
-.. _context:
+.. _mode:
 
-Context
--------
-An instrument package *recipes* path is extended by names indicating a "context."
-As shown above, *geminidr* instrument packages define two contexts under all
-recipes directories: `qa` and `sq`, which indicate that recipes defined under
+Mode
+----
+An instrument package *recipes* path is extended by names indicating a "mode."
+As shown above, *geminidr* instrument packages define two modes under all
+recipes directories: `qa` and `sq`. These indicate that recipes defined under
 ``recipes/qa`` provide Quality Assurance (*qa*) processing. Science Quality
 (*sq*) recipes defined under ``recipes/sq`` provide science quality reduction
 pipelines. Currently defined recipe library files will appear under one or all of
-these context directories.
+these mode directories.
 
-Context is not hard limited to just `qa` and `sq` contexts for the RecipeMapper.
-Indeed, contexts can be named almost anything you like. The form new contexts shall
-have takes the same pattern shown above::
-
-  ../geminidr/<instrument_name>/recipes/<context>/
-
-Developers are free to define and use new *contexts* as they choose. All that is 
-required to have the RecipeMapper select recipes from another context is to pass a 
-list containing this new *context* value (or values) to the RecipeMapper. RecipeMapper
-uses a default context when no context is passed. The :ref:`next section <d2r>` 
-will discuss this and provide examples for adding new contexts and selecting recipes 
-from these new contexts.
-
-.. admonition:: Why is Context a list?
-
-   A reasonable question will arise regarding the *context* parameter: why is
-   context a list and not just a single string value?
-
-   The answer is that *context* serves, not only a recipe context indicator to the 
-   RecipeMapper, but also other possible flags or indicators that may be used by 
-   primitives. Since the *context* parameter is passed to primitives, the primitive
-   functions are free to inspect the context list for particular items and make 
-   decisions based upon any or all provided contexts. Hence, arbitrary flags can 
-   be included in the context list and passed to the primitive class initializer.
-
-   Indeed, any number of strings (and other data types) can be added to the context 
-   list.
-
-   For example, the calibration primitives in *geminidr* (``primitives_calibdb.py``) 
-   examine the context parameter for an "upload" string. This string is 
-   interpreted by the primitives as a signal to upload any processed calibration 
-   files to the Gemini Observatory Archive produced during data processing. Which 
-   means that the context parameter will have a form::
-
-    context = ['sq', 'upload']
-   
-   While the 'sq' entry is used by RecipeMapper, the calibration primitives look
-   for 'upload' in the context. It is at the discretion of the primitive function
-   to examine context at decision nodes and to interpret and act upong these 
-   context strings (or other objects) at these nodes.
-
-   In general, *context*, as a list, provides a direct way for developers writing 
-   new primitives to pass new flags or switches to those primitives without a 
-   need to alter the command line interface of ``reduce`` or the API on the 
-   ``Reduce`` class.
+Currenntly, mode values are hard limited to `qa`, `ql`, and `sq` modes for the
+RecipeMapper. As a refresher, readers are encouraged to review the command line
+options provided by *reduce*, where *mode* is discussed in detail in the document,
+`Reduce and Recipe System User Manual`.
 
 Discussion of instrument packages and their format are presented in some detail 
 in the section of Chapter 2, :ref:`Instrument Packages <ipkg>`.
@@ -310,17 +269,27 @@ understanding of this, and set their own attribute on Mapper instances called,
 >>> rm.pkg
 'gmos'
 
-You can also see the current context setting on the RecipeMapper instance:
+You can also see the current mode, in this case, the 'default' setting on
+the RecipeMapper instance:
 
->>> rm.context
-['qa']
+>>> rm.mode
+'sq'
 
-Once a RecipeMapper instance is created, the public method,
-``get_applicable_recipe()`` can be invoked and the search for the most
-appropriate recipe begins. The search algorithm is concerned with finding module
-objects that define a ``recipe_tags`` attribute on the module (library). Each
-recipe library defines, or may define, multiple recipe functions, all of which are
-applicable to the data classification described by the ``recipe_tags`` set.
+Should you want to have the RecipeMapper search for *qa* recipes, simply set the
+attribute:
+
+>>> rm = RecipeMapper([ad])
+>>> rm.mode
+'sq'
+>>> rm.mode = 'qa'
+
+Once a RecipeMapper instance is created and attributes have been set as desired,
+the public method, ``get_applicable_recipe()`` can be invoked and the search for
+the most appropriate recipe begins. The search algorithm is concerned with finding
+module objects that define a ``recipe_tags`` attribute on the module (library).
+Each recipe library defines, or may define, multiple recipe functions, all of
+which are applicable to the data classification described by the ``recipe_tags``
+set.
 
 Continuing the 'gmos' example, let's see how these recipe libraries are tagged::
 
@@ -350,8 +319,8 @@ matching *subset* of tags to the astrodata object's data classifications.
 A Running Example
 -----------------
 
-The example set that follows begins by first making an ``astrodata`` instance 
-from an unknown FITS file, passing that alone to the RecipeMapper, and then 
+The example that follows begins by first making an ``astrodata`` instance 
+from an arbitrary FITS file, passing that alone to the RecipeMapper, and then 
 calling the instance's public method, ``get_applicable_recipe()``.
 
 >>> import astrodata
@@ -366,25 +335,27 @@ set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
 >>> recipe.__name__ 
 'reduce'
 
-Changing context
-^^^^^^^^^^^^^^^^
+.. note:: Remember, `adinputs` must be a *list* of astrodata objects.
+   
+Set mode
+^^^^^^^^
 
-Let's say we are uncertain of which recipe context we actually used. Simply
+Let's say we are uncertain of which recipe mode we actually used. Simply
 inspect the mapper object:
 
->>> >>> rm.context
-['sq']
+>>> >>> rm.mode
+'sq'
 
 But, it turns out that we would like to get the default 'qa' recipe, not the 
-default 'sq' recipe. All we need to do is set the context attribute on the 
+default 'sq' recipe. All we need to do is set the mode attribute on the 
 RecipeMapper object and the recall the method:
 
->>> rm.context = ['qa']
+>>> rm.mode = 'qa'
 >>> recipefn = rm.get_applicable_recipe()
 >>> recipefn.__name__
 'reduce_nostack'
 
-Which is the defined default recipe for the GMOS `qa` recipe context.
+Which is the defined default recipe for the GMOS `qa` recipe mode.
 
 As this returned recipe function name suggests, image stacking will not be done.
 But perhaps we might want to use a recipe that does perform stacking. We simply
@@ -397,15 +368,15 @@ set the recipename attribute to be the desired recipe. [#]_
 
 There is more going on here than simply setting a string value to the
 recipename attribute. The RecipeMapper is actually acquiring the named recipe
-using the already set *context* and the astrodata tagset. Calling the method a
-second time relaunches the search algorithm, this time for the `qa` context, 
+using the already set *mode* and the astrodata tagset. Calling the method a
+second time relaunches the search algorithm, this time for the `qa` mode, 
 imports the "applicable" `qa` recipe function and returns the function object 
 to the caller.
 
 Returning to the class initializer, we can get this same result by passing the 
 relevant arguments directly to the RecipeMapper call.
 
->>> rm = RecipeMapper(adinputs, context=['qa'], recipename='reduce')
+>>> rm = RecipeMapper(adinputs, mode='qa', recipename='reduce')
 >>> recipefn = rm.get_applicable_recipe()
 >>> recipefn.__name__
 'reduce'
@@ -441,87 +412,22 @@ the RecipeMapper object.
 >>> recipefn.__name__
 'myreduce'
 
-Note that for user supplied recipe libraries and functions, the *context* is
+Note that for user supplied recipe libraries and functions, the *mode* is
 irrelevant, as it is used for searching the *geminidr* package or other
 packages similarly designed.
 
-Bearing that in mind, we'll extend the example by continuing the 
-:ref:`earlier discussion <context>` of how to build and use a new context.
-
-Adding a New Context
+User-defined recipes
 ^^^^^^^^^^^^^^^^^^^^
 
-The interface on the Mapper classes was presented at the 
-:ref:`beginning of the chapter <iface>`. There is one positional argument, which
-is a list of astrodata objects -- the input datasets -- and five (5) keyword
-arguments, one of which is ``context``. This mapper attribute is defaulted to be 
-['sq'] and there are only two contexts currently defined for all recipe context 
-packages ('qa' and 'sq').
-
-It is very easy for developers to add new context packages under an 
-instrument's recipes simply by placing the new context directory under 
-``recipes/``. Your recipe files for this context are written in there. [#]_
-
-E.g., make the new context directory
-::
-
- $ mkdir ../geminidr/gmos/recipes/my_context/
-
-and either copy or move any new recipe files in there ::
-
- $ cp myrecipes.py ../geminidr/gmos/recipes/my_context/
-
-Using the new context, let's see how we can select ``myrecipes.myreduce``. 
-
->>> rm = RecipeMapper(adinputs, context=['my_context'], recipename='myreduce')
->>> recipefn = rm.get_applicable_recipe()
->>> recipefn.__name__
-'myreduce'
-
-This can be made to work in the same way the RecipeMapper locates recipes using
-a default recipe, but two things need to appear in the new recipe file
-(i.e., ``myrecipes.py``). One, an attribute defined on the module called,
-``recipe_tags`` (:ref:`see above <d2r>`) and, two, an attribute named ``default``
-pointing to whichever recipe function you wish to be the default recipe when
-unspecified.
-
-We proceed with the example and intend that the new recipe is applicable
-to GMOS image data.
-
-For example, in myrecipes.py, place the ``default`` reference ::
-
-  in myrecipes.py:
-  ----------------
-  recipe_tags = set(['GEMINI', 'GMOS', 'IMAGE'])
-  def myreduce(p):
-      p.prepare()
-      ...
-      return
-
-  default = myreduce
-
-Once this new context and recipe library have been installed under *geminidr* in
-this manner, you are now able to have your myreduce recipe selected by the
-RecipeMapper.
-
-We'll step through this from the top, only this time, we want to get ``myreduce``
-from ``myrecipes.py`` under ``gmos/my_context/myrecipes.py`` returned by the
-RecipeMapper:
-
->>> import astrodata
->>> import gemini_instruments
->>> ad = astrodata.open('S20161025S0111.fits')
->>> ad.tags
-set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
->>> adinputs = [ad]
->>> from recipe_system.mappers.recipeMapper import RecipeMapper
->>> rm = RecipeMapper(adinputs, context=['my_context'])
->>> recipe = rm.get_applicable_recipe()
->>> recipe.__name__ 
-  'myreduce'
-
-If things are working for you in this way, you now have a recipe library and 
-functions installed under *gemindir*.
+In the case of external (i.e. user-defined) recipes, developers should understand
+that in passing a user-defined recipe library to the RecipeMapper, the nominal
+mapping algorithm for recipe searches is bypassed and the RecipeMapper will use the
+recipe library (module) and path to import the module directly. In these cases,
+none of ``mode``, ``tags``, or ``recipe_tags`` is relevant, as the user-passed recipe
+library and recipe name are already known. Essentially, passing a user-defined
+recipe to the RecipeMapper tells the mapper, "do not search but use this." In these
+cases, it is incumbent upon the users and develoers to ensure that the external
+recipes specified are actually applicable to the datasets being processed.
 
 We will now discuss what to do now that we have both a primtives instance and a 
 recipe.
@@ -555,7 +461,3 @@ level interface.
 .. rubric:: Footnotes
 
 .. [#] See appendix on currently available recipes in geminidr.
-
-.. [#] Remember, these are python packages and as such will need the standard 
-       __init__.py in the context directory as well. This is still required by 
-       Python2 but goes away in Python3.
