@@ -8,8 +8,6 @@ Examples
 This section provides working examples to exercise Mosaic and MosaicAD class and 
 their functions.
 
-.. note:: print statements appearing in these examples employ Python 3 syntax.
-
 .. _mosad_array:
 
 Example 1: Create a mosaic using MosaicAD class.
@@ -620,3 +618,4 @@ create the mosaic with  default interpolation function and again with the
 
  # The difference between the 2 plots is the edge effect at the
  # low and high stripe corners plot due to interpolation.
+ 

@@ -29,7 +29,7 @@ of the same same size contained in a MosaicData object.
  ::
 
   from gempy.library.mosaic import Mosaic
-  mosaic = Mosaic(mosaic_data, mosaic_geometry=None, dq_data=False)
+  mosaic = Mosaic(mosaic_data, mosaic_geometry=None)
 
 **Input parameters**
 
@@ -91,7 +91,8 @@ areas of no-data due to shifting when transforming the data.
  Usage:
  ::
 
-  mosaic = mosaic_image_data(tile=False, block=None, return_ROI=True)
+  mosaic = mosaic_image_data(block=None, jfactor=None, dq_data=False,
+                             tile=False, return_ROI=True)
 
 **Input parameters**
 
@@ -101,8 +102,8 @@ areas of no-data due to shifting when transforming the data.
     The blocks layout is given by the attribute mosaic_grid.
 
 - dq_data <bool>
-    If True, then the input data is transformed bit-plane by bit-plane.
-    DQ is 8-bit planes so far.
+    If True, then the input data is to be handled as a bit mask.
+    DQ data arrays are 16-bit masks.
 
 - jfactor <list>
     Jacobian factors to conserve flux under transformation.
@@ -122,6 +123,8 @@ set_blocks()
 ============
 
 Initialize the block order and amplifier indices in blocks and block coordinates.
+This method initially "tiles" each extension's data array onto the "blocks" of
+the output mosaic frame. This must be done before any transformation operation.
 
 get_blocks()
 ============
@@ -189,11 +192,15 @@ Possible ways to obtain a list of ndarrays (data_list) suitable for Mosaic:
     three image extensions using pyfits to create the list of numpy arrays 
     (aka ndarrays) ::
 
-     import pyfits
-     fits = pyfits.open('kp445403.fits')
+     import astrodata
+     import gemini_instruments
+     ad = astrodata.open('kp445403.fits')
+     data_list = [ex.data for ex in ad]
 
-     # Read image extension 1,2 and 3.
-     data_list = [fits[k].data for k in range(1,4)]
+  - Similarly, form data_list objects from other pixel data arrays::
+
+     var_list = [ex.variance for ex in ad]
+     dq_list = [ex.mask for ex in ad]
 
   - By creating your own data list ::
 
@@ -265,10 +272,8 @@ keys. This is an example of a typical geometry dictionary:
            'magnification': (1.,     1.0013,
                              1.0052, 1.0159),
            }
-
     # (x_gap,y_gap) in pixels. Key values are block location 
     # (0-based) (column,row) w.r.t. lower left block in the mosaic.
-
     'gap_dict': {
 
        'tile_gaps': {(0,0):(15,25), (1,0):(15,25),
@@ -300,7 +305,7 @@ by using the gemini_mosaic_function in the module gemMosaicFunction.py
 .. _mos_data:
 
 Mosaic Data Class
-#################
+*****************
 
 MosaicData is a class that provides functionality to verify and store a list of 
 ndarrays. An object of this class is used as input to the initialize function of 
@@ -340,7 +345,7 @@ To create a MosaicData object:
 .. _mos_geom:
 
 Mosaic Geometry Class
-#####################
+*********************
 
 The MosaicGeometry class provides functionality to verify the input geometry 
 elements and set all the require attributes. A MosaicGeometry object is not 
@@ -358,12 +363,12 @@ To create a MosaicData object:
 - dict
       A dictionary with the following keys:
       (NOTE: ``blocksize`` and ``mosaic_grid`` are *required* to produce a mosaic.)
-  blocksize <tuple>
+    blocksize <tuple>
       (npixels_x, npixels_y). I.e., the size of the block.
-  mosaic_grid <tuple>
+    mosaic_grid <tuple>
       (ncols, nrows). Number of blocks per row and number of rows in the output 
       mosaic array.
-  transformation <dict>
+    transformation <dict>
       with the following keys
         'shift'
           List of tuples (x_shift, y_shift). N pixels (as floats) to shift to 
@@ -377,18 +382,18 @@ To create a MosaicData object:
           ref_block. There are as many numbers as number of blocks. The 
           magnification is about the block center.
 
-  ref_block
+    ref_block
       Reference block tuple. The block location (x,y) coordinate in the 
       mosaic_grid. This is a 0-based tuple. 'x' increases to the right, 'y' 
       increases in the upwards direction.
-  interpolator
+    interpolator
       (String). Default is 'linear'. Name of the transformation function used for 
       translation,rotation, magnification of the blocks to be aligned with the 
       reference block. The possible values are: 'linear', 'nearest', 'spline'.
-  spline_order
+    spline_order
       (int). Default 3. Is the 'spline' interpolator order. Allow values are in 
       the range [0-5].
-  gap_dict 
+    gap_dict 
        A dictionary of dictionaries of the form:
 
        ::

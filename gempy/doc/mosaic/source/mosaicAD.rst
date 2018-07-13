@@ -10,7 +10,8 @@ MosaicAD
 **MosaicAD** as a subclass of Mosaic and extends its functionality by providing 
 support for:
 
-- AstroData objects with more than one extension name; i.e. 'SCI', 'VAR', 'DQ'
+- AstroData objects with a full suite of extensions, including SCI, VAR, DQ,
+  object masks, and tables.
 
 - Creating output mosaics in AstroData objects
 
@@ -44,7 +45,7 @@ To instantiate a MosaicAd object:
   from gempy.mosaic.mosaicAD import MosaicAD
   from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
-  mosad = MosaicAD(ad, mosaic_ad_function, column_names=def_columns)
+  mosad = MosaicAD(ad, gemini_mosaic_function)
 
 **MosaicAD Input parameters**
 
@@ -59,22 +60,6 @@ To instantiate a MosaicAd object:
     a user function available 'gemini_mosaic_function' in a module 
     *gemMosaicFunction.py*. If you have other data, see the Example section for 
     :ref:`'Write a user_function <user_function_ad>`
-
-- column_names
-    Dictionary with bintable extension names that are associates with the input 
-    images extension names. The extension name is the key and the value a tuple: 
-    (X_pixel_columnName, Y_pixel_columnName, RA_degrees_columnName, 
-    DEC_degrees_columnName). Example::
-
-      column_names = { 
-        'OBJCAT': ('X_IMAGE', 'Y_IMAGE', 'X_WORLD', 'Y_WORLD'),
-        'REFCAT': (None, None, 'RAJ2000', 'DEJ2000')
-      }
-
-    The dictionary has two table entries: the 'OBJCAT' extension name with 
-    four values which are the column names in the table and the other table if 
-    'REFCAT' containing two column names for RA and DEC of objects in the field.
-
                         
 :ref:`MosaicAD example <mosad_array>`
 
@@ -82,10 +67,11 @@ To instantiate a MosaicAd object:
 
 These attributes are in addition to the Mosaic class. 
 
-- .log gemini_python logger object.
+- .log DRAGONS logger object.
 - .ad  AstroData object.
-- .column_names column names for catalog merge.
 - .jfactor <list>, Jacobians applied to interpolated pixels.
+- .data_list <list>, a list of array sections from all extensions.
+- .geometry <MosaicGeometry>, geometry parameters for transformation.
 - .mosaic_shape <tuple>, output shape of the mosaic array.
 
 .. _mosad_asad:
@@ -99,11 +85,10 @@ as_astrodata()
 
 This function has the same functionality as the *mosaic_image_data* function 
 but, results in a fullly formed astrodata object returned to the caller. 
-WCS information in the headers of the IMAGE extensions and any pixel coordinates 
-in the output BINTABLEs will be updated appropriately. As_astrodata returns an 
-AstroData object. Notice that as_astrodata can return more than one mosaic is 
-the input AstroData object contains different image extension names, 
-e.g. a MEF file with 'SCI', 'VAR' and 'DQ' image extensions.
+WCS information in the headers of the IMAGE extensions are updated appropriately.
+``as_astrodata()`` returns an AstroData object. Notice that as_astrodata can return
+more than one mosaic is the input AstroData object contains different image
+extension names, e.g. MEF file with 'SCI', 'VAR' and 'DQ' image extensions.
 
 Usage:
  ::
@@ -129,15 +114,13 @@ Usage:
   # Using the 'mosad' object executes the method as_astrodata returning an
   # AstroData object.
 
-  adout = mosad.as_astrodata(block=None, tile=False, doimg=False, return_ROI=True,
-                             update_with='wcs')
+  adout = mosad.as_astrodata()
 
-
-**as_astrodata parameters**
+**Input parameters**
 
 ::
 
- as_astrodata(block=None, doimg=False, tile=False, return_ROI=True, update_with='wcs')
+ as_astrodata(block=None, doimg=False, tile=False, return_ROI=True)
 
 - block: <2-tuple>. Default is None.
     Allows a specific block to be returned as the output mosaic. The tuple 
@@ -157,15 +140,13 @@ Usage:
     Returns the minimum frame size calculated from the location of the 
     amplifiers in a given block. If False uses the blocksize value.
 
-- update_catalog_method: ('wcs').
-    Specifies if the X and Y pixel coordinates of any source positions in the 
-    BINTABLEs are to be recalculated using the output WCS and the sources R.A.  
-    and Dec. values within the table. If set to 'transform' the updated X and Y 
-    pixel coordinates will be determined using the transformations used to mosaic 
-    the pixel data. In the case of tiling, a shift is technically being applied 
-    and therefore update_catalog_method='wcs' should be set internally (Not yet 
-    implemented).
+**Output**
 
+- adout: An Astrodata object with transformed pixel data. Once in the form of
+  an Astrodata object, the object can be written to a file,
+  e.g., adout.write('newfile.fits')
+  
+See Examples for an example of `as_astrodata()`
 :ref:`as_astrodata example <asastro_ex>`
 
 .. _mosad_imdata:
@@ -201,56 +182,10 @@ Usage:
 
 **Output**
 
-- mosaic: ndarray with mosaic data.
+- mosaic: <ndarray> with mosaic data.
 
+See Examples for an example of `mosaic_image_data()`
 :ref:`mosaic_image_data example <asastro_ex>`
-
-..
-   .. _mosad_merge:
-
-   MosaicAD.merge_table_data function
-   -------------------------------------
-
-   Merges input BINTABLE extensions that matches the extension name given in the 
-   parameter *tab_extname*. Merging is based on RA and DEC columns and the repeated 
-   RA, DEC values in the output table are removed. The column names for pixel and 
-   equatorial coordinates are given in a dictionary with class attribute name: 
-   *column_names*
-
-    Usage
-    ::
-
-     mosad = MosaicAD(ad, gemini_mosaic_function, column_names='default')
-
-	   # column_names is a dictionary with default values:
-	   # column_names = {'OBJCAT': ('Xpix', 'Ypix', 'RA', 'DEC'),
-	   #                 'REFCAT': (None, None, 'RaRef', 'DecRef')} 
-     adout = mosad.merge_table_data(ref_wcs, tile, tab_extname, block=None,
-			update_catalog_method='wcs')
-
-
-
-   - ref_wcs: Pywcs object containing the WCS from the output header
-
-   - tile: Boolean. 
-       If True, the function will use the gaps list of values for tiling, if False 
-   it uses the Transform list of gap values.
-
-   - tab_extname: Binary table extname
-
-   - block: default is (None).
-       Allows a specific block to be returned as the output mosaic. The tuple 
-   notation is (col,row) (zero-based) where (0,0) is the lower left block in 
-   the output mosaic.
-
-   - update_catalog_method
-       If 'wcs' use the reference extension header WCS to recalculate the x,y 
-   values. If 'transform', apply the linear equations using to correct the x,y 
-   values in each block.
-
-   **Output**
-
-   - adout: AstroData object with the merged output BINTABLE
 
 .. _mosad_jfactor:
 
@@ -259,9 +194,8 @@ calculate_jfactor()
 
 Calculate the ratio of reference input pixel size to output pixel size for each 
 reference extension in the AstroData object.  In practice this ratio is formulated 
-as the determinant of the WCS transformation matrix.  This is the ratio that we will 
-applied to each pixel to conserve flux in an image after magnification in the 
-transformation.  
+as the determinant of the WCS transformation matrix.  This ratio is applied to each
+pixel to conserve flux in an image after magnification in the transformation.  
  
  Usage:
  ::
@@ -283,8 +217,8 @@ dot product of the inverse of one of the matrices times the other matrix.
 
 **Output**
 
-- MosaicAD.jfactor
-    The mosad attribute list is filled with one floating value per block.
+- MosaicAD.jfactor, <list>
+    The jfactor attribute is a list providing one Jacobian factor (float) per amp.
 
 .. _mosad_getdl:
 
@@ -304,7 +238,7 @@ i.e. GMOS or GSAOI.
 
 **Output**
 
-- data_list. List of image data ndarrays.
+- data_list. List of pixel data ndarrays.
 
 .. _mosad_info:
 
