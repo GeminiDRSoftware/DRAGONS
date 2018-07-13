@@ -197,7 +197,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index-latex', 'MosaicADReferenceGuide.tex', 
-   u'Mosaic and MosaicAD Programming and Reference Guide',
+   u'DRAGONS - Mosaic and MosaicAD Programming and Reference Guide',
    u'Kenneth Anderson', 'manual'),
 ]
 
