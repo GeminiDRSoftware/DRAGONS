@@ -4,8 +4,9 @@ Glossary
 --------
 
 **Astrodata**
-  Python class that serves as an active abstraction for a dataset or a group of 
-  datasets
+  Is DRAGONS data abstraction for astronomical datasets. Currently, only FITS files
+  can opened and constructed into an astrodata object, but is extensible to other
+  data formats, such as HDF5.
 
 **amplifier**
   In the context of the Mosaic class, amplifier is the ndarray containing the 
@@ -20,7 +21,10 @@ Glossary
 .. _block_def:
 
 **block**
-  Is an ndarray containing one or more amplifier data arrays.
+  Is an ndarray containing one or more amplifier data arrays and corresponds
+  to one (1) detector chip. I.e., a block is the abstract representation of
+  a detector chip. For GMOS, three CCD chips are represented by three corresponding
+  blocks.
 
 **mask**
   Ndarray of the same shape (ny,nx); i.e. number of pixels in y and x, as the 

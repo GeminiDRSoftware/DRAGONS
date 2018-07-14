@@ -10,10 +10,10 @@ Introduction
 What is Mosaic
 --------------
 
-**Mosaic** is a pure Python implementation of the gemini_iraf task, `gmosaic`.
-Of course, this implementation provides programmatic access to **mosaic**  
+**Mosaic** is a pure Python implementation to "mosaic" multi-chip instrument
+detectors. The implementation provides programmatic access to **mosaic**  
 interfaces for other packages to import and use the mosaic package. The 
-package resides (currently) in the `gemini_python` gempy package.
+package resides (currently) in the DRAGONS gempy package.
 
 Throughout this document the term *mosaic* will have the following meanings:
 
@@ -36,17 +36,6 @@ Throughout this document the term *mosaic* will have the following meanings:
 
 - Information about geometric transformation of the ndarrays is carried using 
   the MosaicGeometry class.
-
-.. _mos_installation:
-
-Mosaic scripts availability
----------------------------
-
-Mosaic scripts are in the `gemini_python` distribution, hence you need to have 
-the distribution available on your machine to use Mosaic.
-
-For users inside the Gemini firewall the software installed in the gemini_python
-*gempy* directory which need to be imported before running mosaic.
 
 What is the MosaicAD class
 --------------------------
@@ -73,7 +62,7 @@ Quick Example
 
 Create a mosaic with MosaicAD class.
 
-- The `gemini-python` package is installed on your system.
+- DRAGONS is installed on your system.
 
 - Start your favorite Python shell
 
@@ -94,7 +83,7 @@ Create a mosaic with MosaicAD class.
   The user function *gemini_mosaic_function* currently supports only GMOS and 
   GSAOI data at this time. ::
 
-    mo = MosaicAD(ad,mosaic_ad_function=gemini_mosaic_function)
+    mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
    
 - Use *mosaic_image_data* method to generate a mosaic with all the 'SCI' 
   extensions in the input Astrodata data list.  The output *mosaic_array* is a 
@@ -103,7 +92,7 @@ Create a mosaic with MosaicAD class.
   and magnification with respect to the reference block. This information is 
   available in the 'geometry' configuration file for each supported instrument. ::
 
-    mosaic_array = mo.mosaic_image_data()
+    mosaic_array = mos.mosaic_image_data()
 
 - Display the resulting mosaic using DS9. Make sure you have DS9 up and running
   and the *numdisplay* python module is available in your Python installation. ::
@@ -113,36 +102,19 @@ Create a mosaic with MosaicAD class.
 
    display(mosaic_array)
 
-
-The `mosaic` package also provides a command line tool called ``automosaic.`` 
-This script is a convenience tool that allows users to pass FITS data to 
-Mosaic/MosaicAD directly from the command line. It provides access to a subset 
-of `mosaic` options. 
-
-E.g.,
-
-Running automosaic in your favorite Unix shell. ::
-
-   # Use it with one or more files:
-   automosaic S20170427*.fits
-
-`automosaic` is detailed  in :ref:`Supplemental Tools <auto_mos>`.
-
 .. _primitives:
 
 Mosaic in Primitives
 --------------------
 
-.. todo:: (Update required for current or future primitive names.)
-
-The primitive **mosaicADdetectors** in the module *primitives_GEMINI.py* handles 
+The primitive **mosaicDetectors** in the module *primitives_visualize.py* handles 
 GMOS and GSAOI images. The parameter 'tile' default value is False, but it can be 
-change via the 'reduce par' option. 
+change via the ``reduce`` [-p, --param] option. 
 
 Example ::
  
   # Using reduce to mosaic a GMOS raw in tile mode.
 
-  reduce -r mosaicad -p tile=True S20170427S0064.fits
+  reduce -r mosaicDetectors -p tile=True S20170427S0064.fits
 
-  # where 'mosaicad' refers to a recipe name in the RECIPES_Gemini directory
+  # where mosaciDetectors is the actual primitive name, called here directly.
