@@ -1389,7 +1389,8 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     return
 
 
-def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
+def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
+                          separate_ext=True):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1405,31 +1406,41 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         if True, return only background values, not the standard deviations
     gaussfit: bool
         if True, fit a Gaussian to the pixel values, instead of sigma-clipping?
+    separate_ext: bool
+        return information for each extension, rather than the whole AD?
 
     Returns
     -------
     list/value/tuple
-        if ad is single extension, returns a bg value or (bg, std) tuple; otherwise
-        returns a list of such things
+        if ad is single extension, or separate_ext==False, returns a bg value
+        or (bg, std) tuple; otherwise returns a list of such things
     """
     # Handle NDData objects (or anything with .data and .mask attributes
     try:
         single = ad.is_single
     except AttributeError:
         single = True
-    input_list = [ad] if single else [ext for ext in ad]
+    input_list = [ad] if single or not separate_ext else [ext for ext in ad]
 
     output_list = []
     for ext in input_list:
         # Use DQ and OBJMASK to flag pixels
-        flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
-            else getattr(ext, 'OBJMASK', None)
+        if not single and not separate_ext:
+            bg_data = np.array([ext.data for ext in ad]).ravel()
+            flags = np.array([ext.mask | getattr(ext, 'OBJMASK', 0)
+                              if ext.mask is not None
+                else getattr(ext, 'OBJMASK', np.empty_like(ext.data, dtype=bool))
+                              for ext in ad]).ravel()
+        else:
+            flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
+                else getattr(ext, 'OBJMASK', None)
+            bg_data = ext.data.ravel()
 
-        bg_data = ext.data[flags==0] if flags is not None else ext.data
-        # Try to proceed in case all pixels are flagged
-        if len(bg_data) == 0:
-            bg_data == ext.data
-        bg_data = bg_data.ravel()[::sampling]
+        if flags is None or np.sum(flags==0) == 0:
+            bg_data = bg_data[::sampling]
+        else:
+            bg_data = bg_data[flags.ravel()==0][::sampling]
+
         if len(bg_data) > 0:
             if gaussfit:
                 # An ogive fit is more robust than a histogram fit
@@ -1455,16 +1466,18 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True):
         else:
             output_list.append((bg, bg_std, len(bg_data)))
 
-    return output_list[0] if single else output_list
+    return output_list[0] if single or not separate_ext else output_list
 
 
-def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
+def measure_bg_from_objcat(ad, min_ok=5, value_only=False, separate_ext=True):
     """
-    Return a list of triples of background values, and their std deviations
-    derived from the OBJCATs in ad, plus the number of objects used.
+    Return a list of triples of background values, (and their std deviations
+    and the number of objects used, if requested) from the OBJCATs in an AD.
     If there are too few good BG measurements, None is returned.
     If the input has SCI extensions, then the output list contains one tuple
-    per SCI extension, even if no OBJCAT is associated with that extension
+    per SCI extension, even if no OBJCAT is associated with that extension.
+    If a single extension/OBJCAT is sent, or separate_ext==False, then
+    return only the value or triple, not a list.
 
     Parameters
     ----------
@@ -1474,15 +1487,26 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
         return None if fewer measurements than this (after sigma-clipping)
     value_only: bool
         if True, only return the background values, not the other stuff
+    separate_ext: bool
+        return information for each extension, rather than the whole AD?
 
     Returns
     -------
-    list
+    list/value/triple
         as described above
     """
     # Populate input list with either the OBJCAT or a list
-    input_list = [ad] if isinstance(ad, Table) else [
-        getattr(ext, 'OBJCAT', None) for ext in ad]
+    single = True
+    if isinstance(ad, Table):
+        input_list = [ad]
+    elif ad.is_single:
+        input_list = [getattr(ad, 'OBJCAT', None)]
+    elif separate_ext:
+        input_list = [getattr(ext, 'OBJCAT', None) for ext in ad]
+        single = False
+    else:
+        input_list = [vstack([getattr(ext, 'OBJCAT', Table()) for ext in ad],
+                             metadata_conflicts='silent')]
 
     output_list = []
     for objcat in input_list:
@@ -1510,7 +1534,7 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
             output_list.append(bg)
         else:
             output_list.append((bg, bg_std, nsamples))
-    return output_list
+    return output_list[0] if single else output_list
 
 def obsmode_add(ad):
     """
