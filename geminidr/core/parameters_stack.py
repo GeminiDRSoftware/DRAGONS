@@ -67,6 +67,8 @@ class stackSkyFramesConfig(stackFramesConfig):
 class alignAndStackConfig(stackFramesConfig, resampleToCommonFrameConfig,
                           matchWCSToReferenceConfig):
     save = config.Field("Save aligned images to disk?", bool, False)
+    def setDefaults(self):
+        self.zero = True
 
 class stackFlatsConfig(core_stacking_config):
     scale = config.Field("Scale images to the same intensity?", bool, False)
