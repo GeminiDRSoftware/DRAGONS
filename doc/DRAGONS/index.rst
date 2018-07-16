@@ -10,21 +10,29 @@ DRAGONS Documentation
 
    <PIPE-USER-103_DRAGONSManual>
 
-.. toctree::
-   :numbered:
-   :maxdepth: 2
-   
-   AstroData Cheat Sheet <http://astrodata-cheat-sheet.readthedocs.io/en/latest/>
-   AstroData User Manual <http://astrodata-user-manual.readthedocs.io/en/latest/>
-   Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/>
-   Recipe System Users Manual <http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/>
+   This document is a collection of links and document IDs making up the
+   DRAGONS documentation.
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+DRAGONS Manuals
+---------------
+
+* `AstroData Cheat Sheet <http://astrodata-cheat-sheet.readthedocs.io/en/latest/>`_
+
+   Document ID: PIPE-USER-105_AstrodataCheatSheet
+
+* `AstroData User Manual <http://astrodata-user-manual.readthedocs.io/en/latest/>`_
+
+   Document ID: PIPE-USER-106_AstrodataUserManual
+
+* `Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/>`_
+
+   Document ID: PIPE-USER-108_RSProgManual
+
+* `Recipe System Users Manual <http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/>`_
+
+   Document ID: PIPE-USER-109_RSUserManual
+
 
 .. todolist::
 
