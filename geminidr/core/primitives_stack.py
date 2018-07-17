@@ -169,8 +169,8 @@ class Stack(PrimitivesBASE):
                 for index in range(num_ext):
                     nddata = (ad[index].nddata.window[:] if statsec is None
                               else ad[i][index].nddata.window[statsec])
-                    # TODO: measure_bg_from_image?
-                    levels[i, index] = np.median(nddata.data)
+                    #levels[i, index] = np.median(nddata.data)
+                    levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
             if scale and zero:
                 log.warning("Both scale and zero are set. Setting scale=False.")
                 scale = False
