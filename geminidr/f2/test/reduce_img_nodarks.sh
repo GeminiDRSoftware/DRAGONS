@@ -55,7 +55,7 @@ reduce @flats.lis -p addDQ:user_bpm=${bpm}
 caldb add "$(last_result_filename flat)"
 
 # Reduce science data:
-reduce @sciset.lis -p darkCorrect:do_dark=False -p alignAndStack:save=True -p addDQ:user_bpm=${bpm} -p skyCorrect:nhigh=7
+reduce @sciset.lis -p darkCorrect:do_dark=False -p alignAndStack:save=True -p addDQ:user_bpm=${bpm} -p skyCorrect:nhigh=12
 
 # Check the final result & return status:
 compare_file $(last_result_filename stack)
