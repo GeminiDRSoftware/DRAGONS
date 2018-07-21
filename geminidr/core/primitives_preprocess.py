@@ -262,7 +262,7 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def correctBackgroundToReference(self, adinputs=None, suffix=None,
-                                     remove_background=False):
+                                     separate_ext=True, remove_background=False):
         """
         This primitive does an additive correction to a set
         of images to put their sky background at the same level
@@ -290,30 +290,47 @@ class Preprocess(PrimitivesBASE):
                                     "images do not match")
         else:
             # Loop over input files
-            ref_bg_list = []
+            ref_bg_list = None
             for ad in adinputs:
-                bg_list = gt.measure_bg_from_image(ad, value_only=True)
+                bg_list = gt.measure_bg_from_image(ad, value_only=True,
+                                                   separate_ext=separate_ext)
                 # If this is the first (reference) image, set the reference bg levels
-                if not ref_bg_list:
+                if ref_bg_list is None:
                     if remove_background:
-                        ref_bg_list = [0] * len(ad)
+                        ref_bg_list = ([0] * len(ad)) if separate_ext else 0.
                     else:
                         ref_bg_list = bg_list
 
-                for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
-                    if bg is None:
+                if separate_ext:
+                    for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
+                        if bg is None:
+                            log.warning("Could not get background level from "
+                                        "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
+                            continue
+
+                        # Add the appropriate value to this extension
+                        log.fullinfo("Background level is {:.0f} for {}:{}".
+                                     format(bg, ad.filename, ext.hdr['EXTVER']))
+                        difference = np.float32(ref - bg)
+                        log.fullinfo("Adding {:.0f} to match reference background "
+                                     "level {:.0f}".format(difference, ref))
+                        ext.add(difference)
+                        ext.hdr.set('SKYLEVEL', ref,
+                                    self.keyword_comments["SKYLEVEL"])
+                else:
+                    if bg_list is None:
                         log.warning("Could not get background level from "
-                            "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
+                                    "{}".format(ad.filename))
                         continue
 
-                    # Add the appropriate value to this extension
-                    log.fullinfo("Background level is {:.0f} for {}:{}".
-                                 format(bg, ad.filename, ext.hdr['EXTVER']))
-                    difference = np.float32(ref - bg)
+                    # Add the appropriate value to the entire AD object
+                    log.fullinfo("Background level is {:.0f} for {}".
+                                 format(bg_list, ad.filename))
+                    difference = np.float32(ref_bg_list - bg_list)
                     log.fullinfo("Adding {:.0f} to match reference background "
-                                     "level {:.0f}".format(difference, ref))
-                    ext.add(difference)
-                    ext.hdr.set('SKYLEVEL', ref,
+                                 "level {:.0f}".format(difference, ref_bg_list))
+                    ad.add(difference)
+                    ad.hdr.set('SKYLEVEL', ref_bg_list,
                                 self.keyword_comments["SKYLEVEL"])
 
                 # Timestamp the header and update the filename
