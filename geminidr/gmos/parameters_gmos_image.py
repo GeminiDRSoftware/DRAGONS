@@ -1,20 +1,16 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gmos_image.py file, in alphabetical order.
 from gempy.library import config
-from geminidr.core import parameters_stack, parameters_photometry, parameters_standardize
+from geminidr.core import parameters_stack, parameters_photometry
 
 class addOIWFSToDQConfig(config.Config):
     pass
 
-class makeFringeFrameConfig(parameters_stack.stackFramesConfig, parameters_photometry.detectSourcesConfig):
-    subtract_median_image = config.Field("Subtract median image?", bool, True)
+class makeFringeConfig(parameters_stack.core_stacking_config, parameters_photometry.detectSourcesConfig):
+    subtract_median_image = config.Field("Subtract median image?", bool, None, optional=True)
+    dilation = config.RangeField("Object dilation radius (pixels)", float, 2., min=0)
     def setDefaults(self):
         self.suffix = "_fringe"
-
-class scaleFringeToScienceConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_fringeScaled", optional=True)
-    science = None # TODO
-    stats_scale = config.Field("Scale by statistics rather than exposure time?", bool, False)
 
 class stackFlatsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_stack", optional=True)

@@ -12,12 +12,13 @@ import scipy.ndimage as ndimage
 from astropy.wcs import WCS
 
 from gempy.gemini import gemini_tools as gt
-from gempy.utils import logutils
+from gemini_instruments.gmu import detsec_to_pixels
 
 from geminidr.core import Image, Photometry
 from .primitives_gmos import GMOS
 from . import parameters_gmos_image
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr.gmos.lookups.fringe_control_pairs import control_pairs
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -169,56 +170,58 @@ class GMOSImage(GMOS, Image, Photometry):
 
         return adinputs
 
-    def fringeCorrect(self, adinputs=None, **params):
-        """
-        This uses a fringe frame to correct a GMOS image for fringing.
-        The fringe frame is obtained either from the calibration database
-        or the "fringe" stream in the reduction (if a suitable file has
-        been constructed using the other primitives in this module).
-
-        CJS: During refactoring, I've changed the operation of this primitive.
-        It used to no-op if *any* of the adinputs didn't need a correction but
-        it now makes an image-by-image decision
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        adoutputs = []
-        for ad in adinputs:
-            if _needs_fringe_correction(ad, self.mode):
-                # Check for a fringe in the "fringe" stream first; the makeFringe
-                # primitive, if it was called, would have added it there;
-                # this avoids the latency involved in storing and retrieving
-                # a calibration in the central system
-                try:
-                    fringes = self.streams['fringe']
-                    assert len(fringes) == 1
-                except (KeyError, AssertionError):
-                    self.getProcessedFringe([ad])
-                    fringe = self._get_cal(ad, "processed_fringe")
-                    if fringe is None:
-                        log.warning("Could not find an appropriate fringe for {}".
-                                     format(ad.filename))
-                        adoutputs.append(ad)
-                        continue
-
-                    # Scale and subtract fringe
-                    fringe = self.scaleFringeToScience([fringe], science=ad,
-                                                       stats_scale=True)[0]
-                    ad = self.subtractFringe([ad], fringe=fringe)[0]
-                else:
-                    #Fringe was made from science frames. Subtract w/o scaling
-                    log.stdinfo("Using fringe {} for {}".format(
-                        fringes[0].filename, ad.filename))
-                    ad = self.subtractFringe([ad], fringe=fringes)[0]
-
-            adoutputs.append(ad)
-        return adoutputs
+#    def fringeCorrect(self, adinputs=None, **params):
+#        """
+#        This uses a fringe frame to correct a GMOS image for fringing.
+#        The fringe frame is obtained either from the calibration database
+#        or the "fringe" stream in the reduction (if a suitable file has
+#        been constructed using the other primitives in this module).
+#
+#        CJS: During refactoring, I've changed the operation of this primitive.
+#        It used to no-op if *any* of the adinputs didn't need a correction but
+#        it now makes an image-by-image decision
+#        """
+#        log = self.log
+#        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+#
+#        adoutputs = []
+#        for ad in adinputs:
+#            if self._needs_fringe_correction(ad):
+#                # Check for a fringe in the "fringe" stream first; the makeFringe
+#                # primitive, if it was called, would have added it there;
+#                # this avoids the latency involved in storing and retrieving
+#                # a calibration in the central system
+#                try:
+#                    fringes = self.streams['fringe']
+#                    assert len(fringes) == 1
+#                except (KeyError, AssertionError):
+#                    self.getProcessedFringe([ad])
+#                    fringe = self._get_cal(ad, "processed_fringe")
+#                    if fringe is None:
+#                        log.warning("Could not find an appropriate fringe for {}".
+#                                     format(ad.filename))
+#                        adoutputs.append(ad)
+#                        continue
+#
+#                    # Scale and subtract fringe
+#                    fringe = self.scaleFringeToScience([fringe], science=ad,
+#                                                       stats_scale=True)[0]
+#                    ad = self.subtractFringe([ad], fringe=fringe)[0]
+#                else:
+#                    #Fringe was made from science frames. Subtract w/o scaling
+#                    log.stdinfo("Using fringe {} for {}".format(
+#                        fringes[0].filename, ad.filename))
+#                    ad = self.subtractFringe([ad], fringe=fringes)[0]
+#
+#            adoutputs.append(ad)
+#        return adoutputs
 
     def makeFringe(self, adinputs=None, **params):
         """
         This primitive performs the bookkeeping related to the construction of
-        a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame
+        a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame.
+        The GMOS version simply handles subtract_median_image=None and then
+        calls the Image() version.
 
         Parameters
         ----------
@@ -226,110 +229,11 @@ class GMOSImage(GMOS, Image, Photometry):
             subtract a median image before finding fringes?
             None => yes if any images are from Gemini-South
         """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        # Exit without doing anything if any of the inputs are inappropriate
-        if not all(_needs_fringe_correction(ad, self.mode) for ad in adinputs):
-            return adinputs
-        if len(set(ad.filter_name(pretty=True) for ad in adinputs)) > 1:
-            log.warning("Mismatched filters in input; not making fringe "
-                        "frame")
-            return adinputs
-
-        # Fringing on Cerro Pachon is generally stronger than on Maunakea.
-        # A SExtractor mask alone is usually sufficient for GN data, but GS
-        # data need to be median-subtracted to distinguish fringes from objects
-        sub_med = params["subtract_median_image"]
-        if sub_med is None:
-            sub_med = any(ad.telescope=="Gemini-South" for ad in adinputs)
-
-        # Detect sources in order to get an OBJMASK. Doing it now will aid
-        # efficiency by putting the OBJMASK-added images in the list
-        # NB. We don't want to edit adinputs at this stage
-        #TODO: Only detectSources if there's no OBJMASK. Is this right?
-        # Old code ran regardless but it's slow...
-        fringe_adinputs = adinputs if sub_med else [ad if
-                        all(hasattr(ext, 'OBJMASK') for ext in ad)
-                        else self.detectSources([ad])[0] for ad in adinputs]
-
-        # Add this frame to the list and get the full list
-        self.addToList(fringe_adinputs, purpose='forFringe')
-        fringe_adinputs = self.getList(purpose='forFringe')
-
-        if len(fringe_adinputs) < 3:
-            log.stdinfo("Fewer than 3 frames provided as input. "
-                        "Not making fringe frame.")
-            return adinputs
-        elif (any(ad.telescope=="Gemini-North" for ad in adinputs) and
-                      len(fringe_adinputs)<5):
-            if "qa" in self.mode:
-                # If fewer than 5 frames and in QA mode, don't
-                # make a fringe -- it'll just make the data look worse.
-                log.stdinfo("Fewer than 5 frames provided as input "
-                            "for GMOS-N data. Not making fringe frame.")
-                return adinputs
-            else:
-                # Allow it in the science case, but warn that it
-                # may not be helpful.
-                log.warning("Fewer than 5 frames "
-                            "provided as input for GMOS-N data. Fringe "
-                            "frame generation is not recommended.")
-
-        # We have the required inputs to make a fringe frame
-        fringe = self.makeFringeFrame(fringe_adinputs,
-                                      subtract_median_image=sub_med)
-        # Store the result and put the output in the "fringe" stream
-        self.storeProcessedFringe(fringe)
-        self.streams.update({'fringe': fringe})
-
-        # We now return *all* the input images that required fringe correction
-        # so they can all be fringe corrected
-        return fringe_adinputs
-
-
-    def makeFringeFrame(self, adinputs=None, **params):
-        """
-        Make a fringe frame from a list of images
-
-        Parameters
-        ----------
-        subtract_median_image: bool
-            if True, create and subtract a median image before object
-            detection as a first-pass fringe removal
-        operation: str
-            type of combine operation
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        if len(adinputs) < 3:
-            log.stdinfo('Fewer than 3 frames provided as input. '
-                        'Not making fringe frame.')
-            return []
-
-        frinputs = self.correctBackgroundToReference([deepcopy(ad) for ad in adinputs],
-                                            suffix='_fringe', remove_background=True)
-
-        # If needed, construct a median image and subtract from all frames to
-        # do a first-order fringe removal and hence better detect real objects
-        if params["subtract_median_image"]:
-            median_image = self.stackFrames(frinputs, scale=False,
-                            zero=False, operation="median", mask_objects=False,
-                            reject_method="minmax", nlow=1, nhigh=1)
-            if len(median_image) > 1:
-                raise ValueError("Problem with creating median image")
-            median_image = median_image[0]
-            frinputs = [ad.subtract(median_image) for ad in frinputs]
-            frinputs = self.detectSources(frinputs,
-                        **self._inherit_params(params, "detectSources"))
-            frinputs = [ad.add(median_image) for ad in frinputs]
-
-        # Add object mask to DQ plane and stack with masking
-        frinputs = self.addObjectMaskToDQ(frinputs, suffix=None)
-        frinputs = self.stackFrames(frinputs,
-                    **self._inherit_params(params, "stackFrames"))
-        return frinputs
+        if params["subtract_median_image"] is None:
+            params["subtract_median_image"] = any(ad.telescope() == "Gemini-South"
+                                                         for ad in adinputs)
+        adinputs = super(GMOSImage, self).makeFringe(adinputs, **params)
+        return adinputs
 
     def normalizeFlat(self, adinputs=None, **params):
         """
@@ -678,43 +582,96 @@ class GMOSImage(GMOS, Image, Photometry):
             adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
 
-def _needs_fringe_correction(ad, mode):
-    """
-    This function determines whether an AstroData object needs a fringe
-    correction. If it says no, it reports its decision to the log.
+    def _needs_fringe_correction(self, ad):
+        """
+        This function determines whether an AstroData object needs a fringe
+        correction. If it says no, it reports its decision to the log.
 
-    Parameters
-    ----------
-    ad: AstroData
-        input AD object
-    mode: <str>
-        reduction mode; one of 'qa', 'sq', 'ql'
+        Parameters
+        ----------
+        ad: AstroData
+            input AD object
 
-    Returns
-    -------
-    <bool>: does this image need a correction?
+        Returns
+        -------
+        <bool>: does this image need a correction?
+        """
+        log = self.log
+        filter = ad.filter_name(pretty=True)
+        exposure = ad.exposure_time()
 
-    """
-    log = logutils.get_logger(__name__)
-    filter = ad.filter_name(pretty=True)
-    tel = ad.telescope()
-    exposure = ad.exposure_time()
-    if filter not in ["i", "z", "Z", "Y"]:
-        log.stdinfo("No fringe correction necessary for {} with filter {}".
-                    format(ad.filename, filter))
-        return False
-    elif filter == "i" and "Gemini-North" in tel:
-        if "qa" in mode:
-            log.stdinfo("No fringe correction necessary for {} with filter "
-                        "{} and GMOS-N".format(ad.filename, filter))
+        if filter not in ["z", "Z", "Y"]:
+            log.stdinfo("No fringe correction necessary for {} with filter {}".
+                        format(ad.filename, filter))
             return False
+        if exposure < 60.0:
+            log.stdinfo("No fringe correction necessary for {} with "
+                        "exposure time {:.1f}s".format(ad.filename, exposure))
+            return False
+        return True
+
+    def _calculate_fringe_scaling(self, ad, fringe):
+        """
+        Helper method to determine the amount by which to scale a fringe frame
+        before subtracting from a science frame. Returns that factor.
+
+        This uses the method of Snodgrass & Carry (2013; ESO Messenger 152, 14)
+        with a series of "control pairs" of locations at the peaks and troughs
+        of fringes. The differences between the signals at these pairs are
+        calculated for both the science and fringe frames, and the average
+        ratio between these is used as the scaling.
+
+        Parameters
+        ----------
+        ad: AstroData
+            input AD object
+        fringe: AstroData
+            fringe frame
+
+        Returns
+        -------
+        <float>: scale factor to match fringe to ad
+        """
+        log = self.log
+        halfsize = 10
+
+        # TODO: Do we have CCD2-only images to defringe?
+        detname = ad.detector_name()
+        try:
+            pairs = control_pairs[detname]
+        except KeyError:
+            log.warning("Cannot find control pairs for detector {} in {}. "
+                        "Using defualt scaling algorithm".format(detname, ad.filename))
+            return super(GMOSImage, self)._calculate_fringe_scaling(ad, fringe)
+
+        # Different detectors => different fringe patterns
+        if detname != fringe.detector_name():
+            log.warning("Input {} and fringe {} appear to have different "
+                        "detectors".format(ad.filename, fringe.filename))
+
+        scale_factors = []
+        for pair in pairs:
+            signals = []
+            for image in (ad, fringe):
+                for (x, y) in pair:
+                    i1, x1, y1 = detsec_to_pixels(image, detx=x-halfsize,
+                                                  dety=y-halfsize)
+                    i2, x2, y2 = detsec_to_pixels(image, detx=x+halfsize+1,
+                                                  dety=y+halfsize+1)
+                    if i1 == i2:
+                        signals.append(np.median(image[i1].data[y1:y2, x1:x2]))
+            if len(signals) == 4:
+                scaling = (signals[0] - signals[1]) / (signals[2] - signals[3])
+                log.debug("{} produces {}".format(signals, scaling))
+                scale_factors.append(scaling)
+
+        if scale_factors:
+            if len(scale_factors) < 6:
+                log.warning("Only {} control pair measurements made: fringe "
+                            "scaling is uncertain".format(len(scale_factors)))
+            scaling = np.median(scale_factors)
         else:
-            # Allow it in the science case, but warn that it
-            # may not be helpful.
-            log.warning("{} uses filter {} with GMOS-N. Fringe correction is "
-                        "not recommended.".format(ad.filename, filter))
-    if exposure < 60.0:
-        log.stdinfo("No fringe correction necessary for {} with "
-                    "exposure time {:.1f}s".format(ad.filename, exposure))
-        return False
-    return True
+            log.warning("Failed to estimate fringe scaling for {}".
+                             format(ad.filename))
+            scaling = 1.
+        return scaling
