@@ -525,7 +525,7 @@ class Standardize(PrimitivesBASE):
             else:
                 raise IOError("The {} extension(s) in {} does not match the "
                               "number of extensions expected in raw {} "
-                              "data.".format(ad.filename, inst_name))
+                              "data.".format(len(ad), ad.filename, inst_name))
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

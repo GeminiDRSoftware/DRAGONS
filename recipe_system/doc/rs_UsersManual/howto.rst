@@ -667,11 +667,10 @@ Reduce and logutils::
 
   >>> from recipe_system.reduction.coreReduce import Reduce
   >>> from gempy.utils import logutils
+  >>> logutils.config(file_name='my_reduce_run.log', mode='quiet')
   >>> reduce = Reduce()
   >>> reduce.files.append('S20130616S0019.fits')
   >>> reduce.recipename = 'recipe.MyRecipe'
-  >>> reduce.logfile = 'my_reduce_run.log'
-  >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode)
   >>> reduce.runr()
 
   All submitted files appear valid
@@ -688,23 +687,22 @@ Eg.,::
 
  >>> from recipe_system.reduction.coreReduce import Reduce
  >>> from gempy.utils import logutils
+ >>> logutils.config(file_name='my_reduce_run.log')
  >>> reduce = Reduce()
  >>> reduce.files.append('S20130616S0019.fits')
  >>> reduce.recipename = 'recipe.MyRecipe'
- >>> reduce.logfile = 'my_reduce_run.log'
- >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode)
  >>> reduce.runr()
    ...
  reduce completed successfully.
 
  >>> reduce.recipename = 'recipe.NewRecipe'
  >>> reduce.files = ['newfile.fits']
- >>> reduce.userparam = ['clobber=True']
+ >>> reduce.userparam = ['nhigh=5']
  >>> reduce.runr()
 
 Once an attribute is set on an instance, such as above with ``userparam``, it is
 always set on the instance. If, on another call of runr() the caller does not
-wish to have ``clobber=True``, simply reset the attribute::
+wish to change ``nhigh``, simply reset the attribute::
 
 >>> reduce.userparam = []
 >>> reduce.runr()

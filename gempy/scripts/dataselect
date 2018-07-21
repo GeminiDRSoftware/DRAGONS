@@ -1,0 +1,166 @@
+#!/usr/bin/env python
+
+"""
+Select datasets based on tags and descriptors.  Useful to create
+reduce input lists.  Looks at datasets on disk.
+"""
+
+from __future__ import print_function
+
+import sys
+import argparse
+
+import re
+from copy import deepcopy
+from datetime import datetime
+import glob
+
+import astrodata
+import gemini_instruments
+
+def expr_parser(expression):
+    """
+    Takes a selection expression and return a codified version of that
+    expression that returns True or False when eval().
+
+    Parameters
+    ----------
+    expression
+
+    Returns
+    -------
+    String that returns True or False when eval()
+
+    """
+
+    adexpr = re.sub('([_A-z]\w*)([!=<>]+\S+)', r'ad.\1()\2', expression)
+    codified_expression = deepcopy(adexpr)
+
+    for strfound in re.finditer('(ad.)([_A-z]\w*)([\(\)]+[!=<>]+)(\S+)', adexpr):
+        descriptor = strfound.groups()[1]
+        pattern = r'(ad.' + re.escape(descriptor) + r')([\(\)]+[!=<>]+)(\S+)'
+        if descriptor in ['ut_time', 'local_time']:
+            codified_expression = \
+                re.sub(pattern, r'\1\2datetime.strptime(\3, "%H:%M:%S").time()',
+                       adexpr)
+        elif descriptor == 'ut_date':
+            codified_expression = \
+                re.sub(pattern, r'\1\2datetime.strptime(\3, "%Y-%m-%d").date()', adexpr)
+        elif descriptor == 'ut_datetime':
+            codified_expression = \
+                re.sub(pattern, r'\1\2datetime.strptime(\3, "%Y-%m-%d %H:%M:%S")',
+                       adexpr)
+        else:
+            pass
+
+    return codified_expression
+
+def evalexpression(ad, expression):
+    if type(eval(expression)) is not type(True):
+        raise(IOError, 'Expression does not return a boolean value.')
+    return eval(expression)
+
+def select_data(inputs, tags=[], xtags=[], expression='True'):
+
+    selected_data = []
+    for input in inputs:
+        ad = astrodata.open(input)
+        adtags = ad.tags
+        if set(tags).issubset(adtags) and \
+               not len(set(xtags).intersection(adtags)) and \
+               evalexpression(ad, expression):
+           selected_data.append(input)
+
+    return selected_data
+
+def writeheader(fh, tags, xtags, expression):
+    if tags is None:
+        tags = 'None'
+    if xtags is None:
+        xtags = 'None'
+    if expression is None:
+        expression = 'None'
+    fh.write('# Includes tags: '+str(tags)+'\n')
+    fh.write('# Excludes tags: '+str(xtags)+'\n')
+    fh.write('# Descriptor selection: '+expression+'\n')
+    return
+
+def parse_args(command_line_args):
+    """
+    Parse the command line.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('inputs', type=str, nargs="*",
+                        help="Input FITS file")
+    parser.add_argument('--tags', '-t', type=str, nargs='*',
+                        dest='tags', action='store', required=False,
+                        help='Tags requested')
+    parser.add_argument('--xtags', type=str, nargs='*',
+                        dest='xtags', action='store', required=False,
+                        help='Tags to exclude')
+    parser.add_argument('--expr', type=str, nargs=1,
+                        dest='expression', action='store', required=False,
+                        help='Expression to apply to descriptors (and tags)')
+    parser.add_argument('--output', '-o', nargs=1,
+                        dest='output', action='store', required=False,
+                        help='Name of the output file')
+    parser.add_argument('--verbose', '-v', default=False, action='store_true',
+                        help='Toggle verbose mode when using -o')
+    parser.add_argument('--debug', default=False, action='store_true',
+                        help='Toggle debug mode')
+
+    args = parser.parse_args(command_line_args)
+
+    inputs = []
+    for pattern in args.inputs:
+        inputs.extend(glob.glob(pattern))
+    args.inputs = inputs
+
+    if args.tags is None:
+        args.tags = []
+    if args.xtags is None:
+        args.xtags = []
+
+    if args.debug:
+        print(args)
+
+    return args
+
+def main(argv=None):
+    """
+    Print or send to file the filename of the datasets that match the
+    selection criteria provided on the command line.
+    """
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    args = parse_args(argv)
+
+    if args.expression is None:
+        codified_expression = 'True'
+    else:
+        codified_expression = expr_parser(args.expression[0])
+
+    if args.output is None:
+        args.verbose = True
+
+    selected_data = select_data(args.inputs, args.tags, args.xtags,
+                                codified_expression)
+
+    # write to screen and/or to file
+    if args.output is not None:
+        fh = open(args.output[0], 'w')
+        writeheader(fh, args.tags, args.xtags, args.expression[0])
+    for filename in selected_data:
+        if args.verbose:
+            print(filename)
+        if args.output is not None:
+            fh.write(filename+'\n')
+    if args.output is not None:
+        fh.close()
+
+
+
+if __name__ == '__main__':
+    sys.exit(main())

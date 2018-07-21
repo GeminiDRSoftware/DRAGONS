@@ -37,25 +37,25 @@ attribute on an instance of ``AstroData``. This *tags* property is a set of data
 classifications describing the dataset, which is used by the Recipe System
 to select the appropriate processing.
 
-Defining the lexicon and coding the related actions allows ``AstroData`` and
+.. Defining the lexicon and coding the related actions allows ``AstroData`` and
 the Recipe System infrastructure to naturally bring the following benefits:
 
- • Instrument-agnostic programming
- • Rapid development through isolation of dataset-specific heuristics
- • A science-oriented data processing "recipe" system
- • Automated and dynamic data processing
- • Automatic propagation of associated data and metadata
- • History, provenance, repeatability
- • Support for building smart pipelines
+.. • Instrument-agnostic programming
+.. • Rapid development through isolation of dataset-specific heuristics
+.. • A science-oriented data processing "recipe" system
+.. • Automated and dynamic data processing
+.. • Automatic propagation of associated data and metadata
+.. • History, provenance, repeatability
+.. • Support for building smart pipelines
 
 As a quick example of how the Recipe System and ``AstroData`` work together, 
-a typical reduce command can look deceptively simple, Without knowing the content
-of the FITS file, you can simply run `reduce` on the data and the Recipe System
-`mappers` automatically select the default recipe, ``reduce``, based upon the
+a typical ``reduce`` command can look deceptively simple, Without knowing the content
+of the FITS file, you can simply run ``reduce`` on the data and the Recipe System
+`mappers` automatically select the default recipe based upon the
 data classifications presented by the dataset and ``AstroData``. Furthermore,
 these data classifications have also been used to internally determine the most
 applicable class of primitives from the set of defined instrument packages
-(`targets`)::
+(``targets``)::
 
  $ reduce S20161025S0111.fits
  			--- reduce, v2.0 (beta) ---
@@ -74,33 +74,34 @@ a primitive class and a recipe:
  * recipe name
  * tags (or `tagset`)
 
-Recipes and tags have already been mentioned, but `mode` is one other 
-parameter required to perform recipe selection. The `mode` is simply a 
-label by which the recipe libraries are delineated and which are manifest 
-in instrument packages as directories named with these same-named labels.
+Recipes and tags have already been mentioned, but ``mode`` is one other
+parameter required to perform recipe selection.  The ``mode`` defines the
+type of reduction one wants to perform: science quality, quick reduction
+for quality assessment, etc.  Each ``mode`` defines its own recipe library.
 
-For example, instrument packages for many Gemini instruments are provided under 
+For example, instrument packages for most Gemini instruments are provided under
 the `gemindr` package, each of which contain a ``recipes`` directory that, in 
 turn, contains a `qa` directory and a `sq` directory. These `mode` directories 
 provide all recipes that pertain to data processing classified as Quality 
-Assessment (``qa``) or Science Quality (``sq``). The **QAP**, the Quality 
-Assessment Pipeline, is the ``reduce_nostack`` recipe under the ``qa`` recipe 
-libraries. Without indicating otherwise, the default mode in the DRAGONS Recipe
-System is ``sq``. Users can request ``qa`` mode recipes by simply specifying the
-``--qa`` switch on the command line.
+Assessment (``qa``) or Science Quality (``sq``).  Without indicating otherwise,
+the default mode in the DRAGONS Recipe System is ``sq``. Users can request
+``qa`` mode recipes by simply specifying the ``--qa`` switch on the command
+line.
 
 The DRAGONS Recipe System requires no naming convention on recipe
 libraries or primitive filenames; the system is name-agnostic: naming of recipe
 libraries, recipe functions, and primitive modules and classes is arbitrary. 
 
-With no arguments passed on the command line, what has happened in the example 
+.. With no arguments passed on the command line, what has happened in the example
 above? What has happened is that the Recipe System has fallen back to defaults
 for a recipe name and a mode, which, in the current (beta) release, results
 in the recipe, ``reduce``, and a mode of `sq`.
 
-As indicated, a recipe is just a function that recieves a primitive instance 
+.. As indicated, a recipe is just a function that recieves a primitive instance
 paired with the data, and which specifies that the following primitive functions 
-are called on the data. And what does the ``reduce`` recipe look like?
+are called on the data.
+
+This is what a recipe looks like?
 ::
 
  def reduce(p):
@@ -130,7 +131,13 @@ are called on the data. And what does the ``reduce`` recipe look like?
     p.writeOutputs()
     return
 
-The point here is not to overwhelm readers with a stack of primitive names, but 
+As the reader can see, a recipe is essentially a sequence of primitives that
+the data will be run through.  The primitives used at the recipe level
+normally represent a clear, meaningful step in the reduction.  The recipe
+is readable and does not require the scientific to know about Python coding
+to figure out what will happen to the data.
+
+.. The point here is not to overwhelm readers with a stack of primitive names, but
 to present both the default pipeline processing that the above simple ``reduce`` 
 command invokes and to demonstrate how much the ``reduce`` interface abstracts 
 away the complexity of the processing that is engaged with the simplicity of 
@@ -144,34 +151,40 @@ Definitions
 
 Mode
 ----
-A mode is a label by which the recipe libraries are delineated and 
-which are manifest in instrument packages as directories named with these 
-same labels. These mode names `should` indicate or hint at the purpose or 
-quality of the recipes contained therein. For example, Quality Assessment recipes
-are found in the ``qa`` recipes directory, Science Quality recipes, in the
-``sq`` recipes directory. There is no ``--mode`` option on the command line.
-Rather, mode is switched by two flags provided, ``--qa`` and ``--ql``, indicating
-that the Recipe System should map data to the Qaulity Assessment (``qa``)
-recipes or to what are called Quick Look (``ql``) recipes.
+The ``mode`` defines the type of reduction one wants to perform:
+science quality, quick reduction for quality assessment, etc.
+Each ``mode`` defines its own set of recipe libraries.
+The mode is switched through command line flags.  Without a flag, the default
+mode is science quality (``sq``).  Currently implemented are ``--qa`` and
+``--ql``, indicating
+that the Recipe System should map data to the Quality Assessment (``qa``)
+recipes or to the Quick Look (``ql``) recipes.  ``qa`` recipes are used at
+the observatory, at night, to evaluate the sky condition.  Those recipes
+assume that the data come in one a time and calculates various metrics needed
+for operations.  The ``ql`` recipes, which still have to be written, will
+be used for quick reduction of target-of-opportunity and follow-up observation
+with the goal of providing a reduced product good enough to assess the
+scientific worth of the target and of the observations quickly.
 
-.. note:: (DRAGONS currently defines no ``ql`` recipes but these are anticipated
-	  in future development.)
 
 Recipe
 ------
-A recipe is a python function defined for specific instruments and modes. A
-recipe function recieves one parameter, an instance of a primitive class. 
-This "primitive" class presents all available primitive methods on the 
-instance recived by the recipe, which is then free to call any primitive 
-function in any order. The acquisition of an applicable recipe and primitive
-class is the primary operation provided by ``reduce``.
+A recipe is a sequence of instructions specific to an instrument, type of
+data, and recipe system mode.  It a Python function that calls a sequence
+of ``primitives`` each designed to do one specific transformation.
+A Recipe System mapper can select the recipe automatically.  Another mapper
+selects the primitive set (collected through a ``primitive class``) the recipe
+can use and passes it to it.
+
 
 Recipe Library
 --------------
-A python module defined in an instrument package comprising one or more 
-defined recipe functions. A recipe library (module) will have one (1) attribute
-defined as ``recipe_tags``, which is a set of tags indicating the kind of
-data to which this recipe library applies.
+A recipe library is a collection of recipes that applies to a specific
+type of data.  The astrodata tags are used to match a recipe library to
+a dataset.  The recipe library is implemented as Python module.  There can
+be many recipes but only one is set as the default (though the user can
+call any recipe within the library.)
+
 
 Primitive
 ---------
