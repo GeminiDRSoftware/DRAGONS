@@ -17,6 +17,9 @@ class makeFringeConfig(parameters_stack.core_stacking_config, parameters_photome
     dilation = config.RangeField("Object dilation radius (pixels)", float, 2., min=0)
     def setDefaults(self):
         self.suffix = "_fringe"
+        self.operation = "median"
+        self.reject_method = "minmax"
+        self.nhigh = 1
 
 class makeFringeFrameConfig(parameters_stack.core_stacking_config, parameters_photometry.detectSourcesConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, True)
