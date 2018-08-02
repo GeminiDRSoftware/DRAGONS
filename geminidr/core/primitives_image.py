@@ -334,6 +334,12 @@ class Image(Register, Resample):
         x = -------------------------  and the sums are performed over the
              n*Sum(FF) - (Sum(F))**2   pixels (only good, non-object pixels)
 
+        This works reasonably well for images that are flat, where the pixel-
+        to-pixel variation is driven by the fringes and not large-scale
+        variations. GMOSImage has a more specific algorithm that uses control
+        pairs marking specific parts of the fringe pattern, and this is
+        works better, but requires preparatory work setting up those pairs.
+
         Parameters
         ----------
         ad: AstroData
