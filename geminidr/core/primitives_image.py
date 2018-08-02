@@ -211,7 +211,9 @@ class Image(Register, Resample):
                 ad.add(median_image)
 
         # Add object mask to DQ plane and stack with masking
-        adinputs = self.stackSkyFrames(adinputs, mask_objects=True, scale=False, zero=False,
+        # separate_ext is irrelevant unless (scale or zero) but let's be explicit
+        adinputs = self.stackSkyFrames(adinputs, mask_objects=True, separate_ext=False,
+                                       scale=False, zero=False,
                     **self._inherit_params(params, "stackSkyFrames", pass_suffix=True))
         if len(adinputs) > 1:
             raise ValueError("Problem with stacking fringe frames")

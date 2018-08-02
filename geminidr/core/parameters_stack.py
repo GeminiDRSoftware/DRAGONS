@@ -27,7 +27,6 @@ class core_stacking_config(config.Config):
     """Parameters relevant to ALL stacking primitives"""
     suffix = config.Field("Filename suffix", str, "_stack", optional=True)
     apply_dq = config.Field("Use DQ to mask bad pixels?", bool, True)
-    separate_ext = config.Field("Handle extensions separately?", bool, True)
     statsec = config.Field("Section for statistics", str, None, optional=True, check=statsec_check)
     operation = config.ChoiceField("Averaging operation", str,
                                    allowed = {"mean": "arithmetic mean",
@@ -50,6 +49,7 @@ class core_stacking_config(config.Config):
     memory = config.RangeField("Memory available for stacking (GB)", float, None, min=0.1, optional=True)
 
 class stackFramesConfig(core_stacking_config):
+    separate_ext = config.Field("Handle extensions separately?", bool, True)
     scale = config.Field("Scale images to the same intensity?", bool, False)
     zero = config.Field("Apply additive offsets to images to match intensity?", bool, False)
 
@@ -76,6 +76,5 @@ class stackFlatsConfig(core_stacking_config):
         self.reject_method = "minmax"
         self.nlow = 1
         self.nhigh = 1
-        self.separate_ext = False
 
 # TODO: Do we want stackSkyFlats with object removal?
