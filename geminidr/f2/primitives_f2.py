@@ -108,7 +108,7 @@ class F2(Gemini, NearIR):
                 continue
 
             # Attach an MDF to each input AstroData object
-            if params["attach_mdf"]:
+            if params["attach_mdf"] and 'SPECT' in ad.tags:
                 ad = self.addMDF([ad], mdf=mdf)[0]
 
             # Raw FLAMINGOS-2 pixel data have three dimensions (2048x2048x1).
