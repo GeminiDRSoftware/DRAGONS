@@ -193,11 +193,11 @@ class Stack(PrimitivesBASE):
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
-            if scale and any(np.isinf(scale_factors)):
+            if scale and np.any(np.isinf(scale_factors)):
                 log.warning("Some scale factors are infinite. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
-            if scale and any(np.isnan(scale_factors)):
+            if scale and np.any(np.isnan(scale_factors)):
                 log.warning("Some scale factors are undefined. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
@@ -305,36 +305,32 @@ class Stack(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys["stackSkyFrames"]
 
-        scale = params["scale"]
-        zero = params["zero"]
-        if scale and zero:
+        # Not what stackFrames does when both are set
+        stack_params = self._inherit_params(params, 'stackFrames',
+                                            pass_suffix=True)
+        if stack_params["scale"] and stack_params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
-            zero = False
+            stack_params["zero"] = False
 
         # We're taking care of the varying sky levels here (using a more
         # accurate determination of the sky level) so we need to stop
         # stackFrames from getting involved
-        stack_params = self._inherit_params(params, 'stackFrames',
-                                            pass_suffix=True)
-        stack_params.update({'zero': False, 'scale': False})
+        #stack_params.update({'zero': False, 'scale': False})
 
-        # Run detectSources() on any frames without any OBJMASKs
         if params["mask_objects"]:
-            adinputs = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad) else
-                        self.detectSources([ad])[0] for ad in adinputs]
             adinputs = self.dilateObjectMask(adinputs,
                                              dilation=params["dilation"])
             adinputs = self.addObjectMaskToDQ(adinputs)
 
-        if scale or zero:
-            ref_bg = gt.measure_bg_from_image(adinputs[0], value_only=True)
-            for ad in adinputs[1:]:
-                this_bg = gt.measure_bg_from_image(ad, value_only=True)
-                for ext, this, ref in zip(ad, this_bg, ref_bg):
-                    if scale:
-                        ext *= ref / this
-                    elif zero:
-                        ext += ref - this
+        #if scale or zero:
+        #    ref_bg = gt.measure_bg_from_image(adinputs[0], value_only=True)
+        #    for ad in adinputs[1:]:
+        #        this_bg = gt.measure_bg_from_image(ad, value_only=True)
+        #        for ext, this, ref in zip(ad, this_bg, ref_bg):
+        #            if scale:
+        #                ext *= ref / this
+        #            elif zero:
+        #                ext += ref - this
         adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
