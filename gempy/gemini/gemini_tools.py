@@ -396,12 +396,12 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
     if len(ad1) != len(ad2):
         result = False
         log.debug('  Number of SCI extensions differ')
-
-    for ext1, ext2 in zip(ad1, ad2):
-        if ext1.data.shape != ext2.data.shape:
-            result = False
-            log.debug('  Array dimensions differ')
-            break
+    else:
+        for i in range(len(ad1)):
+            if ad1.nddata[i].shape != ad2.nddata[i].shape:
+                result = False
+                log.debug('  Array dimensions differ')
+                break
 
     # Check all these descriptors for equality
     things_to_check = ['data_section', 'detector_roi_setting', 'read_mode',
