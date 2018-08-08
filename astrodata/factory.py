@@ -1,7 +1,7 @@
 from builtins import object
 from future.builtins import str
 from future.utils import PY3
-from functools import partial
+from copy import deepcopy
 
 from astropy.io import fits
 from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
@@ -99,7 +99,7 @@ class AstroDataFactory(object):
             if isinstance(phu, PrimaryHDU):
                 lst.append(phu)
             elif isinstance(phu, Header):
-                lst.append(PrimaryHDU(header=phu, data=DELAYED))
+                lst.append(PrimaryHDU(header=deepcopy(phu), data=DELAYED))
             elif isinstance(phu, (dict, list, tuple)):
                 p = PrimaryHDU()
                 p.header.update(phu)
