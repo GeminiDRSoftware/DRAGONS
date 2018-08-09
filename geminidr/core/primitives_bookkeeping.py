@@ -6,6 +6,7 @@
 import astrodata
 import gemini_instruments
 import numpy as np
+from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
 
@@ -333,9 +334,10 @@ class Bookkeeping(PrimitivesBASE):
         found = False
         for ad1, ad2 in zip(*gt.make_lists(adinputs, self.streams[source])):
             # Attribute could be top-level or extension-level
+            # Use deepcopy so references to original object don't remain
             if hasattr(ad2, attribute):
                 try:
-                    setattr(ad1, attribute, getattr(ad2, attribute))
+                    setattr(ad1, attribute, deepcopy(getattr(ad2, attribute)))
                 except ValueError:  # data, mask, are gettable not settable
                     pass
                 else:
@@ -343,7 +345,7 @@ class Bookkeeping(PrimitivesBASE):
                     continue
             for ext1, ext2 in zip(ad1, ad2):
                 if hasattr(ext2, attribute):
-                    setattr(ext1, attribute, getattr(ext2, attribute))
+                    setattr(ext1, attribute, deepcopy(getattr(ext2, attribute)))
                     found = True
 
         if not found:
