@@ -20,6 +20,11 @@ import pickle
 import warnings
 from copy import deepcopy
 from inspect import stack, isclass
+from multiprocessing import Process, Queue
+from subprocess import check_output, STDOUT, CalledProcessError
+
+from queue import Empty
+import atexit
 
 from gempy.library import config
 
@@ -67,6 +72,7 @@ def load_cache(cachefile):
 def save_cache(object, cachefile):
     pickle.dump(object, open(cachefile, 'wb'))
     return
+
 # ------------------------- END caches------------------------------------------
 class Calibrations(dict):
     def __init__(self, calindfile, user_cals={}, *args, **kwargs):
@@ -107,6 +113,20 @@ class Calibrations(dict):
         save_cache(self, self._calindfile)
         return
 # ------------------------------------------------------------------------------
+def cmdloop(inQueue, outQueue):
+    # Run shell commands as they arrive and return the output
+    while True:
+        cmd = inQueue.get()
+        try:
+            result = check_output(cmd, stderr=STDOUT)
+        except CalledProcessError as e:
+            result = e
+        outQueue.put(result)
+
+def cleanup(process):
+    # Ensure the child process is terminated with the parent
+    process.terminate()
+
 @parameter_override
 class PrimitivesBASE(object):
     """
@@ -153,6 +173,19 @@ class PrimitivesBASE(object):
         self.myself           = lambda: stack()[1][3]
 
         warnings.simplefilter('ignore', category=VerifyWarning)
+
+        # Create a parallel process to which we can send shell commands.
+        # Spawning a shell command makes a copy of its parent process in RAM
+        # so we need this process to have a small memory footprint.
+        self._inQueue = Queue()
+        self._outQueue = Queue()
+        self._cmd_host_process = Process(target=cmdloop, args=(self._inQueue,
+                                                               self._outQueue))
+        self._cmd_host_process.start()
+        atexit.register(cleanup, self._cmd_host_process)
+
+    def _kill_subprocess(self):
+        self._cmd_host_process.terminate()
 
     @property
     def upload(self):

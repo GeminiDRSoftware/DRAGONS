@@ -217,6 +217,8 @@ class Reduce(object):
                 log.error(str(err))
                 xstat = signal.SIGABRT
 
+        p._kill_subprocess()
+
         if hasattr(p, 'streams'):
             self._write_final(p.streams['main'])
         else:

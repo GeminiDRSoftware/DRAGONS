@@ -18,11 +18,12 @@ __VERSION_REGEXP__ = ''.join(["^.*version (?P<", __REGEXP_GROUP_NAME__,
 
 class SExtractorETI(ETI):
     """This class coordinates the ETI as is relates to SExtractor"""
-    def __init__(self, inputs=None, params=None, mask_dq_bits=None,
+    def __init__(self, primitives_class=None, inputs=None, params=None, mask_dq_bits=None,
                  getmask=False):
         """
         Parameters
         ----------
+        primitives_class: a PrimitivesBASE object
         inputs: list of AstroData objects
             AD objects to run through SExtractor
         params: dict
@@ -35,7 +36,7 @@ class SExtractorETI(ETI):
         getmask: bool
             make SExtractor produce an object mask and attach it to the outputs
         """
-        super(SExtractorETI, self).__init__(inputs=inputs)
+        super(SExtractorETI, self).__init__(primitives_class, inputs=inputs)
         self.add_param(SExtractorETIParam(params))
         self._mask_dq_bits = mask_dq_bits
         self._getmask = getmask
@@ -50,8 +51,7 @@ class SExtractorETI(ETI):
         """
         Returns True if the installed SExtractor is OK to use
         """
-        (stdoutdata, stderrdata) = self._execute(command,
-                                                   return_output=True)
+        stdoutdata = self._execute(command)
 
         version_regexp, group_names = self._version_regexp()
         if isinstance(group_names, list):
@@ -138,7 +138,7 @@ class SExtractorETI(ETI):
             [files.extend([param, value.popleft()]) for param, value in
              list_params.items()]
             files.append(file_obj._sci_image)
-            self._execute(cmd+files, return_output=False)
+            self._execute(cmd+files)
 
     def recover(self):
         for par in self.param_objs:
@@ -146,33 +146,20 @@ class SExtractorETI(ETI):
         # Return a list of OBJCATs
         return [fil.recover() for fil in self.file_objs]
 
-    def _execute(self, command, return_output=False):
-        """
-        Call subprocess to execute shell 'command'. Tests the executed task's
-        returncode: raises if non-zero. Raises an OSError.
-        If exceptions are raised the recover method is invoked.
-
-        @command: list: Shell command to execute
-        @return_output: bool: If True returns tuple (stdoutdata, stderrdata)
-        """
-        try:
-            # universal_newlines=True as SExtractor outputs non-ASCII chars
+    def _execute(self, command):
+        if self.inQueue is not None:
+            self.inQueue.put(command)
+            result = self.outQueue.get()
+            if isinstance(result, Exception):
+                raise result
+        else:
             pipe_out = subprocess.Popen(command,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         universal_newlines=True)
-
-            # Get the output from sextractor and set returncode (communicate
-            # does this) then check it
-            (stdoutdata, stderrdata) = pipe_out.communicate()
+            (result, stderrdata) = pipe_out.communicate()
             if pipe_out.returncode != 0:
                 errmsg = ("SExtractor returned an error:\n"
-                          "{0}{1}".format(stdoutdata, stderrdata))
+                          "{0}{1}".format(result, stderrdata))
                 raise Exception(errmsg)
-        except OSError:
-            self.clean()
-            raise
-        else:
-            # TODO Search for WARNINGS in stderrdata and print
-            if return_output:
-                return (stdoutdata, stderrdata)
+        return result

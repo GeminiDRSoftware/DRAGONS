@@ -159,7 +159,7 @@ class Photometry(PrimitivesBASE):
         mask_bits = params["replace_flags"] if params["mask"] else 0
 
         # Will raise an Exception if SExtractor is too old or missing
-        SExtractorETI().check_version()
+        SExtractorETI(primitives_class=self).check_version()
 
         # Delete primitive-specific keywords from params so we only have
         # the ones for SExtractor
@@ -204,8 +204,8 @@ class Photometry(PrimitivesBASE):
                 # If we don't have a seeing estimate, try to get one
                 if seeing_estimate is None:
                     log.debug("Running SExtractor to obtain seeing estimate")
-                    sex_task = SExtractorETI([ext], sexpars,
-                                    mask_dq_bits=mask_bits, getmask=True)
+                    sex_task = SExtractorETI(primitives_class=self, inputs=[ext],
+                            params=sexpars, mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
                     # An OBJCAT is *always* attached, even if no sources found
                     seeing_estimate = _estimate_seeing(ext.OBJCAT)
@@ -217,8 +217,8 @@ class Photometry(PrimitivesBASE):
                               "{:.3f}".format(seeing_estimate))
                     sexpars.update({'SEEING_FWHM': '{:.3f}'.
                                    format(seeing_estimate)})
-                    sex_task = SExtractorETI([ext], sexpars,
-                                    mask_dq_bits=mask_bits, getmask=True)
+                    sex_task = SExtractorETI(primitives_class=self, inputs=[ext],
+                            params=sexpars, mask_dq_bits=mask_bits, getmask=True)
                     sex_task.run()
                     # We don't want to replace an actual value with "None"
                     temp_seeing_estimate = _estimate_seeing(ext.OBJCAT)

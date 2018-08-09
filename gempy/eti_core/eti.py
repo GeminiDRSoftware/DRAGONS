@@ -1,4 +1,5 @@
 from ..utils import logutils
+
 log = logutils.get_logger(__name__)
 
 class ExternalTaskInterface(object):
@@ -12,7 +13,7 @@ class ExternalTaskInterface(object):
     file_objs = None
     inputs = None
     params = None
-    def __init__(self, inputs=None, params=None):
+    def __init__(self, primitives_class=None, inputs=None, params=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
@@ -22,6 +23,12 @@ class ExternalTaskInterface(object):
         self.params = params
         self.param_objs = []
         self.file_objs = []
+        if primitives_class is not None:
+            self.inQueue = primitives_class._inQueue
+            self.outQueue = primitives_class._outQueue
+        else:
+            self.inQueue = None
+            self.outQueue = None
 
     def run(self):
         log.debug("ExternalTaskInterface.run()")
@@ -61,6 +68,3 @@ class ExternalTaskInterface(object):
             par.clean()
         for fil in self.file_objs:
             fil.clean()
-
-
-
