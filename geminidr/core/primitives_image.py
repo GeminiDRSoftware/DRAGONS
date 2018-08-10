@@ -191,7 +191,7 @@ class Image(Register, Resample):
             return []
 
         adinputs = self.correctBackgroundToReference([deepcopy(ad) for ad in adinputs],
-                                            suffix='_fringe', remove_background=True,
+                                            suffix='_bksub', remove_background=True,
                                                      separate_ext=False)
 
         # If needed, construct a median image and subtract from all frames to
