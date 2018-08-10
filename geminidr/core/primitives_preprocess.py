@@ -20,6 +20,10 @@ from geminidr import PrimitivesBASE
 from . import parameters_preprocess
 
 from recipe_system.utils.decorators import parameter_override
+
+#import os, psutil
+#def memusage(proc):
+#    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
 # ------------------------------------------------------------------------------
 @parameter_override
 class Preprocess(PrimitivesBASE):
@@ -941,8 +945,12 @@ class Preprocess(PrimitivesBASE):
         nhigh: int
             number of high pixels to reject (for "minmax")
         """
+        #tpid = os.getpid()
+        #proc = psutil.Process(tpid)
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        #print "STARTING", memusage(proc)
 
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
@@ -986,7 +994,7 @@ class Preprocess(PrimitivesBASE):
 
         # Now make a list of AD instances of the skies, and delete any
         # filenames that could not be converted to ADs
-        skies = list(skies)
+        skies = sorted(list(skies))
         ad_skies = []
         for filename in skies:
             for sky in self.streams["sky"]:
@@ -1011,8 +1019,8 @@ class Preprocess(PrimitivesBASE):
         # sky-subtracted image.
         del self.streams["sky"]
         if params["mask_objects"]:
-            ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
-                        else self.detectSources([ad])[0] for ad in ad_skies]
+            #ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
+            #            else self.detectSources([ad])[0] for ad in ad_skies]
             dilate_params = self._inherit_params(params, "dilateObjectMask")
             ad_skies = self.dilateObjectMask(ad_skies, **dilate_params)
         sky_dict = dict(zip(skies, ad_skies))
@@ -1026,8 +1034,9 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
-                stacked_sky = self.stackSkyFrames([deepcopy(sky_dict[sky]) for sky in
+                stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
                                                   skytable], **stack_params)
+                #print ad.filename, memusage(proc)
                 if len(stacked_sky) == 1:
                     stacked_sky = stacked_sky[0]
                     # Provide a more intelligent filename
@@ -1046,8 +1055,10 @@ class Preprocess(PrimitivesBASE):
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
+        #print "ABOUT TO SUBTRACT", memusage(proc)
         adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
                                     offset_sky=offset_sky, reset_sky=reset_sky)
+        #print "SUBTRACTED", memusage(proc)
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):

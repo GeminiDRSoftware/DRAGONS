@@ -9,6 +9,7 @@ from astrodata.fits import windowedOp
 import numpy as np
 from astropy import table
 from functools import partial
+from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.nddops import NDStacker
@@ -137,9 +138,9 @@ class Stack(PrimitivesBASE):
 
         # Try to determine how much memory we're going to need to stack and
         # whether it's necessary to flush pixel data to disk first
+        # Also determine kernel size from offered memory and bytes per pixel
         bytes_per_ext = []
         for ext in adinputs[0]:
-            # Determine kernel size from offered memory and bytes per pixel
             bytes = 0
             # Count _data twice to handle temporary arrays
             for attr in ('_data', '_data', '_uncertainty'):
@@ -313,15 +314,14 @@ class Stack(PrimitivesBASE):
                         "Setting zero=False.")
             stack_params["zero"] = False
 
-        # We're taking care of the varying sky levels here (using a more
-        # accurate determination of the sky level) so we need to stop
-        # stackFrames from getting involved
-        #stack_params.update({'zero': False, 'scale': False})
-
+        # Need to deepcopy here to avoid changing DQ of inputs
+        dilation=params["dilation"]
         if params["mask_objects"]:
-            adinputs = self.dilateObjectMask(adinputs,
-                                             dilation=params["dilation"])
-            adinputs = self.addObjectMaskToDQ(adinputs)
+            # Purely cosmetic to avoid log reporting unnecessary calls to
+            # dilateObjectMask
+            if dilation > 0:
+                adinputs = self.dilateObjectMask(adinputs, dilation=dilation)
+            adinputs = self.addObjectMaskToDQ([deepcopy(ad) for ad in adinputs])
 
         #if scale or zero:
         #    ref_bg = gt.measure_bg_from_image(adinputs[0], value_only=True)
