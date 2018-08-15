@@ -26,17 +26,17 @@ class AstroDataGnirs(AstroDataGemini):
 
     @astro_data_tag
     def _type_dark(self):
-        if self.phu['OBSTYPE'] == 'DARK':
+        if self.phu.get('OBSTYPE') == 'DARK':
             return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _type_arc(self):
-        if self.phu['OBSTYPE'] == 'ARC':
+        if self.phu.get('OBSTYPE') == 'ARC':
             return TagSet(['ARC', 'CAL'])
 
     @astro_data_tag
     def _type_image(self):
-        if self.phu['ACQMIR'] == 'In':
+        if self.phu.get('ACQMIR') == 'In':
             return TagSet(['IMAGE'])
 
     @astro_data_tag
@@ -46,7 +46,7 @@ class AstroDataGnirs(AstroDataGemini):
 
     @astro_data_tag
     def _type_spect(self):
-        if self.phu['ACQMIR'] == 'Out':
+        if self.phu.get('ACQMIR') == 'Out':
             tags = set(['SPECT'])
             slit = self.phu.get('SLIT', '').lower()
             grat = self.phu.get('GRATING', '')
@@ -62,8 +62,8 @@ class AstroDataGnirs(AstroDataGemini):
 
     @astro_data_tag
     def _type_flats(self):
-        if self.phu['OBSTYPE'] == 'FLAT':
-            if 'Pinholes' in self.phu['SLIT']:
+        if self.phu.get('OBSTYPE') == 'FLAT':
+            if 'Pinholes' in self.phu.get('SLIT', ''):
                 return TagSet(['PINHOLE', 'CAL'], remove=['GCALFLAT'])
             else:
                 return TagSet(['FLAT', 'CAL'])

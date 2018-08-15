@@ -45,7 +45,7 @@ class AstroDataGmos(AstroDataGemini):
     def _tag_flat(self):
         if self.phu.get('OBSTYPE') == 'FLAT':
             if self.phu.get('GRATING') == 'MIRROR':
-                f1, f2 = self.phu['FILTER1'], self.phu['FILTER2']
+                f1, f2 = self.phu.get('FILTER1'), self.phu.get('FILTER2')
                 # This kind of filter prevents imaging to be classified as FLAT
                 if any(('Hartmann' in f) for f in (f1, f2)):
                     return
@@ -54,7 +54,7 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_twilight(self):
-        if self.phu.get('OBJECT').upper() == 'TWILIGHT':
+        if self.phu.get('OBJECT', '').upper() == 'TWILIGHT':
             # Twilight flats are of OBSTYPE == OBJECT, meaning that the generic
             # FLAT tag won't be triggered. Add it explicitly
             return TagSet(['TWILIGHT', 'CAL', 'FLAT'])

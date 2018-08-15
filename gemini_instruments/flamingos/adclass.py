@@ -27,17 +27,17 @@ class AstroDataFlamingos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_flat(self):
-        if 'flat' in self.phu.get('OBJECT').lower():
+        if 'flat' in self.phu.get('OBJECT', '').lower():
             return TagSet(['FLAT', 'CAL'])
 
     @astro_data_tag
     def _tag_twilight(self):
-        if 'twilight' in self.phu.get('OBJECT').lower():
+        if 'twilight' in self.phu.get('OBJECT', '').lower():
             return TagSet(['TWILIGHT', 'CAL'])    
 
     @astro_data_tag
     def _tag_dark(self):
-        if 'dark' in self.phu.get('OBJECT').lower():
+        if 'dark' in self.phu.get('OBJECT', '').lower():
             return TagSet(['DARK', 'CAL'])
 
     @astro_data_descriptor

@@ -87,7 +87,7 @@ class AstroDataF2(AstroDataGemini):
 
     @astro_data_tag
     def _tag_twilight(self):
-        if self.phu.get('OBJECT').upper() == 'TWILIGHT':
+        if self.phu.get('OBJECT', '').upper() == 'TWILIGHT':
             rej = set(['FLAT']) if self.phu.get('GRISM') != 'Open' else set()
             return TagSet(['TWILIGHT', 'CAL'], blocks=rej)
 

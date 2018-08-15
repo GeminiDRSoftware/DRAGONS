@@ -35,17 +35,17 @@ class AstroDataCirpass(AstroDataGemini):
 
     @astro_data_tag
     def _tag_dark(self):
-        if 'dark' in self.phu.get('OBSTYPE').lower():
+        if 'dark' in self.phu.get('OBSTYPE', '').lower():
             return TagSet(['DARK', 'CAL'], blocks=['IMAGE'])
 
     @astro_data_tag
     def _tag_flat(self):
-        if 'flat' in self.phu.get('OBSTYPE').lower():
+        if 'flat' in self.phu.get('OBSTYPE', '').lower():
             return TagSet(['FLAT', 'CAL'])
 
     @astro_data_tag
     def _tag_bias(self):
-        if 'bias' in self.phu.get('OBSTYPE').lower():
+        if 'bias' in self.phu.get('OBSTYPE', '').lower():
             return TagSet(['BIAS', 'CAL'], blocks=['IMAGE'])
 
     @astro_data_descriptor

@@ -130,7 +130,7 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_az(self):
-        if self.phu['FRAME'] == 'AZEL_TOPO':
+        if self.phu.get('FRAME') == 'AZEL_TOPO':
             try:
                 if self.phu.get('ELEVATIO', 0) >= 90:
                     return TagSet(['AZEL_TARGET', 'AT_ZENITH'])
@@ -148,13 +148,13 @@ class AstroDataGemini(AstroDataFits):
     # GCALFLAT is still needed
     @astro_data_tag
     def _type_gcalflat(self):
-        if self.phu['GCALLAMP'] == 'IRhigh':
+        if self.phu.get('GCALLAMP') == 'IRhigh':
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
-        if self.phu['GCALLAMP'] == 'IRhigh':
-            shut = self.phu['GCALSHUT']
+        if self.phu.get('GCALLAMP') == 'IRhigh':
+            shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
@@ -171,7 +171,7 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_nodandchop(self):
-        if self.phu['DATATYPE'] == "marked-nodandchop":
+        if self.phu.get('DATATYPE') == "marked-nodandchop":
             return TagSet(['NODCHOP'])
 
     @astro_data_tag
