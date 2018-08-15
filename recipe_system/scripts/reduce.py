@@ -6,18 +6,16 @@
 # reduce.py -- next gen reduce
 # ------------------------------------------------------------------------------
 from __future__ import print_function
-_version = '2.0 (beta)'
-# ------------------------------------------------------------------------------
-"""
-Prototype reduce (New Hope).
 
-"""
+# ------------------------------------------------------------------------------
+
 # ---------------------------- Package Import ----------------------------------
 import os
 import sys
 
 from gempy.utils import logutils
 
+from recipe_system import __version__
 from recipe_system.reduction.coreReduce import Reduce
 
 from recipe_system.utils.reduce_utils import buildParser
@@ -88,7 +86,7 @@ def main(args):
     except AssertionError:
         pass
 
-    log.stdinfo("\t\t\t--- reduce, v{} ---".format(_version))
+    log.stdinfo("\t\t\t--- reduce, v{} ---".format(__version__))
     r_reduce = Reduce(args)
     estat = r_reduce.runr()
     if estat != 0:
@@ -99,7 +97,7 @@ def main(args):
 
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
-    version_report = _version
+    version_report = __version__
     parser = buildParser(version_report)
     args = parser.parse_args()
 

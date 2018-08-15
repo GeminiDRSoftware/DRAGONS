@@ -18,7 +18,10 @@ import glob
 import astrodata
 import gemini_instruments
 
-def expr_parser(expression):
+def isclose(a, b, rel_tol=1e-02, abs_tol=0.0):
+    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+def expr_parser(expression, strict=False):
     """
     Takes a selection expression and return a codified version of that
     expression that returns True or False when eval().
@@ -36,20 +39,27 @@ def expr_parser(expression):
     adexpr = re.sub('([_A-z]\w*)([!=<>]+\S+)', r'ad.\1()\2', expression)
     codified_expression = deepcopy(adexpr)
 
-    for strfound in re.finditer('(ad.)([_A-z]\w*)([\(\)]+[!=<>]+)(\S+)', adexpr):
+    for strfound in re.finditer('(ad.)([_A-z]\w*)([\(\)]+)([!=<>]+)(\S+)', adexpr):
         descriptor = strfound.groups()[1]
-        pattern = r'(ad.' + re.escape(descriptor) + r')([\(\)]+[!=<>]+)(\S+)'
+        operator = strfound.groups()[3]
+        pattern = r'(ad.' + re.escape(descriptor) + r')([\(\)]+)([!=<>]+)(\S+)'
         if descriptor in ['ut_time', 'local_time']:
             codified_expression = \
-                re.sub(pattern, r'\1\2datetime.strptime(\3, "%H:%M:%S").time()',
-                       adexpr)
+                re.sub(pattern, r'\1\2\3datetime.strptime(\4, "%H:%M:%S").time()',
+                       codified_expression)
         elif descriptor == 'ut_date':
             codified_expression = \
-                re.sub(pattern, r'\1\2datetime.strptime(\3, "%Y-%m-%d").date()', adexpr)
+                re.sub(pattern, r'\1\2\3datetime.strptime(\4, "%Y-%m-%d").date()', codified_expression)
         elif descriptor == 'ut_datetime':
             codified_expression = \
-                re.sub(pattern, r'\1\2datetime.strptime(\3, "%Y-%m-%d %H:%M:%S")',
-                       adexpr)
+                re.sub(pattern, r'\1\2\3datetime.strptime(\4, "%Y-%m-%d %H:%M:%S")',
+                       codified_expression)
+        elif descriptor == 'exposure_time' and operator == '==' and not strict:
+            codified_expression = \
+                re.sub(pattern, r'isclose(\1(),\4)', codified_expression)
+        elif descriptor == 'filter_name' and not strict:
+            codified_expression = \
+                re.sub(pattern, r'\1(pretty=True)\3\4', codified_expression)
         else:
             pass
 
@@ -101,6 +111,8 @@ def parse_args(command_line_args):
     parser.add_argument('--expr', type=str, nargs=1,
                         dest='expression', action='store', required=False,
                         help='Expression to apply to descriptors (and tags)')
+    parser.add_argument('--strict', default=False, action='store_true',
+                        help='Toggle on strict expression matching.')
     parser.add_argument('--output', '-o', nargs=1,
                         dest='output', action='store', required=False,
                         help='Name of the output file')
@@ -140,7 +152,7 @@ def main(argv=None):
     if args.expression is None:
         codified_expression = 'True'
     else:
-        codified_expression = expr_parser(args.expression[0])
+        codified_expression = expr_parser(args.expression[0], args.strict)
 
     if args.output is None:
         args.verbose = True

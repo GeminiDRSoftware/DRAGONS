@@ -16,16 +16,14 @@ whereby users and developers can programmatically invoke ``Reduce`` and set
 parameters on an instance of that class.
 
 Both interfaces allow users to configure and launch a Recipe System processing 
-pipeline (a 'recipe') on one or more input datasets. Control of the Recipe System 
+pipeline on one or more input datasets. Control of the Recipe System
 on the ``reduce`` command line is provided by a variety of options and switches. 
-All options and switches can be accessed and controlled through the API.
+All options and switches can also be accessed and controlled through the API.
 
-The material presented in this chapter shall demonstrate that the ``reduce``
-command is quite sophisticated, providing a number of ways to pass arguments to the 
-``Reduce`` class. This chapter will first present details of the ``reduce`` 
-command line interface, including an extended discussion of :ref:`atfile`. This 
-is followed by a detailed presentation on the Recipe System's ``Reduce`` class and
-it's :ref:`api`.
+This chapter will first present details of the ``reduce`` command line
+interface, including an extended discussion of ???KL :ref:`atfile`. This
+is followed by a detailed presentation on the Recipe System's ``Reduce``
+class and it's :ref:`api`.
 
 The ``reduce`` command
 ----------------------
@@ -36,7 +34,7 @@ We begin with the example shown in the :ref:`Introduction <intro>`::
 
   $ reduce S20161025S0111.fits
 
-With no command line parameters or other options, a default mode of `'sq'` 
+With no command line arguments or other options, a default mode of `'sq'`
 is set. Instrument packages provide a default recipe for all instruments when
 none is specified by the user. Under DRAGONS, all instrument packages define one
 default recipe for each recipe library.
@@ -344,7 +342,7 @@ display settable primitive parameters, see
 .. _atfile:
 
 The @file facility
-++++++++++++++++++
+------------------
 
 The reduce command line interface supports what might be called an 'at-file' 
 facility (users and readers familiar with IRAF will recognize this facility). 

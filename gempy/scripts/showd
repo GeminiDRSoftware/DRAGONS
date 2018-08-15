@@ -75,9 +75,13 @@ def main(argv=None):
     One file per line.
     """
     if argv is None:
-        argv = sys.argv
+        argv = sys.argv[1:]
 
-    args = parse_args(sys.argv[1:])
+    if not sys.stdin.isatty():
+        input_stream = [fname.rstrip() for fname in sys.stdin]
+        argv[0:0] = input_stream
+
+    args = parse_args(argv)
 
     for filename in args.inputs:
         ad = astrodata.open(filename)

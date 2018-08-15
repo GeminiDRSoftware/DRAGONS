@@ -5,8 +5,6 @@ from __future__ import print_function
 #                                                        recipe_system.reduction
 #                                                               reduceActions.py
 # ------------------------------------------------------------------------------
-__version__  = '2.0.0 (beta)'
-# ------------------------------------------------------------------------------
 """
 This module provides a number "action" classes, subclassed from the
 argparse.Action class. These classes only override the __call__() method. This 
