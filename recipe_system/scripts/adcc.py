@@ -3,8 +3,6 @@
 #
 #                                                                        adcc.py
 # ------------------------------------------------------------------------------
-__version__ = '2.0 (beta)'
-# ------------------------------------------------------------------------------
 """
 Automated Dataflow Coordination Center
 
@@ -12,6 +10,9 @@ Automated Dataflow Coordination Center
 import sys
 
 from argparse import ArgumentParser
+
+from recipe_system import __version__
+
 from recipe_system.adcc.adcclib import ADCC
 # ------------------------------------------------------------------------------
 def buildArgs():

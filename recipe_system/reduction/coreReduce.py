@@ -8,7 +8,7 @@ from __future__ import print_function
 from builtins import str
 from builtins import object
 # ------------------------------------------------------------------------------
-_version = '2.0.0 (beta)'
+from recipe_system import __version__
 # ------------------------------------------------------------------------------
 """
 class Reduce {} provides one (1) public method:
@@ -17,7 +17,7 @@ class Reduce {} provides one (1) public method:
 
 which calls on the mapper classes and passes the received data to them.
 
-""".format(_version)
+""".format(__version__)
 # ---------------------------- Package Import ----------------------------------
 import os
 import sys
@@ -97,9 +97,9 @@ class Reduce(object):
         if sys_args:
             args = sys_args
         elif self._confirm_args():
-            args = buildParser(_version).parse_args()
+            args = buildParser(__version__).parse_args()
         else:
-            args = buildParser(_version).parse_args([])
+            args = buildParser(__version__).parse_args([])
 
         # acquire any new astrodata classes.
         if args.adpkg:
@@ -324,7 +324,7 @@ class Reduce(object):
         """
         is_reduce = False
         exe_path = sys.argv[0]
-        red_namespace = buildParser(_version).parse_args([])
+        red_namespace = buildParser(__version__).parse_args([])
         if exe_path:
             cstack = inspect.stack()
             for local, value in list(cstack[-1][0].f_locals.items()):

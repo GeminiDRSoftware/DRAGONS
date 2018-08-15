@@ -4,7 +4,7 @@ from __future__ import print_function
 # ------------------------------------------------------------------------------
 # Utility function library for reduce and the Reduce class.
 from builtins import range
-__version__ = "2.0.0 (beta)"
+
 # ------------------------------------------------------------------------------
 from argparse import ArgumentParser
 from argparse import HelpFormatter

@@ -7,131 +7,117 @@
 
 Installation
 ============
+The Recipe System is distributed as part of DRAGONS.  DRAGONS is available
+as a conda package.  The installation instructions below will install all
+the necessary dependencies.
 
-.. note:: While the original Recipe System, v1.0, was written in such a way as
-   to prevent migration to Python 3.x, Recipe System v2.0 has been written with
-   efforts to ensure compatibility with both Python 2.7.x and Python 3.x. Because
-   of this, the Recipe System, and the larger DRAGONS package, introduce a
-   dependency on the ``future`` module (currently, v0.16.0). Users may need to
-   install this package (see http://python-future.org).
+The use of the `bash` shell is required.  This is an Anaconda limitation.
 
-.. todo:: This chapter will need updating with reference to Anaconda/astroconda, 
-	  once package naming and org. is finalized.
+Install Anaconda
+----------------
+If you already have Anaconnda installed, you can skip this step.  Go to
+the ???KL ``Install geminiconda`` section below.
 
-In order to use ``reduce``, the ``Reduce`` class, and the Recipe System to 
-process data, the DRAGONS package must be installed properly. The 
-DRAGONS package provides all the components described herein, as well as
-those components, such as ``astrodata``, referred to in the
-:ref:`Introduction <intro>`. In particular, though not the subject of this
-document, the DRAGONS ``astrodata`` package has several dependencies, such
-as ``astropy``, ``scipy``, ``numpy``, and others.
+The first step is to get anaconda.  You can download it at:
 
-All dependencies of DRAGONS and ``astrodata`` are provided by the Ureka package,
-and users are highly encouraged to install and use this
-very useful package. It is an easy and, perhaps, best way to get everything you
-need and then some. Ureka is available at http://ssb.stsci.edu/ureka/.
+    `<https://www.anaconda.com/download/>`_
 
-WARNING:  The Ureka installation script will not set up IRAF for you. You need
-to do that yourself. Here's how::
+Choose the version of Python that suits your other Python needs.  DRAGONS is
+compatible with both Python 2.7 and 3.6.
 
-   $ cd ~
-   $ mkdir iraf
-   $ cd iraf
-   $ mkiraf
-   -- creating a new uparm directory
-   Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
-   Enter terminal type: xgterm
-   A new LOGIN.CL file has been created in the current directory.
-   You may wish to review and edit this file to change the defaults.
+If you have downloaded the graphical installer, follow the graphical installer
+instructions.  Install in your home directory.  It should be the default.
 
+If you have downloaded the command-line installer::
 
-Once a user has has retrieved the gemini_python package, available as a tarfile 
-from the Gemini website (http://gemini.edu), and untarred only minor adjustments 
-need to be made to the user environment in order to make astrodata importable and 
-allow ``reduce`` to work properly.
+    /bin/bash -l
+    chmod a+x Anaconda3-5.2.0-MacOSX-x86_64.sh
+    ./Anaconda3-5.2.0-MacOSX-x86_64.sh
 
-.. _config:
+Of course, if you are already using ``bash`` you can forgo that line, and
+adapt the Anaconda package installer name to what you downloaded.
 
-Install
--------
+Install geminiconda
+-------------------
+Anaconda requires the use of the bash shell.  ``tcsh`` or ``csh`` will not
+work.  If you are using (t)csh, your first step is:
 
-Recommended Installation
-------------------------
+    /bin/bash -l
 
-We recommend that users install the software in a location other than the standard 
-python location for modules (the default ``site-packages``). This is recommended
-because, in all likelihood, most users will not have write permission to the system
-python ``site-packages`` directory. Here is how you install the software somewhere 
-other than the system location::
+Make sure that ``~/anaconda/bin/activate`` is in your ``PATH``.  The easiest
+way to ensure that is to add ``export PATH=~/anaconda/bin:$PATH`` to your
+``.bash_profile``.  The Anaconda installer should have offered to add it for
+you.
 
-   $ python setup.py install --prefix=/your/location
+Activate anaconda::
 
-``/your/location`` must already exist.  This command will install executable
-scripts in a ``bin`` subdirectory, the documentation in a ``share`` subdirectory,
-and the modules in a ``lib/python2.7/site-packages`` subdirectory.  The modules
-being installed are ``astrodata``, ``gemini_instruments``, ``geminidr``, 
-``recipe_system``, and ``gempy``. In this manual, we will only use ``astrodata``.
+    source ~/anaconda/bin/activate
 
-Because you are not using the default location, you will need to add two paths to
-your environment.  You might want to add the following to your .cshrc or
-.bash_profile, or equivalent shell configuration script.
-
-C shell(csh, tcsh)::
-
-   setenv PATH /your/location/bin:${PATH}
-   setenv PYTHONPATH /your/location/lib/python2.7/site-packages:${PYTHONPATH}
-
-Bourne shells (sh, bash, ksh, ...) ::
-
-   export PATH=/your/location/bin:${PATH}
-   export PYTHONPATH=/your/location/lib/python2.7/site-packages:${PYTHONPATH}
-
-If you added those lines to your shell configuration script, make sure your 
-``source`` the file to activate the new setting.
-
-For csh/tcsh::
-
-   $ source ~/.cshrc
-   $ rehash
-
-For bash::
-
-   $ source ~/.bash_profile
-
-Installation under Ureka
-++++++++++++++++++++++++
-
-Assuming that you have installed Ureka and that you have write access to the Ureka
-directory, this will install ``astrodata`` in the Ureka ``site-packages`` directory.
+Now add the Astroconda channel and the Gemini channel.  Those channels host
+the necessary conda packages.
 
 ::
 
-   $ python setup.py install
+    conda config --add channels http://ssb.stsci.edu/astroconda
+    conda config --add channels http://astroconda.gemini.edu/public
 
-This will also add executables to the Ureka ``bin`` directory and documentation to
-the Ureka ``share`` directory.
+Then create the ``geminiconda`` environment and install the Gemini data
+reduction software into it.
 
-With this installation scheme, there is no need to add paths to your environment.
-However, it is a lot more complicated to remove the Gemini software in case of
-problems, or if you just want to clean it out after evaluation.
+::
 
-In tcsh, you will need to run ``rehash`` to pick the new executables written to
-``bin``.
+    Python 2.7:
+
+    conda create -n geminiconda python=2.7 iraf-all pyraf-all stsci gemini
+
+    Python 3.6
+
+    conda create -n geminiconda python=3.6 iraf-all pyraf-all stsci gemini
+
+If you are going to use PyRAF a regularly, we recommend installing Python 2.7
+as PyRAF is very slow under Python 3.  Otherwise, install the Python 3
+version.  If you know that you will not be using IRAF or PyRAF, you can
+remove ``iraf-all`` and ``pyraf-all`` from command.
+
+To use this environment, activate it::
+
+    source activate geminiconda
+
+You will need to activate the environment whenever you start a new shell.
+If you are planning to use it all the time, you might want to add the
+command to your ``.bash_profile``.
+
+A note about IRAF.  If you have installed IRAF, you will need to configure it
+if this is the first time.  With the ``geminiconda`` environment activated::
+
+    cd ~
+    mkdir iraf
+    cd iraf
+    mkiraf
+
+At the ``mkiraf`` prompts choose ``xterm`` and re-initialize the ``uparm``
+if asked.
+
+IRAF is not needed for DRAGONS.  But since the Gemini IRAF suite is still
+required for the reduction of some data, we add the information nonetheless.
+
 
 .. _test:
 
 Test the installation
-+++++++++++++++++++++
+---------------------
 
-Start up the python interpreter and import astrodata and the gemini_instruments
-packages::
+Start up the Python interpreter and import ``astrodata`` and the
+``gemini_instruments`` packages::
 
    $ python
    >>> import astrodata
    >>> import gemini_instruments
 
-Next, return to the command line and test that ``reduce`` runs. There may be some 
-delay as package modules are compiled and loaded::
+If the imports are successful, i.e. no errors show up, exit Python (Ctrl-D).
+
+Now test that ``reduce`` runs. There may be some delay as package modules
+are compiled and loaded::
 
    $ reduce -h
 
@@ -141,59 +127,39 @@ or ::
 
 This will print the reduce help to the screen.
 
-.. todo:: Update the following section for example "test_one". Currently,
-   there is no defined recipe or primitive "test_one".
-
 If you have Gemini fits files available, you can test that the Recipe System
-is functioning as expected with a test recipe provided by the ``geminidr``
-package::
+is functioning as expected as follow::
 
-  $ reduce --recipe test_one /path/to/gemini_data.fits
+  $ reduce N20180106S0700.fits -r prepare
 
 If all is well, you will see something like::
 
-  Resetting logger for application: reduce
-  Logging configured for application: reduce
-                         --- reduce, v4890  ---
-		Running under astrodata Version GP-X1
-  All submitted files appear valid
-  Starting Reduction on set #1 of 1
+			--- reduce, v2.0.8 ---
+    All submitted files appear valid
+    Found 'prepare' as a primitive.
+    ================================================================================
+    RECIPE: prepare
+    ================================================================================
+    PRIMITIVE: prepare
+    ------------------
+      PRIMITIVE: validateData
+      -----------------------
+      .
+      PRIMITIVE: standardizeStructure
+      -------------------------------
+      .
+      PRIMITIVE: standardizeHeaders
+      -----------------------------
+         PRIMITIVE: standardizeObservatoryHeaders
+         ----------------------------------------
+         Updating keywords that are common to all Gemini data
+         .
+         PRIMITIVE: standardizeInstrumentHeaders
+         ---------------------------------------
+         Updating keywords that are specific to NIRI
+         .
+      .
+    .
+    Wrote N20180106S0700_prepared.fits in output directory
 
-    Processing dataset(s):
-	  gemini_data.fits
-
-  ==============================================================================
-  RECIPE: test_one
-  ==============================================================================
-   PRIMITIVE: showParameters
-   -------------------------
-   rtf = False
-   suffix = '_scafaasled'
-   otherTest = False
-   logindent = 3
-   logfile = 'reduce.log'
-   reducecache = '.reducecache'
-   storedcals = 'calibrations/storedcals'
-   index = 1
-   retrievedcals = 'calibrations/retrievedcals'
-   cachedict = {'storedcals': 'calibrations/storedcals', 'retrievedcals': 
-                'calibrations/retrievedcals', 'calibrations': 'calibrations', 
-                'reducecache': '.reducecache'}
-   loglevel = 'stdinfo'
-   calurl_dict = {'CALMGR': 'http://fits/calmgr', 
-                  'UPLOADPROCCAL': 'http://fits/upload_processed_cal', 
-                  'QAMETRICURL': 'http://fits/qareport', 
-                  'QAQUERYURL': 'http://fits/qaforgui', 
-                  'LOCALCALMGR': 'http://localhost:%(httpport)d/calmgr/%(caltype)s'}
-   logmode = 'standard'
-   test = True
-   writeInt = False
-   calibrations = 'calibrations'
-   .
-  Wrote gemini_data.fits in output directory
-
-
-  reduce completed successfully.
-
-The URLs in the example above, i.e. ``http://fits/...`` are described in Sec. 
-:ref:`fitsstore`, Chapter 5, Discussion.
+    reduce completed successfully.

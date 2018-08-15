@@ -188,57 +188,72 @@ call any recipe within the library.)
 
 Primitive
 ---------
-A primitive is a defined function (method) on a primitive class. Under DRAGONS,
-a primitive function is generally contrived to be a "science-oriented"
-data processing step; for example, "bias correction." This is purely convention.
-The Recipe System has no requirement that this be true.
+A primitive is a data reduction step usually involving a transformation of
+the data.  By convention, the primitives are named to covey the scientific
+meaning of the transformation. For example `biasCorrect` will do exactly that,
+remove the bias signal from the input data.  (Note that the naming convention
+is a guideline, not a technical restriction.)
 
-Primitive Class
----------------
-As defined under the DRAGONS package, ``geminidr``, primitive classes 
-are a large set of hierarchical classes exhibiting inheritance from generic to
-specific. Because they are real data, datasets will always have some 
-instrument/mode specific set of *tags* that will allow the Recipe System to pick
-instrument/mode specific primitive class. 
+Technically, a primitive is a method of the primitive class.  A primitive
+class gets associated with the input dataset by matching the astrodata tags.
+Once associated, all the primitives in that class, locally defined or inherited,
+are available to reduce that dataset.  We refer to that collection of
+primitves a "primitive set".
+
+
+Primitive Set
+-------------
+A primitive set is a collection of primitives that are applicable to the
+dataset.  The association is done by matching astrodata tags.  It is a
+primitive set that gets passed to the recipe.  The recipe can use any primitive
+within that set.
+
+Technically, a primitive set is a class that can have inherited from other more
+general classes.  In ``geminidr``, there is a large inheritance tree of
+primitive classes from very generic to very specific.  For example, the
+primitive set for GMOS images inherits other set (class) like the one for
+generic CCD, the photometry set, the one that applies to all Gemini data, etc.
+
 
 Further Information
 ===================
-As this document details, ``reduce`` provides a number of options and command 
+As this document details, command-line tool ``reduce`` provides a number of
+options and command
 line switches that allow users to control the processing of their data.
-This document will further describe usage of the ``Reduce`` class' API. A 
-detailed presentation of the above components comprise Chapter 3, :ref:`howto`.
+This document will further describe usage of the ``Reduce`` class' API that
+allows for a programmatic usage rather than command-line usage. A
+detailed presentation of these interfaces is found in Chapter 3, :ref:`howto`.
 
-The DRAGONS packge must be installed and available, both at the command 
-line and as importable Python packages. The :ref:`next chapter <install>` 
-takes readers through the install process.
+The Recipe System is distributed as part of the DRAGONS software.
+DRAGONS and its dependencies must be installed and configured.
+The :ref:`next chapter <install>` takes readers through the installation process.
 
-Details and information about the ``astrodata`` package, the Recipe System, 
-and/or the data processing involved in data reduction are beyond the scope of 
-this document and will only be engaged when directly pertinent to the operations 
-of the Recipe System. Users and developers wishing to see more information about 
-how to use the programmtic interfaces of the Recipe System should consult the
-documents described next section.
+Details and information on developing for the Recipe System, and about the
+``astrodata`` package, are beyond the scope of this document, so is the
+discussion on how to reduce specific data.  We invite the reader interested
+in those topics to refer to the topical documentation. We list some resources
+below.
+
 
 .. _refdocs:
 
 Reference Documents
 -------------------
 
-  - `RecipeSystem v2.0 Design Note`, Doc. ID: PIPE-DESIGN-104_RS2.0DesignNote,
-    Anderson, K.R., Gemini Observatory, 2017, DPSGdocuments/.
-
-  - `Recipe System Programmer’s Manual`, Doc. ID: PIPE-USER-108_RSProgManual,
-    Anderson, K.R., Gemini Observatory, 2017, 
-    DRAGONS/recipe_system/doc/rs_ProgManual/.
+  - `Recipe System Programmer’s Manual`, Anderson, K.R., Gemini Observatory, 2018,
+    `<http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/astrodata/doc/ad_CheatSheet>`_.
+    (Doc. ID: PIPE-USER-108_RSProgManual,)
 
 .. _related:
 
 Related Documents
 -----------------
 
-  - `Astrodata cheat sheet`, Doc. ID: PIPE-USER-105_AstrodataCheatSheet,
-    Cardenas, R., Gemini Observatory, 2017, astrodata/doc/ad_CheatSheet.
+  - `Astrodata cheat sheet`, Labrie, K., Gemini Observatory, 2018,
+    `<http://astrodata-cheat-sheet.readthedocs.io/en/latest/>`_
+    (Doc. ID: PIPE-USER-105_AstrodataCheatSheet)
 
-  - `Astrodata User’s Manual`, Doc. ID:  PIPE-USER-106_AstrodataUserManual,
-    Labrie, K., Gemini Observatory, 2017, astrodata/doc/ad_UserManual/.
+  - `Astrodata User’s Manual`, Labrie, K., Gemini Observatory, 2018
+    `<http://astrodata-user-manual.readthedocs.io/en/latest/>`_
+    (Doc. ID:  PIPE-USER-106_AstrodataUserManual)
 
