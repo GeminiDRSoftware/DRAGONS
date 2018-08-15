@@ -20,6 +20,10 @@ from geminidr import PrimitivesBASE
 from . import parameters_preprocess
 
 from recipe_system.utils.decorators import parameter_override
+
+#import os, psutil
+#def memusage(proc):
+#    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
 # ------------------------------------------------------------------------------
 @parameter_override
 class Preprocess(PrimitivesBASE):
@@ -262,7 +266,7 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def correctBackgroundToReference(self, adinputs=None, suffix=None,
-                                     remove_background=False):
+                                     separate_ext=True, remove_background=False):
         """
         This primitive does an additive correction to a set
         of images to put their sky background at the same level
@@ -290,34 +294,47 @@ class Preprocess(PrimitivesBASE):
                                     "images do not match")
         else:
             # Loop over input files
-            ref_bg_list = []
+            ref_bg_list = None
             for ad in adinputs:
-                bg_list = gt.measure_bg_from_image(ad, value_only=True)
+                bg_list = gt.measure_bg_from_image(ad, value_only=True,
+                                                   separate_ext=separate_ext)
                 # If this is the first (reference) image, set the reference bg levels
-                if not ref_bg_list:
+                if ref_bg_list is None:
                     if remove_background:
-                        ref_bg_list = [0] * len(ad)
+                        ref_bg_list = ([0] * len(ad)) if separate_ext else 0.
                     else:
                         ref_bg_list = bg_list
 
-                for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
-                    if bg is None:
-                        if 'qa' in self.mode:
+                if separate_ext:
+                    for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
+                        if bg is None:
                             log.warning("Could not get background level from "
-                                "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
+                                        "{}:{}".format(ad.filename, ext.hdr['EXTVER']))
                             continue
-                        else:
-                            raise LookupError("Could not get background level "
-                            "from {}:{}".format(ad.filename, ext.hdr['EXTVER']))
 
-                    # Add the appropriate value to this extension
-                    log.fullinfo("Background level is {:.0f} for {}:{}".
-                                 format(bg, ad.filename, ext.hdr['EXTVER']))
-                    difference = np.float32(ref - bg)
-                    log.fullinfo("Adding {:.0f} to match reference background "
+                        # Add the appropriate value to this extension
+                        log.fullinfo("Background level is {:.0f} for {}:{}".
+                                     format(bg, ad.filename, ext.hdr['EXTVER']))
+                        difference = np.float32(ref - bg)
+                        log.fullinfo("Adding {:.0f} to match reference background "
                                      "level {:.0f}".format(difference, ref))
-                    ext.add(difference)
-                    ext.hdr.set('SKYLEVEL', ref,
+                        ext.add(difference)
+                        ext.hdr.set('SKYLEVEL', ref,
+                                    self.keyword_comments["SKYLEVEL"])
+                else:
+                    if bg_list is None:
+                        log.warning("Could not get background level from "
+                                    "{}".format(ad.filename))
+                        continue
+
+                    # Add the appropriate value to the entire AD object
+                    log.fullinfo("Background level is {:.0f} for {}".
+                                 format(bg_list, ad.filename))
+                    difference = np.float32(ref_bg_list - bg_list)
+                    log.fullinfo("Adding {:.0f} to match reference background "
+                                 "level {:.0f}".format(difference, ref_bg_list))
+                    ad.add(difference)
+                    ad.hdr.set('SKYLEVEL', ref_bg_list,
                                 self.keyword_comments["SKYLEVEL"])
 
                 # Timestamp the header and update the filename
@@ -928,8 +945,12 @@ class Preprocess(PrimitivesBASE):
         nhigh: int
             number of high pixels to reject (for "minmax")
         """
+        #tpid = os.getpid()
+        #proc = psutil.Process(tpid)
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        #print "STARTING", memusage(proc)
 
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
@@ -973,7 +994,7 @@ class Preprocess(PrimitivesBASE):
 
         # Now make a list of AD instances of the skies, and delete any
         # filenames that could not be converted to ADs
-        skies = list(skies)
+        skies = sorted(list(skies))
         ad_skies = []
         for filename in skies:
             for sky in self.streams["sky"]:
@@ -998,8 +1019,8 @@ class Preprocess(PrimitivesBASE):
         # sky-subtracted image.
         del self.streams["sky"]
         if params["mask_objects"]:
-            ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
-                        else self.detectSources([ad])[0] for ad in ad_skies]
+            #ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
+            #            else self.detectSources([ad])[0] for ad in ad_skies]
             dilate_params = self._inherit_params(params, "dilateObjectMask")
             ad_skies = self.dilateObjectMask(ad_skies, **dilate_params)
         sky_dict = dict(zip(skies, ad_skies))
@@ -1013,8 +1034,9 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
-                stacked_sky = self.stackSkyFrames([deepcopy(sky_dict[sky]) for sky in
+                stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
                                                   skytable], **stack_params)
+                #print ad.filename, memusage(proc)
                 if len(stacked_sky) == 1:
                     stacked_sky = stacked_sky[0]
                     # Provide a more intelligent filename
@@ -1033,8 +1055,10 @@ class Preprocess(PrimitivesBASE):
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
+        #print "ABOUT TO SUBTRACT", memusage(proc)
         adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
                                     offset_sky=offset_sky, reset_sky=reset_sky)
+        #print "SUBTRACTED", memusage(proc)
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):

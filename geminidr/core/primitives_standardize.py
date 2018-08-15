@@ -673,7 +673,13 @@ class Standardize(PrimitivesBASE):
         """
         log = self.log
         inst = ad.instrument()
-        mode = 'IMAGE' if 'IMAGE' in ad.tags else 'SPECT'
+        mode = ad.tags & {'IMAGE', 'SPECT'}
+        if mode:
+            mode = mode.pop()
+        else:  # DARK/BIAS (only F2 K-band darks for flats should get here)
+            log.fullinfo("{} in neither IMAGE nor SPECT so does not require "
+                         "an illumination mask".format(ad.filename))
+            return None
         xbin = ad.detector_x_bin()
         ybin = ad.detector_y_bin()
         try:

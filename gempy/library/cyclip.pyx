@@ -16,7 +16,7 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
             if mask[i] == 0:
                 tmp[nused] = data[i]
                 nused += 1
-    else:
+    if nused == 0:  # if not(has_mask) or all(mask)
         for i in range(data_size):
             tmp[i] = data[i]
         nused = data_size
@@ -56,10 +56,9 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double * mask_stats(float data[], unsigned short mask[], int has_mask,
-                int data_size, int return_median):
+cdef void mask_stats(float data[], unsigned short mask[], int has_mask,
+                int data_size, int return_median, double result[2]):
     cdef double mean, sum = 0., sumsq = 0., sumall = 0., sumsqall=0.
-    cdef double result[2]
     cdef int i, nused = 0
     for i in range(data_size):
         sumall += data[i]
@@ -73,12 +72,11 @@ cdef double * mask_stats(float data[], unsigned short mask[], int has_mask,
         sumsq = sumsqall
         nused = data_size
     mean = sum / float(nused)
-    result[1] = sumsq / nused - mean*mean
     if return_median:
         result[0] = <double>median(data, mask, has_mask, data_size)
     else:
         result[0] = mean
-    return result
+    result[1] = sumsq / nused - mean*mean
 
 cdef long num_good(unsigned short mask[], long data_size):
     cdef long i, ngood = 0
@@ -112,7 +110,7 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
             tmpmask[n] = mask[n*data_size+i]
         ngood = num_good(tmpmask, num_img)
         while iter < max_iters:
-            result = mask_stats(tmpdata, tmpmask, 1, num_img, return_median)
+            mask_stats(tmpdata, tmpmask, 1, num_img, return_median, result)
             avg = result[0]
             if has_var == 0 or sigclip:
                 std = sqrt(result[1])

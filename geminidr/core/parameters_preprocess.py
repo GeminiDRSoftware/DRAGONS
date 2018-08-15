@@ -30,6 +30,7 @@ class associateSkyConfig(config.Config):
 
 class correctBackgroundToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_backgroundCorrected", optional=True)
+    separate_ext = config.Field("Treat each extension separately?", bool, True)
     remove_background = config.Field("Remove background level?", bool, False)
 
 class darkCorrectConfig(config.Config):

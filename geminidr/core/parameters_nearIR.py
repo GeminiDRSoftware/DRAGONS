@@ -15,9 +15,7 @@ class makeBPMConfig(config.Config):
     pass
 
 class makeLampFlatConfig(parameters_stack.core_stacking_config):
-    def setDefaults(self):
-        self.reject_method = "none"
-        self.separate_ext = False
+    pass
 
 class removeFirstFrameConfig(config.Config):
     pass

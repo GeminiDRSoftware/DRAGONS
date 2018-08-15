@@ -9,6 +9,7 @@ from astrodata.fits import windowedOp
 import numpy as np
 from astropy import table
 from functools import partial
+from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.nddops import NDStacker
@@ -137,9 +138,9 @@ class Stack(PrimitivesBASE):
 
         # Try to determine how much memory we're going to need to stack and
         # whether it's necessary to flush pixel data to disk first
+        # Also determine kernel size from offered memory and bytes per pixel
         bytes_per_ext = []
         for ext in adinputs[0]:
-            # Determine kernel size from offered memory and bytes per pixel
             bytes = 0
             # Count _data twice to handle temporary arrays
             for attr in ('_data', '_data', '_uncertainty'):
@@ -169,8 +170,8 @@ class Stack(PrimitivesBASE):
                 for index in range(num_ext):
                     nddata = (ad[index].nddata.window[:] if statsec is None
                               else ad[i][index].nddata.window[statsec])
-                    # TODO: measure_bg_from_image?
-                    levels[i, index] = np.median(nddata.data)
+                    #levels[i, index] = np.median(nddata.data)
+                    levels[i, index] = gt.measure_bg_from_image(nddata, value_only=True)
             if scale and zero:
                 log.warning("Both scale and zero are set. Setting scale=False.")
                 scale = False
@@ -193,11 +194,11 @@ class Stack(PrimitivesBASE):
                 log.warning("Some scale factors are negative. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
-            if scale and any(np.isinf(scale_factors)):
+            if scale and np.any(np.isinf(scale_factors)):
                 log.warning("Some scale factors are infinite. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
-            if scale and any(np.isnan(scale_factors)):
+            if scale and np.any(np.isnan(scale_factors)):
                 log.warning("Some scale factors are undefined. Not scaling.")
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
@@ -305,36 +306,31 @@ class Stack(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys["stackSkyFrames"]
 
-        scale = params["scale"]
-        zero = params["zero"]
-        if scale and zero:
-            log.warning("Both the scale and zero parameters are set. "
-                        "Setting zero=False.")
-            zero = False
-
-        # We're taking care of the varying sky levels here (using a more
-        # accurate determination of the sky level) so we need to stop
-        # stackFrames from getting involved
+        # Not what stackFrames does when both are set
         stack_params = self._inherit_params(params, 'stackFrames',
                                             pass_suffix=True)
-        stack_params.update({'zero': False, 'scale': False})
+        if stack_params["scale"] and stack_params["zero"]:
+            log.warning("Both the scale and zero parameters are set. "
+                        "Setting zero=False.")
+            stack_params["zero"] = False
 
-        # Run detectSources() on any frames without any OBJMASKs
+        # Need to deepcopy here to avoid changing DQ of inputs
+        dilation=params["dilation"]
         if params["mask_objects"]:
-            adinputs = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad) else
-                        self.detectSources([ad])[0] for ad in adinputs]
-            adinputs = self.dilateObjectMask(adinputs,
-                                             dilation=params["dilation"])
-            adinputs = self.addObjectMaskToDQ(adinputs)
+            # Purely cosmetic to avoid log reporting unnecessary calls to
+            # dilateObjectMask
+            if dilation > 0:
+                adinputs = self.dilateObjectMask(adinputs, dilation=dilation)
+            adinputs = self.addObjectMaskToDQ([deepcopy(ad) for ad in adinputs])
 
-        if scale or zero:
-            ref_bg = gt.measure_bg_from_image(adinputs[0], value_only=True)
-            for ad in adinputs[1:]:
-                this_bg = gt.measure_bg_from_image(ad, value_only=True)
-                for ext, this, ref in zip(ad, this_bg, ref_bg):
-                    if scale:
-                        ext *= ref / this
-                    elif zero:
-                        ext += ref - this
+        #if scale or zero:
+        #    ref_bg = gt.measure_bg_from_image(adinputs[0], value_only=True)
+        #    for ad in adinputs[1:]:
+        #        this_bg = gt.measure_bg_from_image(ad, value_only=True)
+        #        for ext, this, ref in zip(ad, this_bg, ref_bg):
+        #            if scale:
+        #                ext *= ref / this
+        #            elif zero:
+        #                ext += ref - this
         adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs

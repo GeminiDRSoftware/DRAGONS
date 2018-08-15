@@ -152,4 +152,17 @@ def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
     # And return values in degrees
     return (icrs.ra.degree, icrs.dec.degree)
 
+def detsec_to_pixels(ad, detx, dety):
+    # Utility function to convert a location in "detector section pixels" to
+    # an image extension and real pixels on that extension.
+    xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+    for i, detsec in enumerate(ad.detector_section()):
+        if (detx < detsec.x1 or detx >= detsec.x2 or dety < detsec.y1 or
+            dety >= detsec.y2):
+            continue
+        datasec = ad.data_section()[i]
+        return (i, datasec.x1 + (detx - detsec.x1) // xbin,
+                   datasec.y1 + (dety - detsec.y1) // ybin)
+    return None
+
 ### END temporary functions

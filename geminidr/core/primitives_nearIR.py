@@ -150,8 +150,8 @@ class NearIR(PrimitivesBASE):
 
         lamp_on_list = self.selectFromInputs(adinputs, tags='LAMPON')
         lamp_off_list = self.selectFromInputs(adinputs, tags='LAMPOFF')
-        self.showInputs(lamp_on_list, stream='lampOn')
-        self.showInputs(lamp_off_list, stream='lampOff')
+        self.showInputs(lamp_on_list, purpose='lampOn')
+        self.showInputs(lamp_off_list, purpose='lampOff')
 
         stack_params = self._inherit_params(params, "stackFrames")
         stack_params.update({'zero': False, 'scale': False})
@@ -160,11 +160,12 @@ class NearIR(PrimitivesBASE):
 
         if ad_on and ad_off:
             log.fullinfo("Subtracting lampOff stack from lampOn stack")
-            flat = ad_on[0] - ad_off[0]
+            flat = ad_on[0]
+            flat.subtract(ad_off[0])
             flat.update_filename(suffix="_lampOnOff")
             return [flat]
         else:
-            log.warning("Cannot subtract lamp on - lamp off flats as do not "
+            log.warning("Cannot subtract lampOff from lampOn flats as do not "
                         "have some of each")
             if ad_on:
                 log.warning("Returning stacked lamp on flats")
@@ -184,7 +185,7 @@ class NearIR(PrimitivesBASE):
     def separateFlatsDarks(self, adinputs=None, **params):
         """
         This primitive produces two streams, one containing flats, and one
-        containing darks
+        containing darks. Other files remain in the main stream
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -192,15 +193,17 @@ class NearIR(PrimitivesBASE):
         # Initialize lists of AstroData objects to be added to the streams
         dark_list = []
         flat_list = []
+        adoutputs = []
         for ad in adinputs:
-            all_tags = "+".join(ad.tags)
-            if "DARK" in all_tags:
+            tags = ad.tags
+            if "DARK" in tags:
                 dark_list.append(ad)
-                log.stdinfo("Dark: {}, {}".format(ad.data_label(), ad.filename))
-            elif "FLAT" in all_tags:
+                log.fullinfo("Dark: {}, {}".format(ad.data_label(), ad.filename))
+            elif "FLAT" in tags:
                 flat_list.append(ad)
-                log.stdinfo("Flat: {}, {}".format(ad.data_label(), ad.filename))
+                log.fullinfo("Flat: {}, {}".format(ad.data_label(), ad.filename))
             else:
+                adoutputs.append(ad)
                 log.warning("Not Dark/Flat: {} {}".format(ad.data_label(),
                                                           ad.filename))
         if not dark_list:
@@ -210,30 +213,21 @@ class NearIR(PrimitivesBASE):
 
         self.streams.update({"flats" : flat_list})
         self.streams.update({"darks" : dark_list})
-        return adinputs
+        return adoutputs
 
     def stackDarks(self, adinputs=None, **params):
         """
-        This primitive stacks the files in the "darks" stream, after checking
-        they have the same exposure time, and returns the output there.
+        This primitive checks the inputs have the same exposure time and
+        stacks them without any scaling or offsetting, suitable for darks.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        # Check darks for equal exposure time
-        try:
-            dark_list = self.streams["darks"]
-        except KeyError:
-            log.warning("There are no darks in the 'darks' stream.")
-            return adinputs
-
-        if not all(dark.exposure_time()==dark_list[0].exposure_time()
-                   for dark in dark_list[1:]):
+        if not all(dark.exposure_time() == adinputs[0].exposure_time()
+                   for dark in adinputs[1:]):
                 raise IOError("Darks are not of equal exposure time")
 
-        # stack the darks stream
-        self.showInputs(purpose='darks')
         stack_params = self._inherit_params(params, "stackFrames")
         stack_params.update({'zero': False, 'scale': False})
-        self.streams['darks'] = self.stackFrames(self.streams['darks'], **stack_params)
+        adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs

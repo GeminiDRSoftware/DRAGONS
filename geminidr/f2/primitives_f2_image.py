@@ -40,11 +40,33 @@ class F2Image(F2, Image, Photometry):
             return adinputs
 
         if adinputs[0].wavelength_band() in ('K',):
-            log.stdinfo('Using darkCorrect and stackFlats to make flatfield')
-            adinputs = self.darkCorrect(adinputs, dark=params["dark"], do_dark=True)
-            stack_params = self._inherit_params(params, "stackFlats")
-            stack_params["scale"] = False
-            adinputs = self.stackFlats(adinputs, **stack_params)
+            # This is basically the generic makeLampFlat code, but altered to
+            # distinguish between FLATs and DARKs, not LAMPONs and LAMPOFFs
+            flat_list = self.selectFromInputs(adinputs, tags='FLAT')
+            dark_list = self.selectFromInputs(adinputs, tags='DARK')
+            stack_params = self._inherit_params(params, "stackFrames")
+            if dark_list:
+                self.showInputs(dark_list, purpose='darks')
+                dark_list = self.stackDarks(dark_list, **stack_params)
+                self.writeOutputs(dark_list)
+            self.showInputs(flat_list, purpose='flats')
+            stack_params.update({'zero': False, 'scale': False})
+            flat_list = self.stackFrames(flat_list, **stack_params)
+
+            if flat_list and dark_list:
+                log.fullinfo("Subtracting stacked dark from stacked flat")
+                flat = flat_list[0]
+                flat.subtract(dark_list[0])
+                flat.update_filename(suffix="_flat")
+                return [flat]
+            elif flat_list:
+                log.fullinfo("Only had flats to stack. Calling darkCorrect.")
+                flat_list = self.darkCorrect(flat_list, suffix="_flat",
+                                             dark=None, do_dark=True)
+                return flat_list
+            else:
+                return []
+
         else:
             log.stdinfo('Using standard makeLampFlat primitive to make flatfield')
             adinputs = super(F2Image, self).makeLampFlat(adinputs, **params)
