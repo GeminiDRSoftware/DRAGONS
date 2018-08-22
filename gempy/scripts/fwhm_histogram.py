@@ -27,7 +27,7 @@ def main():
     ad = astrodata.open(filename)
     objcat = ad[0].OBJCAT
 
-    fwhm_arcsec = objcat.field("FWHM_WORLD")
+    fwhm_arcsec = objcat.field("FWHM_WORLD") * 3600.
     flux = objcat.field("FLUX_AUTO")
     fluxerr = objcat.field("FLUXERR_AUTO")
     ellip = objcat.field("ELLIPTICITY")

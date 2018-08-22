@@ -328,56 +328,6 @@ def _calculate_magnitudes(refcat, formulae):
             row['filtermag_err'] = mag_errs[lowest]
     return refcat
 
-def _estimate_seeing(objcat):
-    """
-    This function tries to estimate the seeing from a SExtractor object
-    catalog, so future runs of SExtractor can provide better CLASS_STAR
-    classifications. This uses a catalog that hasn't yet been run through
-    _profile_sources() so lacks the extra columns that
-    gemini_tools.clip_sources() needs.
-
-    Parameters
-    ----------
-    objcat: an OBJCAT instance
-
-    Returns
-    -------
-    float: the seeing estimate (or None)
-    """
-    try:
-        badpix = objcat['NIMAFLAGS_ISO']
-    except KeyError:
-        badpix = np.zeros_like(objcat['NUMBER'])
-
-    # Convert FWHM_WORLD from degrees to arcseconds
-    objcat['FWHM_WORLD'] *= 3600
-
-    # Only use objects that are: fairly round
-    #                            thought to be stars by SExtractor
-    #                            decent S/N ratio
-    #                            unflagged (blended, saturated is OK)
-    #                            not many bad pixels
-    good = np.logical_and.reduce([objcat['ISOAREA_IMAGE'] > 20,
-                                  objcat['B_IMAGE'] > 1.1,
-                                  objcat['ELLIPTICITY'] < 0.5,
-                                  objcat['CLASS_STAR'] > 0.8,
-                                  objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
-                                  objcat['FLAGS'] & 65528 == 0,
-                                  objcat['FWHM_WORLD'] > 0,
-                                  badpix < 0.2*objcat['ISOAREA_IMAGE']])
-    good_fwhm = objcat['FWHM_WORLD'][good]
-    if len(good_fwhm) > 3:
-        seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
-    elif len(good_fwhm) > 0:
-        seeing_estimate = np.mean(good_fwhm)
-    else:
-        seeing_estimate = None
-
-    if seeing_estimate and seeing_estimate <= 0:
-        seeing_estimate = None
-
-    return seeing_estimate
-
 def _cull_objcat(ext):
     """
     Takes an extension of an AD object with attached OBJCAT (and possibly
@@ -420,12 +370,57 @@ def _cull_objcat(ext):
         ret[order] = np.concatenate((sar[1:] == sar[:-1], [False]))
         ext.OBJMASK = np.where(ret[objmask1d], np.uint8(1),
                                np.uint8(0)).reshape(objmask_shape)
-        #ext.OBJMASK = np.where(np.in1d(objmask1d, numbers), np.uint8(1),
-        #                    np.uint8(0)).reshape(objmask_shape)
 
     # Now renumber what's left sequentially
     objcat['NUMBER'].data[:] = list(range(1, len(objcat)+1))
     return ext
+
+def _estimate_seeing(objcat):
+    """
+    This function tries to estimate the seeing from a SExtractor object
+    catalog, so future runs of SExtractor can provide better CLASS_STAR
+    classifications. This uses a catalog that hasn't yet been run through
+    _profile_sources() so lacks the extra columns that
+    gemini_tools.clip_sources() needs.
+
+    Parameters
+    ----------
+    objcat: an OBJCAT instance
+
+    Returns
+    -------
+    float: the seeing estimate (or None)
+    """
+    try:
+        badpix = objcat['NIMAFLAGS_ISO']
+    except KeyError:
+        badpix = np.zeros_like(objcat['NUMBER'])
+
+    # Only use objects that are: fairly round
+    #                            thought to be stars by SExtractor
+    #                            decent S/N ratio
+    #                            unflagged (blended, saturated is OK)
+    #                            not many bad pixels
+    good = np.logical_and.reduce([objcat['ISOAREA_IMAGE'] > 20,
+                                  objcat['B_IMAGE'] > 1.1,
+                                  objcat['ELLIPTICITY'] < 0.5,
+                                  objcat['CLASS_STAR'] > 0.8,
+                                  objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
+                                  objcat['FLAGS'] & 65528 == 0,
+                                  objcat['FWHM_WORLD'] > 0,
+                                  badpix < 0.2*objcat['ISOAREA_IMAGE']])
+    good_fwhm = objcat['FWHM_WORLD'][good] * 3600  # degrees -> arcseconds
+    if len(good_fwhm) > 3:
+        seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
+    elif len(good_fwhm) > 0:
+        seeing_estimate = np.mean(good_fwhm)
+    else:
+        seeing_estimate = None
+
+    if seeing_estimate and seeing_estimate <= 0:
+        seeing_estimate = None
+
+    return seeing_estimate
 
 def _profile_sources(ad, seeing_estimate=None):
     """

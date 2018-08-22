@@ -1174,7 +1174,7 @@ def _strehl(ad, sources):
         pixel_scale = ext.pixel_scale()
         for star in src:
             psf = _quick_psf(star['x'], star['y'], pixel_scale, wavelength,
-                             8.1, 0.2)
+                             8.1, 1.2)
             strehl = float(star['flux_max'] / star['flux'] / psf)
             if strehl < 0.6:
                 strehl_list.append(strehl)

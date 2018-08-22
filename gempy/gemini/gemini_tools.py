@@ -876,6 +876,7 @@ def clip_sources(ad):
         pixscale = ext.pixel_scale()
         table['fwhm_arcsec'] *= pixscale
         table['ee50d_arcsec'] *= pixscale
+        table['isofwhm_arcsec'] *= 3600  # degrees -> arcseconds
 
         # Clip outliers in FWHM - single 2-sigma clip if more than 3 sources.
         if len(table) >= 3:
