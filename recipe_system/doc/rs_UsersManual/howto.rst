@@ -665,7 +665,7 @@ Reduce and logutils::
 
   >>> from recipe_system.reduction.coreReduce import Reduce
   >>> from gempy.utils import logutils
-  >>> logutils.config(file_name='my_reduce_run.log', mode='quiet')
+  >>> logutils.config(file_name='my_reduce_run.log')
   >>> reduce = Reduce()
   >>> reduce.files.append('S20130616S0019.fits')
   >>> reduce.recipename = 'recipe.MyRecipe'
