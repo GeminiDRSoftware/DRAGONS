@@ -15,10 +15,10 @@ The Mappers
 ----
 
 In a nominal pipeline context, the mappers receive input data and parameters from 
-the ``Reduce`` class, either through the ``reduce`` command or the class's API. This
-document describes how to import and use the mapper classes programmatically. The 
-mapper classes are the main component of the Recipe System and serve as arbiters 
-between the input data and parameters and the instrument packages defined
+the ``Reduce`` class, either through the ``reduce`` command or the class's API.
+This document describes how to import and use the mapper classes programmatically.
+The mapper classes are the main component of the Recipe System and serve as
+arbiters between the input data and parameters and the instrument packages defined
 by the ``drpkg`` parameter. This parameter defaults to ``geminidr``, which is the
 Gemini Observatory's data reduction package under DRAGONS.
 
@@ -44,14 +44,15 @@ applicable instrument package name (based on instrument name), and a recipe name
 This base class *__init__* function receives all data and parameters passed by 
 either ``Reduce`` or other caller. As readers may infer from the 
 :ref:`Mapper class diagram <mappercls>` below, the Mapper initializer determines 
-certain instance attributes `from` the passed input datasets provided by the list, 
+certain instance attributes `from` the passed input datasets provided by the list,
+
 ``adinputs``.
 
 For instance, the mapper attribute, ``pkg``, which is used as the description of 
 the applicable instrument package in *geminidr*, is derived from an ``AstroData`` 
 instance "descriptor," ``instrument()``, which returns the actual instrument used 
 for the observation. (While details about AstroData classes are beyond the scope 
-of this document, readers are encouraged to consult the AstroData documents listed 
+of this document, readers are encouraged to consult the AstroData documents listed
 in Chapter 2, :ref:`Related Documents <refdocs>`.)
 
 The Mapper classes receive a required list of input datasets and some, or all, of 
@@ -71,8 +72,8 @@ PrimitiveMapper
 ===============
 
 PrimitiveMapper (in `recipe_system.mappers.primitiveMapper`) is subclassed on
-Mapper and does *not* override __init__().  PrimitiveMapper implements the primitive
-search algorithm and provides one (1) public method on the class:
+Mapper and does *not* override __init__().  PrimitiveMapper implements the
+primitive search algorithm and provides one (1) public method on the class:
 ``get_applicable_primitives()``.
 
  **Class PrimitiveMapper** `(adinputs, mode='sq', drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload=None)`

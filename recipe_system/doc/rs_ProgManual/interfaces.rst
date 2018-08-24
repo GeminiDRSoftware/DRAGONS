@@ -40,8 +40,9 @@ using the default data reduction package, *geminidr*. The *geminidr* package
 defines all recipes, modes, and primitive classes for several instruments of the
 Observatory. With that in mind, the last :ref:`section of this chapter <drpkg>`
 will detail steps required to build your own "drpkg", whether for testing purposes
-or as a new, complete data reduction package. It will be the case that all examples
-presented herein will be perfectly applicable to any correctly implemented *drpkg*.
+or as a new, complete data reduction package. It will be the case that all
+examples presented herein will be perfectly applicable to any correctly
+implemented *drpkg*.
 
 Selecting Primitives with PrimitiveMapper
 =========================================
@@ -55,15 +56,15 @@ class may be referred to as a set of "primitives" or just "primitives", which ar
 just the defined or inherited methods on that class).
 
 "Generic" primitive classes in the ``geminidr`` package are defined under
-``geminidr.core`` (see :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`. These
-generic classes provide functions that work on all data produced by Gemini
+``geminidr.core`` (see :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`.
+These generic classes provide functions that work on all data produced by Gemini
 Oberservatory. These classes are arranged logically, meaning primitive functions
 for some general task are grouped together. For example, the stacking functions
 are defined on the ``Stack`` class found in ``core.primitives_stack``.
 
 There are five (5) defined primitive classes in `core` that are not strictly
-generic but are what might be called "quasi-generic". That is, these classes define
-methods for data of a certain general kind, like imaging or spectroscopy.
+generic but are what might be called "quasi-generic". That is, these classes
+define methods for data of a certain general kind, like imaging or spectroscopy.
 :ref:`Figure 4.2 <gmoscls>` illustrates these classes by breaking them out of
 *core* to show what they are and where in the class structure they are used.
 
@@ -95,19 +96,20 @@ on.
 
 Recall that primitive classes are attributed with a *tagset* indicating the
 particular kinds of data to which they are applicable. Indeed, as defined in the
-*geminidr* package, only ``gemini`` and subclasses thereof have *tagset* attributes
-that make them discoverable by the PrimitiveMapper. Which also implies that any
-primitive classes defined in ``core`` are not discoverable by the PrimitiveMapper.
-We shall examine the details of this statement in the next section.
+*geminidr* package, only ``gemini`` and subclasses thereof have *tagset*
+attributes that make them discoverable by the PrimitiveMapper. Which also
+implies that any primitive classes defined in ``core`` are not discoverable by
+the PrimitiveMapper. We shall examine the details of this statement in the next
+section.
 
 Mapping Data to Primitives
 --------------------------
 
 When the PrimitiveMapper receives input data, those data are passed as a
-list of *astrodata* objects, one *astrodata* object per input dataset. All astrodata
-objects have been classified with a number of what are called `tags`, which are
-present on the *astrodata* instance as an attribute of the object. For example, a
-typical unprocessed GMOS image:
+list of *astrodata* objects, one *astrodata* object per input dataset. All
+astrodata objects have been classified with a number of what are called `tags`,
+which are present on the *astrodata* instance as an attribute of the object.
+For example, a typical unprocessed GMOS image:
 
 >>> ad = astrodata.open('S20161025S0111.fits')
 >>> ad.tags
@@ -218,9 +220,9 @@ Here is a (current) listing of instrument recipe directories under *geminidr*::
       sq/
 
 Readers will note the appearance of directories named ``qa`` and ``sq`` under
-recipes. These directories indicate a separation of recipe types, named to indicate
-the kinds of recipes contained therein. Any named directories defined under
-``recipes/`` are termed "modes." 
+recipes. These directories indicate a separation of recipe types, named to
+indicate the kinds of recipes contained therein. Any named directories defined
+under ``recipes/`` are termed "modes."
 
 .. _mode:
 
@@ -259,7 +261,7 @@ set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
 
 The RecipeMapper uses these tags to search *geminidr* packages, first by
 immediately narrowing the search to the applicable instrument package and then
-by using the ``context`` parameter, further focusing the recipe search. In this
+by using the ``mode`` parameter, further focusing the recipe search. In this
 case, the instrument and package are ``gmos``. The Mapper classes have an
 understanding of this, and set their own attribute on Mapper instances called,
 ``pkg``:
@@ -421,13 +423,14 @@ User-defined recipes
 
 In the case of external (i.e. user-defined) recipes, developers should understand
 that in passing a user-defined recipe library to the RecipeMapper, the nominal
-mapping algorithm for recipe searches is bypassed and the RecipeMapper will use the
-recipe library (module) and path to import the module directly. In these cases,
-none of ``mode``, ``tags``, or ``recipe_tags`` is relevant, as the user-passed recipe
-library and recipe name are already known. Essentially, passing a user-defined
-recipe to the RecipeMapper tells the mapper, "do not search but use this." In these
-cases, it is incumbent upon the users and develoers to ensure that the external
-recipes specified are actually applicable to the datasets being processed.
+mapping algorithm for recipe searches is bypassed and the RecipeMapper will use
+the recipe library (module) and path to import the module directly. In these
+cases, none of ``mode``, ``tags``, or ``recipe_tags`` is relevant, as the
+user-passed recipe library and recipe name are already known. Essentially,
+passing a user-defined recipe to the RecipeMapper tells the mapper, "do not
+search but use this." In these cases, it is incumbent upon the users and
+develoers to ensure that the external recipes specified are actually applicable
+to the datasets being processed.
 
 We will now discuss what to do now that we have both a primtives instance and a 
 recipe.
