@@ -524,10 +524,10 @@ internal handling is not pertinent here, but rather, that the returned object
 shown above is a *list* containing the actual AstroDataGmos object(s) that the
 primitive class was passed upon construction, but with the *data and metdata in
 the current state* at completion of a primitive call. Each primitive returns
-this object after completing the primitive, so users can examine the state of
-that dataset at each point in the processing, examine parameters currently set,
-and set parameters to new values if desired. But fist, one must capture that
-object on return, so the previous last call becomes
+this object after completion, allowing users to examine the state of that dataset
+at each point in the processing, examine parameters currently set, and set
+parameters to new values if desired. But first, one must capture that object on
+return, so the previous last call becomes
 
 >>> adobject = p.prepare()
    PRIMITIVE: prepare
