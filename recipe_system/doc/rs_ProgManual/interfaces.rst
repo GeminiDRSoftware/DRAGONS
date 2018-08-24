@@ -461,6 +461,155 @@ are no such protections at the level of the mapper interfaces. Any exceptions
 raised will have to be dealt with by those using the Recipe System at this lower
 level interface.
 
+Step-wise Recipe Execution
+--------------------------
+Since we now understand that a recipe is simply a sequential set of calls on
+primitive class methods (the primitives themselves), astute readers will
+understand that it is entirely possible to call the recipes steps (primitives)
+individually and interactively, and while doing so, inspect the condition of the
+data and metdata during step-wise processing.
+
+Starting with an example using a GMOS image, step-wise execution simply becomes
+calling the primitives in the same order as the recipe. The example will also
+configure a DRAGONS logger object.
+
+The example lays out all import calls and logger configuration, and then shows
+an interactive primitive call and inspection of the processed data.
+
+>>> import astrodata
+>>> import gemini_instruments
+>>> ff = 'S20161025S0111.fits'
+>>> ad = astrodata.open(ff)
+>>> ad.tags
+>>> set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
+>>> from gempy.utils import logutils
+>>> logutils.config(file_name='rsdemo.log')
+>>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
+>>> pm = PrimitiveMapper([ad])
+>>> p = pm.get_applicable_primitives()
+
+And begin calling the primitives, the first one is always *prepare*
+
+>>> p.prepare()
+   PRIMITIVE: prepare
+   ------------------
+      PRIMITIVE: validateData
+      -----------------------
+      .
+      PRIMITIVE: standardizeStructure
+      -------------------------------
+      .
+      PRIMITIVE: standardizeHeaders
+      -----------------------------
+         PRIMITIVE: standardizeObservatoryHeaders
+         ----------------------------------------
+         Updating keywords that are common to all Gemini data
+         .
+         PRIMITIVE: standardizeInstrumentHeaders
+         ---------------------------------------
+         Updating keywords that are specific to GMOS
+         .
+      .
+   .
+   [<gemini_instruments.gmos.adclass.AstroDataGmos object at 0x11a12d650>]
+
+As readers can see, the call on the primitive *prepare()* shows the logging
+sent to stdout. They will also find the log file, ``rsdemo.log`` in the current
+working diretory.
+
+
+Readers will note the return object. This object is returned both to
+the caller, and handled internally by a recipe system decorator function. The
+internal handling is not pertinent here, but rather, that the returned object
+shown above is a *list* containing the actual AstroDataGmos object(s) that the
+primitive class was passed upon construction, but with the *data and metdata in
+the current state* at completion of a primitive call. Each primitive returns
+this object after completing the primitive, so users can examine the state of
+that dataset at each point in the processing, examine parameters currently set,
+and set parameters to new values if desired. But fist, one must capture that
+object on return, so the previous last call becomes
+
+>>> adobject = p.prepare()
+   PRIMITIVE: prepare
+   ------------------
+      PRIMITIVE: validateData
+      -----------------------
+      .
+      PRIMITIVE: standardizeStructure
+      -------------------------------
+      .
+      PRIMITIVE: standardizeHeaders
+
+>>> ad_prepare = adobject[0]
+>>> ad_prepare.data
+  array([[  0,   0,   0, ...,   0,   0,   0],
+       [  0,   0,   0, ...,   0,   0,   0],
+       [  0,   0,   0, ...,   0,   0,   0],
+       ...,
+       [823, 824, 820, ..., 822, 820, 825],
+       [821, 822, 825, ..., 821, 824, 824],
+       [823, 819, 823, ..., 205, 204, 203]], dtype=uint16)
+>>> ad_prepare.phu.cards['PREPARE']
+('PREPARE', '2018-08-24T16:02:39', 'UT time stamp for PREPARE')
+>>> ad_prepare.phu.cards['SDZSTRUC']
+('SDZSTRUC', '2018-08-24T15:44:08', 'UT time stamp for standardizeStructure')
+
+You can also look at the parameter set for that or any other primitive from the
+primtive object itself:
+
+>>> p.params['prepare'].toDict()
+OrderedDict([('suffix', '_prepared'), ('mdf', None), ('attach_mdf', True)])
+>>> p.params['mosaicDetectors'].toDict()
+OrderedDict([('suffix', '_mosaic'), ('tile', False), ('sci_only', False), ('interpolator', 'linear')])
+
+Finally, readers may wonder how one may "see" the recipe the RecipeMapper would
+return for the specified data, in order to know the primitives to call and in what
+order. This involves using the RecipeMapper just as recipe system does and using
+the inspect module to show the function's code.
+
+Continuing the example ...
+
+>>> from recipe_system.mappers.recipeMapper import RecipeMapper
+>>> rm = RecipeMapper([ad])
+>>> rfn = rm.get_applicable_recipe()
+>>> rfn.__name__
+'reduce'
+>>> import inspect
+>>> print inspect.getsource(rfn.__code__)
+def reduce(p):
+    """
+    This recipe performs the standardization and corrections needed to
+    convert the raw input science images into a stacked image.
+    Parameters
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.flatCorrect()
+    p.makeFringe()
+    p.fringeCorrect()
+    p.mosaicDetectors()
+    p.alignAndStack()
+    p.writeOutputs()
+    return
+
+Users can see the next primitive calls, and continue processing the dataset
+in a step-wise and interactive manner.
+
+>>> p.addDQ()
+   PRIMITIVE: addDQ
+   ----------------
+   Clipping gmos-s_bpm_HAM_11_12amp_v1.fits to match science data.
+   .
+[<gemini_instruments.gmos.adclass.AstroDataGmos object at 0x11a12d650>]
+
+
 .. rubric:: Footnotes
 
 .. [#] See appendix on currently available recipes in geminidr.
