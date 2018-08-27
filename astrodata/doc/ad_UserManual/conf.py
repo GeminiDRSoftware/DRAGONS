@@ -183,6 +183,10 @@ htmlhelp_basename = 'AstrodataUserManual'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
+# This will remove blank pages.
+'classoptions': ',openany,oneside',
+'babel': '\\usepackage[english]{babel}',
+
 # The paper size ('letterpaper' or 'a4paper').
 #'papersize': 'letterpaper',
 
