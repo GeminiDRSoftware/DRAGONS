@@ -517,7 +517,6 @@ As readers can see, the call on the primitive *prepare()* shows the logging
 sent to stdout. They will also find the log file, ``rsdemo.log`` in the current
 working diretory.
 
-
 Readers will note the return object. This object is returned both to
 the caller, and handled internally by a recipe system decorator function. The
 internal handling is not pertinent here, but rather, that the returned object
