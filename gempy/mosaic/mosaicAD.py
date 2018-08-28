@@ -3,14 +3,14 @@
 #
 #                                                                    mosaicAD.py
 # ------------------------------------------------------------------------------
-from copy import copy
+#from copy import copy
 from os.path import join
 from os.path import dirname
 
 import numpy as np
 
 import astropy.wcs as wcs
-from astropy.io import fits
+#from astropy.io import fits
 
 import astrodata
 import gemini_instruments
@@ -41,7 +41,8 @@ class MosaicAD(Mosaic):
     -------
     as_astrodata       - Output mosaics as AstroData objects.
     mosaic_image_data  - Create a mosaic from extensions.
-    mosaic_header      - Make a mosaic FITS header from reference extension header.
+    mosaic_header      - Make a mosaic FITS header from reference extension
+                         header.
     get_data_list      - Return a list of image data for a given extname
                          extensions in the input AstroData object.
     update_wcs         - Update the WCS information in the output header.

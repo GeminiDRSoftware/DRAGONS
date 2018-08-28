@@ -18,7 +18,7 @@ requires that data reduction `instrument packages` provide defined `primitive
 classes` and `recipe` functions. In this document, `instrument packages` may
 be referred to as `targets` of the Recipe System.
 
-This document presents information, discussion, and a wealth of examples of 
+This document presents information, discussion, and a variety of examples of
 the ``reduce`` command line, and the programmatic interface on the ``Reduce``
 class. The ``reduce`` command and programmatic access to the ``Reduce`` class
 are the principle ways DRAGONS users can employ the Recipe System to process
@@ -26,8 +26,8 @@ and reduce their data.
 
 The ``reduce`` application lets users invoke the Gemini Recipe System from 
 the command line. As this document describes, the ``reduce`` command supports
-a wealth of options that allow users to select and "tune" complex data processing
-steps directly for one or more astronomical datasets.
+options that allow users to select and "tune" complex data processing steps
+directly for one or more astronomical datasets.
 
 Or not. Without any command line options, ``reduce`` will almost certainly
 do the roughly correct thing by using well-tested default parameters for automated
@@ -37,21 +37,21 @@ attribute on an instance of ``AstroData``. This *tags* property is a set of data
 classifications describing the dataset, which is used by the Recipe System
 to select the appropriate processing.
 
-.. Defining the lexicon and coding the related actions allows ``AstroData`` and
+Defining the lexicon and coding the related actions allows ``AstroData`` and
 the Recipe System infrastructure to naturally bring the following benefits:
 
-.. • Instrument-agnostic programming
-.. • Rapid development through isolation of dataset-specific heuristics
-.. • A science-oriented data processing "recipe" system
-.. • Automated and dynamic data processing
-.. • Automatic propagation of associated data and metadata
-.. • History, provenance, repeatability
-.. • Support for building smart pipelines
+• Instrument-agnostic programming
+• Rapid development through isolation of dataset-specific heuristics
+• A science-oriented data processing "recipe" system
+• Automated and dynamic data processing
+• Automatic propagation of associated data and metadata
+• History, provenance, repeatability
+• Support for building smart pipelines
 
 As a quick example of how the Recipe System and ``AstroData`` work together, 
-a typical ``reduce`` command can look deceptively simple, Without knowing the content
-of the FITS file, you can simply run ``reduce`` on the data and the Recipe System
-`mappers` automatically select the default recipe based upon the
+a typical ``reduce`` command can look deceptively simple, Without knowing the
+content of the FITS file, you can simply run ``reduce`` on the data and the
+Recipe System `mappers` automatically select the default recipe based upon the
 data classifications presented by the dataset and ``AstroData``. Furthermore,
 these data classifications have also been used to internally determine the most
 applicable class of primitives from the set of defined instrument packages
@@ -92,30 +92,22 @@ The DRAGONS Recipe System requires no naming convention on recipe
 libraries or primitive filenames; the system is name-agnostic: naming of recipe
 libraries, recipe functions, and primitive modules and classes is arbitrary. 
 
-.. With no arguments passed on the command line, what has happened in the example
+With no arguments passed on the command line, what has happened in the example
 above? What has happened is that the Recipe System has fallen back to defaults
 for a recipe name and a mode, which, in the current (beta) release, results
 in the recipe, ``reduce``, and a mode of `sq`.
 
-.. As indicated, a recipe is just a function that recieves a primitive instance
+As indicated, a recipe is just a function that recieves a primitive instance
 paired with the data, and which specifies that the following primitive functions 
 are called on the data.
 
-This is what a recipe looks like?
-::
+This is what a recipe can look like; a simple python function. This recipe
+performs the standardization and corrections needed to convert the raw input
+science images into a stacked image. Parameter, p, is a primitive instance,
+usually returned by the PrimitiveMapper in a pipeline context, or any
+instantiated primitive class::
 
  def reduce(p):
-    """
-    This recipe performs the standardization and corrections needed to
-    convert the raw input science images into a stacked image.
-
-    Parameters
-    ----------
-    p : <primitives object>
-        A primitive instance, usually returned by the PrimitiveMapper in
-	a pipeline context, or any instantiated primitive class.
-    """
-
     p.prepare()
     p.addDQ()
     p.addVAR(read_noise=True)
@@ -131,20 +123,22 @@ This is what a recipe looks like?
     p.writeOutputs()
     return
 
-As the reader can see, a recipe is essentially a sequence of primitives that
-the data will be run through.  The primitives used at the recipe level
-normally represent a clear, meaningful step in the reduction.  The recipe
-is readable and does not require the scientific to know about Python coding
-to figure out what will happen to the data.
+As the reader can see, a recipe is essentially a wrapper around a sequence of
+primitive calls, which operate on the dataset(s) passed to the Recipe System.
+The primitives used at the recipe level normally represent a clear, meaningful
+step in the reduction.  The recipe is readable and does not require those
+scientifically oriented to know about Python coding to figure out what will
+happen to the data.
 
-.. The point here is not to overwhelm readers with a stack of primitive names, but
+The point here is not to overwhelm readers with a stack of primitive names, but
 to present both the default pipeline processing that the above simple ``reduce`` 
 command invokes and to demonstrate how much the ``reduce`` interface abstracts 
 away the complexity of the processing that is engaged with the simplicity of 
 commands.
 
 There is much more to say about the topic of modes and recipe libraries, 
-presented in depth in the :ref:`DRAGONS Recipe System Programmer’s Manual <refdocs>`.
+presented in depth in the
+:ref:`DRAGONS Recipe System Programmer’s Manual <refdocs>`.
 
 Definitions
 ===========
@@ -222,11 +216,12 @@ options and command
 line switches that allow users to control the processing of their data.
 This document will further describe usage of the ``Reduce`` class' API that
 allows for a programmatic usage rather than command-line usage. A
-detailed presentation of these interfaces is found in Chapter 3, :ref:`howto`.
+detailed presentation of these interfaces is found in Chapter 3,
+:ref:`howto`.
 
-The Recipe System is distributed as part of the DRAGONS software.
-DRAGONS and its dependencies must be installed and configured.
-The :ref:`next chapter <install>` takes readers through the installation process.
+The Recipe System is distributed as part of the DRAGONS software. DRAGONS
+and its dependencies must be installed and configured. The
+:ref:`next chapter <install>` takes readers through the installation process.
 
 Details and information on developing for the Recipe System, and about the
 ``astrodata`` package, are beyond the scope of this document, so is the

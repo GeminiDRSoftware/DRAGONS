@@ -40,8 +40,9 @@ using the default data reduction package, *geminidr*. The *geminidr* package
 defines all recipes, modes, and primitive classes for several instruments of the
 Observatory. With that in mind, the last :ref:`section of this chapter <drpkg>`
 will detail steps required to build your own "drpkg", whether for testing purposes
-or as a new, complete data reduction package. It will be the case that all examples
-presented herein will be perfectly applicable to any correctly implemented *drpkg*.
+or as a new, complete data reduction package. It will be the case that all
+examples presented herein will be perfectly applicable to any correctly
+implemented *drpkg*.
 
 Selecting Primitives with PrimitiveMapper
 =========================================
@@ -55,15 +56,15 @@ class may be referred to as a set of "primitives" or just "primitives", which ar
 just the defined or inherited methods on that class).
 
 "Generic" primitive classes in the ``geminidr`` package are defined under
-``geminidr.core`` (see :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`. These
-generic classes provide functions that work on all data produced by Gemini
+``geminidr.core`` (see :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`.
+These generic classes provide functions that work on all data produced by Gemini
 Oberservatory. These classes are arranged logically, meaning primitive functions
 for some general task are grouped together. For example, the stacking functions
 are defined on the ``Stack`` class found in ``core.primitives_stack``.
 
 There are five (5) defined primitive classes in `core` that are not strictly
-generic but are what might be called "quasi-generic". That is, these classes define
-methods for data of a certain general kind, like imaging or spectroscopy.
+generic but are what might be called "quasi-generic". That is, these classes
+define methods for data of a certain general kind, like imaging or spectroscopy.
 :ref:`Figure 4.2 <gmoscls>` illustrates these classes by breaking them out of
 *core* to show what they are and where in the class structure they are used.
 
@@ -95,19 +96,20 @@ on.
 
 Recall that primitive classes are attributed with a *tagset* indicating the
 particular kinds of data to which they are applicable. Indeed, as defined in the
-*geminidr* package, only ``gemini`` and subclasses thereof have *tagset* attributes
-that make them discoverable by the PrimitiveMapper. Which also implies that any
-primitive classes defined in ``core`` are not discoverable by the PrimitiveMapper.
-We shall examine the details of this statement in the next section.
+*geminidr* package, only ``gemini`` and subclasses thereof have *tagset*
+attributes that make them discoverable by the PrimitiveMapper. Which also
+implies that any primitive classes defined in ``core`` are not discoverable by
+the PrimitiveMapper. We shall examine the details of this statement in the next
+section.
 
 Mapping Data to Primitives
 --------------------------
 
 When the PrimitiveMapper receives input data, those data are passed as a
-list of *astrodata* objects, one *astrodata* object per input dataset. All astrodata
-objects have been classified with a number of what are called `tags`, which are
-present on the *astrodata* instance as an attribute of the object. For example, a
-typical unprocessed GMOS image:
+list of *astrodata* objects, one *astrodata* object per input dataset. All
+astrodata objects have been classified with a number of what are called `tags`,
+which are present on the *astrodata* instance as an attribute of the object.
+For example, a typical unprocessed GMOS image:
 
 >>> ad = astrodata.open('S20161025S0111.fits')
 >>> ad.tags
@@ -218,9 +220,9 @@ Here is a (current) listing of instrument recipe directories under *geminidr*::
       sq/
 
 Readers will note the appearance of directories named ``qa`` and ``sq`` under
-recipes. These directories indicate a separation of recipe types, named to indicate
-the kinds of recipes contained therein. Any named directories defined under
-``recipes/`` are termed "modes." 
+recipes. These directories indicate a separation of recipe types, named to
+indicate the kinds of recipes contained therein. Any named directories defined
+under ``recipes/`` are termed "modes."
 
 .. _mode:
 
@@ -259,7 +261,7 @@ set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
 
 The RecipeMapper uses these tags to search *geminidr* packages, first by
 immediately narrowing the search to the applicable instrument package and then
-by using the ``context`` parameter, further focusing the recipe search. In this
+by using the ``mode`` parameter, further focusing the recipe search. In this
 case, the instrument and package are ``gmos``. The Mapper classes have an
 understanding of this, and set their own attribute on Mapper instances called,
 ``pkg``:
@@ -421,13 +423,14 @@ User-defined recipes
 
 In the case of external (i.e. user-defined) recipes, developers should understand
 that in passing a user-defined recipe library to the RecipeMapper, the nominal
-mapping algorithm for recipe searches is bypassed and the RecipeMapper will use the
-recipe library (module) and path to import the module directly. In these cases,
-none of ``mode``, ``tags``, or ``recipe_tags`` is relevant, as the user-passed recipe
-library and recipe name are already known. Essentially, passing a user-defined
-recipe to the RecipeMapper tells the mapper, "do not search but use this." In these
-cases, it is incumbent upon the users and develoers to ensure that the external
-recipes specified are actually applicable to the datasets being processed.
+mapping algorithm for recipe searches is bypassed and the RecipeMapper will use
+the recipe library (module) and path to import the module directly. In these
+cases, none of ``mode``, ``tags``, or ``recipe_tags`` is relevant, as the
+user-passed recipe library and recipe name are already known. Essentially,
+passing a user-defined recipe to the RecipeMapper tells the mapper, "do not
+search but use this." In these cases, it is incumbent upon the users and
+develoers to ensure that the external recipes specified are actually applicable
+to the datasets being processed.
 
 We will now discuss what to do now that we have both a primtives instance and a 
 recipe.
@@ -457,6 +460,154 @@ the ``Reduce`` class provides exception handling during pipeline execution, ther
 are no such protections at the level of the mapper interfaces. Any exceptions
 raised will have to be dealt with by those using the Recipe System at this lower
 level interface.
+
+Step-wise Recipe Execution
+--------------------------
+Since we now understand that a recipe is simply a sequential set of calls on
+primitive class methods (the primitives themselves), astute readers will
+understand that it is entirely possible to call the recipes steps (primitives)
+individually and interactively, and while doing so, inspect the condition of the
+data and metdata during step-wise processing.
+
+Starting with an example using a GMOS image, step-wise execution simply becomes
+calling the primitives in the same order as the recipe. The example will also
+configure a DRAGONS logger object.
+
+The example lays out all import calls and logger configuration, and then shows
+an interactive primitive call and inspection of the processed data.
+
+>>> import astrodata
+>>> import gemini_instruments
+>>> ff = 'S20161025S0111.fits'
+>>> ad = astrodata.open(ff)
+>>> ad.tags
+>>> set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
+>>> from gempy.utils import logutils
+>>> logutils.config(file_name='rsdemo.log')
+>>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
+>>> pm = PrimitiveMapper([ad])
+>>> p = pm.get_applicable_primitives()
+
+And begin calling the primitives, the first one is always *prepare*
+
+>>> p.prepare()
+   PRIMITIVE: prepare
+   ------------------
+      PRIMITIVE: validateData
+      -----------------------
+      .
+      PRIMITIVE: standardizeStructure
+      -------------------------------
+      .
+      PRIMITIVE: standardizeHeaders
+      -----------------------------
+         PRIMITIVE: standardizeObservatoryHeaders
+         ----------------------------------------
+         Updating keywords that are common to all Gemini data
+         .
+         PRIMITIVE: standardizeInstrumentHeaders
+         ---------------------------------------
+         Updating keywords that are specific to GMOS
+         .
+      .
+   .
+   [<gemini_instruments.gmos.adclass.AstroDataGmos object at 0x11a12d650>]
+
+As readers can see, the call on the primitive *prepare()* shows the logging
+sent to stdout. They will also find the log file, ``rsdemo.log`` in the current
+working diretory.
+
+Readers will note the return object. This object is returned both to
+the caller, and handled internally by a recipe system decorator function. The
+internal handling is not pertinent here, but rather, that the returned object
+shown above is a *list* containing the actual AstroDataGmos object(s) that the
+primitive class was passed upon construction, but with the *data and metdata in
+the current state* at completion of a primitive call. Each primitive returns
+this object after completion, allowing users to examine the state of that dataset
+at each point in the processing, examine parameters currently set, and set
+parameters to new values if desired. But first, one must capture that object on
+return, so the previous last call becomes
+
+>>> adobject = p.prepare()
+   PRIMITIVE: prepare
+   ------------------
+      PRIMITIVE: validateData
+      -----------------------
+      .
+      PRIMITIVE: standardizeStructure
+      -------------------------------
+      .
+      PRIMITIVE: standardizeHeaders
+
+>>> ad_prepare = adobject[0]
+>>> ad_prepare.data
+  array([[  0,   0,   0, ...,   0,   0,   0],
+       [  0,   0,   0, ...,   0,   0,   0],
+       [  0,   0,   0, ...,   0,   0,   0],
+       ...,
+       [823, 824, 820, ..., 822, 820, 825],
+       [821, 822, 825, ..., 821, 824, 824],
+       [823, 819, 823, ..., 205, 204, 203]], dtype=uint16)
+>>> ad_prepare.phu.cards['PREPARE']
+('PREPARE', '2018-08-24T16:02:39', 'UT time stamp for PREPARE')
+>>> ad_prepare.phu.cards['SDZSTRUC']
+('SDZSTRUC', '2018-08-24T15:44:08', 'UT time stamp for standardizeStructure')
+
+You can also look at the parameter set for that or any other primitive from the
+primtive object itself:
+
+>>> p.params['prepare'].toDict()
+OrderedDict([('suffix', '_prepared'), ('mdf', None), ('attach_mdf', True)])
+>>> p.params['mosaicDetectors'].toDict()
+OrderedDict([('suffix', '_mosaic'), ('tile', False), ('sci_only', False), ('interpolator', 'linear')])
+
+Finally, readers may wonder how one may "see" the recipe the RecipeMapper would
+return for the specified data, in order to know the primitives to call and in what
+order. This involves using the RecipeMapper just as recipe system does and using
+the inspect module to show the function's code.
+
+Continuing the example ...
+
+>>> from recipe_system.mappers.recipeMapper import RecipeMapper
+>>> rm = RecipeMapper([ad])
+>>> rfn = rm.get_applicable_recipe()
+>>> rfn.__name__
+'reduce'
+>>> import inspect
+>>> print inspect.getsource(rfn.__code__)
+def reduce(p):
+    """
+    This recipe performs the standardization and corrections needed to
+    convert the raw input science images into a stacked image.
+    Parameters
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.flatCorrect()
+    p.makeFringe()
+    p.fringeCorrect()
+    p.mosaicDetectors()
+    p.alignAndStack()
+    p.writeOutputs()
+    return
+
+Users can see the next primitive calls, and continue processing the dataset
+in a step-wise and interactive manner.
+
+>>> p.addDQ()
+   PRIMITIVE: addDQ
+   ----------------
+   Clipping gmos-s_bpm_HAM_11_12amp_v1.fits to match science data.
+   .
+[<gemini_instruments.gmos.adclass.AstroDataGmos object at 0x11a12d650>]
+
 
 .. rubric:: Footnotes
 
