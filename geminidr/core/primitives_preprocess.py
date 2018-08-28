@@ -1017,7 +1017,7 @@ class Preprocess(PrimitivesBASE):
         # Note that we can edit the OBJMASK even if the sky is also a science
         # frame because we expect detectSources() to be run again on the
         # sky-subtracted image.
-        del self.streams["sky"]
+        #del self.streams["sky"]
         if params["mask_objects"]:
             #ad_skies = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
             #            else self.detectSources([ad])[0] for ad in ad_skies]
