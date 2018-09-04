@@ -38,7 +38,6 @@ def makeProcessedBPM(p):
     """
 
     p.prepare()
-    p.ADUToElectrons()
     p.selectFromInputs(tags="DARK", outstream="darks")
     p.selectFromInputs(tags="FLAT")
     p.stackFrames(stream="darks")

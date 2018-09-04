@@ -75,23 +75,42 @@ class NearIR(PrimitivesBASE):
 
     def makeBPM(self, adinputs=None, **params):
         """
-        To be run from recipe makeProcessedBPM
+        To be run from recipe makeProcessedBPM.
 
-        Input is a stacked short darks and flats On/Off (1 filter)
-        The flats are stacked and subtracted (ON - OFF)
-        The Dark is stack of short darks
+        The main input is a flat field image that has been constructed by
+        stacking the differences of lamp on / off exposures in a given filter
+        and normalizing the resulting image to unit average.
+
+        A 'darks' stream must also be provided, containing a single image
+        constructed by stacking short darks.
+
+        Parameters
+        ----------
+        dark_lo_thresh, dark_hi_thresh: float
+            Range of data values (normally ADUs) outside which pixels in the
+            input dark are considered bad (eg. -20 and 100, but these defaults
+            vary by instrument).
+        flat_lo_thresh, flat_hi_thresh: float
+            Range of unit-normalized data values outside which pixels in the
+            input flat are considered bad (eg. 0.8 and 1.25, but these defaults
+            vary by instrument).
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        # To exclude hot pixels from stddev calculation
-        DARK_CLIP_THRESH = 5.0
+        # This has been adapted to do almost the same as niflat in IRAF; it
+        # could most likely be improved upon, but produces reasonable results,
+        # whereas the original version wasn't deriving good thresholds.
 
-        # Threshold above/below the N_SIGMA clipped median
-        FLAT_HI_THRESH = 1.2
-        FLAT_LO_THRESH = 0.8
-        N_SIGMA = 3.0
+        dark_lo = params['dark_lo_thresh']
+        dark_hi = params['dark_hi_thresh']
+        flat_lo = params['flat_lo_thresh']
+        flat_hi = params['flat_hi_thresh']
+
+        # This could probably be improved by using an input DQ mask (which
+        # currently isn't produced by the recipe)?
 
         # Get the stacked flat and dark; these are single-element lists
         try:
@@ -104,31 +123,14 @@ class NearIR(PrimitivesBASE):
             raise IOError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
-            # Dubious clipping of the flat
-            clipped_median= np.ma.median(sigma_clip(flat_ext.data, sigma=N_SIGMA,
-                                                    iters=1, cenfunc=np.ma.mean))
-            upper_lim = FLAT_HI_THRESH * clipped_median
-            lower_lim = FLAT_LO_THRESH * clipped_median
             msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {} "
-            log.stdinfo(msg.format(lower_lim, upper_lim))
-            flat_mask = np.ma.masked_outside(flat_ext.data, lower_lim, upper_lim)
-
-            # Dubious clipping of the dark
-            mean = np.mean(dark_ext.data)
-            upper_lim = mean + (DARK_CLIP_THRESH * mean)
-            lower_lim = mean - (DARK_CLIP_THRESH * mean)
-            stddev = np.ma.std(np.ma.masked_outside(dark_ext.data,
-                                                    lower_lim, upper_lim))
-            clipped_median = np.ma.median(np.ma.masked_outside(dark_ext.data,
-                                                        lower_lim, upper_lim))
-            upper_lim = clipped_median + (N_SIGMA * stddev)
-            lower_lim = clipped_median - (N_SIGMA * stddev)
+            log.stdinfo(msg.format(flat_lo, flat_hi))
+            flat_mask = np.ma.masked_outside(flat_ext.data, flat_lo, flat_hi)
 
             msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {}"
-            log.stdinfo(msg.format(lower_lim, upper_lim))
-
+            log.stdinfo(msg.format(dark_lo, dark_hi))
             # create the mask -- darks (hot pixels)
-            dark_mask = np.ma.masked_outside(dark_ext.data, upper_lim, lower_lim)
+            dark_mask = np.ma.masked_outside(dark_ext.data, dark_lo, dark_hi)
 
             # combine masks and write to bpm file
             data_mask = np.ma.mask_or(dark_mask.mask, flat_mask.mask)
