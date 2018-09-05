@@ -238,14 +238,22 @@ class Visualize(PrimitivesBASE):
         Parameters
         ----------
         suffix: str
-            suffix to be added to output files. Default is '_mosaicAD'
+            suffix to be added to output files. Default is '_mosaic'
+
         tile: bool
             tile images instead of a proper mosaic. Default is False.
+
+        tile_all: <bool>
+            Tile data blocks into a single extension. If True, uses the standard
+            as_astrodata() method with tile=True. Default is False.
+
         sci_only: bool
             mosaic only SCI image data. Default is False
+
         interpolator: <str>
             type of interpolation to use across chip gaps
             ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
+
 
         """
         fmat1 = "No changes will be made to {}, since it has "
@@ -263,11 +271,14 @@ class Visualize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        
+
+        # ----------  get parameters -------------
+        interpolator = params['interpolator']
         sci_only = params['sci_only']
         suffix = params['suffix']
+        tile_all = params['tile_all']
         tile = params['tile']
-
+        # ----------------------------------------
         adoutputs = []
         for ad in adinputs:
             if not _compat(ad.tags):
@@ -288,14 +299,23 @@ class Visualize(PrimitivesBASE):
 
             log.stdinfo("\tMosaicAD Working on {}".format(_compat(ad.tags)))
             mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
+            mos.set_interpolator(interpolator)
 
             log.stdinfo("\tBuilding mosaic, converting data ...")
-            ad_out = mos.as_astrodata(tile=tile, doimg=sci_only)
-            ad_out.orig_filename = ad.filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.update_filename(suffix=suffix, strip=True)
-            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
-            adoutputs.append(ad_out)
+            if tile_all:
+                ad_out = mos.as_astrodata(tile=tile, doimg=sci_only)
+                ad_out.orig_filename = ad.filename
+                gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+                ad_out.update_filename(suffix=suffix, strip=True)
+                log.stdinfo("Updated filename: {} ".format(ad_out.filename))
+                adoutputs.append(ad_out)
+            else:
+                ad_out = mos.tile_as_astrodata(tile_all=False, doimg=sci_only)
+                ad_out.orig_filename = ad.filename
+                gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+                ad_out.update_filename(suffix=suffix, strip=True)
+                log.stdinfo("Updated filename: {} ".format(ad_out.filename))
+                adoutputs.append(ad_out)
 
         return adoutputs
 
@@ -309,17 +329,19 @@ class Visualize(PrimitivesBASE):
         suffix: str
             suffix to be added to output files
 
-        tile: bool
+        tile_all: bool
             tile to a single extension (as opposed to one extn per CCD)?
 
          """
         log = self.log
+        tile_all = params['tile_all']
+        log.stdinfo("Tile arrays parameter, tile_all is {} ".format(tile_all))
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
         # Using mosaicADdetectors rather than tileArrays()
         # mosaicADdetectors() handles both GSAOI and GMOS,
-        adoutputs = self.mosaicDetectors(adinputs, tile=True,
+        adoutputs = self.mosaicDetectors(adinputs, tile_all=tile_all, tile=True,
                                          suffix=params["suffix"])
         return adoutputs
 

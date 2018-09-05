@@ -1,6 +1,6 @@
 from __future__ import division
 #
-#                                                                  gemini_python
+#                                                                        DRAGONS
 #
 #                                                                      mosaic.py
 # ------------------------------------------------------------------------------
@@ -31,10 +31,7 @@ class Mosaic(object):
     - Information about gaps between the blocks and transformation is
       given by the MosaicGeometry  object.
 
-    - Mosaic object can generate masks associated with the output mosaic
-
-    - Can reset the interpolated function use in tranformation via Mosaic
-      class function.
+    - Can reset the interpolator in tranformation via Mosaic class function.
 
     - Preserving flux when transforming a block
 
@@ -154,36 +151,39 @@ class Mosaic(object):
         Correction for rotation, shifting and magnification is performed with
         respect to the reference block.
 
-        A Mask is also created containing value zero for positions were
-        there are pixel data and one for everywhere else -like gaps and
-        areas of no-data due to shiftingr; for example, after transforming.
+        A mask is created containing value zero for positions were
+        there are pixel data and one for everywhere else -- like gaps and
+        areas of no-data due to shifting; for example, after transforming.
 
         Parameters
         ----------
-        block: Allows a specific block to be returned as the output mosaic.
-               The tuple notation is (col,row) (0-based), where (0,0) is the
-               lower left block. The blocks layout is given by the attribute
-               mosaic_grid.
-        type:  <tuple>, default: None
 
-        dq_data: If True, then the input data is transformed
-                 bit-plane by bit-plane. DQ is 8-bit planes so far.
-        type:    <bool>
+        block: <tuple>
+            Allows a specific block to be returned as the output mosaic.
+            The tuple notation is (col,row) (0-based), where (0,0) is the
+            lower left block. The blocks layout is given by the attribute
+            mosaic_grid. Default is None.
 
-        tile: Layout the block in the mosaic grid with no correction for
-              rotation nor shift. Gaps are included.
-        type: <bool>, default: False
+        dq_data: <bool>
+            The input data are transformed bit-plane by bit-plane.
+            Can handle both 8-bit and 16-bit planes. DQ is 16-bit.
+            Default is False.
 
-        return_ROI: Use the minimum frame enclosing all the block_data elements.
-        type:       <bool>, default: True
+        tile: <bool>
+            Layout the block in the mosaic grid with no correction for
+            rotation nor shift. Gaps are included. Default is False.
 
-        jfactor: Factor to multiply transformed block to conserve flux.
-        type:    <list>
+        return_ROI: <bool>
+            Use the minimum frame enclosing all the block_data elements.
+            Default is True.
 
-        Return
-        ------
-        :return: An ndarray with the mosaic. The Mask created is available
-                 as an attribute with name 'mask'.
+        jfactor: <list>
+            Factor to multiply transformed block to conserve flux.
+
+        Returns
+        -------
+        outdata: <ndarray>
+            An ndarray containing the mosaic.
 
         """
         self.return_ROI = return_ROI
@@ -314,22 +314,28 @@ class Mosaic(object):
 
     def get_blocks(self, block=None):
         """
-        From the input data_list and the position of the amplifier
-        in the block array, form a dictionary of blocks. Forming
-        blocks is necessary for transformation.
+        From the input data_list and the position of the amplifier in the block
+        array, form a dictionary of blocks. Forming blocks is necessary for
+        tiling and transformation. self.data_list should be first populated by
+        a call on self.get_data-list(<extension_type>), where <extension_type>
+        is one of 'data', 'variance', 'mask', or "OBJMASK'.
 
-        :param  block: default is (None).
-            Allows a specific block to be returned as the
-            output mosaic. The tuple notation is (col,row)
-            (zero-based) where (0,0) is the lower left block.
-            This is position of the reference block w/r
-            to mosaic_grid.
+        Parameters
+        ----------
+        block: <2-tuple>
+            Allows a specific block to be returned as the output mosaic. The tuple
+            notation is ((col,row), zero-based) where (0,0) is the lower left block.
+            This is position of the reference block wrt mosaic_grid.
+            Default is None.
 
-        :return block_data:
-            Block data dictionary keyed in by (col,row) of the
-            mosaic_grid layout.
+        Returns
+        -------
+        block_data: <dict> or None
+            Block data dictionary keyed in by (col,row) of the mosaic_grid layout.
 
         """
+        if not self.data_list:
+            return None
         # set an alias for dictionary of data_list elements
         data_index = self.data_index_per_block
 

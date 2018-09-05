@@ -24,29 +24,29 @@ Glossary
   Is an ndarray containing one or more amplifier data arrays and corresponds
   to one (1) detector chip. I.e., a block is the abstract representation of
   a detector chip. For GMOS, three CCD chips are represented by three corresponding
-  blocks.
+  blocks. For GSAOI, four blocks represent the four chips.
 
 **mask**
-  Ndarray of the same shape (ny,nx); i.e. number of pixels in y and x, as the 
+  Ndarray of the same shape (ny, nx); i.e. number of pixels in y and x, as the 
   output mosaic with zero as the pixel value for image data and 16 as 
   non-image data ("no data") in the output mosaic. Example of non-image data 
   are the gaps between the blocks and the areas of no data resulting from 
   transformation.
 
 **MosaicData**
-  Python class with functions to verify input data lists. The object created 
+  A class providing functions to verify input data lists. The object created 
   with this class is required as input to create a Mosaic object. For more 
   details see :ref:`MosaicData example <help_mdata>`.
 
 **MosaicGeometry**
-  Python class with functions to verify the input data ndarrays geometry 
+  A class providing functions to verify the input data ndarrays geometry 
   properties values and the geometry of the output mosaic. Some of these 
   values are rotation, shifting and magnification, and are used to transform 
   the blocks to match the reference block geometry. For more details see 
   :ref:`MosaicGeometry example <help_mgeo_example>`.  
 
 **Mosaic**
-  Python base class with low level functionality to generate a mosaic from 
+  The base class with low level functionality to generate a mosaic from 
   MosaicData and MosaicGeometry object inputs. Depending on the amount of 
   input geometry values supplied when creating the MosaicGeometry, the user 
   can generate a mosaic with or without transforming blocks. This class object 
@@ -65,8 +65,8 @@ Glossary
   to differentiate it from a CCD or other detector array.
 
 **reference block**
-  Is a 1-based tuple (column_number, row_number) with respect to the lower 
-  left origin (1,1), it notes the reference block to which the transformation 
+  Is a tuple (column_number, row_number) with respect to the lower 
+  left origin (0, 0). It notes the reference block to which the transformation 
   values are given. These values are given in the geometry dictionary with key 
   *transformation*.
 
