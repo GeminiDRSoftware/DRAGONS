@@ -28,9 +28,7 @@ LOGFILE = 'test_photometry.log'
 @pytest.fixture()
 def primitivesClass():
     ad = AstroFaker.create('NIRI', 'IMAGE')
-    ad.phu['RA'] = 180.
-    ad.phu['DEC'] = 0.
-    ad.add_extension()
+    ad.init_default_extensions()
     # SExtractor struggles if the background is noiseless
     ad.add_read_noise()
     for x, y in STAR_POSITIONS:
