@@ -19,5 +19,5 @@ class makeBPMConfig(parameters_nearIR.makeBPMConfig):
     def setDefaults(self):
         self.dark_lo_thresh = -150.
         self.dark_hi_thresh = 650.
-        self.flat_lo_thresh = 0.73
-        self.flat_hi_thresh = 1.25
+        self.flat_lo_thresh = 0.71
+        self.flat_hi_thresh = 1.22

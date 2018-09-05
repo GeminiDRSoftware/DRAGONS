@@ -38,6 +38,8 @@ def makeProcessedBPM(p):
     """
 
     p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True, poisson_noise=True)
     p.selectFromInputs(tags="DARK", outstream="darks")
     p.selectFromInputs(tags="FLAT")
     p.stackFrames(stream="darks")
