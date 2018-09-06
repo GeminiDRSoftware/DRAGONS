@@ -22,11 +22,11 @@ from geminidr.gemini.lookups.timestamp_keywords import timestamp_keys
 
 from . import ad_compare
 
-STAR_POSITIONS = [(200.5,200.5), (300.5,800.5)]
+STAR_POSITIONS = [(200.,200.), (300.5,800.5)]
 LOGFILE = 'test_photometry.log'
 
 @pytest.fixture()
-def primitivesClass():
+def niriImage():
     ad = AstroFaker.create('NIRI', 'IMAGE')
     ad.init_default_extensions()
     # SExtractor struggles if the background is noiseless
@@ -35,23 +35,27 @@ def primitivesClass():
         ad[0].add_star(amplitude=500, x=x, y=y)
     return NIRIImage([ad])
 
-def test_addReferenceCatalog(primitivesClass):
-    ad = primitivesClass.addReferenceCatalog()[0]
+def test_addReferenceCatalog(niriImage):
+    adinputs = niriImage.addReferenceCatalog()
+    assert len(adinputs) == 1
+    ad = adinputs[0]
     assert timestamp_keys["addReferenceCatalog"] in ad.phu
     assert hasattr(ad, 'REFCAT')
 
     # Check all objects in REFCAT are within prescribed radius
-    search_radius = primitivesClass.params['addReferenceCatalog'].radius
+    search_radius = niriImage.params['addReferenceCatalog'].radius
     base_coord = SkyCoord(ra=ad.wcs_ra(), dec=ad.wcs_dec(), unit='deg')
     for ra, dec in ad.REFCAT['RAJ2000', 'DEJ2000']:
         assert SkyCoord(ra=ra, dec=dec, unit='deg').separation(base_coord).value < search_radius
 
-def test_detectSources(primitivesClass):
+def test_detectSources(niriImage):
     def catsort(cat):
         # Sort catalogue by first ordinate
         return sorted(cat, key=lambda x: x[0])
 
-    ad = primitivesClass.detectSources()[0]
+    adinputs = niriImage.detectSources()
+    assert len(adinputs) == 1
+    ad = adinputs[0]
     assert timestamp_keys["detectSources"] in ad.phu
     # Hard to do much more than check OBJMASK exists
     assert hasattr(ad[0], 'OBJMASK')
@@ -90,8 +94,8 @@ def test_calculate_magnitudes():
     # This holds because J-H=-1 for all rows
     assert all(abs(refcat['filtermag_err'].data - 0.2) < 0.001)
 
-def test_cull_objcat(primitivesClass):
-    ad = primitivesClass.detectSources()[0]
+def test_cull_objcat(niriImage):
+    ad = niriImage.detectSources()[0]
     total_objects = len(ad[0].OBJCAT)
     total_object_pixels = np.sum(ad[0].OBJMASK)
     ad[0].OBJCAT['B_IMAGE'][0] = 1.0
@@ -100,11 +104,11 @@ def test_cull_objcat(primitivesClass):
     assert len(ad[0].OBJCAT) == total_objects - 1
     assert np.sum(ad[0].OBJMASK) < total_object_pixels
 
-def test_estimate_seeing(primitivesClass):
+def test_estimate_seeing(niriImage):
     """This is primarily a test that SExractor is producing sensible values
     since we don't care *precisely* how the FWHM is derived from a long list,
     only that the value is representative."""
-    ad = primitivesClass.detectSources()[0]
+    ad = niriImage.detectSources()[0]
     seeing = prims._estimate_seeing(ad[0].OBJCAT)
     assert abs(seeing - ad.seeing)/ad.seeing < 0.05
 
@@ -140,11 +144,11 @@ def test_estimate_seeing_stats():
     objcat['FWHM_WORLD'][0] = 0.001
     assert abs(prims._estimate_seeing(objcat) - 0.9) < 0.0001
 
-def test_profile_sources(primitivesClass):
+def test_profile_sources(niriImage):
     # We give slightly more leeway here than for _estimate_seeing
     # since that works better for true Gaussians (our fake sources)
     # but this works better for real sources.
-    ad = primitivesClass.detectSources()[0]
+    ad = niriImage.detectSources()[0]
     ad = prims._profile_sources(ad)
     assert 'PROFILE_FWHM' in ad[0].OBJCAT.colnames
     assert 'PROFILE_EE50' in ad[0].OBJCAT.colnames
