@@ -203,6 +203,12 @@ class Stack(PrimitivesBASE):
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
 
+        if params["reject_method"] == "varclip" and any(ext.variance is None
+                                                        for ad in adinputs for ext in ad):
+            log.warning("Rejection method 'varclip' has been chosen but some"
+                        "extensions have no variance. 'sigclip' will be used"
+                        "in these cases.")
+
         stack_function = NDStacker(combine=params["operation"],
                                    reject=params["reject_method"],
                                    log=self.log, **params)
