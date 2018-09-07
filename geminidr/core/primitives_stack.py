@@ -96,6 +96,7 @@ class Stack(PrimitivesBASE):
         apply_dq = params["apply_dq"]
         separate_ext = params["separate_ext"]
         statsec = params["statsec"]
+        reject_method = params["reject_method"]
         if statsec:
             statsec = tuple([slice(int(start)-1, int(end))
                              for x in reversed(statsec.strip('[]').split(','))
@@ -203,14 +204,15 @@ class Stack(PrimitivesBASE):
                 scale_factors = np.ones_like(scale_factors)
                 scale = False
 
-        if params["reject_method"] == "varclip" and any(ext.variance is None
-                                                        for ad in adinputs for ext in ad):
+        if reject_method == "varclip" and any(ext.variance is None
+                                              for ad in adinputs for ext in ad):
             log.warning("Rejection method 'varclip' has been chosen but some"
                         "extensions have no variance. 'sigclip' will be used"
-                        "in these cases.")
+                        "instead.")
+            reject_method = "sigclip"
 
         stack_function = NDStacker(combine=params["operation"],
-                                   reject=params["reject_method"],
+                                   reject=reject_method,
                                    log=self.log, **params)
 
         # NDStacker uses DQ if it exists; if we don't want that, delete the DQs!
