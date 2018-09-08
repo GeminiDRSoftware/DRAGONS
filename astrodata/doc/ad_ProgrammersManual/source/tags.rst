@@ -15,7 +15,8 @@ them or not following certain rules, but let's talk about ``TagSet`` first.
 ``TagSet`` is actually a standard named tuple customized to generate default
 values (``None``) for its missing members. Its signature is::
 
-    TagSet(add=None, remove=None, blocked_by=None, blocks=None, if_present=None)
+    TagSet(add=None, remove=None, blocked_by=None, blocks=None,
+           if_present=None)
 
 The most common ``TagSet`` is an **additive** one: ``TagSet(['FOO', 'BAR'])``.
 If all you need is to add tags, then you're done here. But the real power of
@@ -47,20 +48,111 @@ Now, the algorithm works like this:
 2. Then we sort them out:
 
   #. Those that subtract tags from the tag set go first (the ones with
-       non-empty ``remove`` or ``blocks``), allowing them to act early on
+     non-empty ``remove`` or ``blocks``), allowing them to act early on
   #. Those with non-empty ``blocked_by`` are moved to the end of the list, to
-       ensure that other tags can be generated before them.
+     ensure that other tags can be generated before them.
   #. Those with non-empty ``if_present`` are moved behind those with
-       ``blocked_by``.
+     ``blocked_by``.
 
 3. Now that we've sorted the tags, process them sequentially and for each one:
 
   #. If they require other tags to be present, make sure that this is the case.
-       If the requirements are not met, drop the tagset; then
-  #. Figure out if any other tag is blocking the tagset; then
+     If the requirements are not met, drop the tagset. If not...
+  #. Figure out if any other tag is blocking the tagset. This will be the
+     case if *any* of the tags to be added is in the "blocked" list, or if
+     any of the tags added by previous tag sets are in the ``blocked_by``
+     list of the one being processed. Then...
   #. If all the previous hurdles have been passed, apply the changes declared
-       by this tag (add, remove, and/or block others).
+     by this tag (add, remove, and/or block others).
 
-Note that Python's sort algorithm is stable. This means, that if two elements are indistinguishable from the point of view of the sorting algorithm, they are guaranteed to stay in the same relative position. To better understand how this affects our tags, and the algorithm itself, let's follow up with an example::
+Note that Python's sort algorithm is stable. This means, that if two elements
+are indistinguishable from the point of view of the sorting algorithm, they are
+guaranteed to stay in the same relative position. To better understand how this
+affects our tags, and the algorithm itself, let's follow up with an example taken
+from real code (the Gemini-generic and GMOS modules)::
 
-  #TODO : Write an example for the tags
+  # Simple tagset, with only a constant, additive content
+  @astro_data_tag
+  def _tag_instrument(self):
+      return TagSet(['GMOS'])
+
+  # Simple tagset, also with additive content. This one will
+  # check if the frame fits the requirements to be classified
+  # as "GMOS imaging". It returns a value conditionally:
+  # if this is not imaging, then it will return None, which
+  # means the algorithm will ignore the value
+  @astro_data_tag
+  def _tag_image(self):
+      if self.phu.get('GRATING') == 'MIRROR':
+          return TagSet(['IMAGE'])
+
+  # This is a slightly more complex TagSet (but fairly simple, anyway),
+  # inherited by all Gemini instruments.
+  @astro_data_tag
+  def _type_gcal_lamp(self):
+      if self.phu['GCALLAMP'] == 'IRhigh':
+          shut = self.phu['GCALSHUT']
+          if shut == 'OPEN':
+              return TagSet(['GCAL_IR_ON', 'LAMPON'],
+                            blocked_by=['PROCESSED'])
+          elif shut == 'CLOSED':
+              return TagSet(['GCAL_IR_OFF', 'LAMPOFF'],
+                            blocked_by=['PROCESSED'])
+
+  # This tagset is only active when we detect that the frame is
+  # a bias. In that case we want to prevent the frame from being
+  # classified as "imaging" or "spectroscopy", which depend on the
+  # configuration of the instrument
+  @astro_data_tag
+  def _tag_bias(self):
+      if self.phu.get('OBSTYPE') == 'BIAS':
+          return TagSet(['BIAS', 'CAL'], blocks=['IMAGE', 'SPECT'])
+
+These four simple tag methods will serve to illustrate the algorithm. Let's pretend
+that the requirements for all four of them are somehow met, meaning that we get four
+``TagSet`` instances in our list, in some random order. After step 1 in the algorithm,
+then, we may have collected the following list::
+
+  [ TagSet(['GMOS']),
+    TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED']),
+    TagSet(['BIAS', 'CAL'], blocks=['IMAGE', 'SPECT']),
+    TagSet(['IMAGE']) ]
+
+The algorithm then proceeds to sort them. First, it will promote the ``TagSet``
+with non-empty ``blocks`` or ``remove``::
+
+  [ TagSet(['BIAS', 'CAL'], blocks=['IMAGE', 'SPECT']),
+    TagSet(['GMOS']),
+    TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED']),
+    TagSet(['IMAGE']) ]
+
+Note that the other three ``TagSet`` stay in exactly the same order. Now the
+algorithm will sort the list again, moving the ones with non-empty
+``blocked_by`` to the end::
+
+  [ TagSet(['BIAS', 'CAL'], blocks=['IMAGE', 'SPECT']),
+    TagSet(['GMOS']), TagSet(['IMAGE']),
+    TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED']) ]
+
+Note that at each step, all the instances (except the ones "being moved") have
+kept the same position relative to each other -here's where the "stability" of
+the sorting comes into play,- ensuring that each step does not affect the previous
+one. Finally, there are no ``if_present`` in our example, so no more instances are
+moved around.
+
+Now the algorithm prepares three empty sets (``tags``, ``removals``, and ``blocked``),
+and starts iterating over the ``TagSet`` list.
+
+  1. For the first ``TagSet`` there are no blocks or removals, so we just add its
+     contents to the current sets: ``tags = {'BIAS', 'CAL'}``,
+     ``blocked = {'IMAGE', 'SPECT'}``.
+  2. Then comes ``TagSet(['GMOS'])``. Again, there are no removals in place, and
+     ``GMOS`` is not in the list of blocked tags. Thus, we just add it to the current
+     tag set: ``tags = {'BIAS', 'CAL', 'GMOS'}``.
+  3. When processing ``TagSet(['IMAGE'])``, the algorithm observes that this ``IMAGE``
+     is in the ``blocked`` set, and stops processing this tag set.
+  4. Finally, neither ``GCAL_IR_OFF`` nor ``LAMPOFF`` are in ``blocked``, and
+     ``PROCESSED`` is not in ``tags``, meaning that we can add add this tag set to
+     the final one.
+     
+Our result will look something like: ``{'BIAS', 'CAL', 'GMOS', 'GCAL_IR_OFF', 'LAMPOFF'}``
