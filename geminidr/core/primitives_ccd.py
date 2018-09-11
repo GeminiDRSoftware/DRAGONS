@@ -76,11 +76,13 @@ class CCD(PrimitivesBASE):
                                   format(ad.filename))
 
             try:
-                gt.check_inputs_match(ad, bias, check_filter=False)
+                gt.check_inputs_match(ad, bias, check_filter=False,
+                                      check_units=True)
             except ValueError:
                 bias = gt.clip_auxiliary_data(ad, aux=bias, aux_type='cal')
                 # An Error will be raised if they don't match now
-                gt.check_inputs_match(ad, bias, check_filter=False)
+                gt.check_inputs_match(ad, bias, check_filter=False,
+                                      check_units=True)
 
             log.fullinfo('Subtracting this bias from {}:\n{}'.
                          format(ad.filename, bias.filename))

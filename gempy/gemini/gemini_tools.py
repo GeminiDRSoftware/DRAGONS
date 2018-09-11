@@ -309,7 +309,8 @@ def array_information(adinput=None):
 #                  'nbiascontam, so using default value = 4')
 #        return 4
 
-def check_inputs_match(adinput1=None, adinput2=None, check_filter=True):
+def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
+                       check_units=False):
     """
     This function will check if the inputs match.  It will check the filter,
     binning and shape/size of the every SCI frames in the inputs.
@@ -324,6 +325,9 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True):
 
     check_filter: bool
         if True, also check the filter name of each pair
+
+    check_units: bool
+        if True, also check that both inputs are in electrons or ADUs
     """
     log = logutils.get_logger(__name__)
 
@@ -357,6 +361,11 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True):
                         ext1.detector_y_bin() != ext2.detector_y_bin()):
                 log.error('Extensions have different binning')
                 raise ValueError('Extensions have different binning')
+
+            # Check units if desired
+            if check_units:
+                if ext1.hdr.get('BUNIT', 'ADU').lower() != ext2.hdr.get('BUNIT', 'ADU').lower():
+                    raise ValueError('Extensions have different units')
 
         # Check filter if desired
         if check_filter and (ad1.filter_name() != ad2.filter_name()):
