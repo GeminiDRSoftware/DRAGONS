@@ -392,16 +392,18 @@ class Preprocess(PrimitivesBASE):
                     raise IOError("No processed dark listed for {}".
                                    format(ad.filename))
 
-            # Check the inputs have matching binning, and shapes
+            # Check the inputs have matching binning, shapes & units
             # TODO: Check exposure time?
             try:
-                gt.check_inputs_match(ad, dark, check_filter=False)
+                gt.check_inputs_match(ad, dark, check_filter=False,
+                                      check_units=True)
             except ValueError:
                 # Else try to extract a matching region from the dark
                 dark = gt.clip_auxiliary_data(ad, aux=dark, aux_type="cal")
 
                 # Check again, but allow it to fail if they still don't match
-                gt.check_inputs_match(ad, dark, check_filter=False)
+                gt.check_inputs_match(ad, dark, check_filter=False,
+                                      check_units=True)
 
             log.fullinfo("Subtracting the dark ({}) from the input "
                          "AstroData object {}".

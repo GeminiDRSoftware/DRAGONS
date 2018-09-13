@@ -87,7 +87,7 @@ class NearIR(PrimitivesBASE):
         Parameters
         ----------
         dark_lo_thresh, dark_hi_thresh: float
-            Range of data values (normally ADUs) outside which pixels in the
+            Range of data values (always in ADUs) outside which pixels in the
             input dark are considered bad (eg. -20 and 100, but these defaults
             vary by instrument).
         flat_lo_thresh, flat_hi_thresh: float
@@ -123,14 +123,25 @@ class NearIR(PrimitivesBASE):
             raise IOError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
-            msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {} "
+            msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {}"
             log.stdinfo(msg.format(flat_lo, flat_hi))
             flat_mask = np.ma.masked_outside(flat_ext.data, flat_lo, flat_hi)
 
-            msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {}"
-            log.stdinfo(msg.format(dark_lo, dark_hi))
+            msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {} ADU\n" \
+                  "                                    ({} < > {})"
+            bunit = dark_ext.hdr.get('BUNIT', 'ADU').upper()
+            if bunit in ('ELECTRON', 'ELECTRONS'):
+                conv = dark_ext.gain()
+            elif bunit == 'ADU':
+                conv = 1
+            else:
+                raise ValueError("Input units for dark should be ADU or "
+                                 "ELECTRON, not {}".format(bunit))
+            log.stdinfo(msg.format(dark_lo, dark_hi,
+                                   conv*dark_lo, conv*dark_hi))
             # create the mask -- darks (hot pixels)
-            dark_mask = np.ma.masked_outside(dark_ext.data, dark_lo, dark_hi)
+            dark_mask = np.ma.masked_outside(dark_ext.data,
+                                             conv*dark_lo, conv*dark_hi)
 
             # combine masks and write to bpm file
             data_mask = np.ma.mask_or(dark_mask.mask, flat_mask.mask)
