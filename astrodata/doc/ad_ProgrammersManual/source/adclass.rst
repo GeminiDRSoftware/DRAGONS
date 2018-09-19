@@ -6,12 +6,10 @@
 AstroData and Derivatives
 *************************
 
-The ``astrodata.core.AstroData`` class is the main interface to the package. When
-opening files or creating new objects, it will be a derivative of this class
-that we will obtain. As such, ``AstroData``'s interface include provisions for
-?????????????TODO?????????????
-
-# TODO: Link "tag set" and "descriptors" to the proper chapters The ``AstroData``
+The ``astrodata.core.AstroData`` class (or simply ``astrodata.AstroData``)
+is the main interface to the package. When
+opening files or creating new objects, a derivative of this class is
+returned, as the ``AstroData``
 class is not intended to be used directly. It provides the logic to calculate
 the :ref:`tag set <ad_tags>` for an image, which is common to all data products. Aside from
 that, it lacks any kind of specialized knowledge about the different
@@ -20,11 +18,11 @@ methods (``info`` and ``load``) as abstract, meaning that the class cannot be
 instantiated directly: a derivative must implement those methods in order to be
 useful. Such derivatives can also implement descriptors, which provide
 processed metadata in a way that abstracts the user from the raw information
-(eg. the keywords in FITS headers)
+(eg. the keywords in FITS headers).
 
 ``AstroData`` does define a common interface, though. Much of it consists on
 implementing semantic behaviour (access to components through indices, like a
-list; arithmetics using standard operators; etc), mostly by implementing
+list; arithmetic using standard operators; etc), mostly by implementing
 standard Python methods:
 
 * Defines a common ``__init__`` function, that accepts a ``DataProvider`` as its
@@ -56,7 +54,7 @@ The ``tags`` Property
 =====================
 
 Additionally, and crucial to the package, AstroData offers a ``tags`` property,
-that under the hood calculates the textual tags that describe the object
+that under the hood calculates textual tags that describe the object
 represented by an instance, and returns a set of strings. Returning a set (as
 opposed to a list, or other similar structure) is intentional, because it is
 fast to compare sets, eg. testing for membership; or calculating intersection,
@@ -223,7 +221,7 @@ Some highlights:
   or ``None``, which is the same as returning an empty ``TagSet``\ [#tagset1]_.
 
   **All** these methods will be executed when looking up for tags, and it's up
-  to the tag set construction :ref:`algorithm <ad_tags>` to figure out the final
+  to the tag set construction algorithm (see :ref:`ad_tags` to figure out the final
   result.  In theory, one **could** provide *just one* big method, but this is
   feasible only when the logic behind deciding the tag set is simple. The
   moment that there are a few competing alternatives, with some conditions
@@ -243,12 +241,12 @@ Some highlights:
   ``astro_data_descriptor`` to decorate them. This is *not required*, because
   unlike tag methods, descriptors are meant to be called explicitly by the
   programmer, but they can still be earmarked (using this decorator) to be
-  listed when calling the ``descriptor_list`` function. The decorator does not
+  listed when calling the ``descriptors`` property. The decorator does not
   alter the descriptor input or output in any way, so it is always safe to use
   it, and you probably should, unless there's a good reason against it (eg. if
   a descriptor is deprecated and you don't want it to show up in lookups).
 
-  We'll talk about descriptors in more detail :ref:`later on <ad_descriptors>`.
+  More detailed information can be found in :ref:`ad_descriptors`.
 
 
 .. _class_registration:
@@ -256,14 +254,13 @@ Some highlights:
 Register your class
 -------------------
 
-Finally, you want to include your class into the **AstroData Registry**. This
-is an internal structure that keeps a list of all the AstroData derived classes
+Finally, you need to include your class in the **AstroData Registry**. This
+is an internal structure with a list of all the ``AstroData``\-derived classes
 that we want to make available for our programs. Including the classes in this
-registry is an important step, because choosing the classes manually is
-discouraged: a file **should** be opened using ``astrodata.open``, which uses
-the registry to identify the appropriate class, instead of having the user
-figuring it out, following the algorithm described in the previous section,
-when talking about ``_matches_data``.
+registry is an important step, because a file should be opened using
+``astrodata.open`` or ``astrodata.create``, which uses
+the registry to identify the appropriate class (via the ``_matches_data``
+methods), instead of having the user specify it explicitly.
 
 The version of AstroData prior to DRAGONS had an auto-discovery mechanism, that
 explored the source tree looking for the relevant classes and other related
@@ -320,12 +317,13 @@ letting the user decide which level of detail they need.
 As an additional step, the ``__init__.py`` file in a package may do extra
 initialization. For example, for the Gemini modules, one piece of functionality
 that is shared across instruments is a descriptor (``wavelength_band``)
-translating a filter's name (say "u" or "FeII") to its central wavelenght (eg.
+translating a filter's name (say "u" or "FeII") to its central wavelength (eg.
 0.35µm, 1.644µm). As it is a rather common function for us, it is implemented
 by ``AstroDataGemini``. This class **does not know** about its daughter
 classes, though, meaning that it **cannot know** about the filters offered by
 their instruments. Instead, we offer a function that can be used to update the
-filter → wavelength mapping into ``gemini_instruments.gemini.lookup``. Eg.,
+filter → wavelength mapping in ``gemini_instruments.gemini.lookup`` so that
+it is accessible by the ``AstroDataGemini``\-level descriptor. So
 our ``gmos.__init__.py`` looks like this::
 
     __all__ = ['AstroDataGmos']
@@ -347,7 +345,7 @@ initialization methods, driven by the modules that add functionality
 themselves, as opposed to active discovery methods on the core code. This
 favors decoupling between modules, which is generally a good idea.
 
-.. rubric:: footnotes
+.. rubric:: Footnotes
 
 .. [#keywdict] Note that the keyword dictionary is a "private" property of the class (due to the double-underscore prefix). Each class can define its own set, which will not be replaced by derivative classes. ``_keyword_for`` is aware of this and will look up each class up the inheritance chain, in turn, when looking up for keywords.
 

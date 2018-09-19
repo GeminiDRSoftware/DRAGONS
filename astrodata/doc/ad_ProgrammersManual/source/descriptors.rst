@@ -6,7 +6,7 @@
 Descriptors
 ***********
 
-The descriptors are just regular methods that translate metadata from the raw
+Descriptors are just regular methods that translate metadata from the raw
 storage (eg. cards from FITS headers) to values useful for the user,
 potentially doing some processing in between. They exist to:
 
@@ -14,38 +14,48 @@ potentially doing some processing in between. They exist to:
   takes the detector gain from a keyword in the FITS PHU, where
   ``AstroDataNiri`` overrides this to provide a hard-coded value.
 
-  Then again, ``AstroDataGmos`` uses the observation date to choose one out of
-  several lookup tables that are then indexed by read speed setting, gain
-  setting, and amplifier name… and does this per each individual detector in
-  the mosaic. No only that, the read speed and gain settings, and the amplifier
-  are obtained using descriptors, too.
+  More complex implementations also exist. In order to determine the gain
+  of a GMOS observations, ``AstroDataGmos`` uses the observation date
+  (provided by a descriptor) to select a particular lookup table, and
+  then uses the values of other descriptors to select the correct entry
+  in the table.
 * Provide a common interface to a set of instruments. This simplifies user
-  training (no need to learn a different API for each instrument), and the
+  training (no need to learn a different API for each instrument), and
   facilitates the reuse of code for pipelines, etc.
-* Also, for simple keyword → value mappings, they provide a more meaningful and
-  readable name, typically.
+* Also, since FITS header keywords are limited to 8 characters, for simple
+  keyword → value mappings, they provide a more meaningful and readable name.
 
 Descriptors **should** be decorated using
 ``astrodata.core.astro_data_descriptor``. The only function of this decorator
 is to ensure that the descriptor is marked as such: it does not alter its input
 or output in any way. This lets the user to explore the API of an AstroData
-object by calling ``astrodata.core.descriptor_list``.
+object via the ``descriptors`` property.
 
-Descriptors **can** be decorated with ``astrodata.core.returns_list``. This is
-useful with descriptors that are supposed to return lists of values. This is a
-common case for decorators on instances that may have more than one extension.
-AstroData complicates a little bit the logic for descriptors when there is
-slicing, and ``returns_list`` may help in those cases, altering the output as
-needed. The algorithm for the decorator is the following:
+Descriptors **can** be decorated with ``astrodata.core.returns_list`` to
+eliminate the need to code some logic. Some descriptors return single values,
+while some return lists, one per extension. Typically, the former are
+descriptors that refer to the entire observation (and, for MEF files,
+are usually extracted from metadata in the PHU, such as ``airmass``), while
+the latter are descriptors where different extensions might return different
+values (and typically come from metadata in the individual HDUs, such as
+``gain``). A list is returned even if there is only one extension in the
+AstroData object, as this allows code to be written generically to
+iterate over the ``AstroData`` object and the descriptor return, without
+needing to know how many extensions there are. The ``returns_list``
+decorator ensures that the descriptor returns an appropriate object
+(value or list), using the following rules:
 
-* If the astrodata object has been sliced as a single object, a single value
-  will be returned (as opposed to a list). If the descriptor returns a list,
-  the decorator will return only its first element.
-* Else:
+* If the ``AstroData`` object is not a single slice:
 
-  * If the descriptor returns a list, it must match the number of extensions,
-    which is always equal to ``len(self)``. If the lengths do not match, an
-    exception will be raised.
-  * Else, the decorator will consider the result a single value, and will
-    return a list of length ``len(self)``, where each element is a copy of the
-    one returned by the original descriptor.
+  * If the undecorated descriptor returns a list, an exception is raised
+    if the list is not the same length as the number of extensions.
+  * If the undecorated descriptor returns a single value, the decorator
+    will turn this into a list of the correct length by copying this value.
+
+* If the ``AstroData`` object is a single slice and the undecorated
+  descriptor returns a list, only the first element is returned.
+
+An example of the use of this decorator is the ``AstroDataNiri`` ``gain``
+descriptor, which reads the value from a lookup table and simply returns it.
+A single value is only appropriate if the AstroData object is singly-sliced
+and the decorator ensures that a list is returned otherwise.

@@ -177,7 +177,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         Examples
         ---------
 
-        >>> ad[0].window[100:200, 100:200]
+        >>> ad[0].nddata.window[100:200, 100:200]
         <NDWindowingAstrodata .....>
 
         """
@@ -286,6 +286,11 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
             and ``mask``. Their entire contents will replace the data in the
             area defined by ``section``.
 
+        Examples
+        ---------
+
+        >>> sec = NDData(np.zeros((100,100)))
+        >>> ad[0].nddata.set_section((slice(None,100),slice(None,100)), sec)
         """
         self.data[section] = input.data
         if self.uncertainty is not None:

@@ -16,8 +16,9 @@ a regular data provider.)
 The data provider acts as a hierarchical data storage. At the **top level**, it
 contains:
 
-* A sequence of "extensions", which are typically science objects (for a FITS
-  file, this would typically be an Image HDU representing an exposure). One can
+* A sequence of "extensions", representing individual data planes and their
+  associated metadata, likely to
+  represent separate detectors or amplifiers. One can
   access these extensions by index (eg. ``ad[5]``). Indexing starts at 0,
   following Python's convention.
 * Global objects like masks or tables affecting all the extensions.
@@ -123,7 +124,7 @@ during the design phase to make as easy as possible to plug in new providers.
 Future release of this document will address this topic.
 
 
-.. rubric:: footnotes
+.. rubric:: Footnotes
 
 .. [#viewnote] For efficiency reasons, and to keep just one version of the
    data. One implementator may decide to return a sliced copy instead, but this is

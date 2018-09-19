@@ -10,7 +10,7 @@ A third, and very important part of the AstroData core package is the data
 container. We have chosen to extend Astropy's NDData\ [#nddata]_ with our own
 requirements, particularly lazy-loading of data using by opening the FITS files
 in read-only, memory-mapping mode, and exploiting the windowing capability of
-PyFITS\[#pyfits]_ (using ``section``) to reduce our memory requirements, which
+PyFITS\ [#pyfits]_ (using ``section``) to reduce our memory requirements, which
 becomes important when reducing data (eg. stacking).
 
 We document our container for completeness and for reference, but note that its
@@ -58,9 +58,9 @@ latter, which is the more pressing issue.
 
 Another addition of as is the ``variance`` property as a convenience for the
 user.. Astropy, so far, only provides a standard deviation class for storing
-uncertainties. Internally it doesn't matter, as any of them can be used when
-propagating errors, but we are more concerned about variance elsewhere in the
-code.
+uncertainties and the code to propagate errors stored this way already
+exists. However, our coding elsewhere is greatly simplified if we are able
+to access and set the variance directly.
 
 At last, we've added another new property, ``window``, that can be used to
 explicitly exploit the PyFITS ``section`` property, to (again) avoid loading
@@ -70,7 +70,7 @@ itself a proxy of ``NDAstroData``. This scheme may seem complex, but it was
 deemed the easiest and cleanest way to achieve the result that we were looking
 for.
 
-.. rubric:: footnotes
+.. rubric:: Footnotes
 
 .. [#nddata] Astropy: `N-dimensional datasets <http://docs.astropy.org/en/stable/nddata>`_
 

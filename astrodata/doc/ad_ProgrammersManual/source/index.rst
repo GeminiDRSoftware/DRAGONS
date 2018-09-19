@@ -15,7 +15,7 @@ Astrodata Programmer's Manual
 
    intro
    design
-   astrodata
+   adclass
    providers
    containers
    tags
@@ -29,11 +29,3 @@ Appendix
    :maxdepth: 1
 
    appendices/api_refguide
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
