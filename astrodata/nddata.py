@@ -51,6 +51,9 @@ class NDWindowing(object):
 
 class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
+    Allows "windowed" access to some properties of an ``NDAstroData`` instance.
+    In particular, ``data``, ``uncertainty``, ``variance``, and ``mask`` return
+    clipped data.
     """
     def __init__(self, target, window):
         self._target = target
@@ -86,16 +89,19 @@ def is_lazy(item):
     return isinstance(item, ImageHDU) or (hasattr(item, 'lazy') and item.lazy)
 
 class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
-    """Implements `NDData` with all Mixins.
+    """
+    Implements ``NDData`` with all Mixins, plus some ``AstroData`` specifics.
 
-    This class implements a `NDData`-like container that supports reading and
+    This class implements an ``NDData``-like container that supports reading and
     writing as implemented in the ``astropy.io.registry`` and also slicing
     (indexing) and simple arithmetics (add, subtract, divide and multiply).
 
-    Notes
-    -----
-    A key distinction from `NDDataArray` is that this class does not attempt
-    to provide anything that was not defined in any of the parent classes.
+    A very important difference between ``NDAstroData`` and ``NDData`` is that
+    the former attempts to load all its data lazily. There are also some important
+    differences in the interface (eg. ``.data`` lets you reset its contents after
+    initialization).
+
+    Documentation is provided where our class differs.
 
     See also
     --------
@@ -105,8 +111,8 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     Examples
     --------
-    The mixins allow operation that are not possible with `NDData` or
-    `NDDataBase`, i.e. simple arithmetics::
+    The mixins allow operation that are not possible with ``NDData`` or
+    ``NDDataBase``, i.e. simple arithmetics::
 
         >>> from astropy.nddata import NDAstroData, StdDevUncertainty
         >>> import numpy as np
@@ -125,7 +131,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
                [ 1.41421356,  1.41421356,  1.41421356],
                [ 1.41421356,  1.41421356,  1.41421356]])
 
-    see `NDArithmeticMixin` for a complete list of all supported arithmetic
+    see ``NDArithmeticMixin`` for a complete list of all supported arithmetic
     operations.
 
     But also slicing (indexing) is possible::
@@ -136,7 +142,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         >>> ndd4.uncertainty.array
         array([ 1.41421356,  1.41421356,  1.41421356])
 
-    See `NDSlicingMixin` for a description how slicing works (which attributes)
+    See ``NDSlicingMixin`` for a description how slicing works (which attributes)
     are sliced.
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
@@ -161,6 +167,22 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def window(self):
+        """
+        Interface to access a section of the data, using lazy access whenever possible.
+
+        Returns
+        --------
+        An instance of ``NDWindowing``, which provides ``__getitem__``, to allow the use
+        of square brackets when specifying the window. Ultimately, an
+        ``NDWindowingAstrodata`` instance is returned
+
+        Examples
+        ---------
+
+        >>> ad[0].nddata.window[100:200, 100:200]
+        <NDWindowingAstrodata .....>
+
+        """
         return NDWindowing(self)
 
     @property
@@ -201,6 +223,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def data(self):
+        """
+        An array representing the raw data stored in this instance.
+        It implements a setter.
+        """
         return self._get_simple('_data')
 
     @data.setter
@@ -214,6 +240,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def uncertainty(self):
+
         return self._get_uncertainty()
 
     @uncertainty.setter
@@ -234,6 +261,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def variance(self):
+        """
+        A convenience property to access the contents of ``uncertainty``,
+        squared (as the uncertainty data is stored as standard deviation).
+        """
         arr = self._get_uncertainty()
         if arr is not None:
             return arr.array**2
@@ -243,6 +274,26 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         self.uncertainty = new_variance_uncertainty_instance(value)
 
     def set_section(self, section, input):
+        """
+        Sets only a section of the data. This method is meant to prevent
+        fragmentation in the Python heap, by reusing the internal structures
+        instead of replacing them with new ones.
+
+        Args
+        -----
+        section : ``slice``
+            The area that will be replaced
+        input : ``NDData``-like instance
+            This object needs to implement at least ``data``, ``uncertainty``,
+            and ``mask``. Their entire contents will replace the data in the
+            area defined by ``section``.
+
+        Examples
+        ---------
+
+        >>> sec = NDData(np.zeros((100,100)))
+        >>> ad[0].nddata.set_section((slice(None,100),slice(None,100)), sec)
+        """
         self.data[section] = input.data
         if self.uncertainty is not None:
             self.uncertainty.array[section] = input.uncertainty.array
