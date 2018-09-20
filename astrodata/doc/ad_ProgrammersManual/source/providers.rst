@@ -23,8 +23,6 @@ contains:
   following Python's convention.
 * Global objects like masks or tables affecting all the extensions.
 
-# TODO: Point "Data Container" to the API
-
 Each extension, in turn, is an instance of a Data Container, keeping important
 metadata (e.g., a FITS HDU's header) and the main data for the extension (e.g., the
 data for a SCI extension, on Gemini data), along with any other associated data

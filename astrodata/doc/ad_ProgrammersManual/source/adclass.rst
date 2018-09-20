@@ -236,6 +236,37 @@ Some highlights:
   Please, refer to ``AstroDataGemini``, ``AstroDataGmos``, and ``AstroDataGnirs`` for
   examples using most of the features.
 
+* The ``AstroDataFits.load`` method calls the ``FitsLoader.load`` method, which
+  uses metadata in the FITS headers to determine how the data should be stored in
+  the ``AstroData`` object. In particular, the ``EXTNAME`` and ``EXTVER`` keywords
+  are used to assign individual FITS HDUs, using the same names (``SCI``, ``DQ``,
+  and ``VAR``) as Gemini-IRAF for the ``data``, ``mask``, and ``variance`` planes.
+  A ``SCI`` HDU *must* exist if there is another HDU with the same ``EXTVER``, or
+  else an error will occur.
+
+  If the raw data do not conform to this format, the ``AstroDataFits.load`` method
+  can be overridden by your class, by having it call the ``FitsLoader.load`` method
+  with an additional parameter, *extname_parser*, that provides a function to
+  modify the header. This function will be called on each HDU before further
+  processing. As an example, the SOAR Adaptive Module Imager (SAMI) instrument
+  writes raw data as a 4-extension MEF file, with the extensions having ``EXTNAME``
+  values ``im1``, ``im2``, etc. These need to be modified to ``SCI``, and an
+  ``EXTVER`` keyword added. This can be done by writing a suitable ``load`` method
+  for the ``AstroDataSami`` class::
+
+    @classmethod
+    def load(cls, source):
+        def sami_parser(hdu):
+            m = re.match('im(\d)', hdu.header.get('EXTNAME', ''))
+            if m:
+                hdu.header['EXTNAME'] = ('SCI', 'Added by AstroData')
+                hdu.header['EXTVER'] = (int(m.group(1)), 'Added by AstroData')
+
+        return cls(FitsLoader(FitsProvider).load(source, extname_parser=sami_parser))
+
+  Note that the ``FitsLoader.load`` method will assign the lowest available
+  integer to a ``SCI`` header with no ``EXTVER`` keyword (or if its value is -1).
+
 * *Descriptors* will make the bulk of the class: again, the name is arbitrary,
   and it should be descriptive. What *may* be important here is to use
   ``astro_data_descriptor`` to decorate them. This is *not required*, because
