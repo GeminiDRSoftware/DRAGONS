@@ -16,13 +16,13 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
     TagSet(add=None, remove=None, blocked_by=None, blocks=None, if_present=None)
 
-    Named tuple that is used by tag methods to return the actions that should be
+    Named tuple that is used by tag methods to return which actions should be
     performed on a tag set. All the attributes are optional, and any combination
     of them can be used, allowing to create complex tag structures. Read the
-    :ref:`documentation on the tag-generating algorithm <ad_tags>` if you want
-    to better understand the interactions.
+    documentation on the tag-generating algorithm if you want to better understand
+    the interactions.
 
-    The simplest ``TagSet``, though, tends to just add tags to the global set.
+    The simplest TagSet, though, tends to just add tags to the global set.
 
     It can be initialized by position, like any other tuple (the order of the
     arguments is the one in which the attributes are listed below). It can
@@ -30,16 +30,16 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
 
     Attributes
     ----------
-    add : set of strings, or ``None``
+    add : set of str, or None
         Tags to be added to the global set
-    remove : set of strings, or ``None``
+    remove : set of str, or None
         Tags to be removed from the global set
-    blocked_by : set of strings, or ``None``
-        Tags that will prevent this ``TagSet`` to be applied
-    blocks : set of strings, or ``None``
-        Other ``TagSet``\ s containing these won't be applied
-    if_present : set of strings, or ``None``
-        This ``TagSet`` will be applied only **all** of these tags are present
+    blocked_by : set of str, or None
+        Tags that will prevent this TagSet from being applied
+    blocks : set of str, or None
+        Other TagSets containing these won't be applied
+    if_present : set of str, or None
+        This TagSet will be applied only *all* of these tags are present
 
     Examples
     ---------
@@ -62,7 +62,7 @@ def astro_data_descriptor(fn):
     Decorator that will mark a class method as an AstroData descriptor.
     Useful to produce list of descriptors, for example.
 
-    If used in combination with other decorators, this one **must** be the
+    If used in combination with other decorators, this one *must* be the
     one on the top (ie. the last one applying). It doesn't modify the
     method in any other way.
 
@@ -78,8 +78,6 @@ def astro_data_descriptor(fn):
     fn.descriptor_method = True
     return fn
 
-# Ensures descriptors coded to return a list (one value per extension)
-# only return a value if sent a slice with a single extension
 def returns_list(fn):
     """
     Decorator to ensure that descriptors that should return a list (of one
@@ -122,13 +120,13 @@ def returns_list(fn):
 
 def astro_data_tag(fn):
     """
-    Decorator that marks methods of an :py:class:`AstroData` derived class as part of the
+    Decorator that marks methods of an `AstroData` derived class as part of the
     tag-producing system.
 
     It wraps the method around a function that will ensure a consistent return
     value: the wrapped method can return any sequence of sequences of strings,
-    and they will be converted to a ``TagSet`` of ``set``. If the wrapped method
-    returns ``None``, it will be turned into an empty ``TagSet``.
+    and they will be converted to a TagSet. If the wrapped method
+    returns None, it will be turned into an empty TagSet.
 
     Args
     -----
@@ -162,7 +160,7 @@ class AstroDataError(Exception):
 
 class DataProvider(with_metaclass(ABCMeta, object)):
     """
-    Abstract class describing the minimal interface that :py:class:`DataProvider` derivative
+    Abstract class describing the minimal interface that `DataProvider` derivative
     classes need to implement.
     """
 
@@ -170,7 +168,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
     def is_sliced(self):
         """
         If this data provider instance represents the whole dataset, return
-        ``False``. If it represents a slice out of the whole, return ``True``.
+        False. If it represents a slice out of the whole, return True.
 
         Returns
         --------
@@ -182,7 +180,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
     def is_single(self):
         """
         If this data provider represents a single slice out of a whole dataset,
-        return ``True``. Otherwise, return ``False``.
+        return True. Otherwise, return False.
 
         Returns
         --------
@@ -194,9 +192,9 @@ class DataProvider(with_metaclass(ABCMeta, object)):
     def is_settable(self, attribute):
         """
         Predicate that can be used to figure out if certain attribute of the
-        :py:class:`DataProvider` is meant to be modified by an external object.
+        `DataProvider` is meant to be modified by an external object.
 
-        This is used mostly by :py:class:`AstroData`, which acts as a proxy exposing
+        This is used mostly by `AstroData`, which acts as a proxy exposing
         attributes of its assigned provider, to decide if it should set a value
         on the provider or on itself.
 
@@ -220,10 +218,10 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         Args
         -----
-        ext : array, ``NDData``, ``Table``, etc
+        ext : array, `NDData`, `Table`, etc
             The component to be added. The exact accepted types depend on the class
             implementing this interface. Implementations specific to certain data formats
-            may accept specialized types (eg. a FITS provider will accept an ``ImageHDU``
+            may accept specialized types (eg. a FITS provider will accept an `ImageHDU`
             and extract the array out of it)
 
         name : str, optional
@@ -243,7 +241,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         Raises
         -------
         TypeError
-            If adding the object in an invalid situation (eg. ``name`` is ``None`` when
+            If adding the object in an invalid situation (eg. `name` is `None` when
             adding to a single slice)
 
         ValueError
@@ -259,8 +257,8 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         Args
         -----
-        slice : int, ``slice``
-            An integer or an instance of a Python standard ``slice`` object
+        slice : int, `slice`
+            An integer or an instance of a Python standard `slice` object
 
         Raises
         -------
@@ -269,7 +267,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
             slice)
 
         ValueError
-            If ``slice`` does not belong to one of the recognized types
+            If `slice` does not belong to one of the recognized types
 
         IndexError
             If an index is out of range
@@ -308,7 +306,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         Returns
         --------
-        Generally, it should return ``self``. The implementations may decide to return
+        Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
         pass
@@ -327,7 +325,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         Returns
         --------
-        Generally, it should return ``self``. The implementations may decide to return
+        Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
         pass
@@ -346,7 +344,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         Returns
         --------
-        Generally, it should return ``self``. The implementations may decide to return
+        Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
         pass
@@ -365,7 +363,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         Returns
         --------
-        Generally, it should return ``self``. The implementations may decide to return
+        Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
         pass
@@ -374,7 +372,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
     def exposed(self):
         """
         A collection of strings with the names of objects that can be accessed directly
-        by name as attributes of this instance, which are not part of its standard
+        by name as attributes of this instance, and that are not part of its standard
         interface (ie. data objects that have been added dynamically).
 
         Examples
@@ -400,12 +398,12 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         A list of the uncertainty objects (or a single object, if this is a single slice)
         attached to the science data, for each extension, in loading/appending order.
 
-        The objects are instances of AstroPy's ``NDUncertainty``, or ``None`` where no information
+        The objects are instances of AstroPy's `NDUncertainty`, or `None` where no information
         is available.
 
         See also
         ---------
-        variance
+        variance: The actual array supporting the uncertainty object
         """
         pass
 
@@ -415,7 +413,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         A list of the mask arrays (or a single array, if this is a single slice) attached to the
         science data, for each extension, in loading/appending order.
 
-        For objects that miss a mask, ``None`` will be provided instead.
+        For objects that miss a mask, `None` will be provided instead.
         """
         pass
 
@@ -425,12 +423,12 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         A list of the variance arrays (or a single array, if this is a single slice) attached to
         the science data, for each extension, in loading/appending order.
 
-        For objects that miss uncertainty information, ``None`` will be provided instead.
+        For objects that miss uncertainty information, `None` will be provided instead.
 
         See also
         ---------
-        uncertainty: The ``NDUncertainty`` object used under the hood to propagate uncertainty when
-                     operating with the data
+        uncertainty: The `NDUncertainty` object used under the hood to propagate uncertainty when
+        operating with the data
         """
         pass
 
@@ -451,9 +449,10 @@ class AstroData(object):
     Base class for the AstroData software package. It provides an interface to manipulate
     astronomical data sets.
 
-    Parameters:
-       provider (DataProvider):  The data that will be manipulated through the
-          :py:class:`AstroData` instance.
+    Parameters
+    -----------
+    provider : DataProvider
+        The data that will be manipulated through the `AstroData` instance.
     """
 
     # Simply a value that nobody is going to try to set an NDData attribute to
@@ -467,13 +466,16 @@ class AstroData(object):
 
     def __deepcopy__(self, memo):
         """
-        Returns a new instance of this class, initialized with a deep copy of the associted :py:class:`DataProvider`
+        Returns a new instance of this class, initialized with a deep copy of the associted `DataProvider`
 
-        Parameters:
-           memo (dict): See the documentation on :py:class:`copy.deepcopy` for an explanation on how this works
+        Args
+        -----
+        memo : dict
+            See the documentation on `deepcopy` for an explanation on how this works
 
-        Returns:
-           AstroData: A deep copy of this instance
+        Returns
+        --------
+        A deep copy of this instance
         """
         # Force the data provider to load data, if needed
         len(self._dataprov)
@@ -485,8 +487,9 @@ class AstroData(object):
         """
         Determines the tag set for the current instance
 
-        Returns:
-           set: A set of strings
+        Returns
+        --------
+        A set of strings
         """
         # This prevents infinite recursion
         if self._processing_tags:
@@ -537,7 +540,7 @@ class AstroData(object):
     @property
     def tags(self):
         """
-        A :py:class:`set` of strings that represent the tags defining this instance
+        A set of strings that represent the tags defining this instance
         """
         return self.__process_tags()
 
@@ -547,8 +550,9 @@ class AstroData(object):
         Returns a sequence of names for the methods that have been
         decorated as descriptors.
 
-        Returns:
-           tuple: A tuple of str
+        Returns
+        --------
+        A tuple of str
         """
         members = inspect.getmembers(self.__class__,
                                      lambda x: hasattr(x, 'descriptor_method'))
@@ -566,8 +570,8 @@ class AstroData(object):
 
         Args
         -----
-        slice : ``int``, ``slice``
-            An integer or an instance of a Python standard :py:class:`slice` object
+        slice : int, `slice`
+            An integer or an instance of a Python standard `slice` object
 
         Raises
         -------
@@ -576,7 +580,7 @@ class AstroData(object):
             slice)
 
         ValueError
-            If ``slice`` does not belong to one of the recognized types
+            If `slice` does not belong to one of the recognized types
 
         IndexError
             If an index is out of range
@@ -590,7 +594,7 @@ class AstroData(object):
 
     def __delitem__(self, idx):
         """
-        Called to implement deletion of ``self[idx]``.  Supports standard Python syntax
+        Called to implement deletion of `self[idx]`.  Supports standard Python syntax
         (including negative indices).
 
         Args
@@ -601,16 +605,16 @@ class AstroData(object):
         Raises
         -------
         IndexError
-            If ``idx`` is out of range
+            If `idx` is out of range
         """
         del self._dataprov[idx]
 
     def __getattr__(self, attribute):
         """
         Called when an attribute lookup has not found the attribute in the usual places
-        (not an instance attribute, and not in the class tree for ``self``).
+        (not an instance attribute, and not in the class tree for `self`).
 
-        This is implemented to provide access to objects exposed by the :py:class:`DataProvider`
+        This is implemented to provide access to objects exposed by the `DataProvider`
 
         Args
         -----
@@ -631,10 +635,10 @@ class AstroData(object):
     def __setattr__(self, attribute, value):
         """
         Called when an attribute assignment is attempted, instead of the normal mechanism.
-        This method will check first with the :py:class:`DataProvider`: if the DP says it will contain
+        This method will check first with the `DataProvider`: if the DP says it will contain
         this attribute, or that it will accept it for setting, then the value will be stored
         at the DP level. Otherwise, the regular attribute assignment mechanisme takes over
-        and the value will be store as an instance attribute of ``self``.
+        and the value will be store as an instance attribute of `self`.
 
         Args
         -----
@@ -644,11 +648,11 @@ class AstroData(object):
         value : object
             The value to be assigned to the attribute
 
-        Raises
-        -------
-        ValueError
-           If the value is passed to the :py:class:`DataProvider`, and it is not of an acceptable type.
-           Please, check the appropriate documentation for this.
+        Returns
+        --------
+        If the value is passed to the `DataProvider`, and it is not of an acceptable type,
+        a `ValueError` (or other exception) may be rised. Please, check the appropriate
+        documentation for this.
         """
         if attribute != '_dataprov' and '_dataprov' in self.__dict__:
             if self._dataprov.is_settable(attribute):
@@ -658,12 +662,7 @@ class AstroData(object):
 
     def __delattr__(self, attribute):
         """
-        Implements attribute removal.
-
-        Raises
-        -------
-        AttributeError
-            if ``self`` represents a slice
+        Implements attribute removal. If `self` represents a single slice, the 
         """
         try:
             try:
@@ -678,9 +677,9 @@ class AstroData(object):
 
     def __contains__(self, attribute):
         """
-        Implements the ability to use the ``in`` operator with an :py:class:`AstroData` object.
+        Implements the ability to use the `in` operator with an `AstroData` object.
         It will look up the specified attribute name within the exposed members of
-        the internal :py:class:`DataProvider` object. Refer to the concrete ``DataProvider``
+        the internal `DataProvider` object. Refer to the concrete `DataProvider`
         implementation's documentation to know what members are exposed.
 
         Args
@@ -696,7 +695,7 @@ class AstroData(object):
 
     def __len__(self):
         """
-        Number of independent extensions stored by the :py:class:`DataProvider`
+        Number of independent extensions stored by the `DataProvider`
 
         Returns
         --------
@@ -714,17 +713,17 @@ class AstroData(object):
 
     def __add__(self, oper):
         """
-        Implements the binary arithmetic operation ``+`` with :py:class:`AstroData` as the left operand.
+        Implements the binary arithmetic operation `+` with `AstroData` as the left operand.
 
         Args
         -----
         oper : number or object
             The operand to be added to this instance. The accepted types depend on the
-            :py:class:`DataProvider`
+            `DataProvider`
 
         Returns
         --------
-        A new :py:class:`AstroData` instance
+        A new `AstroData` instance
         """
         copy = deepcopy(self)
         copy += oper
@@ -732,17 +731,17 @@ class AstroData(object):
 
     def __sub__(self, oper):
         """
-        Implements the binary arithmetic operation ``-`` with :py:class:`AstroData` as the left operand.
+        Implements the binary arithmetic operation `-` with `AstroData` as the left operand.
 
         Args
         -----
         oper : number or object
             The operand to be added to this instance. The accepted types depend on the
-            :py:class:`DataProvider`
+            `DataProvider`
 
         Returns
         --------
-        A new :py:class:`AstroData` instance
+        A new `AstroData` instance
         """
         copy = deepcopy(self)
         copy -= oper
@@ -750,17 +749,17 @@ class AstroData(object):
 
     def __mul__(self, oper):
         """
-        Implements the binary arithmetic operation ``*`` with :py:class:`AstroData` as the left operand.
+        Implements the binary arithmetic operation `*` with `AstroData` as the left operand.
 
         Args
         -----
         oper : number or object
             The operand to be added to this instance. The accepted types depend on the
-            :py:class:`DataProvider`
+            `DataProvider`
 
         Returns
         --------
-        A new :py:class:`AstroData` instance
+        A new `AstroData` instance
         """
         copy = deepcopy(self)
         copy *= oper
@@ -768,14 +767,17 @@ class AstroData(object):
 
     def __div__(self, oper):
         """
-        Implements the binary arithmetic operation ``/`` with :py:class:`AstroData` as the left operand.
+        Implements the binary arithmetic operation `/` with `AstroData` as the left operand.
 
-        Args:
-            oper (number or object): The operand to be added to this instance. The accepted
-               types depend on the :py:class:`DataProvider`
+        Args
+        -----
+        oper : number or object
+            The operand to be added to this instance. The accepted types depend on the
+            `DataProvider`
 
-        Returns:
-            AstroData: a new :py:class:`AstroData`  instance
+        Returns
+        --------
+        A new `AstroData` instance
         """
         copy = deepcopy(self)
         copy /= oper
@@ -783,68 +785,68 @@ class AstroData(object):
 
     def __iadd__(self, oper):
         """
-        Implements the augmented arithmetic assignment ``+=``.
+        Implements the augmented arithmetic assignment `+=`.
 
         Args
         -----
         oper : number or object
             The operand to be added to this instance. The accepted types depend on the
-            :py:class:`DataProvider`
+            `DataProvider`
 
         Returns
         --------
-        ``self``
+        `self`
         """
         self._dataprov += oper
         return self
 
     def __isub__(self, oper):
         """
-        Implements the augmented arithmetic assignment ``-=``.
+        Implements the augmented arithmetic assignment `-=`.
 
         Args
         -----
         oper : number or object
             The operand to be added to this instance. The accepted types depend on the
-            :py:class:`DataProvider`
+            `DataProvider`
 
         Returns
         --------
-        ``self``
+        `self`
         """
         self._dataprov -= oper
         return self
 
     def __imul__(self, oper):
         """
-        Implements the augmented arithmetic assignment ``*=``.
+        Implements the augmented arithmetic assignment `*=`.
 
         Args
         -----
         oper : number or object
             The operand to be added to this instance. The accepted types depend on the
-            :py:class:`DataProvider`
+            `DataProvider`
 
         Returns
         --------
-        ``self``
+        `self`
         """
         self._dataprov *= oper
         return self
 
     def __idiv__(self, oper):
         """
-        Implements the augmented arithmetic assignment ``/=``.
+        Implements the augmented arithmetic assignment `/=`.
 
         Args
         -----
         oper : number or other
             The operand to be added to this instance. The accepted types depend on the
-            :py:class:`DataProvider`
+            `DataProvider`
 
         Returns
         --------
-        ``self``
+        `self`
         """
         self._dataprov /= oper
         return self
@@ -857,14 +859,10 @@ class AstroData(object):
 
     __radd__ = __add__
     __rmul__ = __mul__
-
     def __rsub__(self, oper):
-        # TODO
         copy = (deepcopy(self) - oper) * -1
         return copy
-
     def __rdiv__(self, oper):
-        # TODO
         copy = deepcopy(self)
         copy._dataprov.__rdiv__(oper)
         return copy
@@ -874,7 +872,7 @@ class AstroData(object):
     def load(cls, source):
         """
         Class method that returns an instance of this same class, properly initialized
-        with a :py:class:`DataProvider` that can deal with the object passed as ``source``
+        with a DataProvider that can deal with the object passed as `source`
 
         This method is abstract and has to be implemented by derived classes.
         """
@@ -883,38 +881,38 @@ class AstroData(object):
     def append(self, extension, name=None, *args, **kw):
         """
         Adds a new top-level extension to the provider. Please, read the the concrete
-        :py:class:`DataProvider` documentation that is being used to know the exact behavior and
+        `DataProvider` documentation that is being used to know the exact behavior and
         additional accepted arguments.
 
         Args
         -----
         extension : array, Table, or other
-            The contents for the new extension. Usually the underlying :py:class:`DataProvider`
+            The contents for the new extension. Usually the underlying `DataProvider`
             will understand how to deal with regular NumPy arrays and with AstroData
-            ``Table`` instances, but it may also accept other types.
+            `Table` instances, but it may also accept other types.
 
         name : string, optional
-            A :py:class:`DataProvider` will usually require a name for extensions. If the name
-            cannot be derived from the metadata associated to ``extension``, you will
-            have to provide one.
+            A `DataProvider` will usually require a name for extensions. If the name
+            cannot be derived from the metadata associated to `extension`, you will
+            have to provider one.
 
         args : optional
-            The :py:class:`DataProvider` may accept additional arguments. Please, refer to its
+            The DataProvider may accept additional arguments. Please, refer to its
             documentation.
 
         kw : optional
-            The :py:class:`DataProvider` may accept additional arguments. Please, refer to its
+            The DataProvider may accept additional arguments. Please, refer to its
             documentation.
 
         Returns
         --------
-        The instance that has been added internally (potentially **not** the same that
-        was passed as ``extension``)
+        The instance that has been added internally (potentially *not* the same that
+        was passed as *extension*)
 
         Raises
         -------
         TypeError
-            Will be raised if the :py:class:`DataProvider` doesn't know how to deal with the
+            Will be raised if the `DataProvider` doesn't know how to deal with the
             data that has been passed.
 
         ValueError
@@ -932,7 +930,7 @@ class AstroData(object):
         It will be applied to the mask and variance of each extension, too, if
         they exist.
 
-        This is a convenience method, which is equivalent to::
+        This is a convenience method, which is equivalent to:
 
             for ext in ad:
                 ad.ext.data = operator(ad.ext.data, *args, **kwargs)
@@ -948,10 +946,10 @@ class AstroData(object):
             and returns an array
 
         args : optional
-            Additional arguments to be passed positionally to the ``operator``
+            Additional arguments to be passed positionally to the `operator`
 
         kwargs : optional
-            Additional arguments to be passed by name to the ``operator``
+            Additional arguments to be passed by name to the `operator`
 
         Examples
         ---------
@@ -969,9 +967,9 @@ class AstroData(object):
     def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
         """
         Sets the .data, and optionally .mask and .variance attributes of a
-        single-extension :py:class:`AstroData` slice. This function will optionally
+        single-extension AstroData slice. This function will optionally
         check whether these attributes have the same shape.
-
+        
         Parameters
         ----------
         data : ndarray
