@@ -19,14 +19,14 @@ contains:
 * A sequence of "extensions", representing individual data planes and their
   associated metadata, likely to
   represent separate detectors or amplifiers. One can
-  access these extensions by index (eg. ``ad[5]``). Indexing starts at 0,
+  access these extensions by index (e.g., ``ad[5]``). Indexing starts at 0,
   following Python's convention.
 * Global objects like masks or tables affecting all the extensions.
 
-# TODO: Point "Data Cointainer" to the API
+# TODO: Point "Data Container" to the API
 
 Each extension, in turn, is an instance of a Data Container, keeping important
-metadata (eg. a FITS HDU's header) and the main data for the extension (eg. the
+metadata (e.g., a FITS HDU's header) and the main data for the extension (e.g., the
 data for a SCI extension, on Gemini data), along with any other associated data
 (masks, variance plane, tables, etc).
 
@@ -58,7 +58,7 @@ from the class: ``exposed`` (used to determine if a certain attribute is to be
 "exposed" to the user through the AstroData class), ``is_sliced``, and
 ``is_single``. Of particular interest is this later one: ``is_single`` is a
 predicate that should return ``True`` only if a data provider has been sliced
-using a single index. Eg.::
+using a single index, e.g.::
 
     >>> d1 = provider[:4]
     >>> d1.is_sliced, d1.is_single
@@ -68,11 +68,11 @@ using a single index. Eg.::
     (True, True)
 
 This is important for the AstroData interface. When a data provider is being
-considered a "single" slice, the behaviour of many methods change. For example,
+considered a "single" slice, the behavior of many methods change. For example,
 we mentioned that the ``data`` property *generally* returns a list. **If the
 data provider in question is a single slice, then data would return a single
-(ie. scalar) element**. This behavior is often seen also in descriptors. Refer
-always to the to documentation of a method to figure out how they behave. As
+(i.e., scalar) element**. This behavior is often seen also in :ref:`ad_descriptors`.
+Refer always to the to documentation of a method to figure out how they behave. As
 programmers, you should always include this explicitly in the documentation,
 even if it's implicit to AstroData.
 
@@ -102,7 +102,7 @@ public release.
 
 As a last comment: remember that ``AstroData`` exposes its underlying
 ``DataProvider`` interface up to a certain point. This can be used to
-dynamically expose to the user additional attributes, dependant on the
+dynamically expose to the user additional attributes, dependent on the
 underlying technology, or even to the instrument, if needed. This is all fine
 and encouraged **as long as everything is well documented**, and the user
 understands that certain parts of the interface may not be available when using
@@ -127,7 +127,7 @@ Future release of this document will address this topic.
 .. rubric:: Footnotes
 
 .. [#viewnote] For efficiency reasons, and to keep just one version of the
-   data. One implementator may decide to return a sliced copy instead, but this is
+   data. The method may decide to return a sliced copy instead, but this is
    a design decision.
 
 .. [#soarnote] At the time of writing this manual, SOAR

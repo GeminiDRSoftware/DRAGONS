@@ -7,10 +7,10 @@ Descriptors
 ***********
 
 Descriptors are just regular methods that translate metadata from the raw
-storage (eg. cards from FITS headers) to values useful for the user,
+storage (e.g., cards from FITS headers) to values useful for the user,
 potentially doing some processing in between. They exist to:
 
-* Abstract the actual organization of the metadata. Eg. ``AstroDataGemini``
+* Abstract the actual organization of the metadata; e.g. ``AstroDataGemini``
   takes the detector gain from a keyword in the FITS PHU, where
   ``AstroDataNiri`` overrides this to provide a hard-coded value.
 

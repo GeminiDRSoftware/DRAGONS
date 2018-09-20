@@ -18,10 +18,10 @@ methods (``info`` and ``load``) as abstract, meaning that the class cannot be
 instantiated directly: a derivative must implement those methods in order to be
 useful. Such derivatives can also implement descriptors, which provide
 processed metadata in a way that abstracts the user from the raw information
-(eg. the keywords in FITS headers).
+(e.g., the keywords in FITS headers).
 
 ``AstroData`` does define a common interface, though. Much of it consists on
-implementing semantic behaviour (access to components through indices, like a
+implementing semantic behavior (access to components through indices, like a
 list; arithmetic using standard operators; etc), mostly by implementing
 standard Python methods:
 
@@ -31,10 +31,10 @@ standard Python methods:
 * Implements ``__deepcopy__``
 
 * Implements ``__iter__`` to allow sequential iteration over the main set of
-  components (eg. FITS science HDUs, but this depends on the DataProvider
+  components (e.g., FITS science HDUs, but this depends on the DataProvider
   implementation)
 
-* Implements ``__getitem__`` to allow data slicing (eg. ``ad[2:4]`` returns a new
+* Implements ``__getitem__`` to allow data slicing (e.g., ``ad[2:4]`` returns a new
   ``AstroData`` instance that contains only the third and fourth main components)
 
 * Implements ``__delitem__`` to allow for data removal based on index. It does
@@ -57,7 +57,7 @@ Additionally, and crucial to the package, AstroData offers a ``tags`` property,
 that under the hood calculates textual tags that describe the object
 represented by an instance, and returns a set of strings. Returning a set (as
 opposed to a list, or other similar structure) is intentional, because it is
-fast to compare sets, eg. testing for membership; or calculating intersection,
+fast to compare sets, e.g., testing for membership; or calculating intersection,
 etc., to figure out if a certain dataset belongs to an arbitrary category.
 
 The implementation for the tags property is just a call to
@@ -73,10 +73,10 @@ The first step when creating new ``AstroData`` derivative hierarchy would be to
 create a new class that knows how to deal with some kind of specific data in a
 broad sense. DRAGONS provide such a class for FITS files,
 ``astrodata.fits.AstroDataFits``, that can be used as an example for future
-extensions (eg. to support the ASDF format).
+extensions (e.g., to support the ASDF format).
 
 ``AstroDataFits`` implements both info and load in ways that are specific to FITS
-files. It also introduces a number of FITS-specific methods and properties, eg:
+files. It also introduces a number of FITS-specific methods and properties, e.g.:
 
 * The properties ``phu`` and ``hdr``, which return the primary header and a list of
   headers for the science HDUs, respectively.
@@ -173,7 +173,7 @@ This is an excerpt of a typical derivative module::
    for the example.
 
 The class typically relies on functionality declared elsewhere, in some
-ancestor. Eg. the tag set computation is defined at ``AstroData``, and the
+ancestor, e.g., the tag set computation is defined at ``AstroData``, and the
 ``_keyword_for`` method is defined at ``AstroDataFits``.
 
 Some highlights:
@@ -195,7 +195,7 @@ Some highlights:
   return a boolean, with ``True`` meaning "I know how to handle this data".
 
   Note that ``True`` **does not mean "I have full knowledge of the data"**. It is
-  ok for more than one class to claim compatibility. For a GMOS FITS file, the
+  acceptable for more than one class to claim compatibility. For a GMOS FITS file, the
   classes that will return ``True`` are: ``AstroDataFits`` (because it is a FITS
   file that comply with certain minimum requirements), ``AstroDataGemini`` (the
   data contains Gemini Facility common metadata), and ``AstroDataGmos`` (the
@@ -243,7 +243,7 @@ Some highlights:
   programmer, but they can still be earmarked (using this decorator) to be
   listed when calling the ``descriptors`` property. The decorator does not
   alter the descriptor input or output in any way, so it is always safe to use
-  it, and you probably should, unless there's a good reason against it (eg. if
+  it, and you probably should, unless there's a good reason against it (e.g., if
   a descriptor is deprecated and you don't want it to show up in lookups).
 
   More detailed information can be found in :ref:`ad_descriptors`.
@@ -317,7 +317,7 @@ letting the user decide which level of detail they need.
 As an additional step, the ``__init__.py`` file in a package may do extra
 initialization. For example, for the Gemini modules, one piece of functionality
 that is shared across instruments is a descriptor (``wavelength_band``)
-translating a filter's name (say "u" or "FeII") to its central wavelength (eg.
+translating a filter's name (say "u" or "FeII") to its central wavelength (e.g.,
 0.35µm, 1.644µm). As it is a rather common function for us, it is implemented
 by ``AstroDataGemini``. This class **does not know** about its daughter
 classes, though, meaning that it **cannot know** about the filters offered by
@@ -349,4 +349,4 @@ favors decoupling between modules, which is generally a good idea.
 
 .. [#keywdict] Note that the keyword dictionary is a "private" property of the class (due to the double-underscore prefix). Each class can define its own set, which will not be replaced by derivative classes. ``_keyword_for`` is aware of this and will look up each class up the inheritance chain, in turn, when looking up for keywords.
 
-.. [#tagset1] Notice that the example functions will return only a ``TagSet``, if appropriate. This is ok, remember that *every function* in Python returns a value, which will be ``None``, implicitly, if you don't specify otherwise.
+.. [#tagset1] Notice that the example functions will return only a ``TagSet``, if appropriate. This is OK, remember that *every function* in Python returns a value, which will be ``None``, implicitly, if you don't specify otherwise.

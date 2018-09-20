@@ -29,7 +29,7 @@ During 2016 a decision was reached to overhaul Gemini Python. While the
 principles behind AstroData were sound, the coding involved unnecessary
 layers of abstraction and eschewed features of the Python language in favor
 of its own implementation. Thus,
-DRAGONS\ [#DRAGONS]_ was born, with a new, simplified (and backwards *incompatible*)
+DRAGONS\ [#DRAGONS]_ was born, with a new, simplified (and backward *incompatible*)
 AstroData v2.0 (which we will refer to simply as AstroData)
 
 This manual documents both the high level design and some implementation

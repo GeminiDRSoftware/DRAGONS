@@ -11,7 +11,7 @@ container. We have chosen to extend Astropy's NDData\ [#nddata]_ with our own
 requirements, particularly lazy-loading of data using by opening the FITS files
 in read-only, memory-mapping mode, and exploiting the windowing capability of
 PyFITS\ [#pyfits]_ (using ``section``) to reduce our memory requirements, which
-becomes important when reducing data (eg. stacking).
+becomes important when reducing data (e.g., stacking).
 
 We document our container for completeness and for reference, but note that its
 use is associated to ``FitsProvider``. If you're implementing an alternative
@@ -28,7 +28,7 @@ functionality::
     class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         ...
 
-This allows us out of the box to have proper arithmetics with error
+This allows us out of the box to have proper arithmetic with error
 propagation, and slicing the data with the array syntax.
 
 Our first customization is ``NDAstroData.__init__``. It relies mostly on the
@@ -47,7 +47,7 @@ can only be read unscaled. Our NDAstroData redefines the properties ``data``,
   of memory as long as possible.
 
 * To replace lazy-loaded data with a real in-memory array, under certain
-  conditions (eg. if the data is modified, as we won't apply the changes to the
+  conditions (e.g., if the data is modified, as we won't apply the changes to the
   original file!)
 
 Our obsession with lazy-loading and discarding data is directed to reduce
@@ -69,6 +69,14 @@ which, when sliced, in turn produces an instance of ``NDWindowingAstroData``,
 itself a proxy of ``NDAstroData``. This scheme may seem complex, but it was
 deemed the easiest and cleanest way to achieve the result that we were looking
 for.
+
+.. note::
+
+   We expect to make changes to ``NDAstroData`` in future releases. In particular,
+   we plan to make use of the ``wcs`` and ``unit`` attributes provided by the
+   ``NDData`` class and increase the use of memory-mapping by default. These
+   changes mostly represent increased functionality and we anticipate a high
+   (and possibly full) degree of backward compatibility.
 
 .. rubric:: Footnotes
 
