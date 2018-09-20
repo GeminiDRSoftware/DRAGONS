@@ -50,7 +50,7 @@ decorator ensures that the descriptor returns an appropriate object
   * If the undecorated descriptor returns a list, an exception is raised
     if the list is not the same length as the number of extensions.
   * If the undecorated descriptor returns a single value, the decorator
-    will turn this into a list of the correct length by copying this value.
+    will turn it into a list of the correct length by copying this value.
 
 * If the ``AstroData`` object is a single slice and the undecorated
   descriptor returns a list, only the first element is returned.
