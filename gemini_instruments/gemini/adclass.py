@@ -1027,6 +1027,25 @@ class AstroDataGemini(AstroDataFits):
         return True
 
     @astro_data_descriptor
+    def is_in_adu(self):
+        """
+        Tells whether the data are in ADU (likely to be superseded by use of
+        NDData's unit attribute)
+
+        Returns
+        -------
+        bool
+            True if the data are in ADU
+        """
+        units = self.hdr.get('BUNIT', 'ADU')
+        if self.is_single:
+            return units.upper() == 'ADU'
+        units = set(u.upper() for u in units)
+        if len(units) > 1:
+            raise ValueError("Not all extensions appear to have the same units")
+        return units.pop() == 'ADU'
+
+    @astro_data_descriptor
     def local_time(self):
         """
         Returns the local time stored at the time of the observation.
