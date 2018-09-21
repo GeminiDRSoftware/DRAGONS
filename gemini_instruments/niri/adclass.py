@@ -369,22 +369,19 @@ class AstroDataNiri(AstroDataGemini):
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
         camera = self.camera()
-        # Explicit: if BUNIT is missing, assume data are in ADU
-        bunit = self.hdr.get('BUNIT', 'adu')
+        in_adu = self.is_in_adu()
         zpt = lookup.nominal_zeropoints.get((filter_name, camera))
 
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
         # if the data are in ADU
         if self.is_single:
             try:
-                return zpt - (
-                    2.5 * math.log10(gain) if bunit.lower() == 'adu' else 0)
+                return zpt - (2.5 * math.log10(gain) if in_adu else 0)
             except TypeError:
                 return None
         else:
-            return [zpt - (2.5 * math.log10(g) if b.lower() == 'adu' else 0)
-                   if zpt and g else None
-                   for g, b in zip(gain, bunit)]
+            return [zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
+                    else None for g in gain]
 
     @astro_data_descriptor
     def nonlinearity_coeffs(self):

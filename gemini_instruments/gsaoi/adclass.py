@@ -192,34 +192,31 @@ class AstroDataGsaoi(AstroDataGemini):
         """
         Returns the nominal zeropoints (i.e., the magnitude corresponding to
         a pixel value of 1) for the extensions in an AD object.
+        Zeropoints in table are for electrons, so subtract 2.5*lg(gain)
+        if the data are in ADU
 
         Returns
         -------
         float/list
             zeropoint values, one per SCI extension
         """
-        def _zpt(array, filt, gain, bunit):
+        def _zpt(array, filt, gain, in_adu):
             zpt = lookup.nominal_zeropoints.get((filt, array))
             try:
-                return zpt - (2.5 * math.log10(gain) if
-                              bunit.lower() == 'adu' else 0)
+                return zpt - (2.5 * math.log10(gain) if in_adu else 0)
             except TypeError:
                 return None
 
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
         array_name = self.array_name()
-        # Explicit: if BUNIT is missing, assume data are in ADU
-        bunit = self.hdr.get('BUNIT', 'adu')
+        in_adu = self.is_in_adu()
 
-        # Have to do the list/not-list stuff here
-        # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
-        # if the data are in ADU
         if self.is_single:
-            return _zpt(array_name, filter_name, gain, bunit)
+            return _zpt(array_name, filter_name, gain, in_adu)
         else:
-            return [_zpt(a, filter_name, g, b)
-                    for a, g, b, in zip(array_name, gain, bunit)]
+            return [_zpt(a, filter_name, g, in_adu)
+                    for a, g in zip(array_name, gain)]
 
     @astro_data_descriptor
     def nonlinearity_coeffs(self):

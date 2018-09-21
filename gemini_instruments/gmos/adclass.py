@@ -730,33 +730,31 @@ class AstroDataGmos(AstroDataGemini):
         """
         Returns the nominal zeropoints (i.e., the magnitude corresponding to
         a pixel value of 1) for the extensions in an AD object.
+        Zeropoints in table are for electrons, so subtract 2.5*lg(gain)
+        if the data are in ADU
 
         Returns
         -------
         float/list
             zeropoint values, one per SCI extension
         """
-        def _zpt(ccd, filt, gain, bunit):
+        def _zpt(ccd, filt, gain, in_adu):
             zpt = lookup.nominal_zeropoints.get((ccd, filt))
             try:
-                return zpt - (2.5 * math.log10(gain) if
-                              bunit.lower() == 'adu' else 0)
+                return zpt - (2.5 * math.log10(gain) if in_adu else 0)
             except TypeError:
                 return None
 
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
         ccd_name = self.hdr.get('CCDNAME')
-        # Explicit: if BUNIT is missing, assume data are in ADU
-        bunit = self.hdr.get('BUNIT', 'adu')
+        in_adu = self.is_in_adu()
 
-        # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
-        # if the data are in ADU
         if self.is_single:
-            return _zpt(ccd_name, filter_name, gain, bunit)
+            return _zpt(ccd_name, filter_name, gain, in_adu)
         else:
-            return [_zpt(c, filter_name, g, b)
-                    for c, g, b in zip(ccd_name, gain, bunit)]
+            return [_zpt(c, filter_name, g, in_adu)
+                    for c, g in zip(ccd_name, gain)]
 
     @returns_list
     @astro_data_descriptor
@@ -912,10 +910,10 @@ class AstroDataGmos(AstroDataGemini):
         int/list
             saturation level
         """
-        def _well_depth(detector, amp, bin, gain, bunit):
+        def _well_depth(detector, amp, bin, gain, in_adu):
             try:
                 return lookup.gmosThresholds[detector][amp] * bin / (
-                    gain if 'electron' in bunit else 1)
+                    1 if in_adu else gain)
             except KeyError:
                 return None
 
@@ -935,8 +933,7 @@ class AstroDataGmos(AstroDataGemini):
         bin_factor = xbin * ybin
         ampname = self.array_name()
         gain = self.gain()
-        # Explicit: if BUNIT is missing, assume data are in ADU
-        bunits = self.hdr.get('BUNIT', 'adu')
+        in_adu = self.is_in_adu()
 
         # Get estimated bias levels from LUT
         bias_levels = get_bias_level(self, estimate=True)
@@ -953,14 +950,14 @@ class AstroDataGmos(AstroDataGemini):
         if self.is_single:
             bias_subtracted |= overscan_levels is not None
             processed_limit = (adc_limit - (bias_levels if bias_subtracted
-                              else 0)) * (gain if 'electron' in bunits else 1)
+                              else 0)) * (1 if in_adu else gain)
         else:
             bias_subtracted = [bias_subtracted or o is not None
                                for o in overscan_levels]
             processed_limit = [(adc_limit - (blev if bsub else 0))
-                              * (g if 'electron' in bunit else 1)
-                              for blev, bsub, g, bunit in
-                              zip(bias_levels, bias_subtracted, gain, bunits)]
+                              * (1 if in_adu else g)
+                              for blev, bsub, g in
+                              zip(bias_levels, bias_subtracted, gain)]
 
 
         # For old EEV data, or heavily-binned data, we're ADC-limited
@@ -969,7 +966,7 @@ class AstroDataGmos(AstroDataGemini):
         else:
             # Otherwise, we're limited by the electron well depths
             if self.is_single:
-                saturation = _well_depth(detector, ampname, bin_factor, gain, bunits)
+                saturation = _well_depth(detector, ampname, bin_factor, gain, in_adu)
                 if saturation is None:
                     saturation = processed_limit
                 else:
@@ -977,9 +974,8 @@ class AstroDataGmos(AstroDataGemini):
                     if saturation > processed_limit:
                         saturation = processed_limit
             else:
-                testlut = _well_depth(detector, ampname[0], bin_factor, gain[0], bunits[0])
-                well_limit = [_well_depth(detector, a, bin_factor, g, b)
-                              for a, g, b in zip(ampname, gain, bunits)]
+                well_limit = [_well_depth(detector, a, bin_factor, g, in_adu)
+                              for a, g in zip(ampname, gain)]
                 saturation = [None if w is None else
                               min(w + blev if not bsub else 0, p)
                               for w, p, blev, bsub in zip(well_limit,
