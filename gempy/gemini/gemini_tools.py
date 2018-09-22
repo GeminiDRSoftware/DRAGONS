@@ -364,7 +364,7 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
 
             # Check units if desired
             if check_units:
-                if ext1.hdr.get('BUNIT', 'ADU').lower() != ext2.hdr.get('BUNIT', 'ADU').lower():
+                if ext1.is_in_adu() != ext2.is_in_adu():
                     raise ValueError('Extensions have different units')
 
         # Check filter if desired

@@ -569,7 +569,7 @@ class Standardize(PrimitivesBASE):
             var_array = np.where(ext.data > 0, ext.data, 0)
             if not ext.is_coadds_summed():
                 var_array /= ext.coadds()
-            if ext.hdr.get('BUNIT', 'ADU').upper() == 'ADU':
+            if ext.is_in_adu():
                 var_array /= ext.gain()
             if ext.variance is None:
                 ext.variance = var_array
@@ -610,7 +610,7 @@ class Standardize(PrimitivesBASE):
             else:
                 log.fullinfo('Read noise for {}:{} = {} electrons'.
                              format(ad.filename, extver, read_noise))
-            if ext.hdr.get('BUNIT', 'ADU').upper() == 'ADU':
+            if ext.is_in_adu():
                 read_noise /= gain
             var_array = np.full_like(ext.data, read_noise * read_noise)
             if ext.variance is None:
@@ -725,10 +725,9 @@ def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
     read_noise_list = adinput.read_noise()
     var_dtype = np.float32
 
+    in_adu = adinput.is_in_adu()
     for ext, gain, read_noise in zip(adinput, gain_list, read_noise_list):
         extver = ext.hdr['EXTVER']
-        # Assume units are ADU if not explicitly given
-        bunit = ext.hdr.get('BUNIT', 'ADU')
 
         # Create a variance array with the read noise (or zero)
         if add_read_noise:
@@ -739,9 +738,9 @@ def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
             else:
                 log.fullinfo('Read noise for {} extver {} = {} electrons'.
                          format(adinput.filename, extver, read_noise))
-                log.fullinfo('Calculating the read noise component of '
-                             'the variance in {}'.format(bunit))
-                if bunit.upper() == 'ADU':
+                log.fullinfo('Calculating the read noise component of the '
+                             'variance in {}'.format('ADU' if in_adu else 'electrons'))
+                if in_adu:
                     read_noise /= gain
             var_array = np.full(ext.data.shape, read_noise*read_noise)
         else:

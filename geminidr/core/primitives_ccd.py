@@ -157,7 +157,7 @@ class CCD(PrimitivesBASE):
                 # Weights are used to determine number of spline pieces
                 # should be the estimate of the mean
                 wt = np.sqrt(x2 - x1) / ext.read_noise()
-                if ext.hdr.get('BUNIT', 'adu').lower() == 'adu':
+                if ext.is_in_adu():
                     wt *= ext.gain()
 
                 medboxsize = 2  # really 2n+1 = 5

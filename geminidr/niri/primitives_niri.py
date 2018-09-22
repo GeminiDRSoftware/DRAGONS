@@ -57,6 +57,7 @@ class NIRI(Gemini, NearIR):
                             format(ad.filename))
                 continue
 
+            in_adu = ad.is_in_adu()
             total_exptime = ad.exposure_time()
             coadds = ad.coadds()
             # Check the raw exposure time (i.e., per coadd). First, convert
@@ -83,8 +84,7 @@ class NIRI(Gemini, NearIR):
                             format(coeffs.time_delta, coeffs.gamma, coeffs.eta))
                 
                 # Convert back to ADU per exposure if data are in electrons
-                bunit = ext.hdr.get("BUNIT", 'ADU').upper()
-                conv_factor = (1 if bunit == 'ADU' else ext.gain()) * coadds
+                conv_factor = (1 if in_adu else ext.gain()) * coadds
 
                 raw_pixel_data = ext.data / conv_factor  # ADU per 1 coadd
                 # Create a new array that contains the corrected pixel data
@@ -96,7 +96,7 @@ class NIRI(Gemini, NearIR):
                 # Poisson noise (divided by gain if in ADU), possibly plus RN**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
-                conv_factor = ext.gain() if bunit == 'ADU' else 1
+                conv_factor = ext.gain() if in_adu else 1
                 if ext.variance is not None:
                     ext.variance += (corrected_pixel_data - ext.data) / conv_factor
                 # Now update the SCI extension

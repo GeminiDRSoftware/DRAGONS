@@ -568,6 +568,7 @@ class Preprocess(PrimitivesBASE):
                             "{}".format(ad.filename))
                 continue
 
+            in_adu = ad.is_in_adu()
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use regular maths
             log.status("Applying nonlinearity correction to {}".
@@ -579,8 +580,7 @@ class Preprocess(PrimitivesBASE):
 
                 # Convert back to ADU per exposure if coadds have been summed
                 # or if the data have been converted to electrons
-                bunit = ext.hdr.get("BUNIT", 'ADU').upper()
-                conv_factor = 1 if bunit == 'ADU' else ext.gain()
+                conv_factor = 1 if in_adu else ext.gain()
                 if ext.is_coadds_summed():
                     conv_factor *= ext.coadds()
                 for n in range(len(coeffs), 0, -1):
@@ -593,7 +593,7 @@ class Preprocess(PrimitivesBASE):
                 # if the coadds are averaged), possibly plus read-noise**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
-                conv_factor = ext.gain() if bunit == 'ADU' else 1
+                conv_factor = ext.gain() if in_adu else 1
                 if not ext.is_coadds_summed():
                     conv_factor *= ext.coadds()
                 if ext.variance is not None:

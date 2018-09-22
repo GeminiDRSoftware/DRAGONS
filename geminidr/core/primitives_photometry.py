@@ -197,7 +197,7 @@ class Photometry(PrimitivesBASE):
                 # so need to multiply by gain if image is not in ADU
                 if set_saturation:
                     sat_level = ext.saturation_level()
-                    if ext.hdr.get('BUNIT', 'adu').lower() != 'adu':
+                    if not ext.is_in_adu():
                         sat_level *= ext.gain()
                     sexpars.update({'SATUR_LEVEL': sat_level})
 

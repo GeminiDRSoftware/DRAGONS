@@ -102,11 +102,12 @@ class QA(PrimitivesBASE):
 
             info_list = []
             bg_mag_list = []
+            in_adu = ad.is_in_adu()
+            bunit = 'ADU' if in_adu else 'electron'
             for i, (ext, npz) in enumerate(
                     zip(ad, ad.nominal_photometric_zeropoint())):
                 extver = ext.hdr['EXTVER']
                 ext_info = {}
-                bunit = ext.hdr.get('BUNIT', 'adu')
 
                 bg_count = Measurement(*bg_list[i])
                 if bg_count.value:
@@ -137,7 +138,7 @@ class QA(PrimitivesBASE):
                                              bg_count.samples)
                         # Need to report to FITSstore in electrons
                         bg_e = _arith(bg_count, 'mul', fak * (ext.gain() if
-                                            bunit.lower() == 'adu' else 1))
+                                            in_adu else 1))
                         ext_info.update({"mag": bg_mag.value, "mag_std": bg_mag.std,
                                 "electrons": bg_e.value, "electrons_std":
                                 bg_e.std, "nsamples": bg_e.samples})

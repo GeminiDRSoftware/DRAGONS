@@ -140,7 +140,7 @@ def _position_illum_mask(adinput, illum, log, max_dy=20):
     med = max(np.median(addata), 0.0)
     # Get read noise in appropriate units (descriptor returns electrons)
     rdnoise = adinput.read_noise()[0]
-    if adinput.hdr.get('BUNIT', 'ADU')[0].upper() == 'ADU':
+    if adinput.is_in_adu():
         rdnoise /= adinput.gain()[0]
     # Set UNilliminated pixels here, to allow the binary_dilation to work
     threshpixdata = np.where(np.logical_and(addata>2*med, addata>3*rdnoise),
