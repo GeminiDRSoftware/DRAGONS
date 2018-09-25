@@ -151,8 +151,8 @@ class Resample(PrimitivesBASE):
                           'output_shape': out_shape}
                 new_var = None if ad[0].variance is None else \
                     affine_transform(ad[0].variance, cval=0.0, **kwargs)
-                new_mask = None if ad[0].mask is None else \
-                    _transform_mask(ad[0].mask, **kwargs)
+                new_mask = _transform_mask(ad[0].mask if ad[0].mask is not None
+                        else np.zeros_like(ad[0].data, dtype=DQ.datatype), **kwargs)
                 if hasattr(ad[0], 'OBJMASK'):
                     ad[0].OBJMASK = _transform_mask(ad[0].OBJMASK, **kwargs)
                 ad[0].reset(affine_transform(ad[0].data, cval=0.0, **kwargs),
@@ -340,13 +340,14 @@ def _pad_image(ad, padding):
     ad.operate(np.pad, padding, 'constant', constant_values=0)
     # We want the mask padding to be DQ.no_data, so have to fix
     # that up by hand...
-    if ad[0].mask is not None:
-        ad[0].mask[:padding[0][0]] = DQ.no_data
-        if padding[0][1] > 0:
-            ad[0].mask[-padding[0][1]:] = DQ.no_data
-        ad[0].mask[:,:padding[1][0]] = DQ.no_data
-        if padding[1][1] > 0:
-            ad[0].mask[:,-padding[1][1]:] = DQ.no_data
+    if ad[0].mask is None:
+        ad[0].mask = np.zeros_like(ad[0].data, dtype=DQ.datatype)
+    ad[0].mask[:padding[0][0]] = DQ.no_data
+    if padding[0][1] > 0:
+        ad[0].mask[-padding[0][1]:] = DQ.no_data
+    ad[0].mask[:,:padding[1][0]] = DQ.no_data
+    if padding[1][1] > 0:
+        ad[0].mask[:,-padding[1][1]:] = DQ.no_data
     if hasattr(ad[0], 'OBJMASK'):
         ad[0].OBJMASK = np.pad(ad[0].OBJMASK, padding, 'constant',
                              constant_values=0)
