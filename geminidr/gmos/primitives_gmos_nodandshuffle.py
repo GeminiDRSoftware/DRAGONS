@@ -24,7 +24,7 @@ class GMOSNodAndShuffle(GMOS):
     tagset = set()
 
     def __init__(self, adinputs, **kwargs):
-        #super(GMOSNodAndShuffle, self).__init__(adinputs, **kwargs)
+        super(GMOSNodAndShuffle, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_nodandshuffle)
 
     def skyCorrectNodAndShuffle(self, adinputs=None, suffix=None):
