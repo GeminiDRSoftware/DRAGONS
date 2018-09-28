@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import re
 from datetime import date
 
@@ -442,12 +443,27 @@ class AstroDataGmos(AstroDataGemini):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters.
             output_units = "meters"
-        cd11 = self.hdr.get('CD1_1')
+
+        # Temporary setup. Assume wavelength calibration creates a WDELTA keyword
         try:
+            disp = self.hdr[self._keyword_for('dispersion')]
+        except KeyError:
+            # Straight from gsappwave; linear interpolation does OK
+            cenwave = self.central_wavelength()  # meters
+            grule = float(self.disperser(pretty=True)[1:])
+            greq = 1000 * cenwave * grule
+            gtilt = np.pi / 180. * np.interp(greq, lookup.gratingeq[::-1],
+                        np.arange(len(lookup.gratingeq), 0, -1))
+            disp = (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() *
+                    cenwave) / (206265. * greq)
+            if not self.is_single:
+                disp = [disp] * len(self)
+
+        if self.is_single:
+            dispersion = gmu.convert_units('meters', disp, output_units)
+        else:
             dispersion = [gmu.convert_units('meters', d, output_units)
-                          for d in cd11]
-        except TypeError:
-            dispersion = gmu.convert_units('meters', cd11, output_units)
+                          for d in disp]
         return dispersion
 
     @returns_list
