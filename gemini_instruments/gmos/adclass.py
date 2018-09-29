@@ -454,8 +454,8 @@ class AstroDataGmos(AstroDataGemini):
             greq = 1000 * cenwave * grule
             gtilt = np.pi / 180. * np.interp(greq, lookup.gratingeq[::-1],
                         np.arange(len(lookup.gratingeq), 0, -1))
-            disp = (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() *
-                    cenwave) / (206265. * greq)
+            disp = -(81 * math.sin(gtilt + 0.87266) * self.pixel_scale() *
+                     cenwave) / (206265. * greq)
             if not self.is_single:
                 disp = [disp] * len(self)
 
