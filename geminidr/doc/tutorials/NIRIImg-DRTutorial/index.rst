@@ -11,7 +11,7 @@ Tutorial Series - NIRI Imaging Data Reduction with DRAGONS
    PIPE-USER-119_NIRIImg-DRTutorial
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    overview
