@@ -1525,8 +1525,10 @@ gmosRoiSettings = {
     "Central Stamp" : [
         # EEV and e2vDD CCDs
         (2923, 3222, 2155, 2454),
-        # GMOS-S Hamamatsu CCDs  !!KL!! and GMOS-N?  Looks okay.
-        (2923, 3222, 1987, 2286)
+        # GMOS-S Hamamatsu CCDs
+        (2923, 3222, 1987, 2286),
+        # GMOS-N Hamamatsu CCDs
+        (2923, 3222, 1987, 2284),
     ]
 }
 
