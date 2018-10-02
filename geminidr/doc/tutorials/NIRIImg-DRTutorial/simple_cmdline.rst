@@ -2,9 +2,9 @@
 
 .. _simple_cmdline:
 
-*****************************************
-Simple example using the "reduce" command
-*****************************************
+********************************************
+Extended source - Using the "reduce" command
+********************************************
 
 The dataset
 ===========
@@ -248,11 +248,29 @@ Note how we pass in the BPM we created in the previous step.  The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
 ``user_bpm``.  We assign our BPM to that input parameter.
 
+To see the list of available input parameters and their defaults, use the
+tool ``showpars``.  It needs the name of a file on which the primitive will
+be run because the defaults are adjusted to match the input data.
+
+::
+
+    showpars ../playdata/N20160102S0363.fits addDQ
+
+.. image:: _graphics/showpars_addDQ.png
+   :scale: 100%
+   :align: center
+
+
 
 Standard Star
 -------------
-Reduce the standard star.  The flat field will be automatically picked
-from the local calibration database.
+The standard star is reduced more or less the same way as the science
+target (next section) except that darks frames are not obtained for standard
+stars observation.  Therefore the dark correction needs to be turned off.
+
+The processed flat field that we added earlier to the local calibration
+database will be fetched automatically.  The user BPM (optional, but
+recommended) needs to be specified by the user.
 
 ::
 
@@ -261,18 +279,36 @@ from the local calibration database.
 
 Science Target
 --------------
-Reduce the science target.  This is an extended source.  We need to turn off
+The science target is an extended source.  We need to turn off
 the scaling of the sky because the target fills the field of view and does
-not present a reasonable sky background.  If scaling is not turned off in
-this particular case, it results in an oversubtraction of the sky frame.
+not represent a reasonable sky background.  If scaling is not turned off in
+this particular case, it results in an over-subtraction of the sky frame.
 
-The sky frame comes from off-target sky observations.  The software will
-split the on-target and the off-target appropriately as long as the first
-frame is on-target.
+The sky frame comes from off-target sky observations.  We feed the pipeline
+all the on-target and off-target frames.  The software will split the
+on-target and the off-target appropriately as long as the first frame is
+on-target.
 
 The master dark and master flats will be retrieved automatically from the
-local calibration database.
+local calibration database. Again, the user BPM needs to be specified on
+the command line.
 
 ::
 
     reduce @target.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits skyCorrect:scale=False
+
+.. image:: _graphics/extended_before.png
+   :scale: 55%
+   :align: left
+
+.. image:: _graphics/extended_after.png
+   :scale: 55%
+   :align: left
+
+The attentive reader will note that the reduced image is slightly larger
+than the individual raw image. This is because of the telescope was dithered
+between each observation leading to a slightly larger final field of view
+than that of each individual image.  The stacked product is *not* cropped to
+the common area, rather the image size is adjusted to include the complete
+area covered by the whole sequence.  Of course the areas covered by less than
+the full stack of images will have a lower signal-to-noise.
