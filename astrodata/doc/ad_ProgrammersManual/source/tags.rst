@@ -26,8 +26,8 @@ certain ``TagSet``, or put restrictions on others. The different arguments to
 
 * ``add``: if this ``TagSet`` is selected, then add all these members to the tag
   set.
-* ``remove``: if this ``TagSet`` is selected, then subtract all these members
-  from the tag set.
+* ``remove``: if this ``TagSet`` is selected, then prevent all these members
+  from joining the tag set.
 * ``blocked_by``: if any of the tags listed in here exist in the tag set, then
   discard this ``TagSet`` altogether.
 * ``blocks``: discard from the list of unprocessed ones any ``TagSet`` that
@@ -39,7 +39,9 @@ Note that ``blocked_by`` and ``blocks`` look like two sides of the same coin.
 This is intentional: which one to use is up to the programmer, depending on
 what will reduce the amount typing and/or make the logic easier (sometimes one
 wants to block a bunch of other tags from a single one; sometimes one wants a
-tag to be blocked by a bunch of others).
+tag to be blocked by a bunch of others). Furthermore, while ``blocks`` and
+``blocked_by`` prevent the entire ``TagSet`` from being added if it contains a
+tag affected by these, ``remove`` only affects the specific tag.
 
 Now, the algorithm works like this:
 
