@@ -41,8 +41,8 @@ standard Python methods:
   not define ``__setitem__``, though. The basic AstroData series of classes only
   allows to append new data blocks, not to replace them in one sweeping move
 
-* Implements ``__iadd__``, ``__isub__``, ``__imul__``, ``__idiv__``, and then its not
-  in-place versions, based on them.
+* Implements ``__iadd__``, ``__isub__``, ``__imul__``, ``__idiv__``, and their
+  not-in-place versions, based on them.
 
 All of these provide default implementations that rely heavily on the
 ``DataProvider`` capabilities. There are a few other methods. For a detailed
@@ -251,8 +251,8 @@ Some highlights:
   processing. As an example, the SOAR Adaptive Module Imager (SAMI) instrument
   writes raw data as a 4-extension MEF file, with the extensions having ``EXTNAME``
   values ``im1``, ``im2``, etc. These need to be modified to ``SCI``, and an
-  ``EXTVER`` keyword added. This can be done by writing a suitable ``load`` method
-  for the ``AstroDataSami`` class::
+  appropriate ``EXTVER`` keyword added` [#extver]_\. This can be done by writing
+  a suitable ``load`` method for the ``AstroDataSami`` class::
 
     @classmethod
     def load(cls, source):
@@ -264,8 +264,6 @@ Some highlights:
 
         return cls(FitsLoader(FitsProvider).load(source, extname_parser=sami_parser))
 
-  Note that the ``FitsLoader.load`` method will assign the lowest available
-  integer to a ``SCI`` header with no ``EXTVER`` keyword (or if its value is -1).
 
 * *Descriptors* will make the bulk of the class: again, the name is arbitrary,
   and it should be descriptive. What *may* be important here is to use
@@ -318,7 +316,7 @@ The call to ``factory.addClass`` is the one registering the class. This step
 AstroData system. Placing the registration step in the ``__init__.py`` file is
 convenient, because importing the package will be enough!
 
-Thus, a typical script making use of DRAGONS' AstroData to manipulate GMOS data
+Thus, a script making use of DRAGONS' AstroData to manipulate GMOS data
 could start like this::
 
     import astrodata
@@ -330,8 +328,8 @@ could start like this::
 
 The first import line is not needed, technically, because the ``gmos`` package
 will import it too, anyway, but we'll probably need the ``astrodata`` package
-in the namespace anyway, and it's always better to be explicit. Note that our
-typical script starts like this, instead::
+in the namespace anyway, and it's always better to be explicit. Our
+typical DRAGONS scripts and modules start like this, instead::
 
     import astrodata
     import gemini_instruments
@@ -347,8 +345,8 @@ letting the user decide which level of detail they need.
 
 As an additional step, the ``__init__.py`` file in a package may do extra
 initialization. For example, for the Gemini modules, one piece of functionality
-that is shared across instruments is a descriptor (``wavelength_band``)
-translating a filter's name (say "u" or "FeII") to its central wavelength (e.g.,
+that is shared across instruments is a descriptor that translates
+a filter's name (say "u" or "FeII") to its central wavelength (e.g.,
 0.35µm, 1.644µm). As it is a rather common function for us, it is implemented
 by ``AstroDataGemini``. This class **does not know** about its daughter
 classes, though, meaning that it **cannot know** about the filters offered by
@@ -381,3 +379,5 @@ favors decoupling between modules, which is generally a good idea.
 .. [#keywdict] Note that the keyword dictionary is a "private" property of the class (due to the double-underscore prefix). Each class can define its own set, which will not be replaced by derivative classes. ``_keyword_for`` is aware of this and will look up each class up the inheritance chain, in turn, when looking up for keywords.
 
 .. [#tagset1] Notice that the example functions will return only a ``TagSet``, if appropriate. This is OK, remember that *every function* in Python returns a value, which will be ``None``, implicitly, if you don't specify otherwise.
+
+.. [#extver] An ``EXTVER`` keyword is not formally required as the ``FitsLoader.load`` method will assign the lowest available integer to a ``SCI`` header with no ``EXTVER`` keyword (or if its value is -1). But we wish to be able to identify the original ``im1`` header by assigning it an ``EXTVER`` of 1, etc.

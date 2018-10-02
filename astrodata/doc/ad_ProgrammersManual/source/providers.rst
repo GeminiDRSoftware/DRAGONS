@@ -81,7 +81,7 @@ AstroData does not impose any restriction on how to organize the data
 internally, or how to deal with slicing. On slicing, we chose to use a "proxy"
 class for ``FitsProvider``. So, when sliced (through __getitem__), a
 ``FitsProvider`` will return a ``FitsProviderProxy``, which is also a
-descendant of ``DataProvider`` and reproduces the interface of its "proxyed"
+descendant of ``DataProvider`` and reproduces the interface of its "proxied"
 class.
 
 More importantly, ``FitsProviderProxy`` keeps an internal mapping of the sliced

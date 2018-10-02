@@ -42,7 +42,7 @@ this was a feature of
 Gemini IRAF\ [#iraf]_, the coding required to implement it was cumbersome
 and AstroData uses the ``astropy.nddata.NDData`` class,
 as discussed in :ref:`containers`. This makes the relationship between these
-data much clearer, and AstroData creates a syntax that makes clear the
+data much clearer, and AstroData creates a syntax that makes readily apparent the
 roles of other data and metadata that may be created during the reduction
 process.
 
@@ -59,7 +59,7 @@ specifically, an instance of the same subclass as its parent.
 
 A final feature of AstroData is the implementation of very high-level metadata.
 These data, called ``tags``, facilitate a key part of the Gemini data reduction
-system, DRAGONS\ [#dragons]_, by linking the astronomical data to the recipes
+system, DRAGONS, by linking the astronomical data to the recipes
 required to process them. They are explained in detail in :ref:`ad_tags` and the
 Recipe System Programmers Manual\ [#rsprogman]_.
 
@@ -79,6 +79,4 @@ Recipe System Programmers Manual\ [#rsprogman]_.
 
 .. [#iraf] `<https://www.gemini.edu/sciops/data-and-results/processing-software/description>`_
 
-.. [#dragons] DRAGONS reference
-
-.. [#rsprogman] Recipe System Programmers Manual reference
+.. [#rsprogman] PIPE-USER-108_RSProgManual

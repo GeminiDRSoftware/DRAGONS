@@ -14,11 +14,11 @@ PyFITS\ [#pyfits]_ (using ``section``) to reduce our memory requirements, which
 becomes important when reducing data (e.g., stacking).
 
 We document our container for completeness and for reference, but note that its
-use is associated to ``FitsProvider``. If you're implementing an alternative
+use is intimately linked to ``FitsProvider``. If you're implementing an alternative
 data provider, you do not need to follow our design.
 
 We'll describe here how we depart from NDData, and how do we integrate the data
-containers with the rest of the package. Please, refer to NDData for the full
+containers with the rest of the package. Please refer to NDData for the full
 interface.
 
 Our main data container is ``astrodata.nddata.NDAstroData``. Fundamentally, it
@@ -57,12 +57,12 @@ the choice to optimize for speed or for memory consumption, we've chosen the
 latter, which is the more pressing issue.
 
 Another addition of as is the ``variance`` property as a convenience for the
-user.. Astropy, so far, only provides a standard deviation class for storing
+user. Astropy, so far, only provides a standard deviation class for storing
 uncertainties and the code to propagate errors stored this way already
 exists. However, our coding elsewhere is greatly simplified if we are able
 to access and set the variance directly.
 
-At last, we've added another new property, ``window``, that can be used to
+Lastly, we've added another new property, ``window``, that can be used to
 explicitly exploit the PyFITS ``section`` property, to (again) avoid loading
 unneeded data to memory. This property returns an instance of ``NDWindowing``
 which, when sliced, in turn produces an instance of ``NDWindowingAstroData``,

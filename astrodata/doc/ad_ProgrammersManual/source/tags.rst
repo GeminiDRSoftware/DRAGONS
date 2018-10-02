@@ -24,9 +24,9 @@ our tag generating system is that you can specify some conditions to apply a
 certain ``TagSet``, or put restrictions on others. The different arguments to
 ``TagSet`` all expect a list (or some other work the in the following way):
 
-* ``add``: if this ``TagSet`` is selected, then add all its members to the tag
+* ``add``: if this ``TagSet`` is selected, then add all these members to the tag
   set.
-* ``remove``: if this ``TagSet`` is selected, then subtract all its members
+* ``remove``: if this ``TagSet`` is selected, then subtract all these members
   from the tag set.
 * ``blocked_by``: if any of the tags listed in here exist in the tag set, then
   discard this ``TagSet`` altogether.

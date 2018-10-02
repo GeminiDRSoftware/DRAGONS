@@ -10,10 +10,12 @@ Precedents and Motivation
 The Gemini Observatory has produced a number of tools for data processing.
 Historically this has translated into a number of IRAF\ [#IRAF]_ packages but
 the lack of long-term support for IRAF, coupled with the well-known
-difficulty in creating robust reduction pipelines, led to a decision
+difficulty in creating robust reduction pipelines within the IRAF
+environment, led to a decision
 to adopt Python as a programming tool and a new
 package was born: Gemini Python. Gemini Python provided tools to load and
-manipulate Gemini-produced FITS\ [#FITS]_ files, along with a pipeline that
+manipulate Gemini-produced multi-extension FITS\ [#FITS]_ (MEF) files,
+along with a pipeline that
 allowed the construction of reduction recipes. At the center of this package
 was the AstroData subpackage, which supported the abstraction of the FITS
 files.
@@ -25,7 +27,7 @@ planning future steps. With improved oversight and time and thought, it became
 evident that the design of Gemini Python and, specially, of AstroData, made
 further development a daunting task.
 
-During 2016 a decision was reached to overhaul Gemini Python. While the
+In 2016 a decision was reached to overhaul Gemini Python. While the
 principles behind AstroData were sound, the coding involved unnecessary
 layers of abstraction and eschewed features of the Python language in favor
 of its own implementation. Thus,
