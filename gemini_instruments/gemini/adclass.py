@@ -132,7 +132,7 @@ class AstroDataGemini(AstroDataFits):
     def _type_az(self):
         if self.phu.get('FRAME') == 'AZEL_TOPO':
             try:
-                if self.phu.get('ELEVATIO', 0) >= 90:
+                if self.airmass() == 1.0:
                     return TagSet(['AZEL_TARGET', 'AT_ZENITH'])
             except ValueError:
                 pass
