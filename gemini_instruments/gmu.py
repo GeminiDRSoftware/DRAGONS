@@ -118,20 +118,28 @@ def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
     # and equinox at ut_datetime into ICRS. This is used by the ra and dec descriptors.
 
     # Assume equinox is julian calendar
-    equinox = 'J%s' % equinox
+    equinox = 'J{}'.format(equinox)
 
     # astropy doesn't understand APPT coordinates. However, it does understand
     # CIRS coordinates, and we can convert from APPT to CIRS by adding the
     # equation of origins to the RA. We can get that using ERFA.
     # To proceed with this, we first let astopy construct the CIRS frame, so
     # that we can extract the obstime object from that to pass to erfa.
+    appt_frame = (frame == 'APPT')
+    if frame == 'APPT':
+        frame = 'cirs'
+    if frame == 'FK5':
+        frame = 'fk5'
 
-    appt_frame = True if frame == 'APPT' else False
-    frame = 'cirs' if frame == 'APPT' else frame
-    frame = 'fk5' if frame == 'FK5' else frame
-
-    coords = coordinates.SkyCoord(ra=ra*units.degree, dec=dec*units.degree,
-                      frame=frame, equinox=equinox, obstime=ut_datetime)
+    # Try this with the passed frame but, if it doesn't work, convert to "cirs"
+    # If that doesn't work, then raise an error
+    try:
+        coords = coordinates.SkyCoord(ra=ra*units.degree, dec=dec*units.degree,
+                  frame=frame, equinox=equinox, obstime=ut_datetime)
+    except ValueError:
+        frame = 'cirs'
+        coords = coordinates.SkyCoord(ra=ra*units.degree, dec=dec*units.degree,
+                  frame=frame, equinox=equinox, obstime=ut_datetime)
 
     if appt_frame:
         # Call ERFA.apci13 to get the Equation of Origin (EO).
