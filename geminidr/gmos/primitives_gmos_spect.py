@@ -5,6 +5,9 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 
+from importlib import import_module
+import os
+
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 
@@ -139,3 +142,11 @@ class GMOSSpect(GMOS, Spect):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
+
+    def _get_arc_lines(self):
+        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        linelist = os.path.join(lookup_dir, 'CuAr_GMOS.dat')
+        with open(linelist, 'r') as f:
+            arc_lines =  np.array([float(line.strip().split()[0])
+                                   for line in f.readlines() if not line.startswith('#')])
+        return arc_lines

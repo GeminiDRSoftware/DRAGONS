@@ -1,10 +1,10 @@
 import numpy as np
 import math
+from astropy.modeling import fitting, models, FittableModel, Parameter
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
                                       _model_to_fit_params, Fitter,
                                       _convert_input)
-from astropy.modeling import models, FittableModel, Parameter
 from astropy.wcs import WCS
 
 from scipy import optimize, spatial
@@ -12,6 +12,187 @@ from datetime import datetime
 
 from gempy.gemini import gemini_tools as gt
 from ..utils import logutils
+
+##############################################################################
+class MatchBox(object):
+    """
+    A class to hold two sets of coordinates that have a one-to-one
+    correspondence, and the transformations that go between them.
+    """
+    def __init__(self, input_coords, output_coords, forward_model=None,
+                 backward_model=None, fitter=fitting.LinearLSQFitter,
+                 **kwargs):
+        super(MatchBox, self).__init__(**kwargs)
+        self._input_coords = list(input_coords)
+        self._output_coords = list(output_coords)
+        self.validate_coords()
+        self._forward_model = forward_model
+        self._backward_model = backward_model
+        self._fitter = fitter
+
+    def validate_coords(self, input_coords=None, output_coords=None):
+        """Confirm that the two sets of coordinates are compatible"""
+        if input_coords is None:
+            input_coords = self._input_coords
+        if output_coords is None:
+            output_coords = self._output_coords
+        if len(self._input_coords) != len(self._output_coords):
+            raise ValueError("Coordinate lists have different lengths")
+        try:
+            for coord_list in (input_coords, output_coords):
+                try:
+                    len(coord_list[0])
+                except TypeError:
+                    assert len(set(type(coord) for coord in coord_list)) == 1
+                else:
+                    assert len(set(len(coord) for coord in coord_list)) == 1
+        except AssertionError:
+            raise ValueError("Incompatible elements in one or both coordinate lists")
+
+    @property
+    def input_coords(self):
+        return self._input_coords
+
+    @property
+    def output_coords(self):
+        return self._output_coords
+
+    @property
+    def forward(self):
+        """Compute the forward transformation"""
+        return self._forward_model
+
+    @forward.setter
+    def forward(self, model):
+        if isinstance(model, FittableModel):
+            self._forward_model = model
+        else:
+            raise ValueError("Model is not Fittable")
+
+    @property
+    def backward(self):
+        """Compute the backward transformation"""
+        return self._backward_model
+
+    @backward.setter
+    def backward(self, model):
+        if isinstance(model, FittableModel):
+            self._backward_model = model
+        else:
+            raise ValueError("Model is not Fittable")
+
+    def _fit(self, model, input_coords, output_coords):
+        """Fits a model to input and output coordinates after repackaging
+        them in the correct format"""
+        fit = self._fitter()
+        prepared_input = np.array(input_coords).T
+        prepared_output = np.array(output_coords).T
+        if len(prepared_input) == 1:
+            prepared_input = (prepared_input,)
+            prepared_output = (prepared_output,)
+        return fit(model, prepared_input, prepared_output)
+
+    def fit_forward(self, model=None, coords=None, set_inverse=True):
+        """
+        Fit the forward (input->output) model.
+
+        Parameters
+        ----------
+        model: FittableModel
+            initial model guess (if None, use the _forward_model)
+        coords: array-like
+            if not None, fit the backward-transformed version of these coords
+            to these coords (_backward_model must not be None)
+        set_inverse: bool
+            set the inverse (backward) model too, if possible?
+        """
+        if model is None:
+            model = self._forward_model
+        if model is None:
+            raise ValueError("No forward model specified")
+        if coords is None:
+            coords = self._input_coords
+            out_coords = self._output_coords
+        else:
+            if self._backward_model is None:
+                raise ValueError("A backward model must exist to map specific coords")
+            out_coords = self.backward(coords)
+        fitted_model = self._fit(model, coords, out_coords)
+        self._forward_model = fitted_model
+        if hasattr(fitted_model, 'inverse') and set_inverse:
+            self._backward_model = fitted_model.inverse
+
+    def fit_backward(self, model=None, coords=None, set_inverse=True):
+        """
+        Fit the backward (output->input) model. If this has an inverse, set the
+        forward_model to its inverse.
+
+        Parameters
+        ----------
+        model: FittableModel
+            initial model guess (if None, use the _backward_model)
+        coords: array-like
+            if not None, fit the forward-transformed version of these coords
+            to these coords (_forward_model must not be None)
+        set_inverse: bool
+            set the inverse (forward) model too, if possible?
+        """
+        if model is None:
+            model = self._backward_model
+        if model is None:
+            raise ValueError("No backward model specified")
+        if coords is None:
+            coords = self._output_coords
+            out_coords = self._input_coords
+        else:
+            if self._forward_model is None:
+                raise ValueError("A forward model must exist to map specific coords")
+            out_coords = self.forward(coords)
+        fitted_model = self._fit(model, coords, out_coords)
+        self._backward_model = fitted_model
+        if hasattr(fitted_model, 'inverse') and set_inverse:
+            self._forward_model = fitted_model.inverse
+
+    def add_coords(self, input_coords, output_coords):
+        """
+        Add coordinates to the input and output coordinate lists
+
+        Parameters
+        ----------
+        input_coords: array-like/value
+            New input coordinates
+        output_coords: array-like/value
+            New output coordinates
+        """
+        try:  # Replace value with single-element list
+            len(input_coords)
+        except TypeError:
+            input_coords = [input_coords]
+            output_coords = [output_coords]
+        self.validate_coords(input_coords, output_coords)
+        self._input_coords.extend(input_coords)
+        self._output_coords.extend(output_coords)
+
+    def __delitem__(self, index):
+        del self._input_coords[index]
+        del self._output_coords[index]
+
+    def sort(self, by_output=False, reverse=False):
+        """
+        Sort the coordinate lists, either by input or output.
+
+        Parameters
+        ----------
+        by_output: bool
+            If set, sort by the output coords rather than input coords
+        reverse: bool
+            If set, put the largest elements at the start of the list
+        """
+        ordered = zip(*sorted(zip(self._input_coords, self._output_coords),
+                                  reverse=reverse, key=lambda x: x[1 if by_output else 0]))
+        self._input_coords, self._output_coords = ordered
+
+##############################################################################
 
 class Pix2Sky(FittableModel):
     """
