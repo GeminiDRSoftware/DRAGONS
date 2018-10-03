@@ -262,7 +262,7 @@ class Visualize(PrimitivesBASE):
 
         def _compat(tlist):
             item = None
-            if "GMOS" in tlist:
+            if "GMOS" in tlist and "IMAGE" in tlist:
                 item = 'GMOS IMAGE'
             elif "GSAOI" in tlist and "IMAGE" in tlist:
                 item = 'GSAOI IMAGE'
