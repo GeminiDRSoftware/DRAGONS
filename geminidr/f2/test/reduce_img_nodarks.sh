@@ -54,8 +54,10 @@ bpm=$(cat bpmname)
 reduce @flats.lis -p addDQ:user_bpm=${bpm}
 caldb add "$(last_result_filename flat)"
 
-# Reduce science data:
-reduce @sciset.lis -p darkCorrect:do_dark=False -p alignAndStack:save=True -p addDQ:user_bpm=${bpm} -p skyCorrect:nhigh=12
+# Reduce science data. Set nhigh to reduce background residuals with 6 exp.
+# at each dither point (an even larger value wouldn't leave a good number of
+# skies at some positions). Don't scale skies since there are no darks.
+reduce @sciset.lis -p darkCorrect:do_dark=False -p alignAndStack:save=True -p addDQ:user_bpm=${bpm} -p skyCorrect:nhigh=9 -p stackSkyFrames:scale=False
 
 # Check the final result & return status:
 compare_file $(last_result_filename stack)
