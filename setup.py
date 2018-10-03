@@ -187,7 +187,7 @@ SCRIPTS.extend(GEMPY_SCRIPTS)
 EXTENSIONS = None
 
 setup ( name='dragons',
-        version='2.0.9',
+        version='2.0.10',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
         author_email='sus_inquiries@gemini.edu',

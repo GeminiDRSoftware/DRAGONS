@@ -1,8 +1,8 @@
 # Version name  Commit (tag/hash)
-dev             v2.0.9
-internal        v2.0.9
-gnops           v2.0.9
-gsops           v2.0.9
+dev             v2.0.10
+internal        v2.0.10
+gnops           v2.0.10
+gsops           v2.0.10
 
 # We probably won't need gnops_prev / gsops_prev (TBC), which can be reproduced
 # more reliably using the same package that was generated when those revisions
