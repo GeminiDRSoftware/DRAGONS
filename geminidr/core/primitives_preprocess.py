@@ -237,7 +237,7 @@ class Preprocess(PrimitivesBASE):
                                 and abs(sci_time - v) <= seconds
                                 and ((k.telescope_x_offset() - xoffset)**2 +
                                      (k.telescope_y_offset() - yoffset)**2
-                                     > min_distsq**2)}
+                                     > min_distsq)}
 
                     # Now cull the list of associated skies if necessary to
                     # those closest in time to the sceince observation
