@@ -1528,7 +1528,7 @@ gmosRoiSettings = {
         # GMOS-S Hamamatsu CCDs
         (2923, 3222, 1987, 2286),
         # GMOS-N Hamamatsu CCDs
-        (2923, 3222, 1987, 2284),
+        (2923, 3222, 1987, 2294),
     ]
 }
 

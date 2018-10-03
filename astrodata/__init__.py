@@ -3,7 +3,7 @@ __all__ = ['AstroData', 'AstroDataError', 'TagSet',
            'descriptor_list',
            'open', 'create', '__version__']
 
-__version__ = '9999'
+__version__ = '2.0.10'
 
 from .core import *
 # TODO: Remove 'write' when there's nothing else using it
