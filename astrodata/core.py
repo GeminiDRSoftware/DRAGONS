@@ -12,6 +12,7 @@ import inspect
 from collections import namedtuple
 from copy import deepcopy
 
+
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
     TagSet(add=None, remove=None, blocked_by=None, blocks=None, if_present=None)
@@ -57,6 +58,7 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
                                                blocks or set(),
                                                if_present or set())
 
+
 def astro_data_descriptor(fn):
     """
     Decorator that will mark a class method as an AstroData descriptor.
@@ -77,6 +79,7 @@ def astro_data_descriptor(fn):
     """
     fn.descriptor_method = True
     return fn
+
 
 def returns_list(fn):
     """
@@ -155,8 +158,10 @@ def astro_data_tag(fn):
     wrapper.tag_method = True
     return wrapper
 
+
 class AstroDataError(Exception):
     pass
+
 
 class DataProvider(with_metaclass(ABCMeta, object)):
     """
@@ -442,6 +447,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 #         return cls
 #     return decorator
 
+
 class AstroData(object):
     """
     AstroData(provider)
@@ -557,7 +563,6 @@ class AstroData(object):
         members = inspect.getmembers(self.__class__,
                                      lambda x: hasattr(x, 'descriptor_method'))
         return tuple(mname for (mname, method) in members)
-
 
     def __iter__(self):
         for single in self._dataprov:
@@ -859,9 +864,11 @@ class AstroData(object):
 
     __radd__ = __add__
     __rmul__ = __mul__
+
     def __rsub__(self, oper):
         copy = (deepcopy(self) - oper) * -1
         return copy
+
     def __rdiv__(self, oper):
         copy = deepcopy(self)
         copy._dataprov.__rdiv__(oper)
