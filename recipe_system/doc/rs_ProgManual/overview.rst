@@ -12,8 +12,8 @@ The Recipe System is a pure python package provided by the Gemini
 Observatory's DRAGONS data reduction package. The Recipe System is a
 framework that supports configurable data processing pipelines, i.e., "recipes," 
 and which can accommodate processing pipelines for arbitrary dataset types. The 
-Recipe System is written to introspectively exploit features of "instrument 
-packages" by effecting arbitrage on specific attributes of defined recipes and 
+It is written to introspectively exploit features of "instrument packages" by
+effecting arbitrage on specific attributes of defined recipes and
 primitives comprising such packages. Gemini Observatory has developed a suite of 
 these recipes and primitives for the Observatory's facility instruments. These
 can be found in the DRAGONS package, ``geminidr``.
@@ -31,7 +31,7 @@ objects and their interfaces provide a common grammar by which the Recipe System
 and the instrument packages identify and work with astronomical datasets. For
 further information and discussion of ``astrodata`` and its interface, see the
 `Astrodata User's Manual` (:ref:`related`; Document ID:
-PIPE-USER-106_AstrodataUserManual)
+PIPE-USER-106_AstrodataUserManual).
 
 In Gemini Observatory's operational environment "on summit," the Recipe System,
 ``reduce``, ``astrodata``, and the ``geminidr`` packages provide a
@@ -68,7 +68,7 @@ Mode is a label -- a string literal --  by which recipe libraries are delineated
 and which are manifest in a data reduction package's ``recipes`` directory. These mode
 names `should` indicate or hint at the purpose or quality of the recipes contained
 therein. For example, in DRAGONS ``geminidr`` instrument packages, Quality Assessment
-recipes are defined in the ``qa`` recipes directory; Science Qauality recipes, in an
+recipes are defined in the ``qa`` recipes directory; Science Quality recipes, in an
 ``sq`` recipes directory. The mode specified for pipeline processing also serves,
 or can serve, as a flag to primitive functions. A key difference between ``qa``
 and ``sq`` modes is that when a calibration is requested during processing,
@@ -154,7 +154,7 @@ Outline of the Recipe System
 
 .. _schematic:
 
-.. figure:: images/RS_full_schematic.jpg
+.. figure:: images/RS_full_schematic.svg
 
    Schematic Diagram of Recipe System Components and the supporting 
    Calibration Request Service
@@ -165,11 +165,11 @@ description of each segment of :ref:`Figure 2.1, Schematic Diagram <schematic>`
 of the Recipe System and supporting components follows.
 
 From left to right, the diagram indicates that the Recipe System, `in toto`, 
-comprises six (6) main components. The calibration manager, whether local or 
-facility service, is an indepedent (and indpendently developed) component that 
-provides the calibration manager service to any requesting client. 
+comprises six (6) main components:
 
- * Command line interface, ``reduce``, providing command access and execution
+.. todo:: Finish the second item.
+
+ * Command line interface, ``reduce``, providing command access and execution.
  * The ``Reduce`` class, which receives input datasets and parameters either 
    from ``reduce`` or through the ``Reduce`` class API. These components are
    thoroughly presented in :ref:`Reduce and Recipe System User Manual.<refdocs>` 
@@ -185,11 +185,14 @@ provides the calibration manager service to any requesting client.
    primitives requesting calibration files (biases, flats, etc.) and either
    a local calibration manager or the Gemini Observatory facility calibration
    manager provided by the FitsStorage server (a.k.a. "fitsstore").
- * The Calibration Manager (local or fitsstore) accepts calibration requests
+ * The Calibration Manager, whether local or facility service, is an independent
+   (and independently developed) component that provides the calibration manager
+   service to any requesting client. It accepts calibration requests
    passed by the Calibration Request Service at the behest of primitive calls.
    The "calmanager" receives observational metadata and applies a set of complex 
    rules to determine a best match for the requested calibration, and returns a 
    URL to the matching file available in the fitsstore or local calibration manager.
+
 
 All components delineated here operate and communicate using the common grammar
 provided by the ``astrodata`` data abstraction.
@@ -197,7 +200,7 @@ provided by the ``astrodata`` data abstraction.
 
 ``reduce`` and ``Reduce``
 -------------------------
-The application ``reduce`` is provided with the Recipe System under the
+The command line application ``reduce`` is provided with the Recipe System under the
 recipe system ``scripts`` directory. When this directory is available on a
 user's PATH environment variable, ``reduce`` can be called and help requested::
 
@@ -252,9 +255,11 @@ often present (``lookups/``), though not needed by the Recipe System::
       primitives_<instrument>.py
       parameters_<instrument>_<mode1>.py
       primitives_<instrument>_<mode1>.py
+      parameters_<instrument>_<mode2>.py
+      primitives_<instrument>_<mode2>.py
+      [ ... ]
       parameters_<instrument>_<modeX>.py
       primitives_<instrument>_<modeX>.py
-      [ ... ]
       recipes/
              qa/
              sq/

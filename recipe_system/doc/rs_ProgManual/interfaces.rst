@@ -6,18 +6,18 @@
 
 Using the Mappers API
 *********************
-For practical applications, the Mapper base class provides no functionality, but
+For practical applications, the ``Mapper`` base class provides no functionality, but
 defines all attributes for instances built from subclasses of Mapper. Though not 
-strictly an abstract class, the Mapper base class cannot be used on its own. 
-Subclasses, such as PrimitiveMapper and RecipeMapper, should not override 
-Mapper.__init__(), but implement their own mapping routines optimized to the 
+strictly an abstract class, the ``Mapper`` base class cannot be used on its own.
+Subclasses, such as ``PrimitiveMapper`` and ``RecipeMapper``, should not override
+``Mapper.__init__()``, but implement their own mapping routines optimized to the
 "target" of the mapping. An example of a Mapper extension might be an 
-implemention of a mapper to find "applicable" lookup tables in instrument 
+implementation of a mapper to find "applicable" lookup tables in instrument
 packages.
 
-The programmatic interfaces on the current mapper classes are straight forward.
-One begins by passing a list of astrodata instances, and any ancilliary arguments,
-to the "constructor" of either PrimitiveMapper or RecipeMapper. Below, we reiterate
+The programmatic interfaces on the current mapper classes are straightforward.
+One begins by passing a list of ``AstroData`` instances, and any ancillary arguments,
+to the "constructor" of either ``PrimitiveMapper`` or ``RecipeMapper``. Below, we reiterate
 the input arguments to a Mapper class and show the default values of parameters not
 passed by the caller::
 
@@ -105,20 +105,20 @@ section.
 Mapping Data to Primitives
 --------------------------
 
-When the PrimitiveMapper receives input data, those data are passed as a
-list of *astrodata* objects, one *astrodata* object per input dataset. All
-astrodata objects have been classified with a number of what are called `tags`,
-which are present on the *astrodata* instance as an attribute of the object.
+When the ``PrimitiveMapper`` receives input data, those data are passed as a
+list of ``AstroData`` objects, one ``AstroData`` object per input dataset. All
+``AstroData`` objects have been classified with a number of what are called `tags`,
+which are present on the ``AstroData`` instance as an attribute of the object.
 For example, a typical unprocessed GMOS image:
 
 >>> ad = astrodata.open('S20161025S0111.fits')
 >>> ad.tags
 set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
 
-The PrimitiveMapper uses these tags to search *geminidr* packages, first by 
+The ``PrimitiveMapper`` uses these tags to search ``geminidr`` packages, first by
 immediately narrowing the search to the applicable instrument package. In this 
-case, the instrument and package are ``gmos``. The Mapper classes have an
-understanding of this, and set their own attribute on Mapper instances called,
+case, the instrument and package are ``gmos``. The ``Mapper`` classes have an
+understanding of this, and set their own attribute on ``Mapper`` instances called,
 ``pkg``:
 
 >>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
@@ -126,7 +126,7 @@ understanding of this, and set their own attribute on Mapper instances called,
 >>> pm.pkg
 'gmos'
 
-Once a PrimtiveMapper instance is created, the public method, 
+Once a ``PrimitiveMapper`` instance is created, the public method,
 ``get_applicable_primitives()`` can be invoked and the search for the most 
 appropriate primitive class begins. The search itself is focused on finding
 class objects that define a ``tagset`` attribute on the class.
@@ -143,13 +143,13 @@ Let's see how primitive classes in the hierarchy are tagged, beginning with
   class GMOSImage(GMOS, ... ):
       tagset = set(["GEMINI", "GMOS", "IMAGE"])
 
-The PrimitiveMapper gloms all primitive classes in the package, looking for a 
-maximal subset of the *astrodata tags* in the tagset attribute of the primitive 
+The ``PrimitiveMapper`` gloms all primitive classes in the package, looking for a
+maximal subset of the *astrodata tags* in the ``tagset`` attribute of the primitive
 classes. Using our astrodata ``tags`` in the example above, we can see that 
-``GMOSImage`` class provides a maximal matching tagset to the astrodata object's 
+``GMOSImage`` class provides a maximal matching tagset to the ``AstroData`` object's
 data classifications.
 
-We proceed from the example above and have the PrimitiveMapper do its job:
+We proceed from the example above and have the ``PrimitiveMapper`` do its job:
 
 >>> pset = pm.get_applicable_primitives()
 
@@ -158,12 +158,12 @@ Check that we have the primitives we expect:
 >>> pset.__class__
 <class 'geminidr.gmos.primitives_gmos_image.GMOSImage'>
 
-Which is exactly correct. Once PrimitiveMapper has acquired the best "applicable"
+Which is exactly correct. Once ``PrimitiveMapper`` has acquired the best "applicable"
 primitive class, it instantiates the primitives object using the parameters 
 passed. The returned ``pset`` is the *actual instance of the class* and is ready 
 to be used.
 
-The *tagset* is the only criterion used by the PrimitiveMapper to find the correct
+The *tagset* is the only criterion used by the ``PrimitiveMapper`` to find the correct
 primitive class. Readers may correctly infer from this that naming primitive
 classes, and the modules containing them, is arbitrary; primitive classes and the
 containing modules can be named at the discretion of the developer. Indeed, the
@@ -236,7 +236,7 @@ recipes directories: `qa` and `sq`. These indicate that recipes defined under
 pipelines. Currently defined recipe library files will appear under one or all of
 these mode directories.
 
-Currenntly, mode values are hard limited to `qa`, `ql`, and `sq` modes for the
+Currently, mode values are hard limited to `qa`, `ql`, and `sq` modes for the
 RecipeMapper. As a refresher, readers are encouraged to review the command line
 options provided by *reduce*, where *mode* is discussed in detail in the document,
 `Reduce and Recipe System User Manual`.
@@ -429,7 +429,7 @@ cases, none of ``mode``, ``tags``, or ``recipe_tags`` is relevant, as the
 user-passed recipe library and recipe name are already known. Essentially,
 passing a user-defined recipe to the RecipeMapper tells the mapper, "do not
 search but use this." In these cases, it is incumbent upon the users and
-develoers to ensure that the external recipes specified are actually applicable
+developers to ensure that the external recipes specified are actually applicable
 to the datasets being processed.
 
 We will now discuss what to do now that we have both a primtives instance and a 
@@ -513,15 +513,15 @@ And begin calling the primitives, the first one is always *prepare*
    .
    [<gemini_instruments.gmos.adclass.AstroDataGmos object at 0x11a12d650>]
 
-As readers can see, the call on the primitive *prepare()* shows the logging
+As readers can see, the call on the primitive ``prepare()`` shows the logging
 sent to stdout. They will also find the log file, ``rsdemo.log`` in the current
-working diretory.
+working directory.
 
-Readers will note the return object. This object is returned both to
+Readers will note the returned object. This object is returned both to
 the caller, and handled internally by a recipe system decorator function. The
 internal handling is not pertinent here, but rather, that the returned object
 shown above is a *list* containing the actual AstroDataGmos object(s) that the
-primitive class was passed upon construction, but with the *data and metdata in
+primitive class was passed upon construction, but with the *data and metadata in
 the current state* at completion of a primitive call. Each primitive returns
 this object after completion, allowing users to examine the state of that dataset
 at each point in the processing, examine parameters currently set, and set
@@ -539,8 +539,8 @@ return, so the previous last call becomes
       .
       PRIMITIVE: standardizeHeaders
 
->>> ad_prepare = adobject[0]
->>> ad_prepare.data
+>>> ad_prepared = adobject[0]
+>>> ad_prepared.data
   array([[  0,   0,   0, ...,   0,   0,   0],
        [  0,   0,   0, ...,   0,   0,   0],
        [  0,   0,   0, ...,   0,   0,   0],
@@ -548,9 +548,9 @@ return, so the previous last call becomes
        [823, 824, 820, ..., 822, 820, 825],
        [821, 822, 825, ..., 821, 824, 824],
        [823, 819, 823, ..., 205, 204, 203]], dtype=uint16)
->>> ad_prepare.phu.cards['PREPARE']
+>>> ad_prepared.phu.cards['PREPARE']
 ('PREPARE', '2018-08-24T16:02:39', 'UT time stamp for PREPARE')
->>> ad_prepare.phu.cards['SDZSTRUC']
+>>> ad_prepared.phu.cards['SDZSTRUC']
 ('SDZSTRUC', '2018-08-24T15:44:08', 'UT time stamp for standardizeStructure')
 
 You can also look at the parameter set for that or any other primitive from the
@@ -561,9 +561,9 @@ OrderedDict([('suffix', '_prepared'), ('mdf', None), ('attach_mdf', True)])
 >>> p.params['mosaicDetectors'].toDict()
 OrderedDict([('suffix', '_mosaic'), ('tile', False), ('sci_only', False), ('interpolator', 'linear')])
 
-Finally, readers may wonder how one may "see" the recipe the RecipeMapper would
+Finally, readers may wonder how one may "see" the recipe the ``RecipeMapper`` would
 return for the specified data, in order to know the primitives to call and in what
-order. This involves using the RecipeMapper just as recipe system does and using
+order. This involves using the ``RecipeMapper`` just as recipe system does and using
 the inspect module to show the function's code.
 
 Continuing the example ...
