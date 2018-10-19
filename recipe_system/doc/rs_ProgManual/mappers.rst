@@ -45,7 +45,6 @@ This base class *__init__* function receives all data and parameters passed by
 either ``Reduce`` or other caller. As readers may infer from the 
 :ref:`Mapper class diagram <mappercls>` below, the Mapper initializer determines 
 certain instance attributes `from` the passed input datasets provided by the list,
-
 ``adinputs``.
 
 For instance, the mapper attribute, ``pkg``, which is used as the description of 
@@ -92,7 +91,7 @@ primitive search algorithm and provides one (1) public method on the class:
      A `string` indicating the recipe to use for processing. ``recipename`` may
      be a system or external recipe name, as passed by a ``reduce`` command with 
      ``-r`` or ``--recipe``, or set directly by a caller. This string may also
-     be an *explicitly named primitive function*. Otherwise, recipename is 
+     be an *explicitly named primitive function*. Otherwise, ``recipename`` is
      'default', which may be an actual function or a reference to a named recipe 
      function defined in a recipes library. In *gemindr* recipe packages,
      defaults are references to other defined recipe functions.
