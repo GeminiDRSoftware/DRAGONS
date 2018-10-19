@@ -167,25 +167,28 @@ of the Recipe System and supporting components follows.
 From left to right, the diagram indicates that the Recipe System, `in toto`, 
 comprises six (6) main components:
 
-.. todo:: Finish the second item.
+.. todo::
 
- * Command line interface, ``reduce``, providing command access and execution.
- * The ``Reduce`` class, which receives input datasets and parameters either 
-   from ``reduce`` or through the ``Reduce`` class API. These components are
-   thoroughly presented in :ref:`Reduce and Recipe System User Manual.<refdocs>` 
-   ``Reduce`` acts as a "data wrangler", and passes these data to ... 
- * The "Mappers", both RecipeMapper and PrimitiveMapper. Mappers conduct
+    Finish the second item of the bullet list while explaining the ``Reduce`` class.
+
+
+* Command line interface, ``reduce``, providing command access and execution.
+* The ``Reduce`` class, which receives input datasets and parameters either
+    from ``reduce`` or through the ``Reduce`` class API. These components are
+    thoroughly presented in :ref:`Reduce and Recipe System User Manual.<refdocs>`
+    ``Reduce`` acts as a "data wrangler", and passes these data to ...
+* The "Mappers", both RecipeMapper and PrimitiveMapper. Mappers conduct
    best matching tests on recipe libraries and primitive classes and return
    the best matched objects.
- * Instrument packages are an arbitrary collection of packages that
+* Instrument packages are an arbitrary collection of packages that
    provide data reduction classes, instrument lookup tables, and recipe
    libraries. These instrument packages serve as the "targets" of the Recipe 
    System. In DRAGONS, these packages are found under *geminidr*.
- * The Calibration Request Service provides a functional interface between
+* The Calibration Request Service provides a functional interface between
    primitives requesting calibration files (biases, flats, etc.) and either
    a local calibration manager or the Gemini Observatory facility calibration
    manager provided by the FitsStorage server (a.k.a. "fitsstore").
- * The Calibration Manager, whether local or facility service, is an independent
+* The Calibration Manager, whether local or facility service, is an independent
    (and independently developed) component that provides the calibration manager
    service to any requesting client. It accepts calibration requests
    passed by the Calibration Request Service at the behest of primitive calls.
