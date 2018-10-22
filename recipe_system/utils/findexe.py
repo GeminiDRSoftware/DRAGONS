@@ -6,22 +6,24 @@
 import os
 import psutil
 
+
 def findexe(exe):
     """
     Function receives an executable name, 'exe', as a string, and returns
     a list of pids that match the name.
 
-    Parameters:
+    Parameters
     ----------
-        exe: Name of a running executable.
-        type: <str>
+    exe : str
+        Name of a running executable.
 
-    Returns:
+    Returns
     -------
-        pids: a list of extant pids found running 'exe'
-        type: <list>
+    pids: list
+        a list of extant pids found running 'exe'
 
-    E.g., find autoredux,
+    Example
+    -------
 
     >>> findexe('autoredux')
     [98684]

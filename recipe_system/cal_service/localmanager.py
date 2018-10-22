@@ -56,10 +56,12 @@ ERROR_DIDNT_FIND = 3
 
 FileData = namedtuple('FileData', 'name path')
 
+
 class LocalManagerError(Exception):
     def __init__(self, error_type, *args, **kw):
         super(LocalManagerError, self).__init__(*args, **kw)
         self.error_type = error_type
+
 
 class LocalManager(object):
     def __init__(self, db_path):

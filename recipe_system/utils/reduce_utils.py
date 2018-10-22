@@ -319,6 +319,7 @@ def normalize_upload(upload):
         raise TypeError("upload must be None or a list")
     return
 
+
 def normalize_ucals(files, cals):
     """
     When a user passes a --user_cal argument of the form,
@@ -341,20 +342,22 @@ def normalize_ucals(files, cals):
     retrieval. User calibrations are not cached because they are not
     retrieved from fitsstore and are presumably on disk.
 
-    Parameters:
+    Parameters
     ----------
-        cals: a list of strings like, 'caltype:calfilepath'
-        type: <list>
+    files : list
+        A list containing the input files.
+    cals : list
+        A list of strings like, 'caltype:calfilepath'.
 
-    Returns:
+    Returns
     -------
-        normalz: a dictionary of the cal types applied to input files.
-        type:  <dict>
+    normalz : dict
+        a dictionary of the cal types applied to input files.
 
-    E.g., a returned dict,
-
-    {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
-
+    Example
+    -------
+    a returned dict,
+        {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
     """
     def _site(tags):
         site = None

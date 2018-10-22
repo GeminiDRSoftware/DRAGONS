@@ -3,6 +3,7 @@
 # ------------------------------------------------------------------------------
 from future import standard_library
 standard_library.install_aliases()
+
 from builtins import zip
 from builtins import str
 from builtins import object
@@ -34,11 +35,13 @@ def get_request(url, filename):
             fd.write(chunk)
     return filename
 
+
 def generate_md5_digest(filename):
     md5 = hashlib.md5()
     fdata = open(filename).read()
     md5.update(fdata)
     return md5.hexdigest()
+
 
 def _check_cache(cname, ctype):
     cachedir = _makecachedir(ctype)
@@ -47,12 +50,14 @@ def _check_cache(cname, ctype):
         return cachename, cachedir
     return None, cachedir
 
+
 def _makecachedir(caltype):
     cache = set_caches()
     cachedir = join(cache["calibrations"], caltype)
     if not exists(cachedir):
         mkdir(cachedir)
     return cachedir
+
 
 class CalibrationRequest(object):
     """
@@ -88,19 +93,18 @@ class CalibrationRequest(object):
 
 def get_cal_requests(inputs, caltype):
     """
-    Builds a list of CalibrationRequest objects, one for each 'ad' input.
+    Builds a list of :class:`.CalibrationRequest` objects, one for each `ad` input.
 
     Parameters
     ----------
-    inputs: <list>
-        A list of input AstroData instances
-
-    caltype: <str>
+    inputs : list
+        A list of input AstroData instances.
+    caltype : str
         Calibration type, eg., 'processed_bias', 'flat', etc.
 
     Returns
     -------
-    rq_events <list>
+    rq_events : list
         A list of CalibrationRequest instances, one for each passed 
        'ad' instance in 'inputs'.
 
@@ -153,25 +157,30 @@ def process_cal_requests(cal_requests, howmany=None):
 
     Parameters
     ----------
-    cal_requests: <list>
+    cal_requests : list
         A list of CalibrationRequest objects
 
-    howmany: <int>/None 
+    howmany : int, optional
         Maximum number of calibrations to return per request
         (not passed to the server-side request but trims the returned list)
 
     Returns
     -------
-    <dict> A set of science frames and matching calibrations.
+    calibration_records : dict
+        A set of science frames and matching calibrations.
 
-    E.g., The returned dictionary has the form,
+    Example
+    -------
+
+    The returned dictionary has the form::
 
         {(ad): <filename_of_calibration_including_path>,
-          ...
+            ...
         }
 
     """
     calibration_records = {}
+
     def _add_cal_record(rq, calfile):
         calibration_records.update({rq.ad: calfile})
         return
