@@ -10,7 +10,8 @@ Welcome to DRAGONS - Recipe System API's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   recipe_system
+   modules
+
 
 Indices and tables
 ==================
