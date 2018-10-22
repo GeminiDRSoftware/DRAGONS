@@ -10,8 +10,6 @@
 #from builtins import str
 #gitfrom builtins import object
 
-# ------------------------------------------------------------------------------
-__version__      = '2.0 (beta)'
 
 # ------------------------------------------------------------------------------
 # CONFIG SERVICE
@@ -28,83 +26,11 @@ import types
 from configparser import SafeConfigParser
 from collections import defaultdict
 
-STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
+__version__ = '2.0 (beta)'
+
 DEFAULT_DIRECTORY = '/tmp'
+STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
-class Section(object):
-    """
-    An instance of `Section` describes the contents for a section of an
-    INI-style config file. Each entry in the section translates to an
-    *attribute* of the instance. Thus, a piece of config file like this::
-
-        [section]
-        attribute1 = true
-        attribute2 = /foo/bar
-
-    could be accessed like this::
-
-        >>> sect = globalConf[SECTION_NAME]
-        >>> sect.attribute1
-        'true'
-        >>> sect.attribute2
-        '/foo/bar'
-
-    The attributes are read-only. Any attempt to set a new one, or change
-    the value of an entry through instances of this class, will raise an
-    exception.
-
-    As the entries will be translated as Python attributes, this means that
-    entry names **have to** be valid Python identifier names.
-
-    There is only one reserved name: `as_dict`. This cannot be used as an
-    entry name.
-    """
-    def __init__(self, values_dict):
-        self._set('_contents', values_dict)
-
-    def _set(self, name, value):
-        if name == 'as_dict':
-            raise RuntimeError("'as_dict' is a reserved name and cannot be "
-                               "used as a config entry.")
-        self.__dict__[name] = value
-
-    def as_dict(self):
-        "Returns a dictionary representation of this section"
-        return self._contents.copy()
-
-    def __setattr__(self, attr, value):
-        raise RuntimeError("Attribute {0!r} is read-only".format(attr))
-
-    def __getattr__(self, attr):
-        try:
-            return self._contents[attr]
-        except KeyError:
-            raise AttributeError("Unknown attribute {0!r}".format(attr))
-
-    def __repr__(self):
-        return "<Section [{0}]>".format(', '.join(list(self._contents.keys())))
-
-class Converter(object):
-    def __init__(self, conv_dict, cp):
-        self._trans = dict(conv_dict)
-        self._cp_default = cp.get
-        self._type_to_cp = {
-            int: cp.getint,
-            float: cp.getfloat,
-            bool: cp.getboolean
-        }
-
-    def from_config_file(self, section, key):
-        try:
-            return self._type_to_cp[self._trans[(section, key)]](section, key)
-        except KeyError:
-            return self._type_to_cp.get((None, key), self._cp_default)(section, key)
-
-    def from_raw(self, section, key, value):
-        return self._trans.get(key, str)(value)
-
-def environment_variable_name(section, option):
-    return '_GEM_{}_{}'.format(section.upper(), option.upper())
 
 class ConfigObject(object):
     def __init__(self):
@@ -250,5 +176,84 @@ class ConfigObject(object):
             except AttributeError:
                 # The option was not defined...
                 pass
+
+
+class Converter(object):
+    def __init__(self, conv_dict, cp):
+        self._trans = dict(conv_dict)
+        self._cp_default = cp.get
+        self._type_to_cp = {
+            int: cp.getint,
+            float: cp.getfloat,
+            bool: cp.getboolean
+        }
+
+    def from_config_file(self, section, key):
+        try:
+            return self._type_to_cp[self._trans[(section, key)]](section, key)
+        except KeyError:
+            return self._type_to_cp.get((None, key), self._cp_default)(section, key)
+
+    def from_raw(self, section, key, value):
+        return self._trans.get(key, str)(value)
+
+
+class Section(object):
+    """
+    An instance of `Section` describes the contents for a section of an
+    INI-style config file. Each entry in the section translates to an
+    *attribute* of the instance. Thus, a piece of config file like this::
+
+        [section]
+        attribute1 = true
+        attribute2 = /foo/bar
+
+    could be accessed like this::
+
+        >>> sect = globalConf[SECTION_NAME]
+        >>> sect.attribute1
+        'true'
+        >>> sect.attribute2
+        '/foo/bar'
+
+    The attributes are read-only. Any attempt to set a new one, or change
+    the value of an entry through instances of this class, will raise an
+    exception.
+
+    As the entries will be translated as Python attributes, this means that
+    entry names **have to** be valid Python identifier names.
+
+    There is only one reserved name: `as_dict`. This cannot be used as an
+    entry name.
+    """
+    def __init__(self, values_dict):
+        self._set('_contents', values_dict)
+
+    def _set(self, name, value):
+        if name == 'as_dict':
+            raise RuntimeError("'as_dict' is a reserved name and cannot be "
+                               "used as a config entry.")
+        self.__dict__[name] = value
+
+    def as_dict(self):
+        "Returns a dictionary representation of this section"
+        return self._contents.copy()
+
+    def __setattr__(self, attr, value):
+        raise RuntimeError("Attribute {0!r} is read-only".format(attr))
+
+    def __getattr__(self, attr):
+        try:
+            return self._contents[attr]
+        except KeyError:
+            raise AttributeError("Unknown attribute {0!r}".format(attr))
+
+    def __repr__(self):
+        return "<Section [{0}]>".format(', '.join(list(self._contents.keys())))
+
+
+def environment_variable_name(section, option):
+    return '_GEM_{}_{}'.format(section.upper(), option.upper())
+
 
 globalConf = ConfigObject()
