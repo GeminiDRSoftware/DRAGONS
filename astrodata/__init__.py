@@ -1,6 +1,5 @@
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
-           'descriptor_list',
            'open', 'create', '__version__']
 
 __version__ = '9999'
