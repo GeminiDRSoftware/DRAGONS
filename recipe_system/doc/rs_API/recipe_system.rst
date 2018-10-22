@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+    :maxdepth: 1
 
     recipe_system.adcc
     recipe_system.cal_service
@@ -15,9 +16,6 @@ Subpackages
 Submodules
 ----------
 
-recipe\_system.config module
-----------------------------
-
 .. automodule:: recipe_system.config
     :members:
     :undoc-members:
@@ -26,7 +24,6 @@ recipe\_system.config module
 
 Module contents
 ---------------
-
 .. automodule:: recipe_system
     :members:
     :undoc-members:
