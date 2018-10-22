@@ -269,7 +269,9 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {
+    'rs_api': ('https://dragons-rs-api-experimental.readthedocs.io/', None),
+}
 
 # Activate the todos
 todo_include_todos=True

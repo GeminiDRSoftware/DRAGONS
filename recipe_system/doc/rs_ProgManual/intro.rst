@@ -10,7 +10,8 @@ Introduction
 This document is the Recipe System Programmer's Manual, which covers version 2.0
 (beta) of the DRAGONS Recipe System. This document presents detailed 
 information and discussion about the programmatic interfaces on the system's 
-underlying classes, ``RecipeMapper`` and ``PrimitiveMapper``. It
+underlying classes, :py:class:`~recipe_system.mappers.recipeMapper.RecipeMapper` and
+:py:class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`. It
 describes usage of the Recipe System's application programming interface (API).
 
 Subsequent to this introduction, this document provides a high-level overview 
