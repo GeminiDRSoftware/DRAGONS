@@ -1,0 +1,18 @@
+
+.. HyperLinks ..
+
+.. _`Reduce and Recipe System User Manual`: https://astrodata-user-manual.readthedocs.io/
+.. _`Astrodata Cheat Sheet`: https://astrodata-cheat-sheet.readthedocs.io/
+.. _`Astrodata User’s Manual`: https://astrodata-user-manual.readthedocs.io/
+
+
+.. Cross-Reference to the API ..
+
+.. .. |astrodata| replace:: `~astrodata`
+   .. |AstroData| replace:: `~astrodata.AstroData`
+   .. |RecipeMapper| replace:: `~recipe_system.mappers.recipeMapper.RecipeMapper`
+   .. |PrimitiveMapper| replace:: ``recipe_system.mappers.primitiveMapper.PrimitiveMapper`
+   .. |ad_cheat_cheet| replace:: https://astrodata-cheat-sheet.readthedocs.io/en/latest/
+   .. |rs_user_manual| replace:: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/
+
+

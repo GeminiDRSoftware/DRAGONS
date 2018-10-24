@@ -1,7 +1,7 @@
 .. include overview
 .. include interfaces
 
-
+.. include:: references.txt
 
 .. _intro:
 
@@ -36,28 +36,17 @@ engaged when directly pertinent to the operations of the Recipe System.
 Reference Documents
 ===================
 
-..  ... Private Docs should not be referenced ...
-    `RecipeSystem v2.0 Design Note`, Doc. ID: PIPE-DESIGN-104_RS2.0DesignNote,
-    Anderson, K.R., Gemini Observatory, 2017, DPSGdocuments/.
+    - `Reduce and Recipe System User Manual`_
 
-  - `Reduce and Recipe System User Manual`, Doc. ID: PIPE-USER-109_RSUsersManual,
-    Anderson, K.R., Gemini Observatory, 2017, 
-    gemini_python/recipe_system/doc/rs_UsersManual/.
 
 .. _related:
 
 Related Documents
 =================
 
-  - `Astrodata cheat sheet`, Doc. ID: PIPE-USER-105_AstrodataCheatSheet,
-    Cardenas, R., Gemini Observatory, 2017, astrodata/doc/ad_CheatSheet.
+  - `Astrodata Cheat Sheet`_
+  - `Astrodata User’s Manual`_
 
-  - `Astrodata User’s Manual`, Doc. ID:  PIPE-USER-106_AstrodataUserManual,
-    Labrie, K., Gemini Observatory, 2017, astrodata/doc/ad_UserManual/.
-
-.. ... `Gemini Fits Storage System Overview` (Calibration Manager),
-       Doc. ID: `None`, Doc. file: `FitsStorageSystemOverview.docx`,
-       P. Hirst, 2011, http://scisoft/svn/FitsStorage/trunk/docs/
 
 Further Information
 ===================
