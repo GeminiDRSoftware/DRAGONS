@@ -1,6 +1,8 @@
 .. include overview
 .. include interfaces
 
+
+
 .. _intro:
 
 ************
@@ -25,7 +27,7 @@ can recognise and use, how one can interactively run a recipe, step by step,
 perform discovery on the data processed, and pass adjusted parameters to the 
 next step of a recipe.
 
-Details and information about the ``astrodata`` package and/or the data processing 
+Details and information about the ``astrodata`` package and/or the data processing
 involved in data reduction are beyond the scope of this document and will only be 
 engaged when directly pertinent to the operations of the Recipe System.
 
@@ -34,7 +36,8 @@ engaged when directly pertinent to the operations of the Recipe System.
 Reference Documents
 ===================
 
-  - `RecipeSystem v2.0 Design Note`, Doc. ID: PIPE-DESIGN-104_RS2.0DesignNote,
+..  ... Private Docs should not be referenced ...
+    `RecipeSystem v2.0 Design Note`, Doc. ID: PIPE-DESIGN-104_RS2.0DesignNote,
     Anderson, K.R., Gemini Observatory, 2017, DPSGdocuments/.
 
   - `Reduce and Recipe System User Manual`, Doc. ID: PIPE-USER-109_RSUsersManual,
@@ -52,9 +55,9 @@ Related Documents
   - `Astrodata User’s Manual`, Doc. ID:  PIPE-USER-106_AstrodataUserManual,
     Labrie, K., Gemini Observatory, 2017, astrodata/doc/ad_UserManual/.
 
-  - `Gemini Fits Storage System Overview` (Calibration Manager), 
-    Doc. ID: `None`, Doc. file: `FitsStorageSystemOverview.docx`,
-    P. Hirst, 2011, http://scisoft/svn/FitsStorage/trunk/docs/
+.. ... `Gemini Fits Storage System Overview` (Calibration Manager),
+       Doc. ID: `None`, Doc. file: `FitsStorageSystemOverview.docx`,
+       P. Hirst, 2011, http://scisoft/svn/FitsStorage/trunk/docs/
 
 Further Information
 ===================
