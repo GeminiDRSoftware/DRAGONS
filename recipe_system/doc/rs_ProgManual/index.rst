@@ -29,5 +29,6 @@ Appendix
 
    appendices/glossary
    appendices/primitives_catalog
+   api
 
 .. todolist::
