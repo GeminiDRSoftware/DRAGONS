@@ -202,6 +202,97 @@ class GSAOI(Gemini, NearIR):
         """Check the AD has a valid number of extensions"""
         return len(ad) == 4
 
+    def makeBPM(self, adinputs=None, **params):
+        """
+        To be run from recipe makeProcessedBPM.
+
+        The main input is a flat field image that has been constructed by
+        stacking the differences of lamp on / off exposures in a given filter
+        and normalizing the resulting image to unit average.
+
+        A 'darks' stream must also be provided, containing a single image
+        constructed by stacking short darks.
+
+
+        Parameters
+        ----------
+        dark_lo_thresh: float
+            Not used for GSAOI.
+        dark_hi_thresh: float, optional
+            Maximum data value above which pixels in the input dark are
+            considered bad. For GSAOI (with the default value of NaN), hot
+            pixels are considered to be those with a level greater than 75% of
+            (the mean + 3 sigma). If the user sets this parameter to a number,
+            however, that absolute limit (always in ADUs) will be used instead.
+        flat_lo_thresh: float, optional
+            Minimum (unit-normalized) data value below which pixels in the
+            input flat are considered to be bad (default 0.5).
+        flat_hi_thresh: float
+            Not used for GSAOI.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        # This GSAOI version approximately follows a procedure documented on
+        # the GSAOI Web pages (GSAOI_BPM_forweb.pdf). That document is
+        # inconsistent on whether a mean or median is used for the dark, but
+        # it seems to make very little difference to the result (and the actual
+        # example commands shown appear to use a mean).
+
+        dark_hi = params['dark_hi_thresh']
+        flat_lo = params['flat_lo_thresh']
+
+        # Get the stacked flat and dark; these are single-element lists
+        try:
+            flat = adinputs[0]
+        except (KeyError, TypeError):
+            raise IOError("A SET OF FLATS IS REQUIRED INPUT")
+        try:
+            dark = self.streams['darks'][0]
+        except (KeyError, TypeError):
+            raise IOError("A SET OF DARKS IS REQUIRED INPUT")
+
+        for dark_ext, flat_ext in zip(dark, flat):
+
+            msg = "BPM flat mask lower limit: {}"
+            log.stdinfo(msg.format(flat_lo))
+
+            flat_mask = flat_ext.data < flat_lo  # (already normalized)
+
+            msg = "BPM dark mask upper limit: {:.2f} ADU ({:.2f})"
+
+            bunit = dark_ext.hdr.get('BUNIT', 'ADU').upper()
+            if bunit in ('ELECTRON', 'ELECTRONS'):
+                conv = dark_ext.gain()
+            elif bunit == 'ADU' or np.isnan(dark_hi):
+                conv = 1.
+            else:
+                raise ValueError("Input units for dark should be ADU or "
+                                 "ELECTRON, not {}".format(bunit))
+
+            if np.isnan(dark_hi):
+                # Use the "standard" calculation for GSAOI:
+                dark_lim = 0.75 * (np.mean(dark_ext.data) \
+                                      + 3 * np.std(dark_ext.data))
+            else:
+                # Convert a user-specified threshold from ADUs:
+                dark_lim = conv * dark_hi
+
+            log.stdinfo(msg.format(dark_lim / conv, dark_lim))
+
+            dark_mask = dark_ext.data > dark_lim
+
+            # combine masks and write to bpm file
+            data_mask = np.ma.mask_or(dark_mask, flat_mask)
+            flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
+
+        flat.update_filename(suffix="_bpm", strip=True)
+        flat.phu.set('OBJECT', 'BPM')
+        gt.mark_history(flat, primname=self.myself(), keyword=timestamp_key)
+        return [flat]
+
 
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #
