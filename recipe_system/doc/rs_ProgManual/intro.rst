@@ -36,7 +36,7 @@ engaged when directly pertinent to the operations of the Recipe System.
 Reference Documents
 ===================
 
-    - `Reduce and Recipe System User Manual`_
+    - `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/>`_
 
 
 .. _related:
@@ -44,17 +44,16 @@ Reference Documents
 Related Documents
 =================
 
-  - `Astrodata Cheat Sheet`_
-  - `Astrodata User’s Manual`_
+  - `Astrodata Cheat Sheet <https://astrodata-cheat-sheet.readthedocs.io/>`_
+  - `Astrodata User’s Manual <https://astrodata-user-manual.readthedocs.io/>`_
 
 
 Further Information
 ===================
 As this document details programmatic use of the mapper classes, readers who wish
 to read up on the Recipe System application, ``reduce``, should consult the 
-DRAGONS document, :ref:`Reduce and Recipe System User Manual <refdocs>`, 
-*Doc ID: PIPE-USER-109_RSUserManual*, which also describes usage of the 
-``Reduce`` class API.
+DRAGONS document, `Reduce and Recipe System User Manual <https://dragons-recipe-system-users-manual.readthedocs.io/>`_,
+which also describes usage of the ``Reduce`` class API.
 
 Users and developers wishing to see more information about the ``astrodata`` 
 package, how to use the programmtic interfaces on such objects should consult the
