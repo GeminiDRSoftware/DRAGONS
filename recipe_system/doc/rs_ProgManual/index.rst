@@ -31,8 +31,7 @@ Appendix
    appendices/primitives_catalog
 
 .. toctree::
-   :maxdepth:
 
-   api/index
+   api
 
 .. todolist::

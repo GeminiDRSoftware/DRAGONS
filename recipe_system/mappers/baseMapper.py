@@ -7,13 +7,14 @@ import importlib
 
 from ..utils.mapper_utils import dictify
 from ..utils.mapper_utils import dotpath
-# ------------------------------------------------------------------------------
+
+
 class Mapper(object):
     """
-    This is the base class for classes 
-
-    RecipeMapper
-    PrimitiveMapper
+    This is the base class for classes
+    :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
+    and
+    :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`.
 
     It provides initialization only.
 

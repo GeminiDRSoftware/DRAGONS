@@ -1,17 +1,23 @@
+
 class AstroDataError(Exception):
-      pass
+    pass
+
 
 class ContextError(Exception):
-      pass
+    pass
+
 
 class ModeError(Exception):
-      pass
+    pass
+
 
 class RecipeNotFound(Exception):
-      pass
+    pass
+
 
 class PrimitivesNotFound(Exception):
-      pass
+    pass
+
 
 class StackError(IOError):
-      pass
+    pass

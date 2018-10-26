@@ -5,13 +5,14 @@ import sys
 import pkgutil
 
 from importlib import import_module
-from inspect   import isclass
+from inspect import isclass
 
 from .baseMapper import Mapper
 
 from ..utils.mapper_utils import dotpath
 from ..utils.errors import PrimitivesNotFound
-# ------------------------------------------------------------------------------
+
+
 class PrimitiveMapper(Mapper):
     """
     Retrieve the appropriate primitive class for a dataset, using all

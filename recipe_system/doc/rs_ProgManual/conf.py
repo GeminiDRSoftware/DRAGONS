@@ -315,15 +315,31 @@ todo_include_todos = True
 
 # -- Automatically generate API documentation --------------------------------
 
-def run_apidoc(_):
+# -- Enable autoapi ----------------------------------------------------------
+def run_api_doc(_):
+    """
+    Automatic API generator
 
-    # sphinx-apidoc --force --no-toc --separate --module --output-dir api/ ../../ ../../cal_service
+    This method is used to generate API automatically by importing all the
+    modules and sub-modules inside a package.
 
-    current_path = os.getcwd()
-    build_path = os.path.join(current_path, '../../')
+    It is equivalent to run:
+    >>> sphinx-apidoc --force --no-toc --separate --module --output-dir api/ ../../ ../../cal_service
+
+    It is useful because it creates .rst files on the file.
+
+    NOTE
+    ----
+        This does not work with PyCharm default build. If you want to trigger
+        this function, use the standard `$ make html` in the command line.
+        The .rst files will be generated. After that, you can use PyCharm's
+        build helper.
+    """
+    current_path = os.path.abspath('.')
+    relative_path = "../../../recipe_system/"
+    build_path = os.path.join(current_path, relative_path)
 
     ignore_paths = [
-        os.path.join(build_path, "cal_service"),
     ]
 
     argv = [
@@ -332,8 +348,10 @@ def run_apidoc(_):
                "--separate",
                "--module",
                "--output-dir", "api/",
-               "../../"
+               relative_path
            ] + ignore_paths
+
+    sys.path.insert(0, build_path)
 
     try:
         # Sphinx 1.7+
@@ -348,9 +366,11 @@ def run_apidoc(_):
 
 
 # -- Finishing with a setup that will run always -----------------------------
-
-# Adding style in order to have the todos show up in a red box.
 def setup(app):
+
+    # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
-    # app.connect('builder-inited', run_apidoc)  # Automatic API generation
+
+    # Automatic API generation
+    app.connect('builder-inited', run_api_doc)
 
