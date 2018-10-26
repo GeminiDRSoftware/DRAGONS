@@ -345,7 +345,7 @@ def run_api_doc(_):
     argv = [
                "--force",
                "--no-toc",
-               "--separate",
+               # "--separate",
                "--module",
                "--output-dir", "api/",
                relative_path
@@ -370,6 +370,7 @@ def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('css/custom_code.css')
 
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)

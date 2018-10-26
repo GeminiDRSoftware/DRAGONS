@@ -1,8 +1,11 @@
+.. api.rst
+
+.. _api:
+
 Reference API
 =============
 
-This is where my API begins.
-
 .. toctree::
+    :maxdepth: 2
 
     api/recipe_system
