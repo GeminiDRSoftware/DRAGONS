@@ -1,11 +1,4 @@
 
-.. HyperLinks ..
-
-.. _`Reduce and Recipe System User Manual`: https://astrodata-user-manual.readthedocs.io/
-.. _`Astrodata Cheat Sheet`: https://astrodata-cheat-sheet.readthedocs.io/
-.. _`Astrodata User’s Manual`: https://astrodata-user-manual.readthedocs.io/
-
-
 .. Cross-Reference to the API ..
 
 .. .. |astrodata| replace:: `~astrodata`
