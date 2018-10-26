@@ -299,21 +299,58 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 
+# -- Options for intersphinx extension ---------------------------------------
+
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None),
 }
 
-# Activate the todos
-todo_include_todos=True
+
+# -- Options for todo extension ----------------------------------------------
+
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = True
 
 
-def run_apidoc():
-    import os
-    import sys
+# -- Automatically generate API documentation --------------------------------
 
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+def run_apidoc(_):
+
+    # sphinx-apidoc --force --no-toc --separate --module --output-dir api/ ../../ ../../cal_service
+
+    current_path = os.getcwd()
+    build_path = os.path.join(current_path, '../../')
+
+    ignore_paths = [
+        os.path.join(build_path, "cal_service"),
+    ]
+
+    argv = [
+               "--force",
+               "--no-toc",
+               "--separate",
+               "--module",
+               "--output-dir", "api/",
+               "../../"
+           ] + ignore_paths
+
+    try:
+        # Sphinx 1.7+
+        from sphinx.ext import apidoc
+        apidoc.main(argv)
+
+    except ImportError:
+        # Sphinx 1.6 (and earlier)
+        from sphinx import apidoc
+        argv.insert(0, apidoc.__file__)
+        apidoc.main(argv)
+
+
+# -- Finishing with a setup that will run always -----------------------------
 
 # Adding style in order to have the todos show up in a red box.
 def setup(app):
     app.add_stylesheet('todo-styles.css')
+    # app.connect('builder-inited', run_apidoc)  # Automatic API generation
+

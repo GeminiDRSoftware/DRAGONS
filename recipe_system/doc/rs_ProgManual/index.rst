@@ -29,6 +29,10 @@ Appendix
 
    appendices/glossary
    appendices/primitives_catalog
-   api
+
+.. toctree::
+   :maxdepth:
+
+   api/index
 
 .. todolist::

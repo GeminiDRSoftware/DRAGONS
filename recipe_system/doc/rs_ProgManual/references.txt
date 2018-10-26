@@ -1,11 +1,11 @@
 
 .. Cross-Reference to the API ..
 
-.. .. |astrodata| replace:: `~astrodata`
-   .. |AstroData| replace:: `~astrodata.AstroData`
-   .. |RecipeMapper| replace:: `~recipe_system.mappers.recipeMapper.RecipeMapper`
-   .. |PrimitiveMapper| replace:: ``recipe_system.mappers.primitiveMapper.PrimitiveMapper`
-   .. |ad_cheat_cheet| replace:: https://astrodata-cheat-sheet.readthedocs.io/en/latest/
-   .. |rs_user_manual| replace:: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/
+.. |astrodata| replace:: :mod:`~astrodata`
+.. |AstroData| replace:: :class:`~astrodata.AstroData`
+.. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
+.. |reduce| replace:: :mod:`~recipe_system.reduction.scripts.reduce`
+.. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
+.. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
 
 
