@@ -2,6 +2,7 @@
 .. Cross-Reference to the API ..
 
 .. _`AstroData User's Manual`: https://astrodata-user-manual.readthedocs.io/
+.. _`AstroData Cheat Sheet`: https://astrodata-cheat-sheet.readthedocs.io/
 
 .. |astrodata| replace:: :mod:`~astrodata`
 .. |geminidr| replace:: :mod:`~geminidr`

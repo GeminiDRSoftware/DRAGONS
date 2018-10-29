@@ -2,6 +2,9 @@
 .. include interfaces
 .. include overview
 
+.. include:: references.txt
+
+
 Data Reduction Packages
 ***********************
 In the context of the Recipe System, a "data reduction package" is a python
@@ -12,10 +15,10 @@ package, which make them discoverable by the Recipe System. Developers are
 entirely free to build their own data reduction package, or "dr-package."
 
 As stated at :ref:`the beginning of Chapter 4<iface>`, the default and only data
-reduction package provided by DRAGONS is *geminidr*. This package is included
+reduction package provided by DRAGONS is |geminidr|. This package is included
 in the DRAGONS distribution. Unless specifed otherwise, it is the
-*geminidr* package that serves targets for the Recipe System mappers. Readers are
-encouraged to examine the *geminidr* package to familiarize themselves with
+|geminidr| package that serves targets for the Recipe System mappers. Readers are
+encouraged to examine the |geminidr| package to familiarize themselves with
 components.
 
 .. _drpkg:
@@ -25,13 +28,13 @@ Building a new "dr-package"
 Developers can build and write one or more of their own "dr-packages." There may
 be any number of reasons why one might wish to do this, but we have found it
 handy for testing purposes; one might want to build and test a new data reduction
-package independent of *geminidr*. This document won't argue against that -- it
-is entirely possible to place any new instrument packages under *geminidr*
+package independent of |geminidr|. This document won't argue against that -- it
+is entirely possible to place any new instrument packages under |geminidr|
 without undue side effects -- but rather, demonstrate the "how to" of setting
 up a "dr-package". And it's really very simple.
 
 The first requirement is that your new *dr-package* `must` be directly importable
-by python in the same way *geminidr* is directly importable::
+by python in the same way |geminidr| is directly importable::
 
   >>> import geminidr
   >>> geminidr
@@ -45,7 +48,7 @@ DRAGONS but this is not required. What `is` required is that your new
 
 We start by simply making a directory, naming it as our new data reduction
 package. For convenience, we shall do this under DRAGONS, making it
-"parallel" with *geminidr*. We shall show each step, including making the "empty"
+"parallel" with |geminidr|. We shall show each step, including making the "empty"
 __init__.py files for the subpackages. Readers and developers are free to make 
 this directory structure in any way they like, but here we show the build
 using common shell commands::
@@ -184,16 +187,16 @@ From the mappers interfaces:
          Doc. ID: PIPE-USER-109_RSUsersManual, 2017, as cited in :ref:`Sec. 2.1,
          Reference Documents <refdocs>`.
 
-As readers examine *geminidr* instrument packages, they will notice some or many
+As readers examine |geminidr| instrument packages, they will notice some or many
 of these have a ``lookups/`` directory. This is convention and the standard place
-*geminidr* organizes instrument-specific lookup tables, such as tables for
+|geminidr| organizes instrument-specific lookup tables, such as tables for
 detector array gaps, geometries, other definition files, etc.. The absence or
 presence of ``lookups/`` is immaterial to the Recipe System and can be present
 at the convenience of the developer.
 
 At this point, it is incumbent upon the developer to provide the primitive classes
 and recipes they wish to define. You are free to inherit or use any primitive and
-parameter classes from *geminidr* or to not inherit anything at all. You can also
+parameter classes from |geminidr| or to not inherit anything at all. You can also
 make use of any and all function libraries from the larger DRAGONS
 distribution.
 
@@ -203,12 +206,12 @@ document *will* specify and describe attributes that must appear in a defined
 primitive class and recipe libraries if the Recipe System is to handle a newly
 defined *dr-package* and underlying instrument package.
 
-1) If developers intend to use the *geminidr* parameter system, they *must* use
+1) If developers intend to use the |geminidr| parameter system, they *must* use
    the ``parameter_override`` decorator for the new primitive class.
    This decorator handles parameters for all methods on the decorated class. This
    decorator is located in ``recipe_system.utils.decorators.``
 
-   There is no requirement that the parameter system implemented under *geminidr*
+   There is no requirement that the parameter system implemented under |geminidr|
    be used by other *dr-packages*. Developers are free to implement primitive
    parameters as they wish. For example, as parameters on function signatures --
    the nominal way parameters are defined and passed to functions. E.g.::
@@ -224,7 +227,7 @@ defined *dr-package* and underlying instrument package.
 3) In recipe files defined under ``recipes/<mode>/``, define a ``recipe_tags``
    attribute at the module/file level. These tags define the kinds of data for
    which the defined recipes are appropriate. Readers are encouraged to examine
-   the contents of any *geminidr* instrument package recipes and modes to get
+   the contents of any |geminidr| instrument package recipes and modes to get
    a sense of these recipe libraries.
 
 Readers may wish to review the relevent sections of the
@@ -248,7 +251,7 @@ But there is more. Developers need also to define and configure an *astrodata*
 class for this new instrument. This, too, is beyond the scope of this document,
 but since the Recipe System uses the grammar of the astrodata abstraction layer,
 it is incumbent upon developers to ensure any new instrument, whether in
-*geminidr* or elsewhere, is that any new instrument defines a set of *astrodata*
+|geminidr| or elsewhere, is that any new instrument defines a set of *astrodata*
 tags for the new instrument and one (1) descriptor must be defined. This
 descriptor shall be called ``instrument()`` and it shall return the actual name
 of the instrument. In our example case, this instrument descriptor shall return
@@ -259,6 +262,6 @@ the string literal ``new_instrument``::
 
 Developers and readers are encouraged to review the appropriate documents relating
 to defining and writing an *astrodata* class for their new instrument's data. The
-`Astrodata User's Manual` and "cheat sheet" were enumerated  earlier in
+`AstroData User's Manual`_ and the `AstroData Cheat Sheet`_ were enumerated earlier in
 :ref:`Sec. 2.2, Related Documents <related>`.
 

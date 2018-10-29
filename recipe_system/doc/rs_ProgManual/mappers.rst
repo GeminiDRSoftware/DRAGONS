@@ -1,6 +1,8 @@
 .. interfaces.rst
 .. include overview
 
+.. include:: references.txt
+
 .. _mapps:
 
 The Mappers
@@ -15,18 +17,18 @@ The Mappers
 ----
 
 In a nominal pipeline context, the mappers receive input data and parameters from 
-the ``Reduce`` class, either through the ``reduce`` command or the class's API.
+the |Reduce| class, either through the ``reduce`` command or the class's API.
 This document describes how to import and use the mapper classes programmatically.
 The mapper classes are the main component of the Recipe System and serve as
 arbiters between the input data and parameters and the instrument packages defined
-by the ``drpkg`` parameter. This parameter defaults to ``geminidr``, which is the
+by the ``drpkg`` parameter. This parameter defaults to |geminidr| , which is the
 Gemini Observatory's data reduction package under DRAGONS.
 
 The mapper classes implement search/match/capture algorithms optimized for the 
-instrument packages defined in ``geminidr`` under a DRAGONS installation. 
-The algorithm exploits attributes of an ``AstroData`` instance, determines the 
+instrument packages defined in |geminidr|  under a DRAGONS installation. 
+The algorithm exploits attributes of an |AstroData|  instance, determines the 
 applicable instrument package (e.g. 'niri', 'gnirs', 'gmos', etc.) defined under 
-``geminidr``, then conducts a search of that package, looking for specific 
+|geminidr|, then conducts a search of that package, looking for specific
 attributes: a class attribute called `tagset` defined on discoverable 
 primitive classes, and a module attribute defined in recipe library files, 
 called `recipe_tags`. The mappers look for the "best" match between an AstroData 
@@ -37,18 +39,18 @@ larger set of tags defined for the input dataset.
 Mapper
 ======
 
-Mapper (in ``recipe_system.mappers.baseMapper``) serves as the base class for all
-other `Recipe System` mapper classes. The base Mapper class defines *only* the 
-initialisation function, which sets important instance attributes, such as the 
-applicable instrument package name (based on instrument name), and a recipe name. 
-This base class *__init__* function receives all data and parameters passed by 
-either ``Reduce`` or other caller. As readers may infer from the 
-:ref:`Mapper class diagram <mappercls>` below, the Mapper initializer determines 
-certain instance attributes `from` the passed input datasets provided by the list,
-``adinputs``.
+|Mapper| serves as the base class for all other `Recipe System` mapper classes.
+The base |Mapper| class defines *only* the initialisation function, which sets
+important instance attributes, such as the applicable instrument package name
+(based on instrument name), and a recipe name. This base class'
+``__init__()`` function receives all data and parameters passed by either
+|Reduce| or other caller. As readers may infer from the
+:ref:`Mapper class diagram <mappercls>` below, the |Mapper|
+initializer determines certain instance attributes `from` the passed input
+datasets provided by the list, ``adinputs``.
 
 For instance, the mapper attribute, ``pkg``, which is used as the description of 
-the applicable instrument package in *geminidr*, is derived from an ``AstroData`` 
+the applicable instrument package in *geminidr*, is derived from an |AstroData|  
 instance "descriptor," ``instrument()``, which returns the actual instrument used 
 for the observation. (While details about AstroData classes are beyond the scope 
 of this document, readers are encouraged to consult the AstroData documents listed
@@ -65,15 +67,14 @@ by, the selected primitive class.
 .. figure:: images/mapper_classes.jpeg
    :scale: 80
 
-   Mapper subclasses inherit and do not override Mapper.__init__().
+   |Mapper| subclasses inherit and do not override ``Mapper.__init__()``.
 
 PrimitiveMapper
 ===============
 
-PrimitiveMapper (in `recipe_system.mappers.primitiveMapper`) is subclassed on
-Mapper and does *not* override __init__().  PrimitiveMapper implements the
-primitive search algorithm and provides one (1) public method on the class:
-``get_applicable_primitives()``.
+|PrimitiveMapper| is subclassed on |Mapper| and does *not* override ``__init__()``.
+|PrimitiveMapper| implements the primitive search algorithm and provides one (1)
+public method on the class: ``get_applicable_primitives()``.
 
  **Class PrimitiveMapper** `(adinputs, mode='sq', drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload=None)`
 
@@ -131,7 +132,7 @@ primitive classes of the *geminidr* primitive class hierarchy.
 As the search of instrument primitive classes progresses, modules are 
 introspected, looking for class objects with a *tagset* attribute. A tagset match 
 is assessed against all previous matches and the best matching class is retrieved 
-and instantiated with all the appropriate arguments received from ``Reduce``, or
+and instantiated with all the appropriate arguments received from |Reduce|, or
 set as instance attributes through the class API.
 
 The ``get_applicable_primitives()`` method returns this instance of the best 
@@ -142,10 +143,9 @@ as such. It will be this primitive instance that can then be passed to the
 RecipeMapper
 ============
 
-RecipeMapper (in `recipe_system.mappers.recipeMapper`) is subclassed on
-Mapper and does *not* override __init__(). RecipeMapper implements the 
-recipe search algorithm and provides one (1) public method on the class:
-``get_applicable_recipe()``.
+|RecipeMapper| is subclassed on |Mapper| and does *not* override ``__init__()``.
+|RecipeMapper| implements the recipe search algorithm and provides one (1)
+public method on the class: ``get_applicable_recipe()``.
 
  **Class RecipeMapper** `(adinputs, mode='sq', drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload=None)`
 
@@ -204,16 +204,13 @@ This will be the actual function object and will be callable.
 As the search of instrument recipe modules (libraries) progresses, modules are 
 introspected, looking for a *recipe_tags* attribute. A recipe tags match is 
 assessed against all previous matches and the best matching recipe library is 
-imported with all the appropriate arguments received from ``Reduce``, or set as 
+imported with all the appropriate arguments received from |Reduce|, or set as
 instance attributes through the class API.
 
 Because the RecipeMapper class must be responsive to a number of possible 
 forms a recipe name may be take as specified by clients, such as the ``reduce``
-command line tool and the ``Reduce`` class, the RecipeMapper first examines the 
+command line tool and the |Reduce| class, the |RecipeMapper| first examines the
 recipe name to see if it can be found as a member of an external recipe library, 
-i.e., not defined under the *geminidr* package. If not, this mapper class then 
+i.e., not defined under the |geminidr| package. If not, this mapper class then
 begins the process of searching for the correct ("applicable") recipe in 
-*geminidr* under the appropriate instrument package.
-
-
-
+|geminidr| under the appropriate instrument package.

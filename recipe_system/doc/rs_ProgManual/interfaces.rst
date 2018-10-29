@@ -2,22 +2,24 @@
 .. include mappers
 .. include overview
 
+.. include:: references.txt 
+
 .. _iface:
 
 Using the Mappers API
 *********************
-For practical applications, the ``Mapper`` base class provides no functionality, but
+For practical applications, the |Mapper|  base class provides no functionality, but
 defines all attributes for instances built from subclasses of Mapper. Though not 
-strictly an abstract class, the ``Mapper`` base class cannot be used on its own.
-Subclasses, such as ``PrimitiveMapper`` and ``RecipeMapper``, should not override
+strictly an abstract class, the |Mapper|  base class cannot be used on its own.
+Subclasses, such as |PrimitiveMapper|  and |RecipeMapper| , should not override
 ``Mapper.__init__()``, but implement their own mapping routines optimized to the
 "target" of the mapping. An example of a Mapper extension might be an 
 implementation of a mapper to find "applicable" lookup tables in instrument
 packages.
 
 The programmatic interfaces on the current mapper classes are straightforward.
-One begins by passing a list of ``AstroData`` instances, and any ancillary arguments,
-to the "constructor" of either ``PrimitiveMapper`` or ``RecipeMapper``. Below, we reiterate
+One begins by passing a list of |AstroData| instances, and any ancillary arguments,
+to the "constructor" of either |PrimitiveMapper|  or |RecipeMapper|. Below, we reiterate
 the input arguments to a Mapper class and show the default values of parameters not
 passed by the caller::
 
@@ -36,7 +38,7 @@ that instance has one (1) and only one public method, a method that invokes
 the search algorithm for the instance.
 
 It shall be noted here that the following discussion and examples are based on
-using the default data reduction package, *geminidr*. The *geminidr* package
+using the default data reduction package, |geminidr|. The |geminidr| package
 defines all recipes, modes, and primitive classes for several instruments of the
 Observatory. With that in mind, the last :ref:`section of this chapter <drpkg>`
 will detail steps required to build your own "drpkg", whether for testing purposes
@@ -47,15 +49,15 @@ implemented *drpkg*.
 Selecting Primitives with PrimitiveMapper
 =========================================
 
-Primitive classes for Gemini Observatory instruments are defined in the *geminidr*
+Primitive classes for Gemini Observatory instruments are defined in the |geminidr| 
 package under DRAGONS. This is specified as the default value on the ``drpkg``
 keyword argument shown above. These primitive classes define methods to provide
-essential data processing functionality. Primitive classes in *geminidr* are
+essential data processing functionality. Primitive classes in |geminidr| are
 structured hierarchically and employ multiple inheritance. (Hereafter, a Primitive
 class may be referred to as a set of "primitives" or just "primitives", which are
 just the defined or inherited methods on that class).
 
-"Generic" primitive classes in the ``geminidr`` package are defined under
+"Generic" primitive classes in the |geminidr| package are defined under
 ``geminidr.core`` (see :ref:`Figure 4.1, Primitive Class Hierarchy <prmcls>`.
 These generic classes provide functions that work on all data produced by Gemini
 Oberservatory. These classes are arranged logically, meaning primitive functions
@@ -78,7 +80,7 @@ instrument data being processed.
 
 .. figure:: images/primcls16.jpg
 
-   Hierarchy of Primitive classes defined under `geminidr`
+   Hierarchy of Primitive classes defined under |geminidr| 
 
 Because real data are produced by real instruments, the PrimitiveMapper will
 usually be selecting primitive classes defined at the instrument-mode
@@ -96,7 +98,7 @@ on.
 
 Recall that primitive classes are attributed with a *tagset* indicating the
 particular kinds of data to which they are applicable. Indeed, as defined in the
-*geminidr* package, only ``gemini`` and subclasses thereof have *tagset*
+|geminidr| package, only ``gemini`` and subclasses thereof have *tagset*
 attributes that make them discoverable by the PrimitiveMapper. Which also
 implies that any primitive classes defined in ``core`` are not discoverable by
 the PrimitiveMapper. We shall examine the details of this statement in the next
@@ -105,20 +107,20 @@ section.
 Mapping Data to Primitives
 --------------------------
 
-When the ``PrimitiveMapper`` receives input data, those data are passed as a
-list of ``AstroData`` objects, one ``AstroData`` object per input dataset. All
-``AstroData`` objects have been classified with a number of what are called `tags`,
-which are present on the ``AstroData`` instance as an attribute of the object.
+When the |PrimitiveMapper| receives input data, those data are passed as a
+list of |AstroData| objects, one |AstroData| object per input dataset. All
+|AstroData| objects have been classified with a number of what are called `tags`,
+which are present on the |AstroData| instance as an attribute of the object.
 For example, a typical unprocessed GMOS image:
 
 >>> ad = astrodata.open('S20161025S0111.fits')
 >>> ad.tags
 set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
 
-The ``PrimitiveMapper`` uses these tags to search ``geminidr`` packages, first by
+The |PrimitiveMapper| uses these tags to search |geminidr| packages, first by
 immediately narrowing the search to the applicable instrument package. In this 
-case, the instrument and package are ``gmos``. The ``Mapper`` classes have an
-understanding of this, and set their own attribute on ``Mapper`` instances called,
+case, the instrument and package are ``gmos``. The |Mapper| classes have an
+understanding of this, and set their own attribute on |Mapper| instances called,
 ``pkg``:
 
 >>> from recipe_system.mappers.primitiveMapper import PrimitiveMapper
@@ -126,7 +128,7 @@ understanding of this, and set their own attribute on ``Mapper`` instances calle
 >>> pm.pkg
 'gmos'
 
-Once a ``PrimitiveMapper`` instance is created, the public method,
+Once a |PrimitiveMapper|  instance is created, the public method,
 ``get_applicable_primitives()`` can be invoked and the search for the most 
 appropriate primitive class begins. The search itself is focused on finding
 class objects that define a ``tagset`` attribute on the class.
@@ -143,13 +145,13 @@ Let's see how primitive classes in the hierarchy are tagged, beginning with
   class GMOSImage(GMOS, ... ):
       tagset = set(["GEMINI", "GMOS", "IMAGE"])
 
-The ``PrimitiveMapper`` gloms all primitive classes in the package, looking for a
+The |PrimitiveMapper|  gloms all primitive classes in the package, looking for a
 maximal subset of the *astrodata tags* in the ``tagset`` attribute of the primitive
 classes. Using our astrodata ``tags`` in the example above, we can see that 
-``GMOSImage`` class provides a maximal matching tagset to the ``AstroData`` object's
+``GMOSImage`` class provides a maximal matching tagset to the |AstroData| object's
 data classifications.
 
-We proceed from the example above and have the ``PrimitiveMapper`` do its job:
+We proceed from the example above and have the |PrimitiveMapper| do its job:
 
 >>> pset = pm.get_applicable_primitives()
 
@@ -158,12 +160,12 @@ Check that we have the primitives we expect:
 >>> pset.__class__
 <class 'geminidr.gmos.primitives_gmos_image.GMOSImage'>
 
-Which is exactly correct. Once ``PrimitiveMapper`` has acquired the best "applicable"
+Which is exactly correct. Once |PrimitiveMapper| has acquired the best "applicable"
 primitive class, it instantiates the primitives object using the parameters 
 passed. The returned ``pset`` is the *actual instance of the class* and is ready 
 to be used.
 
-The *tagset* is the only criterion used by the ``PrimitiveMapper`` to find the correct
+The *tagset* is the only criterion used by the |PrimitiveMapper| to find the correct
 primitive class. Readers may correctly infer from this that naming primitive
 classes, and the modules containing them, is arbitrary; primitive classes and the
 containing modules can be named at the discretion of the developer. Indeed, the
@@ -183,7 +185,7 @@ order of primitive functions to be called on the data, references to which are
 contained by the primitive instance. Essentially, a recipe is a pipeline.
 
 Recipe functions are defined in python modules (which may be referred to as
-recipe libraries, a collection of functions) that are placed in a *geminidr*
+recipe libraries, a collection of functions) that are placed in a |geminidr| 
 instrument package. Recipes are only defined for instruments and exist under
 an instrument package in a ``recipes/`` directory like this::
 
@@ -192,7 +194,7 @@ an instrument package in a ``recipes/`` directory like this::
   ../geminidr/gnirs/recipes
   .. [etc. ]
 
-Here is a (current) listing of instrument recipe directories under *geminidr*::
+Here is a (current) listing of instrument recipe directories under |geminidr|::
 
   geminidr/f2/recipes/:
       __init__.py
@@ -229,7 +231,7 @@ under ``recipes/`` are termed "modes."
 Mode
 ----
 An instrument package *recipes* path is extended by names indicating a "mode."
-As shown above, *geminidr* instrument packages define two modes under all
+As shown above, |geminidr| instrument packages define two modes under all
 recipes directories: `qa` and `sq`. These indicate that recipes defined under
 ``recipes/qa`` provide Quality Assurance (*qa*) processing. Science Quality
 (*sq*) recipes defined under ``recipes/sq`` provide science quality reduction
@@ -259,7 +261,7 @@ typical unprocessed GMOS image:
 >>> ad.tags
 set(['RAW', 'GMOS', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'SOUTH'])
 
-The RecipeMapper uses these tags to search *geminidr* packages, first by
+The RecipeMapper uses these tags to search |geminidr| packages, first by
 immediately narrowing the search to the applicable instrument package and then
 by using the ``mode`` parameter, further focusing the recipe search. In this
 case, the instrument and package are ``gmos``. The Mapper classes have an
@@ -321,7 +323,7 @@ matching *subset* of tags to the astrodata object's data classifications.
 A Running Example
 -----------------
 
-The example that follows begins by first making an ``astrodata`` instance 
+The example that follows begins by first making an |astrodata| instance 
 from an arbitrary FITS file, passing that alone to the RecipeMapper, and then 
 calling the instance's public method, ``get_applicable_recipe()``.
 
@@ -415,7 +417,7 @@ the RecipeMapper object.
 'myreduce'
 
 Note that for user supplied recipe libraries and functions, the *mode* is
-irrelevant, as it is used for searching the *geminidr* package or other
+irrelevant, as it is used for searching the |geminidr| package or other
 packages similarly designed.
 
 User-defined recipes
@@ -453,10 +455,10 @@ a nominal function call::
 That's it. Once the function, ``recipe``, is called with the primitive instance, 
 ``p``, the pipeline begins execution.
 
-In the context of running ``reduce`` from the command line, the ``Reduce`` class
+In the context of running ``reduce`` from the command line, the |Reduce| class
 is responsible for retrieving recipes and primitive sets appropriate to the data
 and passing the primitive object as the argument to the recipe function. And while
-the ``Reduce`` class provides exception handling during pipeline execution, there
+the |Reduce| class provides exception handling during pipeline execution, there
 are no such protections at the level of the mapper interfaces. Any exceptions
 raised will have to be dealt with by those using the Recipe System at this lower
 level interface.
@@ -561,9 +563,9 @@ OrderedDict([('suffix', '_prepared'), ('mdf', None), ('attach_mdf', True)])
 >>> p.params['mosaicDetectors'].toDict()
 OrderedDict([('suffix', '_mosaic'), ('tile', False), ('sci_only', False), ('interpolator', 'linear')])
 
-Finally, readers may wonder how one may "see" the recipe the ``RecipeMapper`` would
+Finally, readers may wonder how one may "see" the recipe the |RecipeMapper| would
 return for the specified data, in order to know the primitives to call and in what
-order. This involves using the ``RecipeMapper`` just as recipe system does and using
+order. This involves using the |RecipeMapper| just as recipe system does and using
 the inspect module to show the function's code.
 
 Continuing the example ...
