@@ -304,6 +304,7 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'python': ('https://docs.python.org/3', None),
 }
 
 
@@ -335,38 +336,48 @@ def run_api_doc(_):
         The .rst files will be generated. After that, you can use PyCharm's
         build helper.
     """
-    current_path = os.getcwd()
-    relative_path = "../../../"
-    build_path = os.path.join(current_path, relative_path)
-
-    ignore_paths = [
-        'doc',
-        'old*',
-        'recipe_system/cal_service',
-        'setup',
+    build_packages = [
+        'astrodata',
+        'geminidr',
+        'recipe_system',
     ]
 
-    argv = [
-               "--force",
-               "--no-toc",
-               # "--separate",
-               "--module",
-               "--output-dir", "api/",
-               relative_path
-           ] + ignore_paths
+    current_path = os.getcwd()
+    relative_path = "../../../"
 
-    sys.path.insert(0, build_path)
+    for p in build_packages:
 
-    try:
-        # Sphinx 1.7+
-        from sphinx.ext import apidoc
-        apidoc.main(argv)
+        build_path = os.path.join(current_path, relative_path, p)
 
-    except ImportError:
-        # Sphinx 1.6 (and earlier)
-        from sphinx import apidoc
-        argv.insert(0, apidoc.__file__)
-        apidoc.main(argv)
+        ignore_paths = [
+            'doc',
+            'test',
+            'cal_service',
+        ]
+
+        ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+
+        argv = [
+                   "--force",
+                   "--no-toc",
+                   # "--separate",
+                   "--module",
+                   "--output-dir", "api/",
+                   build_path
+               ] + ignore_paths
+
+        sys.path.insert(0, build_path)
+
+        try:
+            # Sphinx 1.7+
+            from sphinx.ext import apidoc
+            apidoc.main(argv)
+
+        except ImportError:
+            # Sphinx 1.6 (and earlier)
+            from sphinx import apidoc
+            argv.insert(0, apidoc.__file__)
+            apidoc.main(argv)
 
 
 # -- Finishing with a setup that will run always -----------------------------

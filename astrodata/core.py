@@ -940,9 +940,9 @@ class AstroData(object):
         This is a convenience method, which is equivalent to:
 
             for ext in ad:
-                ad.ext.data = operator(ad.ext.data, *args, **kwargs)
-                ad.ext.mask = operator(ad.ext.mask, *args, **kwargs) if ad.ext.mask is not None else None
-                ad.ext.variance = operator(ad.ext.variance, *args, **kwargs) if ad.ext.variance is not None else None
+                ad.ext.data = operator(ad.ext.data, \*args, \**kwargs)
+                ad.ext.mask = operator(ad.ext.mask, \*args, \**kwargs) if ad.ext.mask is not None else None
+                ad.ext.variance = operator(ad.ext.variance, \*args, \**kwargs) if ad.ext.variance is not None else None
 
         with the additional advantage that it will work on single slices, too.
 
