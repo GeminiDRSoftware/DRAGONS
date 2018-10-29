@@ -335,11 +335,15 @@ def run_api_doc(_):
         The .rst files will be generated. After that, you can use PyCharm's
         build helper.
     """
-    current_path = os.path.abspath('.')
-    relative_path = "../../../recipe_system/"
+    current_path = os.getcwd()
+    relative_path = "../../../"
     build_path = os.path.join(current_path, relative_path)
 
     ignore_paths = [
+        'doc',
+        'old*',
+        'recipe_system/cal_service',
+        'setup',
     ]
 
     argv = [

@@ -1,11 +1,16 @@
 
 .. Cross-Reference to the API ..
 
-.. |astrodata| replace:: `astrodata`
-.. |AstroData| replace:: `astrodata.AstroData`
-.. |reduce| replace:: `reduce`
-.. |Reduce| replace:: `Reduce`
+.. _`AstroData User's Manual`: https://astrodata-user-manual.readthedocs.io/
 
+.. |astrodata| replace:: :mod:`~astrodata`
+.. |geminidr| replace:: :mod:`~geminidr`
+.. |mappers| replace:: :mod:`recipe_system.mappers`
+.. |reduce| replace:: ``reduce``
+
+.. |AstroData| replace:: :class:`~astrodata.AstroData`
+.. |Mapper| replace:: :class:`~recipe_system.mappers.baseMapper.Mapper`
+.. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
 .. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
 .. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
 

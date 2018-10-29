@@ -1,3 +1,10 @@
+"""
+    This package add another abstraction layer to astronomical data by parsing
+    the information contained in the headers as attributes. To do so,
+    one must subclass :class:`astrodata.AstroData` and add parse methods
+    accordingly to the :class:`~astrodata.core.TagSet` received.
+"""
+
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
            'descriptor_list',
