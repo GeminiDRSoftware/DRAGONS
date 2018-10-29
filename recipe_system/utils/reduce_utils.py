@@ -5,7 +5,6 @@ from __future__ import print_function
 # Utility function library for reduce and the Reduce class.
 from builtins import range
 
-# ------------------------------------------------------------------------------
 from argparse import ArgumentParser
 from argparse import HelpFormatter
 
@@ -20,7 +19,7 @@ from .reduceActions import UnitaryArgumentAction
 
 from ..cal_service import localmanager_available
 
-# ------------------------------------------------------------------------------
+
 class ReduceHelpFormatter(HelpFormatter):
     """
     ReduceHelpFormatter class overrides default help formatting on customized
@@ -46,7 +45,7 @@ class ReduceHelpFormatter(HelpFormatter):
             result = ' '.join(formats) % get_metavar(action.nargs)
         return result
 
-# ------------------------------------------------------------------------------
+
 class ReduceArgumentParser(ArgumentParser):
     """
     Converts an argument line from a user param file into an actual argument,
@@ -62,7 +61,7 @@ class ReduceArgumentParser(ArgumentParser):
                     break
                 yield arg
 
-# ------------------------------------------------------------------------------
+
 def buildParser(version):
     parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " +
                                   "_"*28 + "\n" + "_"*16 +
@@ -169,6 +168,7 @@ def buildParser(version):
                             "is to look it up in the config file (if any).")
     return parser
 
+
 # --------------------------- Emulation functions ------------------------------
 # The functions below encapsulate ArgumentParser access to option strings and
 # matches them to 'dest' attributes and attribute values. There is no public
@@ -185,17 +185,19 @@ def buildParser(version):
 #     insert_option_value()  -- assigns an option value to matching 'dest' attr
 #     show_parser_options()  -- pretty print options, 'dest' attrs, values.
 # ------------------------------------------------------------------------------
-
 def parser_has_option(parser, option):
     return option in parser._option_string_actions
 
+
 def get_option_flags(parser, option):
     return parser._option_string_actions[option].option_strings
+
 
 def insert_option_value(parser, args, option, value):
     dest = parser._option_string_actions[option].dest
     setattr(args, dest, value)
     return
+
 
 def show_parser_options(parser, args):
     all_opts = list(parser.__dict__['_option_string_actions'].keys())
@@ -223,7 +225,7 @@ def show_parser_options(parser, args):
     print("\t"+"-"*65+"\n")
     return
 
-# ------------------------------------------------------------------------------
+
 def set_btypes(userparams):
     """
     All cmd line args are delivered as strings. Find any user parameters that
@@ -259,7 +261,7 @@ def set_btypes(userparams):
 
     return upars
 
-# ------------------------------------------------------------------------------
+
 def normalize_args(args):
     """
     Convert argparse argument lists to single string values.
@@ -287,6 +289,7 @@ def normalize_args(args):
     if isinstance(args.suffix, list):
         args.suffix = args.suffix[0]
     return args
+
 
 def normalize_upload(upload):
     """
@@ -319,6 +322,7 @@ def normalize_upload(upload):
         raise TypeError("upload must be None or a list")
     return
 
+
 def normalize_ucals(files, cals):
     """
     When a user passes a --user_cal argument of the form,
@@ -341,20 +345,22 @@ def normalize_ucals(files, cals):
     retrieval. User calibrations are not cached because they are not
     retrieved from fitsstore and are presumably on disk.
 
-    Parameters:
+    Parameters
     ----------
-        cals: a list of strings like, 'caltype:calfilepath'
-        type: <list>
+    files : list
+        A list containing the input files.
+    cals : list
+        A list of strings like, 'caltype:calfilepath'.
 
-    Returns:
+    Returns
     -------
-        normalz: a dictionary of the cal types applied to input files.
-        type:  <dict>
+    normalz : dict
+        a dictionary of the cal types applied to input files.
 
-    E.g., a returned dict,
-
-    {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
-
+    Example
+    -------
+    a returned dict,
+        {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
     """
     def _site(tags):
         site = None

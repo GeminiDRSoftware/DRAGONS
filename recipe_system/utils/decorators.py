@@ -5,22 +5,20 @@ is subject to any change in policy.
 
 Currently, the policy defines an order of parameter precedence:
 
-1)  *user parameters*-- as passed by -p on the reduce command line. These take
-    full precedence over any other parameter setting. User parameters may be
-    primitive-specific, as in `-p makeFringeFrame:reject_method=jilt` in which
-    case, only that primitive's parameter will be overridden. Other primitives
-    with the same parameter (e.g. `reject_method` is also a parameter for
-    `stackFlats`) will remain unaffected. If a user passes an un-specified
-    parameter, as in `reject_method=jilt`, then any primitive with that parameter
-    will receive that parameter value.
-
-2)  *recipe parameters* -- as passed on a recipe function call, like 
+1. *user parameters*-- as passed by -p on the reduce command line. These take
+   full precedence over any other parameter setting. User parameters may be
+   primitive-specific, as in `-p makeFringeFrame:reject_method=jilt` in which
+   case, only that primitive's parameter will be overridden. Other primitives
+   with the same parameter (e.g. `reject_method` is also a parameter for
+   `stackFlats`) will remain unaffected. If a user passes an un-specified
+   parameter, as in `reject_method=jilt`, then any primitive with that parameter
+   will receive that parameter value.
+2. *recipe parameters* -- as passed on a recipe function call, like
    `recipe_name(par1=val1)`. These will be overridden by same named user 
-    parameters.
-
-3)  *default parameters* -- The default parameter sets as defined in package 
-    parameter files. These will be overridden by recipe parameters and then 
-    user parameters when applicable.
+   parameters.
+3. *default parameters* -- The default parameter sets as defined in package
+   parameter files. These will be overridden by recipe parameters and then
+   user parameters when applicable.
 
 This policy is implemented in the decorator function,
 
@@ -33,14 +31,14 @@ This decorator is fully enhanced by the make_class_wrapper decorator, which
 maps the parameter_override decorator function to all public methods on 
 the decorated class.
 
-    E.g., 
+E.g.,::
 
-        from pkg_utilities.decorators import parameter_override
+    from pkg_utilities.decorators import parameter_override
 
-        @parameter_override
-        class PrimitivesIMAGE(PrimitivesGMOS):
-            def __init__(self, adinputs, uparms={}):
-                [ . . . ]
+    @parameter_override
+    class PrimitivesIMAGE(PrimitivesGMOS):
+        def __init__(self, adinputs, uparms={}):
+            [ . . . ]
 
 """
 from builtins import zip

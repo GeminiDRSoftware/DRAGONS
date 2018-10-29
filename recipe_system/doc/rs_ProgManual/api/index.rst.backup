@@ -1,0 +1,44 @@
+.. currentmodule:: recipe_system
+
+.. _recipe_system:
+
+*************************
+DRAGONS Recipe SYSTEM API
+*************************
+
+You will find here the documentation related to all relevant methods and classes inside the :mod:`recipe_system`.
+
+Module :mod:`config`
+====================
+
+.. automodule:: recipe_system.config
+    :members:
+
+ADCC
+====
+
+.. automodapi:: recipe_system.adcc
+    :members:
+    :no-inheritance-diagram:
+
+.. automodapi:: recipe_system.adcc.adcclib
+    :members:
+    :no-inheritance-diagram:
+
+
+Mappers
+=======
+
+.. automodapi:: recipe_system.mappers
+    :members:
+    :no-inheritance-diagram:
+
+
+Reduce
+======
+
+.. automodapi:: recipe_system.reduction
+    :members:
+    :no-inheritance-diagram:
+
+

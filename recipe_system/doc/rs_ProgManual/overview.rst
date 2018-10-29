@@ -3,6 +3,8 @@
 .. include interfaces
 .. include mappers
 
+.. include:: references.txt
+
 .. _overview:
 
 Overview
@@ -16,7 +18,7 @@ It is written to introspectively exploit features of "instrument packages" by
 effecting arbitrage on specific attributes of defined recipes and
 primitives comprising such packages. Gemini Observatory has developed a suite of 
 these recipes and primitives for the Observatory's facility instruments. These
-can be found in the DRAGONS package, ``geminidr``.
+can be found in the DRAGONS package, |geminidr|.
 
 The Recipe System offers dynamic flow control and automatically executes options
 regarding processing and calibration. These decisions are based on the pixel and
@@ -24,19 +26,18 @@ the metadata properties of the dataset at "decision nodes" in processing and on
 the context in which the processing is being carried out.
 
 In conjunction with the development of the Recipe System, Gemini Observatory has
-also developed the new ``astrodata`` (v2.0), which works with instrument packages
-defined in ``geminidr``. This package provides the definitions for the
+also developed the new |astrodata| (v2.0), which works with instrument packages
+defined in |geminidr|. This package provides the definitions for the
 abstractions of Gemini Observatory astronomical observations. Indeed, "AstroData"
 objects and their interfaces provide a common grammar by which the Recipe System
 and the instrument packages identify and work with astronomical datasets. For
-further information and discussion of ``astrodata`` and its interface, see the
-`Astrodata User's Manual` (:ref:`related`; Document ID:
-PIPE-USER-106_AstrodataUserManual).
+further information and discussion of |astrodata| and its interface, see the
+`AstroData User's Manual`_.
 
 In Gemini Observatory's operational environment "on summit," the Recipe System,
-``reduce``, ``astrodata``, and the ``geminidr`` packages provide a
+|reduce|, |astrodata|, and the |geminidr| packages provide a
 currently defined, near-realtime Quality Assessment Pipeline, the QAP. 
-``reduce`` is used to launch this pipeline on newly acquired data and provide 
+|reduce| is used to launch this pipeline on newly acquired data and provide
 image quality metrics to observers, who then assess the metrics and apply 
 observational decisions on telescope operations.
 
@@ -56,7 +57,7 @@ certain key features of DRAGONS.
 **Data Reduction Package (drpkg)**
 
 A data reduction (dr) package is simply an umbrella directory under which
-instrument packages can be defined. Currently, only `geminidr` is defined for
+instrument packages can be defined. Currently, only |geminidr| is defined for
 the Gemini Observatory instruments, which provides instrument packages for
 GMOS-(N,S), GSAOI, F2, GNIRS, and NIRI. Users running ``reduce`` can change the
 default 'dr' package to other such defined packages with the ``--drpkg`` option.
@@ -67,7 +68,7 @@ A data reduction package must be a proper python package and must importable.
 Mode is a label -- a string literal --  by which recipe libraries are delineated
 and which are manifest in a data reduction package's ``recipes`` directory. These mode
 names `should` indicate or hint at the purpose or quality of the recipes contained
-therein. For example, in DRAGONS ``geminidr`` instrument packages, Quality Assessment
+therein. For example, in DRAGONS |geminidr| instrument packages, Quality Assessment
 recipes are defined in the ``qa`` recipes directory; Science Quality recipes, in an
 ``sq`` recipes directory. The mode specified for pipeline processing also serves,
 or can serve, as a flag to primitive functions. A key difference between ``qa``
@@ -80,13 +81,13 @@ calibrations, but will continue processing regardless of receipt.
 **Primitive**
 
 Not to be confused with a mathematical primitive function, a primitive under
-DRAGONS is a method (function) defined on a primitive class. A `geminidr` primitive
+DRAGONS is a method (function) defined on a primitive class. A |geminidr| primitive
 function is generally contrived to be a "science-oriented" data processing step,
 for example, ``biasCorrect``. The Recipe System has no requirement that this be true.
 
 **Primitive Class**
 
-Defined under the DRAGONS `geminidr` package, primitive classes are a large set of
+Defined under the DRAGONS |geminidr| package, primitive classes are a large set of
 defined hierarchical classes. Because they are real data, datasets will always have
 some instrument/mode specific set of *tags* that provide the Recipe System with
 the identifiers to allow it to pick the most appropriate instrument/mode specific
@@ -105,7 +106,7 @@ recipe and primitive class is the primary operation provided by ``reduce``.
 
 .. [#ord] While may be strictly true, it is likely not useful. As with any
 	  data reduction process, operations generally need to be performed in a
-	  certain sequence. Under DRAGONS, `geminidr` primitives check metadata
+	  certain sequence. Under DRAGONS, |geminidr| primitives check metadata
 	  to determine if something required to be done was actually done.
           For instance, many primitives check that headers have been updated
           by the *standardizeGeminiHeaders* and *standardizeInstrumentHeaders*
@@ -201,7 +202,7 @@ All components delineated here operate and communicate using the common grammar
 provided by the ``astrodata`` data abstraction.
 
 
-``reduce`` and ``Reduce``
+``reduce`` and |Reduce|
 -------------------------
 The command line application ``reduce`` is provided with the Recipe System under the
 recipe system ``scripts`` directory. When this directory is available on a
@@ -220,7 +221,7 @@ line options to the mappers, which, in turn, use these values to locate and
 indentify applicable primitive classes and recipes. For most users, ``reduce``
 will be the common way to process datasets with the Recipe System.
 
-The ``reduce`` command and its underlying class, ``Reduce``, are described 
+The ``reduce`` command and its underlying class, |Reduce|, are described 
 in rigorous detail in the :ref:`Reduce and Recipe System User Manual <refdocs>`.
 
 Mappers
@@ -228,16 +229,16 @@ Mappers
 The mapper classes are the core of the Recipe System and provide the means by
 which the Recipe System matches input datasets to processing tasks. When applicable
 primitive classes and recipes are found, the mappers return objects of the
-appropriate kind to the caller; the ``PrimitiveMapper`` returning an instance of
-the applicable primitive class; the ``RecipeMapper`` returning the actual recipe
-function object from the applicable recipe library. The ``Reduce`` class is
+appropriate kind to the caller; the |PrimitiveMapper|  returning an instance of
+the applicable primitive class; the |RecipeMapper|  returning the actual recipe
+function object from the applicable recipe library. The |Reduce| class is
 responsible for applying to the mapper-returned primitive instance to the
 mapper-returned recipe function, at which point, processing begins.
 
-Currently, there are two functional mapper classes, ``RecipeMapper`` and
-``PrimitiveMapper``, which are subclassed on the base class, ``Mapper``.
+Currently, there are two functional mapper classes, |RecipeMapper|  and
+|PrimitiveMapper| , which are subclassed on the base class, |Mapper| .
 These classes and their modules are located under DRAGONS in 
-``recipe_system/mappers``.
+|mappers|.
 
 .. _ipkg:
 
@@ -268,7 +269,7 @@ often present (``lookups/``), though not needed by the Recipe System::
              sq/
              .../
 
-As a real example, the 'gmos' instrument package under ``geminidr`` ::
+As a real example, the 'gmos' instrument package under |geminidr| ::
 
   gmos/
       __init__.py
@@ -299,7 +300,7 @@ targeted attributes are defined only on discoverable classes.
 
 The ``recipes`` package is further delineated by subpackages described as
 "mode" packages. Currently, two such modes are defined within the
-instrument package recipe libraries defined under ``geminidr``, and which
+instrument package recipe libraries defined under |geminidr|, and which
 provide mode-specific recipes: "qa" and "sq" recipes. The "qa" mode
 provides Quality Assurance recipes of the kind used for near real-time
 processing at summit, whereas "sq" recipes provide pipeline definitions

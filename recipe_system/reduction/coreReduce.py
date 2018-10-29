@@ -58,15 +58,17 @@ from recipe_system.utils.reduce_utils import set_btypes
 from recipe_system.mappers.recipeMapper import RecipeMapper
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
-# ------------------------------------------------------------------------------
+
 log = logutils.get_logger(__name__)
-# ------------------------------------------------------------------------------
+
+
 def _log_traceback():
     exc_type, exc_value, exc_traceback = sys.exc_info()
-    tblist =traceback.format_exception(exc_type, exc_value, exc_traceback)
+    tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
     [log.error(line.rstrip()) for line in tblist]
     return
-# ------------------------------------------------------------------------------
+
+
 class Reduce(object):
     """
     The Reduce class encapsulates the core processing to be done by reduce.

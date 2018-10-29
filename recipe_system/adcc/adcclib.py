@@ -6,11 +6,7 @@ from __future__ import print_function
 from builtins import object
 from future.utils import with_metaclass
 __version__ = '2.0 (beta)'
-# ------------------------------------------------------------------------------
-"""
-Automated Dataflow Coordination Center
 
-"""
 import os
 import sys
 import signal
@@ -24,38 +20,45 @@ from recipe_system.adcc.servers import eventsManager
 from recipe_system.config import globalConf
 from recipe_system.config import STANDARD_REDUCTION_CONF
 from recipe_system.utils.findexe import findexe
-# ------------------------------------------------------------------------------
+
+
 def get_adcc_dir(dirtitle="adcc"):
     dotadcc = {"adcc": ".adcc"}
     if not os.path.exists(dotadcc[dirtitle]):
         os.mkdir(dotadcc[dirtitle])
     return dotadcc[dirtitle]
 
+
 def write_adcc_sr(srname, vals):
     print("adcclib: adcc startup report in {}".format(srname))
     with open(srname, "w+") as sr:
         sr.write(repr(vals))
     return
-# ------------------------------------------------------------------------------
+
+
 class Singleton(type):
+
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
+
 class ADCC(with_metaclass(Singleton, object)):
+
     def __init__(self, args=None):
         if args is None:
             pass
         else:
-            self.dark      = args.dark
-            self.events    = eventsManager.EventsManager()
+            self.dark = args.dark
+            self.events = eventsManager.EventsManager()
             self.http_port = args.httpport
-            self.sreport   = args.adccsrn
-            self.racefile  = "adccinfo.py"
-            self.verbose   = args.verbosity
-            self.web       = None
+            self.sreport = args.adccsrn
+            self.racefile = "adccinfo.py"
+            self.verbose = args.verbosity
+            self.web = None
 
     def _check_adcc(self, cpid):
         adccproc = findexe('adcc')
@@ -88,8 +91,8 @@ class ADCC(with_metaclass(Singleton, object)):
         msgs = {
             'lockrun': "adcclib: adcc running and lockfile detected.",
             'portrun': "adcclib: adcc running on port {}",
-            'norun'  : "adcclib: No adcc running but lockfile found.",
-            'rupted' : "adcclib: adcc config appears corrupted. Clearing ..."
+            'norun': "adcclib: No adcc running but lockfile found.",
+            'rupted': "adcclib: adcc config appears corrupted. Clearing ..."
         }
 
         if pids and lfile:

@@ -24,10 +24,11 @@ Appendix
 --------
 
 .. toctree::
-   :numbered:
    :maxdepth: 1
+   :caption: More
 
    appendices/glossary
    appendices/primitives_catalog
+   api
 
 .. todolist::
