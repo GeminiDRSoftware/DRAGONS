@@ -264,7 +264,10 @@ class Shift2D(FittableModel):
         return x+x_offset, y+y_offset
 
 class Scale2D(FittableModel):
-    """2D scaling"""
+    """ 2D scaling. A "factor_scale" is included here because the minimization
+    routines use the same absolute tolerance in all parameters, so we need to
+    engineer the parameters such that a 0.01 change in this parameter has the
+    same sort of effect in positions as a 0.01 change in a shift."""
     def __init__(self, factor=1.0, factor_scale=1.0, **kwargs):
         self._factor_scale = factor_scale
         super(Scale2D, self).__init__(factor, **kwargs)
@@ -283,7 +286,8 @@ class Scale2D(FittableModel):
         return x*factor/self._factor_scale, y*factor/self._factor_scale
 
 class Rotate2D(FittableModel):
-    """Rotation; Rotation2D isn't fittable"""
+    """Rotation; Rotation2D isn't fittable. The parameter scaling mechanism
+    is also included here (see Scale2D)"""
     def __init__(self, angle=0.0, angle_scale=1.0, **kwargs):
         self._angle_scale = angle_scale
         super(Rotate2D, self).__init__(angle, **kwargs)
@@ -308,7 +312,7 @@ class Rotate2D(FittableModel):
         x.shape = y.shape = orig_shape
         return x, y
 
-def _landstat(landscape, updated_model, x, y):
+def _landstat(landscape, updated_model, in_coords):
     """
     Compute the statistic for transforming coordinates onto an existing
     "landscape" of "mountains" representing source positions. Since the
@@ -316,27 +320,42 @@ def _landstat(landscape, updated_model, x, y):
 
     Parameters
     ----------
-    landscape: 2D array
+    landscape: nD array
         synthetic image representing locations of sources in reference plane
     updated_model: Model
         transformation (input -> reference) being investigated
-    x, y: float arrays
-        input x, y coordinates
+    in_coords: nD array
+        input coordinates
 
     Returns
     -------
     float:
         statistic representing quality of fit to be minimized
     """
-    xt, yt = updated_model(x, y)
-    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
-                                                   (yt-0.5).astype(int))
-                  if ix>=0 and iy>=0 and ix<landscape.shape[1]
-                                     and iy<landscape.shape[0])
-    #print updated_model.x_offset.value, updated_model.y_offset.value, sum
+    def _element_if_in_bounds(arr, index):
+        try:
+            return arr[index]
+        except IndexError:
+            return 0
+
+    out_coords = updated_model(*in_coords)
+    if len(in_coords) == 1:
+        out_coords = (out_coords,)
+    out_coords2 = tuple((coords-0.5).astype(int) for coords in out_coords)
+    sum = np.sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
+    ################################################################################
+    # This stuff replaces the above 3 lines if speed doesn't hold up
+    #    sum = np.sum(landscape[i] for i in out_coords if i>=0 and i<len(landscape))
+    #elif len(in_coords) == 2:
+    #    xt, yt = out_coords
+    #    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
+    #                                                   (yt-0.5).astype(int))
+    #                  if ix>=0 and iy>=0 and ix<landscape.shape[1]
+    #                                     and iy<landscape.shape[0])
+    ################################################################################
     return -sum  # to minimize
 
-def _stat(tree, updated_model, x, y, sigma, maxsig):
+def _stat(tree, updated_model, in_coords, sigma, maxsig):
     """
     Compute the statistic for transforming coordinates onto a set of reference
     coordinates. This uses mathematical calulations and is not pixellated like
@@ -362,11 +381,11 @@ def _stat(tree, updated_model, x, y, sigma, maxsig):
     """
     f = 0.5/(sigma*sigma)
     maxsep = maxsig*sigma
-    xt, yt = updated_model(x, y)
-    start = datetime.now()
-    dist, idx = tree.query(list(zip(xt, yt)), k=5, distance_upper_bound=maxsep)
+    out_coords = updated_model(*in_coords)
+    if len(in_coords) == 1:
+        out_coords = (out_coords,)
+    dist, idx = tree.query(list(zip(*out_coords)), k=5, distance_upper_bound=maxsep)
     sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
-    #print (datetime.now()-start).total_seconds(), updated_model.parameters, sum
     return -sum  # to minimize
 
 class KDTreeFitter(Fitter):
@@ -383,6 +402,16 @@ class KDTreeFitter(Fitter):
                  **kwargs):
         model_copy = _validate_model(model, ['bounds', 'fixed'])
 
+        # Turn 1D arrays into tuples to allow iteration over axes
+        try:
+            iter(in_coords[0])
+        except TypeError:
+            in_coords = (in_coords,)
+        try:
+            iter(ref_coords[0])
+        except TypeError:
+            ref_coords = (ref_coords,)
+
         # Starting simplex step size is set to be 5% of parameter values
         # Need to ensure this is larger than the convergence tolerance
         # so move the initial values away from zero if necessary
@@ -393,14 +422,14 @@ class KDTreeFitter(Fitter):
         else:
             for p in model_copy.param_names:
                 pval = getattr(model_copy, p).value
-                if abs(pval) < 20*xtol and 'offset' in p:
+                ### EDITED THIS LINE SO TAKE A LOOK IF 2D MATCHING GOES WRONG!!
+                if abs(pval) < 20*xtol and not model_copy.fixed[p]:  # and 'offset' in p
                     getattr(model_copy, p).value = 20*xtol if pval == 0 \
                         else (np.sign(pval) * 20*xtol)
 
         tree = spatial.cKDTree(list(zip(*ref_coords)))
         # avoid _convert_input since tree can't be coerced to a float
-        x, y = in_coords
-        farg = (model_copy, x, y, sigma, maxsig, tree)
+        farg = (model_copy, in_coords, sigma, maxsig, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
         result = self._opt_method(self.objective_function, p0, farg,
@@ -419,7 +448,8 @@ class BruteLandscapeFitter(Fitter):
         super(BruteLandscapeFitter, self).__init__(optimize.brute,
                                               statistic=_landstat)
 
-    def mklandscape(self, coords, sigma, maxsig, landshape):
+    @staticmethod
+    def mklandscape(coords, sigma, maxsig, landshape):
         """
         Populates an array with Gaussian mountains at specified coordinates.
         Used to allow rapid goodness-of-fit calculations for cross-correlation.
@@ -440,6 +470,7 @@ class BruteLandscapeFitter(Fitter):
         float array:
             the "landscape", populated by "mountains"
         """
+        # Turn 1D arrays into tuples to allow iteration over axes
         try:
             iter(coords[0])
         except TypeError:
@@ -470,19 +501,29 @@ class BruteLandscapeFitter(Fitter):
                 lslice.append(slice(l1, l2))
                 mslice.append(slice(m1, m2))
             else:
-                landscape[tuple(lslice)] += mountain[tuple(mslice)]
+                landscape[lslice] += mountain[mslice]
         return landscape
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
-                 **kwargs):
-        model_copy = _validate_model(model, ['bounds'])
-        x, y = in_coords
-        xref, yref = ref_coords
-        xmax = max(np.max(x), np.max(xref))
-        ymax = max(np.max(y), np.max(yref))
-        landscape = self.mklandscape(ref_coords, sigma, maxsig,
-                                    (int(ymax),int(xmax)))
-        farg = (model_copy,) + _convert_input(x, y, landscape)
+                 landscape=None, **kwargs):
+        model_copy = _validate_model(model, ['bounds', 'fixed'])
+
+        # Turn 1D arrays into tuples to allow iteration over axes
+        try:
+            iter(in_coords[0])
+        except TypeError:
+            in_coords = (in_coords,)
+        try:
+            iter(ref_coords[0])
+        except TypeError:
+            ref_coords = (ref_coords,)
+
+        if landscape is None:
+            landshape = tuple(int(max(np.max(inco), np.max(refco)))
+                              for inco, refco in zip(in_coords, ref_coords))
+            landscape = self.mklandscape(ref_coords, sigma, maxsig, landshape)
+
+        farg = (model_copy,) + _convert_input(in_coords, landscape)
         p0, _ = _model_to_fit_params(model_copy)
 
         # TODO: Use the name of the parameter to infer the step size
@@ -494,7 +535,8 @@ class BruteLandscapeFitter(Fitter):
             except TypeError:
                 pass
             else:
-                if diff > 0:
+                # We don't check that the value of a fixed param is within bounds
+                if diff > 0 and not model_copy.fixed[p]:
                     ranges.append(slice(*(bounds+(min(0.5*sigma, 0.1*diff),))))
                     continue
             ranges.append((getattr(model_copy, p).value,) * 2)
@@ -507,7 +549,7 @@ class BruteLandscapeFitter(Fitter):
         return model_copy
 
 def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
-                           release=False, verbose=True):
+                           unbound=False, unfix=False, verbose=True):
     """
     Finds the best-fitting mapping to convert from xin to xout, using a
     two-step approach by first doing a brute-force scan of parameter space,
@@ -526,8 +568,10 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
         size of the mountains for the BruteLandscapeFitter
     tolerance: float
         accuracy of parameters in final answer
-    release: boolean
-        undo the parameter bounds for the simplex fit?
+    unbound: boolean
+        remove the parameter bounds for the simplex fit?
+    unfix: boolean
+        free fixed parameters for the simplex fit?
     verbose: boolean
         output model and time info?
 
@@ -540,11 +584,11 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
 
     # Since optimize.brute can't handle "fixed" parameters, we have to unfix
     # them and control things by setting the bounds to a zero-width interval
-    for p in model.param_names:
-        pval = getattr(model, p).value
-        if getattr(model, p).fixed:
-            getattr(model, p).bounds = (pval, pval)
-            getattr(model, p).fixed = False
+    #for p in model.param_names:
+    #    pval = getattr(model, p).value
+    #    if getattr(model, p).fixed:
+    #        getattr(model, p).bounds = (pval, pval)
+    #        getattr(model, p).fixed = False
 
     # Brute-force grid search using an image landscape
     fit_it = BruteLandscapeFitter()
@@ -556,14 +600,19 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
     # Re-fix parameters in the intermediate model, if they were fixed
     # in the original model
     for p in m.param_names:
+        if unfix:
+            getattr(m, p).fixed = False
+        if unbound:
+            getattr(m, p).bounds = (None, None)
         try:
             if np.diff(getattr(model, p).bounds)[0] == 0:
-                getattr(m, p).fixed = True
+                if not unfix:
+                    getattr(m, p).fixed = True
                 continue
         except TypeError:
             pass
-        if release:
-            getattr(m, p).bounds = (None, None)
+
+    print m
 
     # More precise minimization using pairwise calculations
     fit_it = KDTreeFitter()
