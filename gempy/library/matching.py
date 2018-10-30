@@ -490,6 +490,8 @@ class BruteLandscapeFitter(Fitter):
             for pos, length in zip(coord[::-1], landshape):
                 l1, l2 = int(pos-0.5)-hw, int(pos-0.5)+hw+1
                 m1, m2 = 0, hw*2+1
+                if l2 < 0 or l1 >= length:
+                    break
                 if l1 < 0:
                     m1 -= l1
                     l1 = 0
@@ -498,7 +500,8 @@ class BruteLandscapeFitter(Fitter):
                     l2 = length
                 lslice.append(slice(l1, l2))
                 mslice.append(slice(m1, m2))
-            landscape[lslice] += mountain[mslice]
+            else:
+                landscape[lslice] += mountain[mslice]
         return landscape
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
