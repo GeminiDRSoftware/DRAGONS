@@ -259,36 +259,37 @@ class BruteLandscapeFitter(Fitter):
         float array:
             the "landscape", populated by "mountains"
         """
+        try:
+            iter(coords[0])
+        except TypeError:
+            coords = (coords,)
+
         landscape = np.zeros(landshape)
-        lysize, lxsize = landscape.shape
         hw = int(maxsig * sigma)
-        xgrid, ygrid = np.mgrid[0:hw * 2 + 1, 0:hw * 2 + 1]
-        rsq = (ygrid - hw) ** 2 + (xgrid - hw) ** 2
+        grid = np.meshgrid(*[np.arange(0, hw*2+1)]*landscape.ndim)
+        rsq = np.sum((ax - hw)**2 for ax in grid)
         mountain = np.exp(-0.5 * rsq / (sigma * sigma))
-        for x, y in zip(*coords):
-            mx1, mx2, my1, my2 = 0, hw * 2 + 1, 0, hw * 2 + 1
-            lx1, lx2 = int(x - 0.5) - hw, int(x - 0.5) + hw + 1
-            ly1, ly2 = int(y - 0.5) - hw, int(y - 0.5) + hw + 1
-            if lx2 < 0 or lx1 >= lxsize or ly2 < 0 or ly1 >= lysize:
-                continue
-            if lx1 < 0:
-                mx1 -= lx1
-                lx1 = 0
-            if lx2 > lxsize:
-                mx2 -= (lx2 - lxsize)
-                lx2 = lxsize
-            if ly1 < 0:
-                my1 -= ly1
-                ly1 = 0
-            if ly2 > lysize:
-                my2 -= (ly2 - lysize)
-                ly2 = lysize
-            try:
-                landscape[ly1:ly2, lx1:lx2] += mountain[my1:my2, mx1:mx2]
-            except ValueError:
-                print(y, x, landscape.shape)
-                print(ly1, ly2, lx1, lx2)
-                print(my1, my2, mx1, mx2)
+
+        # Place a mountain onto the landscape for each coord in coords
+        # Need to crop at edges if mountain extends beyond landscape
+        for coord in zip(*coords):
+            lslice = []
+            mslice = []
+            for pos, length in zip(coord[::-1], landshape):
+                l1, l2 = int(pos-0.5)-hw, int(pos-0.5)+hw+1
+                m1, m2 = 0, hw*2+1
+                if l2 < 0 or l1 >= length:
+                    break
+                if l1 < 0:
+                    m1 -= l1
+                    l1 = 0
+                if l2 > length:
+                    m2 -= (l2 - length)
+                    l2 = length
+                lslice.append(slice(l1, l2))
+                mslice.append(slice(m1, m2))
+            else:
+                landscape[lslice] += mountain[mslice]
         return landscape
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
