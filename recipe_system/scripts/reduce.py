@@ -86,7 +86,7 @@ def main(args):
     except AssertionError:
         pass
 
-    log.stdinfo("\t\t\t--- reduce, v{} ---".format(__version__))
+    log.stdinfo("\t\t\t--- reduce, {} ---".format(__version__))
     r_reduce = Reduce(args)
     estat = r_reduce.runr()
     if estat != 0:

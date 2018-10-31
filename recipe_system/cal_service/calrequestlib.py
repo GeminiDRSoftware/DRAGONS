@@ -1,4 +1,6 @@
 #
+#                                                                        DRAGONS
+#
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
 from future import standard_library
@@ -38,7 +40,7 @@ def get_request(url, filename):
 
 def generate_md5_digest(filename):
     md5 = hashlib.md5()
-    fdata = open(filename).read()
+    fdata = open(filename, 'rb').read()
     md5.update(fdata)
     return md5.hexdigest()
 
@@ -190,8 +192,7 @@ def process_cal_requests(cal_requests, howmany=None):
         calname = None
         calmd5 = None
         calurl = None
-        calurl, calmd5 = calibration_search(rq,
-                                howmany=(howmany if howmany else 1))
+        calurl,calmd5 = calibration_search(rq, howmany=(howmany if howmany else 1))
         if calurl is None:
             log.error("START CALIBRATION SERVICE REPORT\n")
             log.error(calmd5)

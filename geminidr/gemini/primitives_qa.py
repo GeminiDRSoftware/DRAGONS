@@ -750,8 +750,14 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
         presentation.
 
     """
-    cmp = lambda x, y: (x > y) - (x < y)
     log = logutils.get_logger(__name__)
+
+    # In cmp lambda fn, "-" is deprecated for in numpy objects. Because the
+    # lambda needs to work on other types, and because we need a numerical
+    # value returned, the bitwise-or recommendation does not apply.
+
+    # We coerce the numpy.float64 object to native type @L785:: float(quant.value)
+    cmp = lambda x, y: (x > y) - (x < y)
     try:
         reqband = getattr(ad, 'requested_{}'.format(metric.lower()))()
     except:
@@ -779,7 +785,7 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
             qaband = 100
             info = '{}{}'.format(inequality, limits[0])
             for i in range(len(bands)):
-                if cmp(quant.value, limits[i]) == sign:
+                if cmp(float(quant.value), limits[i]) == sign:
                     qaband = bands[i]
                     info = '{}-{}'.format(*sorted(limits[i:i+2])) if \
                         i<len(bands)-1 else '{}{}'.format(
@@ -794,7 +800,7 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
             bands = (100,)+bands if bands[0]>bands[1] else bands+(100,)
             # To Bayesian this, prepend (0,) to limits and not to probs
             # and renormalize (divide all by 1-probs[0]) and add prior
-            norm_limits = [(l-quant.value)/quant.std for l in limits]
+            norm_limits = [(l - float(quant.value/quant.std)) for l in limits]
             cum_probs = [0] + [0.5*(1+math.erf(s/math.sqrt(2))) for
                            s in norm_limits] + [1]
             probs = np.diff(cum_probs)

@@ -9,14 +9,17 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from past.utils import old_div
+
 import os
 import sys
 import json
 import time
 import select
-import urllib.request, urllib.error, urllib.parse
-import urllib.parse
 import datetime
+
+import urllib.error
+import urllib.parse
+import urllib.request
 
 from socketserver import ThreadingMixIn
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -218,7 +221,8 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     self.send_header('Content-type', 'text/html')
                     self.end_headers()
                     data = "<b>bad path error</b>"
-                    self.wfile.write(data)
+                    self.wfile.write(bytes(data.encode('utf-8')))
+
                 dirname = os.path.dirname(__file__)
                 if dark_theme:
                     joinlist = [dirname, "../client/adcc_faceplate_dark/"]
@@ -234,11 +238,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.log_message('{} {} {}'.format("Loading "+joinlist[1]+
                                             os.path.basename(fname), 203, '-'))
                 try:
-                    f = open(fname, "r")
-                    data = f.read()
-                    f.close()
+                    with open(fname, 'rb') as f:
+                        data = f.read()
                 except IOError:
-                    data = "<b>NO SUCH RESOURCE AVAILABLE</b>"
+                    data = bytes("<b>NO SUCH RESOURCE AVAILABLE</b>".encode('utf-8'))
 
                 self.send_response(200)
                 if  self.path.endswith(".js"):
@@ -268,7 +271,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-type', "application/json")
                 self.end_headers()
                 tdic = server_time()
-                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+                self.wfile.write(
+                    bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+                )
 
            # ------------------------------------------------------------------
            # Queried by metrics client
@@ -288,7 +293,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     msg = "No log file available"
 
                 tdic = {"log": msg}
-                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+                self.wfile.write(
+                    bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+                    )
         except IOError:
             self.send_error(404,'File Not Found: %s' % self.path)
             raise
@@ -352,7 +359,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
             tdic = events.get_list()
             tdic.insert(0, {"msgtype": "cmdqueue.request","timestamp": time.time()})
             tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
-            self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+            self.wfile.write(
+                bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+                )
 
         # Handle current nighttime requests ...
         elif stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
@@ -365,7 +374,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
             tdic = events.get_list(fromtime=fromtime)
             tdic.insert(0, {"msgtype":"cmdqueue.request","timestamp": time.time()})
-            self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+            self.wfile.write(
+                bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+                )
         # Handle previous day requests
         elif fromtime < current_op_timestamp():
             if verbosity:
@@ -382,7 +393,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
             # recorded event.
             tdic.insert(0, {"msgtype": "cmdqueue.request", "timestamp": time.time()})
             tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
-            self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+            self.wfile.write(
+                bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+            )
 
         # Cannot handle the future ...
         else:

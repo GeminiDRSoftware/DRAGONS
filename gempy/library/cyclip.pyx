@@ -1,4 +1,8 @@
+# If switching to new versions of Python under anaconda,
+# you may need to run this command again under the new
+# environment.
 # cythonize -a -i cyclip.pyx
+
 import numpy as np
 from libc.math cimport sqrt
 cimport cython

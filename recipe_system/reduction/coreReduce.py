@@ -194,7 +194,7 @@ class Reduce(object):
                 log.stdinfo("Found '{}' as a primitive.".format(pname))
                 self._logheader(primitive_as_recipe.__name__)
                 primitive_as_recipe()
-            except AttributeError:
+            except AttributeError as err:
                 err = "Recipe {} Not Found".format(self.urecipe)
                 xstat = signal.SIGIO
                 log.error(str(err))
