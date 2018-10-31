@@ -1,10 +1,10 @@
 #
-#                                                                  gemini_python
+#                                                                        DRAGONS
 #
-#                                                                   gempy.gemini
 #                                                       gemini_catalog_client.py
 # ------------------------------------------------------------------------------
 from builtins import range
+
 __version__ = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 """
@@ -21,8 +21,21 @@ question in a different format to the primary.
 
 """
 # ------------------------------------------------------------------------------
-from astropy.vo.client.conesearch import conesearch as vo_conesearch
-from astropy.vo.client.vos_catalog import VOSError
+#
+# Note: In astropy 3 (python 3 only support), the vo context functions moved
+# from astropy.vo to astroquery. Under astroquery, former ImportError exceptions
+# now throw a ModuleNotFoundError, an object not available in < astropy 3.0 and
+# the older astropy.vo package.
+
+# We handle potential import issues between astropy versions.
+
+try:
+    from astropy.vo.client.conesearch import conesearch as vo_conesearch
+    from astropy.vo.client.vos_catalog import VOSError
+except ImportError:
+    from astroquery.vo_conesearch.conesearch import conesearch as vo_conesearch
+    from astroquery.vo_conesearch.exceptions import VOSError
+
 from astropy.table import Table, Column
 from astropy.io import fits
 

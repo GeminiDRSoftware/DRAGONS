@@ -148,7 +148,7 @@ def calibration_search(rq, howmany=1, return_xml=False):
                             "response": response.strip(),
                             "nones"   : ", ".join(nones) \
                             if len(nones) > 0 else "No Nones Sent"}
-    
+
     try:
         dom = minidom.parseString(response)
         calel = dom.getElementsByTagName("calibration")

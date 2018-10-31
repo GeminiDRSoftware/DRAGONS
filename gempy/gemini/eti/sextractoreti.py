@@ -60,10 +60,10 @@ class SExtractorETI(ETI):
                           " of minimum_version {1}".format(len(group_names),
                                                           len(minimum_version)))
                 raise IOError(errmsg)
-            version = ".".join([version_regexp.match(stdoutdata).group(name)
+            version = ".".join([version_regexp.match(str(stdoutdata)).group(name)
                                 for name in group_names])
         else:
-            version = version_regexp.match(stdoutdata).group(group_names)
+            version = version_regexp.match(str(stdoutdata)).group(group_names)
 
         if version is None:
             raise Exception("Unable to determine SExtractor version")

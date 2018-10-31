@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #
-#                                                                  gemini_python
+#                                                                        DRAGONS
 #
 #                                                                     swapper.py
 # ------------------------------------------------------------------------------
-__version__  = 'v2.0'
+__version__  = '2.0'
 # ------------------------------------------------------------------------------
 #
 #    functional tasks
@@ -43,8 +43,8 @@ __version__  = 'v2.0'
 # ------------------------------------------------------------------------------
 desc = """
 Description:
-  swapper replaces string literals that occur within predefined gemini_python
-  packages. These packages are,
+  swapper replaces string literals that occur within defined DRAGONS packages.
+  These packages are
 
     astrodata/
     gemini_instruments/
@@ -56,23 +56,23 @@ Description:
   passed with the '-u USERPATH' option. $DRAGONS defines a path to a user's
   DRAGONS installation as pulled from the GDPSG GitHub repository, and which
   nominally contains the 'branches' and 'trunk' directories as they appear 
-  in the gemini_python repo. I.e.,
+  in the DRAGONS repo. I.e.,
 
     export DRAGONS=/user/path/to/dragons
 
-  If a user has a non-standard or partial gemini_python installation, or has 
+  If a user has a non-standard or partial DRAGONS installation, or has 
   otherwise changed the above organisation, the -u option should be used to 
   pass the location of this code base to swapper. If -u is passed, search 
   packages should be directly under this path.
 
   Examples:
 
-  -- a standard gemini_python repo checkout in ~ :
+  -- a standard DRAGONS repo checkout in ~ :
 
       $ export DRAGONS=~/dragons
       $ swapper -c -r "old string" "new string"
 
-  -- astrodata, gempy, and other gemini_python packages are in directory
+  -- astrodata, gempy, and other DRAGONS packages are in directory
      ~/foobar/. Use -u:
 
       $ swapper -r -c -u ~/foobar "old string" "new string"
@@ -116,18 +116,24 @@ dragons_set = {"apaths":
                [ 'astrodata',
                  'gemini_instruments',
                  'gemini_instruments/bhros',
+                 'gemini_instruments/cirpass',
                  'gemini_instruments/f2',
+                 'gemini_instruments/flamingos',
                  'gemini_instruments/gemini',
                  'gemini_instruments/gmos',
                  'gemini_instruments/gnirs',
                  'gemini_instruments/gpi',
                  'gemini_instruments/graces',
                  'gemini_instruments/gsaoi',
+                 'gemini_instruments/hokupaa_quirc',
+                 'gemini_instruments/hrwfs',
+                 'gemini_instruments/igrins',
                  'gemini_instruments/michelle',
                  'gemini_instruments/nici',
                  'gemini_instruments/nifs',
                  'gemini_instruments/niri',
                  'gemini_instruments/phoenix',
+                 'gemini_instruments/skycam',
                  'gemini_instruments/test',
                  'gemini_instruments/trecs'
                ],
@@ -165,7 +171,6 @@ dragons_set = {"apaths":
                  'recipe_system/mappers',
                  'recipe_system/reduction',
                  'recipe_system/scripts',
-                 'recipe_system/stacks',
                  'recipe_system/utils',
                ],
                "gpaths":
@@ -177,6 +182,7 @@ dragons_set = {"apaths":
                  'gempy/gemini/tests',
                  'gempy/library',
                  'gempy/library/config',
+                 'gempy/library/tests',
                  'gempy/mosaic',
                  'gempy/mosaic/tests/mosaic',
                  'gempy/scripts',
@@ -295,90 +301,37 @@ class Swap(object):
         self.full_paths = []
         self.swap_summary = ()
         self.search_fits = args.fitss
+        self.search_root = None
         self.search_set = None
 
-    # paths in a package
     def setup_search(self):
-        if self.search_fits:
+        if self.userpath:
+            self.search_root = self.userpath
+        elif self.search_fits:
             try:
-                self.FITS = os.path.abspath(os.environ['FITSSTORE'])
+                self.search_root = os.path.abspath(os.environ['FITSSTORE'])
             except KeyError:
                 pass
-
             self.search_set = fits_set
         else:
             try:
-                self.DRAGONS = os.path.abspath(os.environ['DRAGONS'])
+                self.search_root = os.path.abspath(os.environ['DRAGONS'])
             except KeyError:
                 pass
-
             self.search_set = dragons_set
-        return
 
-    def set_full_paths(self):
-        gem_path = self._determine_gem_path()
-        try:
-            assert exists(gem_path)
-        except AssertionError:
-            msg = "Supplied path '" + gem_path + "' cannot be found."
+        if self.search_set is None:
+            msg = "Specify -u USERPATH OR define $DRAGONS OR define $FITS. "
+            msg += "-h for help."
             raise SystemExit(msg)
 
-        if self.search_fits:
-            self.set_fitsstore_paths(gem_path)
-        else:
-            self.set_dragon_paths(gem_path)
-
         return
 
+    def set_search_paths(self):
+        for pathkey in list(self.search_set.keys()):
+            for path in self.search_set[pathkey]:
+                self.full_paths.append(join(self.search_root, path))
 
-    def set_dragon_paths(self, gem_path):
-        """ Sets the instance var 'full_paths' with the fulls paths
-        for the search on DRAGONS.
-
-        parameters: <void>
-        return:     <void>
-
-        """
-        astro_paths = self.search_set['apaths']
-        gemp_paths  = self.search_set['gpaths']
-        rs_paths    = self.search_set['rpaths']
-        dr_paths    = self.search_set['gdr_paths']
-
-        for path in astro_paths:
-            self.full_paths.append(join(gem_path, path))
-        for path in gemp_paths:
-            self.full_paths.append(join(gem_path, path))
-        for path in rs_paths:
-            self.full_paths.append(join(gem_path, path))
-        for path in dr_paths:
-            fpath = join(gem_path, path)
-            if exists(fpath):
-                self.full_paths.append(fpath)
-        return
-
-    def set_fitsstore_paths(self, gem_path):
-        """ Sets the instance var 'full_paths' with the fulls paths
-        for the search on FitsStorage.
-
-        parameters: <void>
-        return:     <void>
-
-        """
-        db_paths    = self.search_set['db_paths']
-        fits_paths  = self.search_set['fits_paths']
-        test_paths  = self.search_set['test_paths']
-        userc_paths = self.search_set['userc_paths']
-
-        for path in db_paths:
-            self.full_paths.append(join(gem_path, path))
-        for path in fits_paths:
-            self.full_paths.append(join(gem_path, path))
-        for path in test_paths:
-            self.full_paths.append(join(gem_path, path))
-        for path in userc_paths:
-            fpath = join(gem_path, path)
-            if exists(fpath):
-                self.full_paths.append(fpath)
         return
 
     def set_searchable_mods(self):
@@ -402,13 +355,7 @@ class Swap(object):
                 continue
             match_lines = []
             fpath, tail  = os.path.split(mod)
-            if self.userpath:
-                head = fpath.split(self.userpath)[-1]
-            elif self.FITS:
-                head = fpath.split(self.FITS)[-1]
-            elif self.DRAGONS:
-                head = fpath.split(self.DRAGONS)[-1]
-
+            head = fpath.split(self.search_root)[-1]
             match_lines = self._search_and_report(mod, self.cur_str)
             if match_lines:
                 if head != new_head:
@@ -437,14 +384,7 @@ class Swap(object):
                 continue
             match_lines = []
             fpath, tail = os.path.split(mod)
-
-            if self.userpath:
-                head = fpath.split(self.userpath)[-1]
-            elif self.FITS:
-                head = fpath.split(self.FITS)[-1]
-            elif self.DRAGONS:
-                head = fpath.split(self.DRAGONS)[-1]                
-
+            head = fpath.split(self.search_root)[-1]
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
             if match_lines:
                 current_mod = mod
@@ -488,13 +428,11 @@ class Swap(object):
     
     # ------------------------------ prive -------------------------------------
     def _echo_header(self):
+        root_name = os.path.split(self.search_root)[-1]
+        if root_name == 'trunk':
+            root_name = os.path.split(os.path.split(self.search_root)[-2])[-1]
         log.stdinfo("\n" + basename(__file__) + " \t" + __version__)
-        if self.userpath:
-            log.stdinfo("USERPATH\t" + Faces.BOLD + self.userpath + Faces.END)
-        elif self.FITS:
-            log.stdinfo("Searching\t" + Faces.BOLD + "FitsStorage ..." + Faces.END)
-        elif self.DRAGONS:
-            log.stdinfo("Searching\t" + Faces.BOLD + "DRAGONS ..." + Faces.END)
+        log.stdinfo("SEARCHING\t" + Faces.BOLD + root_name.upper()+" ... "+Faces.END)
         return
 
     def _determine_gem_path(self):
@@ -533,11 +471,9 @@ class Swap(object):
             eindex = sindex + len(string)
             if sindex > -1:
                 if self.colorize:
-                    matched_line = self._build_electric_line(line, i, 
-                                                                   sindex, eindex)
+                    matched_line = self._build_electric_line(line, i, sindex, eindex)
                 else:
-                    matched_line = self._build_vanilla_line(line, i, 
-                                                             sindex, eindex)
+                    matched_line = self._build_vanilla_line(line, i, sindex, eindex)
                 match_lines.append(matched_line)
         return match_lines
 
@@ -554,16 +490,16 @@ class Swap(object):
             if sindex > -1:
                 if self.colorize:
                     matched_line = self._build_electric_line(line, i, sindex, eindex)
-                    new_line, print_line = self._build_electric_new_line(line, i, 
-                                                                            sindex, 
-                                                                            ostring, 
-                                                                            nstring)
+                    new_line, print_line = self._build_electric_new_line(line, i,
+                                                                         sindex,
+                                                                         ostring,
+                                                                         nstring)
                 else:
                     matched_line = self._build_vanilla_line(line, i, sindex, eindex)
-                    new_line, print_line  = self._build_vanilla_new_line(line, i, 
-                                                                          sindex, 
-                                                                          ostring, 
-                                                                          nstring)
+                    new_line, print_line  = self._build_vanilla_new_line(line, i,
+                                                                         sindex,
+                                                                         ostring,
+                                                                         nstring)
 
                 swap_lines.append((i, matched_line, new_line, print_line))
         return swap_lines
@@ -621,7 +557,7 @@ class Swap(object):
     def _confirm_swap(self, mod, lineno):
         confirm = False
         try:
-            response = raw_input("\nConfirm swap (y/n/e): ")
+            response = input("\nConfirm swap (y/n/e): ")
             if response == "y":
                 confirm = True
             elif response == "e":
@@ -669,7 +605,7 @@ class Swap(object):
 def main(args):
     swap = Swap(args)
     swap.setup_search()
-    swap.set_full_paths()
+    swap.set_search_paths()
     swap.set_searchable_mods()
     if args.report:
         swap.report()
