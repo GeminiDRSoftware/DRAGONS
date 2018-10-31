@@ -13,7 +13,7 @@ class addDQConfig(parameters_standardize.addDQConfig, addLatencyToDQConfig):
 
 class makeBPMConfig(config.Config):
     dark_lo_thresh = config.Field("Low rejection threshold for dark (ADU)", float, -20.)
-    dark_hi_thresh = config.Field("High rejection threshold for dark (ADU)", float, 100.)
+    dark_hi_thresh = config.Field("High rejection threshold for dark (ADU)", float, 100., optional=True)
     flat_lo_thresh = config.RangeField("Low rejection threshold for normalized flat", float, 0.8, max=1.0)
     flat_hi_thresh = config.RangeField("High rejection threshold for normalized flat", float, 1.25, min=1.0)
 
