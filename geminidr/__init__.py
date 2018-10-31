@@ -70,15 +70,15 @@ def load_cache(cachefile):
         return {}
 
 def save_cache(object, cachefile):
-    pickle.dump(object, open(cachefile, 'wb'))
+    pickle.dump(object, open(cachefile, 'wb'), protocol=2)
     return
 
 # ------------------------- END caches------------------------------------------
-class Calibrations(dict):
+class Calibrations(object):
     def __init__(self, calindfile, user_cals={}, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
         self._calindfile = calindfile
-        self.update(load_cache(self._calindfile))
+        self._dict = {}
+        self._dict.update(load_cache(self._calindfile))
         self._usercals = user_cals or {}                 # Handle user_cals=None
 
     def __getitem__(self, key):
@@ -91,14 +91,14 @@ class Calibrations(dict):
     def __delitem__(self, key):
         # Cope with malformed keys
         try:
-            self.pop((key[0].calibration_key(), key[1]), None)
+            self._dict.pop((key[0].calibration_key(), key[1]), None)
         except (TypeError, IndexError):
             pass
 
     def _add_cal(self, key, val):
         # Munge the key from (ad, caltype) to (ad.calibration_key, caltype)
         key = (key[0].calibration_key(), key[1])
-        self.update({key: val})
+        self._dict.update({key: val})
         self.cache_to_disk()
         return
 
@@ -106,11 +106,11 @@ class Calibrations(dict):
         key = (ad.calibration_key(), caltype)
         if key in self._usercals:
             return self._usercals[key]
-        calfile = self.get(key)
+        calfile = self._dict.get(key)
         return calfile
 
     def cache_to_disk(self):
-        save_cache(self, self._calindfile)
+        save_cache(self._dict, self._calindfile)
         return
 # ------------------------------------------------------------------------------
 def cmdloop(inQueue, outQueue):
