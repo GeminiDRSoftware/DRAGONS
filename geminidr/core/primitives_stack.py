@@ -262,6 +262,15 @@ class Stack(PrimitivesBASE):
             out_refcat['Cat_Id'] = list(range(1, len(out_refcat)+1))
             ad_out.REFCAT = out_refcat
 
+        # Set AIRMASS to be the mean of the input values
+        try:
+            airmass_kw = ad_out._keyword_for('airmass')
+            mean_airmass = np.mean([ad.airmass() for ad in adinputs])
+        except:  # generic implementation failure (probably non-Gemini)
+            pass
+        else:
+            ad_out.phu.set(airmass_kw, mean_airmass, "Mean airmass for the exposure")
+
         # Set GAIN to the average of input gains. Set the RDNOISE to the
         # sum in quadrature of the input read noises.
         for ext, gain, rn in zip(ad_out, gain_list, read_noise_list):
