@@ -3,14 +3,12 @@
 #
 #                                                                    mosaicAD.py
 # ------------------------------------------------------------------------------
-#from copy import copy
 from os.path import join
 from os.path import dirname
 
 import numpy as np
 
 import astropy.wcs as wcs
-#from astropy.io import fits
 
 import astrodata
 import gemini_instruments
@@ -20,9 +18,8 @@ from gempy.gemini.gemini_tools import tile_objcat
 from geminidr.gemini.lookups.source_detection import sextractor_dict
 
 from .mosaic import Mosaic
-
 # ------------------------------------------------------------------------------
-__version__ = "2.0.0"
+__version__ = "2.0"
 # ------------------------------------------------------------------------------
 class MosaicAD(Mosaic):
     """
@@ -90,9 +87,10 @@ class MosaicAD(Mosaic):
         module.
 
         """
+        verr = "Nothing to mosaic. < 2 extensions found on file {}"
         self.ad = ad
         if len(ad) < 2:
-            raise ValueError("Nothing to mosaic. < 2 extensions found.")
+            raise ValueError(verr.format(ad.filename))
 
         self.log = logutils.get_logger(__name__)
         mosaic_data, geometry = mosaic_ad_function(ad)  # Call geometry function.
@@ -147,7 +145,7 @@ class MosaicAD(Mosaic):
             raise IOError("No science data found on file {}".format(self.ad.filename))
         else:
             self.log.stdinfo("MosaicAD working on data arrays ...")
-            darray = self.mosaic_image_data(block=block,return_ROI=return_ROI,tile=False)
+            darray = self.mosaic_image_data(block=block,return_ROI=return_ROI,tile=tile)
             self.mosaic_shape = darray.shape
             header = self.mosaic_header(darray.shape, block, False)
             adout.append(darray, header=header)
@@ -570,45 +568,46 @@ class MosaicAD(Mosaic):
         warn = "No {} array for block {} on {}"
         adout = astrodata.create(self.ad.phu)
         adout.phu['TILED'] = (True, "True: tiled; False: Mosaic")
+
+        # SCI
         self.data_list = self.get_data_list('data')
         if not self.data_list:
             emsg = "MosaicAD received a dataset with no data: {}"
             self.log.error(emsg.format(self.ad.filename))
             raise IOError("No science data found on file {}".format(self.ad.filename))
 
-        # SCI
-        self.log.stdinfo("MosaicAD working on data arrays ...")
+        self.log.stdinfo("MosaicAD v{} working on data arrays ...".format(__version__))
         dblocks = self.get_blocks()
         if not doimg:
             # VAR
-            self.log.stdinfo("Working on VAR arrays ...")
             self.data_list = self.get_data_list('variance')
             varblocks = self.get_blocks()
 
             # DQ
-            self.log.stdinfo("Working on DQ arrays ...")
             self.data_list = self.get_data_list('mask')
             maskblocks = self.get_blocks()
 
             # OBJMASK
-            self.log.stdinfo("Working on OBJMASK arrays ...")
             self.data_list = self.get_data_list('OBJMASK')
             objmaskblocks = self.get_blocks()
 
-            blocks_indx = dblocks.keys()
-            blocks_indx.sort()
+            blocks_indx = list(dblocks.keys())
             i = 0
             for iblock in blocks_indx:
                 darray = dblocks[iblock]
                 header = self._tile_header(darray.shape, iblock)
                 adout.append(darray, header=header)
 
+                varray = None
                 if varblocks:
+                    self.log.stdinfo("Working on VAR arrays ...")
                     varray = varblocks[iblock]
                 else:
                     self.log.stdinfo(warn.format('VAR', iblock, self.ad.filename))
 
+                marray = None
                 if maskblocks:
+                    self.log.stdinfo("Working on DQ arrays ...")
                     marray = maskblocks[iblock]
                 else:
                     self.log.stdinfo(warn.format('DQ', iblock, self.ad.filename))
@@ -616,6 +615,7 @@ class MosaicAD(Mosaic):
                 adout[i].reset(data=darray, variance=varray, mask=marray)
 
                 if objmaskblocks:
+                    self.log.stdinfo("Working on OBJMASK arrays ...")
                     adout[i].OBJMASK = objmaskblocks[iblock]
                 else:
                     self.log.stdinfo(warn.format('OBJMASK', iblock, self.ad.filename))

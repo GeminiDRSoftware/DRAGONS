@@ -227,9 +227,6 @@ class Visualize(PrimitivesBASE):
 
         return adinputs
 
-#    def mosaicDetectors(self, adinputs=None, **params):
-#        return adinputs
-
     def mosaicDetectors(self, adinputs=None, **params):
         """
         This primitive will use the gempy MosaicAD class to mosaic the frames
@@ -243,10 +240,6 @@ class Visualize(PrimitivesBASE):
         tile: bool
             tile images instead of a proper mosaic. Default is False.
 
-        tile_all: <bool>
-            Tile data blocks into a single extension. If True, uses the standard
-            as_astrodata() method with tile=True. Default is False.
-
         sci_only: bool
             mosaic only SCI image data. Default is False
 
@@ -258,15 +251,7 @@ class Visualize(PrimitivesBASE):
         """
         fmat1 = "No changes will be made to {}, since it has "
         fmat1 += "already been processed by mosaicDetectors"
-        fmat2 = "No changes will be made to {}; only one extension present."
-
-        def _compat(tlist):
-            item = None
-            if "GMOS" in tlist and "IMAGE" in tlist:
-                item = 'GMOS IMAGE'
-            elif "GSAOI" in tlist and "IMAGE" in tlist:
-                item = 'GSAOI IMAGE'
-            return item
+        fmat2 = "Nothing to mosaic. < 2 extensions found on file {}"
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -276,19 +261,10 @@ class Visualize(PrimitivesBASE):
         interpolator = params['interpolator']
         sci_only = params['sci_only']
         suffix = params['suffix']
-        tile_all = params['tile_all']
         tile = params['tile']
         # ----------------------------------------
         adoutputs = []
         for ad in adinputs:
-            if not _compat(ad.tags):
-                adoutputs.append(ad)
-                continue
-
-            # Data validation
-            if ad.phu.get('GPREPARE') is None and ad.phu.get('PREPARE') is None:
-                raise IOError('{} must be prepared'.format(ad.filename))
-
             if ad.phu.get(timestamp_key):
                 log.warning(fmat1.format(ad.filename))
 
@@ -297,28 +273,25 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
-            log.stdinfo("\tMosaicAD Working on {}".format(_compat(ad.tags)))
-            mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
+            log.stdinfo("\tMosaicAD Working on {}".format(ad.filename))
+            try:
+                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
+            except ValueError as mos_err:
+                log.error(str(mos_err))
+                adoutputs.append(ad)
+                continue
+
             mos.set_interpolator(interpolator)
 
             log.stdinfo("\tBuilding mosaic, converting data ...")
-            if tile_all:
-                ad_out = mos.as_astrodata(tile=tile, doimg=sci_only)
-                ad_out.orig_filename = ad.filename
-                gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-                ad_out.update_filename(suffix=suffix, strip=True)
-                log.stdinfo("Updated filename: {} ".format(ad_out.filename))
-                adoutputs.append(ad_out)
-            else:
-                ad_out = mos.tile_as_astrodata(tile_all=False, doimg=sci_only)
-                ad_out.orig_filename = ad.filename
-                gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-                ad_out.update_filename(suffix=suffix, strip=True)
-                log.stdinfo("Updated filename: {} ".format(ad_out.filename))
-                adoutputs.append(ad_out)
+            ad_out = mos.as_astrodata(tile=tile, doimg=sci_only)
+            ad_out.orig_filename = ad.filename
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.update_filename(suffix=suffix, strip=True)
+            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
+            adoutputs.append(ad_out)
 
         return adoutputs
-
 
     def tileArrays(self, adinputs=None, **params):
         """
@@ -326,23 +299,51 @@ class Visualize(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
+        suffix: <str>
             suffix to be added to output files
 
-        tile_all: bool
-            tile to a single extension (as opposed to one extn per CCD)?
+        sci_only: <bool>
+            Tile only science arrays (SCI). Default is False
+
+        tile_all: <bool>
+            Tile to a single extension. Default is False. 
+            If True, tiling is done into one ext per block.
+
+            For example, on Hamamatsu GMOS datasets,
+              tile_all=True results in an output FITS file with one (1)
+                extension; all 12 input extensions are tiled together.
+
+              tile_all=False results in an output FITS file with three (3) 
+                extensions; 4 amplifier sections are tiled into one block
+                representing one CCD.
 
          """
         log = self.log
+        suffix   = params['suffix']
+        sci_only = params['sci_only']
         tile_all = params['tile_all']
-        log.stdinfo("Tile arrays parameter, tile_all is {} ".format(tile_all))
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
 
-        # Using mosaicADdetectors rather than tileArrays()
-        # mosaicADdetectors() handles both GSAOI and GMOS,
-        adoutputs = self.mosaicDetectors(adinputs, tile_all=tile_all, tile=True,
-                                         suffix=params["suffix"])
+        adoutputs = []
+        for ad in adinputs:
+            log.stdinfo("parameter: tile_all is {} ".format(tile_all))
+            log.debug(gt.log_message("primitive", self.myself(), "starting"))
+            timestamp_key = self.timestamp_keys[self.myself()]
+
+            try:
+                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
+            except ValueError as mos_err:
+                log.error(str(mos_err))
+                adoutputs.append(ad)
+                continue
+
+            ad_out = mos.tile_as_astrodata(tile_all=tile_all, doimg=sci_only)
+            ad_out.orig_filename = ad.filename
+
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.update_filename(suffix=suffix, strip=True)
+            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
+            adoutputs.append(ad_out)
+
         return adoutputs
 
 ##############################################################################
