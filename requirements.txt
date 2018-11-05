@@ -2,6 +2,7 @@ future
 pytest
 pylint
 coveralls
+python-dateutil
 psutil
 numpy
 scipy
