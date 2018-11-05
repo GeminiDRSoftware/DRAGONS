@@ -19,3 +19,10 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
 class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
     def setDefaults(self):
         self.set_saturation = True
+
+class makeBPMConfig(parameters_nearIR.makeBPMConfig):
+    def setDefaults(self):
+        self.dark_lo_thresh = -20.
+        self.dark_hi_thresh = 100.
+        self.flat_lo_thresh = 0.8
+        self.flat_hi_thresh = 1.25
