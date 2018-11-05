@@ -20,7 +20,16 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('./../../../'))
+# Adding configurations that are different on RTD or on local builds
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+print(' Printing current working directory for debugging:')
+print(' ' + os.getcwd())
+
+if on_rtd:
+    sys.path.insert(0, os.path.abspath('./../../../'))
+else:
+    sys.path.insert(0, os.path.abspath('./../../../'))
 
 
 # -- Project information -----------------------------------------------------

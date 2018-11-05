@@ -2,3 +2,7 @@ future
 pytest
 pylint
 coveralls
+psutil
+numpy
+scipy
+astropy
