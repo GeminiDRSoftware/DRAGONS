@@ -18,6 +18,8 @@ import glob
 import astrodata
 import gemini_instruments
 
+SHORT_DESCRIPTION = "Find files that matches certain criteria defined by tags and expression involving descriptors."
+
 def isclose(a, b, rel_tol=1e-02, abs_tol=0.0):
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
@@ -92,27 +94,29 @@ def writeheader(fh, tags, xtags, expression):
         expression = 'None'
     fh.write('# Includes tags: '+str(tags)+'\n')
     fh.write('# Excludes tags: '+str(xtags)+'\n')
-    fh.write('# Descriptor selection: '+expression+'\n')
+    fh.write('# Descriptor expression: '+expression+'\n')
     return
 
 def parse_args(command_line_args):
     """
     Parse the command line.
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('inputs', type=str, nargs="*",
+    parser = argparse.ArgumentParser(description=SHORT_DESCRIPTION)
+    parser.add_argument('inputs', type=str, nargs="+",
                         help="Input FITS file")
-    parser.add_argument('--tags', '-t', type=str, nargs='*',
+    parser.add_argument('--tags', '-t', type=str, nargs=1,
                         dest='tags', action='store', required=False,
-                        help='Tags requested')
-    parser.add_argument('--xtags', type=str, nargs='*',
+                        help='Comma-separated list of required tags.')
+    parser.add_argument('--xtags', type=str, nargs=1,
                         dest='xtags', action='store', required=False,
-                        help='Tags to exclude')
+                        help='Comma-separated list of tags to exclude')
     parser.add_argument('--expr', type=str, nargs=1,
                         dest='expression', action='store', required=False,
                         help='Expression to apply to descriptors (and tags)')
     parser.add_argument('--strict', default=False, action='store_true',
-                        help='Toggle on strict expression matching.')
+                        help='Toggle on strict expression matching for '
+                             'exposure_time (not just close) and for filter_name'
+                             ' (match component number).')
     parser.add_argument('--output', '-o', nargs=1,
                         dest='output', action='store', required=False,
                         help='Name of the output file')
@@ -130,8 +134,12 @@ def parse_args(command_line_args):
 
     if args.tags is None:
         args.tags = []
+    else:
+        args.tags = args.tags[0].split(',')
     if args.xtags is None:
         args.xtags = []
+    else:
+        args.xtags = args.xtags[0].split(',')
 
     if args.debug:
         print(args)
@@ -151,6 +159,7 @@ def main(argv=None):
 
     if args.expression is None:
         codified_expression = 'True'
+        args.expression = [None]
     else:
         codified_expression = expr_parser(args.expression[0], args.strict)
 
