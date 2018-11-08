@@ -6,7 +6,7 @@ pipeline {
       environment {
         PACKAGE_NAME = 'dragons'
         CONDA_HOME = 'miniconda'
-    	PYENV_HOME = '.pyenv'
+    	  PYENV_HOME = '.pyenv'
         }
       steps {
         sh '''
@@ -17,9 +17,9 @@ pipeline {
 
           echo $CONDA_HOME
           if [ ! -d $CONDA_HOME ]; then
-          /usr/local/bin/wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-          bash miniconda.sh -b -p $CONDA_HOME
-          fi
+            /usr/local/bin/wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+            bash miniconda.sh -b -p $CONDA_HOME
+            fi
 
           export PATH="$CONDA_HOME/bin:$PATH"
           echo $PATH
@@ -31,8 +31,8 @@ pipeline {
 
           echo $PYENV_HOME
           if [ ! -d $PYENV_HOME ]; then
-          conda create --quiet --yes --prefix $PYENV_HOME numpy scipy matplotlib pandas astropy ccdproc cython
-          fi
+            conda create --quiet --yes --prefix $PYENV_HOME numpy scipy matplotlib pandas astropy ccdproc cython
+            fi
 
           source activate $PYENV_HOME
 
