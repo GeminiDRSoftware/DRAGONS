@@ -155,7 +155,9 @@ class NearIR(PrimitivesBASE):
                                              conv*dark_lo, conv*dark_hi)
 
             # combine masks and write to bpm file
-            data_mask = np.ma.mask_or(dark_mask.mask, flat_mask.mask)
+            data_mask = np.ma.mask_or(np.ma.getmaskarray(dark_mask),
+                                      np.ma.getmaskarray(flat_mask),
+                                      shrink=False)
             flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
         flat.update_filename(suffix="_bpm", strip=True)

@@ -294,7 +294,7 @@ class GSAOI(Gemini, NearIR):
             dark_mask = dark_ext.data > dark_lim
 
             # combine masks and write to bpm file
-            data_mask = np.ma.mask_or(dark_mask, flat_mask)
+            data_mask = np.ma.mask_or(dark_mask, flat_mask, shrink=False)
             flat_ext.reset(data_mask.astype(np.int16), mask=None, variance=None)
 
         flat.update_filename(suffix="_bpm", strip=True)
