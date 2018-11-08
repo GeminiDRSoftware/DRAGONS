@@ -1,9 +1,10 @@
 pipeline {
   agent any
-    stages {
-      stage('Installation') {
-        steps {
-          sh '''
+  stages {
+    stage('Installation') {
+      agent any
+      steps {
+        sh '''
             echo $WORKSPACE
             PACKAGE_NAME="dragons"
             CONDA_HOME=$WORKSPACE/miniconda
@@ -40,7 +41,14 @@ pipeline {
             cd $WORKSPACE
             pip install --quiet .
 	    '''
+        sh '''echo $CONDA_HOME
+echo $PYENV_HOME'''
       }
     }
+  }
+  environment {
+    PACKAGE_NAME = '"dragons"'
+    CONDA_HOME = '"$WORKSPACE/miniconda"'
+    PYENV_HOME = '"$WORKSPACE/.pyenv"'
   }
 }
