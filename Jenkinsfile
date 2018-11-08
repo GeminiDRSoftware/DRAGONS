@@ -25,6 +25,8 @@ pipeline {
 	    export PATH="$CONDA_HOME/bin:$PATH"
 	    hash -r
 	   '''
+ 	echo 'Check if right path'
+	sh 'echo $PATH'
 	
 	echo 'Setting conda to use astroconda'      
 	sh '''      
