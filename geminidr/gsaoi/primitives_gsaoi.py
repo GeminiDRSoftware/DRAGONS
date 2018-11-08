@@ -216,15 +216,22 @@ class GSAOI(Gemini, NearIR):
 
         Parameters
         ----------
+        override_thresh: bool
+            Override GSAOI default dark threshold calculation with a
+            user-specified `dark_hi_thresh`? With the default of False, hot
+            pixels are considered to be those with a level greater than 75%
+            of (the mean + 3 sigma); note that this calculated level varies
+            significantly between quadrants.
         dark_hi_thresh: float, optional
-            Maximum data value above which pixels in the input dark are
-            considered bad. For GSAOI (with the default value of None), hot
-            pixels are considered to be those with a level greater than 75% of
-            (the mean + 3 sigma). If the user sets this parameter to a number,
-            however, that absolute limit (always in ADUs) will be used instead.
+            Maximum data value above which pixels in the input dark are to be
+            considered bad, if `override_thresh` is set. This is always an
+            absolute limit in ADUs. If None, no limit (+Inf) is applied and
+            the dark does not contribute to the bad pixel mask.
         flat_lo_thresh: float, optional
             Minimum (unit-normalized) data value below which pixels in the
-            input flat are considered to be bad (default 0.5).
+            input flat are considered to be bad (default 0.5). If None, no
+            limit (-Inf) is applied and the flat does not contribute to the
+            bad pixel mask.
 
         """
         log = self.log
@@ -237,8 +244,14 @@ class GSAOI(Gemini, NearIR):
         # it seems to make very little difference to the result (and the actual
         # example commands shown appear to use a mean).
 
+        override = params['override_thresh']
         dark_hi = params['dark_hi_thresh']
         flat_lo = params['flat_lo_thresh']
+
+        if dark_hi is None:
+            dark_hi = float('Inf')
+        if flat_lo is None:
+            flat_lo = float('-Inf')
 
         # Get the stacked flat and dark; these are single-element lists
         try:
@@ -262,19 +275,19 @@ class GSAOI(Gemini, NearIR):
             bunit = dark_ext.hdr.get('BUNIT', 'ADU').upper()
             if bunit in ('ELECTRON', 'ELECTRONS'):
                 conv = dark_ext.gain()
-            elif bunit == 'ADU' or dark_hi is None:
+            elif bunit == 'ADU' or override is False:
                 conv = 1.
             else:
                 raise ValueError("Input units for dark should be ADU or "
                                  "ELECTRON, not {}".format(bunit))
 
-            if dark_hi is None:
+            if override:
+                # Convert a user-specified threshold from ADUs:
+                dark_lim = conv * dark_hi
+            else:
                 # Use the "standard" calculation for GSAOI:
                 dark_lim = 0.75 * (np.mean(dark_ext.data) \
                                       + 3 * np.std(dark_ext.data))
-            else:
-                # Convert a user-specified threshold from ADUs:
-                dark_lim = conv * dark_hi
 
             log.stdinfo(msg.format(dark_lim / conv, dark_lim))
 

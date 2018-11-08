@@ -12,6 +12,7 @@ class addDQConfig(parameters_standardize.addDQConfig, addLatencyToDQConfig):
     latency = config.Field("Apply latency for saturated pixels?", bool, False)
 
 class makeBPMConfig(config.Config):
+    override_thresh = config.ChoiceField("Apply user-specified thresholds, overriding any default calculation?", bool, { True : 'Must be True where no default algorithm is implemented' }, default=True, optional=False)
     dark_lo_thresh = config.Field("Low rejection threshold for dark (ADU)", float, None, optional=True)
     dark_hi_thresh = config.Field("High rejection threshold for dark (ADU)", float, None, optional=True)
     flat_lo_thresh = config.RangeField("Low rejection threshold for normalized flat", float, None, max=1.0, optional=True)

@@ -86,14 +86,16 @@ class NearIR(PrimitivesBASE):
 
         Parameters
         ----------
-        dark_lo_thresh, dark_hi_thresh: float
+        dark_lo_thresh, dark_hi_thresh: float, optional
             Range of data values (always in ADUs) outside which pixels in the
             input dark are considered bad (eg. -20 and 100, but these defaults
-            vary by instrument).
-        flat_lo_thresh, flat_hi_thresh: float
+            vary by instrument). A limit of None is not applied and all pixels
+            are considered good at that end of the range.
+        flat_lo_thresh, flat_hi_thresh: float, optional
             Range of unit-normalized data values outside which pixels in the
             input flat are considered bad (eg. 0.8 and 1.25, but these defaults
-            vary by instrument).
+            vary by instrument). A limit of None is not applied and all pixels
+            are considered good at that end of the range.
 
         """
         log = self.log
@@ -108,6 +110,15 @@ class NearIR(PrimitivesBASE):
         dark_hi = params['dark_hi_thresh']
         flat_lo = params['flat_lo_thresh']
         flat_hi = params['flat_hi_thresh']
+
+        if dark_lo is None:
+            dark_lo = float('-Inf')
+        if dark_hi is None:
+            dark_hi = float('Inf')
+        if flat_lo is None:
+            flat_lo = float('-Inf')
+        if flat_hi is None:
+            flat_hi = float('Inf')
 
         # This could probably be improved by using an input DQ mask (which
         # currently isn't produced by the recipe)?

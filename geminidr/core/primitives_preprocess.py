@@ -1120,7 +1120,8 @@ class Preprocess(PrimitivesBASE):
                         log.fullinfo("Applying {} to EXTVER {} from {} to {}".
                                 format(("scaling" if scale else "zeropoint"),
                                        ext_sky.hdr['EXTVER'], init_bg, final_bg))
-
+                ad_sky.update_filename(suffix='_skyim', strip=True)
+                self.writeOutputs([ad_sky])
                 ad.subtract(ad_sky)
                 if reset_sky:
                     new_bg = gt.measure_bg_from_image(ad, value_only=True)

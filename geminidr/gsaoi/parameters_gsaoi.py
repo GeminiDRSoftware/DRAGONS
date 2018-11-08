@@ -18,9 +18,11 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
 #         self.tile_all = True
 
 class makeBPMConfig(parameters_nearIR.makeBPMConfig):
+    override_thresh = config.Field("Override GSAOI default calculation with a user-specified dark_hi_thresh?", bool, False)
+
     def setDefaults(self):
         del self.dark_lo_thresh, self.flat_hi_thresh
-        self.dark_hi_thresh = None  # (use default)
+        self.dark_hi_thresh = None  # (when using default calc. instead)
         self.flat_lo_thresh = 0.5
 
     def validate(self):
