@@ -47,8 +47,8 @@ echo $PYENV_HOME'''
     }
   }
   environment {
-    PACKAGE_NAME = '"dragons"'
-    CONDA_HOME = '"$WORKSPACE/miniconda"'
-    PYENV_HOME = '"$WORKSPACE/.pyenv"'
+    PACKAGE_NAME = 'dragons'
+    CONDA_HOME = '$WORKSPACE/miniconda'
+    PYENV_HOME = '$WORKSPACE/.pyenv'
   }
 }
