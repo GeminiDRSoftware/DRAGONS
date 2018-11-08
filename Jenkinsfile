@@ -39,6 +39,7 @@ pipeline {
             
             cd $WORKSPACE
             pip install --quiet .
+	    '''
       }
     }
   }
