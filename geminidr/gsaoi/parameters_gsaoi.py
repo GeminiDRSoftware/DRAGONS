@@ -13,10 +13,6 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
         self.distance = 1.
         self.time = 900.
 
-# class tileArraysConfig(parameters_visualize.tileArraysConfig):
-#     def setDefaults(self):
-#         self.tile_all = True
-
 class makeBPMConfig(parameters_nearIR.makeBPMConfig):
     override_thresh = config.Field("Override GSAOI default calculation with a user-specified dark_hi_thresh?", bool, False)
 
