@@ -598,7 +598,8 @@ class Preprocess(PrimitivesBASE):
                 conv_factor = ext.gain() if in_adu else 1
                 if not ext.is_coadds_summed():
                     conv_factor *= ext.coadds()
-                if ext.variance is not None:
+                if ext.variance is not None and \
+                   'poisson' in ext.hdr.get('VARNOISE', '').lower():
                     ext.variance += (pixel_data - ext.data) / conv_factor
                 # Now update the SCI extension
                 ext.data = pixel_data
