@@ -1,25 +1,16 @@
 language: python
 python:
-- '2.7'
 - '3.5'
 - '3.6'
 
 branches:
   only:
   - master
-  - auto_test
 
 install:
 - sudo apt-get update
 
-# Here we install Anaconda to work with Virtual Environments. We do this
-# conditionally because it saves us some downloading if the version is the same.
-- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-    wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-  else
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  fi
-
+- wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 - bash miniconda.sh -b -p $HOME/miniconda
 - export PATH="$HOME/miniconda/bin:$PATH"
 - hash -r
@@ -31,11 +22,11 @@ install:
 - conda update -q conda
 
 # Useful for debugging any issues with conda
-- conda info -a
+#- conda info -a
 
 # Create astroconda virtual environment
-- conda create -q -n astroconda stsci python=$TRAVIS_PYTHON_VERSION
-- source activate astroconda
+#- conda create -q -n astroconda stsci python=$TRAVIS_PYTHON_VERSION
+#- source activate astroconda
 
 # Install packages
 #- pip install coveralls astroplan
@@ -43,8 +34,8 @@ install:
 
 script:
 - pytest
-- coverage run --branch --source= setup.py test
-# TODO - How can I add the ./goodman as a source?
+#- coverage run --branch --source= setup.py test
 
 after_success:
-- coveralls
+# - coveralls
+
