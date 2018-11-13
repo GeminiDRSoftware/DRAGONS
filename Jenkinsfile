@@ -1,7 +1,11 @@
 #!/usr/bin/env groovy
 pipeline {
 
-  agent linux
+  agent {
+    node{
+      label 'centos7'
+    }
+  }
 
   triggers {
     pollSCM('*/5 * * * 1-5')
