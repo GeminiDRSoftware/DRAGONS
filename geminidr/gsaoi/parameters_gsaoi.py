@@ -37,5 +37,5 @@ class subtractSkyConfig(parameters_preprocess.subtractSkyConfig):
     def setDefaults(self):
         self.reset_sky = False
         self.scale_sky = False  # darks not taken routinely for GSAOI
-        self.offset_sky = False
+        self.offset_sky = True
 
