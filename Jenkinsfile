@@ -54,7 +54,7 @@ pipeline {
                 '''
         echo "Code Coverage"
         sh  ''' source activate ${BUILD_TAG}
-                coverage run dummy_package/greet_people.py
+                coverage run --source=astrodata,gemini_instruments,gempy,recipe_system
                 python -m coverage xml -o ./reports/coverage.xml
                 '''
         echo "PEP8 style check"
