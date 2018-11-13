@@ -31,6 +31,7 @@ pipeline {
               conda install coverage pytest
               conda install -c omnia behave
               conda install -c conda-forge twine
+              conda install -c chroxvi radon 
         '''
       }
     }
