@@ -11,7 +11,7 @@ import sys
 import argparse
 import glob
 
-import dataselect
+from gempy.adlibrary import dataselect
 
 SHORT_DESCRIPTION = "Find files that matches certain criteria defined by tags " \
                     "and expression involving descriptors."
