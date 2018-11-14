@@ -1013,6 +1013,8 @@ class Preprocess(PrimitivesBASE):
                             "Ignoring it.".format(filename))
                     skies.remove(filename)
                     continue
+                else:
+                    log.stdinfo("Found {} on disk".format(filename))
             ad_skies.append(sky)
 
         # We've got all the sky frames in sky_dict, so delete the sky stream
@@ -1059,6 +1061,7 @@ class Preprocess(PrimitivesBASE):
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
         #print "ABOUT TO SUBTRACT", memusage(proc)
+        self.writeOutputs(stacked_skies)
         adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
                                     offset_sky=offset_sky, reset_sky=reset_sky)
         #print "SUBTRACTED", memusage(proc)
