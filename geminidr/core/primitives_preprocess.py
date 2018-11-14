@@ -1214,7 +1214,7 @@ class Preprocess(PrimitivesBASE):
 
             for ext in ad:
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
-                # make sure the 64 is an int16 64 else it will promote the DQ
+                # make sure the 64 is an int16(64) else it will promote the DQ
                 # plane to int64
                 unillum = np.where(((ext.data>upper) | (ext.data<lower)) &
                                    ((ext.mask & DQ.bad_pixel)==0),
@@ -1224,9 +1224,10 @@ class Preprocess(PrimitivesBASE):
                              "outside the range [{:.2f},{:.2f}]".
                              format(lower, upper))
 
-                # Set the sci value to 1.0 where it is less that 0.001 and
-                # where the DQ says it's non-illuminated.
-                #ext.data[ext.data < 0.001] = 1.0
+                # Bad pixels might have low values and don't get flagged as
+                # unilluminated, so we need to flag them to avoid infinite
+                # values in the flatfielded image
+                ext.data[ext.data < lower] = 1.0
                 ext.data[(ext.mask & DQ.unilluminated)>0] = 1.0
                 log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 "
                              "for non-illuminated pixels.")
