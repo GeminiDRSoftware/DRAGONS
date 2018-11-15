@@ -17,7 +17,8 @@ pipeline {
   }
 
   environment {
-    PATH="~/miniconda3/bin:$PATH"
+    CONDA_HOME="$HOME/miniconda"
+    PATH="$HOME/miniconda/bin"
   }
 
   stages {
@@ -29,7 +30,10 @@ pipeline {
     stage ("Check Conda") {
         steps {
             echo "Verify existing conda installation"
-            sh 'echo $HOME'
+            if [ ! -d $CONDA_HOME ]; then
+                /usr/local/bin/wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
+                bash miniconda.sh -b -p $CONDA_HOME
+            fi
         }
     }
     stage ("Build Environment") {
