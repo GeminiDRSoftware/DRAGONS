@@ -29,13 +29,8 @@ pipeline {
     }
     stage ("Check Conda") {
       steps {
-        echo "Verify existing conda installation"
-        sh '''if [ ! -d $CONDA_HOME ]; then
-                echo "Downloading and installing miniconda:"
-                /usr/local/bin/wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
-                bash miniconda.sh -b -p $CONDA_HOME
-              fi
-              '''
+        sh '''echo "Verifying conda installation"
+        '''
       }
     }
     stage ("Build Environment") {
