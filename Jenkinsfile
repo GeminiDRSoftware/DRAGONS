@@ -26,6 +26,12 @@ pipeline {
         checkout scm
       }
     }
+    stage ("Check Conda") {
+        steps {
+            echo "Verify existing conda installation"
+            sh 'echo $HOME'
+        }
+    }
     stage ("Build Environment") {
       steps {
         sh '''conda create --yes -n ${BUILD_TAG} python
@@ -33,7 +39,7 @@ pipeline {
               conda install coverage pytest
               conda install -c omnia behave
               conda install -c conda-forge twine
-              conda install -c chroxvi radon 
+              conda install -c chroxvi radon
         '''
       }
     }
