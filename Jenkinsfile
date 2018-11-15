@@ -31,7 +31,7 @@ pipeline {
         sh '''echo "Verifying conda installation"
               echo $CONDA_HOME
               if [ ! -d $CONDA_HOME ]; then
-                wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
+                curl --silent https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh --output miniconda.sh
                 bash miniconda.sh -b -p $CONDA_HOME
               fi
               
