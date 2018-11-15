@@ -30,6 +30,7 @@ pipeline {
     stage ("Check Conda") {
       steps {
         sh '''echo "Verifying conda installation"
+              echo $CONDA_HOME
         '''
       }
     }
