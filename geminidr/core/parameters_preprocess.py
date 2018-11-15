@@ -24,6 +24,8 @@ class associateSkyConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyAssociated", optional=True)
     time = config.RangeField("Maximum association time (seconds)", float, 600., min=0)
     distance = config.RangeField("Minimum association distance (arcsec)", float, 3., min=0)
+    min_skies = config.RangeField("Minimum number of sky frames to associate",
+                             int, 3, min=0, optional=True)
     max_skies = config.RangeField("Maximum number of sky frames to associate",
                              int, None, min=1, optional=True)
     use_all = config.Field("Use all frames as skies?", bool, False)

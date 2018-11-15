@@ -186,6 +186,7 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        min_skies = params["min_skies"]
         max_skies = params["max_skies"]
         min_distsq = params.get("distance", 0) ** 2
 
@@ -234,21 +235,26 @@ class Preprocess(PrimitivesBASE):
                     sky_dict = {k: v for k, v in sky_times.items() if
                                 gt.matching_inst_config(ad1=ad, ad2=k,
                                                         check_exposure=True)
-                                and abs(sci_time - v) <= seconds
                                 and ((k.telescope_x_offset() - xoffset)**2 +
                                      (k.telescope_y_offset() - yoffset)**2
                                      > min_distsq)}
 
-                    # Now cull the list of associated skies if necessary to
-                    # those closest in time to the sceince observation
-                    if max_skies is not None and len(sky_dict) > max_skies:
-                        sky_list = sorted(sky_dict, key=lambda x:
-                                          abs(sky_dict[x]-sci_time))[:max_skies]
-                    else:
-                        sky_list = sky_dict.keys()
+                    # Sort sky list by time difference and determine how many
+                    # skies will be matched by the default conditions
+                    sky_list = sorted(sky_dict, key=lambda x:
+                                      abs(sky_dict[x]-sci_time))[:max_skies]
+                    num_matching_skies = len([k for k in sky_dict
+                                              if abs(sky_dict[k]-sci_time)
+                                                 <= seconds])
+
+                    # Now create a sky list of the appropriate length
+                    num_skies = min(max_skies or len(sky_list),
+                                    max(min_skies or 0, num_matching_skies))
+                    sky_list = sky_list[:num_skies]
 
                     # Sort sky list chronologically for presentation purposes
-                    sky_list = sorted(sky_list, key=lambda sky: sky.ut_datetime())
+                    sky_list = sorted(sky_list,
+                                      key=lambda sky: sky.ut_datetime())
 
                 if sky_list:
                     sky_table = Table(names=('SKYNAME',),
