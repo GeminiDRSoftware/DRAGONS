@@ -18,7 +18,6 @@ pipeline {
 
   environment {
     CONDA_HOME="$HOME/miniconda"
-    CONDA_PATH="$HOME/miniconda/bin"
   }
 
   stages {
@@ -31,12 +30,25 @@ pipeline {
       steps {
         sh '''echo "Verifying conda installation"
               echo $CONDA_HOME
+              if [ ! -d $CONDA_HOME ]; then
+                /usr/local/bin/wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
+                bash miniconda.sh -b -p $CONDA_HOME
+              fi
+              
+              export PATH="$CONDA_HOME/bin:$PATH"
+              hash -r
+              
+              conda config --set always_yes yes --set changeps1 no
+              conda config --add channels http://ssb.stsci.edu/astroconda
+              conda update -q conda
         '''
       }
     }
     stage ("Build Environment") {
       steps {
-        sh '''conda create --yes -n ${BUILD_TAG} python
+        sh '''
+              export PATH="$CONDA_HOME/bin:$PATH"
+              conda create --yes -n ${BUILD_TAG} python
               source activate ${BUILD_TAG}
               conda install coverage pytest
               conda install -c omnia behave
@@ -47,7 +59,9 @@ pipeline {
     }
     stage('Test environment') {
       steps {
-        sh '''source activate ${BUILD_TAG}
+        sh '''
+              export PATH="$CONDA_HOME/bin:$PATH"
+              source activate ${BUILD_TAG}
               pip list
               which pip
               which python
@@ -57,18 +71,24 @@ pipeline {
     stage('Static code metrics') {
       steps {
         echo "Raw metrics"
-        sh  ''' source activate ${BUILD_TAG}
+        sh  ''' 
+                export PATH="$CONDA_HOME/bin:$PATH"
+                source activate ${BUILD_TAG}
                 radon raw --json irisvmpy/ > raw_report.json
                 radon cc --json irisvmpy/ > cc_report.json
                 radon mi --json irisvmpy/ > mi_report.json
                 '''
         echo "Code Coverage"
-        sh  ''' source activate ${BUILD_TAG}
+        sh  ''' 
+                export PATH="$CONDA_HOME/bin:$PATH"
+                source activate ${BUILD_TAG}
                 coverage run --source=astrodata,gemini_instruments,gempy,recipe_system
                 python -m coverage xml -o ./reports/coverage.xml
                 '''
         echo "PEP8 style check"
-        sh  ''' source activate ${BUILD_TAG}
+        sh  ''' 
+                export PATH="$CONDA_HOME/bin:$PATH"
+                source activate ${BUILD_TAG}
                 pylint --disable=C irisvmpy || true
                 '''
       }
@@ -90,7 +110,8 @@ pipeline {
     }
     stage('Unit tests') {
       steps {
-        sh  ''' source activate ${BUILD_TAG}
+        sh  ''' export PATH="$CONDA_HOME/bin:$PATH"
+                source activate ${BUILD_TAG}
                 python -m pytest --verbose --junit-xml test-reports/results.xml
                 '''
       }
@@ -112,7 +133,9 @@ pipeline {
         }
       }
       steps {
-        sh  ''' source activate ${BUILD_TAG}
+        sh  ''' 
+                export PATH="$CONDA_HOME/bin:$PATH"
+                source activate ${BUILD_TAG}
                 python setup.py sdist bdist_wheel
             '''
       }
@@ -128,7 +151,10 @@ pipeline {
   }
   post {
     always {
-      sh 'conda remove --yes -n ${BUILD_TAG} --all'
+      sh '''
+        export PATH="$CONDA_HOME/bin:$PATH"
+        conda remove --yes -n ${BUILD_TAG} --all
+        '''
     }
     failure {
       echo "Send e-mail, when failed"
