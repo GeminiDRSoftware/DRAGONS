@@ -18,7 +18,7 @@ pipeline {
 
   environment {
     CONDA_HOME="$HOME/miniconda"
-    PATH="$HOME/miniconda/bin"
+    CONDA_PATH="$HOME/miniconda/bin"
   }
 
   stages {
