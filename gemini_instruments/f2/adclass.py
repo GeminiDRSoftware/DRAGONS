@@ -287,6 +287,17 @@ class AstroDataF2(AstroDataGemini):
         return -offset if self.phu.get('INPORT')==1 else offset
 
     @astro_data_descriptor
+    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        # F2 header keyword value is in Angstroms, not meters
+        dispersion = super(AstroDataF2, self).dispersion(asMicrometers=asMicrometers,
+                                                         asNanometers=asNanometers,
+                                                         asAngstroms=asAngstroms)
+        try:
+            return [disp*1e-10 for disp in dispersion]
+        except TypeError:
+            return dispersion*1e-10
+
+    @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
