@@ -6,6 +6,7 @@ python:
 branches:
   only:
   - master
+  - ci_probe
 
 install:
 - sudo apt-get update
@@ -25,12 +26,12 @@ install:
 #- conda info -a
 
 # Create astroconda virtual environment
-#- conda create -q -n astroconda stsci python=$TRAVIS_PYTHON_VERSION
-#- source activate astroconda
+- conda create -q -n astroconda stsci python=$TRAVIS_PYTHON_VERSION
+- source activate astroconda
 
 # Install packages
-#- pip install coveralls astroplan
-#- conda install -c astropy ccdproc
+- pip install coveralls astroplan
+- conda install -c astropy ccdproc
 
 script:
 - pytest
