@@ -30,11 +30,12 @@ install:
 - source activate astroconda
 
 # Install packages
-- pip install coveralls astroplan
-- conda install -c astropy ccdproc
+- conda install --yes --quiet --channel conda-forge python-coveralls
+- conda install --yes --quiet --channel astropy astroplan ccdproc
+- conda install --yes --quiet future
 
 script:
-- pytest
+- pytest --ignore=old_other --ignore=old_astrodata_Gemini
 #- coverage run --branch --source= setup.py test
 
 after_success:
