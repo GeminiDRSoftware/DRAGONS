@@ -10,6 +10,8 @@ from astropy.wcs import WCS
 from scipy import optimize, spatial
 from datetime import datetime
 
+from matplotlib import pyplot as plt
+
 from gempy.gemini import gemini_tools as gt
 from ..utils import logutils
 
@@ -21,14 +23,19 @@ class MatchBox(object):
     """
     def __init__(self, input_coords, output_coords, forward_model=None,
                  backward_model=None, fitter=fitting.LinearLSQFitter,
-                 **kwargs):
+                 domain=None, **kwargs):
         super(MatchBox, self).__init__(**kwargs)
         self._input_coords = list(input_coords)
         self._output_coords = list(output_coords)
+        try:
+            self._ndim = len(self._input_coords[0])
+        except TypeError:
+            self._ndim = 1
         self.validate_coords()
         self._forward_model = forward_model
         self._backward_model = backward_model
         self._fitter = fitter
+        self._domain = domain
 
     def validate_coords(self, input_coords=None, output_coords=None):
         """Confirm that the two sets of coordinates are compatible"""
@@ -36,16 +43,14 @@ class MatchBox(object):
             input_coords = self._input_coords
         if output_coords is None:
             output_coords = self._output_coords
-        if len(self._input_coords) != len(self._output_coords):
+        if len(input_coords) != len(output_coords):
             raise ValueError("Coordinate lists have different lengths")
         try:
-            for coord_list in (input_coords, output_coords):
+            for coord in input_coords+output_coords:
                 try:
-                    len(coord_list[0])
+                    assert len(coord) == self._ndim
                 except TypeError:
-                    assert len(set(type(coord) for coord in coord_list)) == 1
-                else:
-                    assert len(set(len(coord) for coord in coord_list)) == 1
+                    assert self._ndim == 1
         except AssertionError:
             raise ValueError("Incompatible elements in one or both coordinate lists")
 
@@ -192,6 +197,93 @@ class MatchBox(object):
                                   reverse=reverse, key=lambda x: x[1 if by_output else 0]))
         self._input_coords, self._output_coords = ordered
 
+    @property
+    def residuals(self):
+        """
+        Return the residuals of the fit
+        """
+        try:
+            len(self._input_coords[0])
+        except TypeError:
+            return self._output_coords - self.forward(self._input_coords)
+        else:
+            return list(c1[i]-c2[i] for c1, c2 in zip(self._output_coords,
+                                                      self.forward(self._input_coords))
+                        for i in range(self._ndim))
+
+    @property
+    def rms_input(self):
+        """
+        Return the rms of the fit in input units
+        """
+        return self._rms(self._input_coords, self.backward(self._output_coords))
+
+    @property
+    def rms_output(self):
+        """
+        Return the rms of the fit in output units
+        """
+        return self._rms(self._output_coords, self.forward(self._input_coords))
+
+    def _rms(self, coords1, coords2):
+        try:
+            len(coords1[0])
+        except TypeError:
+            return np.std(coords1 - coords2)
+        else:
+            return list(np.std([c1[i]-c2[i] for c1,c2 in zip(coords1,coords2)])
+                        for i in range(self._ndim))
+
+##############################################################################
+
+class Chebyshev1DMatchBox(MatchBox):
+    """
+    A MatchBox that specifically has Chebyshev1D transformations, and provides
+    additional plotting methods for analysis.
+    """
+    def __init__(self, input_coords, output_coords, forward_model=None,
+                 backward_model=None, fitter=fitting.LinearLSQFitter,
+                 **kwargs):
+        if not isinstance(forward_model, models.Chebyshev1D):
+            raise ValueError("forward_model is not a Chebyshev1D instance")
+        if (backward_model is not None and
+                not isinstance(backward_model, models.Chebyshev1D)):
+            raise ValueError("backward_model is not a Chebyshev1D instance")
+        super(Chebyshev1DMatchBox, self).__init__(input_coords, output_coords,
+                                                  forward_model=forward_model,
+                                                  backward_model=backward_model,
+                                                  fitter=fitter, **kwargs)
+
+    def display_fit(self, remove_orders=1, axes=None, show=False):
+        """
+        Plot the fit
+
+        Parameters
+        ----------
+        remove_orders: int
+            Only show the fit's orders above this value (so the default value
+            of 1 removes the linear component)
+        axes: None/Axes object
+            axes for plotting (None => create new figure)
+        show: bool
+            call plt.show() method at end?
+        """
+        if axes is None:
+            fig, axes = plt.subplots()
+
+        model = self.forward.copy()
+        if not (remove_orders is None or remove_orders < 0):
+            for i in range(0, remove_orders+1):
+                setattr(model, 'c{}'.format(i), 0)
+
+        limits = self._forward_model.domain or (min(self._input_coords), max(self._input_coords))
+        x = np.linspace(limits[0], limits[1], 1000)
+        axes.plot(self.forward(x), model(x))
+        axes.plot(self.forward(self._input_coords), model(self._input_coords)+self.residuals, 'ko')
+
+        if show:
+            plt.show()
+
 ##############################################################################
 
 class Pix2Sky(FittableModel):
@@ -312,6 +404,8 @@ class Rotate2D(FittableModel):
         x.shape = y.shape = orig_shape
         return x, y
 
+##############################################################################
+
 def _landstat(landscape, updated_model, in_coords):
     """
     Compute the statistic for transforming coordinates onto an existing
@@ -354,89 +448,6 @@ def _landstat(landscape, updated_model, in_coords):
     #                                     and iy<landscape.shape[0])
     ################################################################################
     return -sum  # to minimize
-
-def _stat(tree, updated_model, in_coords, sigma, maxsig):
-    """
-    Compute the statistic for transforming coordinates onto a set of reference
-    coordinates. This uses mathematical calulations and is not pixellated like
-    the landscape-array methods.
-
-    Parameters
-    ----------
-    tree: KDTree
-        a KDTree made from the reference coordinates
-    updated_model: Model
-        transformation (input -> reference) being investigated
-    x, y: float arrays
-        input x, y coordinates
-    sigma: float
-        standard deviation of Gaussian (in pixels) used to represent each source
-    maxsig: float
-        maximum number of standard deviations of Gaussian extent
-
-    Returns
-    -------
-    float:
-        statistic representing quality of fit to be minimized
-    """
-    f = 0.5/(sigma*sigma)
-    maxsep = maxsig*sigma
-    out_coords = updated_model(*in_coords)
-    if len(in_coords) == 1:
-        out_coords = (out_coords,)
-    dist, idx = tree.query(list(zip(*out_coords)), k=5, distance_upper_bound=maxsep)
-    sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
-    return -sum  # to minimize
-
-class KDTreeFitter(Fitter):
-    """
-    Fitter class that uses minimization (the method can be passed as a
-    parameter to the instance) to determine the transformation to map a set
-    of input coordinates to a set of reference coordinates.
-    """
-    def __init__(self):
-        super(KDTreeFitter, self).__init__(optimize.minimize,
-                                             statistic=_stat)
-
-    def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
-                 **kwargs):
-        model_copy = _validate_model(model, ['bounds', 'fixed'])
-
-        # Turn 1D arrays into tuples to allow iteration over axes
-        try:
-            iter(in_coords[0])
-        except TypeError:
-            in_coords = (in_coords,)
-        try:
-            iter(ref_coords[0])
-        except TypeError:
-            ref_coords = (ref_coords,)
-
-        # Starting simplex step size is set to be 5% of parameter values
-        # Need to ensure this is larger than the convergence tolerance
-        # so move the initial values away from zero if necessary
-        try:
-            xtol = kwargs['options']['xtol']
-        except KeyError:
-            pass
-        else:
-            for p in model_copy.param_names:
-                pval = getattr(model_copy, p).value
-                ### EDITED THIS LINE SO TAKE A LOOK IF 2D MATCHING GOES WRONG!!
-                if abs(pval) < 20*xtol and not model_copy.fixed[p]:  # and 'offset' in p
-                    getattr(model_copy, p).value = 20*xtol if pval == 0 \
-                        else (np.sign(pval) * 20*xtol)
-
-        tree = spatial.cKDTree(list(zip(*ref_coords)))
-        # avoid _convert_input since tree can't be coerced to a float
-        farg = (model_copy, in_coords, sigma, maxsig, tree)
-        p0, _ = _model_to_fit_params(model_copy)
-
-        result = self._opt_method(self.objective_function, p0, farg,
-                                  **kwargs)
-        fitted_params = result['x']
-        _fitter_to_model_params(model_copy, fitted_params)
-        return model_copy
 
 class BruteLandscapeFitter(Fitter):
     """
@@ -501,7 +512,7 @@ class BruteLandscapeFitter(Fitter):
                 lslice.append(slice(l1, l2))
                 mslice.append(slice(m1, m2))
             else:
-                landscape[lslice] += mountain[mslice]
+                landscape[tuple(lslice)] += mountain[tuple(mslice)]
         return landscape
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
@@ -547,6 +558,97 @@ class BruteLandscapeFitter(Fitter):
                                          farg, Ns=1, finish=None, **kwargs)
         _fitter_to_model_params(model_copy, fitted_params)
         return model_copy
+
+def _kdstat(tree, updated_model, in_coords, sigma, maxsig, k):
+    """
+    Compute the statistic for transforming coordinates onto a set of reference
+    coordinates. This uses mathematical calulations and is not pixellated like
+    the landscape-array methods.
+
+    Parameters
+    ----------
+    tree: KDTree
+        a KDTree made from the reference coordinates
+    updated_model: Model
+        transformation (input -> reference) being investigated
+    x, y: float arrays
+        input x, y coordinates
+    sigma: float
+        standard deviation of Gaussian (in pixels) used to represent each source
+    maxsig: float
+        maximum number of standard deviations of Gaussian extent
+
+    Returns
+    -------
+    float:
+        statistic representing quality of fit to be minimized
+    """
+    f = 0.5/(sigma*sigma)
+    maxsep = maxsig*sigma
+    out_coords = updated_model(*in_coords)
+    if len(in_coords) == 1:
+        out_coords = (out_coords,)
+    dist, idx = tree.query(list(zip(*out_coords)), k=k, distance_upper_bound=maxsep)
+    if k > 1:
+        sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
+    else:
+        sum = np.sum(np.exp(-f*d*d) for d in dist)
+    return -sum  # to minimize
+
+class KDTreeFitter(Fitter):
+    """
+    Fitter class that uses minimization (the method can be passed as a
+    parameter to the instance) to determine the transformation to map a set
+    of input coordinates to a set of reference coordinates.
+    """
+    def __init__(self):
+        self.statistic = None
+        self.niter = None
+        super(KDTreeFitter, self).__init__(optimize.minimize,
+                                           statistic=_kdstat)
+
+    def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
+                 k=5, **kwargs):
+        model_copy = _validate_model(model, ['bounds', 'fixed'])
+
+        # Turn 1D arrays into tuples to allow iteration over axes
+        try:
+            iter(in_coords[0])
+        except TypeError:
+            in_coords = (in_coords,)
+        try:
+            iter(ref_coords[0])
+        except TypeError:
+            ref_coords = (ref_coords,)
+
+        # Starting simplex step size is set to be 5% of parameter values
+        # Need to ensure this is larger than the convergence tolerance
+        # so move the initial values away from zero if necessary
+        try:
+            xtol = kwargs['options']['xtol']
+        except KeyError:
+            pass
+        else:
+            for p in model_copy.param_names:
+                pval = getattr(model_copy, p).value
+                ### EDITED THIS LINE SO TAKE A LOOK IF 2D MATCHING GOES WRONG!!
+                if abs(pval) < 20*xtol and not model_copy.fixed[p]:  # and 'offset' in p
+                    getattr(model_copy, p).value = 20*xtol if pval == 0 \
+                        else (np.sign(pval) * 20*xtol)
+
+        tree = spatial.cKDTree(list(zip(*ref_coords)))
+        # avoid _convert_input since tree can't be coerced to a float
+        farg = (model_copy, in_coords, sigma, maxsig, k, tree)
+        p0, _ = _model_to_fit_params(model_copy)
+
+        result = self._opt_method(self.objective_function, p0, farg,
+                                  **kwargs)
+        fitted_params = result['x']
+        _fitter_to_model_params(model_copy, fitted_params)
+        self.statistic = result['fun']
+        self.niter = result['nit']
+        return model_copy
+
 
 def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
                            unbound=False, unfix=False, verbose=True):
@@ -642,6 +744,7 @@ def _show_model(model, intro=""):
                     model_str += "{}: {}\n".format(name, value/pscale)
     return model_str
 
+##############################################################################
 
 def align_catalogs(xin, yin, xref, yref, model_guess=None,
                    translation=None, translation_range=None,
@@ -836,6 +939,11 @@ def match_sources(incoords, refcoords, radius=2.0, priority=[]):
     int array of length N:
         index of matched sources in the reference list (-1 means no match)
     """
+    try:
+        iter(incoords[0])
+    except TypeError:
+        incoords = (incoords,)
+        refcoords = (refcoords,)
     matched = np.full((len(incoords[0]),), -1, dtype=int)
     tree = spatial.cKDTree(list(zip(*refcoords)))
     dist, idx = tree.query(list(zip(*incoords)), distance_upper_bound=radius)
