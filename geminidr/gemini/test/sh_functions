@@ -45,7 +45,7 @@ last_result_filename() {  # suffix
     local fn
     fn=$(tail "$log" | grep -E "(Wrote|Writing to file)[ \t]*[NS]2.*_${1}.fits")
     if [ -n "$fn" ]; then
-        echo "$fn" | sed -ne "s/.*\([NS]2.*_${1}.fits\).*/\1/gp"
+        echo "$fn" | tail -1 | sed -ne "s/.*\([NS]2.*_${1}.fits\).*/\1/gp"
     else
         echo "Failed to parse output filename of type $1 from log" >&2
         return 1
@@ -55,7 +55,6 @@ last_result_filename() {  # suffix
 # Compare a named file with a reference version:
 compare_file() {  # name
     local fn=$1
-    fn=$(tail "$log" | sed -ne "/\(Writing to file [NS]2.*_stack.fits\)/s/.*\([NS]2.*_stack.fits\).*/\1/gp")
     fitsdiff "$ref_dir/$fn" "$fn" -k "$ignore_kw" -r "$rtol" -a "$atol"
 }
 
