@@ -15,6 +15,7 @@ class AstroDataF2(AstroDataGemini):
     __keyword_dict = dict(camera = 'LYOT',
                           central_wavelength = 'GRWLEN',
                           disperser = 'GRISM',
+                          dispersion = 'DISPERSI',
                           focal_plane_mask = 'MOSPOS',
                           lyot_stop = 'LYOT',
                           )
