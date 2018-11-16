@@ -738,8 +738,8 @@ class AstroDataGemini(AstroDataFits):
             dispersion = self.hdr[self._keyword_for('dispersion')]
         except KeyError:
             try:
-                dispersion = self.phu[self._keyword_for(
-                    'dispersion')] * len(self)
+                dispersion = [self.phu[self._keyword_for(
+                    'dispersion')]] * len(self)
             except KeyError:
                 return None
 
