@@ -186,6 +186,7 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        min_skies = params["min_skies"]
         max_skies = params["max_skies"]
         min_distsq = params.get("distance", 0) ** 2
 
@@ -234,21 +235,26 @@ class Preprocess(PrimitivesBASE):
                     sky_dict = {k: v for k, v in sky_times.items() if
                                 gt.matching_inst_config(ad1=ad, ad2=k,
                                                         check_exposure=True)
-                                and abs(sci_time - v) <= seconds
                                 and ((k.telescope_x_offset() - xoffset)**2 +
                                      (k.telescope_y_offset() - yoffset)**2
                                      > min_distsq)}
 
-                    # Now cull the list of associated skies if necessary to
-                    # those closest in time to the sceince observation
-                    if max_skies is not None and len(sky_dict) > max_skies:
-                        sky_list = sorted(sky_dict, key=lambda x:
-                                          abs(sky_dict[x]-sci_time))[:max_skies]
-                    else:
-                        sky_list = sky_dict.keys()
+                    # Sort sky list by time difference and determine how many
+                    # skies will be matched by the default conditions
+                    sky_list = sorted(sky_dict, key=lambda x:
+                                      abs(sky_dict[x]-sci_time))[:max_skies]
+                    num_matching_skies = len([k for k in sky_dict
+                                              if abs(sky_dict[k]-sci_time)
+                                                 <= seconds])
+
+                    # Now create a sky list of the appropriate length
+                    num_skies = min(max_skies or len(sky_list),
+                                    max(min_skies or 0, num_matching_skies))
+                    sky_list = sky_list[:num_skies]
 
                     # Sort sky list chronologically for presentation purposes
-                    sky_list = sorted(sky_list, key=lambda sky: sky.ut_datetime())
+                    sky_list = sorted(sky_list,
+                                      key=lambda sky: sky.ut_datetime())
 
                 if sky_list:
                     sky_table = Table(names=('SKYNAME',),
@@ -1013,6 +1019,8 @@ class Preprocess(PrimitivesBASE):
                             "Ignoring it.".format(filename))
                     skies.remove(filename)
                     continue
+                else:
+                    log.stdinfo("Found {} on disk".format(filename))
             ad_skies.append(sky)
 
         # We've got all the sky frames in sky_dict, so delete the sky stream
@@ -1059,6 +1067,7 @@ class Preprocess(PrimitivesBASE):
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
         #print "ABOUT TO SUBTRACT", memusage(proc)
+        self.writeOutputs(stacked_skies)
         adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
                                     offset_sky=offset_sky, reset_sky=reset_sky)
         #print "SUBTRACTED", memusage(proc)
@@ -1121,8 +1130,8 @@ class Preprocess(PrimitivesBASE):
                         log.fullinfo("Applying {} to EXTVER {} from {} to {}".
                                 format(("scaling" if scale else "zeropoint"),
                                        ext_sky.hdr['EXTVER'], init_bg, final_bg))
-                ad_sky.update_filename(suffix='_skyim', strip=True)
-                self.writeOutputs([ad_sky])
+                #ad_sky.update_filename(suffix='_skyim', strip=True)
+                #self.writeOutputs([ad_sky])
                 ad.subtract(ad_sky)
                 if reset_sky:
                     new_bg = gt.measure_bg_from_image(ad, value_only=True)
@@ -1211,7 +1220,7 @@ class Preprocess(PrimitivesBASE):
 
             for ext in ad:
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
-                # make sure the 64 is an int16 64 else it will promote the DQ
+                # make sure the 64 is an int16(64) else it will promote the DQ
                 # plane to int64
                 unillum = np.where(((ext.data>upper) | (ext.data<lower)) &
                                    ((ext.mask & DQ.bad_pixel)==0),
@@ -1221,9 +1230,10 @@ class Preprocess(PrimitivesBASE):
                              "outside the range [{:.2f},{:.2f}]".
                              format(lower, upper))
 
-                # Set the sci value to 1.0 where it is less that 0.001 and
-                # where the DQ says it's non-illuminated.
-                #ext.data[ext.data < 0.001] = 1.0
+                # Bad pixels might have low values and don't get flagged as
+                # unilluminated, so we need to flag them to avoid infinite
+                # values in the flatfielded image
+                ext.data[ext.data < lower] = 1.0
                 ext.data[(ext.mask & DQ.unilluminated)>0] = 1.0
                 log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 "
                              "for non-illuminated pixels.")
