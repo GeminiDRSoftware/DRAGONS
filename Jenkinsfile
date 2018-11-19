@@ -31,20 +31,20 @@ pipeline {
         sh '''echo "Verifying conda installation ---"
               echo $HOME
               echo $CONDA_HOME
-
-              if [ ! -d $CONDA_HOME ]; then
-                curl --silent https://repo.anaconda.com/archive/Anaconda3-5.3.0-Linux-x86_64.sh --output miniconda.sh
-                bash miniconda.sh -b -p $CONDA_HOME
+              '''
+        sh '''if [ ! -d $CONDA_HOME ]; then
+                curl --silent https://repo.anaconda.com/archive/Anaconda3-5.3.0-Linux-x86_64.sh --output anaconda.sh
+                bash anaconda.sh -b -p $CONDA_HOME
               fi
-
-              ls $CONDA_HOME/bin
+              '''
+        sh '''ls $CONDA_HOME/bin
               export PATH="$CONDA_HOME/bin:$PATH"
               hash -r
               
               conda config --set always_yes yes --set changeps1 no
               conda config --add channels http://ssb.stsci.edu/astroconda
               conda update -q conda
-        '''
+              '''
       } // steps
     } // stage Check Conda
     stage ("Build Environment") {
