@@ -28,7 +28,8 @@ pipeline {
     }
     stage ("Check Conda") {
       steps {
-        sh '''echo "Verifying conda installation"
+        sh '''echo "Verifying conda installation ---"
+              echo $HOME
               echo $CONDA_HOME
 
               if [ ! -d $CONDA_HOME ]; then
