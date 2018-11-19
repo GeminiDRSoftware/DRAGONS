@@ -31,8 +31,8 @@ pipeline {
         sh '''echo "Verifying conda installation ---"
               cat /etc/os-release
               echo $HOME
+              ls $HOME
               echo $CONDA_HOME
-              env
               '''
         sh '''if [ -f /.dockerenv ]; then
                 echo "I'm inside matrix ;(";
