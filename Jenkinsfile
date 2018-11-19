@@ -28,18 +28,10 @@ pipeline {
     }
     stage ("Check Conda") {
       steps {
-        sh '''echo "Verifying conda installation ---"
-              cat /etc/os-release
-              echo $HOME
-              ls $HOME
-              echo $CONDA_HOME
-              '''
-        sh '''if [ -f /.dockerenv ]; then
-                echo "I'm inside matrix ;(";
-              else
-                echo "I'm living in real world!";
-              fi
-              '''
+        echo "Verifying docker environment"
+        sh 'ls $HOME'
+        sh 'echo $CONDA_HOME'
+        sh 'echo $0'
       } // steps
     } // stage Check Conda
   } // stages
