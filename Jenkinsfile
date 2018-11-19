@@ -29,6 +29,7 @@ pipeline {
     stage ("Check Conda") {
       steps {
         sh '''echo "Verifying conda installation ---"
+              cat /etc/os-release
               echo $HOME
               echo $CONDA_HOME
               env
