@@ -1067,7 +1067,6 @@ class Preprocess(PrimitivesBASE):
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
         #print "ABOUT TO SUBTRACT", memusage(proc)
-        self.writeOutputs(stacked_skies)
         adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
                                     offset_sky=offset_sky, reset_sky=reset_sky)
         #print "SUBTRACTED", memusage(proc)
