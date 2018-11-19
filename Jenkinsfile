@@ -30,10 +30,6 @@ pipeline {
       steps {
         sh '''
           echo $SHELL
-          if [ ! -d $CONDA_HOME ]; then
-            curl --silent https://repo.anaconda.com/archive/Anaconda3-5.3.0-Linux-x86_64.sh --output anaconda.sh
-            /bin/bash -c "anaconda.sh -b -p $HOME/anaconda/"
-          fi
           '''
       } // steps
     } // stage Check Conda
