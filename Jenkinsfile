@@ -40,7 +40,8 @@ pipeline {
               '''
         sh '''if [ ! -d $CONDA_HOME ]; then
                 curl --silent https://repo.anaconda.com/archive/Anaconda3-5.3.0-Linux-x86_64.sh --output anaconda.sh
-                bash anaconda.sh -b -p $CONDA_HOME
+                chmod a+x anaconda.sh
+                ./anaconda.sh -b -p ~/anaconda/
               fi
               '''
         sh '''ls $CONDA_HOME/bin
