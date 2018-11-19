@@ -26,12 +26,15 @@ pipeline {
         checkout scm
       }
     }
-    stage ("Check Conda") {
+    stage ("Anaconda") {
       steps {
-        echo "Verifying docker environment"
-        sh 'ls $HOME'
-        sh 'echo $CONDA_HOME'
-        sh 'echo $0'
+        sh '''
+          /bin/bash -c
+          if [ ! -d $CONDA_HOME ]; then
+            curl --silent https://repo.anaconda.com/archive/Anaconda3-5.3.0-Linux-x86_64.sh --output anaconda.sh
+            /bin/bash -c "anaconda.sh -b -p $HOME/anaconda/"
+          fi
+          '''
       } // steps
     } // stage Check Conda
   } // stages
