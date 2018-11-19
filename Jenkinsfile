@@ -32,6 +32,12 @@ pipeline {
               echo $HOME
               echo $CONDA_HOME
               '''
+        sh '''if [ -f /.dockerenv ]; then
+                echo "I'm inside matrix ;(";
+              else
+                echo "I'm living in real world!";
+              fi
+              '''
         sh '''if [ ! -d $CONDA_HOME ]; then
                 curl --silent https://repo.anaconda.com/archive/Anaconda3-5.3.0-Linux-x86_64.sh --output anaconda.sh
                 bash anaconda.sh -b -p $CONDA_HOME
