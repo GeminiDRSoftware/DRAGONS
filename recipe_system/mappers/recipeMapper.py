@@ -1,4 +1,6 @@
 #
+#                                                                        DRAGONS
+#
 #                                                        mappers.recipeMapper.py
 # ------------------------------------------------------------------------------
 import pkgutil
@@ -14,7 +16,7 @@ from ..utils.mapper_utils import dotpath
 from ..utils.mapper_utils import find_user_recipe
 from ..utils.mapper_utils import RECIPEMARKER
 
-
+# ------------------------------------------------------------------------------
 class RecipeMapper(Mapper):
     """
     Retrieve the appropriate recipe for a dataset, using all defined defaults:
