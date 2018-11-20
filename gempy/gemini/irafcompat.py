@@ -49,7 +49,11 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Add GIREDUCE to PHU")
         ad.phu.set('GIREDUCE', "Compatibility", "For IRAF compatibility")
-    
+    if 'MOSAIC' in ad.phu:
+        if verbose:
+            print("Add GMOSAIC to PHU")
+        ad.phu.set('GMOSAIC', "Compatibility", "For IRAF compatibility")
+
     return
 
 def _get_gmos_obsmode(ad):
