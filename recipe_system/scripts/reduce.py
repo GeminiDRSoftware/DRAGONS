@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 #
+#                                                                        DRAGONS
 #
 #                                                                      reduce.py
 # ------------------------------------------------------------------------------
-# reduce.py -- next gen reduce
-# ------------------------------------------------------------------------------
 from __future__ import print_function
-
-# ------------------------------------------------------------------------------
-
 # ---------------------------- Package Import ----------------------------------
 import os
 import sys
@@ -17,18 +13,14 @@ from gempy.utils import logutils
 
 from recipe_system import __version__
 from recipe_system.reduction.coreReduce import Reduce
+from recipe_system.reduction.coreReduce import set_calservice
 
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_args
 from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
-
-from recipe_system.cal_service import localmanager_available
-from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
-
-from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
-
 # ------------------------------------------------------------------------------
+
 def main(args):
     """
     'main' is called with a Namespace 'args' parameter, or an object that
@@ -86,6 +78,9 @@ def main(args):
     except AssertionError:
         pass
 
+    # Configure local calibration manager.
+    set_calservice(args)
+
     log.stdinfo("\t\t\t--- reduce, {} ---".format(__version__))
     r_reduce = Reduce(args)
     estat = r_reduce.runr()
@@ -94,14 +89,13 @@ def main(args):
     else:
         pass
     return estat
-
 # --------------------------------------------------------------------------
+
 if __name__ == "__main__":
     version_report = __version__
     parser = buildParser(version_report)
     args = parser.parse_args()
 
-    globalConf.load(STANDARD_REDUCTION_CONF)
     # Deal with argparse structures that are different than optparse
     args = normalize_args(args)
     args.upload = normalize_upload(args.upload)
@@ -111,13 +105,5 @@ if __name__ == "__main__":
         for item in ["Input fits file(s):\t%s" % inf for inf in args.files]:
             print(item)
         sys.exit()
-
-    if localmanager_available:
-        if args.local_db_dir is not None:
-            globalConf.update(CAL_CONFIG_SECTION, dict(
-                standalone=True,
-                database_dir=os.path.expanduser(args.local_db_dir)
-            ))
-    globalConf.export_section(CAL_CONFIG_SECTION)
 
     sys.exit(main(args))
