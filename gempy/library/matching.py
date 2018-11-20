@@ -714,8 +714,6 @@ def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
         except TypeError:
             pass
 
-    print m
-
     # More precise minimization using pairwise calculations
     fit_it = KDTreeFitter()
     # We don't care about how much the function value changes (ftol), only
