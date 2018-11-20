@@ -1,16 +1,22 @@
 #
-#                                                           request_transport.py
+#                                                                        DRAGONS
+#
+#
+#                                                           transport_request.py
 # ------------------------------------------------------------------------------
 from future import standard_library
 standard_library.install_aliases()
-from builtins import str
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
-import traceback
 
-from os.path import join, basename
-from xml.dom import minidom
+from builtins import str
+
+from os.path import join
+from os.path import basename
 from pprint  import pformat
+from xml.dom import minidom
+
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from gemini_instruments.common import Section
 
@@ -79,7 +85,7 @@ def upload_calibration(filename):
     """
     fn = basename(filename)
     url = join(UPLOADPROCCAL, fn)
-    postdata = open(filename).read()
+    postdata = open(filename, 'rb').read()
     try:
         rq = urllib.request.Request(url)
         rq.add_header('Content-Length', '%d' % len(postdata))
@@ -99,7 +105,7 @@ def calibration_search(rq, howmany=1, return_xml=False):
 
     :parameter rq: CalibrationRequest obj
     :type rq: <CalibrationRequest object>
-    
+
     :parameter howmany: maxinum number of calibrations to return
     :type howmany: <int>
 
@@ -151,9 +157,6 @@ def calibration_search(rq, howmany=1, return_xml=False):
 
     try:
         dom = minidom.parseString(response)
-        calel = dom.getElementsByTagName("calibration")
-        #calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
-        #calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
         calurlel = [d.childNodes[0].data
                     for d in dom.getElementsByTagName('url')[:howmany]]
         calurlmd5 = [d.childNodes[0].data
@@ -172,5 +175,5 @@ def handle_returns(dv):
     #       (eventually) FitsStorage upgrades to new AstroData
     if isinstance(dv, list) and isinstance(dv[0], Section):
         return [[el.x1, el.x2, el.y1, el.y2] for el in dv]
-    else:
-        return dv
+
+    return dv
