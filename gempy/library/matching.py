@@ -289,7 +289,7 @@ class BruteLandscapeFitter(Fitter):
                 lslice.append(slice(l1, l2))
                 mslice.append(slice(m1, m2))
             else:
-                landscape[lslice] += mountain[mslice]
+                landscape[tuple(lslice)] += mountain[tuple(mslice)]
         return landscape
 
     def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,

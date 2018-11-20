@@ -1,7 +1,12 @@
+#
+#                                                                        DRAGONS
+#
+#                                                                    cal_service
+# ------------------------------------------------------------------------------
 import os
+
 from ..config import globalConf, STANDARD_REDUCTION_CONF, DEFAULT_DIRECTORY
 from . import transport_request
-
 try:
     from . import localmanager
     localmanager_available = True
@@ -59,7 +64,7 @@ def is_local():
                         "are missing dependencies: {}".format(import_error))
            return True
     except AttributeError:
-        # This may happend if there's no calibration config section or, in
+        # This may happen if there's no calibration config section or, in
         # case there is one, if either calconf.standalone or calconf.database_dir
         # are not defined
         pass
@@ -86,3 +91,14 @@ def cal_search_factory():
         if is_local() else
         transport_request.calibration_search
     )
+
+
+def set_calservice(args):
+    globalConf.load(STANDARD_REDUCTION_CONF)
+    if localmanager_available:
+        if args.local_db_dir is not None:
+            globalConf.update(CONFIG_SECTION, dict(standalone=True,
+                            database_dir=os.path.expanduser(args.local_db_dir)))
+
+    globalConf.export_section(CONFIG_SECTION)
+    return

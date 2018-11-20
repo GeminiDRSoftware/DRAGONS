@@ -28,7 +28,7 @@ class EventsManager(object):
         # Depracated:
         # raw_rgx = re.compile(r'tmp\d+gemcombine[NS]\d{8}S\d{4}\.fits\[SCI,\d+\]')
 
-        return ad.phu.get('IMCMB***').values()
+        return list(ad.phu.get('IMCMB***').values())
 
     def get_metadict(self, ad):
         # Key: metadata dictionary key, Value: descriptor name

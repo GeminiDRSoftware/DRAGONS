@@ -1,12 +1,20 @@
+#
+#                                                                        DRAGONS
+#
+#                                                                localmanager.py
+# ------------------------------------------------------------------------------
 from builtins import object
 import os
-from os.path import abspath, basename, dirname, isdir
-import warnings
-from collections import namedtuple
+import imp
 import sys
 import pdb
+import warnings
+
+from collections import namedtuple
+from os.path import abspath, basename, dirname, isdir
 
 from sqlalchemy.exc import SAWarning, OperationalError
+
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 from gemini_calmgr import orm
@@ -18,9 +26,12 @@ from gemini_calmgr.orm import preview
 from gemini_calmgr.cal import get_cal_object
 from gemini_calmgr.orm import createtables
 from gemini_calmgr.utils import dbtools
-
+# ------------------------------------------------------------------------------
+from recipe_system import __version__
+# ------------------------------------------------------------------------------
 __all__ = ['LocalManager, LocalManagerError']
 
+# ------------------------------------------------------------------------------
 # SQLAlchemy complains about SQLite details. We can't do anything about the
 # data types involved, because the ORM files are meant for PostgreSQL.
 # The queries work, though, so we just ignore the warnings
@@ -91,12 +102,12 @@ class LocalManager(object):
         # databases on the fly, and we're reusing its infrastructure.
         #
         # This will have to do for the time being
-        reload(orm)
-        reload(file)
-        reload(preview)
-        reload(diskfile)
-        reload(createtables)
-        reload(dbtools)
+        imp.reload(orm)
+        imp.reload(file)
+        imp.reload(preview)
+        imp.reload(diskfile)
+        imp.reload(createtables)
+        imp.reload(dbtools)
 
         self.session = orm.sessionfactory()
 
@@ -132,7 +143,8 @@ class LocalManager(object):
             createtables.create_tables(self.session)
             self.session.commit()
         except OperationalError:
-            message = "There was an error when trying to create the database. Please, check your path and permissions."
+            message = "There was an error when trying to create the database. "
+            message += "Please, check your path and permissions."
             raise LocalManagerError(ERROR_CANT_CREATE, message)
 
     def remove_file(self, path):
@@ -256,7 +268,7 @@ class LocalManager(object):
 
         if ret_value:
             # Turn from list of tuples into two lists
-            return tuple(map(list, zip(*ret_value)))
+            return tuple(map(list, list(zip(*ret_value))))
         return (None, "Could not find a proper calibration in the local database")
 
     def list_files(self):

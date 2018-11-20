@@ -49,8 +49,7 @@ class NearIR(PrimitivesBASE):
         times = [ad.ut_datetime() for ad in adinputs]
         for i, ad in enumerate(adinputs):
             # Find which frames have their bright pixels propagated
-            propagated = filter(lambda x: (x[1]<times[i] and times[i]-x[1]<seconds),
-                                zip(adinputs, times))
+            propagated = [x for x in zip(adinputs, times) if (x[1]<times[i] and times[i]-x[1]<seconds)]
             if propagated:
                 log.stdinfo('{} affected by {}'.format(ad.filename,
                                     ','.join([x[0].filename for x in propagated])))

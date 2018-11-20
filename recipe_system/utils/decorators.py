@@ -96,6 +96,11 @@ def unset_logging():
     logutils.update_indent(LOGINDENT)
     return
 
+def zeroset():
+    global LOGINDENT
+    LOGINDENT = 0
+    logutils.update_indent(LOGINDENT)
+    return
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
     @wraps(wrapped)
@@ -143,14 +148,21 @@ def parameter_override(fn):
             else:
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])
-            ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+            try:
+                ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+            except Exception:
+                zeroset()
+                raise
             # And place the outputs in the appropriate stream
             pobj.streams[outstream] = ret_value
         else:
             if args:  # if not, adinputs has already been assigned from params
                 adinputs = args[0]
-            ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-
+            try:
+                ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+            except Exception:
+                zeroset()
+                raise
         unset_logging()
         return ret_value
     return gn

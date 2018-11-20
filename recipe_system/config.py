@@ -1,5 +1,5 @@
 #
-#                                                                  gemini_python
+#                                                                        DRAGONS
 #
 #                                                                  recipe_system
 #                                                                      config.py
@@ -14,19 +14,20 @@
 # ------------------------------------------------------------------------------
 # CONFIG SERVICE
 
-""" This module provides an interface to config files, and a globally available
+"""
+This module provides an interface to config files, and a globally available
 config object, to share setup information across the application.
 
 An instance of `ConfigObject`, `globalConf`, is initialized when first loading
 this module, and it should be used as the only interface to the config system.
-"""
 
+"""
 import os
 import types
 from configparser import SafeConfigParser
 from collections import defaultdict
 
-__version__ = '2.0 (beta)'
+__version__ = '2.0'
 
 DEFAULT_DIRECTORY = '/tmp'
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
