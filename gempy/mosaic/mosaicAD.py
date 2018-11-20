@@ -182,7 +182,7 @@ class MosaicAD(Mosaic):
                 self.log.stdinfo("Working on OBJMASK arrays ...")
                 adout[0].OBJMASK = self.mosaic_image_data(block=block,
                                                           return_ROI=return_ROI,
-                                                          tile=tile, dq_data=True)
+                                                          tile=tile)
 
         # When tiling, tile OBJCATS
         if not doimg and tile:

@@ -13,12 +13,13 @@ from gempy.utils import logutils
 
 from recipe_system import __version__
 from recipe_system.reduction.coreReduce import Reduce
-from recipe_system.reduction.coreReduce import set_calservice
 
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_args
 from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
+
+from recipe_system.cal_service import set_calservice
 # ------------------------------------------------------------------------------
 
 def main(args):

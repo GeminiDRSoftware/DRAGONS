@@ -18,7 +18,7 @@ from .reduceActions import CalibrationAction
 from .reduceActions import UnitaryArgumentAction
 
 from ..cal_service import localmanager_available
-
+# ------------------------------------------------------------------------------
 
 class ReduceHelpFormatter(HelpFormatter):
     """
