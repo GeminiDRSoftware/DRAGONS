@@ -1,8 +1,9 @@
 #
+#                                                                        DRAGONS
+#
 #                                                                  coreReduce.py
 # ------------------------------------------------------------------------------
-# the Reduce class. Used by the reduce, v2.0 cli.
-
+# The Reduce class. Used by reduce, v2.0 cli.
 # ------------------------------------------------------------------------------
 from __future__ import print_function
 from builtins import str
@@ -30,19 +31,6 @@ from importlib import import_module
 import astrodata
 import gemini_instruments
 
-# ------------------------------------------------------------------------------
-# These are vestigial and left here temporarily. Use --adpkg on reduce.
-# try:
-#     import soar_instruments
-# except ImportError:
-#     pass
-
-# try:
-#     from ghost_instruments import ghost
-# except ImportError:
-#     pass
-
-# ------------------------------------------------------------------------------
 from gempy.utils import logutils
 
 from astrodata.core import AstroDataError
@@ -58,16 +46,15 @@ from recipe_system.utils.reduce_utils import set_btypes
 from recipe_system.mappers.recipeMapper import RecipeMapper
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
-
+# ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
-
 
 def _log_traceback():
     exc_type, exc_value, exc_traceback = sys.exc_info()
     tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
     [log.error(line.rstrip()) for line in tblist]
     return
-
+# ------------------------------------------------------------------------------
 
 class Reduce(object):
     """
@@ -115,7 +102,7 @@ class Reduce(object):
         self.ucals    = normalize_ucals(args.files, args.user_cal)
         self.uparms   = set_btypes(args.userparam)
         self._upload  = args.upload
-        self.urecipe  = args.recipename if args.recipename else 'default'
+        self.recipename  = args.recipename if args.recipename else 'default'
 
     @property
     def upload(self):
@@ -162,7 +149,7 @@ class Reduce(object):
             return xstat
 
         rm = RecipeMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
-                          recipename=self.urecipe)
+                          recipename=self.recipename)
 
         pm = PrimitiveMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
                              usercals=self.ucals, uparms=self.uparms,
@@ -189,13 +176,13 @@ class Reduce(object):
         # a primitive name.
         if recipe is None:
             try:
-                primitive_as_recipe = getattr(p, self.urecipe)
+                primitive_as_recipe = getattr(p, self.recipename)
                 pname = primitive_as_recipe.__name__
                 log.stdinfo("Found '{}' as a primitive.".format(pname))
                 self._logheader(primitive_as_recipe.__name__)
                 primitive_as_recipe()
             except AttributeError as err:
-                err = "Recipe {} Not Found".format(self.urecipe)
+                err = "Recipe {} Not Found".format(self.recipename)
                 xstat = signal.SIGIO
                 log.error(str(err))
                 return xstat
@@ -346,10 +333,10 @@ class Reduce(object):
         return is_reduce
 
     def _logheader(self, recipe):
-        if self.urecipe == 'default':
+        if self.recipename == 'default':
             r_actual = recipe.__name__
         else:
-            r_actual = self.urecipe
+            r_actual = self.recipename
 
         logstring = "RECIPE: {}".format(r_actual)
         log.status("="*80)
