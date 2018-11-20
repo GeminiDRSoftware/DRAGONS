@@ -21,7 +21,7 @@ from recipe_system.utils.decorators import parameter_override
 class GMOSSpect(GMOS, Spect):
     """
     This is the class containing all of the preprocessing primitives
-    for the GMOSImage level of the type hierarchy tree. It inherits all
+    for the GMOSSpect level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
     tagset = set(["GEMINI", "GMOS", "SPECT"])
@@ -143,14 +143,9 @@ class GMOSSpect(GMOS, Spect):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def _get_arc_lines(self, ad):
-        wave_long = (ad.central_wavelength(asNanometers=True) +
-                     0.5*ad[0].data.shape[-1]*abs(ad[0].dispersion(asNanometers=True)))
+    def _get_linelist_filename(self, ext, cenwave, dw):
+        wave_long = cenwave + 0.5*ext.data.shape[-1]*abs(dw)
         second_order = wave_long > 850
         lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
         filename = 'CuAr_GMOS{}.dat'.format('_mixord' if second_order else '')
-        linelist = os.path.join(lookup_dir, filename)
-        with open(linelist, 'r') as f:
-            arc_lines =  np.array([float(line.strip().split()[0])
-                                   for line in f.readlines() if not line.startswith('#')])
-        return arc_lines
+        return os.path.join(lookup_dir, filename)

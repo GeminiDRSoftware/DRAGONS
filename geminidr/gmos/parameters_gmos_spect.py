@@ -8,4 +8,4 @@ class findAcquisitionSlitsConfig(config.Config):
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):
-        self.order = 5
+        self.order = 3
