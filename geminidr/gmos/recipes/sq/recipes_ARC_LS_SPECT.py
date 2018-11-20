@@ -12,7 +12,7 @@ def reduce(p):
     #p.biasCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
-    p.mosaicDetectors(tile=False, tile_all=True)
+    p.mosaicDetectors()
     p.determineWavelengthSolution()
 
 default = reduce
