@@ -35,10 +35,10 @@ grep -Ev "^[ \t]*#" flatson.lis | sort | head -5 > flats.lis
 grep -Ev "^[ \t]*#" flatsoff.lis | sort | head -5 >> flats.lis
 
 # List std data:
-dataselect "$data_dir/*.fits" --tags IMAGE,RAW --xtags FLAT --expr="object=='"$std_name"'" > "$work_dir/std.lis"
+dataselect "$data_dir/*.fits" --tags IMAGE,RAW --xtags FLAT --expr="object=='$std_name'" > "$work_dir/std.lis"
 
 # List science data:
-dataselect "$data_dir/*.fits" --tags IMAGE,RAW --xtags FLAT --expr="object=='"$targ_name"'" > "$work_dir/sci.lis"
+dataselect "$data_dir/*.fits" --tags IMAGE,RAW --xtags FLAT --expr="object=='$targ_name'" > "$work_dir/sci.lis"
 grep -Ev "^[ \t]*#" sci.lis | sort | head -$maxim > sciset.lis
 
 # This is not actually needed since makeProcessedBPM reduces the only dark?
