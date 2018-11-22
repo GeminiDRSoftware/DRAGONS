@@ -19,7 +19,18 @@ import os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
-# -- General configuration -----------------------------------------------------
+# -- Setting up path to import modules ---------------------------------------
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+print(' Printing current working directory for debugging:')
+print(' ' + os.getcwd())
+
+if on_rtd:
+    sys.path.insert(0, os.path.abspath('./../../../'))
+else:
+    sys.path.insert(0, os.path.abspath('./../../../'))
+
+# -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
@@ -263,14 +274,90 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {
+    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'python': ('https://docs.python.org/3', None),
+}
 
 # Activate the todos
 todo_include_todos=True
 
-# Adding style in order to have the todos show up in a red box.
-def setup(app):
-   app.add_stylesheet('todo-styles.css')
-   app.add_stylesheet('rtd_theme_overrides.css')
 
+# -- Automatically generate API documentation --------------------------------
+# -- Enable autoapi ----------------------------------------------------------
+def run_api_doc(_):
+    """
+    Automatic API generator
+
+    This method is used to generate API automatically by importing all the
+    modules and sub-modules inside a package.
+
+    It is equivalent to run:
+    >>> sphinx-apidoc --force --no-toc --separate --module --output-dir api/ ../../ ../../cal_service
+
+    It is useful because it creates .rst files on the file.
+
+    NOTE
+    ----
+        This does not work with PyCharm default build. If you want to trigger
+        this function, use the standard `$ make html` in the command line.
+        The .rst files will be generated. After that, you can use PyCharm's
+        build helper.
+    """
+    build_packages = [
+        'astrodata',
+    ]
+
+    current_path = os.getcwd()
+    relative_path = "../../../"
+
+    print("Current Path:", current_path)
+
+    for p in build_packages:
+
+        build_path = os.path.join(current_path, relative_path, p)
+
+        ignore_paths = [
+            'doc',
+            'test',
+        ]
+
+        ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+
+        argv = [
+                   "--force",
+                   "--no-toc",
+                   # "--separate",
+                   "--module",
+                   "--output-dir", "api/",
+                   build_path
+               ] + ignore_paths
+
+        sys.path.insert(0, build_path)
+
+        try:
+            # Sphinx 1.7+
+            from sphinx.ext import apidoc
+            apidoc.main(argv)
+
+        except ImportError:
+            # Sphinx 1.6 (and earlier)
+            from sphinx import apidoc
+            argv.insert(0, apidoc.__file__)
+            apidoc.main(argv)
+
+
+# -- Finishing with a setup that will run always -----------------------------
+def setup(app):
+
+    # Adding style in order to have the todos show up in a red box.
+    app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('rtd_theme_overrides.css')
+    app.add_stylesheet('css/rtd_theme_overrides_references.css')
+
+    # Automatic API generation
+    app.connect('builder-inited', run_api_doc)
 

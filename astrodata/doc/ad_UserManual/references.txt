@@ -1,0 +1,30 @@
+
+.. Cross-Reference to the API ..
+
+.. _`Anaconda`: https://www.anaconda.com/
+.. _`AstroData User's Manual`: https://astrodata-user-manual.readthedocs.io/
+.. _`AstroData Cheat Sheet`: https://astrodata-cheat-sheet.readthedocs.io/
+.. _`Conda`: https://conda.io/docs/
+.. _`Recipe System Programmers Manual`: http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/
+.. _`Recipe System Users Manual`: http://dragons-recipe-system-users-manual.readthedocs.io/en/latest/
+
+.. |astrodata| replace:: :mod:`~astrodata`
+.. |astropy| replace:: :mod:`~astropy`
+.. |AstroData| replace:: :class:`~astrodata.AstroData`
+.. |DRAGONS| replace:: ``DRAGONS``
+.. |gemini| replace:: ``gemini``
+.. |geminidr| replace:: :mod:`~geminidr`
+.. |gemini_instruments| replace:: :mod:`gemini_instruments`
+.. |mappers| replace:: :mod:`recipe_system.mappers`
+.. |Mapper| replace:: :class:`~recipe_system.mappers.baseMapper.Mapper`
+.. |NDAstroData| replace:: :class:`~astrodata.nddata.NDAstroData`
+.. |NDData| replace:: :class:`~astropy.nddata.NDData`
+.. |numpy| replace:: :mod:`~numpy`
+.. |PrimitiveMapper| replace:: :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`
+.. |reduce| replace:: ``reduce``
+.. |Reduce| replace:: :class:`~recipe_system.reduction.coreReduce.Reduce`
+.. |RecipeMapper| replace:: :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
+.. |TagSet| replace:: :class:`~astrodata.TagSet`
+
+
+

@@ -1,55 +1,88 @@
 .. intro.rst
 
+.. include:: references.txt
+
 .. _intro:
 
 ************
 Introduction
 ************
 
-What is Astrodata?
-==================
-Astrodata is a tool to represent internally datasets stored on disks.
-Astrodata provides uniform interfaces for working on datasets from different
-instruments.  Once a dataset has been opened with Astrodata, the object
-"knowns about itself".  Information like instrument, observation mode, and how
-to access headers, is readily available through the uniform interface.  All
-the details are coded inside the class associated with the instrument, that
-class then provides the interface.  The appropriate class is selected
-automatically when the file is opened and inspected by Astrodata.
+This is the AstroData User's Manual, which covers version 2.0
+(beta) of the DRAGONS Recipe System. The current chapter covers basic concepts
+like what is the |astrodata| package and how to install it (together with the
+other DRAGONS' packages). :ref:`Chapter 2 <structure>`
+explains with more details what is |AstroData| and how the data is represented
+using it. :ref:`Chapter 3 <iomef>` describes input and output operations and
+how multi-extension (MEF) FITS files are represented. :ref:`Chapter 4 <tags>`
+provides information regarding the |TagSet| class, its usage and a few advanced
+topics. On :ref:`Chapter 5 <headers>` you will find information about the FITS
+headers and how to access/modify the metadata. The last two chapters,
+:ref:`Chapter 5 <data>` and :ref:`Chapter 6 <tables>` cover more details about
+how to read, manipulate and write pixel data and tables, respectively.
 
-Currently Astrodata implements a representation for Multi-Extension FITS (MEF)
-files.  (Other representations can be implemented.)
+
+If you are looking for a quick reference, please, have a look on the
+`AstroData Cheat Sheet`_. If you are already familiar with |astrodata| and
+are looking forward to use the DRAGONS Recipe System, please check the
+`Recipe System Users Manual`_ and the `Recipe System Programmers Manual`_.
+
+Reference Documents
+===================
+
+    - `DRAGONS Documentation <https://dragons.readthedocs.io/>`_
+    - `AstroData Cheat Sheet`_
+    - `Recipe System Users Manual`_
+    - `Recipe System Programmers Manual`_
+
+What is |astrodata|?
+====================
+
+|astrodata| is a package that wraps together tools to represent internally
+astronomical datasets stored on disks and to properly parse their metadata
+using the |AstroData| and the |TagSet| classes. |astrodata| provides uniform
+interfaces for working on datasets from different
+instruments. Once a dataset has been opened with |astrodata|, the object
+"knowns about itself". Information like instrument, observation mode, and how
+to access headers, is readily available through the uniform interface. All
+the details are coded inside the class associated with the instrument, that
+class then provides the interface. The appropriate class is selected
+automatically when the file is opened and inspected by |astrodata|.
+
+Currently |astrodata| implements a representation for Multi-Extension FITS (MEF)
+files. (Other representations can be implemented.)
 
 
 .. _install:
 
 Installing Astrodata
 ====================
-The astrodata package has a few dependencies, ``astropy``, ``numpy`` and others.
-The best way to get everything you need is to install Anaconda, and the
-``gemini`` stack from the AstroConda channel.
 
-Astrodata itself is part of ``DRAGONS``.  It is available from the
-repository, as tar file, or as a conda package.  The bare ``astrodata`` package
+The |astrodata| package has a few dependencies, |astropy|, |numpy| and others.
+The best way to get everything you need is to install Anaconda_, and the
+|gemini| stack from the AstroConda channel.
+
+|astrodata| itself is part of |DRAGONS|. It is available from the
+repository, as tar file, or as a conda package. The bare |astrodata| package
 does not do much by itself, it needs a companion instrument definitions
-package.   For Gemini, this is ``gemini_instruments``, also included in
-``DRAGONS``.
+package. For Gemini, this is ``gemini_instruments``, also included in
+|DRAGONS|.
 
 Installing Anaconda and stacks from AstroConda
 ----------------------------------------------
-This is required whether you are installing ``DRAGONS`` from the
+This is required whether you are installing |DRAGONS| from the
 repository, the tar file or the conda package.
 
 #. Install Anaconda.
-    Go to https://www.continnum.io/downloads and install the latest 64-bit
+    Go to https://www.anaconda.com/download/ and install the latest 64-bit
     Anaconda, Python 2.7 or 3.x, it does not matter for the root installation.
     Since the Python world is moving away from 2.7, choosing 3.x is
-    probably better.   The DRAGONS software has been tested
+    probably better. The DRAGONS software has been tested
     under both 2.7 and 3.x.
 
 #. Open a bash session.
-    Anaconda requires bash.  If you are not familiar with bash, note that the
-    shell configuration file is named ``.bash_profile``.  During the
+    Anaconda requires bash. If you are not familiar with bash, note that the
+    shell configuration file is named ``.bash_profile``. During the
     installation, a PATH setting has been added to your ``.bash_profile`` to
     add the Anaconda bin directory to the ``PATH``.
 
