@@ -12,5 +12,4 @@ Reference API
 .. toctree::
     :hidden:
 
-    api/astrodata
     api/geminidr
