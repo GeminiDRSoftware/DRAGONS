@@ -124,8 +124,11 @@ class MatchBox(object):
             out_coords = self.backward(coords)
         fitted_model = self._fit(model, coords, out_coords)
         self._forward_model = fitted_model
-        if hasattr(fitted_model, 'inverse') and set_inverse:
-            self._backward_model = fitted_model.inverse
+        if set_inverse:
+            try:
+                self._backward_model = fitted_model.inverse
+            except NotImplementedError:
+                pass
 
     def fit_backward(self, model=None, coords=None, set_inverse=True):
         """
@@ -155,8 +158,11 @@ class MatchBox(object):
             out_coords = self.forward(coords)
         fitted_model = self._fit(model, coords, out_coords)
         self._backward_model = fitted_model
-        if hasattr(fitted_model, 'inverse') and set_inverse:
-            self._forward_model = fitted_model.inverse
+        if set_inverse:
+            try:
+                self._forward_model = fitted_model.inverse
+            except NotImplementedError:
+                pass
 
     def add_coords(self, input_coords, output_coords):
         """
