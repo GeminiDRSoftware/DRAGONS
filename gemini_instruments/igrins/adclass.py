@@ -128,7 +128,7 @@ class AstroDataIgrins(AstroDataGemini):
         """
         Returns the name of the instrument making the observation
 
-        Parameters:
+        Parameters
         ----------
         generic: <bool>
             Request the generic instrument name, if applicable.

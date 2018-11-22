@@ -311,6 +311,7 @@ def run_api_doc(_):
     """
     build_packages = [
         'astrodata',
+        'gemini_instruments'
     ]
 
     current_path = os.getcwd()

@@ -1,5 +1,8 @@
 .. tags.rst
 
+.. include:: references.txt
+
+
 .. _tags:
 
 **************
@@ -8,13 +11,14 @@ Astrodata Tags
 
 What are the Astrodata Tags?
 ============================
-The Astrodata Tags identify the data represented in the ``AstroData`` object.
-When a file on disk is opened with Astrodata, the headers are inspected to
-identify which specific AstroData class needs to be loaded, ``AstroDataGMOS``,
-or ``AstroDataNIRI``.  Based on the class the data is associated to, a list
-of "tags" will be defined.  The tags will tell whether the file is a flatfield
-or a dark, if it is a raw dataset, or if it has been processed by the
-recipe system, if it is imaging or spectroscopy.  The tags will tell the
+The Astrodata Tags identify the data represented in the |AstroData| object.
+When a file on disk is opened with |astrodata|, the headers are inspected to
+identify which specific |AstroData| class needs to be loaded,
+:class:`~gemini_instruments.gmos.AstroDataGmos`,
+:class:`~gemini_instruments.niri.AstroDataNiri`. Based on the class the data is
+associated to, a list of "tags" will be defined. The tags will tell whether the
+file is a flatfield or a dark, if it is a raw dataset, or if it has been processed by the
+recipe system, if it is imaging or spectroscopy. The tags will tell the
 users and the system what that data is and also give some information about
 the processing status.
 
@@ -31,8 +35,8 @@ examples.  Then ::
     $ cd <path>/dragons_datapkg-v1.0/playground
     $ python
 
-Before doing anything, you need to import AstroData and the Gemini instrument
-configuration package.
+Before doing anything, you need to import |astrodata| and the Gemini instrument
+configuration package (|gemini_instruments|).
 
 ::
 
@@ -45,8 +49,8 @@ Let us open a Gemini dataset and see what tags we get::
     >>> ad.tags
     set(['RAW', 'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'ACQUISITION'])
 
-The file we loaded is raw, GMOS North data.  It is a 2D image and it was an
-acquistion image, not a science observation.  The "UNPREPARED" tag indicates
+The file we loaded is raw, GMOS North data. It is a 2D image and it was an
+acquisition image, not a science observation. The "UNPREPARED" tag indicates
 that the file has never been touched by the Recipe System which runs a
 "prepare" primitive as the first step of each recipe.
 
@@ -95,7 +99,7 @@ run typewalk ::
      N20170609S0154_varAdded.fits ...... (ACQUISITION) (GEMINI) (GMOS) (IMAGE) (NORTH) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) (PREPARED) (SIDEREAL)
     Done DataSpider.typewalk(..)
 
-`typewalk` can be used to select specific data based on tags, and even create
+``typewalk`` can be used to select specific data based on tags, and even create
 lists ::
 
     % typewalk --tags RAW
@@ -119,20 +123,21 @@ lists ::
 Creating New Astrodata Tags [Advanced Topic]
 ============================================
 For proper and complete instructions on how to create Astrodata Tags and
-the ``AstroData`` class that host the tags, the reader is invited to refer to the
-Astrodata Programmer Manual.  Here we provide a simple introduction that
+the |AstroData| class that host the tags, the reader is invited to refer to the
+Astrodata Programmer Manual. Here we provide a simple introduction that
 might help some readers better understand Astrodata Tags, or serve as a
 quick reference for those who have written Astrodata Tags in the past but need
 a little refresher.
 
-The Astrodata Tags are defined in an ``AstroData`` class.  The ``AstroData``
+The Astrodata Tags are defined in an |AstroData| class.  The |AstroData|
 class specific to an instrument is located in a separate package, not in
-``astrodata``.  For example, for Gemini instruments, all the various ``AstroData``
-classes are contained in the ``gemini_instruments`` package.
+|astrodata|. For example, for Gemini instruments, all the various |AstroData|
+classes are contained in the |gemini_instruments| package.
 
-An Astrodata Tag is a function within the instrument's ``AstroData`` class.
+An Astrodata Tag is a function within the instrument's |AstroData| class.
 The tag function is distinguished from normal functions by applying the
-``@astro_data_tag`` decorator to it.  The tag function returns a ``TagSet``.
+:func:`~astrodata.astro_data_tag` decorator to it.
+The tag function returns a :class:`astrodata.TagSet`.
 
 For example::
 
@@ -145,7 +150,7 @@ For example::
 
 The tag function looks at the headers and if the keyword "OBSTYPE" is set
 to "ARC", the tags "ARC" and "CAL" (for calibration) will be assigned to the
-``AstroData`` object.
+|AstroData| object.
 
 A whole suite of such tag functions is needed to fully characterize all
 types of data an instrument can produce.
