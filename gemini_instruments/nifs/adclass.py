@@ -134,7 +134,7 @@ class AstroDataNifs(AstroDataGemini):
         Returns the level at which the array becomes non-linear.  The
         return units are ADUs.  A lookup table is used.  Whether the data
         has been corrected for non-linearity or not is taken into account.
-         A list is returned unless called on a single-extension slice.
+        A list is returned unless called on a single-extension slice.
 
         Returns
         -------

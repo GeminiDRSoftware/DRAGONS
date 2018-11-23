@@ -25,10 +25,11 @@ Appendix
 --------
 
 .. toctree::
-   :numbered:
    :maxdepth: 1
+   :caption: More
 
    appendices/appendix_descriptors
+   api
 
 Indices and tables
 ==================
