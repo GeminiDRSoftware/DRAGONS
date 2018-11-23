@@ -7,7 +7,7 @@ script_dir=$(cd $(dirname "$0"); pwd)
 start_test_set "$name"
 
 # GS-2018A-Q-130-23:
-"$script_dir/reduce_img_not_bpm.sh" "$name" "Sgr A* - off-centered" 9182 10 || nerr=${nerr}1
+"$script_dir/reduce_img_every_n.sh" "$name" "Sgr A* - off-centered" 9182 4 || nerr=${nerr}1
 
 end_test_set "$name" $nerr
 
