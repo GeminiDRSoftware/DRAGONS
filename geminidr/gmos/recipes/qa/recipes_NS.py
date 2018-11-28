@@ -1,11 +1,13 @@
 """
-Recipes available to data with tags ['GMOS', 'NODANDSHUFFLE']
-Default is "reduce".
+Recipes available to data with tags ['GMOS', 'SPECT', 'NODANDSHUFFLE'].
+Currently (2018-11-28), NODANDSHUFFLE datasets are slated as SPECT
+type data. This may be revised in future with greater capabilities developed
+under DRAGONS.
+
+The default recipe is "reduce".
+
 """
-recipe_tags = set(['GMOS', 'NODANDSHUFFLE'])
-# once we have LS, MOS, and IFU recipes, we might need the following set
-# instead to maximize the match.
-# recipe_tags = {'GMOS', 'MOS', 'IFU', 'LS', 'NODANDSHUFFLE'}
+recipe_tags = set(['GMOS', 'SPECT', 'NODANDSHUFFLE'])
 
 def reduce(p):
     """
