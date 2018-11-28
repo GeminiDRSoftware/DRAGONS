@@ -180,10 +180,16 @@ class Reduce(object):
                 pname = primitive_as_recipe.__name__
                 log.stdinfo("Found '{}' as a primitive.".format(pname))
                 self._logheader(primitive_as_recipe.__name__)
-                primitive_as_recipe()
             except AttributeError as err:
                 err = "Recipe {} Not Found".format(self.recipename)
                 xstat = signal.SIGIO
+                log.error(str(err))
+                return xstat
+            try:
+                primitive_as_recipe()
+            except AttributeError as err:
+                xstat = signal.SIGABRT
+                _log_traceback()
                 log.error(str(err))
                 return xstat
         else:
@@ -260,8 +266,15 @@ class Reduce(object):
                 log.error("Caller passed no valid input files")
                 raise IOError("No valid files passed.")
         except AssertionError:
-            log.stdinfo("All submitted files appear valid")
+            log.stdinfo("All submitted files appear valid:")
+            if len(input_files) > 1:
+                filestr = input_files[0]
+                filestr += " ... " + input_files[-1]
+                filestr += ", {} files submitted.".format(len(input_files))
+            else:
+                filestr = input_files[0]
 
+            log.stdinfo(filestr)
         return input_files
 
     def _convert_inputs(self, inputs):
