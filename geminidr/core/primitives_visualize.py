@@ -230,15 +230,13 @@ class Visualize(PrimitivesBASE):
     def mosaicDetectors(self, adinputs=None, **params):
         """
         This primitive will use the gempy MosaicAD class to mosaic the frames
-        of the input images.
+        of the input images. For this primitive, the mosaicAD parameter, 'tile',
+        is always False.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files. Default is '_mosaic'
-
-        tile: bool
-            tile images instead of a proper mosaic. Default is False.
 
         sci_only: bool
             mosaic only SCI image data. Default is False
@@ -261,7 +259,6 @@ class Visualize(PrimitivesBASE):
         interpolator = params['interpolator']
         sci_only = params['sci_only']
         suffix = params['suffix']
-        tile = params['tile']
         # ----------------------------------------
         adoutputs = []
         for ad in adinputs:
@@ -284,7 +281,7 @@ class Visualize(PrimitivesBASE):
             mos.set_interpolator(interpolator)
 
             log.stdinfo("\tBuilding mosaic, converting data ...")
-            ad_out = mos.as_astrodata(tile=tile, doimg=sci_only)
+            ad_out = mos.as_astrodata(tile=False, doimg=sci_only)
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
