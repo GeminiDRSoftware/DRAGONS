@@ -82,7 +82,7 @@ def main(args):
     # Config local calibration manager with passed args object
     set_calservice(args)
 
-    log.stdinfo("\n\t\t\t--- reduce v{} ---".format(__version__))
+    log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
     log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))
     r_reduce = Reduce(args)
     estat = r_reduce.runr()
