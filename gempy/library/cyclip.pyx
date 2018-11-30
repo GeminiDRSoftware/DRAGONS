@@ -3,6 +3,10 @@
 # environment.
 # cythonize -a -i cyclip.pyx
 
+# Specify that this source is nominally based on Python 3 syntax (though the
+# code below is actually 2-vs-3 agnostic), to avoid a warning with v0.29+:
+# cython: language_level=3
+
 import numpy as np
 from libc.math cimport sqrt
 cimport cython

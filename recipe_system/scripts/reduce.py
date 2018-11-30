@@ -11,7 +11,7 @@ import sys
 
 from gempy.utils import logutils
 
-from recipe_system import __version__
+from recipe_system import __version__ as rs_version
 from recipe_system.reduction.coreReduce import Reduce
 
 from recipe_system.utils.reduce_utils import buildParser
@@ -79,10 +79,11 @@ def main(args):
     except AssertionError:
         pass
 
-    # Configure local calibration manager.
+    # Config local calibration manager with passed args object
     set_calservice(args)
 
-    log.stdinfo("\t\t\t--- reduce, {} ---".format(__version__))
+    log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
+    log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))
     r_reduce = Reduce(args)
     estat = r_reduce.runr()
     if estat != 0:
@@ -93,11 +94,11 @@ def main(args):
 # --------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    version_report = __version__
-    parser = buildParser(version_report)
+    parser = buildParser(rs_version)
     args = parser.parse_args()
 
     # Deal with argparse structures that are different than optparse
+    # Normalizing argument types should happen before 'args' is passed to Reduce.
     args = normalize_args(args)
     args.upload = normalize_upload(args.upload)
 
