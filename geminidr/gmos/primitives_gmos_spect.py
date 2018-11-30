@@ -145,7 +145,7 @@ class GMOSSpect(GMOS, Spect):
 
     def _get_linelist_filename(self, ext, cenwave, dw):
         wave_long = cenwave + 0.5*ext.data.shape[-1]*abs(dw)
-        second_order = wave_long > 850
+        use_second_order = wave_long>820 and dw<0.2
         lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
-        filename = 'CuAr_GMOS{}.dat'.format('_mixord' if second_order else '')
+        filename = 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else '')
         return os.path.join(lookup_dir, filename)

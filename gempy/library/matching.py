@@ -23,7 +23,7 @@ class MatchBox(object):
     """
     def __init__(self, input_coords, output_coords, forward_model=None,
                  backward_model=None, fitter=fitting.LinearLSQFitter,
-                 domain=None, **kwargs):
+                 **kwargs):
         super(MatchBox, self).__init__(**kwargs)
         self._input_coords = list(input_coords)
         self._output_coords = list(output_coords)
@@ -35,7 +35,48 @@ class MatchBox(object):
         self._forward_model = forward_model
         self._backward_model = backward_model
         self._fitter = fitter
-        self._domain = domain
+
+    @classmethod
+    def create_from_kdfit(cls, input_coords, output_coords, model,
+                          match_radius, sigma_clip=None, priority=[]):
+        """
+        Creates a MatchBox object from a KDTree-fitted model. This does
+        the matching between input and output coordinates and, if
+        requested, iteratively sigma-clips.
+
+        Parameters
+        ----------
+        input_coords: array-like
+            untransformed input coordinates
+        output_coords: array-like
+            output coordinates
+        model: Model
+            transformation
+        match_radius: float
+            maximum distance for matching coordinates
+        sigma_clip: float/None
+            if not None, iteratively sigma-clip using this number of
+            standard deviations
+
+        Returns
+        -------
+        MatchBox
+        """
+        num_matches = None
+        init_match_radius = match_radius
+        while True:
+            matched = match_sources_alt(model(input_coords), output_coords,
+                                    radius=match_radius)
+            incoords, outcoords = zip(*[(input_coords[i], output_coords[m])
+                                        for i, m in enumerate(matched) if m>-1])
+            m = cls(incoords, outcoords, forward_model=model)
+            m.fit_forward()
+            if sigma_clip is None or num_matches == len(incoords):
+                break
+            num_matches = len(incoords)
+            match_radius = min(init_match_radius, sigma_clip * m.rms_output)
+            model = m.forward
+        return m
 
     def validate_coords(self, input_coords=None, output_coords=None):
         """Confirm that the two sets of coordinates are compatible"""
@@ -565,7 +606,7 @@ class BruteLandscapeFitter(Fitter):
         _fitter_to_model_params(model_copy, fitted_params)
         return model_copy
 
-def _kdstat(tree, updated_model, in_coords, sigma, maxsig, k):
+def _kdstat(tree, updated_model, in_coords, in_weights, ref_weights, sigma, maxsig, k):
     """
     Compute the statistic for transforming coordinates onto a set of reference
     coordinates. This uses mathematical calulations and is not pixellated like
@@ -596,9 +637,9 @@ def _kdstat(tree, updated_model, in_coords, sigma, maxsig, k):
         out_coords = (out_coords,)
     dist, idx = tree.query(list(zip(*out_coords)), k=k, distance_upper_bound=maxsep)
     if k > 1:
-        sum = np.sum(np.exp(-f*d*d) for dd in dist for d in dd)
+        sum = np.sum(in_wt*ref_weights[i]*np.exp(-f*d*d) for in_wt, dd, ii in zip(in_weights, dist, idx) for d, i in zip(dd, ii))
     else:
-        sum = np.sum(np.exp(-f*d*d) for d in dist)
+        sum = np.sum(in_wt*ref_weights[i]*np.exp(-f*d*d) for in_wt, d, i in zip(in_weights, dist, idx))
     return -sum  # to minimize
 
 class KDTreeFitter(Fitter):
@@ -613,8 +654,8 @@ class KDTreeFitter(Fitter):
         super(KDTreeFitter, self).__init__(optimize.minimize,
                                            statistic=_kdstat)
 
-    def __call__(self, model, in_coords, ref_coords, sigma=5.0, maxsig=4.0,
-                 k=5, **kwargs):
+    def __call__(self, model, in_coords, ref_coords, in_weights=None,
+                 ref_weights=None, sigma=5.0, maxsig=5.0, k=5, **kwargs):
         model_copy = _validate_model(model, ['bounds', 'fixed'])
 
         # Turn 1D arrays into tuples to allow iteration over axes
@@ -642,9 +683,16 @@ class KDTreeFitter(Fitter):
                     getattr(model_copy, p).value = 20*xtol if pval == 0 \
                         else (np.sign(pval) * 20*xtol)
 
+        if in_weights is None:
+            in_weights = np.ones((len(in_coords[0]),))
+        if ref_weights is None:
+            ref_weights = np.ones((len(ref_coords[0]),))
+        # cKDTree.query() returns a value of n for no neighbour
+        ref_weights = np.append(ref_weights, (0,))
+
         tree = spatial.cKDTree(list(zip(*ref_coords)))
         # avoid _convert_input since tree can't be coerced to a float
-        farg = (model_copy, in_coords, sigma, maxsig, k, tree)
+        farg = (model_copy, in_coords, in_weights, ref_weights, sigma, maxsig, k, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
         result = self._opt_method(self.objective_function, p0, farg,
@@ -961,6 +1009,32 @@ def match_sources(incoords, refcoords, radius=2.0, priority=[]):
             # No first_allowed so take the first one
             if len(inidx):
                 matched[inidx[0]] = i
+    return matched
+
+def match_sources_alt(incoords, refcoords, radius=2.0):
+    """
+    Like the previous method, but this does a "greedy" match, starting
+    with the closest pair, instead of sequentially through the refcoords
+    """
+    try:
+        iter(incoords[0])
+    except TypeError:
+        incoords = (incoords,)
+        refcoords = (refcoords,)
+    matched = np.full((len(incoords[0]),), -1, dtype=int)
+    tree = spatial.cKDTree(list(zip(*refcoords)))
+    dist, idx = tree.query(list(zip(*incoords)), distance_upper_bound=radius, k=5)
+
+    while True:
+        min_arg = np.unravel_index(np.argmin(dist), dist.shape)
+        min_dist = dist[min_arg]
+        if min_dist == np.inf:
+            break
+        i = idx[min_arg]
+        # min_arg has value (number_of_incoord, order_in_distance_list)
+        matched[min_arg[0]] = i
+        # Remove this incoord from the pool
+        dist[idx==i] = np.inf
     return matched
 
 def match_catalogs(xin, yin, xref, yref, use_in=None, use_ref=None,
