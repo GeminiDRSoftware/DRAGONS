@@ -189,7 +189,7 @@ class Spect(PrimitivesBASE):
                 m_init = _set_model(m_init, order=int(ord), initial=(ord==1), kdfit=True)
                 if ord == init_order:
                     plot_arc_fit(data, peaks, arc_lines, m_init, "Initial model")
-                log.stdinfo('Initial model: {}'.format(repr(m_init)))
+                    log.stdinfo('Initial model: {}'.format(repr(m_init)))
                 fit_it = matching.KDTreeFitter()
                 m_final = fit_it(m_init, peaks_to_fit, arc_lines, maxsig=10, #k=1,
                                  #in_weights=(peak_snrs[peak_snrs>min_snr])**1,
