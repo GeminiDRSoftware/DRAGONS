@@ -11,7 +11,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                    allowed={"none": "no weighting",
                                             "natural": "natural weighting",
                                             "relative": "relative to local peaks"},
-                                   default="relative")
+                                   default="natural")
     fwidth = config.RangeField("Feature width in pixels", float, 4., min=2.)
     order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
