@@ -183,7 +183,7 @@ RS_SCRIPTS = [ os.path.join('recipe_system', 'scripts', 'adcc'),
                os.path.join('recipe_system', 'scripts', 'superclean'),
              ]
 
-GEMPY_SCRIPTS = [ os.path.join('gempy', 'scripts', 'automosaic.py'),
+GEMPY_SCRIPTS = [
                   os.path.join('gempy', 'scripts', 'dataselect'),
                   os.path.join('gempy', 'scripts', 'fwhm_histogram'),
                   os.path.join('gempy', 'scripts', 'gmosn_fix_headers'),
