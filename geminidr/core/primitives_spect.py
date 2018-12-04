@@ -81,13 +81,15 @@ class Spect(PrimitivesBASE):
 
         # Get list of arc lines (probably from a text file dependent on the
         # input spectrum, so a private method of the primitivesClass)
-        old_linelist = None
+        linelists = {}
         if arc_file is not None:
             try:
-                arc_lines = np.loadtxt(arc_file, usecols=[0]) * 0.1
+                arc_lines = np.loadtxt(arc_file, usecols=[0])
             except (IOError, TypeError):
                 log.warning("Cannot read file {} - using default linelist".format(arc_file))
                 arc_file = None
+            else:
+                linelists[arc_file] = arc_lines
 
         for ad in adinputs:
             for ext in ad:
@@ -135,10 +137,15 @@ class Spect(PrimitivesBASE):
                 # (For user-supplied, we read it at the start, so don't do this at all)
                 if arc_file is None:
                     linelist = self._get_linelist_filename(ext, cenwave, dw)
-                    # TODO: Convert linelist to nm
-                    if linelist != old_linelist:
-                        arc_lines = np.loadtxt(linelist, usecols=[0]) * 0.1
-                    old_linelist = linelist
+                    try:
+                        arc_lines = linelists[linelist]
+                    except KeyError:
+                        arc_lines = np.loadtxt(linelist, usecols=[0])
+                        linelists[linelist] = arc_lines
+
+                if min(arc_lines) > cenwave+0.5*len(data)*abs(dw):
+                    log.warning("Line list appears to be in Angstroms; converting to nm")
+                    arc_lines *= 0.1
 
                 # Find peaks; convert width FWHM to sigma
                 widths = 0.42466*fwidth * np.arange(0.8,1.21,0.05)  # TODO!
