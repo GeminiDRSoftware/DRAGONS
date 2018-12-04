@@ -261,7 +261,7 @@ class Spect(PrimitivesBASE):
 
                 fit_table = Table([coeff_column, incoords, outcoords],
                                   names=("coefficients", "peaks", "wavelengths"))
-                ext.FITTABLE = fit_table
+                ext.WAVECAL = fit_table
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
