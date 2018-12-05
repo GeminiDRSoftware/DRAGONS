@@ -31,7 +31,7 @@ install:
 
 # Install packages
 - conda install --yes --quiet --channel conda-forge python-coveralls
-- conda install --yes --quiet --channel astropy astroplan ccdproc
+- conda install --yes --quiet --channel astropy astroplan astroquery ccdproc
 - conda install --yes --quiet future
 
 script:
