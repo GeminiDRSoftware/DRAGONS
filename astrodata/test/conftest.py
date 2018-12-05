@@ -17,14 +17,17 @@ def pytest_collection_modifyitems(config, items):
 
     local_path = config.getoption("--ad_test_data_path")
 
-    if os.path.exists(local_path):
-        return
+    if local_path is not None:
 
-        skip_ad_local_tests = pytest.mark.skip(
-            reason="need --ad_test_data_path option to run")
+        if os.path.exists(local_path):
+            return
+        else:
+            skip_ad_local_tests = pytest.mark.skip(
+                reason="input --ad_test_data_path does not exists")
+
     else:
         skip_ad_local_tests = pytest.mark.skip(
-            reason="input --ad_test_data_path does not exists")
+                reason="need --ad_test_data_path option to run")
 
     for item in items:
         if "ad_local_data" in item.keywords:
