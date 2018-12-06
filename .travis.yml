@@ -3,8 +3,6 @@ python:
 - '3.5'
 - '3.6'
 - '3.6-dev'
-- '3.7'
-- '3.7-dev'
 
 branches:
   only:
@@ -29,7 +27,8 @@ install:
 #- conda info -a
 
 # Create astroconda virtual environment
-- conda create -q -n astroconda stsci python=$TRAVIS_PYTHON_VERSION
+- export PYTHON_VERSION="$( echo $TRAVIS_PYTHON_VERSION | cut -d'-' -f1 )"
+- conda create -q -n astroconda stsci python=$PYTHON_VERSION
 - source activate astroconda
 
 # Install packages
