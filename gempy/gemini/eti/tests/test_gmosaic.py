@@ -13,9 +13,10 @@ To run:
 
 import os
 import os.path
+import pytest
 import astrodata
 import gemini_instruments
-from gempy.gemini.eti import gmosaiceti
+
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 
@@ -51,11 +52,14 @@ class TestGmosaic(object):
         """Run once after every test."""
         pass
 
+    @pytest.mark.skip("Test requires IRAF/PyRAF")
     def test_gmos_default(self):
         """
         Test the mosaic of a GMOS dataset with var dq but that has
         not be overscan subtracted or trimmed.  Use default parameters.
         """
+        from gempy.gemini.eti import gmosaiceti
+
         # where is the fits diff tool?
         ad = astrodata.open(TestGmosaic.gmos_file)
         inputs = []
