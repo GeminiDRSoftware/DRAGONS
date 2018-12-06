@@ -2,6 +2,9 @@ language: python
 python:
 - '3.5'
 - '3.6'
+- '3.6-dev'
+- '3.7'
+- '3.7-dev'
 
 branches:
   only:
@@ -35,9 +38,11 @@ install:
 - conda install --yes --quiet future
 
 script:
-- pytest --ignore=old_other --ignore=old_astrodata_Gemini
+- pytest astrodata recipe_system gemini_instruments
 #- coverage run --branch --source= setup.py test
 
 after_success:
-# - coveralls
+#- coveralls
+
+
 
