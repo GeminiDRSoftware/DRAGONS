@@ -19,22 +19,29 @@ pipeline {
   }
 
   stages {
+
     stage ("Code pull"){
       steps{
         checkout scm
       }
     }
-    stage ("Build Environment") {
+
+    stage ("Download and Install Anaconda") {
       steps {
         sh '''
-              if ! [ "$(command -v conda)" ]; then
-                echo "Conda is not installed - Downloading and installing"
-                curl https://repo.anaconda.com/archive/Anaconda3-5.3.1-Linux-x86_64.sh \\
-                  --output anaconda.sh --silent
-                /bin/bash anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
-              fi
+           if ! [ "$(command -v conda)" ]; then
+               echo "Conda is not installed - Downloading and installing"
+               curl https://repo.anaconda.com/archive/Anaconda3-5.3.1-Linux-x86_64.sh \\
+                   --output anaconda.sh --silent
+               /bin/bash anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
+           fi
+           '''
+      }
+    } // stage: download and install anaconda
 
-              conda create --yes -n ${BUILD_TAG} python
+    stage ("Build Environment") {
+      steps {
+        sh '''conda create --yes -n ${BUILD_TAG} python
               source activate ${BUILD_TAG}
               conda install coverage pytest
               conda install -c omnia behave
