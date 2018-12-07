@@ -26,7 +26,8 @@ pipeline {
     }
     stage ("Build Environment") {
       steps {
-        sh '''conda create --yes -n ${BUILD_TAG} python
+        sh '''echo $PATH
+              conda create --yes -n ${BUILD_TAG} python
               source activate ${BUILD_TAG}
               conda install coverage pytest
               conda install -c omnia behave
