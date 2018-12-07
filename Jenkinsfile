@@ -15,7 +15,7 @@ pipeline {
   }
 
   environment {
-    PATH="~/anaconda3/bin:$PATH"
+    PATH="$HOME/anaconda3/bin:$PATH"
   }
 
   stages {
