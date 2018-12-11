@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 pipeline {
 
-  agent { label 'centos7'}
+  agent { label any }
 
   triggers {
     pollSCM('*/5 * * * 1-5')
@@ -15,15 +15,30 @@ pipeline {
   }
 
   environment {
-    PATH="~/miniconda3/bin:$PATH"
+    PATH="JENKINS_HOME/anaconda3/bin:$PATH"
   }
 
   stages {
+
     stage ("Code pull"){
       steps{
         checkout scm
       }
     }
+
+    stage ("Download and Install Anaconda") {
+      steps {
+        sh '''
+           if ! [ "$(command -v conda)" ]; then
+               echo "Conda is not installed - Downloading and installing"
+               curl https://repo.anaconda.com/archive/Anaconda3-5.3.1-Linux-x86_64.sh \\
+                   --output anaconda.sh --silent
+               /bin/bash anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
+           fi
+           '''
+      }
+    } // stage: download and install anaconda
+
     stage ("Build Environment") {
       steps {
         sh '''conda create --yes -n ${BUILD_TAG} python

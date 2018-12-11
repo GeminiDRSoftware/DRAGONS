@@ -7,11 +7,6 @@ import numpy as np
 from copy import deepcopy
 from os.path import splitext
 
-try:
-    from stsci import numdisplay as nd
-except ImportError:
-    import numdisplay as nd
-
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 
@@ -25,6 +20,13 @@ from geminidr import PrimitivesBASE
 from . import parameters_visualize
 
 from recipe_system.utils.decorators import parameter_override
+
+try:
+    from stsci import numdisplay as nd
+except ImportError:
+    import numdisplay as nd
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class Visualize(PrimitivesBASE):
@@ -346,7 +348,6 @@ class Visualize(PrimitivesBASE):
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-
 class _localNumDisplay(nd.NumDisplay):
     """
     This class overrides the default numdisplay.display function in
