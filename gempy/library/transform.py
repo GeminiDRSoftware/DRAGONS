@@ -177,7 +177,7 @@ class Transform(object):
         try:
             return [m.name for m in self._models].index(key)
         except ValueError as e:
-            if isinstance(key, int):
+            if isinstance(key, (int, np.integer)):
                 return key
             raise ValueError(e)
 
