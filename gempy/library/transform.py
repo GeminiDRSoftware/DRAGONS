@@ -235,7 +235,7 @@ class Transform(object):
 
         # Ugly stuff to break down a CompoundModel
         try:
-            sequence = self.split_compound_model(model._tree)
+            sequence = self.split_compound_model(model._tree, required_inputs)
         except AttributeError:
             self._models.insert(index, model)
         else:
@@ -249,28 +249,39 @@ class Transform(object):
         self._affine = self.__is_affine()
 
     @staticmethod
-    def split_compound_model(tree):
+    def split_compound_model(tree, ndim):
         """
-        Break a CompoundModel into a sequence of chained Model instances
+        Break a CompoundModel into a sequence of chained Model instances.
+        It's necessary to specify the initial dimensionality of the Model
+        to determine whether a chain operator (|) is linking full
+        transformations or just components within a submodel.
 
         Parameters
         ----------
         tree: astropy.modeling.utils.ExpressionTree
+            The tree to be processed
+        ndim: int
+            The number of inputs
 
         Returns
         -------
         list: a list of Models to be inserted into the Transform
         """
         stack = []
+        # Expand the tree in a Reverse Polish Notation-type manner
         for node in tree.traverse_postorder():
             if node.isleaf:
                 stack.append(node.value)
             else:
                 operand = node.value
-                if operand != '|':
-                    right = stack.pop()
-                    left = stack.pop()
-                    stack.append(_model_oper(operand)(left, right))
+                # If this is the chain (|) operator we need to see if what
+                # we have on the stack takes the right number of inputs
+                if operand == "|" and stack[-1].n_inputs == ndim:
+                    ndim = stack[1].n_outputs
+                    continue
+                right = stack.pop()
+                left = stack.pop()
+                stack.append(_model_oper(operand)(left, right))
         return stack
 
     def replace(self, model):
@@ -322,9 +333,15 @@ class Transform(object):
         that is unable to handle certain Models."""
         return self._affine
 
-    def affine_matrices(self):
+    def affine_matrices(self, shape=None):
         if not self.is_affine:
             raise ValueError("Transformation is not affine!")
+        ndim = self.ndim
+        if shape is None:
+            shape = tuple([1000] * ndim)
+        corners = np.zeros((ndim, ndim+1))
+        for i, length in enumerate(shape):
+            corners[i,i] = length
 
     def __call__(self, *args, **kwargs):
         if len(args) != self.ndim:
