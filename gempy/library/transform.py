@@ -13,10 +13,10 @@ Classes:
 
 functions:
 """
-from astropy.modeling import Model
-
 import numpy as np
-from astropy.modeling import models
+
+from astropy.modeling import models, Model
+from astropy.modeling.core import _model_oper
 
 class Block(object):
     """
@@ -232,8 +232,72 @@ class Transform(object):
                                  format(len(model.inputs), required_inputs))
         if index == 0:
             self._ndim = model.n_inputs
-        self._models.insert(index, model)
+
+        # Ugly stuff to break down a CompoundModel
+        try:
+            sequence = self.split_compound_model(model._tree)
+        except AttributeError:
+            self._models.insert(index, model)
+        else:
+            i = self.index(index)
+            # Avoids corrupting a Model (it will lose its name)
+            if len(sequence) == 1:
+                self._models.insert(index, model)
+            else:
+                self._models[i:i] = sequence
+        # Update affinity since we've modified the model
         self._affine = self.__is_affine()
+
+    @staticmethod
+    def split_compound_model(tree):
+        """
+        Break a CompoundModel into a sequence of chained Model instances
+
+        Parameters
+        ----------
+        tree: astropy.modeling.utils.ExpressionTree
+
+        Returns
+        -------
+        list: a list of Models to be inserted into the Transform
+        """
+        stack = []
+        for node in tree.traverse_postorder():
+            if node.isleaf:
+                stack.append(node.value)
+            else:
+                operand = node.value
+                if operand != '|':
+                    right = stack.pop()
+                    left = stack.pop()
+                    stack.append(_model_oper(operand)(left, right))
+        return stack
+
+    def replace(self, model):
+        """
+        Gut-and-replace a Transform instance with an instance of a CompoundModel
+        that does the same thing. The purpose of this is to update a Transform
+        after fitting it, while retaining the names of individual components.
+
+        Parameters
+        ----------
+        model: the CompoundModel instance
+        """
+        try:
+            sequence = self.split_compound_model(model._tree)
+        except:
+            sequence = [model]
+        # Check that the new model is basically the same as the old one, by
+        # ensuring the sequence is the same length and the submodels are the
+        # same (so no need to re-check the affinity)
+        if len(sequence) == len(self):
+            for new, old in zip(model, self.asModel()):
+                if new.__class__ != old.__class__:
+                    break
+            for i, m in enumerate(sequence):
+                self._models[i] = m.rename(self[i].name)
+            return
+        raise ValueError("Replacement Model differs from existing Transform")
 
     def __is_affine(self):
         """Test for affinity, using Model names.
@@ -272,6 +336,8 @@ class Transform(object):
         """
         Return a Model instance of this Transform
         """
+        if len(self) == 0:
+            return models.Identity(self.ndim)
         composite_model = self._models[0]
         for model in self._models[1:]:
             composite_model = composite_model | model
