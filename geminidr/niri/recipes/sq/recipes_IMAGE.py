@@ -55,22 +55,20 @@ def makeSkyFlat(p):
     p.nonlinearityCorrect()
     p.darkCorrect()
     # Make a "fastsky" by combining frames
-    p.scaleByIntensity(outstream='fastsky')
-    p.stackFrames(operation='median', stream='fastsky')
+    p.stackFrames(operation='median', scale=True, outstream='fastsky')
     p.normalizeFlat(stream='fastsky')
     p.thresholdFlatfield(stream='fastsky')
     # Flatfield with the fastsky and find objects
     p.flatCorrect(flat=p.streams['fastsky'][0], outstream='flattened')
-    p.detectSources(detect_minarea=20, stream='flattened')
+    p.detectSources(stream='flattened')
     p.dilateObjectMask(dilation=10, stream='flattened')
     p.addObjectMaskToDQ(stream='flattened')
-    p.writeOutputs(stream='flattened')
+    #p.writeOutputs(stream='flattened')
     p.transferAttribute(source='flattened', attribute='mask')
-    p.scaleByIntensity()
-    p.stackFrames(operation='mean', reject_method="minmax", nlow=0, nhigh=1)
+    p.stackFrames(operation='mean', scale=True, reject_method="minmax", nlow=0, nhigh=1)
     p.normalizeFlat()
     p.thresholdFlatfield()
-    p.storeProcessedFlat()
+    p.storeProcessedFlat(force=True)
     return
 
 default = reduce
