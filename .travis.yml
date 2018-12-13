@@ -1,7 +1,11 @@
+dist: xenial
 language: python
 python:
 - '3.5'
 - '3.6'
+- '3.6-dev'
+#- '3.7'
+#- '3.7-dev'
 
 branches:
   only:
@@ -26,18 +30,21 @@ install:
 #- conda info -a
 
 # Create astroconda virtual environment
-- conda create -q -n astroconda stsci python=$TRAVIS_PYTHON_VERSION
+- export PYTHON_VERSION="$( echo $TRAVIS_PYTHON_VERSION | cut -d'-' -f1 )"
+- conda create -q -n astroconda stsci python=$PYTHON_VERSION
 - source activate astroconda
 
 # Install packages
 - conda install --yes --quiet --channel conda-forge python-coveralls
-- conda install --yes --quiet --channel astropy astroplan ccdproc
+- conda install --yes --quiet --channel astropy astroplan astroquery ccdproc
 - conda install --yes --quiet future
 
 script:
-- pytest --ignore=old_other --ignore=old_astrodata_Gemini
+- pytest astrodata recipe_system gemini_instruments
 #- coverage run --branch --source= setup.py test
 
 after_success:
-# - coveralls
+#- coveralls
+
+
 
