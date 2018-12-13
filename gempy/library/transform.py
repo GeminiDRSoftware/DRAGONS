@@ -224,7 +224,7 @@ class Transform(object):
         try:
             required_inputs = self._models[index-1].n_outputs
         except IndexError:
-            pass
+            required_inputs = model.n_inputs
         else:
             if len(model.inputs) != required_inputs:
                 raise ValueError("Number of inputs ({}) does not match number"
@@ -254,7 +254,9 @@ class Transform(object):
         Break a CompoundModel into a sequence of chained Model instances.
         It's necessary to specify the initial dimensionality of the Model
         to determine whether a chain operator (|) is linking full
-        transformations or just components within a submodel.
+        transformations or just components within a submodel. It may prove
+        difficult/impossible to split a Model if the number of inputs is
+        not preserved. We'll cross that bridge if/when we come to it.
 
         Parameters
         ----------
@@ -295,8 +297,8 @@ class Transform(object):
         model: the CompoundModel instance
         """
         try:
-            sequence = self.split_compound_model(model._tree)
-        except:
+            sequence = self.split_compound_model(model._tree, self.ndim)
+        except AttributeError:
             sequence = [model]
         # Check that the new model is basically the same as the old one, by
         # ensuring the sequence is the same length and the submodels are the
@@ -334,6 +336,19 @@ class Transform(object):
         return self._affine
 
     def affine_matrices(self, shape=None):
+        """
+        Compute the matrix and offset necessary to turn a Transform into an
+        affine transformation.
+
+        Parameters
+        ----------
+        shape: sequence
+            shape to use for fiducial points
+
+        Returns
+        -------
+            array, array: affine matrix and offset
+        """
         if not self.is_affine:
             raise ValueError("Transformation is not affine!")
         ndim = self.ndim
@@ -341,7 +356,16 @@ class Transform(object):
             shape = tuple([1000] * ndim)
         corners = np.zeros((ndim, ndim+1))
         for i, length in enumerate(shape):
-            corners[i,i] = length
+            corners[i,i+1] = length
+        transformed = np.array(list(zip(*self.__call__(*corners))))
+        offset = transformed[0]
+        matrix = np.empty((ndim, ndim))
+        for i in range(ndim):
+            for j in range(ndim):
+                matrix[i,j] = (transformed[j+1,i] - offset[i]) / corners[j,j+1]
+        # Convert to python ordering
+        return matrix.T, offset[::-1]
+
 
     def __call__(self, *args, **kwargs):
         if len(args) != self.ndim:
