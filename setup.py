@@ -223,7 +223,7 @@ EXTENSIONS.extend(CYTHON_EXTENSIONS)
 
 
 setup( name='dragons',
-        version='2.1.0',
+        version='2.1.0-b1',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
         author_email='sus_inquiries@gemini.edu',
