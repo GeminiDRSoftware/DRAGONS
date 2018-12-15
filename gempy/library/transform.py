@@ -14,6 +14,8 @@ Classes:
             geometrically-transformed coordinates
 
 functions:
+    apply_transform: transform a list of objects onto a single output (more
+                     precisely, a single output per attribute)
 """
 import numpy as np
 from functools import reduce
@@ -359,7 +361,7 @@ class Transform(object):
             except AttributeError:
                 models.append(m)
         for m in models:
-            if m.__class__.__name__[:5] not in ('Rotat', 'Scale', 'Shift'):
+            if m.__class__.__name__[:5] not in ('Rotat', 'Scale', 'Shift', 'Ident'):
                 return False
         return True
 
@@ -495,6 +497,12 @@ class GeoMap(object):
 def apply_transform(inputs, transforms, output_shape, attributes=['data'],
                     subsample=1, threshold=0.01, parallel=True):
     """
+    This function takes a sequence of inputs that are to be transformed and
+    combined into a single output object. The inputs, after transforming,
+    shouldn't interfere with each other (i.e., no output pixel should have
+    signal from more than one input object). Bit-masks (identified as being
+    arrays of unsigned integer type) are transformed bit-by-bit, with DQ.no_data
+    being used to represent empty output regions in the "mask" attribute.
 
     Parameters
     ----------
@@ -502,7 +510,7 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
         input objects (AD/NDDdata/ndarrays)
     transforms: sequence
         transforms to apply (one per input object)
-    output_shape: sequence
+    output_shape: tuple
         shape of the output array(s)
     attributes: sequence
         attributes of the input objects to transform
@@ -514,6 +522,9 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
     parallel: bool
         perform operations in parallel using multiprocessing?
 
+    Returns
+    -------
+    dict: {key: array} of arrays containing the transformed attributes
     """
     log = logutils.get_logger(__name__)
 
@@ -556,7 +567,8 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
 
             # Create an output array if we haven't seen this attribute yet
             if attr not in output_dict:
-                output_dict[attr] = np.zeros(output_shape, arr.dtype)
+                value = DQ.no_data if attr == 'mask' else 0
+                output_dict[attr] = np.full(output_shape, value, dtype=arr.dtype)
 
             # Set up the functions to call to transform this attribute
             jobs = []
@@ -626,10 +638,7 @@ def _prepare_for_output(input_array, output_shape, transform, log):
     sequence of doubletons: limits of the output region this transforms into
     """
     # Find extent of this array in the output, after transformation
-    try:
-        corners = np.array(at.get_corners(input_array.shape)).T
-    except AttributeError:  # AD objects have no .shape attribute
-        corners = np.array(at.get_corners(input_array.nddata.shape)).T
+    corners = np.array(at.get_corners(input_array.shape)).T
     # Invert from standard python order to (x, y[, z]) order
     trans_corners = [c[::-1] for c in transform(*corners)]
     min_coords = [int(np.floor(min(coords))) for coords in trans_corners]
@@ -641,7 +650,7 @@ def _prepare_for_output(input_array, output_shape, transform, log):
     # into an array. Coords are still in reverse python order.
     new_min_coords = [max(c, 0) for c in min_coords]
     new_max_coords = [min(c, s) for c, s in zip(max_coords, output_shape[::-1])]
-    shift = reduce(Model.__and__, [models.Shift(c) for c in new_min_coords])
+    shift = reduce(Model.__and__, [models.Shift(-c) for c in new_min_coords])
     transform.append(shift.rename("Region offset"))
     output_corners = tuple((min_, max_) for min_, max_ in
                            zip(new_min_coords, new_max_coords))[::-1]
@@ -669,10 +678,17 @@ def _add_to_output(output_dict, key, output_arrays, area_scale, log):
                 ",".join(["{}:{}".format(*limits)
                           for limits in output_corners[::-1]])+")")
     arr = output_arrays[key]
-    print (arr.shape, output_corners)
     slice_ = tuple(slice(min_,max_) for min_, max_ in output_corners)
     if isinstance(attr, tuple):  # e.g., ('mask', 2)
-        output_dict[attr[0]][slice_] += (arr * attr[1]).astype(arr.dtype)
+        dtype = output_dict[attr[0]].dtype
+        output_region = output_dict[attr[0]][slice_]
+        # This is ugly! The DQ.no_data bit should only be set if all arrays
+        # have the bit set (and-like), but the other bits combine or-like
+        if attr[1] != DQ.no_data:
+            output_region |= (arr * attr[1]).astype(dtype)
+        else:
+            output_dict[attr[0]][slice_] = ((output_region & (65535 ^ DQ.no_data)) |
+                                            (output_region & (arr * attr[1]))).astype(dtype)
     else:
         output_dict[attr][slice_] += arr * area_scale
     del output_arrays[key]
