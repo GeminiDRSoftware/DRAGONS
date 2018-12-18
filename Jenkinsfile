@@ -44,17 +44,7 @@ pipeline {
 
     stage ("Build Environment") {
       steps {
-        sh '''conda create --yes -n ${BUILD_TAG} python
-              source activate ${BUILD_TAG}
-              conda install coverage pytest
-              conda install -c omnia behave
-              conda install -c conda-forge twine
-              conda install -c chroxvi radon
-              conda install astropy
-              conda install future
-              conda install cython
-              conda install -c conda-forge python-dateutil
-        '''
+        sh 'conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}'
       }
     } // stage: build environment
 
