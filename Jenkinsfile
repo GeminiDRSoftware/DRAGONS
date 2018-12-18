@@ -24,6 +24,12 @@ pipeline {
         checkout scm
       }
     }
+    stage ("Download and Install Anaconda") {
+      steps {
+        sh '/bin/bash .jenkins/download_and_install_anaconda.sh'
+      }
+    } // stage: download and install anaconda
+
     stage ("Build Environment") {
       steps {
         sh '''conda create --yes -n ${BUILD_TAG} python
@@ -34,7 +40,8 @@ pipeline {
               conda install -c chroxvi radon
         '''
       }
-    }
+    } // stage: build environment
+
     stage('Test environment') {
       steps {
         sh '''source activate ${BUILD_TAG}
@@ -43,12 +50,13 @@ pipeline {
               which python
               '''
       }
-    }
+    } // stage: test environment
+
     stage('Static code metrics') {
       steps {
         echo "Code Coverage"
         sh  ''' source activate ${BUILD_TAG}
-                coverage run --source=astrodata,gemini_instruments,gempy,recipe_system
+                coverage run --source=astrodata,gemini_instruments,recipe_system
                 python -m coverage xml -o ./reports/coverage.xml
                 '''
         echo "PEP8 style check"
@@ -71,11 +79,12 @@ pipeline {
               zoomCoverageChart: false])
         }
       }
-    }
+    } // stage: static code metrics
+
     stage('Unit tests') {
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                pytest --ignore=old_other --ignore=old_astrodata_Gemini \\
+                pytest astrodata recipe_system gemini_instruments \\
                   --junit-xml test-reports/results.xml
                 '''
       }
@@ -89,7 +98,8 @@ pipeline {
             )
         }
       }
-    }
+    } // stage: unit tests
+
     stage('Build package') {
       when {
         expression {
@@ -108,9 +118,10 @@ pipeline {
                             artifacts: 'dist/*whl',
                             fingerprint: true)
         }
-      }
-    }
-  }
+      } // post
+    } // stage: build package
+  } // stages
+
   post {
     always {
       sh 'conda remove --yes -n ${BUILD_TAG} --all'
@@ -118,5 +129,6 @@ pipeline {
     failure {
       echo "Send e-mail, when failed"
     }
-  }
-}
+  } // post
+
+} // pipeline
