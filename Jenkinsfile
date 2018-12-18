@@ -15,7 +15,7 @@ pipeline {
   }
 
   environment {
-    PATH="~/anaconda3/bin:$PATH"
+    PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
   }
 
   stages {
