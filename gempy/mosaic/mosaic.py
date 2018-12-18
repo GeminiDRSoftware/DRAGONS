@@ -236,7 +236,8 @@ class Mosaic(object):
         # Setup mosaic output array. Same datatype as block_data's
         outtype = block_data[def_key].dtype
         outdata = np.zeros((int(mosaic_ny), int(mosaic_nx)), dtype=outtype)
-        outdata += DQMap['no_data']
+        if dq_data:
+            outdata += DQMap['no_data']
 
         # ------- Paste each block (after transforming if tile=False)
         #         into the output mosaic array considering the gaps.

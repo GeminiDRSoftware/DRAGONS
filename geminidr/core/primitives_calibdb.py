@@ -17,7 +17,7 @@ from geminidr import PrimitivesBASE
 from . import parameters_calibdb
 
 from recipe_system.utils.decorators import parameter_override
-
+# ------------------------------------------------------------------------------
 REQUIRED_TAG_DICT = {'processed_arc':    ['PROCESSED', 'ARC'],
                      'processed_bias':   ['PROCESSED', 'BIAS'],
                      'processed_dark':   ['PROCESSED', 'DARK'],

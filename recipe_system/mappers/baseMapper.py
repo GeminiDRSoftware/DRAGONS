@@ -1,14 +1,14 @@
 #
+#                                                                        DRAGONS
+#
 #                                                          mappers.baseMapper.py
 # ------------------------------------------------------------------------------
 from builtins import object
-import sys
-import importlib
 
 from ..utils.mapper_utils import dictify
 from ..utils.mapper_utils import dotpath
 
-
+# ------------------------------------------------------------------------------
 class Mapper(object):
     """
     This is the base class for classes

@@ -19,7 +19,6 @@ import numpy as np
 import astrodata
 import gemini_instruments
 
-from common_astrodata_test import from_test_data, from_chara
 
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
@@ -34,11 +33,16 @@ from common_astrodata_test import from_test_data, from_chara
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 
 # Load data when accessing it
-def test_for_length():
-    ad = from_test_data('GMOS/N20110826S0336.fits')
+@pytest.mark.ad_local_data
+def test_for_length(test_path):
+
+    test_filename = 'GMOS/N20110826S0336.fits'
+    ad = astrodata.open(os.path.join(test_path, test_filename))
+
     # This should force the data to be loaded
     # Otherwise, we'll get different results - or an exception
     assert len(ad) == len(ad.nddata)
+
 
 # TODO: This one fails as it is written. Decide later if it's relevant or not
 # def test_keyword_changes_preserved_on_lazy_loading():

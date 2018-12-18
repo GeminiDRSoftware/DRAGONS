@@ -1,19 +1,21 @@
 .. iomef.rst
 
+.. include:: references.txt
+
 .. _iomef:
 
 ************************************************************
 Input and Output Operations and Extension Manipulation - MEF
 ************************************************************
 
-AstroData is not intended to be Multi-Extension FITS (MEF) centric.  The core
-is independent of the file format.  At Gemini, our data model uses MEF.
+|AstroData| is not intended to be Multi-Extension FITS (MEF) centric. The core
+is independent of the file format. At Gemini, our data model uses MEF.
 Therefore we have implemented a FITS handler that maps a MEF to the
-internal AstroData representation.  A different handler can be implemented
+internal |AstroData| representation. A different handler can be implemented
 for a different file format.
 
 In this chapter, we present examples that will help the reader understand how
-to access the information stored in a MEF with the AstroData object and
+to access the information stored in a MEF with the |AstroData| object and
 understand that mapping.
 
 **Try it yourself**
@@ -24,10 +26,12 @@ examples.  Then ::
     $ cd <path>/dragons_datapkg-v1.0/playground
     $ python
 
+
 Imports
 =======
-Before doing anything, you need to import AstroData and the Gemini instrument
-configuration package.
+
+Before doing anything, you need to import |AstroData| and the Gemini instrument
+configuration package |gemini_instruments|.
 
 ::
 
@@ -40,7 +44,8 @@ Open and access existing dataset
 
 Read in the dataset
 -------------------
-The file on disk is loaded into the AstroData class associated with the
+
+The file on disk is loaded into the |AstroData| class associated with the
 instrument the data is from. This association is done automatically based on
 header content.
 
@@ -51,11 +56,11 @@ header content.
     <class 'gemini_instruments.gmos.adclass.AstroDataGmos'>
 
 From now on, ``ad`` knows it is GMOS data.  It knows how to access its headers
-and when using the Recipe System (``recipe_system``), it will trigger the
+and when using the Recipe System (|recipe_system|), it will trigger the
 selection of the GMOS primitives and recipes.
 
 The original path and filename are stored in the object. If you were to write
-the AstroData object to disk without specifying anything, those path and
+the |AstroData| object to disk without specifying anything, those path and
 filename would be used. ::
 
     >>> ad.path
@@ -66,21 +71,23 @@ filename would be used. ::
 
 Accessing the content of a MEF file
 -----------------------------------
+
 Accessing pixel data, headers, tables will be covered in details in following
 chapters.  Here we just introduce the basic content interface.
 
-For details on the AstroData structure, please refer to the
+For details on the |AstroData| structure, please refer to the
 :ref:`previous chapter <structure>`.
 
-AstroData uses ``NDData`` as the core of its structure.  Each FITS extension
-becomes a ``NDAstroData`` object, subclassed from ``NDData``, and is added to
+|AstroData| uses |NDData| as the core of its structure. Each FITS extension
+becomes a |NDAstroData| object, subclassed from |NDData|, and is added to
 a list.
 
 Pixel data
 ^^^^^^^^^^
-To access pixel data, the list index and the ``.data`` attribute are used.  That
-returns a ``numpy.ndarray``. The list of ``NDAstroData`` is zero-indexed.
-*Extension number 1 in a MEF is index 0 in an AstroData object*. ::
+
+To access pixel data, the list index and the ``.data`` attribute are used. That
+returns a :class:`numpy.ndarray`. The list of |NDAstroData| is zero-indexed.
+*Extension number 1 in a MEF is index 0 in an |AstroData| object*. ::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
     >>> data = ad[0].data
@@ -89,26 +96,26 @@ returns a ``numpy.ndarray``. The list of ``NDAstroData`` is zero-indexed.
     >>> data.shape
     (2112, 256)
 
-Remember that in a ``ndarray`` the y-axis is the first number.
+Remember that in a :class:`~numpy.ndarray` the y-axis is the first number.
 
 The variance and data quality planes, the VAR and DQ planes in Gemini MEF
-files, are represented by the ``variance`` and ``mask`` attributes,
-respectively.  They are not their own "extension", they don't have their
-own index in the list, unlike in a MEF.  They are attached to the pixel data,
-packaged together by the ``NDAstroData`` object. They are represented as
-``numpy.ndarray`` just like the pixel data ::
+files, are represented by the ``.variance`` and ``.mask`` attributes,
+respectively. They are not their own "extension", they don't have their
+own index in the list, unlike in a MEF. They are attached to the pixel data,
+packaged together by the |NDAstroData| object. They are represented as
+:class:`numpy.ndarray` just like the pixel data ::
 
     >>> var = ad[0].variance
     >>> dq = ad[0].mask
 
 Tables
 ^^^^^^
-Tables in the MEF file will also be loaded into the AstroData object.  If a table
+Tables in the MEF file will also be loaded into the |AstroData| object. If a table
 is associated with a specific science extension through the EXTVER header, that
 table will be packaged within the same AstroData extension as the pixel data.
-The AstroData "extension" is the NDAstroData object plus any table or other pixel
-array.  If the table is not associated with a specific extension and applies
-globally, it will be added to the AstroData object as a global addition.  No
+The |AstroData| "extension" is the |NDAstroData| object plus any table or other pixel
+array. If the table is not associated with a specific extension and applies
+globally, it will be added to the AstroData object as a global addition. No
 indexing will be required to access it.  For example, below one ``OBJCAT`` is
 associated with each extension, while the ``REFCAT`` has a global scope ::
 
@@ -145,7 +152,7 @@ associated with each extension, while the ``REFCAT`` has a global scope ::
     .REFCAT        Table       (245, 16)
 
 
-The tables are stored internally as ``astropy`` ``Table`` objects. ::
+The tables are stored internally as :class:`astropy.table.Table` objects. ::
 
     >>> ad[0].OBJCAT
     <Table length=6>
@@ -164,14 +171,14 @@ The tables are stored internally as ``astropy`` ``Table`` objects. ::
 
 Headers
 ^^^^^^^
-Headers are stored in the ``NDAstroData`` ``.meta`` attribute as ``fits`` ``Header`` objects,
-which is a form of Python ordered dictionaries.  Headers associated with extensions
-are stored with the corresponding NDAstroData object.  The MEF Primary Header
-Unit (PHU) is stored "globally" in the AstroData object.  Note that when slicing an AstroData object,
-for example copying over just the first extension, the PHU will follow.  The
-slice of an AstroData object is an AstroData object itself.
+Headers are stored in the |NDAstroData| ``.meta`` attribute as :class:`astropy.io.fits.Header` objects,
+which is a form of Python ordered dictionaries. Headers associated with extensions
+are stored with the corresponding |NDAstroData| object. The MEF Primary Header
+Unit (PHU) is stored "globally" in the |AstroData| object. Note that when slicing an |AstroData| object,
+for example copying over just the first extension, the PHU will follow. The
+slice of an |AstroData| object is an |AstroData| object itself.
 Headers can be accessed directly, or for some predefined concepts, the use of
-Descriptors is preferred.  See the chapters on headers for details.
+Descriptors is preferred. See the chapters on headers for details.
 
 Using Descriptors::
 
@@ -202,16 +209,16 @@ Accessing the extension headers::
 
 Modify Existing MEF Files
 =========================
-Before you start modify the structure of an AstroData object, you should be
-familiar with it.  Please make sure that you have read the previous chapter
+Before you start modify the structure of an |AstroData| object, you should be
+familiar with it. Please make sure that you have read the previous chapter
 on :ref:`the structure of the AstroData object <structure>`.
 
 Appending an extension
 ----------------------
-In this section, we take an extension from one AstroData object and append it
-to another.  Because we are mapping a FITS file, the EXTVER keyword gets
+In this section, we take an extension from one |AstroData| object and append it
+to another. Because we are mapping a FITS file, the ``EXTVER`` keyword gets
 automatically updated to the next available value to ensure that when the
-AstroData object is written back to disk as MEF, it will be coherent.
+|AstroData| object is written back to disk as MEF, it will be coherent.
 
 Here is an example appending a whole AstroData extension, with pixel data,
 variance, mask and tables.
@@ -253,13 +260,13 @@ variance, mask and tables.
     4
 
 As you can see above, the fourth extension of ``advar``, along with everything
-it contains was appended at the end of the first AstroData object.  Also, note
+it contains was appended at the end of the first |AstroData| object. Also, note
 that the EXTVER of the extension in ``advar`` was 4, but once appended
 to ``ad``, it had to be changed to the next available integer, 5, numbers 1 to
 4 being already used by ``ad``'s own extensions.
 
 In this next example, we are appending only the pixel data, leaving behind the other
-associated data.  The header associated with that data does follow however.
+associated data. The header associated with that data does follow however.
 
 ::
 
@@ -279,24 +286,24 @@ associated data.  The header associated with that data does follow however.
     [ 4]   science                  NDAstroData       (2112, 256)    float32
 
 Notice how a new extension was created but ``variance``, ``mask``, the OBJCAT
-table and OBJMASK image were not copied over.  Only the science pixel data was
+table and OBJMASK image were not copied over. Only the science pixel data was
 copied over.
 
 Please note, there is no implementation for the "insertion" of an extension.
 
 Removing an extension or part of one
 ------------------------------------
-Removing an extension or a part of an extension is straightforward.  The
-Python command ``del`` is used on the item to remove.  Below are a few
+Removing an extension or a part of an extension is straightforward. The
+Python command :func:`del` is used on the item to remove. Below are a few
 examples, but first let us load a file ::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
     >>> ad.info()
 
-As you go through these examples, check the new structure with ``ad.info()``
+As you go through these examples, check the new structure with :func:`ad.info()`
 after every removal to see how the structure has changed.
 
-Deleting a whole AstroData extension, the fourth one ::
+Deleting a whole |AstroData| extension, the fourth one ::
 
     >>> del ad[3]
 
@@ -316,9 +323,10 @@ Deleting a global table, not attached to a specific extension ::
 
 Writing back to disk
 ====================
-The AstroDataFits layer takes care of converting the AstroData object back
-to a MEF file on disk.  When writing to disk, one should be aware of the
-path and filename information associated with the AstroData object.
+The :class:`~astrodata.fits.AstroDataFits` layer takes care of converting
+the |AstroData| object back to a MEF file on disk. When writing to disk,
+one should be aware of the path and filename information associated
+with the |AstroData| object.
 
 ::
 
@@ -338,16 +346,16 @@ The most common and natural way is ::
 This will write a FITS file named 'new154.fits' in the current directory.
 A path can be prepended to the filename if the current directory is not
 the destination.
-Note that `ad.filename` and `ad.path` have not changed, we have just written
-to the new file, the AstroData object is in no way associated anymore with
-that file.  ::
+Note that ``ad.filename`` and ``ad.path`` have not changed, we have just
+written to the new file, the |AstroData| object is in no way associated anymore
+with that file.  ::
 
     >>> ad.path
     '../playdata/N20170609S0154.fits'
     >>> ad.filename
     'N20170609S0154.fits'
 
-If you want to create that association, the `ad.filename` and `ad.path`
+If you want to create that association, the ``ad.filename`` and ``ad.path``
 needs to be modified first.  For example::
 
     >>> ad.filename = 'new154.fits'
@@ -358,13 +366,13 @@ needs to be modified first.  For example::
     >>> ad.filename
     'new154.fits'
 
-Changing `ad.filename` also changes the filename in the `ad.path`.  The
+Changing ``ad.filename`` also changes the filename in the ``ad.path``. The
 sequence above will write 'new154.fits' not in the current directory but
-rather to the directory that is specified in `ad.path`.
+rather to the directory that is specified in ``ad.path``.
 
-WARNING: `ad.write()` has an argument named `filename`.  Setting `filename`
-in the call to `ad.write()`, as in `ad.write(filename='new154.fits') will NOT
-modify `ad.filename` or `ad.path`.  The two "filenames", one a method argument
+WARNING: :func:`ad.write` has an argument named ``filename``.  Setting ``filename``
+in the call to :func:`ad.write`, as in ``ad.write(filename='new154.fits')`` will NOT
+modify ``ad.filename`` or ``ad.path``.  The two "filenames", one a method argument
 the other a class attribute have no association to each other.
 
 
@@ -398,7 +406,7 @@ couple examples for completeness.
 
 Basic example
 ^^^^^^^^^^^^^
-As seen above, a MEF file can be opened with ``astrodata``, the AstroData
+As seen above, a MEF file can be opened with |astrodata|, the |AstroData|
 object can be modified (or not), and then written back to disk under a
 new name.  ::
 
@@ -428,15 +436,15 @@ only when truly needed.
 Create New MEF Files from Scratch
 ---------------------------------
 Before one creates a new MEF file on disk, one has to create the AstroData
-object that will be eventually written to disk.  The AstroData object
+object that will be eventually written to disk.  The |AstroData| object
 created also needs to know that it will have to be written using the MEF
-format.  This is fortunately handled fairly transparently by ``Astrodata``.
+format. This is fortunately handled fairly transparently by |astrodata|.
 
-The keep to associating the FITS data provider to the ``AstroData`` object
-is simply to create the ``AstroData`` object from ``astropy.io.fits`` header
-objects.  Those will be recognized by ``Astrodata`` as FITS and the
-constructor for FITS will be used.  The user does not need to do anything
-else special.  Here is how it is done.
+The keep to associating the FITS data provider to the |AstroData| object
+is simply to create the |AstroData| object from :mod:`astropy.io.fits` header
+objects. Those will be recognized by |astrodata| as FITS and the
+constructor for FITS will be used. The user does not need to do anything
+else special. Here is how it is done.
 
 Create a MEF with basic header and data array set to zeros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -464,12 +472,14 @@ new ``Astrodata`` object.
 
 Represent a table as a FITS binary table in an ``AstroData`` object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-One first needs to create an table, either an ``astropy.table.table.Table``
-or a ``fits.BINTableHDU``.  See the astropy documentation on tables and this
-manual's :ref:`section <tables>` dedicated to tables for more information.
+One first needs to create an table, either an :class:`astropy.table.Table`
+or a :class:`~astropy.io.fits.BinTableHDU`. See the |astropy| documentation
+on tables and this manual's :ref:`section <tables>` dedicated to tables for
+more information.
 
 In the first example, we assume that ``my_astropy_table`` is
-a ``Table`` ready to be attached to an ``AstroData`` object.
+a :class:`~astropy.table.Table` ready to be attached to an |AstroData|
+object.
 
 ::
 
@@ -480,14 +490,14 @@ a ``Table`` ready to be attached to an ``AstroData`` object.
     >>> ad.append(my_astropy_table, name='BOB')
 
 
-In the second example, we start with a FITS BinTableHDU and attach it to
-a new ``AstroData`` object. ::
+In the second example, we start with a FITS :class:`~astropy.io.fits.BinTableHDU`
+and attach it to a new |AstroData| object. ::
 
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
     >>> ad.append(my_fits_table, name='BILL')
 
-As before, once the ``AstroData`` object is constructed, the ``ad.write()``
+As before, once the |AstroData| object is constructed, the ``ad.write()``
 method can be used to write it to disk as a MEF file.
 
 

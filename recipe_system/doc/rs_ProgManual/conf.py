@@ -37,7 +37,7 @@ else:
 project = u"DRAGONS - Recipe System Programmer's Manual"
 copyright = u'Gemini Observatory (AURA), 2018'
 
-author = 'Bruno Quint'
+author = 'Kenneth Anderson'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -339,7 +339,6 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
-        'astrodata',
         'geminidr',
         'recipe_system',
     ]

@@ -12,7 +12,7 @@ To run:
       Eg. /net/chara/data2/pub/gempython_testdata
    2) From the ??? (location): py.test -v
 """
-
+import pytest
 import os
 import os.path
 from gempy.library import fitsverify
@@ -43,6 +43,7 @@ class TestFitsverify:
         """Run once after every test."""
         pass
 
+    @pytest.mark.skip(reason='Uses local data')
     def test_fitsverify(self):
         """
         Test the return values of fitsverify on our test file.

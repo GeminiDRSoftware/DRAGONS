@@ -1,13 +1,12 @@
 #!/usr/bin/env python
+#                                                                        DRAGONS
 #
-#                                                                   reduce_db.py
+#                                                                       caldb.py
 # ------------------------------------------------------------------------------
-# reduce_db.py -- local calibration database management tool
+# caldb.py -- local calibration database management tool
 # ------------------------------------------------------------------------------
 from __future__ import print_function
-
 # ------------------------------------------------------------------------------
-
 
 from os.path import expanduser, isdir, exists, basename
 from argparse import ArgumentParser
@@ -20,6 +19,7 @@ from recipe_system.cal_service.localmanager import LocalManager, LocalManagerErr
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
 from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
 import traceback
+# ------------------------------------------------------------------------------
 
 def buildArgumentParser():
     parser = ArgumentParser(description="Calibration Database Management Tool")
@@ -94,6 +94,11 @@ class Dispatcher(object):
         usage(self._parser, message)
 
     def _action_config(self, args):
+        isactive = "The 'standalone' flag is active, meaning that local "
+        isactive += "calibrations will be used"
+        inactive = "The 'standalone' flag is not active, meaning that remote "
+        inactive += "calibrations will be downloaded"
+
         conf = get_calconf()
         print("Using configuration file: {}".format(STANDARD_REDUCTION_CONF))
         print()
@@ -105,9 +110,9 @@ class Dispatcher(object):
             print("       (Read the help message about 'init' command)")
         print()
         if conf.standalone:
-            print("The 'standalone' flag is active, meaning that local calibrations will be used")
+            print(isactive)
         else:
-            print("The 'standalone' flag is not active, meaning that remote calibrations will be downloaded")
+            print(inactive)
 
     def _action_add(self, args):
         for path in args.files:
@@ -141,15 +146,16 @@ class Dispatcher(object):
                     log(e.message, sys.stderr)
 
     def _action_init(self, args):
+        msg = "Can't initialize an existing database. If "
+        msg += "you're sure about this, either\nremove the file "
+        msg += "first, or pass the -w option to confirm that you "
+        msg += "want\nto wipe the contents."
         try:
             self._log("Initializing {}...".format(self._mgr.path))
             self._mgr.init_database(wipe=args.wipe)
         except LocalManagerError as e:
             if e.error_type == ERROR_CANT_WIPE:
-                self.usage(message="Can't initialize an existing database. If "
-                           "you're sure about this, either\nremove the file "
-                           "first, or pass the -w option to confirm that you "
-                           "want\nto wipe the contents.")
+                self.usage(message=msg)
             elif e.error_type == ERROR_CANT_CREATE:
                 log(e.message, sys.stderr, bold=True)
             return -1
@@ -157,6 +163,8 @@ class Dispatcher(object):
         return 0
 
     def _action_list(self, args):
+        msg = "Could not read information from the database. "
+        msg += "Have you initialized it? (Use --help on the 'init' command)"
         try:
             total = 0
             for file_data in self._mgr.list_files():
@@ -166,8 +174,7 @@ class Dispatcher(object):
                 print("There are no files in the database")
         except LocalManagerError as e:
             if e.error_type == ERROR_CANT_READ:
-                self.usage(message="Could not read information from the database. "
-                           "Have you initialized it? (Use --help and read about 'init' command)")
+                self.usage(message=msg)
             else:
                 log(e.message, sys.stderr, bold=True)
             return -1

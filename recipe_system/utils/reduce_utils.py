@@ -18,7 +18,7 @@ from .reduceActions import CalibrationAction
 from .reduceActions import UnitaryArgumentAction
 
 from ..cal_service import localmanager_available
-
+# ------------------------------------------------------------------------------
 
 class ReduceHelpFormatter(HelpFormatter):
     """
@@ -66,8 +66,8 @@ def buildParser(version):
     parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " +
                                   "_"*28 + "\n" + "_"*16 +
                             " DRAGONS Recipe Processing Management System " +
-                                  "_"*16 + "\n" + "_"*22 +
-                                  " Recipe System Release"+version+" "+"_"*22,
+                                  "_"*16 + "\n" + "_"*24 +
+                                  " Recipe System Release v"+version+" "+"_"*23,
                                   prog="reduce",
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
