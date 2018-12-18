@@ -541,7 +541,7 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
 
     for input_array, transform in zip(inputs, transforms):
         output_corners = _prepare_for_output(input_array, output_shape,
-                                             transform, log)
+                                             transform, subsample, log)
         output_array_shape = tuple(max_-min_ for min_, max_ in output_corners)
 
         # Create a mapping from output pixel to input pixels
@@ -587,7 +587,8 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
             # Perform the jobs (in parallel, if we can)
             for (key, arr, kwargs) in jobs:
                 args = (arr, mapping, output_arrays, key, output_array_shape)
-                kwargs['dtype'] = output_dict[attr].dtype
+                kwargs.update({'dtype': output_dict[attr].dtype,
+                               'subsample': subsample})
                 if parallel:
                     p = multi.Process(target=_apply_geometric_transform,
                                       args=args, kwargs=kwargs)
@@ -616,7 +617,7 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
 
 #-----------------------------------------------------------------------------
 
-def _prepare_for_output(input_array, output_shape, transform, log):
+def _prepare_for_output(input_array, output_shape, transform, subsample, log):
     """
     Determine the shape of the output array that this input will be
     transformed into, accounting for the overall output array. If
@@ -639,6 +640,7 @@ def _prepare_for_output(input_array, output_shape, transform, log):
     """
     # Find extent of this array in the output, after transformation
     corners = np.array(at.get_corners(input_array.shape)).T
+
     # Invert from standard python order to (x, y[, z]) order
     trans_corners = [c[::-1] for c in transform(*corners)]
     min_coords = [int(np.floor(min(coords))) for coords in trans_corners]
@@ -650,8 +652,16 @@ def _prepare_for_output(input_array, output_shape, transform, log):
     # into an array. Coords are still in reverse python order.
     new_min_coords = [max(c, 0) for c in min_coords]
     new_max_coords = [min(c, s) for c, s in zip(max_coords, output_shape[::-1])]
-    shift = reduce(Model.__and__, [models.Shift(-c) for c in new_min_coords])
+    shift = reduce(Model.__and__, [models.Shift(-c*subsample) for c in new_min_coords])
     transform.append(shift.rename("Region offset"))
+
+    # Apply scale and shift for subsampling. Recall that (0,0) is the middle of
+    # the pixel, not the corner, so a shift is required as well.
+    if subsample > 1:
+        rescale = reduce(Model.__and__, [models.Scale(subsample)] * transform.ndim)
+        rescale_shift = reduce(Model.__and__, [models.Shift(0.5*(subsample-1))] * transform.ndim)
+        transform.append([rescale, rescale_shift])
+
     output_corners = tuple((min_, max_) for min_, max_ in
                            zip(new_min_coords, new_max_coords))[::-1]
     return output_corners  # in standard python order
@@ -695,7 +705,7 @@ def _add_to_output(output_dict, key, output_arrays, area_scale, log):
 
 def _apply_geometric_transform(input_array, mapping, output, output_key,
                                output_shape, cval=0., dtype=np.float32,
-                               threshold=None):
+                               threshold=None, subsample=1):
     """
     None-returning function to apply geometric transform, so it can be used
     by multiprocessing
@@ -709,12 +719,20 @@ def _apply_geometric_transform(input_array, mapping, output, output_key,
             threshold = limit for deciding what value counts a pixel as "bad"
                         (if set, always returns a bool array)
     """
+    trans_output_shape = tuple(length * subsample for length in output_shape)
     if isinstance(mapping, GeoMap):
-        out_array = ndimage.geometric_transform(input_array, mapping, output_shape,
+        out_array = ndimage.geometric_transform(input_array, mapping, trans_output_shape,
                                         cval=cval)
     else:
         out_array = ndimage.affine_transform(input_array, mapping.matrix, mapping.offset,
-                                     output_shape, cval=cval)
+                                     trans_output_shape, cval=cval)
+
+    # We average to undo the subsampling. This retains the "threshold" and
+    # conserves flux according to the Jacobian of input/output arrays.
+    if subsample > 1:
+        intermediate_shape = tuple(x for length in output_shape for x in (length, subsample))
+        out_array = out_array.reshape(intermediate_shape).mean(tuple(range(len(output_shape)*2-1, 0, -2))).reshape(output_shape)
+
     if threshold is None:
         output[output_key] = out_array.astype(dtype)
     else:
