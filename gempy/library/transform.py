@@ -90,11 +90,16 @@ class Block(object):
                 raise AttributeError(e)
         return output
 
+
     def _return_array(self, elements):
         """
         Returns a new ndarray, which is required for the scipy.ndimage
         transformations. This obviously requires a copy of the data,
         which is what we were trying to avoid. But oh well.
+
+        There might be a clever way to do this with np.block() and some
+        recursion but, since we don't know the dimensionality, I don't think
+        it's trivial and is unlikely to be shorter or much faster.
         """
         if len(elements) != len(self._elements):
             raise ValueError("All elements of the Block must be used in the "
@@ -102,10 +107,10 @@ class Block(object):
         output = np.empty(self.shape, dtype=elements[0].dtype)
         corner = [0] * self.ndim
         for arr in elements:
-            section = tuple(slice(c, c+s)
+            section = tuple(slice(c, c + s)
                             for c, s in zip(corner, self._arrayshape))
             output[section] = arr
-            for i in range(self.ndim-1, -1, -1):
+            for i in range(self.ndim - 1, -1, -1):
                 corner[i] += self._arrayshape[i]
                 if corner[i] >= self.shape[i]:
                     corner[i] = 0
