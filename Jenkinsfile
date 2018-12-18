@@ -68,7 +68,7 @@ pipeline {
       steps {
         echo "Code Coverage"
         sh  ''' source activate ${BUILD_TAG}
-                coverage run --source=astrodata,gemini_instruments,recipe_system
+                coverage run setup.py install
                 python -m coverage xml -o ./reports/coverage.xml
                 '''
         echo "PEP8 style check"
