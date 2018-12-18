@@ -50,7 +50,7 @@ pipeline {
               conda install -c omnia behave
               conda install -c conda-forge twine
               conda install -c chroxvi radon
-              conda install -c future cython
+              conda install future cython
         '''
       }
     } // stage: build environment
