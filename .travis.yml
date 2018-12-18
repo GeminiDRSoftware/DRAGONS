@@ -37,11 +37,12 @@ install:
 # Install packages
 - conda install --yes --quiet --channel conda-forge python-coveralls
 - conda install --yes --quiet --channel astropy astroplan astroquery ccdproc
-- conda install --yes --quiet future
+- conda install --yes --quiet future cython
 
 script:
 - pytest astrodata recipe_system gemini_instruments
 #- coverage run --branch --source= setup.py test
+- python setup.py build
 
 after_success:
 #- coveralls
