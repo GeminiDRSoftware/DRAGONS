@@ -68,7 +68,7 @@ pipeline {
                 '''
         echo "PEP8 style check"
         sh  ''' source activate ${BUILD_TAG}
-                pylint --disable=C irisvmpy || true
+                pylint --disable=C astrodata || true
                 '''
       }
       post{
