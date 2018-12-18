@@ -69,7 +69,7 @@ pipeline {
       steps {
         echo "Code Coverage"
         sh  ''' source activate ${BUILD_TAG}
-                coverage run setup.py install
+                coverage run setup.py build
                 python -m coverage xml -o ./reports/coverage.xml
                 '''
         echo "PEP8 style check"
@@ -121,7 +121,7 @@ pipeline {
       }
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                python setup.py sdist bdist_wheel
+                python setup.py sdist bdist_egg
             '''
       }
       post {
