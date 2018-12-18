@@ -53,7 +53,7 @@ pipeline {
               conda install astropy
               conda install future
               conda install cython
-              conda install dateutil
+              conda install -c conda-forge python-dateutil
         '''
       }
     } // stage: build environment
