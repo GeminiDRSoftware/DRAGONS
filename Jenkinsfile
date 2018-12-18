@@ -50,7 +50,8 @@ pipeline {
               conda install -c omnia behave
               conda install -c conda-forge twine
               conda install -c chroxvi radon
-              conda install future cython
+              conda install future
+              conda install cython
         '''
       }
     } // stage: build environment
@@ -61,6 +62,7 @@ pipeline {
               pip list
               which pip
               which python
+              python -c "import future"
               '''
       }
     } // stage: test environment
