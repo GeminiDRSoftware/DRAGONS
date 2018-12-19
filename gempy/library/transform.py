@@ -520,7 +520,7 @@ class GeoMap(object):
 #----------------------------------------------------------------------------------
 
 def apply_transform(inputs, transforms, output_shape, attributes=['data'],
-                    subsample=1, threshold=0.01, parallel=True):
+                    order=3, subsample=1, threshold=0.01, parallel=True):
     """
     This function takes a sequence of inputs that are to be transformed and
     combined into a single output object. The inputs, after transforming,
@@ -539,6 +539,8 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
         shape of the output array(s)
     attributes: sequence
         attributes of the input objects to transform
+    order: int (0-5)
+        order of spline interpolation
     subsample: int
         subsampling of input/output arrays
     threshold: float
@@ -613,6 +615,7 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
             for (key, arr, kwargs) in jobs:
                 args = (arr, mapping, output_arrays, key, output_array_shape)
                 kwargs.update({'dtype': output_dict[attr].dtype,
+                               'order': order,
                                'subsample': subsample})
                 if parallel:
                     p = multi.Process(target=_apply_geometric_transform,
@@ -730,27 +733,42 @@ def _add_to_output(output_dict, key, output_arrays, area_scale, log):
 
 def _apply_geometric_transform(input_array, mapping, output, output_key,
                                output_shape, cval=0., dtype=np.float32,
-                               threshold=None, subsample=1):
+                               threshold=None, subsample=1, order=3):
     """
     None-returning function to apply geometric transform, so it can be used
     by multiprocessing
-    Inputs: input_array = input array
-            mapping = callable object with mapping from output->input coords
-            output = DictProxy to hold the transformed output
-            output_key = key in DictProxy for this output
-            output_shape = tuple indicating the shape of these outputs
-            cval = value for "empty" pixels
-            dtype = datatype of outputarray
-            threshold = limit for deciding what value counts a pixel as "bad"
-                        (if set, always returns a bool array)
+
+    Parameters
+    ----------
+    input_array: ndarray
+        array to be transformed
+    mapping: callable
+        provides transformation from output -> input coordinates
+    output: dict/DictProxy
+        storage for all the transformed output arrays
+    output_key;
+        key in dict/DictProxy to use when storing this output array
+    output_shape: tuple
+        shape of this output array
+    cval: number
+        value for "empty" pixels in output array
+    dtype: datatype
+        datatype of output array
+    threshold: None/float
+        limit for deciding what minimum value makes a pixel "bad"
+        (if set, a bool array is returned, irrespective of dtype)
+    subsample: int
+        subsampling in output array for transformation
+    order: int (0-5)
+        order of spline interpolation
     """
     trans_output_shape = tuple(length * subsample for length in output_shape)
     if isinstance(mapping, GeoMap):
         out_array = ndimage.geometric_transform(input_array, mapping, trans_output_shape,
-                                        cval=cval)
+                                        cval=cval, order=order)
     else:
         out_array = ndimage.affine_transform(input_array, mapping.matrix, mapping.offset,
-                                     trans_output_shape, cval=cval)
+                                     trans_output_shape, cval=cval, order=order)
 
     # We average to undo the subsampling. This retains the "threshold" and
     # conserves flux according to the Jacobian of input/output arrays.
