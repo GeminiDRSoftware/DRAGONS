@@ -159,31 +159,30 @@ class Transform(object):
         return self._models.__next__()
 
     def __getitem__(self, key):
-        """Return a Model or Transform based on index or name,
-        or slice or tuple.
-
+        """Return a Transform based on index or name, slice, or tuple.
         If the models are in descending index order, then the inverse
-        will be used
+        will be used.
         """
         if isinstance(key, slice):
             # Turn into a slice of integers
             slice_ = slice(self.index(key.start),
                            self.index(key.stop), key.step)
             if key.step is None or key.step > 0:
-                return self.__class__(self._models[slice_])
+                models = self._models[slice_]
             else:  # Return chain of inverses
-                return self.__class__([m.inverse for m in self._models[slice_]])
+                models = [m.inverse for m in self._models[slice_]]
         elif isinstance(key, tuple):
             indices = [self.index(k) for k in key]
             if all(np.diff(indices) < 0):
-                return self.__class__([self[i].inverse for i in indices])
+                models = [self[i].inverse for i in indices]
             else:
-                return self.__class__([self[i] for i in indices])
+                models = [self[i] for i in indices]
         else:
             try:
-                return self._models[key]
+                models = self._models[key]
             except TypeError:
-                return self._models[self.index(key)]
+                models = [self._models[i] for i in self._indices(key)]
+        return self.__class__(models)
 
     def __setitem__(self, key, value):
         """Replace a model in the Transform. Requires that the replacement
@@ -202,7 +201,8 @@ class Transform(object):
         try:
             del self._models[key]
         except TypeError:
-            del self._models[self.index(key)]
+            for i in self._indices(key)[::-1]:
+                del self._models[i]
         self._affine = self.__is_affine()
 
     @property
@@ -222,6 +222,26 @@ class Transform(object):
             if isinstance(key, (int, np.integer)):
                 return key
             raise ValueError(e)
+
+    def _indices(self, key):
+        """Like the index method, but returns the indices of *all* models
+        with the name of the key"""
+        indices = [i for i, m in enumerate(self._models) if m.name == key]
+        if indices:
+            return indices
+        raise NameError("Transform has no models called {}".format(key))
+
+    @property
+    def name(self):
+        if len(self) == 1:
+            return self._models[0].name
+        else:
+            raise TypeError("Can only request name on single-element transform")
+
+    @name.setter
+    def name(self, value):
+        for model in self:
+            model.name = value
 
     def append(self, model):
         """Append Model(s) to the end of the current Transform"""
