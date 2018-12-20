@@ -667,10 +667,10 @@ def _prepare_for_output(input_array, output_shape, transform, subsample, log):
     sequence of doubletons: limits of the output region this transforms into
     """
     # Find extent of this array in the output, after transformation
-    corners = np.array(at.get_corners(input_array.shape)).T
-
     # Invert from standard python order to (x, y[, z]) order
-    trans_corners = [c[::-1] for c in transform(*corners)]
+    corners = np.array(at.get_corners(input_array.shape)).T[::-1]
+
+    trans_corners = transform(*corners)
     min_coords = [int(np.floor(min(coords))) for coords in trans_corners]
     max_coords = [int(np.ceil(max(coords)))+1 for coords in trans_corners]
     log.stdinfo("Array maps to ("+",".join(["{}:{}".format(min_, max_)
