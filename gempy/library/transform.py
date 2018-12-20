@@ -594,8 +594,8 @@ def apply_transform(inputs, transforms, output_shape, attributes=['data'],
 
             # Create an output array if we haven't seen this attribute yet
             if attr not in output_dict:
-                value = DQ.no_data if attr == 'mask' else 0
-                output_dict[attr] = np.full(output_shape, value, dtype=arr.dtype)
+                cval = DQ.no_data if attr == 'mask' else 0
+                output_dict[attr] = np.full(output_shape, cval, dtype=arr.dtype)
 
             # Set up the functions to call to transform this attribute
             jobs = []
