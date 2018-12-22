@@ -478,6 +478,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
+        clipped_this_ad = False
+
         # Make a new auxiliary file for appending to, starting with PHU
         new_aux = astrodata.create(this_aux.phu)
         new_aux.filename = this_aux.filename
@@ -556,6 +558,9 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # Pull out specified data region:
                 if science_trimmed or aux_trimmed:
+                    # We're not actually clipping!
+                    if region != list(sum(zip([0,0], ext_to_clip[0].nddata.shape),())):
+                        clipped_this_ad = True
                     clipped = ext_to_clip[0].nddata[region[0]:region[1],
                                                 region[2]:region[3]]
 
@@ -618,8 +623,9 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                   "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
                                        ad.filename, ext.hdr['EXTVER']))
 
-        log.stdinfo("Clipping {} to match science data.".
-                    format(os.path.basename(this_aux.filename)))
+        if clipped_this_ad:
+            log.stdinfo("Clipping {} to match science data.".
+                        format(os.path.basename(this_aux.filename)))
         aux_output_list.append(new_aux)
 
     return aux_output_list
