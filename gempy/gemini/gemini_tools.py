@@ -11,9 +11,7 @@ from builtins import range
 from builtins import object
 import os
 import re
-import sys
 import numbers
-import warnings
 import itertools
 import numpy as np
 
@@ -34,7 +32,8 @@ from ..library import astrotools as at
 from ..utils import logutils
 
 import astrodata
-from astrodata import __version__ as ad_version
+
+from collections import namedtuple
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
@@ -132,8 +131,8 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
 def array_information(adinput=None):
     """
     Returns information about the relationship between amps (extensions)
-    and physical CCDs. Used only for GMOS imaging to remove fringes and,
-    even then, half the stuff it returns isn't used!
+    and physical detectors. This works for any 2D array provided the
+    array_section() and detector_section() descriptors return correct values.
 
     Parameters
     ----------
@@ -142,68 +141,37 @@ def array_information(adinput=None):
 
     Returns
     -------
-    list of dicts/dicts
-    Each dict contains:
-        amps_per_array: dict of {array number (1-indexed) : number of amps}
-        amps_order: list of ints giving the AD slices in order of increasing x
-        array_number: list of ints giving the number of the array each slice
-                      is on (1-indexed)
-        reference_extension: extver of the extension in the middle
+    list of ArrayInfo namedtuples, each containing:
+        origins: list of doubletons indicating the bottom-left of each
+                 physical detector in detector_section coordinates
+        extensions: list of tuples, one for each physical detector containing
+                    the indices of the extensions on that detector. Both the
+                    list and the tuples are sorted based on detector_section
+                    first in y, then x (so order is along the bottom, then
+                    the next row up, and so on).
+        reference_extver: extver of the extension in the middle
     """
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
-    log = logutils.get_logger(__name__)
-    
-    # Initialize the list of dictionaries of output array numbers
-    # Keys will be (extname,extver)
+    ArrayInfo = namedtuple("ArrayInfo", "origins extensions reference_extver")
     array_info_list = []
 
-    # Loop over each input AstroData object in the input list
     for ad in adinput:
-        arrayinfo = {}
+        det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
+        array_corners = np.array([(sec.y1, sec.x1) for sec in ad.array_section()])
+        origins = det_corners - array_corners
 
-        # Get the correct order of the extensions by sorting on first element
-        # in detector section (raw ordering is whichever amps read out first)
-        detx1 = [sec.x1 for sec in ad.detector_section()]
-        ampsorder  = list(np.argsort(detx1))
-
-        # Get array sections for determining when a new array is found
-        arrx1 = [sec.x1 for sec in ad.array_section()]
-
-        # Initialize these so that first extension will always start a new array
-        last_detx1   = detx1[ampsorder[0]] - 1
-        last_arrx1 = arrx1[ampsorder[0]]
-
-        array_number = np.empty_like(ampsorder)
-        this_array_number = 0
-        amps_per_array = {}
-
-        for i in ampsorder:
-            this_detx1 = detx1[i]
-            this_arrx1 = arrx1[i]
-
-            if (this_detx1 > last_detx1 and this_arrx1 <= last_arrx1):
-                # New array found
-                this_array_number += 1
-                amps_per_array[this_array_number] = 1
-            else:
-                amps_per_array[this_array_number] += 1
-            array_number[i] = this_array_number
-            last_detx1 = this_detx1
-            last_arrx1 = this_arrx1
-
-        # Reference extension if tiling/mosaicing all data together
-        refext = ad[ampsorder[int(0.5 * (len(ampsorder)-1))]].hdr['EXTVER']
-
-        arrayinfo['array_number'] = list(array_number)
-        arrayinfo['amps_order'] = ampsorder
-        arrayinfo['amps_per_array'] = amps_per_array
-        arrayinfo['reference_extension'] = refext
-
-        # Append the output AstroData object to the list of output
-        # AstroData objects
-        array_info_list.append(arrayinfo)
-
+        # Sort by y first, then x as a tiebreaker, keeping all extensions with
+        # the same origin together
+        ampsorder = np.lexsort(np.vstack([det_corners.T[::-1],origins.T[::-1]]))
+        unique_origins = np.unique(origins, axis=0)
+        sorted_origins = list(np.lexsort(unique_origins.T[::-1]))
+        arrays_list = [tuple(j for j in ampsorder if np.array_equal(det_corners[j],
+                             array_corners[j]+unique_origins[i]))
+                       for i in sorted_origins]
+        centre = np.median(det_corners, axis=0)
+        distances = list(np.sum(det_corners - centre, axis=1))
+        ref_index = distances.index(max(v for v in distances if v < 0))
+        array_info_list.append(ArrayInfo(sorted_origins, arrays_list,
+                                         ref_index.hdr['EXTVER']))
     return array_info_list
 
 #TODO: CJS believes this is never called in normal operations and doesn't even
@@ -472,11 +440,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
         auxiliary file(s), appropriately clipped
     """
     log = logutils.get_logger(__name__)
-
-    # Initialize the list of output AstroData objects
     aux_output_list = []
 
-    # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
         clipped_this_ad = False
 
@@ -664,10 +629,8 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
     if not isinstance(aux, list):
         aux = [aux]
 
-    # Initialize the list of output AstroData objects
     aux_output_list = []
 
-    # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
         new_aux = astrodata.create(this_aux.phu)
@@ -821,9 +784,9 @@ def clip_sources(ad):
     list of Tables
         each Table contains a subset of information on the good stellar sources
     """
-    # Columns in the output table
     log = logutils.get_logger(__name__)
 
+    # Columns in the output table
     column_mapping = {'x': 'X_IMAGE',
                       'y': 'Y_IMAGE',
                       'fwhm': 'PROFILE_FWHM',
@@ -1067,7 +1030,6 @@ def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
 
     adoutput_list = []
     
-    # Loop over each input AstroData object in the list
     for ad in adinput:
         # Add the appropriate time stamps to the PHU
         if timestamp_key is not None:
@@ -1756,7 +1718,6 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
         log.error("TypeError: keyword comments dict was not received.")
         raise TypeError("keyword comments dict required")
 
-    # Initialize the list of output AstroData objects
     adoutput_list = []
 
     for ad in adinput:
@@ -2017,7 +1978,6 @@ def group_exposures(adinput, pkg=None, frac_FOV=1.0):
 
     groups = []
 
-    # Iterate over the input exposures:
     for ad in adinput:
 
         # Should this pointing be associated with an existing group?
