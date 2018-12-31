@@ -788,7 +788,7 @@ class FitsProvider(DataProvider):
                     if isinstance(other, Table):
                         other_objects.append(dict(
                             attr=name, type='Table',
-                            dim=(len(other), len(other.columns)),
+                            dim=str((len(other), len(other.columns))),
                             data_type='n/a'
                         ))
                     else:
