@@ -895,12 +895,12 @@ class FitsProvider(DataProvider):
                 try:
                     oheaders[extname]['EXTVER'] = ver
                 except KeyError:
-                    try:
-                        # The object may keep the header on its own structure
-                        ext.meta['header']['EXTVER'] = ver
-                    except AttributeError:
-                        # No header. We don't need to set anything
-                        pass
+                    pass
+                try:
+                    # The object may keep the header on its own structure
+                    ext.meta['header']['EXTVER'] = ver
+                except AttributeError:
+                    pass
         except KeyError:
             pass
 
