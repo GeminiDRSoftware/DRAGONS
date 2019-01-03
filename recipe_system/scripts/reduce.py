@@ -20,6 +20,7 @@ from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
 
 from recipe_system.cal_service import set_calservice
+from recipe_system.cal_service import localmanager_available
 # ------------------------------------------------------------------------------
 
 def main(args):
@@ -80,7 +81,9 @@ def main(args):
         pass
 
     # Config local calibration manager with passed args object
-    set_calservice(args)
+    if localmanager_available:
+        set_calservice(local_db_dir=args.local_db_dir)
+
 
     log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
     log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))
