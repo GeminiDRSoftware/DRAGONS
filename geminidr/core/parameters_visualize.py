@@ -27,3 +27,8 @@ class tileArraysConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_tiled", optional=True)
     sci_only = config.Field("Tile only SCI extensions?", bool, False)
     tile_all = config.Field("Tile to single extension?", bool, False)
+
+class oldTileArraysConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_tiled", optional=True)
+    sci_only = config.Field("Tile only SCI extensions?", bool, False)
+    tile_all = config.Field("Tile to single extension?", bool, False)

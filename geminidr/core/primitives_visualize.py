@@ -6,9 +6,13 @@
 import numpy as np
 from copy import deepcopy
 from os.path import splitext
+from importlib import import_module
 
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
+
+from gempy.library.transform import Block, Transform, AstroDataGroup
+from astropy.modeling import models
 
 from gempy.mosaic.mosaicAD import MosaicAD
 from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
@@ -293,6 +297,88 @@ class Visualize(PrimitivesBASE):
         return adoutputs
 
     def tileArrays(self, adinputs=None, **params):
+        """
+        This primitive combines extensions by tiling (no interpolation).
+        The array_section() and detector_section() descriptors are used
+        to derive the geometry of the tiling, so outside help (from the
+        instrument's geometry_conf module) is only required if there are
+        multiple arrays being tiled together, as the gaps need to be
+        specified.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        tile_all: bool
+            tile to a single extension, rather than one per array?
+            (array=physical detector)
+        sci_only: bool
+            tile only the data plane?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys["tileArrays"]
+
+        suffix = params['suffix']
+        tile_all = params['tile_all']
+        attributes = ['data'] if params["sci_only"] else None
+
+        adoutputs = []
+        for ad in adinputs:
+            if len(ad) == 1:
+                log.warning("{} has only one extension, so there's nothing "
+                            "to tile".format(ad.filename))
+                adoutputs.append(ad)
+                continue
+
+            # Get information to calculate the output geometry
+            array_info = gt.array_information(ad)
+            detshape = array_info.detector_shape
+            if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
+                log.warning("{} has nothing to tile, as tile_all=False but "
+                            "each array has only one amplifier.")
+                adoutputs.append(ad)
+                continue
+
+            blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
+                      zip(array_info.extensions, array_info.array_shapes)]
+
+            if tile_all and detshape != (1, 1):  # We need gaps!
+                geotable = import_module('.geometry_conf', self.inst_lookups)
+                chip_gaps = geotable.tile_gaps[ad.detector_name()]
+                try:
+                    chip_gap_y, chip_gap_x = chip_gaps
+                except TypeError:  # single number, applies to both
+                    chip_gap_y = chip_gap_x = chip_gaps
+                transforms = []
+                for i, origin in enumerate(array_info.origins):
+                    xshift = (origin[1] + chip_gap_x * (i % detshape[1])) // ad.detector_x_bin()
+                    yshift = (origin[0] + chip_gap_y * (i // detshape[1])) // ad.detector_y_bin()
+                    transforms.append(Transform(models.Shift(xshift) & models.Shift(yshift)))
+                adg = AstroDataGroup(blocks, transforms)
+                adg.set_reference()
+                ad_out = adg.transform(attributes=attributes, process_objcat=True)
+            else:
+                # ADG.transform() produces full AD objects so we start with
+                # the first one, and then append the single extensions created
+                # by later calls to it.
+                for i, block in enumerate(blocks):
+                    adg = AstroDataGroup([block], [Transform(ndim=block.ndim)])
+                    adg.set_reference()
+                    if i == 0:
+                        ad_out = adg.transform(attributes=attributes,
+                                               process_objcat=True)
+                    else:
+                        ad_out.append(adg.transform(attributes=attributes,
+                                                    process_objcat=True)[0])
+
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.orig_filename = ad.filename
+            ad_out.update_filename(suffix=suffix, strip=True)
+            adoutputs.append(ad_out)
+        return adoutputs
+
+    def oldTileArrays(self, adinputs=None, **params):
         """
         This tiles GMOS and GSOAI chips.
 

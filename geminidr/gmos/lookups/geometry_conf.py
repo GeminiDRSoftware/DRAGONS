@@ -27,6 +27,19 @@ hamgap_dict_unbin = {(0,0):(0,0), (1,0):(61,0), (2,0):(61,0)}
 gmosn_hamgap_dict_bin = {(0,0):(0,0), (1,0):(66,0), (2,0):(66,0)}
 gmosn_hamgap_dict_unbin = {(0,0):(0,0), (1,0):(67,0), (2,0):(67,0)}
 
+# for new tileArrays
+tile_gaps = {
+    # GMOS-N
+    'EEV9273-16-03EEV9273-20-04EEV9273-20-03': 37,
+    'e2v 10031-23-05,10031-01-03,10031-18-04': 37,
+    'BI13-20-4k-1,BI12-09-4k-2,BI13-18-4k-2': 67,
+
+    # GMOS-S
+    'EEV2037-06-03EEV8194-19-04EEV8261-07-04': 37,
+    'EEV8056-20-03EEV8194-19-04EEV8261-07-04': 37,
+    'BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1': 61,
+}
+
 # NOTE: The gap sets used for GMOS-N Hamamatsu may not be correct, as the
 # keys below are simply using the gap sets for the old CCDs.
 # - kra, 07-05-15

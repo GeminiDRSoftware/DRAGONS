@@ -34,6 +34,8 @@ from ..utils import logutils
 import astrodata
 
 from collections import namedtuple
+ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
+                                    "extensions")
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
@@ -82,7 +84,6 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
         log.error("TypeError: A SExtractor dictionary was not received.")
         raise TypeError("Require SExtractor parameter dictionary.")
     
-    # Initialize the list of output AstroData objects
     adoutput = []
     # Parse sextractor parameters for the list of expected columns
     expected_columns = parse_sextractor_param(sx_dict['dq', 'param'])
@@ -90,7 +91,6 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
     expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR",
                              "PROFILE_FWHM","PROFILE_EE50"])
 
-    # Loop over each input AstroData object in the input list
     for ad in adinput:
         ext = ad.extver(extver)
         # Check if OBJCAT already exists and just update if desired
@@ -142,36 +142,42 @@ def array_information(adinput=None):
     Returns
     -------
     list of ArrayInfo namedtuples, each containing:
+        detector_shape: doubleton indicating the arrangement of physical
+                        detectors
         origins: list of doubletons indicating the bottom-left of each
                  physical detector in detector_section coordinates
+        array_shapes: list of doubletons indicating the shape for tiling
+                      the extensions to make each physical detector
         extensions: list of tuples, one for each physical detector containing
                     the indices of the extensions on that detector. Both the
                     list and the tuples are sorted based on detector_section
                     first in y, then x (so order is along the bottom, then
                     the next row up, and so on).
-        reference_extver: extver of the extension in the middle
     """
-    ArrayInfo = namedtuple("ArrayInfo", "origins extensions reference_extver")
     array_info_list = []
-
     for ad in adinput:
         det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
-        array_corners = np.array([(sec.y1, sec.x1) for sec in ad.array_section()])
+        # If the array_section() descriptor returns None, then it's reasonable
+        # to assume that each extension is a full detector...
+        try:
+            array_corners = np.array([(sec.y1, sec.x1) for sec in ad.array_section()])
+        except AttributeError:
+            array_corners = det_corners
         origins = det_corners - array_corners
 
         # Sort by y first, then x as a tiebreaker, keeping all extensions with
         # the same origin together
-        ampsorder = np.lexsort(np.vstack([det_corners.T[::-1],origins.T[::-1]]))
+        ampsorder = np.lexsort(np.vstack([det_corners.T[::-1], origins.T[::-1]]))
         unique_origins = np.unique(origins, axis=0)
-        sorted_origins = list(np.lexsort(unique_origins.T[::-1]))
+        detshape = tuple(len(set(orig_coords)) for orig_coords in unique_origins.T)
+        sorted_origins = [tuple(unique_origins[i])
+                          for i in np.lexsort(unique_origins.T[::-1])]
         arrays_list = [tuple(j for j in ampsorder if np.array_equal(det_corners[j],
-                             array_corners[j]+unique_origins[i]))
-                       for i in sorted_origins]
-        centre = np.median(det_corners, axis=0)
-        distances = list(np.sum(det_corners - centre, axis=1))
-        ref_index = distances.index(max(v for v in distances if v < 0))
-        array_info_list.append(ArrayInfo(sorted_origins, arrays_list,
-                                         ref_index.hdr['EXTVER']))
+                             array_corners[j]+origin)) for origin in sorted_origins]
+        array_shapes = [tuple(len(set(coords)) for coords in det_corners[exts,:].T)
+                        for exts in arrays_list]
+        array_info_list.append(ArrayInfo(detshape, sorted_origins,
+                                         array_shapes, arrays_list))
     return array_info_list
 
 #TODO: CJS believes this is never called in normal operations and doesn't even

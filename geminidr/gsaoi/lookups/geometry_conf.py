@@ -1,6 +1,11 @@
 # GSAOI instrument geometry configuration parameters for 
 # gem_mosaic_function() in gemMosaicFunction.py
 
+# for new tileArrays
+tile_gaps = {
+    'GSAOI': (140, 145)
+}
+
 # gaps: (x_gap, y_gap)
 gaps_tile = {
     # Gaps between the blocks in the mosaic grid, (0,0) (col,row) is the lower left.
