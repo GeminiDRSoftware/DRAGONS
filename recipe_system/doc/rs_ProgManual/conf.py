@@ -353,7 +353,6 @@ def run_api_doc(_):
         ignore_paths = [
             'doc',
             'test',
-            'cal_service',
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
