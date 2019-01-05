@@ -235,63 +235,86 @@ class Visualize(PrimitivesBASE):
 
     def mosaicDetectors(self, adinputs=None, **params):
         """
-        This primitive will use the gempy MosaicAD class to mosaic the frames
-        of the input images. For this primitive, the mosaicAD parameter, 'tile',
-        is always False.
+        This primitive does a full mosaic of all the arrays in an AD object.
+        An appropriate geometry_conf.py module containing geometric information
+        is required.
 
         Parameters
         ----------
         suffix: str
-            suffix to be added to output files. Default is '_mosaic'
-
+            suffix to be added to output files.
         sci_only: bool
             mosaic only SCI image data. Default is False
-
-        interpolator: <str>
-            type of interpolation to use across chip gaps
-            ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
-
-
+        order: int (1-5)
+            order of spline interpolation
         """
-        fmat1 = "No changes will be made to {}, since it has "
-        fmat1 += "already been processed by mosaicDetectors"
-        fmat2 = "Nothing to mosaic. < 2 extensions found on file {}"
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        # ----------  get parameters -------------
-        interpolator = params['interpolator']
-        sci_only = params['sci_only']
         suffix = params['suffix']
-        # ----------------------------------------
+        order = params['order']
+        attributes = ['data'] if params['sci_only'] else None
+        geotable = import_module('.geometry_conf', self.inst_lookups)
+
         adoutputs = []
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning(fmat1.format(ad.filename))
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by mosaicDetectors".
+                            format(ad.filename))
+                adoutputs.append(ad)
+                continue
 
             if len(ad) == 1:
-                log.stdinfo(fmat2.format(ad.filename))
+                log.warning("{} has only one extension, so there's nothing "
+                            "to mosaic".format(ad.filename))
                 adoutputs.append(ad)
                 continue
 
-            log.stdinfo("\tMosaicAD Working on {}".format(ad.filename))
-            try:
-                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
-            except ValueError as mos_err:
-                log.error(str(mos_err))
-                adoutputs.append(ad)
-                continue
+            # Create the blocks (individual physical detectors)
+            array_info = gt.array_information(ad)
+            blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
+                      zip(array_info.extensions, array_info.array_shapes)]
 
-            mos.set_interpolator(interpolator)
+            chip_gaps = geotable.tile_gaps[ad.detector_name()]
+            # Work with existing dict format
+            geo_key = (ad.detector_name(), 'unbinned')
+            shifts = geotable.shift[geo_key]
+            rotations = geotable.rotation[geo_key]
+            magnifications = geotable.magnification[geo_key]
+            adg = AstroDataGroup()
 
-            log.stdinfo("\tBuilding mosaic, converting data ...")
-            ad_out = mos.as_astrodata(tile=False, doimg=sci_only)
+            # Currently hacked for GMOS so that the second detector isn't
+            # modified at the sub-pixel level. This will change when the
+            # geometry_conf dict is refactored.
+            for i, (block, shift, rot, mag) in enumerate(zip(blocks, shifts,
+                                                             rotations, magnifications), start=-1):
+                ny, nx = block.shape
+                xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+                transform = Transform(ndim=2)
+                if rot != 0 or mag != (1, 1):
+                    # Shift to centre, do whatever, and then shift back
+                    transform.append(models.Shift(-0.5*(nx-1)) &
+                                     models.Shift(-0.5*(ny-1)))
+                    if rot != 0:
+                        transform.append(models.Rotation2D(rot))
+                    if mag != (1, 1):
+                        transform.append(models.Scale(mag[0]) &
+                                         models.Scale(mag[1]))
+                    transform.append(models.Shift(0.5*(nx-1)) &
+                                     models.Shift(0.5*(ny-1)))
+                transform.append(models.Shift((shift[0] + i*chip_gaps) / xbin + i*nx) &
+                                 models.Shift(shift[1] / ybin))
+                adg.append(block, transform)
+
+            adg.set_reference()
+            ad_out = adg.transform(attributes=attributes, order=order,
+                                   process_objcat=False)
+
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
-            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
             adoutputs.append(ad_out)
 
         return adoutputs
@@ -317,7 +340,7 @@ class Visualize(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["tileArrays"]
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         suffix = params['suffix']
         tile_all = params['tile_all']
@@ -332,6 +355,7 @@ class Visualize(PrimitivesBASE):
                 continue
 
             # Get information to calculate the output geometry
+            # TODO: Think about arbitrary ROIs
             array_info = gt.array_information(ad)
             detshape = array_info.detector_shape
             if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
@@ -378,6 +402,69 @@ class Visualize(PrimitivesBASE):
             adoutputs.append(ad_out)
         return adoutputs
 
+    def oldMosaicDetectors(self, adinputs=None, **params):
+        """
+        This primitive will use the gempy MosaicAD class to mosaic the frames
+        of the input images. For this primitive, the mosaicAD parameter, 'tile',
+        is always False.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files. Default is '_mosaic'
+
+        sci_only: bool
+            mosaic only SCI image data. Default is False
+
+        interpolator: <str>
+            type of interpolation to use across chip gaps
+            ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
+
+
+        """
+        fmat1 = "No changes will be made to {}, since it has "
+        fmat1 += "already been processed by mosaicDetectors"
+        fmat2 = "Nothing to mosaic. < 2 extensions found on file {}"
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys["mosaicDetectors"]
+
+        # ----------  get parameters -------------
+        interpolator = params['interpolator']
+        sci_only = params['sci_only']
+        suffix = params['suffix']
+        # ----------------------------------------
+        adoutputs = []
+        for ad in adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning(fmat1.format(ad.filename))
+
+            if len(ad) == 1:
+                log.stdinfo(fmat2.format(ad.filename))
+                adoutputs.append(ad)
+                continue
+
+            log.stdinfo("\tMosaicAD Working on {}".format(ad.filename))
+            try:
+                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
+            except ValueError as mos_err:
+                log.error(str(mos_err))
+                adoutputs.append(ad)
+                continue
+
+            mos.set_interpolator(interpolator)
+
+            log.stdinfo("\tBuilding mosaic, converting data ...")
+            ad_out = mos.as_astrodata(tile=False, doimg=sci_only)
+            ad_out.orig_filename = ad.filename
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.update_filename(suffix=suffix, strip=True)
+            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
+            adoutputs.append(ad_out)
+
+        return adoutputs
+
     def oldTileArrays(self, adinputs=None, **params):
         """
         This tiles GMOS and GSOAI chips.
@@ -412,7 +499,7 @@ class Visualize(PrimitivesBASE):
         for ad in adinputs:
             log.stdinfo("parameter: tile_all is {} ".format(tile_all))
             log.debug(gt.log_message("primitive", self.myself(), "starting"))
-            timestamp_key = self.timestamp_keys[self.myself()]
+            timestamp_key = self.timestamp_keys["tileArrays"]
 
             try:
                 mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
