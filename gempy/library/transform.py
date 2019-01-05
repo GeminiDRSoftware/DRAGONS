@@ -1,8 +1,8 @@
 """
 transform.py
 
-This module contains classes and functions related to the geometric
-transformation of arrays and AstroData objects.
+This module contains classes related to the geometric transformation of
+arrays and AstroData objects.
 
 Classes:
     Block: a container for array-like objects that are adjacent to each other
@@ -59,7 +59,6 @@ class Block(object):
     So if you want to layer 2D images into a 3D stack, you need to add a
     third dimension to the data. This requirement could be eliminated.
     """
-
     def __init__(self, elements, shape=None, xlast=False):
         """
         elements: list of AD slices/NDData/ndarray
@@ -90,6 +89,17 @@ class Block(object):
                         else list(zip(*corner_grid)))
 
     def __getattr__(self, name):
+        """
+        Returns the named attribute as if the Block were really a single
+        object. The "data" attribute refers to the arrays themselves if
+        the elements are simple ndarrays. Tables and arrays are handled
+        trivially, other attributes are generally handled by returning a
+        list of the individual elements' attributes.
+
+        However, if this list is composed solely of Nones, a single None
+        is returned. This is intended to handle .mask and .variance attributes
+        if they're not defined on the individual elements.
+        """
         attributes = [getattr(el, name, None) for el in self._elements]
         # If we're looking for the .data attributes, this may just be the
         # element, if they're ndarrays. We should handle a mix of ndarrays
@@ -137,9 +147,10 @@ class Block(object):
 
     def _return_array(self, elements):
         """
-        Returns a new ndarray, which is required for the scipy.ndimage
-        transformations. This obviously requires a copy of the data,
-        which is what we were trying to avoid. But oh well.
+        Returns a new ndarray composed of the composite elements, which is
+        required for the scipy.ndimage transformations. It attempts to handle
+        an element list that includes Nones (e.g., OBJMASKs or masks) by
+        filling those regions with zeros.
         """
         if len(elements) != len(self._elements):
             raise ValueError("All elements of the Block must be used in the "
@@ -153,7 +164,7 @@ class Block(object):
             if arr is None:
                 continue
             if output is None:
-                output = np.empty(self.shape, dtype=arr.dtype)
+                output = np.zeros(self.shape, dtype=arr.dtype)
             slice_ = tuple(slice(c, c+a) for c, a in zip(corner, self._arrayshape))
             output[slice_] = arr
         return output
@@ -232,23 +243,33 @@ class Transform(object):
         return transform
 
     def __getattr__(self, key):
+        """
+        The is_affine property and asModel() method should be used to extract
+        information, so attributes are intended to refer to the component
+        models, and only make sense if the Transform has a single model.
+        """
         if len(self) == 1:
             return getattr(self._models[0], key)
         raise AttributeError(key)
 
     def __setattr__(self, key, value):
+        """
+        It is assumed that we're setting attributes of the component models.
+        We are allowed to set an attribute on multiple models (e.g., name),
+        if that attribute exists on all models. Otherwise, it's set on the
+        Transform object.
+        """
         if key not in ("_models", "_affine"):
-            if len(self) == 1:
-                try:
-                    return setattr(self._models[0], key, value)
-                except AttributeError:
-                    pass
+            if all(hasattr(m, key) for m in self._models):
+                for m in self._models:
+                    setattr(m, key, value)
+                return
         return object.__setattr__(self, key, value)
 
     def __getitem__(self, key):
-        """Return a Transform based on index or name, slice, or tuple.
-        If the models are in descending index order, then the inverse
-        will be used.
+        """
+        Return a Transform based on index or name, slice, or tuple. If the
+        models are in descending index order, then the inverse will be used.
         """
         if isinstance(key, slice):
             # Turn into a slice of integers
@@ -303,7 +324,7 @@ class Transform(object):
     @property
     def inverse(self):
         """The inverse transform"""
-        # ndim will only be used if the model is empty
+        # ndim is only used by __init__() if the model is empty
         return self.__class__([model.inverse for model in self._models[::-1]],
                               ndim=self.ndim)
 
@@ -343,8 +364,11 @@ class Transform(object):
             raise ValueError(e)
 
     def _indices(self, key):
-        """Like the index method, but returns the indices of *all* models
-        with the name of the key"""
+        """
+        Like the index method, but returns the indices of *all* models
+        with the name of the key. This is implemented so that a group of
+        related models can be given a single name and extracted together.
+        """
         indices = [i for i, m in enumerate(self._models) if m.name == key]
         if indices:
             return indices
@@ -406,7 +430,7 @@ class Transform(object):
         if index == 0:
             self._ndim = model.n_inputs
 
-        # Ugly stuff to break down a CompoundModel
+        # Ugly stuff to break down a CompoundModel.
         try:
             sequence = self.split_compound_model(model._tree, required_inputs)
         except AttributeError:
@@ -430,6 +454,9 @@ class Transform(object):
         transformations or just components within a submodel. It may prove
         difficult/impossible to split a Model if the number of inputs is
         not preserved. We'll cross that bridge if/when we come to it.
+
+        This has not been tested in extreme circumstances, but works for
+        "normal" transformations.
 
         Parameters
         ----------
@@ -724,7 +751,7 @@ class DataGroup(object):
             corners = np.array(at.get_corners(array.shape)).T[::-1]
             trans_corners = transform(*corners)
             all_corners.extend(corner[::-1] for corner in zip(*trans_corners))
-        limits = [(int(np.floor(min(c))), int(np.ceil(max(c))) + 1)
+        limits = [(int(np.ceil(min(c))), int(np.floor(max(c))) + 1)
                   for c in zip(*all_corners)]
         self.output_shape = tuple(max_ - min_ for min_, max_ in limits)
         self.origin = tuple(min_ for min_, max_ in limits)
@@ -1157,15 +1184,16 @@ class AstroDataGroup(DataGroup):
                 del ad.hdr[keywords['array']]
 
         # Now sort out the WCS. CRPIXi values have to be added to the coords
-        # of the bottom-left of the Block. We want them in x-first order
+        # of the bottom-left of the Block. We want them in x-first order.
+        # Also the CRPIXi values are 1-indexed, so handle that.
         transform = self._transforms[self.ref_array]
         wcs = WCS(header)
-        ref_coords = tuple(corner+crpix for corner, crpix in
+        ref_coords = tuple(corner+crpix-1 for corner, crpix in
                            zip(self._arrays[self.ref_array].corners[self.ref_index][::-1],
                                wcs.wcs.crpix))
         new_ref_coords = transform(*ref_coords)
         for i, coord in enumerate(new_ref_coords, start=1):
-            ad.hdr['CRPIX{}'.format(i)] = coord
+            ad.hdr['CRPIX{}'.format(i)] = coord+1
 
         affine_matrix = transform.inverse.affine_matrices(self._arrays[self.ref_array].shape).matrix
         try:
