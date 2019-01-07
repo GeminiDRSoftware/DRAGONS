@@ -259,7 +259,7 @@ class Transform(object):
         if that attribute exists on all models. Otherwise, it's set on the
         Transform object.
         """
-        if key not in ("_models", "_affine"):
+        if key not in ("_models", "_affine", "_ndim"):
             if all(hasattr(m, key) for m in self._models):
                 for m in self._models:
                     setattr(m, key, value)
