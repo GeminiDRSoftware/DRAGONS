@@ -1,9 +1,9 @@
 # GSAOI instrument geometry configuration parameters for 
 # gem_mosaic_function() in gemMosaicFunction.py
 
-# for new tileArrays
+# for new tileArrays: (xgap, ygap)
 tile_gaps = {
-    'GSAOI': (140, 145)
+    'GSAOI': (145, 140)
 }
 
 # gaps: (x_gap, y_gap)

@@ -371,13 +371,13 @@ class Visualize(PrimitivesBASE):
                 geotable = import_module('.geometry_conf', self.inst_lookups)
                 chip_gaps = geotable.tile_gaps[ad.detector_name()]
                 try:
-                    chip_gap_y, chip_gap_x = chip_gaps
+                    xgap, ygap = chip_gaps
                 except TypeError:  # single number, applies to both
-                    chip_gap_y = chip_gap_x = chip_gaps
+                    xgap = ygap = chip_gaps
                 transforms = []
                 for i, origin in enumerate(array_info.origins):
-                    xshift = (origin[1] + chip_gap_x * (i % detshape[1])) // ad.detector_x_bin()
-                    yshift = (origin[0] + chip_gap_y * (i // detshape[1])) // ad.detector_y_bin()
+                    xshift = (origin[1] + xgap * (i % detshape[1])) // ad.detector_x_bin()
+                    yshift = (origin[0] + ygap * (i // detshape[1])) // ad.detector_y_bin()
                     transforms.append(Transform(models.Shift(xshift) & models.Shift(yshift)))
                 adg = AstroDataGroup(blocks, transforms)
                 adg.set_reference()
