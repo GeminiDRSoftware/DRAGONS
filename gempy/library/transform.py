@@ -847,9 +847,9 @@ class DataGroup(object):
                 # transform, so we can put it straight in the output, since
                 # only this array will map into the region.
                 if integer_shift:
-                    self.log.stdinfo("Placing {} array in [".format(attr) +
-                                     ",".join(["{}:{}".format(limits[0] + 1, limits[1])
-                                               for limits in output_corners[::-1]]) + "]")
+                    self.log.debug("Placing {} array in [".format(attr) +
+                                   ",".join(["{}:{}".format(limits[0] + 1, limits[1])
+                                             for limits in output_corners[::-1]]) + "]")
                     slice_ = tuple(slice(min_, max_) for min_, max_ in output_corners)
                     self.output_dict[attr][slice_] = arr
                     continue
@@ -967,9 +967,9 @@ class DataGroup(object):
         """
         attr, output_corners = key
         # 0-indexed but (x, y) order
-        self.log.stdinfo("Placing {} array in [".format(attr)+
-                         ",".join(["{}:{}".format(limits[0]+1 , limits[1])
-                                   for limits in output_corners[::-1]])+"]")
+        self.log.debug("Placing {} array in [".format(attr)+
+                       ",".join(["{}:{}".format(limits[0]+1 , limits[1])
+                                 for limits in output_corners[::-1]])+"]")
         arr = self.output_arrays[key]
         slice_ = tuple(slice(min_, max_) for min_, max_ in output_corners)
         if isinstance(attr, tuple):  # then attr will be, e.g., ('mask', 2)
@@ -1221,7 +1221,7 @@ class AstroDataGroup(DataGroup):
         # extension (which gets it from its parent AD object).
         for name in self._arrays[self.ref_array][self.ref_index].tables:
             setattr(ad, name, getattr(self._arrays[self.ref_array][self.ref_index], name))
-            self.log.fullinfo("Copying {}".format(table))
+            self.log.fullinfo("Copying {}".format(name))
 
         # Join OBJCATs. We transform the pixel coordinates and then update the
         # RA and DEC based on the output image's WCS.
