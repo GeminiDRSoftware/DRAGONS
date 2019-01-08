@@ -785,7 +785,6 @@ class DataGroup(object):
         dict: {key: array} of arrays containing the transformed attributes
         """
         start = datetime.now()
-        jfactor = 1.0
 
         if parallel:
             processes = []
@@ -929,8 +928,8 @@ class DataGroup(object):
         # Invert from standard python order to (x, y[, z]) order
         corners = np.array(at.get_corners(input_array.shape)).T[::-1]
         trans_corners = transform(*corners)
-        min_coords = [int(np.floor(min(coords))) for coords in trans_corners]
-        max_coords = [int(np.ceil(max(coords)))+1 for coords in trans_corners]
+        min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
+        max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
         self.log.stdinfo("Array maps to ["+",".join(["{}:{}".format(min_+1, max_)
                                 for min_, max_ in zip(min_coords, max_coords)])+"]")
         # If this maps to a region not starting in the bottom-left of the
