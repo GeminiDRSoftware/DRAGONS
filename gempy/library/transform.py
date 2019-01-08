@@ -960,8 +960,6 @@ class DataGroup(object):
         ----------
         key: tuple
             identifier for this particular array
-        jfactor: float
-            multiplier to conserve flux
         """
         attr, output_corners = key
         # 0-indexed but (x, y) order
