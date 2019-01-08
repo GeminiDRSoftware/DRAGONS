@@ -6,6 +6,22 @@ tile_gaps = {
     'GSAOI': (145, 140)
 }
 
+# Shifts are (x, y) and include detector offsets
+geometry = {
+    'GSAOI': {'default_shape': (2048, 2048),
+              (0, 0): {},
+              (2048, 0): {'shift': (2198.604018, -1.248663),
+                          'rotation': 0.033606},
+              (0, 2048): {'shift': (0.029961, 2177.102256),
+                          'rotation': -0.582767},
+              (2048, 2048): {'shift': (2192.420524, 2175.722921),
+                             'rotation': -0.769542}
+              }
+}
+
+# -------------------------------------------------------------------------
+# Every below this line no longer needed.
+
 # gaps: (x_gap, y_gap)
 gaps_tile = {
     # Gaps between the blocks in the mosaic grid, (0,0) (col,row) is the lower left.

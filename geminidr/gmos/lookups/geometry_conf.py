@@ -15,6 +15,7 @@ tile_gaps = {
     'BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1': 61,
 }
 
+# Shifts are (x, y) and include detector offsets
 geometry = {
     # GMOS-N
     'EEV9273-16-03EEV9273-20-04EEV9273-20-03': {'default_shape': (2048, 4608),

@@ -286,7 +286,7 @@ class Visualize(PrimitivesBASE):
             # Currently hacked for GMOS so that the second detector isn't
             # modified at the sub-pixel level. This will change when the
             # geometry_conf dict is refactored.
-            for i, (origin, block) in zip(array_info.origins, blocks):
+            for origin, block in zip(array_info.origins, blocks):
                 # Origins are in (x, y) order in LUT
                 block_geom = geometry[origin[::-1]]
                 nx, ny = block_geom.get('shape', default_shape)
