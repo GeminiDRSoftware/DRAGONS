@@ -115,13 +115,12 @@ class Block(object):
                 if name == "data":
                     return self._return_array(self._elements)
                 else:
-                    raise AttributeError(e)
+                    raise e
         # Handle Tables
         if any(isinstance(attr, table.Table) for attr in attributes):
             return self._return_table(name)
 
         # Otherwise return a list of the attributes, if they exist
-        # or raise an AttributeError if they don't
         attributes = [getattr(el, name) for el in self._elements]
         # If all the attributes are None (e.g., .mask), return a single None
         if all(attr is None for attr in attributes):
@@ -250,7 +249,7 @@ class Transform(object):
         """
         if len(self) == 1:
             return getattr(self._models[0], key)
-        raise AttributeError(key)
+        raise AttributeError("Can only get attributes from single-model Transforms")
 
     def __setattr__(self, key, value):
         """
@@ -361,7 +360,7 @@ class Transform(object):
         except ValueError as e:
             if isinstance(key, (int, np.integer)):
                 return key
-            raise ValueError(e)
+            raise e
 
     def _indices(self, key):
         """
@@ -833,7 +832,7 @@ class DataGroup(object):
                     if attr == "data":
                         arr = input_array
                     else:
-                        raise AttributeError(e)
+                        raise e
 
                 # Create an output array if we haven't seen this attribute yet.
                 # We only do this now so that we know the dtype.
