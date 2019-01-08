@@ -277,34 +277,45 @@ class Visualize(PrimitivesBASE):
             blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
                       zip(array_info.extensions, array_info.array_shapes)]
 
-            chip_gaps = geotable.tile_gaps[ad.detector_name()]
-            # Work with existing dict format
-            geo_key = (ad.detector_name(), 'unbinned')
-            shifts = geotable.shift[geo_key]
-            rotations = geotable.rotation[geo_key]
-            magnifications = geotable.magnification[geo_key]
+            detname = ad.detector_name()
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            chip_gaps = geotable.tile_gaps[detname]
+            geometry = geotable.geometry[detname]
+            default_shape = geometry.get('default_shape')
             adg = AstroDataGroup()
 
             # Currently hacked for GMOS so that the second detector isn't
             # modified at the sub-pixel level. This will change when the
             # geometry_conf dict is refactored.
-            for i, (block, shift, rot, mag) in enumerate(zip(blocks, shifts,
-                                                             rotations, magnifications), start=-1):
-                ny, nx = block.shape
-                xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            for i, (origin, block) in enumerate(zip(array_info.origins, blocks), start=-1):
+                # Origins are in (x, y) order in LUT
+                block_geom = geometry[origin[::-1]]
+                nx, ny = block_geom.get('shape', default_shape)
+                nx /= xbin
+                ny /= ybin
+                shift = block_geom.get('shift', (0, 0))
+                rot = block_geom.get('rotation', 0.)
+                mag = block_geom.get('magnification', (1, 1))
                 transform = Transform(ndim=2)
                 if rot != 0 or mag != (1, 1):
                     # Shift to centre, do whatever, and then shift back
                     transform.append(models.Shift(-0.5*(nx-1)) &
                                      models.Shift(-0.5*(ny-1)))
                     if rot != 0:
+                        # Cope with non-square pixels by scaling in one
+                        # direction to make them square before applying the
+                        # rotation, and then reversing that.
+                        if xbin != ybin:
+                            transform.append(models.Identity(1) & models.Scale(ybin / xbin))
                         transform.append(models.Rotation2D(rot))
+                        if xbin != ybin:
+                            transform.append(models.Identity(1) & models.Scale(xbin / ybin))
                     if mag != (1, 1):
                         transform.append(models.Scale(mag[0]) &
                                          models.Scale(mag[1]))
                     transform.append(models.Shift(0.5*(nx-1)) &
                                      models.Shift(0.5*(ny-1)))
-                transform.append(models.Shift((shift[0] + i*chip_gaps) / xbin + i*nx) &
+                transform.append(models.Shift(shift[0] / xbin) &
                                  models.Shift(shift[1] / ybin))
                 adg.append(block, transform)
 
