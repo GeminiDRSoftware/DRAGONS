@@ -39,6 +39,7 @@ pipeline {
               which pip
               which python
               python -c "import future"
+              python setup.py install
         '''
       }
     } // stage: build environment
@@ -46,7 +47,6 @@ pipeline {
     stage('Download test data') {
       steps {
         sh '''  source activate ${BUILD_TAG}
-                pip install pycurl
                 python .jenkins/download_test_data.py
               '''
       }
@@ -86,7 +86,9 @@ pipeline {
         sh  ''' source activate ${BUILD_TAG}
                 pytest astrodata --ad_test_data_path ${TEST_PATH} \\
                   --junit-xml test-reports/results.xml
-                pytest recipe_system gemini_instruments \\
+                pytest recipe_system \\
+                  --junit-xml test-reports/results.xml
+                pytest gemini_instruments \\
                   --junit-xml test-reports/results.xml
                 '''
       }
