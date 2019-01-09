@@ -11,9 +11,10 @@ import astrodata
 def test_can_read_data(test_path):
 
     test_data_name = "GMOS/N20110826S0336.fits"
+    test_data_full_name = os.path.join(test_path, test_data_name)
 
-    assert os.path.exists(test_data_name)
-    ad = astrodata.open(os.path.join(test_path, test_data_name))
+    assert os.path.exists(test_data_full_name)
+    ad = astrodata.open(test_data_full_name)
 
 
 @pytest.mark.ad_local_data
