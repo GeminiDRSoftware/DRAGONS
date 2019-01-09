@@ -81,7 +81,9 @@ pipeline {
     stage('Unit tests') {
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                pytest astrodata recipe_system gemini_instruments \\
+                pytest astrodata --ad_test_data_path ${TEST_PATH} \\
+                  --junit-xml test-reports/results.xml
+                pytest recipe_system gemini_instruments \\
                   --junit-xml test-reports/results.xml
                 '''
       }
