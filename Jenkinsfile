@@ -45,7 +45,10 @@ pipeline {
 
     stage('Download test data') {
       steps {
-        sh 'python .jenkins/download_test_data.py'
+        sh '''  source activate ${BUILD_TAG}
+                pip install pycurl
+                python .jenkins/download_test_data.py
+              '''
       }
     } // stage: test environment
 

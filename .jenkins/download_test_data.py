@@ -1,13 +1,12 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python
 
 import os
-import requests
-import shutil
+import subprocess
 
 
 FILE_WITH_TEST_FILES = '.jenkins/test_files.txt'
 TEST_PATH = os.environ['TEST_PATH']
-URL = 'https://archive.gemini.edu/file/{:s}'
+URL = u'https://archive.gemini.edu/file/'
 
 
 def download_test_data():
@@ -31,22 +30,17 @@ def download_non_existing_test_files():
 
         for _filename in list_of_files.readlines():
 
-            current_file = os.path.join(TEST_PATH, _filename)
+            current_file = os.path.join(TEST_PATH, _filename).strip()
 
             if os.path.exists(current_file):
-                print('Skip existing file: {}'.format(current_file))
+                print('Skip existing file: {:s}'.format(current_file))
 
             else:
-
-                print('Download missing file: {}'.format(current_file))
+                print('Download missing file: {:s}'.format(current_file))
                 _path, _file = os.path.split(current_file)
                 os.makedirs(_path, exist_ok=True)
-                r = requests.get(URL.format(_file), stream=True)
-
-                if r.status_code == 200:
-                    with open(current_file, 'wb') as f:
-                        r.raw.decode_content = True
-                        shutil.copyfileobj(r.raw, f)
+                subprocess.run(['curl', '--silent', URL + _file, '--output',
+                                current_file])
 
 
 if __name__ == "__main__":
