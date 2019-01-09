@@ -16,6 +16,7 @@ pipeline {
 
   environment {
     PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
+    TEST_PATH = "$WORKSPACE/test_path/"
   }
 
   stages {
@@ -42,20 +43,21 @@ pipeline {
       }
     } // stage: download and install anaconda
 
-    stage ("Build Environment") {
+    stage ("Build and Test Environment") {
       steps {
-        sh 'conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}'
-      }
-    } // stage: build environment
-
-    stage('Test environment') {
-      steps {
-        sh '''source activate ${BUILD_TAG}
+        sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
+              source activate ${BUILD_TAG}
               pip list
               which pip
               which python
               python -c "import future"
-              '''
+        '''
+      }
+    } // stage: build environment
+
+    stage('Download test data') {
+      steps {
+        sh '.jenkins/download_test_data.sh'
       }
     } // stage: test environment
 
