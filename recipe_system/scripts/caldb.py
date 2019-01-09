@@ -7,18 +7,18 @@
 # ------------------------------------------------------------------------------
 from __future__ import print_function
 # ------------------------------------------------------------------------------
+import sys
+import traceback
 
 from os.path import expanduser, isdir, exists, basename
 from argparse import ArgumentParser
 from functools import partial
-import sys
 
 from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
 from recipe_system.cal_service import load_calconf, update_calconf, get_calconf
 from recipe_system.cal_service.localmanager import LocalManager, LocalManagerError
 from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
 from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
-import traceback
 # ------------------------------------------------------------------------------
 
 def buildArgumentParser():

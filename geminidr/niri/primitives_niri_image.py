@@ -73,7 +73,7 @@ class NIRIImage(NIRI, Image, Photometry):
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
-                            "already been processed by ADUToElectrons".
+                            "already been processed by removePatternNoise".
                             format(ad.filename))
                 continue
 

@@ -27,6 +27,8 @@ print(' Printing current working directory for debugging:')
 print(' ' + os.getcwd())
 
 if on_rtd:
+    print(' Adding the following path to the sys.path')
+    print(' ' + os.path.abspath('./../../../'))
     sys.path.insert(0, os.path.abspath('./../../../'))
 else:
     sys.path.insert(0, os.path.abspath('./../../../'))
@@ -349,11 +351,12 @@ def run_api_doc(_):
     for p in build_packages:
 
         build_path = os.path.join(current_path, relative_path, p)
+        print('\n Building API using the following build_path: \n'.format(
+            build_path))
 
         ignore_paths = [
             'doc',
             'test',
-            'cal_service',
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]

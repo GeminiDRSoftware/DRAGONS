@@ -547,7 +547,7 @@ class FitsProviderProxy(DataProvider):
         self._provider.set_name(self._mapping[ext], name)
 
     def crop(self, x1, y1, x2, y2):
-        self._crop_impl(x1, y1, x2, y2, self._mapped_nddata)
+        self._crop_impl(x1, y1, x2, y2, self._mapped_nddata())
 
     def append(self, ext, name):
         if not self.is_single:
@@ -576,7 +576,7 @@ class FitsProviderProxy(DataProvider):
         if self.is_single:
             raise ValueError("Trying to get a mapping out of a single slice")
 
-        return self._provider._extver_impl(self._mapped_nddata)
+        return self._provider._extver_impl(self._mapped_nddata())
 
     def info(self, tags):
         self._provider.info(tags, indices=self._mapping)
@@ -788,7 +788,7 @@ class FitsProvider(DataProvider):
                     if isinstance(other, Table):
                         other_objects.append(dict(
                             attr=name, type='Table',
-                            dim=(len(other), len(other.columns)),
+                            dim=str((len(other), len(other.columns))),
                             data_type='n/a'
                         ))
                     else:
@@ -888,12 +888,12 @@ class FitsProvider(DataProvider):
                 try:
                     oheaders[extname]['EXTVER'] = ver
                 except KeyError:
-                    try:
-                        # The object may keep the header on its own structure
-                        ext.meta['header']['EXTVER'] = ver
-                    except AttributeError:
-                        # No header. We don't need to set anything
-                        pass
+                    pass
+                try:
+                    # The object may keep the header on its own structure
+                    ext.meta['header']['EXTVER'] = ver
+                except AttributeError:
+                    pass
         except KeyError:
             pass
 
