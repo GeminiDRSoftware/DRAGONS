@@ -45,7 +45,7 @@ pipeline {
 
     stage('Download test data') {
       steps {
-        sh '.jenkins/download_test_data.sh'
+        sh 'python .jenkins/download_test_data.py'
       }
     } // stage: test environment
 
