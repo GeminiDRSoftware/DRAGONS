@@ -133,10 +133,19 @@ class CalibrationService(object):
     The 'standalone' flag is active; local calibrations will be used.
 
     >>> caldb.add_cal('calibrations/processed_bias/S20141013S0163_bias.fits')
-    >>> caldb.remove_cal('N20120212S0073_flat.fits')
     >>> for f in caldb.list_files():
             f
     FileData(name='N20120212S0073_flat.fits', path='NIRI/calibrations/processed_flat')
+    FileData(name='N20131214S0097_dark.fits', path='NIRI')
+    FileData(name='N20150419S0224_flat.fits', path='GMOS_N_TWILIGHT_FLATS')
+    FileData(name='S20141013S0020_stackd_flat.fits', path='gband_demo')
+    FileData(name='S20141013S0163_bias.fits', path='gband_demo')
+    FileData(name='S20141013S0163_flats_bias.fits', path='../gband_demo')
+    FileData(name='S20141103S0123_image_bias.fits', path='../gband_demo')
+
+    >>> caldb.remove_cal('N20120212S0073_flat.fits')
+    >>> for f in caldb.list_files():
+            f
     FileData(name='N20131214S0097_dark.fits', path='NIRI')
     FileData(name='N20150419S0224_flat.fits', path='GMOS_N_TWILIGHT_FLATS')
     FileData(name='S20141013S0020_stackd_flat.fits', path='gband_demo')
