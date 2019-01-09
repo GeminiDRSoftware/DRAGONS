@@ -81,33 +81,11 @@ pipeline {
       }
     } // stage: static code metrics
 
-    stage('Test astrodata') {
-      steps {
-        echo "Unit Tests"
-        sh  ''' source activate ${BUILD_TAG}
-                pytest astrodata --ad_test_data_path ${TEST_PATH} \
-                    --junit-xml test-reports/results_astrodata.xml
-        echo "PEP8 style check"
-        sh  ''' source activate ${BUILD_TAG}
-                pylint --disable=C astrodata || true
-                '''
-      }
-      post {
-        always {
-          // Archive unit tests for the future
-          junit (
-            allowEmptyResults: true,
-            testResults: 'test-reports/results_astrodata.xml'
-            //, fingerprint: true
-            )
-        }
-      }
-    } // stage: test astrodata
-
     stage('Unit tests') {
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                pytest recipe_system gemini_instruments \
+                pytest recipe_system gemini_instruments astrodata \
+                    --ad_test_data_path ${TEST_PATH} \
                     --junit-xml test-reports/results.xml
                 '''
       }
