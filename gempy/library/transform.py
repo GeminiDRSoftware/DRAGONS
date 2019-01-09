@@ -801,6 +801,9 @@ class DataGroup(object):
         if self.output_shape is None:
             self.calculate_output_shape()
 
+        self.corners = []
+        self.jfactors = []
+
         print(datetime.now()-start, "Completed setup")
         for input_array, transform in zip(self._arrays, self._transforms):
             # Since this may be modified, deepcopy to preserve the one if
@@ -818,6 +821,7 @@ class DataGroup(object):
             integer_shift = False
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
             jfactor = np.linalg.det(mapping.matrix)
+            self.jfactors.append(jfactor)
             print(datetime.now() - start, "jfactor {}".format(jfactor))
             if transform.is_affine:
                 integer_shift = (np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
@@ -841,10 +845,8 @@ class DataGroup(object):
                 # We only do this now so that we know the dtype.
                 cval = self.no_data.get(attr, 0)
                 if attr not in self.output_dict:
-                    print("New attribute", attr)
                     self.output_dict[attr] = np.full(self.output_shape, cval, dtype=arr.dtype)
 
-                print(datetime.now() - start, attr, "job setup")
                 # Integer shifts mean the output will be unchanged by the
                 # transform, so we can put it straight in the output, since
                 # only this array will map into the region.
@@ -932,6 +934,7 @@ class DataGroup(object):
         # Invert from standard python order to (x, y[, z]) order
         corners = np.array(at.get_corners(input_array.shape)).T[::-1]
         trans_corners = transform(*corners)
+        self.corners.append(trans_corners)
         min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
         max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
         self.log.stdinfo("Array maps to ["+",".join(["{}:{}".format(min_+1, max_)

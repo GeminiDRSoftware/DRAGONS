@@ -6,8 +6,6 @@
 import numpy as np
 from astropy.wcs import WCS
 from scipy.ndimage import affine_transform
-from astropy.modeling import Model, models
-from functools import reduce
 
 from gempy.library import astrotools as at
 from gempy.library.transform import Transform, AstroDataGroup
@@ -19,8 +17,6 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
 from . import parameters_resample
-
-from datetime import datetime
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -44,6 +40,36 @@ class Resample(PrimitivesBASE):
         self._param_update(parameters_resample)
 
     def resampleToCommonFrame(self, adinputs=None, **params):
+        """
+        This primitive applies the transformation encoded in the input images
+        WCSs to align them with a reference image, in reference image pixel
+        coordinates. The reference image is taken to be the first image in
+        the input list.
+
+        By default, the transformation into the reference frame is done via
+        interpolation. The variance plane, if present, is transformed in
+        the same way as the science data.
+
+        The data quality plane, if present, is handled in a bitwise manner
+        with each bit of each pixel in the output image being set it it has
+        >1% influence from that bit of a bad pixel. The transformed masks are
+        then added back together to generate the transformed DQ plane.
+
+        The WCS keywords in the headers of the output images are updated
+        to reflect the transformation.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        order: int (0-5)
+            order of interpolation (0=nearest, 1=linear, etc.)
+        trim_data: bool
+            trim image to size of reference image?
+        clean_data: bool
+            replace bad pixels with a ring median of their values to avoid
+            ringing if using a high-order interpolation?
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         order = params["order"]
@@ -75,46 +101,60 @@ class Resample(PrimitivesBASE):
         ref_wcs = WCS(ref_ad[0].hdr)
         ndim = len(ref_ad[0].shape)
 
+        # No transform for the reference AD
+        transforms = [Transform()] + [Transform([Pix2Sky(WCS(ad[0].hdr)),
+                                                 Pix2Sky(ref_wcs).inverse])
+                                      for ad in adinputs[1:]]
+        for t in transforms:
+            t._affine = True  # We'll perform an approximation
+
         # Deal with the reference image. If trim_data=True, this is untouched
         # because the output image is the same shape as it. Otherwise it needs
         # to be shifted to its correct position in the larger output image.
         if trim_data:
+            log.fullinfo("Trimming data to size of reference image")
             output_shape = ref_ad[0].shape
             origin = (0,) * ndim
         else:
+            log.fullinfo("Output image will contain all transformed images")
             # Calculate corners of all transformed images so we can compute
-            # the size and relative location of output image.
-            transforms = []
-            for ad in adinputs[1:]:
-                transforms.append(Transform([Pix2Sky(WCS(ad[0].hdr)),
-                                             Pix2Sky(ref_wcs).inverse]))
-                transforms[-1]._affine = True  # We'll perform an approximation
-            adg = AstroDataGroup(ref_ad, [Transform(ndim=ndim)])
-            adg.calculate_output_shape(additional_arrays=[ad[0] for ad in adinputs[1:]],
-                                       additional_transforms=transforms)
-            # Store the output shape and origin
+            # the size and relative location of output image. We do this by
+            # making an AstroDataGroup containing all of them, although we're
+            # not going to process it.
+            adg = AstroDataGroup(adinputs, transforms)
+            adg.calculate_output_shape()
             output_shape = adg.output_shape
             origin = adg.origin
-            ref_ad = adg.transform(attributes=attributes, order=order)
-        ref_ad.update_filename(suffix=sfx, strip=True)
-        adoutputs = [ref_ad]
+        log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
 
-        for ad in adinputs[1:]:
-            start = datetime.now()
-            transform = Transform([Pix2Sky(WCS(ad[0].hdr)), Pix2Sky(ref_wcs).inverse])
-            transform._affine = True
+        adoutputs = []
+        for ad, transform in zip(adinputs, transforms):
             adg = AstroDataGroup(ad, [transform])
             # Set the output shape and origin to keep coordinate frame
             adg.output_shape = output_shape
             adg.origin = origin
             ad_out = adg.transform(attributes=attributes, order=order)
-            print(datetime.now()-start, ad.filename)
+
+            # Add a bunch of header keywords describing the transformed shape
+            corners = adg.corners[0]
+            ad_out[0].hdr["AREATYPE"] = ("P{}".format(len(corners)),
+                                         "Region with {} vertices".format(len(corners)))
+            for i, corner in enumerate(zip(*corners), start=1):
+                for axis, value in enumerate(corner, start=1):
+                    key_name = "AREA{}_{}".format(i, axis)
+                    key_comment = "Vertex {}, dimension {}".format(i, axis)
+                    ad_out[0].hdr[key_name] = (value+1, key_comment)
 
             # Timestamp and update filename
             ad_out.update_filename(suffix=sfx, strip=True)
+            log.fullinfo("{} resampled with jfactor {:.2f}".
+                         format(ad.filename, adg.jfactors[0]))
             adoutputs.append(ad_out)
 
         return adoutputs
+
+# -------------------------------------------------------------------------
+# Everything below this line no longer needed.
 
     def oldResampleToCommonFrame(self, adinputs=None, **params):
         """

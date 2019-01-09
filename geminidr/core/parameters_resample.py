@@ -9,7 +9,7 @@ class resampleToCommonFrameConfig(config.Config):
     clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
 
 class oldResampleToCommonFrameConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_newalign", optional=True)
+    suffix = config.Field("Filename suffix", str, "_oldalign", optional=True)
     interpolator = config.ChoiceField("Type of pixel interpolation", str,
                                       allowed={"nearest": "nearest pixel",
                                                "linear": "linear interpolation",
@@ -19,3 +19,5 @@ class oldResampleToCommonFrameConfig(config.Config):
                                                "spline5": "qunitic spline"},
                                       default="linear")
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
+    clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
+    order = config.RangeField("Order of interpolation", int, 3, min=0, max=5)
