@@ -295,7 +295,7 @@ class Visualize(PrimitivesBASE):
                 shift = block_geom.get('shift', (0, 0))
                 rot = block_geom.get('rotation', 0.)
                 mag = block_geom.get('magnification', (1, 1))
-                transform = Transform(ndim=2)
+                transform = Transform()
                 if rot != 0 or mag != (1, 1):
                     # Shift to centre, do whatever, and then shift back
                     transform.append(models.Shift(-0.5*(nx-1)) &
@@ -397,7 +397,8 @@ class Visualize(PrimitivesBASE):
                 # the first one, and then append the single extensions created
                 # by later calls to it.
                 for i, block in enumerate(blocks):
-                    adg = AstroDataGroup([block], [Transform(ndim=block.ndim)])
+                    # Simply create a single tiled array
+                    adg = AstroDataGroup([block])
                     adg.set_reference()
                     if i == 0:
                         ad_out = adg.transform(attributes=attributes,

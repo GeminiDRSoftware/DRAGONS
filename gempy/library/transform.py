@@ -208,21 +208,18 @@ class Transform(object):
     t["m1":"m3"] will create a Transform consisting of "m1" and "m2".
     t["m3":"m1":-1] will create a Transform of "m3.inverse" and "m2.inverse"
     """
-    def __init__(self, model=None, ndim=None, copy=True):
-        """Initialize with a single model, list, or dimensionality. We
+    def __init__(self, model=None, copy=True):
+        """Initialize with a single model or list. We
         implement a copy option since we want to be able to set attributes
         of temporarily-sliced objects."""
         self._models = []
         self._affine = True
+        self._ndim = None
         if model:
             self.append(model, copy)
-        elif ndim:
-            self._ndim = ndim
-        else:
-            raise ValueError("A Model or dimensionality must be specified")
 
     def __call__(self, *args, **kwargs):
-        if len(args) != self.ndim:
+        if self.ndim is not None and len(args) != self.ndim:
             raise ValueError("Incompatible number of inputs for Transform "
                              "(dimensionality {})".format(self.ndim))
         try:
@@ -232,12 +229,12 @@ class Transform(object):
         return self.asModel(inverse=inverse)(*args, **kwargs)
 
     def __copy__(self):
-        transform = self.__class__(self._models, ndim=self.ndim, copy=False)
+        transform = self.__class__(self._models, copy=False)
         transform._affine = self._affine
         return transform
 
     def __deepcopy__(self, memo):
-        transform = self.__class__(self._models, ndim=self.ndim, copy=True)
+        transform = self.__class__(self._models, copy=True)
         transform._affine = self._affine
         return transform
 
@@ -324,13 +321,16 @@ class Transform(object):
     def inverse(self):
         """The inverse transform"""
         # ndim is only used by __init__() if the model is empty
-        return self.__class__([model.inverse for model in self._models[::-1]],
-                              ndim=self.ndim)
+        return self.__class__([model.inverse for model in self._models[::-1]])
 
     @property
     def ndim(self):
         """Dimensionality (number of inputs)"""
         return self._ndim
+
+    @staticmethod
+    def identity_model(*args):
+        return models.Identity(len(args))(*args)
 
     def asModel(self, inverse=False):
         """
@@ -344,7 +344,7 @@ class Transform(object):
             same as t.inverse.asModel() and t[::-1].asModel()
         """
         if len(self) == 0:
-            return models.Identity(self.ndim)
+            return self.identity_model
         model_list = self.inverse._models if inverse else self._models
         return reduce(Model.__or__, model_list)
 
@@ -557,9 +557,13 @@ class Transform(object):
         -------
             AffineMatrices(array, array): affine matrix and offset
         """
-        ndim = self.ndim
         if shape is None:
-            shape = (1000,) * ndim
+            try:
+                shape = (1000,) * self.ndim
+            except TypeError:  # self.ndim is None
+                raise TypeError("Cannot compute affine matrices without a "
+                                "dimensionality")
+        ndim = len(shape)
         halfsize = [0.5*length for length in shape]
         points = np.array([halfsize] * (2*ndim+1)).T
         points[:,1:ndim+1] += np.eye(ndim) * points[:,0]
@@ -676,15 +680,15 @@ class DataGroup(object):
     """
     UnequalError = ValueError("Number of arrays and transforms must be equal")
 
-    def __init__(self, arrays=[], transforms=[]):
-        if len(arrays) != len(transforms):
-            raise self.UnequalError
-        self._arrays = arrays
-        # "Freeze" the transforms
+    def __init__(self, arrays=[], transforms=None):
         if transforms:
+            if len(arrays) != len(transforms):
+                raise self.UnequalError
+            # "Freeze" the transforms
             self._transforms = copy.deepcopy(transforms)
         else:
-            self._transforms = [Transform(ndim=len(arr.shape)) for arr in arrays]
+            self._transforms = [Transform()] * len(arrays)
+        self._arrays = arrays
         self.no_data = {}
         self.output_dict = {}
         self.output_shape = None
@@ -1051,7 +1055,7 @@ class AstroDataGroup(DataGroup):
     """
     array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
 
-    def __init__(self, arrays=[], transforms=[]):
+    def __init__(self, arrays=[], transforms=None):
         super().__init__(arrays=arrays, transforms=transforms)
         # To ensure uniform behaviour, we wish to encase single AD slices
         # as single-element Block objects
