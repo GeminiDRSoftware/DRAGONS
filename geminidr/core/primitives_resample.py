@@ -6,8 +6,12 @@
 import numpy as np
 from astropy.wcs import WCS
 from scipy.ndimage import affine_transform
+from astropy.modeling import Model, models
+from functools import reduce
 
 from gempy.library import astrotools as at
+from gempy.library.transform import Transform, AstroDataGroup
+from gempy.library.matching import Pix2Sky
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
 
@@ -15,6 +19,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
 from . import parameters_resample
+
+from datetime import datetime
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -38,6 +44,79 @@ class Resample(PrimitivesBASE):
         self._param_update(parameters_resample)
 
     def resampleToCommonFrame(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        order = params["order"]
+        trim_data = params["trim_data"]
+        clean_data = params["clean_data"]
+        sfx = params["suffix"]
+
+        if len(adinputs) < 2:
+            log.warning("No alignment will be performed, since at least two "
+                        "input AstroData objects are required for "
+                        "resampleToCommonFrame")
+            return adinputs
+
+        # TODO: Can we make it so that we don't need to mosaic detectors
+        # before doing this? That would mean we only do one interpolation,
+        # not two, and that's definitely better!
+        if not all(len(ad)==1 for ad in adinputs):
+            raise IOError("All input images must have only one extension.")
+
+        attributes = [attr for attr in ('data', 'mask', 'variance', 'OBJMASK')
+                      if all(hasattr(ad, attr) for ad in adinputs)]
+
+        # Clean data en masse (improves logging by showing a single call)
+        if clean_data:
+            adinputs = self.applyDQPlane(adinputs, replace_flags=65535 ^ (DQ.non_linear | DQ.saturated | DQ.no_data),
+                                   replace_value="median", inner_radius=3, outer_radius=5)[0]
+
+        ref_ad = adinputs[0]
+        ref_wcs = WCS(ref_ad[0].hdr)
+        ndim = len(ref_ad[0].shape)
+
+        # Deal with the reference image. If trim_data=True, this is untouched
+        # because the output image is the same shape as it. Otherwise it needs
+        # to be shifted to its correct position in the larger output image.
+        if trim_data:
+            output_shape = ref_ad[0].shape
+            origin = (0,) * ndim
+        else:
+            # Calculate corners of all transformed images so we can compute
+            # the size and relative location of output image.
+            transforms = []
+            for ad in adinputs[1:]:
+                transforms.append(Transform([Pix2Sky(WCS(ad[0].hdr)),
+                                             Pix2Sky(ref_wcs).inverse]))
+                transforms[-1]._affine = True  # We'll perform an approximation
+            adg = AstroDataGroup(ref_ad, [Transform(ndim=ndim)])
+            adg.calculate_output_shape(additional_arrays=[ad[0] for ad in adinputs[1:]],
+                                       additional_transforms=transforms)
+            # Store the output shape and origin
+            output_shape = adg.output_shape
+            origin = adg.origin
+            ref_ad = adg.transform(attributes=attributes, order=order)
+        ref_ad.update_filename(suffix=sfx, strip=True)
+        adoutputs = [ref_ad]
+
+        for ad in adinputs[1:]:
+            start = datetime.now()
+            transform = Transform([Pix2Sky(WCS(ad[0].hdr)), Pix2Sky(ref_wcs).inverse])
+            transform._affine = True
+            adg = AstroDataGroup(ad, [transform])
+            # Set the output shape and origin to keep coordinate frame
+            adg.output_shape = output_shape
+            adg.origin = origin
+            ad_out = adg.transform(attributes=attributes, order=order)
+            print(datetime.now()-start, ad.filename)
+
+            # Timestamp and update filename
+            ad_out.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad_out)
+
+        return adoutputs
+
+    def oldResampleToCommonFrame(self, adinputs=None, **params):
         """
         This primitive applies the transformation encoded in the input images
         WCSs to align them with a reference image, in reference image pixel
