@@ -21,7 +21,7 @@ class displayConfig(config.Config):
 class mosaicDetectorsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_mosaic")
     sci_only = config.Field("Mosaic only SCI extensions?", bool, False)
-    order = config.RangeField("Order of interpolation", int, 3, min=1, max=5)
+    order = config.RangeField("Order of interpolation", int, 3, min=0, max=5)
 
 class oldMosaicDetectorsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_mosaic")
