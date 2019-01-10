@@ -108,9 +108,9 @@ class Resample(PrimitivesBASE):
         for t in transforms:
             t._affine = True  # We'll perform an approximation
 
-        # Deal with the reference image. If trim_data=True, this is untouched
-        # because the output image is the same shape as it. Otherwise it needs
-        # to be shifted to its correct position in the larger output image.
+        # Compute output frame. If we're trimming data, this is the frame of
+        # the reference image; otherwise we have to calculate it as the
+        # smallest rectangle (in 2D) including all transformed inputs
         if trim_data:
             log.fullinfo("Trimming data to size of reference image")
             output_shape = ref_ad[0].shape
