@@ -321,12 +321,18 @@ class Transform(object):
     def inverse(self):
         """The inverse transform"""
         # ndim is only used by __init__() if the model is empty
-        return self.__class__([model.inverse for model in self._models[::-1]])
+        return self.__class__([m.inverse for m in self._models[::-1]])
 
     @property
     def ndim(self):
         """Dimensionality (number of inputs)"""
         return self._ndim
+
+    @property
+    def fittable(self):
+        """Although an Identity Model is fittable, it's not really, and
+        we're implementing this by our own function (below)"""
+        return len(self) > 0 and self.asModel().fittable
 
     @staticmethod
     def identity_model(*args):
