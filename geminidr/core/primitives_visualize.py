@@ -272,11 +272,14 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
-            # If there's still an overscan section then we need to trim it
-            # before mosaicking.
-            overscan_kw = ad._keyword_for('overscan_section')
-            if overscan_kw in ad.hdr:
-                ad = gt.trim_to_data_section(ad, self.keyword_comments)
+            # If there's an overscan section, we must trim it before mosaicking
+            try:
+                overscan_kw = ad._keyword_for('overscan_section')
+            except AttributeError:  # doesn't exist for this AD, so carry on
+                pass
+            else:
+                if overscan_kw in ad.hdr:
+                    ad = gt.trim_to_data_section(ad, self.keyword_comments)
 
             # Create the blocks (individual physical detectors)
             array_info = gt.array_information(ad)
