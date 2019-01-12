@@ -4,28 +4,27 @@
 #                                                                localmanager.py
 # ------------------------------------------------------------------------------
 from builtins import object
-import os
+
 import imp
-import sys
-import pdb
+import os
+from os.path import abspath, basename, dirname, isdir
+
 import warnings
 
 from collections import namedtuple
-from os.path import abspath, basename, dirname, isdir
 
 from sqlalchemy.exc import SAWarning, OperationalError
 
-from gemini_calmgr import fits_storage_config as fsc
-from gemini_calmgr import gemini_metadata_utils as gmu
 from gemini_calmgr import orm
-from gemini_calmgr.orm import NoResultFound
 from gemini_calmgr.orm import file
-from gemini_calmgr.orm import header
 from gemini_calmgr.orm import diskfile
 from gemini_calmgr.orm import preview
 from gemini_calmgr.cal import get_cal_object
 from gemini_calmgr.orm import createtables
 from gemini_calmgr.utils import dbtools
+
+from gemini_calmgr import fits_storage_config as fsc
+from gemini_calmgr import gemini_metadata_utils as gmu
 # ------------------------------------------------------------------------------
 from recipe_system import __version__
 # ------------------------------------------------------------------------------
@@ -229,9 +228,8 @@ class LocalManager(object):
 
             When an error occurs, the first element in the tuple will be
             `None`, and the second a string describing the error.
-        """
-        from datetime import datetime
 
+        """
         caltype = rq.caltype
         descripts = rq.descriptors
         types = rq.tags
