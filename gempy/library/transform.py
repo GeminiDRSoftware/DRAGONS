@@ -832,7 +832,6 @@ class DataGroup(object):
         self.corners = []
         self.jfactors = []
 
-        print(datetime.now()-start, "Completed setup")
         for input_array, transform in zip(self._arrays, self._transforms):
             # Since this may be modified, deepcopy to preserve the one if
             # the DataGroup's _transforms list
@@ -843,31 +842,23 @@ class DataGroup(object):
             output_corners = self._prepare_for_output(input_array,
                                                       transform, subsample)
             output_array_shape = tuple(max_ - min_ for min_, max_ in output_corners)
-            print(datetime.now() - start, "output_array_shape {}".format(output_array_shape))
 
             # Create a mapping from output pixel to input pixels
             integer_shift = False
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
             jfactor = np.linalg.det(mapping.matrix)
             self.jfactors.append(jfactor)
-            print(datetime.now() - start, "jfactor {}".format(jfactor))
             if transform.is_affine:
                 integer_shift = (np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
                                  np.array_equal(mapping.offset, mapping.offset.astype(int)))
-                print(datetime.now() - start, "affine mapping done; integer shift {}".format(integer_shift))
             else:
                 mapping = GeoMap(transform, output_array_shape)
-                print(datetime.now() - start, "GeoMap done")
 
             for attr in attributes:
-                try:
+                if isinstance(input_array, np.ndarray) and attr == "data":
+                    arr = input_array
+                else:  # let this raise an AttributeError
                     arr = getattr(input_array, attr)
-                except AttributeError as e:
-                    # If input_array is just an ndarray
-                    if attr == "data":
-                        arr = input_array
-                    else:
-                        raise e
 
                 # Create an output array if we haven't seen this attribute yet.
                 # We only do this now so that we know the dtype.
@@ -899,7 +890,6 @@ class DataGroup(object):
                     key = (attr, output_corners)
                     jobs.append((key, arr, {}))
 
-                print(datetime.now() - start, attr, "job execution")
                 # Perform the jobs (in parallel, if we can)
                 for (key, arr, kwargs) in jobs:
                     args = (arr, mapping, key, output_array_shape)
@@ -916,14 +906,12 @@ class DataGroup(object):
                     else:
                         self._apply_geometric_transform(*args, **kwargs)
                         self._add_to_output(key, jfactor)
-                        print(datetime.now() - start, attr, "one job completed")
 
         # If we're in parallel, we need to place the outputs into the final
         # arrays as they finish. This should avoid hogging memory. Note that if
         # we've applied integer shifts, the processes list will be empty so this
         # will pass through quickly.
         if parallel:
-            print(datetime.now() - start, "waiting for jobs to finish")
             finished = False
             while not finished:
                 finished = True
@@ -934,7 +922,6 @@ class DataGroup(object):
                     else:
                         finished = False
 
-        print(datetime.now() - start, "leaving")
         del self.output_arrays
         return self.output_dict
 
