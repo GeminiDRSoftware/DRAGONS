@@ -67,24 +67,45 @@ class Block(object):
         xlast: normally arrays are placed in the standard python order,
                along the x-axis first. This reverses that order.
         """
-        super().__init__()
+        super(Block, self).__init__()
         self._elements = list(elements)
         shapes = [el.shape for el in elements]
-        if len(set(shapes)) > 1:
-            raise ValueError("Not all elements have the same shape")
-        self._arrayshape = shapes[0]
 
+        # Check all elements have the same dimensionality
+        if len(set([len(s) for s in shapes])) > 1:
+            raise ValueError("Not all elements have same dimensionality")
+
+        # Check the shape for tiling elements matches number of elements
         if shape is None:
             shape = (len(elements),)
-        shape = (1,) * (len(self._arrayshape)-len(shape)) + shape
+        shape = (1,) * (len(shapes[0])-len(shape)) + shape
         if np.multiply.reduce(shape) != len(elements):
-            print(elements, shape)
             raise ValueError("Incompatible element list and shape")
 
-        self._shape = shape
-        corner_grid = np.mgrid[tuple(slice(0, s*a, a)
-                                     for s, a in zip(shape, shapes[0]))].\
-            reshape(len(shape), len(elements))
+        # Check that shapes are compatible
+        all_axis_lengths = np.rollaxis(np.array([s for s in shapes]).
+                                       reshape(shape + (len(shape),)), -1)
+        # There's almost certainly a smarter way to do this but it's
+        # a struggle for me to visualize it. Basically, we want to go along
+        # each axis and keep the lengths of the elements along that axis,
+        # while ensuring the lengths along each of the other axes are the
+        # same as each other (the np.std()==0 check)
+        lengths = []
+        for i, axis_lengths in enumerate(all_axis_lengths):
+            collapse_axis = 0
+            for axis in range(len(shape)):
+                if axis != i:
+                    if np.std(axis_lengths, axis=collapse_axis).sum() > 0:
+                        raise ValueError("Incompatible shapes along axis "
+                                         "{}".format(axis))
+                    axis_lengths = np.mean(axis_lengths, axis=collapse_axis)
+                else:
+                    collapse_axis = 1
+            lengths.append(axis_lengths.astype(int))
+        self._total_shape = tuple(int(l.sum()) for l in lengths)
+
+        corner_grid = np.array(np.meshgrid(*(np.cumsum([0]+list(l))[:-1]
+                      for l in lengths), indexing='ij')).reshape(len(shape), len(elements))
         self.corners = (list(zip(*corner_grid[::-1])) if xlast
                         else list(zip(*corner_grid)))
 
@@ -104,8 +125,9 @@ class Block(object):
         # If we're looking for the .data attributes, this may just be the
         # element, if they're ndarrays. We should handle a mix of ndarrays
         # and NDData-like objects.
+        # NB ndarray.data returns a "memoryview" object in recent numpy
         if name == "data":
-            attributes = [el if attr is None else attr
+            attributes = [el if not isinstance(attr, np.ndarray) else attr
                           for el, attr in zip(self._elements, attributes)]
 
         if any(isinstance(attr, np.ndarray) for attr in attributes):
@@ -142,7 +164,7 @@ class Block(object):
     @property
     def shape(self):
         """Overall shape of Block"""
-        return tuple(a*s for a, s in zip(self._arrayshape, self._shape))
+        return self._total_shape
 
     def _return_array(self, elements):
         """
@@ -164,7 +186,7 @@ class Block(object):
                 continue
             if output is None:
                 output = np.zeros(self.shape, dtype=arr.dtype)
-            slice_ = tuple(slice(c, c+a) for c, a in zip(corner, self._arrayshape))
+            slice_ = tuple(slice(c, c+a) for c, a in zip(corner, arr.shape))
             output[slice_] = arr
         return output
 
@@ -1065,7 +1087,7 @@ class AstroDataGroup(DataGroup):
     array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
 
     def __init__(self, arrays=[], transforms=None):
-        super().__init__(arrays=arrays, transforms=transforms)
+        super(AstroDataGroup, self).__init__(arrays=arrays, transforms=transforms)
         # To ensure uniform behaviour, we wish to encase single AD slices
         # as single-element Block objects
         self._arrays = [arr if isinstance(arr, Block) else Block(arr)
@@ -1151,8 +1173,8 @@ class AstroDataGroup(DataGroup):
                           if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
-        super().transform(attributes=attributes, order=order, subsample=subsample,
-                          threshold=threshold, parallel=parallel)
+        super(AstroDataGroup, self).transform(attributes=attributes, order=order,
+                            subsample=subsample, threshold=threshold, parallel=parallel)
 
         # Create the output AD object
         ref_ext = self._arrays[self.ref_array][self.ref_index]
