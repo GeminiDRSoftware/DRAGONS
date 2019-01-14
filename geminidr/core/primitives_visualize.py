@@ -285,6 +285,8 @@ class Visualize(PrimitivesBASE):
             array_info = gt.array_information(ad)
             blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
                       zip(array_info.extensions, array_info.array_shapes)]
+            offsets = [ad[exts[0]].array_section()
+                       for exts in array_info.extensions]
 
             detname = ad.detector_name()
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
@@ -292,10 +294,7 @@ class Visualize(PrimitivesBASE):
             default_shape = geometry.get('default_shape')
             adg = AstroDataGroup()
 
-            # Currently hacked for GMOS so that the second detector isn't
-            # modified at the sub-pixel level. This will change when the
-            # geometry_conf dict is refactored.
-            for origin, block in zip(array_info.origins, blocks):
+            for block, origin, offset in zip(blocks, array_info.origins, offsets):
                 # Origins are in (x, y) order in LUT
                 block_geom = geometry[origin[::-1]]
                 nx, ny = block_geom.get('shape', default_shape)
@@ -305,6 +304,14 @@ class Visualize(PrimitivesBASE):
                 rot = block_geom.get('rotation', 0.)
                 mag = block_geom.get('magnification', (1, 1))
                 transform = Transform()
+
+                # Shift the Block's coordinates based on its location within
+                # the full array, to ensure any rotation takes place around
+                # the true centre.
+                if offset.x1 != 0 or offset.y1 != 0:
+                    transform.append(models.Shift(float(offset.x1) / xbin) &
+                                     models.Shift(float(offset.y1) / ybin))
+
                 if rot != 0 or mag != (1, 1):
                     # Shift to centre, do whatever, and then shift back
                     transform.append(models.Shift(-0.5*(nx-1)) &
@@ -323,8 +330,8 @@ class Visualize(PrimitivesBASE):
                                          models.Scale(mag[1]))
                     transform.append(models.Shift(0.5*(nx-1)) &
                                      models.Shift(0.5*(ny-1)))
-                transform.append(models.Shift(shift[0] / xbin) &
-                                 models.Shift(shift[1] / ybin))
+                transform.append(models.Shift(float(shift[0]) / xbin) &
+                                 models.Shift(float(shift[1]) / ybin))
                 adg.append(block, transform)
 
             adg.set_reference()
@@ -385,6 +392,8 @@ class Visualize(PrimitivesBASE):
 
             blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
                       zip(array_info.extensions, array_info.array_shapes)]
+            offsets = [ad[exts[0]].array_section()
+                       for exts in array_info.extensions]
 
             if tile_all and detshape != (1, 1):  # We need gaps!
                 geotable = import_module('.geometry_conf', self.inst_lookups)
@@ -394,9 +403,9 @@ class Visualize(PrimitivesBASE):
                 except TypeError:  # single number, applies to both
                     xgap = ygap = chip_gaps
                 transforms = []
-                for i, origin in enumerate(array_info.origins):
-                    xshift = (origin[1] + xgap * (i % detshape[1])) // ad.detector_x_bin()
-                    yshift = (origin[0] + ygap * (i // detshape[1])) // ad.detector_y_bin()
+                for i, origin, offset in enumerate(array_info.origins, offsets):
+                    xshift = (origin[1] + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
+                    yshift = (origin[0] + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
                     transforms.append(Transform(models.Shift(xshift) & models.Shift(yshift)))
                 adg = AstroDataGroup(blocks, transforms)
                 adg.set_reference()
