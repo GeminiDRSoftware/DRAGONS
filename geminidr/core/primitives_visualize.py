@@ -403,7 +403,7 @@ class Visualize(PrimitivesBASE):
                 except TypeError:  # single number, applies to both
                     xgap = ygap = chip_gaps
                 transforms = []
-                for i, origin, offset in enumerate(array_info.origins, offsets):
+                for i, (origin, offset) in enumerate(zip(array_info.origins, offsets)):
                     xshift = (origin[1] + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
                     yshift = (origin[0] + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
                     transforms.append(Transform(models.Shift(xshift) & models.Shift(yshift)))
