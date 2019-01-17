@@ -8,6 +8,7 @@ dependencies:
   - sphinx_rtd_theme
   - pip
   - pytest
+  - scipy
   - chroxvi::radon
   - conda-forge::python-dateutil
   - conda-forge::twine
