@@ -4,7 +4,7 @@ pipeline {
   agent any
 
   triggers {
-    pollSCM('*/5 * * * 1-5')
+    pollSCM('H/5 * * * 1-5)
   }
 
   options {
@@ -38,6 +38,7 @@ pipeline {
               pip list
               which pip
               which python
+              python --version
               python -c "import future"
               python setup.py install
         '''
