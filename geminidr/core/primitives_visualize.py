@@ -5,7 +5,6 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
-from os.path import splitext
 from importlib import import_module
 
 from gempy.utils import logutils
@@ -13,9 +12,6 @@ from gempy.gemini import gemini_tools as gt
 
 from gempy.library.transform import Block, Transform, AstroDataGroup
 from astropy.modeling import models
-
-from gempy.mosaic.mosaicAD import MosaicAD
-from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.gmos.pixel_functions import get_bias_level
@@ -29,7 +25,6 @@ try:
     from stsci import numdisplay as nd
 except ImportError:
     import numdisplay as nd
-
 
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -429,122 +424,6 @@ class Visualize(PrimitivesBASE):
             ad_out.orig_filename = ad.filename
             ad_out.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad_out)
-        return adoutputs
-
-    def oldMosaicDetectors(self, adinputs=None, **params):
-        """
-        This primitive will use the gempy MosaicAD class to mosaic the frames
-        of the input images. For this primitive, the mosaicAD parameter, 'tile',
-        is always False.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files. Default is '_mosaic'
-
-        sci_only: bool
-            mosaic only SCI image data. Default is False
-
-        interpolator: <str>
-            type of interpolation to use across chip gaps
-            ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
-
-
-        """
-        fmat1 = "No changes will be made to {}, since it has "
-        fmat1 += "already been processed by mosaicDetectors"
-        fmat2 = "Nothing to mosaic. < 2 extensions found on file {}"
-
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["mosaicDetectors"]
-
-        # ----------  get parameters -------------
-        interpolator = params['interpolator']
-        sci_only = params['sci_only']
-        suffix = params['suffix']
-        # ----------------------------------------
-        adoutputs = []
-        for ad in adinputs:
-            if ad.phu.get(timestamp_key):
-                log.warning(fmat1.format(ad.filename))
-
-            if len(ad) == 1:
-                log.stdinfo(fmat2.format(ad.filename))
-                adoutputs.append(ad)
-                continue
-
-            log.stdinfo("\tMosaicAD Working on {}".format(ad.filename))
-            try:
-                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
-            except ValueError as mos_err:
-                log.error(str(mos_err))
-                adoutputs.append(ad)
-                continue
-
-            mos.set_interpolator(interpolator)
-
-            log.stdinfo("\tBuilding mosaic, converting data ...")
-            ad_out = mos.as_astrodata(tile=False, doimg=sci_only)
-            ad_out.orig_filename = ad.filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.update_filename(suffix=suffix, strip=True)
-            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
-            adoutputs.append(ad_out)
-
-        return adoutputs
-
-    def oldTileArrays(self, adinputs=None, **params):
-        """
-        This tiles GMOS and GSOAI chips.
-
-        Parameters
-        ----------
-        suffix: <str>
-            suffix to be added to output files
-
-        sci_only: <bool>
-            Tile only science arrays (SCI). Default is False
-
-        tile_all: <bool>
-            Tile to a single extension. Default is False. 
-            If True, tiling is done into one ext per block.
-
-            For example, on Hamamatsu GMOS datasets,
-              tile_all=True results in an output FITS file with one (1)
-                extension; all 12 input extensions are tiled together.
-
-              tile_all=False results in an output FITS file with three (3) 
-                extensions; 4 amplifier sections are tiled into one block
-                representing one CCD.
-
-         """
-        log = self.log
-        suffix   = params['suffix']
-        sci_only = params['sci_only']
-        tile_all = params['tile_all']
-
-        adoutputs = []
-        for ad in adinputs:
-            log.stdinfo("parameter: tile_all is {} ".format(tile_all))
-            log.debug(gt.log_message("primitive", self.myself(), "starting"))
-            timestamp_key = self.timestamp_keys["tileArrays"]
-
-            try:
-                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
-            except ValueError as mos_err:
-                log.error(str(mos_err))
-                adoutputs.append(ad)
-                continue
-
-            ad_out = mos.tile_as_astrodata(tile_all=tile_all, doimg=sci_only)
-            ad_out.orig_filename = ad.filename
-
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.update_filename(suffix=suffix, strip=True)
-            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
-            adoutputs.append(ad_out)
-
         return adoutputs
 
 ##############################################################################
