@@ -54,13 +54,9 @@ pipeline {
               python --version
               python -c "import future"
               python setup.py install
-        '''
-      }
-      steps {
-        echo 'Download test data'
-        sh '''  source activate ${BUILD_TAG}
-                python .jenkins/download_test_data.py
-                '''
+              source activate ${BUILD_TAG}
+              python .jenkins/download_test_data.py
+              '''
       }
     } // stage: build environment
 
