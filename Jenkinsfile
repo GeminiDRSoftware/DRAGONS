@@ -101,6 +101,7 @@ pipeline {
       steps {
         sh  ''' source activate ${BUILD_TAG}
                 pytest recipe_system gemini_instruments astrodata \
+                    geminidr/f2
                     --ad_test_data_path ${TEST_PATH} \
                     --junit-xml test-reports/results.xml
                 '''
