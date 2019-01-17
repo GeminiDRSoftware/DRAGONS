@@ -788,7 +788,7 @@ class DataGroup(object):
         self.origin = tuple(min_ for min_, max_ in limits)
 
     def transform(self, attributes=['data'],
-                  order=3, subsample=1, threshold=0.01, parallel=True):
+                  order=3, subsample=1, threshold=0.01, parallel=False):
         """
         This method transforms and combines the arrays into a single output
         array. The inputs, after transforming, shouldn't interfere with each
