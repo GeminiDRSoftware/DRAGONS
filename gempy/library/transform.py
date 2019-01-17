@@ -1129,8 +1129,8 @@ class AstroDataGroup(DataGroup):
                                     for sec in self.descriptor("detector_section", index=array)])
             if len(det_corners) > 1:
                 centre = np.median(det_corners, axis=0)
-                distances = list(np.sum(det_corners - centre, axis=1))
-                self.ref_index = distances.index(max(v for v in distances if v < 0))
+                distances = list(det_corners - centre)
+                self.ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
             else:
                 self.ref_index = 0
             if array is None:
@@ -1210,6 +1210,10 @@ class AstroDataGroup(DataGroup):
                            zip(self._arrays[self.ref_array].corners[self.ref_index][::-1],
                                wcs.wcs.crpix))
         new_ref_coords = transform(*ref_coords)
+        # The origin shift wasn't appended to the Transform, so apply it here
+        if self.origin:
+            new_ref_coords = reduce(Model.__and__, [models.Shift(-offset)
+                        for offset in self.origin[::-1]])(*new_ref_coords)
         for i, coord in enumerate(new_ref_coords, start=1):
             ad.hdr['CRPIX{}'.format(i)] = coord+1
 
