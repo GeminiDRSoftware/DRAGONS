@@ -20,6 +20,8 @@ def pytest_collection_modifyitems(config, items):
     if local_path is not None:
 
         if os.path.exists(local_path):
+            print('Path that contains test data for astrodata found: {}'.format(
+                local_path))
             return
         else:
             skip_ad_local_tests = pytest.mark.skip(

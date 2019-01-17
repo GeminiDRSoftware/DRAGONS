@@ -4,7 +4,7 @@ pipeline {
   agent any
 
   triggers {
-    pollSCM('*/5 * * * 1-5')
+    pollSCM('H/5 * * * 1-5')
   }
 
   options {
@@ -16,6 +16,7 @@ pipeline {
 
   environment {
     PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
+    TEST_PATH = "$WORKSPACE/test_path/"
   }
 
   stages {
@@ -24,6 +25,7 @@ pipeline {
         checkout scm
       }
     }
+
     stage ("Download and Install Anaconda") {
       steps {
         sh '''if ! [ "$(command -v conda)" ]; then
@@ -42,19 +44,26 @@ pipeline {
       }
     } // stage: download and install anaconda
 
-    stage ("Build Environment") {
+    stage ("Build and Test Environment") {
       steps {
-        sh 'conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}'
-      }
-    } // stage: build environment
-
-    stage('Test environment') {
-      steps {
-        sh '''source activate ${BUILD_TAG}
+        sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
+              source activate ${BUILD_TAG}
               pip list
               which pip
               which python
+              python --version
               python -c "import future"
+              python setup.py install
+              source activate ${BUILD_TAG}
+              python .jenkins/download_test_data.py
+              '''
+      }
+    } // stage: build environment
+
+    stage('Download test data') {
+      steps {
+        sh '''  source activate ${BUILD_TAG}
+                python .jenkins/download_test_data.py
               '''
       }
     } // stage: test environment
@@ -68,7 +77,7 @@ pipeline {
                 '''
         echo "PEP8 style check"
         sh  ''' source activate ${BUILD_TAG}
-                pylint --disable=C irisvmpy || true
+                pylint --disable=C astrodata || true
                 '''
       }
       post{
@@ -91,8 +100,9 @@ pipeline {
     stage('Unit tests') {
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                pytest astrodata recipe_system gemini_instruments \\
-                  --junit-xml test-reports/results.xml
+                pytest recipe_system gemini_instruments astrodata \
+                    --ad_test_data_path ${TEST_PATH} \
+                    --junit-xml test-reports/results.xml
                 '''
       }
       post {
