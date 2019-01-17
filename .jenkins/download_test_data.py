@@ -38,7 +38,8 @@ def download_non_existing_test_files():
             else:
                 print('Download missing file: {:s}'.format(current_file))
                 _path, _file = os.path.split(current_file)
-                os.makedirs(_path, exist_ok=True)
+                if not os.path.exists(_path):
+                    os.makedirs(_path)
                 subprocess.run(['curl', '--silent', URL + _file, '--output',
                                 current_file])
 
