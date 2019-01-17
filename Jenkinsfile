@@ -48,15 +48,7 @@ pipeline {
       steps {
         sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
               source activate ${BUILD_TAG}
-              pip install stsci.numdisplay
-              which pip
-              which python
-              python --version
-              python -c "import future"
-              cd gempy/library || cythonize -a -i cyclip.pyx || cd -
-              python setup.py build
-              python setup.py install
-              source activate ${BUILD_TAG}
+              bash .jenkins/test_env_and_install_missing_libs.sh
               python .jenkins/download_test_data.py
               '''
       }
