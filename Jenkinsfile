@@ -54,14 +54,6 @@ pipeline {
       }
     } // stage: build environment
 
-    stage('Download test data') {
-      steps {
-        sh '''  source activate ${BUILD_TAG}
-                python .jenkins/download_test_data.py
-              '''
-      }
-    } // stage: test environment
-
     stage('Static code metrics') {
       steps {
         echo "Code Coverage"
@@ -106,7 +98,6 @@ pipeline {
           junit (
             allowEmptyResults: true,
             testResults: 'test-reports/results.xml'
-            //, fingerprint: true
             )
         }
       }
