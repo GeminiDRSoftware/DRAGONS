@@ -9,6 +9,7 @@ dependencies:
   - pip
   - pytest
   - scipy
+  - astropy::astroquery
   - chroxvi::radon
   - conda-forge::python-dateutil
   - conda-forge::twine
