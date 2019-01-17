@@ -29,6 +29,7 @@ def test_select_from_inputs_primitive():
 
             try:
 
+                print('Running tests on file: {:s}'.format(f))
                 p.selectFromInputs(tags="DARK", outstream="darks")
                 p.showInputs(stream="darks")
                 p.showInputs()
