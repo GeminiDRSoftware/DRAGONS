@@ -53,6 +53,7 @@ pipeline {
               which python
               python --version
               python -c "import future"
+              python setup.py build
               python setup.py install
               source activate ${BUILD_TAG}
               python .jenkins/download_test_data.py
