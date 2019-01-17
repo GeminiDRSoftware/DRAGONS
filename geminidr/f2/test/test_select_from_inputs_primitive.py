@@ -3,6 +3,7 @@
 import astrodata
 import gemini_instruments
 import os
+import pytest
 
 from copy import deepcopy
 from glob import glob
@@ -17,7 +18,7 @@ def test_select_from_inputs_primitive():
 
     with open("recursion.log", 'w') as _log:
 
-        for f in glob(TEST_PATH, 'F2', '*.fits'):
+        for f in glob(os.path.join(TEST_PATH, 'F2', '*.fits')):
 
             ad = astrodata.open(f)
 
@@ -42,3 +43,7 @@ def test_select_from_inputs_primitive():
 
             del ad
             del p
+
+if __name__ == '__main__':
+
+    pytest.main()
