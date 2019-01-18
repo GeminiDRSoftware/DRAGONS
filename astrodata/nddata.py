@@ -24,7 +24,7 @@ class StdDevAsVariance(object):
             return None
 
 def new_variance_uncertainty_instance(array):
-    obj = StdDevUncertainty(np.sqrt(array))
+    obj = StdDevUncertainty(None if array is None else np.sqrt(array))
     cls = obj.__class__
     obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
     return obj
