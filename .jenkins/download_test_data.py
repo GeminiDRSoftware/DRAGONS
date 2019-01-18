@@ -2,11 +2,25 @@
 
 import os
 import subprocess
+import sys
 
 
 FILE_WITH_TEST_FILES = '.jenkins/test_files.txt'
-TEST_PATH = os.environ['TEST_PATH']
 URL = u'https://archive.gemini.edu/file/'
+
+
+try:
+    TEST_PATH = os.environ['TEST_PATH']
+
+except KeyError as err:
+
+    print('\n This script needs the environment variable TEST_PATH'
+          '\n Please, add is using the following command: ' \
+          '\n     $ export TEST_PATH="/my/test/path/'
+          '\n and run again. Leaving now.'
+          '\n ')
+
+    sys.exit(1)
 
 
 def download_test_data():
