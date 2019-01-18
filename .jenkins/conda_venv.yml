@@ -1,6 +1,6 @@
 dependencies:
   - python=3.6
-  - astropy=3.0.2
+  - astropy
   - coverage
   - cython
   - future
