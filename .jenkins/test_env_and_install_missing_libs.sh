@@ -15,6 +15,5 @@ cd gempy/library
 cythonize -a -i cyclip.pyx
 cd -
 
-python setup.py build
-python setup.py install
+
 
