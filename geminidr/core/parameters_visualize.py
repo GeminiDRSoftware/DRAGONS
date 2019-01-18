@@ -21,7 +21,7 @@ class displayConfig(config.Config):
 class mosaicDetectorsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_mosaic")
     sci_only = config.Field("Mosaic only SCI extensions?", bool, False)
-    interpolator = config.Field("Type of interpolation", str, "linear")
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
 
 class tileArraysConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_tiled", optional=True)

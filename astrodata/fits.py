@@ -538,6 +538,13 @@ class FitsProviderProxy(DataProvider):
         else:
             return self._mapped_nddata(0)
 
+    @property
+    def shape(self):
+        if not self.is_single:
+            return [nd.shape for nd in self._mapped_nddata()]
+        else:
+            return self._mapped_nddata(0).shape
+
     def hdr(self):
         headers = self._provider._get_raw_headers(indices=self._mapping)
 
@@ -1040,6 +1047,10 @@ class FitsProvider(DataProvider):
     @property
     def tables(self):
         return set(self._tables.keys())
+
+    @property
+    def shape(self):
+        return [nd.shape for nd in self._nddata]
 
     @property
     def data(self):

@@ -7,8 +7,9 @@ import math
 import datetime
 import numpy as np
 from copy import deepcopy
-from scipy.ndimage import binary_dilation
+from scipy.ndimage import binary_dilation, filters
 from astropy.table import Table
+from astropy.convolution import convolve
 
 import astrodata
 import gemini_instruments
@@ -108,7 +109,9 @@ class Preprocess(PrimitivesBASE):
     def applyDQPlane(self, adinputs=None, **params):
         """
         This primitive sets the value of pixels in the science plane according
-        to flags from the DQ plane.
+        to flags from the DQ plane. A uniform mean/median or specific value can
+        be given, or a ring filter can be used (if inner_radius and outer_radius
+        are both defined, and replace_value is *not* a number).
 
         Parameters
         ----------
@@ -119,12 +122,22 @@ class Preprocess(PrimitivesBASE):
         replace_value: str/float
             "median" or "mean" to replace with that value of the good pixels,
             or a value
+        inner_radius: float/None
+            inner radius of the mean/median cleaning filter
+        outer_radius: float/None
+            outer radius of the cleaning filter
+        max_iters: int
+            maximum number of cleaning iterations to perform
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         replace_flags = params["replace_flags"]
         replace_value = params["replace_value"]
+        inner_radius = params["inner"]
+        outer_radius = params["outer"]
+        max_iters = params["max_iters"]
+        footprint = None
 
         flag_list = [int(math.pow(2,i)) for i,digit in
                 enumerate(str(bin(replace_flags))[2:][::-1]) if digit=='1']
@@ -138,18 +151,60 @@ class Preprocess(PrimitivesBASE):
                                                            ext.hdr['EXTVER']))
                     continue
 
+                # We need to know the dimensionality of the data to create the
+                # footprint but, if we've done it once we can avoid creating
+                # it again if the dimensionality of this extension is the same
+                if inner_radius is not None and outer_radius is not None:
+                    ndim = len(ext.shape)
+                    if footprint is None or footprint.ndim != ndim:
+                        size = int(outer_radius)
+                        mgrid = np.array(np.meshgrid(*([np.arange(-size, size+1)] * ndim)))
+                        mgrid *= mgrid
+                        footprint = np.sqrt(np.sum(mgrid, axis=0))
+                        footprint = np.where(np.logical_and(footprint>=inner_radius,
+                                                            footprint<=outer_radius), 1, 0)
+
                 try:
                     rep_value = float(replace_value)
                     log.fullinfo("Replacing bad pixels in {}:{} with the "
                                  "user value {}".format(ad.filename,
                                                         ext.hdr['EXTVER'], rep_value))
                 except ValueError:  # already validated so must be "mean" or "median"
-                    oper = getattr(np, replace_value)
-                    rep_value = oper(ext.data[ext.mask & replace_flags == 0])
-                    log.fullinfo("Replacing bad pixels in {}:{} with the {} "
-                                 "of the good data".format(ad.filename,
-                                            ext.hdr['EXTVER'], replace_value))
+                    if footprint is not None:
+                        mask = (ext.mask & replace_flags) > 0
+                        filtered_data = ext.data
+                        iter = 0
+                        while (iter < max_iters and np.any(mask)):
+                            iter += 1
+                            if replace_value == "median":
+                                median_data = filters.median_filter(filtered_data, footprint=footprint)
+                                filtered_data = np.where(mask, median_data, filtered_data)
+                                # If we're median filtering, we can update the mask...
+                                # if more than half the input pixels were bad, the
+                                # output is still bad.
+                                if iter < max_iters:
+                                    mask = filters.median_filter(mask, footprint=footprint)
+                            else:
+                                # "Mean" filtering is just convolution. The astropy
+                                # version handles the mask.
+                                median_data = convolve(filtered_data, footprint,
+                                                       mask=mask, boundary="extend")
+                                filtered_data = np.where(mask, median_data, filtered_data)
+                                # Output pixels are only bad if *all* the pixels in
+                                # the kernel were bad.
+                                if iter < max_iters:
+                                    mask = np.where(convolve(mask, footprint,
+                                                    boundary="extend")>0.9999, True, False)
+                        ext.data = filtered_data
+                        continue
+                    else:
+                        oper = getattr(np, replace_value)
+                        rep_value = oper(ext.data[ext.mask & replace_flags == 0])
+                        log.fullinfo("Replacing bad pixels in {}:{} with the {} "
+                                     "of the good data".format(ad.filename,
+                                                ext.hdr['EXTVER'], replace_value))
 
+                # kernel-based replacement avoids this line
                 ext.data[(ext.mask & replace_flags) != 0] = rep_value
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
