@@ -1,4 +1,17 @@
 #!/usr/bin/env python
+"""
+Script used to download test files from the GEMINI archive and save them inside
+the path stored in the TEST_PATH environment variable. Before running it, make
+sure that you set this path using the following command:
+
+    $ export TEST_PATH="/path/to/my/test/data/"
+    $ echo $TEST_PATH
+      /path/to/my/test/data/
+
+The test data is listed inside the global variable FILE_WITH_TEST_FILES. Each
+row has one file. Each file can be preceeded with a subfolder. This is useful
+to isolate tests.
+"""
 
 import os
 import subprocess
@@ -7,7 +20,6 @@ import sys
 
 FILE_WITH_TEST_FILES = '.jenkins/test_files.txt'
 URL = u'https://archive.gemini.edu/file/'
-
 
 try:
     TEST_PATH = os.environ['TEST_PATH']
