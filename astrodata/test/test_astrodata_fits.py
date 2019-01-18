@@ -10,16 +10,19 @@ import astrodata
 @pytest.mark.ad_local_data
 def test_can_read_data(test_path):
 
-    test_data_name = "test_data.fits"
-    ad = astrodata.open(os.path.join(test_path, test_data_name))
+    test_data_name = "GMOS/N20110826S0336.fits"
+    test_data_full_name = os.path.join(test_path, test_data_name)
+
+    assert os.path.exists(test_data_full_name)
+    ad = astrodata.open(test_data_full_name)
 
 
 @pytest.mark.ad_local_data
 def test_can_return_ad_length(test_path):
 
     test_data_name = "GMOS/N20110826S0336.fits"
-    ad = astrodata.open(os.path.join(test_path, test_data_name))
-
+    test_data_full_name = os.path.join(test_path, test_data_name)
+    ad = astrodata.open(test_data_full_name)
     assert len(ad) == 3
 
 
@@ -27,7 +30,8 @@ def test_can_return_ad_length(test_path):
 def test_iterate_over_extensions(test_path):
 
     test_data_name = "GMOS/N20110826S0336.fits"
-    ad = astrodata.open(os.path.join(test_path, test_data_name))
+    test_data_full_name = os.path.join(test_path, test_data_name)
+    ad = astrodata.open(test_data_full_name)
 
     metadata = (('SCI', 1), ('SCI', 2), ('SCI', 3))
     for ext, md in zip(ad, metadata):
@@ -38,7 +42,8 @@ def test_iterate_over_extensions(test_path):
 def test_slice_range(test_path):
 
     test_data_name = "GMOS/N20110826S0336.fits"
-    ad = astrodata.open(os.path.join(test_path, test_data_name))
+    test_data_full_name = os.path.join(test_path, test_data_name)
+    ad = astrodata.open(test_data_full_name)
 
     metadata = ('SCI', 2), ('SCI', 3)
     slc = ad[1:]
