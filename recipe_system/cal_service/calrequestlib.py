@@ -82,7 +82,7 @@ class CalibrationRequest(object):
              'datalabel'  : self.datalabel,
              "descriptors": self.descriptors,
              "tags"       : self.tags,
-         }
+            }
         )
 
         return retd
@@ -95,7 +95,8 @@ class CalibrationRequest(object):
 
 def get_cal_requests(inputs, caltype):
     """
-    Builds a list of :class:`.CalibrationRequest` objects, one for each `ad` input.
+    Builds a list of :class:`.CalibrationRequest` objects, one for each `ad`
+    input.
 
     Parameters
     ----------
@@ -107,7 +108,7 @@ def get_cal_requests(inputs, caltype):
     Returns
     -------
     rq_events : list
-        A list of CalibrationRequest instances, one for each passed 
+        A list of CalibrationRequest instances, one for each passed
        'ad' instance in 'inputs'.
 
     """
@@ -134,7 +135,7 @@ def get_cal_requests(inputs, caltype):
                     dv = None
                 # Munge list to value if all item(s) are the same
                 if isinstance(dv, list):
-                    dv = dv[0] if all(v==dv[0] for v in dv) else "+".join(
+                    dv = dv[0] if all(v == dv[0] for v in dv) else "+".join(
                         [str(v) for v in dv])
                 desc_dict[desc_name] = dv
         rq.descriptors = desc_dict
@@ -192,7 +193,7 @@ def process_cal_requests(cal_requests, howmany=None):
         calname = None
         calmd5 = None
         calurl = None
-        calurl,calmd5 = calibration_search(rq, howmany=(howmany if howmany else 1))
+        calurl, calmd5 = calibration_search(rq, howmany=(howmany if howmany else 1))
         if calurl is None:
             log.error("START CALIBRATION SERVICE REPORT\n")
             log.error(calmd5)

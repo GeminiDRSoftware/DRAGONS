@@ -126,7 +126,6 @@ class Block(object):
         # If we're looking for the .data attributes, this may just be the
         # element, if they're ndarrays. We should handle a mix of ndarrays
         # and NDData-like objects.
-        # NB ndarray.data returns a "memoryview" object in recent numpy
         if name == "data":
             attributes = [el if not isinstance(attr, np.ndarray) else attr
                           for el, attr in zip(self._elements, attributes)]
@@ -917,10 +916,8 @@ class DataGroup(object):
             if transform.is_affine:
                 integer_shift = (np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
                                  np.array_equal(mapping.offset, mapping.offset.astype(int)))
-                print(datetime.now() - start, "affine mapping done; integer shift {}".format(integer_shift))
             else:
                 mapping = GeoMap(transform, output_array_shape)
-                print(datetime.now() - start, "GeoMap done")
 
             for attr in attributes:
                 if isinstance(input_array, np.ndarray) and attr == "data":
@@ -1197,8 +1194,8 @@ class AstroDataGroup(DataGroup):
                                     for sec in self.descriptor("detector_section", index=array)])
             if len(det_corners) > 1:
                 centre = np.median(det_corners, axis=0)
-                distances = list(np.sum(det_corners - centre, axis=1))
-                self.ref_index = distances.index(max(v for v in distances if v < 0))
+                distances = list(det_corners - centre)
+                self.ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
             else:
                 self.ref_index = 0
             if array is None:
@@ -1228,8 +1225,8 @@ class AstroDataGroup(DataGroup):
                           if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
-        super(AstroDataGroup, self).transform(attributes=attributes, order=order, subsample=subsample,
-                          threshold=threshold, parallel=parallel)
+        super(AstroDataGroup, self).transform(attributes=attributes, order=order,
+                            subsample=subsample, threshold=threshold, parallel=parallel)
 
         # Create the output AD object
         ref_ext = self._arrays[self.ref_array][self.ref_index]
@@ -1278,6 +1275,10 @@ class AstroDataGroup(DataGroup):
                            zip(self._arrays[self.ref_array].corners[self.ref_index][::-1],
                                wcs.wcs.crpix))
         new_ref_coords = transform(*ref_coords)
+        # The origin shift wasn't appended to the Transform, so apply it here
+        if self.origin:
+            new_ref_coords = reduce(Model.__and__, [models.Shift(-offset)
+                        for offset in self.origin[::-1]])(*new_ref_coords)
         for i, coord in enumerate(new_ref_coords, start=1):
             ad.hdr['CRPIX{}'.format(i)] = coord+1
 
