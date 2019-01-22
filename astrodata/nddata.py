@@ -282,7 +282,8 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         arr = self._get_uncertainty()
 
         if arr is not None:
-            return arr.array**2
+            if arr.array is not None:
+                return arr.array ** 2
 
     @variance.setter
     def variance(self, value):
