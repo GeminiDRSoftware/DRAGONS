@@ -23,8 +23,13 @@ class StdDevAsVariance(object):
         else:
             return None
 
+
 def new_variance_uncertainty_instance(array):
-    obj = StdDevUncertainty(None if array is None else np.sqrt(array))
+
+    if array is None:
+        return
+
+    obj = StdDevUncertainty(np.sqrt(array))
     cls = obj.__class__
     obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
     return obj
@@ -276,14 +281,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         A convenience property to access the contents of ``uncertainty``,
         squared (as the uncertainty data is stored as standard deviation).
         """
-        # TODO: fix me
-        # This has been retuning an object that contains an attribute called
-        # array that is None (when?)
         arr = self._get_uncertainty()
 
         if arr is not None:
-            if arr.array is not None:
-                return arr.array ** 2
+            return arr.array ** 2
 
     @variance.setter
     def variance(self, value):
