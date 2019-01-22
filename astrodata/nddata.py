@@ -197,15 +197,23 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return scaling(source.data if section is None else source[section])
 
     def _get_uncertainty(self, section=None):
+
         if self._uncertainty is not None:
+
             if is_lazy(self._uncertainty):
+
                 data = self._uncertainty.data if section is None else self._uncertainty[section]
+
                 temp = new_variance_uncertainty_instance(data)
+
                 if section is None:
                     self.uncertainty = temp
+
                 return temp
+
             elif section is not None:
                 return self._uncertainty[section]
+
             else:
                 return self._uncertainty
 
@@ -268,7 +276,11 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         A convenience property to access the contents of ``uncertainty``,
         squared (as the uncertainty data is stored as standard deviation).
         """
+        # TODO: fix me
+        # This has been retuning an object that contains an attribute called
+        # array that is None (when?)
         arr = self._get_uncertainty()
+
         if arr is not None:
             return arr.array**2
 
