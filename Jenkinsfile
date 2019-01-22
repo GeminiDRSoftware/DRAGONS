@@ -54,34 +54,34 @@ pipeline {
       }
     } // stage: build environment
 
-    stage('Static code metrics') {
-      steps {
-        echo "Code Coverage"
-        sh  ''' source activate ${BUILD_TAG}
-                coverage run setup.py build
-                python -m coverage xml -o ./reports/coverage.xml
-                '''
-        echo "PEP8 style check"
-        sh  ''' source activate ${BUILD_TAG}
-                pylint --disable=C astrodata || true
-                '''
-      }
-      post{
-        always{
-          step([$class: 'CoberturaPublisher',
-              autoUpdateHealth: false,
-              autoUpdateStability: false,
-              coberturaReportFile: 'reports/coverage.xml',
-              failNoReports: false,
-              failUnhealthy: false,
-              failUnstable: false,
-              maxNumberOfBuilds: 10,
-              onlyStable: false,
-              sourceEncoding: 'ASCII',
-              zoomCoverageChart: false])
-        }
-      }
-    } // stage: static code metrics
+  //  stage('Static code metrics') {
+  //    steps {
+  //      echo "Code Coverage"
+  //      sh  ''' source activate ${BUILD_TAG}
+  //              coverage run setup.py build
+  //              python -m coverage xml -o ./reports/coverage.xml
+  //              '''
+  //      echo "PEP8 style check"
+  //      sh  ''' source activate ${BUILD_TAG}
+  //              pylint --disable=C astrodata || true
+  //              '''
+  //    }
+  //    post{
+  //      always{
+  //        step([$class: 'CoberturaPublisher',
+  //            autoUpdateHealth: false,
+  //            autoUpdateStability: false,
+  //            coberturaReportFile: 'reports/coverage.xml',
+  //            failNoReports: false,
+  //            failUnhealthy: false,
+  //            failUnstable: false,
+  //            maxNumberOfBuilds: 10,
+  //            onlyStable: false,
+  //            sourceEncoding: 'ASCII',
+  //            zoomCoverageChart: false])
+  //      }
+  //    }
+  //  } // stage: static code metrics
 
     stage('Unit tests') {
       steps {
