@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-pip install stsci.numdisplay
-
 which pip
 
 which python
