@@ -22,9 +22,9 @@ from . import parameters_preprocess
 
 from recipe_system.utils.decorators import parameter_override
 
-#import os, psutil
-#def memusage(proc):
-#    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
+import os, psutil
+def memusage(proc):
+    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
 # ------------------------------------------------------------------------------
 @parameter_override
 class Preprocess(PrimitivesBASE):
@@ -1014,7 +1014,7 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        #print "STARTING", memusage(proc)
+        #print("STARTING", memusage(proc))
 
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
@@ -1118,13 +1118,27 @@ class Preprocess(PrimitivesBASE):
                 for j in range(i, len(skytables)):
                     if skytables[j] == skytable:
                         stacked_skies[j] = stacked_sky
+                        skytables[j] = [None]
+
+            # Go through all the science frames and sky-subtract any that
+            # aren't needed for future sky-frame creation
+            for j, ad2 in enumerate(adinputs):
+                if not skytables[j] or stacked_skies[j] == 0:
+                    continue
+                if ad2 not in [sky_dict.get(sky) for skytable in skytables for sky in skytable]:
+                    # Sky-subtraction is in place, so we can discard the output
+                    self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
+                                     offset_sky=offset_sky, reset_sky=reset_sky)
+                    skytables[j] = []
+                    # This deletes a reference to the AD sky object
+                    stacked_skies[j] = None
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
-        #print "ABOUT TO SUBTRACT", memusage(proc)
-        adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
-                                    offset_sky=offset_sky, reset_sky=reset_sky)
-        #print "SUBTRACTED", memusage(proc)
+        #print("ABOUT TO SUBTRACT", memusage(proc))
+        #adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
+        #                            offset_sky=offset_sky, reset_sky=reset_sky)
+        #print("SUBTRACTED", memusage(proc))
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
