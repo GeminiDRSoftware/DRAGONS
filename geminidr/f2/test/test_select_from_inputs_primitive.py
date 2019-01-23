@@ -35,12 +35,12 @@ def test_select_from_inputs_primitive():
                 p.showInputs()
 
                 print("{:15s} OK".format(f))
-                _log.write("{:15s} OK".format(f))
+                _log.write("\n{:15s} OK".format(f))
 
             except RecursionError as re:
 
                 print("{:15s} FAIL".format(f))
-                _log.write("{:15s} FAIL".format(f))
+                _log.write("\n{:15s} FAIL".format(f))
 
             del ad
             del p

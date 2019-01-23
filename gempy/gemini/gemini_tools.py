@@ -905,8 +905,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     if caltype is None:
         raise ValueError("Caltype should not be None")
 
-    fitsfilenamecre = re.compile("^([NS])(20\d\d)([01]\d[0123]\d)(S)"
-                                 "(?P<fileno>\d\d\d\d)(.*)$")
+    fitsfilenamecre = re.compile(r"^([NS])(20\d\d)([01]\d[0123]\d)(S)"
+                                 r"(?P<fileno>\d\d\d\d)(.*)$")
 
     for ad in adinput:
         log.fullinfo("Setting OBSCLASS, OBSTYPE, GEMPRGID, OBSID, "

@@ -23,8 +23,13 @@ class StdDevAsVariance(object):
         else:
             return None
 
+
 def new_variance_uncertainty_instance(array):
-    obj = StdDevUncertainty(None if array is None else np.sqrt(array))
+
+    if array is None:
+        return
+
+    obj = StdDevUncertainty(np.sqrt(array))
     cls = obj.__class__
     obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
     return obj
@@ -197,15 +202,23 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return scaling(source.data if section is None else source[section])
 
     def _get_uncertainty(self, section=None):
+
         if self._uncertainty is not None:
+
             if is_lazy(self._uncertainty):
+
                 data = self._uncertainty.data if section is None else self._uncertainty[section]
+
                 temp = new_variance_uncertainty_instance(data)
+
                 if section is None:
                     self.uncertainty = temp
+
                 return temp
+
             elif section is not None:
                 return self._uncertainty[section]
+
             else:
                 return self._uncertainty
 
@@ -269,8 +282,9 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         squared (as the uncertainty data is stored as standard deviation).
         """
         arr = self._get_uncertainty()
+
         if arr is not None:
-            return arr.array**2
+            return arr.array ** 2
 
     @variance.setter
     def variance(self, value):
