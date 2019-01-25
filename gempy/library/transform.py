@@ -1223,6 +1223,10 @@ class AstroDataGroup(DataGroup):
         if attributes is None:
             attributes = [attr for attr in self.array_attributes
                           if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
+        if 'data' not in attributes:
+            self.log.warning("The 'data' attribute is not specified. Adding to list.")
+            attributes += ['data']
+
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
         super(AstroDataGroup, self).transform(attributes=attributes, order=order,
