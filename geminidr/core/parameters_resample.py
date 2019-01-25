@@ -4,6 +4,12 @@ from gempy.library import config
 
 class resampleToCommonFrameConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_align", optional=True)
-    order = config.RangeField("Order of interpolation", int, 3, min=0, max=5)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
+
+class applyStackedObjectMaskConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_stackedObjMaskApplied", optional=True)
+    source = config.Field("Stream containing stacked image", str, None)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
+    threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)

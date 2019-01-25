@@ -627,7 +627,7 @@ class Transform(object):
             msg.append(repr(model))
         return new_line_indent.join(msg)
 
-    def apply(self, input_array, output_shape, cval=0, inverse=False):
+    def apply(self, input_array, output_shape, order=1, cval=0, inverse=False):
         """
         Apply the transform to the pixels of the input array. Recall that the
         scipy.ndimage functions need to know where in the input_array to find
@@ -658,11 +658,11 @@ class Transform(object):
             else:
                 matrix, offset = self.inverse.affine_matrices(input_array.shape)
             output_array = ndimage.affine_transform(input_array, matrix, offset,
-                                                    output_shape, cval=cval)
+                                        output_shape, order=order, cval=cval)
         else:
             mapping = GeoMap(self, output_shape, inverse=inverse)
             output_array = ndimage.geometric_transform(input_array, mapping,
-                                                       output_shape, cval=cval)
+                                        output_shape, order=order, cval=cval)
         return output_array
 
     @classmethod

@@ -97,13 +97,13 @@ class Resample(PrimitivesBASE):
             adinputs = self.applyDQPlane(adinputs, replace_flags=65535 ^ (DQ.non_linear | DQ.saturated | DQ.no_data),
                                    replace_value="median", inner_radius=3, outer_radius=5)[0]
 
-        ref_ad = adinputs[0]
-        ref_wcs = WCS(ref_ad[0].hdr)
-        ndim = len(ref_ad[0].shape)
+        ad_ref = adinputs[0]
+        ref_wcs = WCS(ad_ref[0].hdr)
+        ndim = len(ad_ref[0].shape)
 
-        for ad in adinputs[1:]:
-            print(ad.filename)
-            print(WCS(ad[0].hdr))
+        #for ad in adinputs[1:]:
+        #    print(ad.filename)
+        #    print(WCS(ad[0].hdr))
 
         # No transform for the reference AD
         transforms = [Transform()] + [Transform([Pix2Sky(WCS(ad[0].hdr)),
@@ -117,7 +117,7 @@ class Resample(PrimitivesBASE):
         # smallest rectangle (in 2D) including all transformed inputs
         if trim_data:
             log.fullinfo("Trimming data to size of reference image")
-            output_shape = ref_ad[0].shape
+            output_shape = ad_ref[0].shape
             origin = (0,) * ndim
         else:
             log.fullinfo("Output image will contain all transformed images")
@@ -133,7 +133,7 @@ class Resample(PrimitivesBASE):
 
         adoutputs = []
         for ad, transform in zip(adinputs, transforms):
-            print(ad.filename+" "+repr(transform.affine_matrices(shape=ad[0].shape)))
+            #print(ad.filename+" "+repr(transform.affine_matrices(shape=ad[0].shape)))
             adg = AstroDataGroup(ad, [transform])
             # Set the output shape and origin to keep coordinate frame
             adg.output_shape = output_shape
@@ -157,3 +157,59 @@ class Resample(PrimitivesBASE):
             adoutputs.append(ad_out)
 
         return adoutputs
+
+    def applyStackedObjectMask(self, adinputs=None, **params):
+        """
+        This primitive takes an image with an OBJMASK and transforms that
+        OBJMASK onto the pixel planes of the input images, using their WCS
+        information. If the first image is a stack, this allows us to mask
+        fainter objects than can be detected in the individual input images.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        source: str
+            name of stream containing single stacked image
+        order: int (0-5)
+            order of interpolation
+        threshold: float
+            threshold above which an interpolated pixel should be flagged
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        source = params["source"]
+        order = params["order"]
+        threshold = params["threshold"]
+        sfx = params["suffix"]
+
+        source_stream = self.streams.get(source, [])
+        if len(source_stream) != 1:
+            log.warning("Stream {} not found or does not contain single "
+                        "AstroData object. Continuing.".format(source_stream))
+            return adinputs
+        
+        ad_source = source_stream[0]
+        # There's no reason why we can't handle multiple extensions
+        if any(len(ad) != len(ad_source) for ad in adinputs):
+            log.warning("At least one AstroData input has a different number "
+                        "of extensions to the reference. Continuing.")
+            return adinputs
+
+        for ad in adinputs:
+            for ext, source_ext in zip(ad, ad_source):
+                transform = Transform([Pix2Sky(WCS(source_ext.hdr)),
+                                       Pix2Sky(WCS(ext.hdr)).inverse])
+                transform._affine = True
+                try:
+                    # Convert OBJMASK to float or else uint8 will be returned
+                    objmask = transform.apply(source_ext.OBJMASK.astype(np.float32),
+                                              output_shape=ext.shape, order=order, cval=0)
+                    ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
+                except:  # source_ext.OBJMASK not present, or None
+                    pass
+                # We will deliberately keep the input image's OBJCAT (if it
+                # exists) since this will be required for aligning the inputs.
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
