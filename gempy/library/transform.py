@@ -35,6 +35,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 import astrodata, gemini_instruments
 
+from .astromodels import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
 
 from datetime import datetime
@@ -125,19 +126,13 @@ class Block(object):
         # If we're looking for the .data attributes, this may just be the
         # element, if they're ndarrays. We should handle a mix of ndarrays
         # and NDData-like objects.
-        # NB ndarray.data returns a "memoryview" object in recent numpy
         if name == "data":
             attributes = [el if not isinstance(attr, np.ndarray) else attr
                           for el, attr in zip(self._elements, attributes)]
 
         if any(isinstance(attr, np.ndarray) for attr in attributes):
-            try:
-                return self._return_array(attributes)
-            except AttributeError as e:
-                if name == "data":
-                    return self._return_array(self._elements)
-                else:
-                    raise e
+            return self._return_array(attributes)
+
         # Handle Tables
         if any(isinstance(attr, table.Table) for attr in attributes):
             return self._return_table(name)
@@ -260,28 +255,39 @@ class Transform(object):
         transform._affine = self._affine
         return transform
 
+    def copy(self):
+        return copy.deepcopy(self)
+
     def __getattr__(self, key):
         """
         The is_affine property and asModel() method should be used to extract
         information, so attributes are intended to refer to the component
-        models, and only make sense if the Transform has a single model.
+        models, and only make sense if this attribute is unique among the models.
         """
-        if len(self) == 1:
-            return getattr(self._models[0], key)
-        raise AttributeError("Can only get attributes from single-model Transforms")
+        values = []
+        for m in self._models:
+            try:
+                values.append(getattr(m, key))
+            except AttributeError:
+                pass
+        if len(values) == 1:
+            return values.pop()
+        raise AttributeError("Attribute '{}' found on {} models".
+                             format(key, len(values)))
 
     def __setattr__(self, key, value):
         """
         It is assumed that we're setting attributes of the component models.
         We are allowed to set an attribute on multiple models (e.g., name),
-        if that attribute exists on all models. Otherwise, it's set on the
-        Transform object.
+        if that attribute exists on all models, or only a single model.
         """
         if key not in ("_models", "_affine", "_ndim"):
-            if all(hasattr(m, key) for m in self._models):
-                for m in self._models:
+            models = [m for m in self._models if hasattr(m, key)]
+            if len(models) in (1, len(self)):
+                for m in models:
                     setattr(m, key, value)
                 return
+            raise AttributeError("Cannot set attribute '{}'".format(key))
         return object.__setattr__(self, key, value)
 
     def __getitem__(self, key):
@@ -342,7 +348,6 @@ class Transform(object):
     @property
     def inverse(self):
         """The inverse transform"""
-        # ndim is only used by __init__() if the model is empty
         return self.__class__([m.inverse for m in self._models[::-1]])
 
     @property
@@ -533,9 +538,16 @@ class Transform(object):
         # ensuring the sequence is the same length and the submodels are the
         # same (so no need to re-check the affinity)
         if len(sequence) == len(self):
-            for new, old in zip(model, self.asModel()):
+            for new, old in zip(sequence, self._models):
                 if new.__class__ != old.__class__:
                     break
+                try:
+                    newsubs, oldsubs = new._submodels, old._submodels
+                except AttributeError:
+                    continue
+                for newsub, oldsub in zip(newsubs, oldsubs):
+                    if newsub.__class__ != oldsub.__class__:
+                        break
             for i, m in enumerate(sequence):
                 self._models[i] = m.rename(self[i].name)
             return
@@ -602,6 +614,11 @@ class Transform(object):
         offset = transformed[0] - np.dot(matrix, halfsize)
         return AffineMatrices(matrix.T, offset[::-1])
 
+    def add_bounds(self, param, range):
+        """Add bounds to a parameter"""
+        value = getattr(self, param).value
+        getattr(self, param).bounds = (value - range, value + range)
+
     def info(self):
         """Print out something vaguely intelligible for debugging purposes"""
         new_line_indent = "\n    "
@@ -610,7 +627,7 @@ class Transform(object):
             msg.append(repr(model))
         return new_line_indent.join(msg)
 
-    def apply(self, input_array, output_shape, cval=0, inverse=False):
+    def apply(self, input_array, output_shape, order=1, cval=0, inverse=False):
         """
         Apply the transform to the pixels of the input array. Recall that the
         scipy.ndimage functions need to know where in the input_array to find
@@ -626,6 +643,8 @@ class Transform(object):
             the input "image"
         output_shape: sequence
             shape of the output array
+        order: int (0-5)
+            order of interpolation
         cval: float-like
             value to use where there's no pixel data
         inverse: bool
@@ -641,13 +660,61 @@ class Transform(object):
             else:
                 matrix, offset = self.inverse.affine_matrices(input_array.shape)
             output_array = ndimage.affine_transform(input_array, matrix, offset,
-                                                    output_shape, cval=cval)
+                                        output_shape, order=order, cval=cval)
         else:
             mapping = GeoMap(self, output_shape, inverse=inverse)
             output_array = ndimage.geometric_transform(input_array, mapping,
-                                                       output_shape, cval=cval)
+                                        output_shape, order=order, cval=cval)
         return output_array
 
+    @classmethod
+    def create2d(cls, translation=(0, 0), rotation=None, magnification=None,
+                 shape=None, center=None):
+        """
+        Creates a Transform object with any/all of shift/rotate/scale,
+        with appropriately named models for easy modification.
+
+        Parameters
+        ----------
+        translation: 2-tuple/None
+            translation IN X, Y ORDER (if None, no translation)
+        rotation: float/None
+            rotation angle in degrees (if None, no rotation)
+        magnification: float/None
+            magnification factor (if None, no magnification)
+        shape: 2-tuple/None
+            shape IN PYTHON ORDER: if provided, the model does a centering
+            shift before the other models, and an uncentering shift at the end
+        center: 2-tuple/None
+            alternatively, simply provide the center
+        """
+        transform = cls()
+        need_to_center = rotation is not None or magnification is not None
+        if need_to_center:
+            if center is None and shape is not None:
+                center = [0.5 * (s - 1) for s in shape]
+                shape = None
+            if center is not None:
+                if shape is not None:
+                    raise ValueError("Cannot create Transform with both center and shape")
+                # We use regular Shift instead of Shift2D so only the
+                # translation model has "x_offset" and "y_offset"
+                # The longwinded approach is required because of an astropy bug
+                shift0 = models.Shift(center[0])
+                shift0.offset.fixed = True
+                shift1 = models.Shift(center[1])
+                shift1.offset.fixed = True
+                shift = shift1 & shift0
+                transform.append(shift)
+        if translation is not None:
+            transform.append(Shift2D(*translation).rename("Translate"))
+        if rotation is not None:
+            transform.append(Rotate2D(rotation).rename("Rotate"))
+        if magnification is not None:
+            transform.append(Scale2D(magnification).rename("Magnify"))
+        if need_to_center and center is not None:
+            transform.append(transform[0].inverse)
+        return transform
 #----------------------------------------------------------------------------------
 
 class GeoMap(object):
@@ -788,7 +855,7 @@ class DataGroup(object):
         self.origin = tuple(min_ for min_, max_ in limits)
 
     def transform(self, attributes=['data'],
-                  order=3, subsample=1, threshold=0.01, parallel=False):
+                  order=3, subsample=1, threshold=0.01, parallel=True):
         """
         This method transforms and combines the arrays into a single output
         array. The inputs, after transforming, shouldn't interfere with each

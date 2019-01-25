@@ -5,12 +5,12 @@ from gempy.library import config
 class matchWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wcsCorrected", optional=True)
     method = config.ChoiceField("Alignment method", str,
-                                allowed={"header": "Use WCS in header",
+                                allowed={"offsets": "Use telescope offsets",
                                          "sources": "Match sources in images"},
                                 default="sources")
     fallback = config.ChoiceField("Fallback method", str,
-                                  allowed={"header": "Use WCS in header"},
-                                  default="header", optional=True)
+                                  allowed={"offsets": "Use telescope offsets"},
+                                  default="offsets", optional=True)
     first_pass = config.RangeField("Search radius for source matching (arcseconds)",
                               float, 5., min=0)
     min_sources = config.RangeField("Minimum number of sources required to use source matching",
