@@ -608,8 +608,6 @@ class BruteLandscapeFitter(Fitter):
         _fitter_to_model_params(model_copy, fitted_params)
         return model_copy
 
-def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
-              release=False, verbose=True):
 def _kdstat(tree, updated_model, in_coords, in_weights, ref_weights, sigma, maxsig, k):
     """
     Compute the statistic for transforming coordinates onto a set of reference
@@ -708,8 +706,8 @@ class KDTreeFitter(Fitter):
         return model_copy
 
 
-def fit_brute_then_simplex(model, xin, xout, sigma=5.0, tolerance=0.001,
-                           unbound=False, unfix=False, verbose=True):
+def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
+              release=False, verbose=True):
     """
     Finds the best-fitting mapping to convert from xin to xout, using a
     two-step approach by first doing a brute-force scan of parameter space,
