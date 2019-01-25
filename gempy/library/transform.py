@@ -643,6 +643,8 @@ class Transform(object):
             the input "image"
         output_shape: sequence
             shape of the output array
+        order: int (0-5)
+            order of interpolation
         cval: float-like
             value to use where there's no pixel data
         inverse: bool
