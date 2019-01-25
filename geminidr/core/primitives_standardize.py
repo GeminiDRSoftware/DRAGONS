@@ -166,7 +166,8 @@ class Standardize(PrimitivesBASE):
         # Handle latency if reqested
         if params.get("latency", False):
             try:
-                adinputs = self.addLatencyToDQ(adinputs)
+                adinputs = self.addLatencyToDQ(adinputs, time=params["time"],
+                                               non_linear=params["non_linear"])
             except AttributeError:
                 log.warning("addLatencyToDQ() not defined in primitivesClass "
                             + self.__class__.__name__)

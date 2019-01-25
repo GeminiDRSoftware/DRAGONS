@@ -1,5 +1,5 @@
 """
-Recipes available to data with tags 'GMOS', 'CAL', 'DARK'].
+Recipes available to data with tags 'F2', 'CAL', 'DARK'].
 Default is "makeProcessedDark".
 """
 

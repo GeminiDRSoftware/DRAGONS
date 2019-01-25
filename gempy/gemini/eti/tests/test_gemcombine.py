@@ -13,9 +13,11 @@ To run:
 
 import os
 import os.path
+import pytest
+
 import astrodata
 import gemini_instruments
-from gempy.gemini.eti import gemcombineeti
+
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 # TESTGMOSLIST = [
@@ -42,6 +44,7 @@ TESTDEFAULTPARAMS = {
     "operation": "average",
     "reject_method": "avsigclip"
 }
+
 
 class TestGemcombine(object):
     """
@@ -72,10 +75,13 @@ class TestGemcombine(object):
         """Run once after every test."""
         pass
 
+    @pytest.mark.skip(reason="Test requires IRAF/PyRAF")
     def test_niri_default(self):
         """
         Test the stacking of NIRI data using QAP default parameters.
         """
+        from gempy.gemini.eti import gemcombineeti
+
         # where is the fits diff tool?
         inputs = []
         for filename in TestGemcombine.niri_files:

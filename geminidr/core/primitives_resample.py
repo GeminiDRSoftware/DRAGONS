@@ -8,6 +8,8 @@ from astropy.wcs import WCS
 from scipy.ndimage import affine_transform
 
 from gempy.library import astrotools as at
+from gempy.library.transform import Transform, AstroDataGroup
+from gempy.library.matching import Pix2Sky
 from gempy.gemini import gemini_tools as gt
 from gempy.utils import logutils
 

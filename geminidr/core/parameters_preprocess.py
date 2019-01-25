@@ -19,6 +19,14 @@ class applyDQPlaneConfig(config.Config):
     replace_flags = config.RangeField("DQ bitmask for pixels to replace", int, 65535, min=0)
     replace_value = config.Field("Replacement value [mean|median|<value>]",
                                  (str, float), "median", check=replace_valueCheck)
+    inner = config.RangeField("Inner filter radius (pixels)", float, None, min=1, optional=True)
+    outer = config.RangeField("Outer filter radius (pixels)", float, None, min=1, optional=True)
+    max_iters = config.RangeField("Maximum number of iterations", int, 1, min=1)
+
+    def validate(self):
+        config.Config.validate(self)
+        if self.inner is not None and self.outer is not None and self.outer < self.inner:
+            raise ValueError("Outer radius must be larger than inner radius")
 
 class associateSkyConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyAssociated", optional=True)

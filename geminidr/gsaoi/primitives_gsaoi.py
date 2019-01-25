@@ -86,10 +86,13 @@ class GSAOI(Gemini, NearIR):
                 for ext in ad:
                     if ext.array_section(pretty=True) == '[513:1536,513:1536]':
                         log.stdinfo("Updating the CCDSEC for central ROI data")
-                        y1o = 513 if ext.hdr['EXTVER'] < 3 else 511
-                        y2o = y1o + 1024
-                        secstr = "[{0}:{1},{2}:{3}]".format(513, 1536, y1o+1, y2o)
-                        ext.hdr.set('CCDSEC', secstr, self.keyword_comments['CCDSEC'])
+                        for sec_name in ('array_section', 'detector_section'):
+                            kw = ad._keyword_for(sec_name)
+                            sec = getattr(ext, sec_name)()
+                            y1o = (sec.y1 + 1) if ext.hdr['EXTVER'] < 3 else (sec.y1 - 1)
+                            y2o = y1o + 1024
+                            secstr = "[{0}:{1},{2}:{3}]".format(sec.x1+1, sec.x2, y1o+1, y2o)
+                            ext.hdr.set(kw, secstr, self.keyword_comments[kw])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

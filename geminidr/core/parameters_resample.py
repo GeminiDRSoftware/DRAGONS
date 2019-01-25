@@ -11,5 +11,5 @@ class resampleToCommonFrameConfig(config.Config):
                                                "spline3": "cubic spline",
                                                "spline4": "quartic spline",
                                                "spline5": "qunitic spline"},
-                                      default="nearest")
+                                      default="linear")
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)

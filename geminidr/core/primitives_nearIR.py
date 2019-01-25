@@ -54,7 +54,7 @@ class NearIR(PrimitivesBASE):
                 log.stdinfo('{} affected by {}'.format(ad.filename,
                                     ','.join([x[0].filename for x in propagated])))
 
-                for ad_latent in list(zip(*propagated)[0]):
+                for ad_latent in list(zip(*propagated))[0]:
                     # AD extensions might not be in the same order
                     # Set aux_type to 'bpm' which means hot pixels in a subarray
                     # can still be propagated to a subsequent full-array image

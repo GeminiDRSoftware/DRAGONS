@@ -23,7 +23,12 @@ class StdDevAsVariance(object):
         else:
             return None
 
+
 def new_variance_uncertainty_instance(array):
+
+    if array is None:
+        return
+
     obj = StdDevUncertainty(np.sqrt(array))
     cls = obj.__class__
     obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
@@ -160,10 +165,14 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
             self.uncertainty = uncertainty
 
     def __deepcopy__(self, memo):
-        return self.__class__(self._data if is_lazy(self._data) else deepcopy(self.data),
-                              self._uncertainty if is_lazy(self._uncertainty) else deepcopy(self.uncertainty),
-                              self._mask if is_lazy(self._mask) else deepcopy(self.mask),
-                              deepcopy(self.wcs), deepcopy(self.meta), self.unit)
+        new = self.__class__(self._data if is_lazy(self._data) else deepcopy(self.data, memo),
+                             self._uncertainty if is_lazy(self._uncertainty) else None,
+                             self._mask if is_lazy(self._mask) else deepcopy(self.mask, memo),
+                             deepcopy(self.wcs, memo), deepcopy(self.meta, memo), self.unit)
+        # Needed to avoid recursion because of uncertainty's weakref to self
+        if not is_lazy(self._uncertainty):
+            new.variance = deepcopy(self.variance)
+        return new
 
     @property
     def window(self):
@@ -193,15 +202,23 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return scaling(source.data if section is None else source[section])
 
     def _get_uncertainty(self, section=None):
+
         if self._uncertainty is not None:
+
             if is_lazy(self._uncertainty):
+
                 data = self._uncertainty.data if section is None else self._uncertainty[section]
+
                 temp = new_variance_uncertainty_instance(data)
+
                 if section is None:
                     self.uncertainty = temp
+
                 return temp
+
             elif section is not None:
                 return self._uncertainty[section]
+
             else:
                 return self._uncertainty
 
@@ -240,7 +257,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def uncertainty(self):
-
         return self._get_uncertainty()
 
     @uncertainty.setter
@@ -266,8 +282,9 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         squared (as the uncertainty data is stored as standard deviation).
         """
         arr = self._get_uncertainty()
+
         if arr is not None:
-            return arr.array**2
+            return arr.array ** 2
 
     @variance.setter
     def variance(self, value):

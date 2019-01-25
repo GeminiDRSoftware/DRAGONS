@@ -5,18 +5,13 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
-from os.path import splitext
-
-try:
-    from stsci import numdisplay as nd
-except ImportError:
-    import numdisplay as nd
+from importlib import import_module
 
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 
-from gempy.mosaic.mosaicAD import MosaicAD
-from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
+from gempy.library.transform import Block, Transform, AstroDataGroup
+from astropy.modeling import models
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gemini_instruments.gmos.pixel_functions import get_bias_level
@@ -25,6 +20,12 @@ from geminidr import PrimitivesBASE
 from . import parameters_visualize
 
 from recipe_system.utils.decorators import parameter_override
+
+try:
+    from stsci import numdisplay as nd
+except ImportError:
+    import numdisplay as nd
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class Visualize(PrimitivesBASE):
@@ -229,124 +230,205 @@ class Visualize(PrimitivesBASE):
 
     def mosaicDetectors(self, adinputs=None, **params):
         """
-        This primitive will use the gempy MosaicAD class to mosaic the frames
-        of the input images. For this primitive, the mosaicAD parameter, 'tile',
-        is always False.
+        This primitive does a full mosaic of all the arrays in an AD object.
+        An appropriate geometry_conf.py module containing geometric information
+        is required.
 
         Parameters
         ----------
         suffix: str
-            suffix to be added to output files. Default is '_mosaic'
-
+            suffix to be added to output files.
         sci_only: bool
             mosaic only SCI image data. Default is False
-
-        interpolator: <str>
-            type of interpolation to use across chip gaps
-            ('linear', 'nearest', 'poly3', 'poly5', 'spline3', 'sinc')
-
-
+        order: int (1-5)
+            order of spline interpolation
         """
-        fmat1 = "No changes will be made to {}, since it has "
-        fmat1 += "already been processed by mosaicDetectors"
-        fmat2 = "Nothing to mosaic. < 2 extensions found on file {}"
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        # ----------  get parameters -------------
-        interpolator = params['interpolator']
-        sci_only = params['sci_only']
         suffix = params['suffix']
-        # ----------------------------------------
+        order = params['order']
+        attributes = ['data'] if params['sci_only'] else None
+        geotable = import_module('.geometry_conf', self.inst_lookups)
+
         adoutputs = []
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning(fmat1.format(ad.filename))
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by mosaicDetectors".
+                            format(ad.filename))
+                adoutputs.append(ad)
+                continue
 
             if len(ad) == 1:
-                log.stdinfo(fmat2.format(ad.filename))
+                log.warning("{} has only one extension, so there's nothing "
+                            "to mosaic".format(ad.filename))
                 adoutputs.append(ad)
                 continue
 
-            log.stdinfo("\tMosaicAD Working on {}".format(ad.filename))
+            # If there's an overscan section, we must trim it before mosaicking
             try:
-                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
-            except ValueError as mos_err:
-                log.error(str(mos_err))
-                adoutputs.append(ad)
-                continue
+                overscan_kw = ad._keyword_for('overscan_section')
+            except AttributeError:  # doesn't exist for this AD, so carry on
+                pass
+            else:
+                if overscan_kw in ad.hdr:
+                    ad = gt.trim_to_data_section(ad, self.keyword_comments)
 
-            mos.set_interpolator(interpolator)
+            # Create the blocks (individual physical detectors)
+            array_info = gt.array_information(ad)
+            blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
+                      zip(array_info.extensions, array_info.array_shapes)]
+            offsets = [ad[exts[0]].array_section()
+                       for exts in array_info.extensions]
 
-            log.stdinfo("\tBuilding mosaic, converting data ...")
-            ad_out = mos.as_astrodata(tile=False, doimg=sci_only)
+            detname = ad.detector_name()
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            geometry = geotable.geometry[detname]
+            default_shape = geometry.get('default_shape')
+            adg = AstroDataGroup()
+
+            for block, origin, offset in zip(blocks, array_info.origins, offsets):
+                # Origins are in (x, y) order in LUT
+                block_geom = geometry[origin[::-1]]
+                nx, ny = block_geom.get('shape', default_shape)
+                nx /= xbin
+                ny /= ybin
+                shift = block_geom.get('shift', (0, 0))
+                rot = block_geom.get('rotation', 0.)
+                mag = block_geom.get('magnification', (1, 1))
+                transform = Transform()
+
+                # Shift the Block's coordinates based on its location within
+                # the full array, to ensure any rotation takes place around
+                # the true centre.
+                if offset.x1 != 0 or offset.y1 != 0:
+                    transform.append(models.Shift(float(offset.x1) / xbin) &
+                                     models.Shift(float(offset.y1) / ybin))
+
+                if rot != 0 or mag != (1, 1):
+                    # Shift to centre, do whatever, and then shift back
+                    transform.append(models.Shift(-0.5*(nx-1)) &
+                                     models.Shift(-0.5*(ny-1)))
+                    if rot != 0:
+                        # Cope with non-square pixels by scaling in one
+                        # direction to make them square before applying the
+                        # rotation, and then reversing that.
+                        if xbin != ybin:
+                            transform.append(models.Identity(1) & models.Scale(ybin / xbin))
+                        transform.append(models.Rotation2D(rot))
+                        if xbin != ybin:
+                            transform.append(models.Identity(1) & models.Scale(xbin / ybin))
+                    if mag != (1, 1):
+                        transform.append(models.Scale(mag[0]) &
+                                         models.Scale(mag[1]))
+                    transform.append(models.Shift(0.5*(nx-1)) &
+                                     models.Shift(0.5*(ny-1)))
+                transform.append(models.Shift(float(shift[0]) / xbin) &
+                                 models.Shift(float(shift[1]) / ybin))
+                adg.append(block, transform)
+
+            adg.set_reference()
+            ad_out = adg.transform(attributes=attributes, order=order,
+                                   process_objcat=False)
+
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)
-            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
             adoutputs.append(ad_out)
 
         return adoutputs
 
     def tileArrays(self, adinputs=None, **params):
         """
-        This tiles GMOS and GSOAI chips.
+        This primitive combines extensions by tiling (no interpolation).
+        The array_section() and detector_section() descriptors are used
+        to derive the geometry of the tiling, so outside help (from the
+        instrument's geometry_conf module) is only required if there are
+        multiple arrays being tiled together, as the gaps need to be
+        specified.
 
         Parameters
         ----------
-        suffix: <str>
+        suffix: str
             suffix to be added to output files
-
-        sci_only: <bool>
-            Tile only science arrays (SCI). Default is False
-
-        tile_all: <bool>
-            Tile to a single extension. Default is False. 
-            If True, tiling is done into one ext per block.
-
-            For example, on Hamamatsu GMOS datasets,
-              tile_all=True results in an output FITS file with one (1)
-                extension; all 12 input extensions are tiled together.
-
-              tile_all=False results in an output FITS file with three (3) 
-                extensions; 4 amplifier sections are tiled into one block
-                representing one CCD.
-
-         """
+        tile_all: bool
+            tile to a single extension, rather than one per array?
+            (array=physical detector)
+        sci_only: bool
+            tile only the data plane?
+        """
         log = self.log
-        suffix   = params['suffix']
-        sci_only = params['sci_only']
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        suffix = params['suffix']
         tile_all = params['tile_all']
+        attributes = ['data'] if params["sci_only"] else None
 
         adoutputs = []
         for ad in adinputs:
-            log.stdinfo("parameter: tile_all is {} ".format(tile_all))
-            log.debug(gt.log_message("primitive", self.myself(), "starting"))
-            timestamp_key = self.timestamp_keys[self.myself()]
-
-            try:
-                mos = MosaicAD(ad, mosaic_ad_function=gemini_mosaic_function)
-            except ValueError as mos_err:
-                log.error(str(mos_err))
+            if len(ad) == 1:
+                log.warning("{} has only one extension, so there's nothing "
+                            "to tile".format(ad.filename))
                 adoutputs.append(ad)
                 continue
 
-            ad_out = mos.tile_as_astrodata(tile_all=tile_all, doimg=sci_only)
-            ad_out.orig_filename = ad.filename
+            # Get information to calculate the output geometry
+            # TODO: Think about arbitrary ROIs
+            array_info = gt.array_information(ad)
+            detshape = array_info.detector_shape
+            if not tile_all and set(array_info.array_shapes) == {(1, 1)}:
+                log.warning("{} has nothing to tile, as tile_all=False but "
+                            "each array has only one amplifier.")
+                adoutputs.append(ad)
+                continue
+
+            blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
+                      zip(array_info.extensions, array_info.array_shapes)]
+            offsets = [ad[exts[0]].array_section()
+                       for exts in array_info.extensions]
+
+            if tile_all and detshape != (1, 1):  # We need gaps!
+                geotable = import_module('.geometry_conf', self.inst_lookups)
+                chip_gaps = geotable.tile_gaps[ad.detector_name()]
+                try:
+                    xgap, ygap = chip_gaps
+                except TypeError:  # single number, applies to both
+                    xgap = ygap = chip_gaps
+                transforms = []
+                for i, (origin, offset) in enumerate(zip(array_info.origins, offsets)):
+                    xshift = (origin[1] + offset.x1 + xgap * (i % detshape[1])) // ad.detector_x_bin()
+                    yshift = (origin[0] + offset.y1 + ygap * (i // detshape[1])) // ad.detector_y_bin()
+                    transforms.append(Transform(models.Shift(xshift) & models.Shift(yshift)))
+                adg = AstroDataGroup(blocks, transforms)
+                adg.set_reference()
+                ad_out = adg.transform(attributes=attributes, process_objcat=True)
+            else:
+                # ADG.transform() produces full AD objects so we start with
+                # the first one, and then append the single extensions created
+                # by later calls to it.
+                for i, block in enumerate(blocks):
+                    # Simply create a single tiled array
+                    adg = AstroDataGroup([block])
+                    adg.set_reference()
+                    if i == 0:
+                        ad_out = adg.transform(attributes=attributes,
+                                               process_objcat=True)
+                    else:
+                        ad_out.append(adg.transform(attributes=attributes,
+                                                    process_objcat=True)[0])
 
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.orig_filename = ad.filename
             ad_out.update_filename(suffix=suffix, strip=True)
-            log.stdinfo("Updated filename: {} ".format(ad_out.filename))
             adoutputs.append(ad_out)
-
         return adoutputs
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-
 class _localNumDisplay(nd.NumDisplay):
     """
     This class overrides the default numdisplay.display function in

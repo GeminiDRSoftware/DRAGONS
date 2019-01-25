@@ -1,10 +1,10 @@
 #!/usr/bin/env groovy
 pipeline {
 
-  agent { label 'centos7'}
+  agent any
 
   triggers {
-    pollSCM('*/5 * * * 1-5')
+    pollSCM('H/20 * * * 1-5')
   }
 
   options {
@@ -15,7 +15,8 @@ pipeline {
   }
 
   environment {
-    PATH="~/miniconda3/bin:$PATH"
+    PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
+    TEST_PATH = "$WORKSPACE/test_path/"
   }
 
   stages {
@@ -24,64 +25,70 @@ pipeline {
         checkout scm
       }
     }
-    stage ("Build Environment") {
+
+    stage ("Download and Install Anaconda") {
       steps {
-        sh '''conda create --yes -n ${BUILD_TAG} python
-              source activate ${BUILD_TAG}
-              conda install coverage pytest
-              conda install -c omnia behave
-              conda install -c conda-forge twine
-              conda install -c chroxvi radon 
-        '''
-      }
-    }
-    stage('Test environment') {
-      steps {
-        sh '''source activate ${BUILD_TAG}
-              pip list
-              which pip
-              which python
+        sh '''if ! [ "$(command -v conda)" ]; then
+                echo "Conda is not installed - Downloading and installing"
+
+                curl https://repo.anaconda.com/archive/Anaconda3-5.3.1-Linux-x86_64.sh \\
+                  --output anaconda.sh --silent
+
+                chmod a+x anaconda.sh
+                ./anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
+
+                conda config --add channels http://ssb.stsci.edu/astroconda
+                conda update --quiet conda
+              fi
               '''
       }
-    }
-    stage('Static code metrics') {
+    } // stage: download and install anaconda
+
+    stage ("Build and Test Environment") {
       steps {
-        echo "Raw metrics"
-        sh  ''' source activate ${BUILD_TAG}
-                radon raw --json irisvmpy/ > raw_report.json
-                radon cc --json irisvmpy/ > cc_report.json
-                radon mi --json irisvmpy/ > mi_report.json
-                '''
-        echo "Code Coverage"
-        sh  ''' source activate ${BUILD_TAG}
-                coverage run --source=astrodata,gemini_instruments,gempy,recipe_system
-                python -m coverage xml -o ./reports/coverage.xml
-                '''
-        echo "PEP8 style check"
-        sh  ''' source activate ${BUILD_TAG}
-                pylint --disable=C irisvmpy || true
-                '''
+        sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
+              source activate ${BUILD_TAG}
+              .jenkins/test_env_and_install_missing_libs.sh
+              python .jenkins/download_test_data.py
+              '''
       }
-      post{
-        always{
-          step([$class: 'CoberturaPublisher',
-              autoUpdateHealth: false,
-              autoUpdateStability: false,
-              coberturaReportFile: 'reports/coverage.xml',
-              failNoReports: false,
-              failUnhealthy: false,
-              failUnstable: false,
-              maxNumberOfBuilds: 10,
-              onlyStable: false,
-              sourceEncoding: 'ASCII',
-              zoomCoverageChart: false])
-        }
-      }
-    }
+    } // stage: build environment
+
+  //  stage('Static code metrics') {
+  //    steps {
+  //      echo "Code Coverage"
+  //      sh  ''' source activate ${BUILD_TAG}
+  //              coverage run setup.py build
+  //              python -m coverage xml -o ./reports/coverage.xml
+  //              '''
+  //      echo "PEP8 style check"
+  //      sh  ''' source activate ${BUILD_TAG}
+  //              pylint --disable=C astrodata || true
+  //              '''
+  //    }
+  //    post{
+  //      always{
+  //        step([$class: 'CoberturaPublisher',
+  //            autoUpdateHealth: false,
+  //            autoUpdateStability: false,
+  //            coberturaReportFile: 'reports/coverage.xml',
+  //            failNoReports: false,
+  //            failUnhealthy: false,
+  //            failUnstable: false,
+  //            maxNumberOfBuilds: 10,
+  //            onlyStable: false,
+  //            sourceEncoding: 'ASCII',
+  //            zoomCoverageChart: false])
+  //      }
+  //    }
+  //  } // stage: static code metrics
+
     stage('Unit tests') {
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                python -m pytest --verbose --junit-xml test-reports/results.xml
+                pytest recipe_system gemini_instruments astrodata \
+                    geminidr/f2 --ad_test_data_path ${TEST_PATH} \
+                    --junit-xml test-reports/results.xml
                 '''
       }
       post {
@@ -90,11 +97,11 @@ pipeline {
           junit (
             allowEmptyResults: true,
             testResults: 'test-reports/results.xml'
-            //, fingerprint: true
             )
         }
       }
-    }
+    } // stage: unit tests
+
     stage('Build package') {
       when {
         expression {
@@ -103,7 +110,7 @@ pipeline {
       }
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                python setup.py sdist bdist_wheel
+                python setup.py sdist bdist_egg
             '''
       }
       post {
@@ -113,15 +120,17 @@ pipeline {
                             artifacts: 'dist/*whl',
                             fingerprint: true)
         }
-      }
-    }
-  }
+      } // post
+    } // stage: build package
+  } // stages
+
   post {
     always {
-      sh 'conda remove --yes -n ${BUILD_TAG} --all'
+      sh 'conda remove --yes -n ${BUILD_TAG} --all --quiet'
     }
     failure {
       echo "Send e-mail, when failed"
     }
-  }
-}
+  } // post
+
+} // pipeline
