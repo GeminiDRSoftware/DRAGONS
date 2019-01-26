@@ -6,12 +6,14 @@ implementing windowing and on-the-fly data scaling.
 from __future__ import (absolute_import, division, print_function)
 
 from copy import deepcopy
+import warnings
 
 from astropy.nddata import NDData
 from astropy.nddata import StdDevUncertainty
 from astropy.nddata.mixins.ndslicing import NDSlicingMixin
 from astropy.nddata.mixins.ndarithmetic import NDArithmeticMixin
 from astropy.io.fits import ImageHDU
+
 import numpy as np
 
 __all__ = ['NDAstroData']
@@ -29,7 +31,19 @@ def new_variance_uncertainty_instance(array):
     if array is None:
         return
 
-    obj = StdDevUncertainty(np.sqrt(array))
+    with warnings.catch_warnings():
+
+        if (array < 0.).any():
+            warnings.warn("Negative variance values found. Setting to zero.",
+                          RuntimeWarning)
+            array = np.where(array >= 0., array, 0.)
+
+        warnings.simplefilter("ignore", RuntimeWarning)
+
+        obj = StdDevUncertainty(np.sqrt(array))
+
+        warnings.simplefilter("default", RuntimeWarning)
+
     cls = obj.__class__
     obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
     return obj
