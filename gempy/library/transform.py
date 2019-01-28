@@ -911,7 +911,7 @@ class DataGroup(object):
                         p.start()
                     else:
                         self._apply_geometric_transform(*args, **kwargs)
-                        self._add_to_output(key, jfactor)
+                        self._add_to_output(key)
 
         # If we're in parallel, we need to place the outputs into the final
         # arrays as they finish. This should avoid hogging memory. Note that if
