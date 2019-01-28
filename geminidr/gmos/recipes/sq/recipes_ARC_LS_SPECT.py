@@ -16,5 +16,7 @@ def reduce(p):
     p.makeIRAFCompatible()
     p.writeOutputs()
     p.determineWavelengthSolution()
+    p.extract1DSpectra()
+    p.writeOutputs()
 
 default = reduce

@@ -1,5 +1,4 @@
 import numpy as np
-import math
 from astropy.modeling import fitting, models, FittableModel, Parameter
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
@@ -67,7 +66,7 @@ class MatchBox(object):
         num_matches = None
         init_match_radius = match_radius
         while True:
-            matched = match_sources_alt(model(input_coords), output_coords,
+            matched = match_sources(model(input_coords), output_coords,
                                     radius=match_radius)
             incoords, outcoords = zip(*[(input_coords[i], output_coords[m])
                                         for i, m in enumerate(matched) if m>-1])
@@ -332,126 +331,6 @@ class Chebyshev1DMatchBox(MatchBox):
 
         if show:
             plt.show()
-
-##############################################################################
-
-class Pix2Sky(FittableModel):
-    """
-    Wrapper to make an astropy.WCS object act like an astropy.modeling.Model
-    object, including having an inverse.
-    """
-    def __init__(self, wcs, x_offset=0.0, y_offset=0.0, factor=1.0, angle=0.0,
-                 direction=1, factor_scale=1.0, angle_scale=1.0, **kwargs):
-        self._wcs = wcs.deepcopy()
-        self._direction = direction
-        self._factor_scale = float(factor_scale)
-        self._angle_scale = float(angle_scale)
-        super(Pix2Sky, self).__init__(x_offset, y_offset, factor, angle,
-                                      **kwargs)
-
-    inputs = ('x','y')
-    outputs = ('x','y')
-    x_offset = Parameter()
-    y_offset = Parameter()
-    factor = Parameter()
-    angle = Parameter()
-
-    def evaluate(self, x, y, x_offset, y_offset, factor, angle):
-        # x_offset and y_offset are actually arrays in the Model
-        #temp_wcs = self.wcs(x_offset[0], y_offset[0], factor, angle)
-        temp_wcs = self.wcs
-        return temp_wcs.all_pix2world(x, y, 1) if self._direction>0 \
-            else temp_wcs.all_world2pix(x, y, 1)
-
-    @property
-    def inverse(self):
-        inv = self.copy()
-        inv._direction = -self._direction
-        return inv
-
-    @property
-    def wcs(self):
-        """Return the WCS modified by the translation/scaling/rotation"""
-        wcs = self._wcs.deepcopy()
-        x_offset = self.x_offset.value
-        y_offset = self.y_offset.value
-        angle = self.angle.value
-        factor = self.factor.value
-        wcs.wcs.crpix += np.array([x_offset, y_offset])
-        if factor != self._factor_scale:
-            wcs.wcs.cd *= factor / self._factor_scale
-        if angle != 0.0:
-            m = models.Rotation2D(angle / self._angle_scale)
-            wcs.wcs.cd = m(*wcs.wcs.cd)
-        return wcs
-
-
-class Shift2D(FittableModel):
-    """2D translation"""
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
-    x_offset = Parameter(default=0.0)
-    y_offset = Parameter(default=0.0)
-
-    @property
-    def inverse(self):
-        inv = self.copy()
-        inv.x_offset = -self.x_offset
-        inv.y_offset = -self.y_offset
-        return inv
-
-    @staticmethod
-    def evaluate(x, y, x_offset, y_offset):
-        return x+x_offset, y+y_offset
-
-class Scale2D(FittableModel):
-    """ 2D scaling. A "factor_scale" is included here because the minimization
-    routines use the same absolute tolerance in all parameters, so we need to
-    engineer the parameters such that a 0.01 change in this parameter has the
-    same sort of effect in positions as a 0.01 change in a shift."""
-    def __init__(self, factor=1.0, factor_scale=1.0, **kwargs):
-        self._factor_scale = factor_scale
-        super(Scale2D, self).__init__(factor, **kwargs)
-
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
-    factor = Parameter(default=1.0)
-
-    @property
-    def inverse(self):
-        inv = self.copy()
-        inv.factor = self._factor_scale**2/self.factor
-        return inv
-
-    def evaluate(self, x, y, factor):
-        return x*factor/self._factor_scale, y*factor/self._factor_scale
-
-class Rotate2D(FittableModel):
-    """Rotation; Rotation2D isn't fittable. The parameter scaling mechanism
-    is also included here (see Scale2D)"""
-    def __init__(self, angle=0.0, angle_scale=1.0, **kwargs):
-        self._angle_scale = angle_scale
-        super(Rotate2D, self).__init__(angle, **kwargs)
-
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
-    angle = Parameter(default=0.0, getter=np.rad2deg, setter=np.deg2rad)
-
-    @property
-    def inverse(self):
-        inv = self.copy()
-        inv.angle = -self.angle
-        return inv
-
-    def evaluate(self, x, y, angle):
-        if x.shape != y.shape:
-            raise ValueError("Expected input arrays to have the same shape")
-        orig_shape = x.shape or (1,)
-        inarr = np.array([x.flatten(), y.flatten()])
-        s, c = math.sin(angle/self._angle_scale), math.cos(angle/self._angle_scale)
-        x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
-        x.shape = y.shape = orig_shape
-        return x, y
 
 ##############################################################################
 
@@ -854,50 +733,50 @@ def align_catalogs(incoords, refcoords, transform=None, tolerance=0.1):
     transform.replace(final_model)
     return transform
 
-def match_sources(incoords, refcoords, radius=2.0, priority=[]):
-    """
-    Match two sets of sources that are on the same reference frame. In general
-    the closest match will be used, but there can be a priority list that will
-    take precedence.
+#def match_sources(incoords, refcoords, radius=2.0, priority=[]):
+#    """
+#    Match two sets of sources that are on the same reference frame. In general
+#    the closest match will be used, but there can be a priority list that will
+#    take precedence.
+#
+#    Parameters
+#    ----------
+#    incoords: 2xN array
+#        input source coords (transformed to reference frame)
+#    refcoords: 2xM array
+#        reference source coords
+#    radius:
+#        maximum separation for a match
+#    priority: list of ints
+#        items in incoords that should have priority, even if a closer
+#        match is found
+#
+#    Returns
+#    -------
+#    int array of length N:
+#        index of matched sources in the reference list (-1 means no match)
+#    """
+#    try:
+#        iter(incoords[0])
+#    except TypeError:
+#        incoords = (incoords,)
+#        refcoords = (refcoords,)
+#    matched = np.full((len(incoords[0]),), -1, dtype=int)
+#    tree = spatial.cKDTree(list(zip(*refcoords)))
+#    dist, idx = tree.query(list(zip(*incoords)), distance_upper_bound=radius)
+#    for i in range(len(refcoords[0])):
+#        inidx = np.where(idx==i)[0][np.argsort(dist[np.where(idx==i)])]
+#        for ii in inidx:
+#            if ii in priority:
+#                matched[ii] = i
+#                break
+#        else:
+#            # No first_allowed so take the first one
+#            if len(inidx):
+#                matched[inidx[0]] = i
+#    return matched
 
-    Parameters
-    ----------
-    incoords: 2xN array
-        input source coords (transformed to reference frame)
-    refcoords: 2xM array
-        reference source coords
-    radius:
-        maximum separation for a match
-    priority: list of ints
-        items in incoords that should have priority, even if a closer
-        match is found
-
-    Returns
-    -------
-    int array of length N:
-        index of matched sources in the reference list (-1 means no match)
-    """
-    try:
-        iter(incoords[0])
-    except TypeError:
-        incoords = (incoords,)
-        refcoords = (refcoords,)
-    matched = np.full((len(incoords[0]),), -1, dtype=int)
-    tree = spatial.cKDTree(list(zip(*refcoords)))
-    dist, idx = tree.query(list(zip(*incoords)), distance_upper_bound=radius)
-    for i in range(len(refcoords[0])):
-        inidx = np.where(idx==i)[0][np.argsort(dist[np.where(idx==i)])]
-        for ii in inidx:
-            if ii in priority:
-                matched[ii] = i
-                break
-        else:
-            # No first_allowed so take the first one
-            if len(inidx):
-                matched[inidx[0]] = i
-    return matched
-
-def match_sources_alt(incoords, refcoords, radius=2.0):
+def match_sources(incoords, refcoords, radius=2.0):
     """
     Like the previous method, but this does a "greedy" match, starting
     with the closest pair, instead of sequentially through the refcoords

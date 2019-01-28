@@ -15,8 +15,9 @@ from astropy.table import Table
 from matplotlib import pyplot as plt
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library.nddops import NDStacker
 from gempy.library import matching
+from gempy.library.nddops import NDStacker
+from gempy.library.transform import Transform, DataGroup
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from recipe_system.utils.decorators import parameter_override
@@ -68,6 +69,8 @@ class Spect(PrimitivesBASE):
         fwidth = params["fwidth"]
         arc_file = params["linelist"]
         weighting = params["weighting"]
+
+        plot = params["plot"]
 
         # TODO: This decision would prevent MOS data being reduced so need
         # to think a bite more about what we're going to do. Maybe make
@@ -183,7 +186,8 @@ class Spect(PrimitivesBASE):
 
                 # Some diagnostic plotting
                 yplot = 0
-                fig, ax = plt.subplots()
+                if plot:
+                    fig, ax = plt.subplots()
 
                 init_order = 1
                 ord = init_order
@@ -196,7 +200,8 @@ class Spect(PrimitivesBASE):
                     peaks_to_fit = peaks[peak_snrs>min_snr]
                     m_init = _set_model(m_init, order=int(ord), initial=(ord==1), kdfit=True)
                     if ord == init_order:
-                        plot_arc_fit(data, peaks, arc_lines, m_init, "Initial model")
+                        if plot:
+                            plot_arc_fit(data, peaks, arc_lines, m_init, "Initial model")
                         log.stdinfo('Initial model: {}'.format(repr(m_init)))
                     fit_it = matching.KDTreeFitter()
                     m_final = fit_it(m_init, peaks_to_fit, arc_lines, maxsig=10, k=1,
@@ -204,7 +209,9 @@ class Spect(PrimitivesBASE):
                                      sigma=kdsigma, method='Nelder-Mead',
                                      options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
                     log.stdinfo('{} {}'.format(repr(m_final), fit_it.statistic))
-                    plot_arc_fit(plot_data, peaks, arc_lines, m_final, "KDFit model order {} KDsigma = {}".format(ord, kdsigma))
+                    if plot:
+                        plot_arc_fit(plot_data, peaks, arc_lines, m_final,
+                                     "KDFit model order {} KDsigma = {}".format(ord, kdsigma))
 
                     kdsigma = fwidth * abs(dw)
                     if ord < order:
@@ -220,12 +227,15 @@ class Spect(PrimitivesBASE):
                     #match_radius = kdsigma
                     m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                     model=m_final, match_radius=match_radius, sigma_clip=5)
-                    for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
-                       ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
-                               ha='center', va='top')
+                    if plot:
+                        for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
+                           ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
+                                   ha='center', va='top')
 
                     log.stdinfo('{} {} {}'.format(repr(m.forward), len(m.input_coords), m.rms_output))
-                    plot_arc_fit(plot_data, peaks, arc_lines, m.forward, "MatchBox model order {}".format(ord))
+                    if plot:
+                        plot_arc_fit(plot_data, peaks, arc_lines, m.forward,
+                                     "MatchBox model order {}".format(ord))
 
                     # Choice of kdsigma can have a big effect. This oscillates
                     # around the initial choice, with increasing amplitude.
@@ -242,10 +252,11 @@ class Spect(PrimitivesBASE):
                 log.stdinfo(m_final)
                 log.stdinfo("Matched {} lines with rms = {:.3f} nm.".format(nmatched, rms))
 
-                plot_arc_fit(plot_data, peaks, arc_lines, m_final, "Final fit")
+                if plot:
+                    plot_arc_fit(plot_data, peaks, arc_lines, m_final, "Final fit")
 
-                m.display_fit()
-                plt.show()
+                    m.display_fit()
+                    plt.show()
 
                 m.sort()
                 incoords = m.input_coords
@@ -269,7 +280,169 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+    def extract1DSpectra(self, adinputs=None, **params):
+        """
+        This primitive extracts a 1D spectrum. No tracing is done yet, it's
+        basically a placeholder.
 
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        center: int/None
+            central row/column for 1D extraction (None => use middle)
+        nsum: int
+            number of rows/columns to average
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        center = params["center"]
+        nsum = params["nsum"]
+
+        # This is just cut-and-paste code from determineWavelengthSolution()
+        for ad in adinputs:
+            for ext in ad:
+                if len(ext.shape) == 1:
+                    log.warning("{}:{} is already one-dimensional".
+                                format(ad.filename, ext.hdr['EXTVER']))
+                    continue
+
+                # Determine direction of extraction for 2D spectrum
+                slitaxis = ext.dispersion_axis() - 1
+                middle = 0.5 * ext.shape[slitaxis]
+                extract = slice(max(0, int((center or middle) - 0.5*nsum)),
+                              min(ext.shape[slitaxis], int((center or middle) + 0.5*nsum)))
+                if slitaxis == 1:
+                    data = ext.data.T[extract]
+                    mask = None if ext.mask is None else ext.mask.T[extract]
+                    variance = None if ext.variance is None else ext.variance.T[extract]
+                    direction = "column"
+                else:
+                    data = ext.data[extract]
+                    mask = None if ext.mask is None else ext.mask[extract]
+                    variance = None if ext.variance is None else ext.variance[extract]
+                    direction = "row"
+                log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
+                            format(direction, extract.start+1, extract.stop))
+
+                data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
+                ext.reset(data, mask=mask, variance=variance)
+
+                # Update some header keywords
+                for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
+                    for ax in (1, 2):
+                        try:
+                            del ext.hdr["{}{}".format(kw, ax)]
+                        except KeyError:
+                            pass
+
+                # TODO: Properly. Simply put the linear approximation here for now
+                ext.hdr["CTYPE1"] = "Wavelength"
+                try:
+                    coeffs = ext.WAVECAL["coefficients"]
+                except AttributeError:
+                    crpix = 0.5 * (len(data) + 1)
+                    crval = ext.central_wavelength(asNanometers=True)
+                    cdelt = ext.dispersion(asNanometers=True)
+                else:
+                    crpix = np.mean(coeffs[:2]) + 1
+                    crval = coeffs[3]
+                    cdelt = 2 * coeffs[4] / float(np.diff(coeffs[:2]))
+
+                ext.hdr["CRPIX1"] = crpix
+                ext.hdr["CRVAL1"] = crval
+                ext.hdr["CDELT1"] = cdelt
+                ext.hdr["CUNIT1"] = "nanometers"
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def linearizeSpectra(self, adinputs=None, **params):
+        """
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        w1: float
+            Wavelength of first pixel (nm)
+        w2: float
+            Wavelength of last pixel (nm)
+        dw: float
+            Dispersion (nm/pixel)
+        npix: int
+            Number of pixels in output spectrum
+        conserve: bool
+            Conserve flux (rather than interpolate)?
+
+        Exactly 3 of (w1, w2, dw, npix) must be specified.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        w1 = params["w1"]
+        w2 = params["w2"]
+        dw = params["dw"]
+        npix = params["npix"]
+        conserve = params["conserve"]
+
+        # Work out the missing variable from the others
+        if npix is None:
+            npix = int(np.ceil((w2 - w1) / dw)) + 1
+            w2 = w1 + (npix-1) * dw
+        elif w1 is None:
+            w1 = w2 - (npix-1) * dw
+        elif w2 is None:
+            w2 = w1 + (npix-1) * dw
+        else:
+            dw = (w2 - w1) / (npix-1)
+
+        for ad in adinputs:
+            for ext in ad:
+                attributes = [attr for attr in ('data', 'mask', 'variance')
+                              if getattr(ext, attr) is not None]
+                try:
+                    coeffs = ext.WAVECAL["coefficients"]
+                except AttributeError:
+                    log.warning("{}:{} has no WAVECAL. Cannot linearize.".
+                                format(ad.filename, ext.hdr['EXTVER']))
+                    continue
+
+                # Recreate wavelength solution
+                order = int(coeffs[2])
+                kwargs = {"domain": [*coeffs[:2].data.astype(int)]}
+                kwargs.update({"c{}".format(i): value
+                               for i, value in enumerate(coeffs[3: 4+order])})
+                cheb = models.Chebyshev1D(degree=order, **kwargs)
+                cheb.inverse = _make_inverse_chebyshev(cheb, rms=0.1)
+                pixel_limits = cheb.inverse([w1, w2])
+                linear_model = models.Polynomial1D(degree=1, c0=-w1/dw, c1=1./dw)
+                linear_model.inverse = models.Polynomial1D(degree=1, c0=w1, c1=dw)
+                transform = Transform([cheb, linear_model])
+
+                dg = DataGroup([ext], [transform])
+                dg.output_shape = (npix,)
+                output_dict = dg.transform(attributes=attributes)
+                for key, value in output_dict.items():
+                    setattr(ext, key, value)
+
+                ext.hdr["CRPIX1"] = 1.
+                ext.hdr["CRVAL1"] = w1
+                ext.hdr["CDELT1"] = dw
+                ext.hdr["CUNIT1"] = "nanometers"
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+#-----------------------------------------------------------------------------
 def _estimate_peak_width(data, fwidth):
     """
     Estimates the FWHM of the spectral features (arc lines) by fitting
@@ -379,6 +552,7 @@ def _find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25
     peak_snrs = list(snr[int(p+0.5)] for p in final_peaks)
 
     # Remove suspiciously bright peaks
+    # TODO: Much improvement possible here!
     if rank_clip:
         diff = 3  # Compare 1st brightest to 4th brightest
         rank_order = list(np.argsort(peak_snrs))
@@ -412,6 +586,7 @@ def _set_model(model, order=None, initial=False, kdfit=False):
     Returns
     -------
     Model: a new Chebyshev1D model instance
+    TODO: This is kind of hacky
     """
     old_order = model.degree
     assert old_order > 0
@@ -447,3 +622,29 @@ def plot_arc_fit(data, peaks, arc_lines, model, title):
     ax.set_ylim(0, 1)
     ax.set_xlabel("Wavelength (nm)")
     ax.set_title(title)
+
+def _make_inverse_chebyshev(model, sampling=1, rms=None):
+    """
+    This creates a Chebyshev1D model that attempts to be the inverse of
+    the model provided.
+
+    Parameters
+    ----------
+    model: Chebyshev1D
+        The model to be inverted
+    rms: float/None
+        required maximum rms in input space (i.e., pixels)
+    """
+    order = model.degree
+    max_order = order if rms is None else order+2
+    incoords = np.arange(*model.domain, sampling)
+    outcoords = model(incoords)
+    while order <= max_order:
+        m_init = models.Chebyshev1D(degree=order, domain=model(model.domain))
+        fit_it = fitting.LinearLSQFitter()
+        m_inverse = fit_it(m_init, outcoords, incoords)
+        rms_inverse = np.std(m_inverse(outcoords) - incoords)
+        if rms is None or rms_inverse <= rms:
+            break
+        order += 1
+    return m_inverse

@@ -31,6 +31,7 @@ timestamp_keys = {
     "findAcquisitionSlits": "FINDACQS",
     "flatCorrect": "FLATCORR",
     "fringeCorrect": "FRNGCORR",
+    "linearizeSpectra": "LINEARZE",
     "makeBPM": "BPMASK",
     "makeFlat": "MAKEFLAT",
     "makeFringeFrame": "FRINGE",

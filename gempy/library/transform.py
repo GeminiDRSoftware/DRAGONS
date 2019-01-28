@@ -608,7 +608,10 @@ class Transform(object):
         points = np.array([halfsize] * (2*ndim+1)).T
         points[:,1:ndim+1] += np.eye(ndim) * points[:,0]
         points[:,ndim+1:] -= np.eye(ndim) * points[:,0]
-        transformed = np.array(list(zip(*self.__call__(*points))))
+        if ndim > 1:
+            transformed = np.array(list(zip(*self.__call__(*points))))
+        else:
+            transformed = np.array([self.__call__(*points)]).T
         matrix = np.array([[0.5 * (transformed[j+1,i] - transformed[ndim+j+1,i]) / halfsize[j]
                             for j in range(ndim)] for i in range(ndim)])
         offset = transformed[0] - np.dot(matrix, halfsize)
@@ -744,6 +747,8 @@ class GeoMap(object):
         if input_shape is None:
             input_shape = shape
         transformed = self._transform(*grids)
+        transformed = (self._transform(*grids) if len(shape) > 1
+                       else self._transform(grids))
         transformed = [np.where(coord > length-1, -1, coord).astype(np.float32)
                        for coord, length in zip(transformed, input_shape[::-1])]
         self._map = transformed
@@ -1022,6 +1027,8 @@ class DataGroup(object):
         # Invert from standard python order to (x, y[, z]) order
         corners = np.array(at.get_corners(input_array.shape)).T[::-1]
         trans_corners = transform(*corners)
+        if len(input_array.shape) == 1:
+            trans_corners = (trans_corners,)
         self.corners.append(trans_corners)
         min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
         max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
