@@ -362,7 +362,7 @@ class Register(PrimitivesBASE):
                                                transform=fit_transform, tolerance=0.05)
                     matched = match_sources(transform(xref, yref),
                                             (objcat['X_IMAGE'], objcat['Y_IMAGE']),
-                                            radius=final, priority=in_field)
+                                            radius=final)
                 else:
                     log.stdinfo('No REFCAT sources in field of extver {}'.format(extver))
                     continue

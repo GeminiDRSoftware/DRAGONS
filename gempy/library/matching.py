@@ -778,8 +778,26 @@ def align_catalogs(incoords, refcoords, transform=None, tolerance=0.1):
 
 def match_sources(incoords, refcoords, radius=2.0):
     """
-    Like the previous method, but this does a "greedy" match, starting
-    with the closest pair, instead of sequentially through the refcoords
+    Match two sets of sources that are on the same reference frame. In general
+    the closest match will be used, but there can be a priority list that will
+    take precedence.
+
+    This does a "greedy" match, starting with the closest pair,
+    instead of sequentially through the refcoords
+
+    Parameters
+    ----------
+    incoords: nxN array
+        input source coords (transformed to reference frame)
+    refcoords: nxM array
+        reference source coords
+    radius:
+        maximum separation for a match
+
+    Returns
+    -------
+    int array of length N:
+        index of matched sources in the reference list (-1 means no match)
     """
     try:
         iter(incoords[0])
