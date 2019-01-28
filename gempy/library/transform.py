@@ -643,7 +643,8 @@ class Transform(object):
             output_array = ndimage.affine_transform(input_array, matrix, offset,
                                                     output_shape, cval=cval)
         else:
-            mapping = GeoMap(self, output_shape, inverse=inverse)
+            mapping = GeoMap(self, output_shape, input_shape=input_array.shape,
+                             inverse=inverse)
             output_array = ndimage.geometric_transform(input_array, mapping,
                                                        output_shape, cval=cval)
         return output_array
@@ -663,17 +664,21 @@ class GeoMap(object):
         the transformation
     shape: tuple
         shape of output array
+    input_shape: tuple
+        shape of input array
     inverse: bool
         if True, then the transform is already the output->input transform,
         and doesn't need to be inverted
     """
-    def __init__(self, transform, shape, inverse=False):
+    def __init__(self, transform, shape, input_shape=None, inverse=False):
         grids = np.meshgrid(*(np.arange(length) for length in shape[::-1]))
         self._transform = transform if inverse else transform.inverse
         self._shape = shape
+        if input_shape is None:
+            input_shape = shape
         transformed = self._transform(*grids)
         transformed = [np.where(coord > length-1, -1, coord).astype(np.float32)
-                       for coord, length in zip(transformed, shape[::-1])]
+                       for coord, length in zip(transformed, input_shape[::-1])]
         self._map = transformed
 
     def __call__(self, coords):
@@ -846,13 +851,14 @@ class DataGroup(object):
             # Create a mapping from output pixel to input pixels
             integer_shift = False
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
-            jfactor = np.linalg.det(mapping.matrix)
+            jfactor = abs(np.linalg.det(mapping.matrix))
             self.jfactors.append(jfactor)
             if transform.is_affine:
                 integer_shift = (np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
                                  np.array_equal(mapping.offset, mapping.offset.astype(int)))
             else:
-                mapping = GeoMap(transform, output_array_shape)
+                mapping = GeoMap(transform, output_array_shape,
+                                 input_shape=input_array.shape)
 
             for attr in attributes:
                 if isinstance(input_array, np.ndarray) and attr == "data":
