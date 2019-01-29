@@ -420,14 +420,21 @@ class Spect(PrimitivesBASE):
                                for i, value in enumerate(coeffs[3: 4+order])})
                 cheb = models.Chebyshev1D(degree=order, **kwargs)
                 cheb.inverse = _make_inverse_chebyshev(cheb, rms=0.1)
-                pixel_limits = cheb.inverse([w1, w2])
                 linear_model = models.Polynomial1D(degree=1, c0=-w1/dw, c1=1./dw)
                 linear_model.inverse = models.Polynomial1D(degree=1, c0=w1, c1=dw)
                 transform = Transform([cheb, linear_model])
 
+                # If we resample to a coarser pixel scale, we may interpolate
+                # over features. We avoid this by subsampling back to the
+                # original pixel scale (approximately).
+                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
+                subsample = dw / abs(input_dw)
+                if subsample > 1.1:
+                    subsample = int(subsample + 0.5)
+
                 dg = DataGroup([ext], [transform])
                 dg.output_shape = (npix,)
-                output_dict = dg.transform(attributes=attributes)
+                output_dict = dg.transform(attributes=attributes, subsample=subsample)
                 for key, value in output_dict.items():
                     setattr(ext, key, value)
 
