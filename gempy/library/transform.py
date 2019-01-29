@@ -863,8 +863,8 @@ class DataGroup(object):
         self.output_shape = tuple(max_ - min_ for min_, max_ in limits)
         self.origin = tuple(min_ for min_, max_ in limits)
 
-    def transform(self, attributes=['data'],
-                  order=3, subsample=1, threshold=0.01, parallel=False):
+    def transform(self, attributes=['data'], order=3, subsample=1,
+                  threshold=0.01, conserve=False, parallel=False):
         """
         This method transforms and combines the arrays into a single output
         array. The inputs, after transforming, shouldn't interfere with each
@@ -885,6 +885,8 @@ class DataGroup(object):
         threshold: float
             for bitmask arrays, the fraction that needs to be exceeded
             for the bit to be set in the output
+        conserve: bool
+            conserve flux by applying Jacobian?
         parallel: bool
             perform operations in parallel using multiprocessing?
 
@@ -892,8 +894,6 @@ class DataGroup(object):
         -------
         dict: {key: array} of arrays containing the transformed attributes
         """
-        start = datetime.now()
-
         if parallel:
             processes = []
             process_keys = []
@@ -922,23 +922,51 @@ class DataGroup(object):
             # Create a mapping from output pixel to input pixels
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
             jfactor = abs(np.linalg.det(mapping.matrix))
+            if not conserve:
+                jfactor = 1
             self.jfactors.append(jfactor)
+
             integer_shift = (transform.is_affine
                 and np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
                                  np.array_equal(mapping.offset, mapping.offset.astype(int)))
 
             if not integer_shift:
+                ndim = transform.ndim
                 # Apply scale and shift for subsampling. Recall that (0,0) is the middle of
                 # the pixel, not the corner, so a shift is required as well.
                 if subsample > 1:
-                    rescale = reduce(Model.__and__, [models.Scale(subsample)] * transform.ndim)
-                    rescale_shift = reduce(Model.__and__, [models.Shift(0.5 * (subsample - 1))] * transform.ndim)
+                    rescale = reduce(Model.__and__, [models.Scale(subsample)] * ndim)
+                    rescale_shift = reduce(Model.__and__, [models.Shift(0.5 * (subsample - 1))] * ndim)
                     transform.append([rescale, rescale_shift])
 
                 trans_output_shape = tuple(length * subsample for length in output_array_shape)
                 if transform.is_affine:
                     mapping = transform.inverse.affine_matrices(shape=trans_output_shape)
                 else:
+                    # If we're conserving the flux, we need to compute the
+                    # Jacobian at every input point. This is done by numerical
+                    # derivatives so expand the output pixel grid.
+                    if conserve:
+                        jacobian_shape = tuple(length + 2 for length in trans_output_shape)
+                        transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
+                        jacobian_mapping = GeoMap(transform, jacobian_shape,
+                                                  input_shape=input_array.shape)
+                        det_matrices = np.empty((ndim, ndim, np.multiply.reduce(trans_output_shape)))
+                        for num_axis in range(ndim):
+                            # _map is stored x-first
+                            coords = jacobian_mapping._map[ndim - num_axis - 1]
+                            for denom_axis in range(ndim):
+                                diff_coords = coords - np.roll(coords, 2, axis=denom_axis)
+                                slice_ = [slice(1, -1)] * ndim
+                                slice_[denom_axis] = slice(2, None)
+                                # Account for the fact that we are measuring
+                                # differences in the subsampled plane
+                                det_matrices[num_axis, ndim-denom_axis-1] = \
+                                    diff_coords[slice_].flatten() / (2*subsample)
+                        jfactor = 1. / abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
+                        # Delete the extra Shift(1) and put a better jfactor in the list
+                        del transform[-1]
+                        self.jfactors[-1] = np.mean(jfactor)
                     mapping = GeoMap(transform, trans_output_shape,
                                      input_shape=input_array.shape)
 
@@ -1117,7 +1145,7 @@ class DataGroup(object):
             subsampling in output array for transformation
         order: int (0-5)
             order of spline interpolation
-        jfactor: float
+        jfactor: float/array
             Jacobian of transformation (basically the increase in pixel area)
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
@@ -1134,12 +1162,12 @@ class DataGroup(object):
         if subsample > 1:
             intermediate_shape = tuple(x for length in output_shape
                                        for x in (length, subsample))
-            out_array = out_array.reshape(intermediate_shape).\
+            out_array = (jfactor * out_array).reshape(intermediate_shape).\
                 mean(tuple(range(len(output_shape)*2-1, 0, -2))).\
                 reshape(output_shape)
 
         if threshold is None:
-            self.output_arrays[output_key] = (jfactor * out_array).astype(dtype)
+            self.output_arrays[output_key] = out_array.astype(dtype)
         else:
             self.output_arrays[output_key] = np.where(abs(out_array) > threshold,
                                                       True, False)

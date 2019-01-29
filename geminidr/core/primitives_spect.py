@@ -413,16 +413,18 @@ class Spect(PrimitivesBASE):
                                 format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                # Recreate wavelength solution
+                # Recreate wavelength solution and construct inverse
                 order = int(coeffs[2])
                 kwargs = {"domain": [*coeffs[:2].data.astype(int)]}
                 kwargs.update({"c{}".format(i): value
                                for i, value in enumerate(coeffs[3: 4+order])})
                 cheb = models.Chebyshev1D(degree=order, **kwargs)
-                cheb.inverse = _make_inverse_chebyshev(cheb, rms=0.1)
-                linear_model = models.Polynomial1D(degree=1, c0=-w1/dw, c1=1./dw)
-                linear_model.inverse = models.Polynomial1D(degree=1, c0=w1, c1=dw)
-                transform = Transform([cheb, linear_model])
+                cheb.inverse = _make_inverse_chebyshev1d(cheb, rms=0.1)
+                transform = Transform(cheb)
+
+                # Linearization (and inverse)
+                transform.append(models.Shift(-w1))
+                transform.append(models.Scale(1./dw))
 
                 # If we resample to a coarser pixel scale, we may interpolate
                 # over features. We avoid this by subsampling back to the
@@ -434,7 +436,9 @@ class Spect(PrimitivesBASE):
 
                 dg = DataGroup([ext], [transform])
                 dg.output_shape = (npix,)
-                output_dict = dg.transform(attributes=attributes, subsample=subsample)
+                output_dict = dg.transform(attributes=attributes, subsample=subsample,
+                                           conserve=conserve)
+                print(dg.jfactors)
                 for key, value in output_dict.items():
                     setattr(ext, key, value)
 
@@ -630,7 +634,7 @@ def plot_arc_fit(data, peaks, arc_lines, model, title):
     ax.set_xlabel("Wavelength (nm)")
     ax.set_title(title)
 
-def _make_inverse_chebyshev(model, sampling=1, rms=None):
+def _make_inverse_chebyshev1d(model, sampling=1, rms=None):
     """
     This creates a Chebyshev1D model that attempts to be the inverse of
     the model provided.

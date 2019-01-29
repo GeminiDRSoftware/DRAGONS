@@ -37,7 +37,5 @@ class linearizeSpectraConfig(config.Config):
         config.Config.validate(self)
         if [self.w1, self.w2, self.dw, self.npix].count(None) != 1:
             raise ValueError("Exactly 3 of w1, w2, dw, npix must be specified")
-        if self.w1 is not None and self.w2 is not None and not (self.w2 > self.w1):
+        if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
-        if self.conserve:
-            raise NotImplementedError("Flux conservation not yet implemented!")
