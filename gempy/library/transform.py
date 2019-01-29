@@ -746,7 +746,6 @@ class GeoMap(object):
         self._shape = shape
         if input_shape is None:
             input_shape = shape
-        transformed = self._transform(*grids)
         transformed = (self._transform(*grids) if len(shape) > 1
                        else self._transform(grids))
         transformed = [np.where(coord > length-1, -1, coord).astype(np.float32)
@@ -865,7 +864,7 @@ class DataGroup(object):
         self.origin = tuple(min_ for min_, max_ in limits)
 
     def transform(self, attributes=['data'],
-                  order=3, subsample=1, threshold=0.01, parallel=True):
+                  order=3, subsample=1, threshold=0.01, parallel=False):
         """
         This method transforms and combines the arrays into a single output
         array. The inputs, after transforming, shouldn't interfere with each
@@ -921,16 +920,27 @@ class DataGroup(object):
             output_array_shape = tuple(max_ - min_ for min_, max_ in output_corners)
 
             # Create a mapping from output pixel to input pixels
-            integer_shift = False
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
             jfactor = abs(np.linalg.det(mapping.matrix))
             self.jfactors.append(jfactor)
-            if transform.is_affine:
-                integer_shift = (np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
+            integer_shift = (transform.is_affine
+                and np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
                                  np.array_equal(mapping.offset, mapping.offset.astype(int)))
-            else:
-                mapping = GeoMap(transform, output_array_shape,
-                                 input_shape=input_array.shape)
+
+            if not integer_shift:
+                # Apply scale and shift for subsampling. Recall that (0,0) is the middle of
+                # the pixel, not the corner, so a shift is required as well.
+                if subsample > 1:
+                    rescale = reduce(Model.__and__, [models.Scale(subsample)] * transform.ndim)
+                    rescale_shift = reduce(Model.__and__, [models.Shift(0.5 * (subsample - 1))] * transform.ndim)
+                    transform.append([rescale, rescale_shift])
+
+                trans_output_shape = tuple(length * subsample for length in output_array_shape)
+                if transform.is_affine:
+                    mapping = transform.inverse.affine_matrices(shape=trans_output_shape)
+                else:
+                    mapping = GeoMap(transform, trans_output_shape,
+                                     input_shape=input_array.shape)
 
             for attr in attributes:
                 if isinstance(input_array, np.ndarray) and attr == "data":
@@ -1041,13 +1051,6 @@ class DataGroup(object):
         new_max_coords = [min(c, s) for c, s in zip(max_coords, self.output_shape[::-1])]
         shift = reduce(Model.__and__, [models.Shift(-c) for c in new_min_coords])
         transform.append(shift.rename("Region offset"))
-
-        # Apply scale and shift for subsampling. Recall that (0,0) is the middle of
-        # the pixel, not the corner, so a shift is required as well.
-        if subsample > 1:
-            rescale = reduce(Model.__and__, [models.Scale(subsample)] * transform.ndim)
-            rescale_shift = reduce(Model.__and__, [models.Shift(0.5*(subsample-1))] * transform.ndim)
-            transform.append([rescale, rescale_shift])
 
         output_corners = tuple((min_, max_) for min_, max_ in
                                zip(new_min_coords, new_max_coords))[::-1]
@@ -1234,7 +1237,7 @@ class AstroDataGroup(DataGroup):
             raise ValueError("Cannot locate EXTVER {}".format(extver))
 
     def transform(self, attributes=None, order=3, subsample=1,
-                  threshold=0.01, parallel=True, process_objcat=False):
+                  threshold=0.01, parallel=False, process_objcat=False):
         if attributes is None:
             attributes = [attr for attr in self.array_attributes
                           if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
