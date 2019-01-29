@@ -29,7 +29,7 @@ from collections import defaultdict
 
 __version__ = '2.0'
 
-DEFAULT_DIRECTORY = '/tmp'
+DEFAULT_DIRECTORY = '/.geminidr'
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 

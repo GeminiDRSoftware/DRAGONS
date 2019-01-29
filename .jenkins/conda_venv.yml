@@ -17,4 +17,5 @@ dependencies:
   - conda-forge::twine
   - omnia::behave
   - pip:
+    - pytest-cov
     - stsci.numdisplay
