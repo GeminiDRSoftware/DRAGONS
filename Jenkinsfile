@@ -66,29 +66,13 @@ pipeline {
   //              pylint --disable=C astrodata || true
   //              '''
   //    }
-  //    post{
-  //      always{
-  //        step([$class: 'CoberturaPublisher',
-  //            autoUpdateHealth: false,
-  //            autoUpdateStability: false,
-  //            coberturaReportFile: 'reports/coverage.xml',
-  //            failNoReports: false,
-  //            failUnhealthy: false,
-  //            failUnstable: false,
-  //            maxNumberOfBuilds: 10,
-  //            onlyStable: false,
-  //            sourceEncoding: 'ASCII',
-  //            zoomCoverageChart: false])
-  //      }
-  //    }
-  //  } // stage: static code metrics
 
-    stage('Unit tests') {
+
+    stage('Unit tests and Code Coverage') {
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                pytest recipe_system gemini_instruments astrodata \
-                    geminidr/f2 --ad_test_data_path ${TEST_PATH} \
-                    --junit-xml test-reports/results.xml
+                coverage run -m pytest --junit-xml ./reports/test_results.xml
+                coverage xml -o ./reports/coverage.xml
                 '''
       }
       post {
@@ -96,11 +80,36 @@ pipeline {
           // Archive unit tests for the future
           junit (
             allowEmptyResults: true,
-            testResults: 'test-reports/results.xml'
+            testResults: 'reports/test_results.xml'
             )
+          step([$class: 'CoberturaPublisher',
+            autoUpdateHealth: false,
+            autoUpdateStability: false,
+            coberturaReportFile: 'reports/coverage.xml',
+            failNoReports: false,
+            failUnhealthy: false,
+            failUnstable: false,
+            maxNumberOfBuilds: 10,
+            onlyStable: false,
+            sourceEncoding: 'ASCII',
+            zoomCoverageChart: false])
         }
       }
     } // stage: unit tests
+
+    stage('Test coverage') {
+      steps {
+        echo "PEP8 style check"
+        sh  ''' source activate ${BUILD_TAG}
+                pylint --disable=C astrodata || true
+                '''
+      }
+      post{
+        always{
+
+        } // always
+      } post
+    } // stage: static code metrics
 
     stage('Build package') {
       when {
