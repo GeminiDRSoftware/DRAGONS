@@ -77,7 +77,6 @@ pipeline {
       }
       post {
         always {
-          // Archive unit tests for the future
           junit (
             allowEmptyResults: true,
             testResults: 'reports/test_results.xml'
@@ -96,20 +95,6 @@ pipeline {
         }
       }
     } // stage: unit tests
-
-    stage('Test coverage') {
-      steps {
-        echo "PEP8 style check"
-        sh  ''' source activate ${BUILD_TAG}
-                pylint --disable=C astrodata || true
-                '''
-      }
-      post{
-        always{
-
-        } // always
-      } post
-    } // stage: static code metrics
 
     stage('Build package') {
       when {
