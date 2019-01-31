@@ -35,9 +35,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 import astrodata, gemini_instruments
 
+from .matching import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
-
-from datetime import datetime
 
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
@@ -125,19 +124,13 @@ class Block(object):
         # If we're looking for the .data attributes, this may just be the
         # element, if they're ndarrays. We should handle a mix of ndarrays
         # and NDData-like objects.
-        # NB ndarray.data returns a "memoryview" object in recent numpy
         if name == "data":
             attributes = [el if not isinstance(attr, np.ndarray) else attr
                           for el, attr in zip(self._elements, attributes)]
 
         if any(isinstance(attr, np.ndarray) for attr in attributes):
-            try:
-                return self._return_array(attributes)
-            except AttributeError as e:
-                if name == "data":
-                    return self._return_array(self._elements)
-                else:
-                    raise e
+            return self._return_array(attributes)
+
         # Handle Tables
         if any(isinstance(attr, table.Table) for attr in attributes):
             return self._return_table(name)
@@ -260,28 +253,39 @@ class Transform(object):
         transform._affine = self._affine
         return transform
 
+    def copy(self):
+        return copy.deepcopy(self)
+
     def __getattr__(self, key):
         """
         The is_affine property and asModel() method should be used to extract
         information, so attributes are intended to refer to the component
-        models, and only make sense if the Transform has a single model.
+        models, and only make sense if this attribute is unique among the models.
         """
-        if len(self) == 1:
-            return getattr(self._models[0], key)
-        raise AttributeError("Can only get attributes from single-model Transforms")
+        values = []
+        for m in self._models:
+            try:
+                values.append(getattr(m, key))
+            except AttributeError:
+                pass
+        if len(values) == 1:
+            return values.pop()
+        raise AttributeError("Attribute '{}' found on {} models".
+                             format(key, len(values)))
 
     def __setattr__(self, key, value):
         """
         It is assumed that we're setting attributes of the component models.
         We are allowed to set an attribute on multiple models (e.g., name),
-        if that attribute exists on all models. Otherwise, it's set on the
-        Transform object.
+        if that attribute exists on all models, or only a single model.
         """
         if key not in ("_models", "_affine", "_ndim"):
-            if all(hasattr(m, key) for m in self._models):
-                for m in self._models:
+            models = [m for m in self._models if hasattr(m, key)]
+            if len(models) in (1, len(self)):
+                for m in models:
                     setattr(m, key, value)
                 return
+            raise AttributeError("Cannot set attribute '{}'".format(key))
         return object.__setattr__(self, key, value)
 
     def __getitem__(self, key):
@@ -342,7 +346,6 @@ class Transform(object):
     @property
     def inverse(self):
         """The inverse transform"""
-        # ndim is only used by __init__() if the model is empty
         return self.__class__([m.inverse for m in self._models[::-1]])
 
     @property
@@ -533,9 +536,16 @@ class Transform(object):
         # ensuring the sequence is the same length and the submodels are the
         # same (so no need to re-check the affinity)
         if len(sequence) == len(self):
-            for new, old in zip(model, self.asModel()):
+            for new, old in zip(sequence, self._models):
                 if new.__class__ != old.__class__:
                     break
+                try:
+                    newsubs, oldsubs = new._submodels, old._submodels
+                except AttributeError:
+                    continue
+                for newsub, oldsub in zip(newsubs, oldsubs):
+                    if newsub.__class__ != oldsub.__class__:
+                        break
             for i, m in enumerate(sequence):
                 self._models[i] = m.rename(self[i].name)
             return
@@ -596,11 +606,19 @@ class Transform(object):
         points = np.array([halfsize] * (2*ndim+1)).T
         points[:,1:ndim+1] += np.eye(ndim) * points[:,0]
         points[:,ndim+1:] -= np.eye(ndim) * points[:,0]
-        transformed = np.array(list(zip(*self.__call__(*points))))
+        if ndim > 1:
+            transformed = np.array(list(zip(*self.__call__(*points))))
+        else:
+            transformed = np.array([self.__call__(*points)]).T
         matrix = np.array([[0.5 * (transformed[j+1,i] - transformed[ndim+j+1,i]) / halfsize[j]
                             for j in range(ndim)] for i in range(ndim)])
         offset = transformed[0] - np.dot(matrix, halfsize)
         return AffineMatrices(matrix.T, offset[::-1])
+
+    def add_bounds(self, param, range):
+        """Add bounds to a parameter"""
+        value = getattr(self, param).value
+        getattr(self, param).bounds = (value - range, value + range)
 
     def info(self):
         """Print out something vaguely intelligible for debugging purposes"""
@@ -610,7 +628,7 @@ class Transform(object):
             msg.append(repr(model))
         return new_line_indent.join(msg)
 
-    def apply(self, input_array, output_shape, cval=0, inverse=False):
+    def apply(self, input_array, output_shape, order=1, cval=0, inverse=False):
         """
         Apply the transform to the pixels of the input array. Recall that the
         scipy.ndimage functions need to know where in the input_array to find
@@ -626,6 +644,8 @@ class Transform(object):
             the input "image"
         output_shape: sequence
             shape of the output array
+        order: int (0-5)
+            order of interpolation
         cval: float-like
             value to use where there's no pixel data
         inverse: bool
@@ -641,22 +661,71 @@ class Transform(object):
             else:
                 matrix, offset = self.inverse.affine_matrices(input_array.shape)
             output_array = ndimage.affine_transform(input_array, matrix, offset,
-                                                    output_shape, cval=cval)
+                                        output_shape, order=order, cval=cval)
         else:
-            mapping = GeoMap(self, output_shape, input_shape=input_array.shape,
-                             inverse=inverse)
-            output_array = ndimage.geometric_transform(input_array, mapping,
-                                                       output_shape, cval=cval)
+            mapping = GeoMap(self, output_shape, inverse=inverse)
+            output_array = ndimage.map_coordinates(input_array, mapping.coords,
+                                        output_shape, order=order, cval=cval)
         return output_array
 
+    @classmethod
+    def create2d(cls, translation=(0, 0), rotation=None, magnification=None,
+                 shape=None, center=None):
+        """
+        Creates a Transform object with any/all of shift/rotate/scale,
+        with appropriately named models for easy modification.
+
+        Parameters
+        ----------
+        translation: 2-tuple/None
+            translation IN X, Y ORDER (if None, no translation)
+        rotation: float/None
+            rotation angle in degrees (if None, no rotation)
+        magnification: float/None
+            magnification factor (if None, no magnification)
+        shape: 2-tuple/None
+            shape IN PYTHON ORDER: if provided, the model does a centering
+            shift before the other models, and an uncentering shift at the end
+        center: 2-tuple/None
+            alternatively, simply provide the center
+        """
+        transform = cls()
+        need_to_center = rotation is not None or magnification is not None
+        if need_to_center:
+            if center is None and shape is not None:
+                center = [0.5 * (s - 1) for s in shape]
+                shape = None
+            if center is not None:
+                if shape is not None:
+                    raise ValueError("Cannot create Transform with both center and shape")
+                # We use regular Shift instead of Shift2D so only the
+                # translation model has "x_offset" and "y_offset"
+                # The longwinded approach is required because of an astropy bug
+                shift0 = models.Shift(center[0])
+                shift0.offset.fixed = True
+                shift1 = models.Shift(center[1])
+                shift1.offset.fixed = True
+                shift = shift1 & shift0
+                transform.append(shift)
+        if translation is not None:
+            transform.append(Shift2D(*translation).rename("Translate"))
+        if rotation is not None:
+            transform.append(Rotate2D(rotation).rename("Rotate"))
+        if magnification is not None:
+            transform.append(Scale2D(magnification).rename("Magnify"))
+        if need_to_center and center is not None:
+            transform.append(transform[0].inverse)
+        return transform
 #----------------------------------------------------------------------------------
 
 class GeoMap(object):
     """
-    Needed to create a callable object for the geometric_transform. Stores ndim
-    mapping arrays (one for each axis) and provides a callable that returns
-    the value of the array at the location of the tuple passed to that function.
-    The coordinates are stored in x-first order.
+    Class to store ndim mapping arrays (one for each axis) indicating the
+    coordinates in the input frame that each coordinate in the output frame
+    transforms back to. The "coords" attribute can be sent directly to
+    scipy.ndimage.map_coordinates(). This is created as a class to provide
+    the affinity() function describing how good the affine approximation is
+    (although this is not yet used in the codebase).
 
     Parameters
     ----------
@@ -664,26 +733,18 @@ class GeoMap(object):
         the transformation
     shape: tuple
         shape of output array
-    input_shape: tuple
-        shape of input array
     inverse: bool
         if True, then the transform is already the output->input transform,
         and doesn't need to be inverted
     """
-    def __init__(self, transform, shape, input_shape=None, inverse=False):
+    def __init__(self, transform, shape, inverse=False):
+        # X then Y (for Transform)
         grids = np.meshgrid(*(np.arange(length) for length in shape[::-1]))
         self._transform = transform if inverse else transform.inverse
         self._shape = shape
-        if input_shape is None:
-            input_shape = shape
-        transformed = self._transform(*grids)
-        transformed = [np.where(coord > length-1, -1, coord).astype(np.float32)
-                       for coord, length in zip(transformed, input_shape[::-1])]
-        self._map = transformed
-
-    def __call__(self, coords):
-        # Return in standard python order
-        return tuple(map_[coords] for map_ in self._map[::-1])
+        transformed = (self._transform(*grids)[::-1] if len(shape) > 1
+                       else self._transform(grids))
+        self.coords = [coord.astype(np.float32) for coord in transformed]
 
     def affinity(self):
         """
@@ -694,13 +755,12 @@ class GeoMap(object):
         tuple: rms and maximum deviation in input-frame pixels
         """
         mapping = self._transform.affine_matrices(shape=self._shape)
-        grids = np.meshgrid(*(np.arange(length) for length in self._shape[::-1]))[::-1]
+        # Y then X (for scipy.ndimage)
+        grids = np.meshgrid(*(np.arange(length) for length in self._shape), indexing='ij')
         offset_array = np.array(mapping.offset).reshape(len(grids), 1)
         affine_coords = (np.dot(mapping.matrix, np.array([grid.flatten() for grid in grids]))
                          + offset_array).astype(np.float32).reshape(len(grids), *self._shape)
-        for i, length in enumerate(self._shape):
-            affine_coords[i][affine_coords[i] > length-1] = -1
-        offsets = np.sum(np.square(np.array(self.__call__(grids)) - affine_coords), axis=0)
+        offsets = np.sum(np.square(self.coords - affine_coords), axis=0)
         return np.sqrt(np.mean(offsets)), np.sqrt(np.max(offsets))
 
 #----------------------------------------------------------------------------------
@@ -792,8 +852,8 @@ class DataGroup(object):
         self.output_shape = tuple(max_ - min_ for min_, max_ in limits)
         self.origin = tuple(min_ for min_, max_ in limits)
 
-    def transform(self, attributes=['data'],
-                  order=3, subsample=1, threshold=0.01, parallel=False):
+    def transform(self, attributes=['data'], order=1, subsample=1,
+                  threshold=0.01, conserve=False, parallel=False):
         """
         This method transforms and combines the arrays into a single output
         array. The inputs, after transforming, shouldn't interfere with each
@@ -814,6 +874,8 @@ class DataGroup(object):
         threshold: float
             for bitmask arrays, the fraction that needs to be exceeded
             for the bit to be set in the output
+        conserve: bool
+            conserve flux by applying Jacobian?
         parallel: bool
             perform operations in parallel using multiprocessing?
 
@@ -821,8 +883,6 @@ class DataGroup(object):
         -------
         dict: {key: array} of arrays containing the transformed attributes
         """
-        start = datetime.now()
-
         if parallel:
             processes = []
             process_keys = []
@@ -849,16 +909,52 @@ class DataGroup(object):
             output_array_shape = tuple(max_ - min_ for min_, max_ in output_corners)
 
             # Create a mapping from output pixel to input pixels
-            integer_shift = False
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
             jfactor = abs(np.linalg.det(mapping.matrix))
+            if not conserve:
+                jfactor = 1
             self.jfactors.append(jfactor)
-            if transform.is_affine:
-                integer_shift = (np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
+
+            integer_shift = (transform.is_affine
+                and np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
                                  np.array_equal(mapping.offset, mapping.offset.astype(int)))
-            else:
-                mapping = GeoMap(transform, output_array_shape,
-                                 input_shape=input_array.shape)
+
+            if not integer_shift:
+                ndim = transform.ndim
+                # Apply scale and shift for subsampling. Recall that (0,0) is the middle of
+                # the pixel, not the corner, so a shift is required as well.
+                if subsample > 1:
+                    rescale = reduce(Model.__and__, [models.Scale(subsample)] * ndim)
+                    rescale_shift = reduce(Model.__and__, [models.Shift(0.5 * (subsample - 1))] * ndim)
+                    transform.append([rescale, rescale_shift])
+
+                trans_output_shape = tuple(length * subsample for length in output_array_shape)
+                if transform.is_affine:
+                    mapping = transform.inverse.affine_matrices(shape=trans_output_shape)
+                else:
+                    # If we're conserving the flux, we need to compute the
+                    # Jacobian at every input point. This is done by numerical
+                    # derivatives so expand the output pixel grid.
+                    if conserve:
+                        jacobian_shape = tuple(length + 2 for length in trans_output_shape)
+                        transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
+                        jacobian_mapping = GeoMap(transform, jacobian_shape)
+                        det_matrices = np.empty((ndim, ndim, np.multiply.reduce(trans_output_shape)))
+                        for num_axis in range(ndim):
+                            coords = jacobian_mapping.coords[num_axis]
+                            for denom_axis in range(ndim):
+                                diff_coords = coords - np.roll(coords, 2, axis=denom_axis)
+                                slice_ = [slice(1, -1)] * ndim
+                                slice_[denom_axis] = slice(2, None)
+                                # Account for the fact that we are measuring
+                                # differences in the subsampled plane
+                                det_matrices[num_axis, denom_axis] = \
+                                    diff_coords[slice_].flatten() / (2*subsample)
+                        jfactor = 1. / abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
+                        # Delete the extra Shift(1) and put a better jfactor in the list
+                        del transform[-1]
+                        self.jfactors[-1] = np.mean(jfactor)
+                    mapping = GeoMap(transform, trans_output_shape)
 
             for attr in attributes:
                 if isinstance(input_array, np.ndarray) and attr == "data":
@@ -955,6 +1051,8 @@ class DataGroup(object):
         # Invert from standard python order to (x, y[, z]) order
         corners = np.array(at.get_corners(input_array.shape)).T[::-1]
         trans_corners = transform(*corners)
+        if len(input_array.shape) == 1:
+            trans_corners = (trans_corners,)
         self.corners.append(trans_corners)
         min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
         max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
@@ -967,13 +1065,6 @@ class DataGroup(object):
         new_max_coords = [min(c, s) for c, s in zip(max_coords, self.output_shape[::-1])]
         shift = reduce(Model.__and__, [models.Shift(-c) for c in new_min_coords])
         transform.append(shift.rename("Region offset"))
-
-        # Apply scale and shift for subsampling. Recall that (0,0) is the middle of
-        # the pixel, not the corner, so a shift is required as well.
-        if subsample > 1:
-            rescale = reduce(Model.__and__, [models.Scale(subsample)] * transform.ndim)
-            rescale_shift = reduce(Model.__and__, [models.Shift(0.5*(subsample-1))] * transform.ndim)
-            transform.append([rescale, rescale_shift])
 
         output_corners = tuple((min_, max_) for min_, max_ in
                                zip(new_min_coords, new_max_coords))[::-1]
@@ -1013,7 +1104,7 @@ class DataGroup(object):
 
     def _apply_geometric_transform(self, input_array, mapping, output_key,
                                    output_shape, cval=0., dtype=np.float32,
-                                   threshold=None, subsample=1, order=3,
+                                   threshold=None, subsample=1, order=1,
                                    jfactor=1):
         """
         None-returning function to apply geometric transform, so it can be used
@@ -1040,16 +1131,17 @@ class DataGroup(object):
             subsampling in output array for transformation
         order: int (0-5)
             order of spline interpolation
-        jfactor: float
+        jfactor: float/array
             Jacobian of transformation (basically the increase in pixel area)
         """
         trans_output_shape = tuple(length * subsample for length in output_shape)
         if isinstance(mapping, GeoMap):
-            out_array = ndimage.geometric_transform(input_array, mapping, trans_output_shape,
-                                            cval=cval, order=order)
+            out_array = ndimage.map_coordinates(input_array, mapping.coords,
+                                                cval=cval, order=order)
         else:
-            out_array = ndimage.affine_transform(input_array, mapping.matrix, mapping.offset,
-                                         trans_output_shape, cval=cval, order=order)
+            out_array = ndimage.affine_transform(input_array, mapping.matrix,
+                                                 mapping.offset, trans_output_shape,
+                                                 cval=cval, order=order)
 
         # We average to undo the subsampling. This retains the "threshold" and
         # conserves flux according to the Jacobian of input/output arrays.
@@ -1057,12 +1149,12 @@ class DataGroup(object):
         if subsample > 1:
             intermediate_shape = tuple(x for length in output_shape
                                        for x in (length, subsample))
-            out_array = out_array.reshape(intermediate_shape).\
+            out_array = (jfactor * out_array).reshape(intermediate_shape).\
                 mean(tuple(range(len(output_shape)*2-1, 0, -2))).\
                 reshape(output_shape)
 
         if threshold is None:
-            self.output_arrays[output_key] = (jfactor * out_array).astype(dtype)
+            self.output_arrays[output_key] = out_array.astype(dtype)
         else:
             self.output_arrays[output_key] = np.where(abs(out_array) > threshold,
                                                       True, False)
@@ -1159,8 +1251,8 @@ class AstroDataGroup(DataGroup):
         if self.ref_array is None:
             raise ValueError("Cannot locate EXTVER {}".format(extver))
 
-    def transform(self, attributes=None, order=3, subsample=1,
-                  threshold=0.01, parallel=True, process_objcat=False):
+    def transform(self, attributes=None, order=1, subsample=1, threshold=0.01,
+                  conserve=False, parallel=False, process_objcat=False):
         if attributes is None:
             attributes = [attr for attr in self.array_attributes
                           if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
@@ -1171,7 +1263,8 @@ class AstroDataGroup(DataGroup):
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
         super(AstroDataGroup, self).transform(attributes=attributes, order=order,
-                            subsample=subsample, threshold=threshold, parallel=parallel)
+                                              subsample=subsample, threshold=threshold,
+                                              conserve=conserve, parallel=parallel)
 
         # Create the output AD object
         ref_ext = self._arrays[self.ref_array][self.ref_index]
@@ -1191,6 +1284,9 @@ class AstroDataGroup(DataGroup):
         reflect the work done.
         """
         ndim = len(ad[0].shape)
+        if ndim != 2:
+            self.log.warning("The updating of header keywords has only been "
+                             "fully tested for 2D data.")
         header = ad[0].hdr
         keywords = {sec: ad._keyword_for('{}_section'.format(sec))
                                        for sec in ('array', 'data', 'detector')}
