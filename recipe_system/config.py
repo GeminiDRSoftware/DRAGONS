@@ -142,7 +142,11 @@ class ConfigObject(object):
             values = {}
 
             for key in cp.options(section):
-                values[key] = translate.from_config_file(section, key)
+                try:
+                    values[key] = os.path.expanduser(
+                        translate.from_config_file(section, key))
+                except AttributeError:
+                    values[key] = translate.from_config_file(section, key)
 
             if env_override:
                 for key in values:
