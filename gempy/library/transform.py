@@ -129,8 +129,13 @@ class Block(object):
                           for el, attr in zip(self._elements, attributes)]
 
         if any(isinstance(attr, np.ndarray) for attr in attributes):
-            return self._return_array(attributes)
-
+            try:
+                return self._return_array(attributes)
+            except AttributeError as e:
+                if name == "data":
+                    return self._return_array(self._elements)
+                else:
+                    raise e
         # Handle Tables
         if any(isinstance(attr, table.Table) for attr in attributes):
             return self._return_table(name)
@@ -1152,9 +1157,10 @@ class DataGroup(object):
             out_array = (jfactor * out_array).reshape(intermediate_shape).\
                 mean(tuple(range(len(output_shape)*2-1, 0, -2))).\
                 reshape(output_shape)
+            jfactor = 1  # Since we've done it
 
         if threshold is None:
-            self.output_arrays[output_key] = out_array.astype(dtype)
+            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype)
         else:
             self.output_arrays[output_key] = np.where(abs(out_array) > threshold,
                                                       True, False)
