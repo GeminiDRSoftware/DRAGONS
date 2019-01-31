@@ -902,6 +902,9 @@ class DataGroup(object):
         self.corners = []
         self.jfactors = []
 
+        if subsample > 1:
+            self.log.warning("Subsampling has not been fully tested")
+
         for input_array, transform in zip(self._arrays, self._transforms):
             # Since this may be modified, deepcopy to preserve the one if
             # the DataGroup's _transforms list
