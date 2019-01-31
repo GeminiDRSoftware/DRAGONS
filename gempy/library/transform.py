@@ -941,6 +941,8 @@ class DataGroup(object):
                     # Jacobian at every input point. This is done by numerical
                     # derivatives so expand the output pixel grid.
                     if conserve:
+                        self.log.warning("Flux conservation has not been fully"
+                                         "test for non-affine transforms")
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
                         transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
                         jacobian_mapping = GeoMap(transform, jacobian_shape)
