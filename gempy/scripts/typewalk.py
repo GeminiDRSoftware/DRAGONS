@@ -209,6 +209,9 @@ class DataSpider(object):
                     try:
                         fl = astrodata.open(fname)
                         dtypes = list(fl.tags)
+                    except AttributeError:
+                        print("     Bad headers in file: {}".format(tfile))
+                        continue
                     except IOError:
                         print("     Could not open file: {}".format(fname))
                         continue
