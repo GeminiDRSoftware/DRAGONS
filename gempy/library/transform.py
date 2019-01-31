@@ -744,13 +744,13 @@ class GeoMap(object):
         grids = np.meshgrid(*(np.arange(length) for length in shape[::-1]))
         self._transform = transform if inverse else transform.inverse
         self._shape = shape
-        if input_shape is None:
-            input_shape = shape
         transformed = (self._transform(*grids) if len(shape) > 1
                        else self._transform(grids))
-        transformed = [np.where(coord > length-1, -1, coord).astype(np.float32)
-                       for coord, length in zip(transformed, input_shape[::-1])]
-        self._map = transformed
+        if input_shape is None:
+            self._map = [coord.astype(np.float32) for coord in transformed]
+        else:  # Need to replace values beyond length of input with -1
+            self._map = [np.where(coord > length-1, -1, coord).astype(np.float32)
+                         for coord, length in zip(transformed, input_shape[::-1])]
 
     def __call__(self, coords):
         # Return in standard python order
