@@ -1,12 +1,20 @@
-# GSAOI instrument geometry configuration parameters for 
-# gem_mosaic_function() in gemMosaicFunction.py
+# GSAOI geometry_conf.py module containing information
+# for Transform-based tileArrays/mosaicDetectors
 
-# for new tileArrays: (xgap, ygap)
+# for tileArrays(): key=detector_name(), value=(xgap, ygap) (unbinned pixels)
 tile_gaps = {
     'GSAOI': (145, 140)
 }
 
-# Shifts are (x, y) and include detector offsets
+# for mosaicDetectors(): key=detector_name(), value=dict
+# In this dict, each physical detector is keyed by the DETSEC coords (x,y) at its bottom-left
+# and can contain entries for: "shift" (x,y) -- (0,0) if absent
+#                               "rotation" (degrees counterclockwise) -- 0 if absent
+#                               "magnification" -- 1.0 if absent
+#                               "shape" (unbinned pixels) -- "default_shape" if absent
+#
+# The shifts are centre-to-centre differences between the detectors. Rotations are
+# performed about the centre of each detector.
 geometry = {
     'GSAOI': {'default_shape': (2048, 2048),
               (0, 0): {},
