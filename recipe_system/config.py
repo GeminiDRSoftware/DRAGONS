@@ -143,8 +143,8 @@ class ConfigObject(object):
 
             for key in cp.options(section):
                 try:
-                    values[key] = os.path.expanduser(
-                        translate.from_config_file(section, key))
+                    values[key] = os.path.expanduser(str(
+                        translate.from_config_file(section, key)))
                 except AttributeError:
                     values[key] = translate.from_config_file(section, key)
 
