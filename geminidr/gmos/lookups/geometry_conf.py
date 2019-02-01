@@ -1,8 +1,7 @@
+# GMOS geometry_conf.py module containing information
+# for Transform-based tileArrays/mosaicDetectors
 
-from copy import deepcopy
-
-# CJS stuff for Transform-based tileArrays/mosaicDetectors
-# for new tileArrays
+# for tileArrays(): key=detector_name(), value=gap (unbinned pixels)
 tile_gaps = {
     # GMOS-N
     'EEV9273-16-03EEV9273-20-04EEV9273-20-03': 37,
@@ -15,7 +14,15 @@ tile_gaps = {
     'BI5-36-4k-2,BI11-33-4k-1,BI12-34-4k-1': 61,
 }
 
-# Shifts are (x, y) and include detector offsets
+# for mosaicDetectors(): key=detector_name(), value=dict
+# In this dict, each CCD is keyed by the DETSEC coords (x,y) at its bottom-left
+# and can contain entries for: "shift" (x,y) -- (0,0) if absent
+#                               "rotation" (degrees counterclockwise) -- 0 if absent
+#                               "magnification" -- 1.0 if absent
+#                               "shape" (unbinned pixels) -- "default_shape" if absent
+#
+# The shifts are centre-to-centre differences between the CCDs. Rotations are
+# performed about the centre of each CCD.
 geometry = {
     # GMOS-N
     'EEV9273-16-03EEV9273-20-04EEV9273-20-03': {'default_shape': (2048, 4608),
