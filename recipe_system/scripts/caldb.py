@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!python
 #                                                                        DRAGONS
 #
 #                                                                       caldb.py
@@ -21,7 +21,9 @@ from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_C
 from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
 # ------------------------------------------------------------------------------
 
+
 def buildArgumentParser():
+
     parser = ArgumentParser(description="Calibration Database Management Tool")
     sub = parser.add_subparsers(help="Sub-command help", dest='action')
 
@@ -62,11 +64,13 @@ def buildArgumentParser():
 
     return parser, sub
 
+
 def usage(parser, message=None, stream=sys.stderr):
     if message is not None:
         log(message, stream, bold=True, add_newlines=1)
 
     parser.print_help(file=stream)
+
 
 def log(message, stream, bold=False, add_newlines=0):
     if stream is not None:
@@ -76,7 +80,9 @@ def log(message, stream, bold=False, add_newlines=0):
         if add_newlines > 0:
             print('\n' * add_newlines, file=stream)
 
+
 class Dispatcher(object):
+
     def __init__(self, parser, manager, log):
         self._parser = parser
         self._mgr = manager
@@ -179,9 +185,14 @@ class Dispatcher(object):
                 log(e.message, sys.stderr, bold=True)
             return -1
 
+
 if __name__ == '__main__':
     argp, subp = buildArgumentParser()
     args = argp.parse_args(sys.argv[1:])
+    if args.action is None:
+        msg = "\n\tNo action specified for caldb"
+        usage(argp, message=msg)
+        sys.exit(-1)
 
     conf = load_calconf()
 
