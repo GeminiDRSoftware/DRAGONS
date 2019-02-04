@@ -4,7 +4,9 @@ import os
 
 from recipe_system.cal_service import CalibrationService
 
-is_travis = 'TRAVIS' in os.environ
+on_travis = pytest.mark.skipif('TRAVIS' in os.environ,
+                               reason="Test won't run on Travis.")
+print('TRAVIS' in os.environ)
 
 
 @pytest.fixture
@@ -12,13 +14,13 @@ def caldb():
     return CalibrationService()
 
 
-@pytest.mark.skipif(is_travis, reason="Test won't run in TRAVIS")
+@on_travis
 def test_can_call_caldb_config(caldb):
 
     caldb.config()
 
 
-@pytest.mark.skipif(is_travis, reason="Test won't run in TRAVIS")
+@on_travis
 def test_can_call_caldb_init(caldb):
 
     caldb.config()
