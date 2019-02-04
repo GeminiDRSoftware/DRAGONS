@@ -2,8 +2,7 @@ astropy
 cython
 future
 ipython
+matplotlib
 numpy
 python-dateutil
 scipy
-
-
