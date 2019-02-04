@@ -205,15 +205,6 @@ todo_include_todos = True
 
 
 # -- Enable autoapi ----------------------------------------------------------
-def cythonize_library(_):
-    """
-    Function that will build libraries using Cython
-    """
-    from Cython.Build import cythonize
-
-
-
-
 def download_tutorial_data(_):
     """
     Method created to download data that will be used in the tutorial.
