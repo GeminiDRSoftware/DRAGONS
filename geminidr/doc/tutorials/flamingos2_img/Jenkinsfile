@@ -1,0 +1,78 @@
+#!/usr/bin/env groovy
+pipeline {
+
+    agent any
+
+    triggers {
+        pollSCM('H/15 * * * 1-5')
+    } // triggers
+
+    options {
+        skipDefaultCheckout(true)
+
+        // keep the 10 most recent builds
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+
+        timestamps()
+    } // options
+
+    environment {
+        PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
+    }
+
+    stages {
+
+        stage ("Code pull") {
+            steps {
+                checkout scm
+            }
+        } // stage: code pull
+
+        stage ("Download and Install Anaconda") {
+            steps {
+                sh '''if ! [ "$(command -v conda)" ]; then
+                          echo "Conda is not installed - Downloading and installing"
+                          curl https://repo.anaconda.com/archive/Anaconda3-5.3.1-Linux-x86_64.sh \\
+                              --output anaconda.sh --silent
+                          /bin/bash anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
+                          conda config --add channels http://ssb.stsci.edu/astroconda
+                          conda update --quiet conda
+                      fi
+                      '''
+          }
+        } // stage: download and install anaconda
+
+        stage ('Build environment') {
+            steps {
+            sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
+                  source activate ${BUILD_TAG}
+                  '''
+            }
+        } // stage: build environment
+
+        stage ('test environment') {
+            steps {
+                sh '''source activate ${BUILD_TAG}
+                      pip list
+                      which pip
+                      which python
+                      '''
+            }
+        } // stage: test environment
+
+        stage ('build sphinx') {
+            steps {
+                sh '''source activate ${BUILD_TAG}
+                      make html
+                      '''
+            }
+        } /// stage: build sphinx
+    }
+
+    post {
+        always {
+            sh 'conda remove --yes --quiet --all --n ${BUILD_TAG}'
+        }
+    }
+
+} // pipeline
