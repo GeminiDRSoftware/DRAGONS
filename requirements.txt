@@ -1,10 +1,9 @@
+astropy
 cython
 future
-pytest
-pylint
-coveralls
-python-dateutil
-psutil
+ipython
 numpy
+python-dateutil
 scipy
-astropy
+
+
