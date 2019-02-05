@@ -14,8 +14,10 @@ Tutorial Series - GSAOI Imaging Data Reduction with DRAGONS
    :numbered:
    :maxdepth: 2
    
-   intro
-   yourcontent
+   01_introduction
+   02_data_manipulation
+   03_data_reduction
+
    
 Appendix
 --------
