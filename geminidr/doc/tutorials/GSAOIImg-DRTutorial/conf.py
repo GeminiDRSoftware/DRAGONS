@@ -284,8 +284,7 @@ def download_tutorial_data(_):
     import requests
 
     base_url = 'https://archive.gemini.edu/file/'
-    filenames = ['S20130622S0040.fits',
-
+    filenames = ['S20171210S0063.fits',
                  ]
 
     for filename in filenames:
@@ -294,6 +293,8 @@ def download_tutorial_data(_):
             return
 
         else:
+
+            print('Download file: '.format(filename))
             r = requests.get(base_url + filename)
 
             with open(os.path.join(filename), 'wb') as f:
