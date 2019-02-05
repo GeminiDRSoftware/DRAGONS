@@ -9,6 +9,7 @@ filter_wavelengths = {
     'SII'   : 0.6720,
     'OVIC'  : 0.6790,
     'OVI'   : 0.6838,
+    'ri'    : 0.7054,  # custom user filter
     'CaT'   : 0.8600,
     'Z'     : 0.8760,
     'DS920' : 0.9200,
