@@ -1273,6 +1273,8 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             for ext in ad:
+                if ext.mask is None:
+                    ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
                 # make sure the 64 is an int16(64) else it will promote the DQ
                 # plane to int64
