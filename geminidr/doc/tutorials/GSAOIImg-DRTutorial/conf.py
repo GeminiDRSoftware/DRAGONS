@@ -277,36 +277,8 @@ intersphinx_mapping = {
 todo_include_todos=True
 
 
-def download_tutorial_data(_):
-    """
-    Method created to download data that will be used in the tutorial.
-    """
-    import requests
-
-    base_url = 'https://archive.gemini.edu/file/'
-    filenames = ['S20171210S0063.fits',
-                 ]
-
-    for filename in filenames:
-
-        if os.path.exists(filename):
-            return
-
-        else:
-
-            print('Download file: '.format(filename))
-            r = requests.get(base_url + filename)
-
-            with open(os.path.join(filename), 'wb') as f:
-                f.write(r.content)
-
-
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
     app.add_stylesheet('code.xref-styles.css')
-
-    # Automatic API generation
-    app.connect('builder-inited', download_tutorial_data)
-
