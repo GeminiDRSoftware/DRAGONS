@@ -12,20 +12,22 @@
 Introduction
 ************
 
-.. todo::
-
-    Write about this document
-
 This tutorial covers the basics on reducing
 `GSAOI <https://www.gemini.edu/sciops/instruments/gsaoi/>`_ (Gemini
 South Adaptive Optics Imager) data using `DRAGONS`_ (Data
 Reduction for Astronomy from Gemini Observatory North and
 South).
 
-.. _download_and_install_dragons:
+The next two sections explain what are the required software and the data set
+that we use throughout the tutorial.
+`Chapter 2: Data Reduction <command_line_data_reduction>`_ contains a
+quick example on how to reduce data using the DRAGONS command line tools.
 
-Download and Install DRAGONS
-============================
+
+.. _requirements:
+
+Requirements
+============
 
 `DRAGONS`_ requires several libraries that could be installed individually. Most
 of them can be obtained by `installing AstroConda`_. Just click the link and
