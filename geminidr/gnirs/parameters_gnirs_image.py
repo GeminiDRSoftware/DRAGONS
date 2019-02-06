@@ -1,6 +1,6 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_gnirs_image.py file, in alphabetical order.
-from geminidr.core import parameters_photometry, parameters_register, parameters_stack, parameters_standardize
+from geminidr.core import parameters_photometry, parameters_register, parameters_nearIR, parameters_standardize
 
 class addDQConfig(parameters_standardize.addDQConfig):
     def setDefaults(self):
@@ -27,3 +27,10 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
 class determineAstrometricSolutionConfig(parameters_register.determineAstrometricSolutionConfig):
     def setDefaults(self):
         self.initial = 15.
+
+class makeBPMConfig(parameters_nearIR.makeBPMConfig):
+    def setDefaults(self):
+        self.dark_lo_thresh = -20.
+        self.dark_hi_thresh = 100.
+        self.flat_lo_thresh = 0.1
+        self.flat_hi_thresh = 1.25

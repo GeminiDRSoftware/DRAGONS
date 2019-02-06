@@ -31,4 +31,22 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
+def makeProcessedBPM(p):
+    """
+    This recipe requires flats and *short* darks, not darks that match
+    the exptime of the flats.
+    """
+
+    p.prepare()
+    p.ADUToElectrons()
+    p.selectFromInputs(tags="DARK", outstream="darks")
+    p.selectFromInputs(tags="FLAT")
+    p.stackFrames(stream="darks")
+    p.makeLampFlat()
+    p.addIllumMaskToDQ()
+    p.normalizeFlat()
+    p.makeBPM()
+    #p.storeBPM()
+    return
+
 default = makeProcessedFlat
