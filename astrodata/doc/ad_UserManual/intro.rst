@@ -92,11 +92,12 @@ repository, the tar file or the conda package.
     $ source ~/anaconda/bin/activate
 
 #. Configure the ``conda`` package manager to look in the AstroConda channel
-    hosted by STScI.  This is a one-time step.  It affects current and future
-    Anaconda installations belonging to the same user on the same machine.::
+    hosted by STScI, and in the GEMINI Conda Channel. This is a one-time step.
+    It affects current and future Anaconda installations belonging to the same
+    user on the same machine.::
 
-    $ conda config --add channels http:/ssb.stsci.edu/astroconda
-
+    $ conda config --add channels http://ssb.stsci.edu/astroconda
+    $ conda config --add channels http://astroconda.gemini.edu/public
 
 #. Create an environment.
     To keep things clean, Anaconda offers virtual environments.  Each project
