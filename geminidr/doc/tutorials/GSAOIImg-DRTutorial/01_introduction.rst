@@ -35,17 +35,13 @@ machine. You can test that by typing the following commands:
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
 be installed. If you have an error message, make sure:
 
-    1. You have Conda properly installed;
+    - Conda is properly installed;
 
-    2. You have a conda environment called ``geminiconda`` (or whatever is the
-    name of your conda environment);
+    - A Conda Virtual Environment is properly created and is active;
 
-    3. `AstroConda <https://astroconda.readthedocs.io/>`_ is configured and
-    installed within the conda environment.
+    - AstroConda (STScI) is properly installed within the Virtual Environment;
 
-    4. `DRAGONS <https://dragons.readthedocs.io/>`_ is configured and installed
-    within the conda environment.
-
+    - DRAGONS was successfully installed within the Conda Virtual Environment;
 
 .. _download_sample_files:
 
