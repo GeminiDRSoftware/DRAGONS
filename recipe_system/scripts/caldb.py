@@ -188,7 +188,7 @@ class Dispatcher(object):
 
 if __name__ == '__main__':
     argp, subp = buildArgumentParser()
-    args = argp.parse_args(sys.argv[1:])
+    args = argp.parse_args()            #(sys.argv[1:])
     if args.action is None:
         msg = "\n\tNo action specified for caldb"
         usage(argp, message=msg)
