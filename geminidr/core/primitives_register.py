@@ -30,7 +30,7 @@ class Register(PrimitivesBASE):
         super(Register, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_register)
 
-    def matchWCSToReference(self, adinputs=None, **params):
+    def adjustWCSToReference(self, adinputs=None, **params):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
@@ -106,7 +106,7 @@ class Register(PrimitivesBASE):
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least "
                         "two input AstroData objects are required for "
-                        "matchWCSToReference")
+                        "adjustWCSToReference")
             return adinputs
 
         if not all(len(ad)==1 for ad in adinputs):
