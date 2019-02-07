@@ -1,8 +1,9 @@
 
 .. _command_line_data_reduction:
 
-Reducing F2 Images via Command Line
-===================================
+**************
+Data Reduction
+**************
 
 Before start, make sure you have:
 
@@ -24,19 +25,20 @@ For this tutorial, we will be also using other
 .. todo::
     Add `dataselect` to the supplemental tools
 
-This tutorial is written based on the `Flamingos 2 Cookbook <http://rashaw-science.org/F2_drc/>`_
-and will use the same data sets for Imaging and Long-Slit Spectroscopy.
+This tutorial is written based on information found in the `Flamingos-2
+WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_.
 
-It reduces images from the program GS-2013B-Q-15 (PI: Leggett), A Study of the
-450K Transition from T to Y Dwarf, and of the 350K Y Dwarfs. This team obtained
-images with Y, J, H, Ks filters of the T9-dwarf star WISE J041358.14-475039.3.
-See
-`Leggett et al. (2015) <https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_
+This tutorial will use images from the program GS-2013B-Q-15 (PI: Leggett), A
+Study of the 450K Transition from T to Y Dwarf, and of the 350K Y Dwarfs. This
+team obtained images with Y, J, H, Ks filters of the T9-dwarf star WISE
+J041358.14-475039.3. See `Leggett et al. (2015)
+<https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_
 for details of the science objectives and their data reduction procedure.
 
 
 Retrieve and Organize Data
---------------------------
+==========================
+
 This tutorial will use observations from program GS-2013B-Q-15 (PI:Leggett),
 NIR photometry of the faint T-dwarf star WISE J041358.14-475039.3, obtained on
 2013-Nov-21. Images of this sparse field were obtained in the Y, J, H, Ks bands
@@ -109,8 +111,8 @@ for details.
    separately. The exposure duratlsions above are noted in the ``obsConfig.yml`` file.
    We will use calibration exposures obtained within a few days of the observations.
 
-DARK MasterCal
---------------
+Process DARK files
+==================
 
 We usually start our data reduction by stacking the DARKS files that contains
 the same exposure time into a Master DARK file. Before we do that, let us create
@@ -128,7 +130,7 @@ time available. If you don't know what are the existing exposure times, you can
 
 ::
 
-    (my_venv) $ dataselect --tags DARK --xtags PROCESSED raw/*.fits |
+    $ dataselect --tags DARK --xtags PROCESSED raw/*.fits |
         showd -d exposure_time
 
 The following line creates a list of DARK files that were not processed and that
@@ -136,7 +138,7 @@ have exposure time of 20 seconds:
 
 ::
 
-   (my_venv) $ dataselect --tags DARK --xtags PROCESSED \
+   $ dataselect --tags DARK --xtags PROCESSED \
        --expr "exposure_time==20" raw/*.fits > darks_020s.list
 
 The `--tags` is a comma-separated argument that is used to select the files
@@ -151,7 +153,7 @@ Once we have the list of DARK files for each exposure time, we can use the
 
 ::
 
-    (my_venv) $ reduce @darks_020s.list
+    $ reduce @darks_020s.list
 
 Note the `@` character before the name of the file that contains the list of
 DARKS. This syntax was inherited from IRAF and also works with most of DRAGONS
@@ -164,14 +166,14 @@ same exposure times:
 
 ::
 
-    (my_venv) $ dataselect --tags DARK --xtags PROCESSED \
+    $ dataselect --tags DARK --xtags PROCESSED \
         --expr "exposure_time==120" raw/*.fits > darks_120s.list
 
 And then pass this list to the `reduce` command.
 
 ::
 
-    (my_venv) $ reduce @darks_120s.list
+    $ reduce @darks_120s.list
 
 
 
@@ -184,7 +186,7 @@ the database.
 
 ::
 
-    (my_env) $ for f in `ls *_dark.fits`; do caldb add ${f}; done
+    $ for f in `ls *_dark.fits`; do caldb add ${f}; done
 
 Now `reduce` will be able to find these files if needed while processing other
 data.
@@ -196,8 +198,8 @@ data.
     you have the same number of flats with LAMPON and LAMPOFF.
 
 
-Bad-Pixel-Mask MasterCal
-------------------------
+Create Bad-Pixel-Mask
+=====================
 
 The Bad Pixel Mask (BPM) can be built using a set of flat images with the
 lamps on and off and a set of short exposure dark files. Here, our shortest dark
@@ -214,17 +216,17 @@ not interfere in the results.
 
 ::
 
-    (my_env) $ dataselect --tags FLAT --xtags PREPARED \
+    $ dataselect --tags FLAT --xtags PREPARED \
         --expr "filter_name=='Y'" *.fits > flats_Y.list
-    (my_env) $ reduce @flats_Y.list @darks_020s.list -r makeProcessedBPM
+    $ reduce @flats_Y.list @darks_020s.list -r makeProcessedBPM
 
 Note that instead of creating a new list for the BP masks, we simply used a
 flat list followed by the dark list. Note also the `-r` tells `reduce` to use a
 different recipe instead of the default.
 
 
-Flat-Field MasterCal
---------------------
+Process Flat-Field images
+=========================
 
 Master Flats can also be created using the `reduce` command line with the default
 recipe. For that, we start creating the lists containing the corresponding files
@@ -232,7 +234,7 @@ for each filter:
 
 ::
 
-    (my_env) $ dataselect --tags FLAT --xtags PREPARED \
+    $ dataselect --tags FLAT --xtags PREPARED \
         --expr "filter_name=='Y'" *.fits > flats_Y.list
 
 .. note::
@@ -244,7 +246,7 @@ for each filter:
 
 ::
 
-    (my_env) $ reduce @flats_Y.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
+    $ reduce @flats_Y.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
 
 Here, the `-p` argument tells `reduce` to modify the `user_bpm` in the `addDQ`
 primitive. Then, we add the master flat file to the database so `reduce` can
@@ -252,7 +254,7 @@ find and use it when reducing the science files.
 
 ::
 
-    (my_env) $ caldb add S20131129S0320_flat.fits
+    $ caldb add S20131129S0320_flat.fits
 
 .. note::
 
@@ -262,8 +264,8 @@ find and use it when reducing the science files.
     consistent, except for sequential exposures. So it is best to combine
     lamps-off exposures from a single day.
 
-Reducing Science Images
------------------------
+Reduce Science Images
+=====================
 
 Now that we have the Master Dark and Master Flat images, we can tell `reduce`
 to process our data. `reduce` will look at the remote or at the local database
@@ -274,9 +276,9 @@ only on Y band images (`--expr 'filter_name=="Y"'`)
 
 ::
 
-    (my_env) $ dataselect --xtags CAL,BPM --expr 'filter_name=="Y"' \
+    $ dataselect --xtags CAL,BPM --expr 'filter_name=="Y"' \
         raw/*.fits > sci_images_Y.list
-    (my_env) $ reduce @sci_images_Y.list
+    $ reduce @sci_images_Y.list
 
 This command will subtract the master dark and apply flat correction. Then it
 will look for sky frames. If it does not find, it will use the science frames

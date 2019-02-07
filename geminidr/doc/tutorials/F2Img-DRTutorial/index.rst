@@ -3,7 +3,7 @@
 DRAGONS - Flamingos 2 Data Reduction Tutorial
 =============================================
 
-This is a brief tutorial on how to manipulate and reduce Flamingos 2 data
+This is a brief tutorial on how to manipulate and reduce Flamingos 2 images
 using DRAGONS (Data Reduction for Astronomy from Gemini Observatory North and
 South).
 
@@ -22,9 +22,8 @@ Flamingos 2 (F2) FITS file.
    :maxdepth: 2
    :caption: Table of Contents
 
-   get_ready
-   data_manipulation
-   command_line_data_reduction
+   01_get_ready
+   02_data_reduction
 
 Related Documents
 -----------------

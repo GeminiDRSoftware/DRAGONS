@@ -5,8 +5,9 @@
 
 .. _get_ready:
 
+*********
 Get Ready
-=========
+*********
 
 `DRAGONS`_ requires several libraries that could be installed individually but
 you can have all of them by `installing AstroConda <https://astroconda.readthedocs.io/en/latest/getting_started.html#getting-started-jump>`_.
