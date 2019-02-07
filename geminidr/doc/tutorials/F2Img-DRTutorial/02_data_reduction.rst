@@ -1,16 +1,17 @@
 
-.. _command_line_data_reduction:
+.. _data_reduction:
 
 **************
 Data Reduction
 **************
 
-Before start, make sure you have:
+This chapter will guide you on reducing **Flamingos-2 Images**. Before we start,
+make sure you have:
 
     - Anaconda is properly installed;
-    - A Virtual Environment was properly created and is active;
-    - AstroConda (STScI) is properly installed within the Virtual Environment;
-    - DRAGONS was successfully installed within the Virtual Environment;
+    - A Conda Environment was properly created and is active;
+    - AstroConda (STScI) is properly installed within the Conda Environment;
+    - DRAGONS was successfully installed within the Conda Environment;
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. One of the most important scripts is called
@@ -25,15 +26,11 @@ For this tutorial, we will be also using other
 .. todo::
     Add `dataselect` to the supplemental tools
 
-This tutorial is written based on information found in the `Flamingos-2
-WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_.
+.. todo::
+    Add `typewalk` to the supplemental tools
 
-This tutorial will use images from the program GS-2013B-Q-15 (PI: Leggett), A
-Study of the 450K Transition from T to Y Dwarf, and of the 350K Y Dwarfs. This
-team obtained images with Y, J, H, Ks filters of the T9-dwarf star WISE
-J041358.14-475039.3. See `Leggett et al. (2015)
-<https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_
-for details of the science objectives and their data reduction procedure.
+.. todo::
+    Add `showd` to the supplemental tools
 
 
 Retrieve and Organize Data
@@ -42,12 +39,24 @@ Retrieve and Organize Data
 This tutorial will use observations from program GS-2013B-Q-15 (PI:Leggett),
 NIR photometry of the faint T-dwarf star WISE J041358.14-475039.3, obtained on
 2013-Nov-21. Images of this sparse field were obtained in the Y, J, H, Ks bands
-using a dither sequence; dayCal darks and GCAL flats were obtained as well.
-Leggett, et al. (2015; [L15]) briefly describes the data reduction procedures
-they followed, which are similar to those described below.
+using a dither sequence; dayCal DARKS and GCAL flats were obtained as well.
+Leggett, et al. (2015; `[L15]
+<https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_)
+briefly describes the data reduction procedures they followed, which are
+similar to those described below.
 
-The first step is to retrieve the data from the Gemini Observatory Archive (see
-`Archive Searches <http://rashaw-science.org/F2_drc/GettingStarted.html#archive-search>`_).
+The first step is to retrieve the data from the Gemini Observatory Archive
+(GOA). For more details on using the Archive, check its
+`Help Page <https://archive.gemini.edu/help/index.html>`_. The link below takes
+you to the result obtained when searching for data that corresponds to the
+chosen program.
+
+::
+
+   https://archive.gemini.edu/searchform/GS-2013B-Q-15-39
+
+The bottom of the page contains a buttom to download the data. This data set
+
 
 The full data set contains 330 images and uses a total of 5.3 Gb of disk space.
 Each raw and unprocessed image has 17 Mb but some processed images have more.
@@ -55,6 +64,20 @@ The data reduction steps are almost the same for all filters so, for this tutori
 we will use a sub data set that contains only the images obtained with the Y
 filter and its calibrations. This sub-set has only 49 files and 786 Mb of disk
 space.
+
+
+The files can be downloaded by clicking directly
+`here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_
+or using copy-and-pasting the address below in your browser:
+
+::
+   https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical
+   #
+
+
+
+
+
 
 We now need retrieve exposures within about a month of the target exposures in
 2013 Nov 21. You may search the `GOA <https://archive.gemini.edu/searchform>`_
@@ -66,50 +89,27 @@ browser.
    # images of the WISE 0413-4750 target field:
    https://archive.gemini.edu/searchform/GS-2013B-Q-15-39/RAW/cols=CTOWEQ/NOTAO/filter=Y/notengineering/F2/imaging/20130101-20150701/AnyQA#
 
-
 After retrieving the science data, click the Load Associated Calibrations tab on
 the search results page and download the associated dark and flat-field
 exposures.
 
-Unpack all of them in a subdirectory of your working directory (assumed to be
-named /raw in this tutorial). Be sure to uncompress the files. See
-`Retrieving Data <http://rashaw-science.org/F2_drc/GettingStarted.html#retrieve-data>`_
-for details.
+Unpack all of them in a subdirectory of your working directory
+(assumed to be named /raw in this tutorial). Be sure to uncompress the files.
 
-.. Exposure Summary
-   ----------------
-   The data contain exposures of a specific science target and
-   `dayCal <http://rashaw-science.org/F2_drc/Glossary.html#term-daycal>`_
-   calibrations; see the table below for a summary. All exposures were obtained
-   with ``ReadMode = Bright``. The science exposures were obtained in a
-   :math:`3 \times 3` spatial dither pattern, with a spacing of about 15 arcsec in
-   each direction from the initial alignment (see
-   `IR Background Removal <http://rashaw-science.org/F2_drc/Supplement.html#ir-background>`_).
+::
 
-   ================ ======== =============== =====================
-    Target           Filter   Exposure Time   Number of Exposures
-   ================ ======== =============== =====================
-    WISE 0413-4750   Y        120 s           9
-    ...              J        60 s            9
-    ...              H        15 s            72
-    ...              Ks       15 s            72
-    Dark             ...      120 s           10
-    ...              ...      60 s            21
-    ...              ...      20 s            20
-    ...              ...      15 s            10
-    ...              ...      8 s             25
-    ...              ...      3 s             13
-    GCAL Flat	      Y        20 s            4 (on) / 6 (off)
-    ...              J        60 s            4 (on) / 6 (off)
-    ...              H        3 s             4 (on) / 6 (off)
-    ...              Ks       8 s             12 (off)
-   ================ ======== =============== =====================
+   $ cd <my_main_working_directory>
 
-   The GCAL exposures list those for
-   `Lamps-On <http://rashaw-science.org/F2_drc/Glossary.html#term-lamps-on>`_ and
-   `Lamps-Off <http://rashaw-science.org/F2_drc/Glossary.html#term-lamps-off>`_
-   separately. The exposure duratlsions above are noted in the ``obsConfig.yml`` file.
-   We will use calibration exposures obtained within a few days of the observations.
+   $ tar -xvf ...tar # extract calibration files from .TAR file
+
+   $ tar -xvf ...tar # extract science files from .TAR file
+
+   $ bunzip2 *.fits.bz2 # command that will decompress FITS files
+
+   $ mkdir raw/ # create directory named "raw" (optional)
+
+   $ mv *.fits raw/ # move all the raw FITS files to raw (optional)
+
 
 Process DARK files
 ==================
@@ -118,11 +118,7 @@ We usually start our data reduction by stacking the DARKS files that contains
 the same exposure time into a Master DARK file. Before we do that, let us create
 file lists that will be used later. These lists can be easily produced using the
 |dataselect| command line, which is available after installing DRAGONS in your
-virtual environment.
-
-.. todo::
-
-   add `dataselect` documentation somewhere.
+conda environment.
 
 We start with the creating of lists that contains DARK images for every exposure
 time available. If you don't know what are the existing exposure times, you can
@@ -141,12 +137,12 @@ have exposure time of 20 seconds:
    $ dataselect --tags DARK --xtags PROCESSED \
        --expr "exposure_time==20" raw/*.fits > darks_020s.list
 
-The `--tags` is a comma-separated argument that is used to select the files
-that matches the tag(s) listed there. The `--xtags` is used to exclude
-the files which tags matches the one(s) listed here. The `--expr` is used
-to filter the files based on their attributes. In this case, we are selecting
-files with exposure time of 20 seconds. Use `dataselect --help` for more
-information.
+The `\` is simply a special character to break the line. The `--tags` is a
+comma-separated argument that is used to select the files that matches the
+tag(s) listed there. The `--xtags` is used to exclude the files which tags
+matches the one(s) listed here. The `--expr` is used to filter the files based
+on their attributes. In this case, we are selecting files with exposure time of
+20 seconds. Use `dataselect --help` for more information.
 
 Once we have the list of DARK files for each exposure time, we can use the
 `reduce` command line to reduce and stack them into a single Master DARK file:
@@ -174,7 +170,6 @@ And then pass this list to the `reduce` command.
 ::
 
     $ reduce @darks_120s.list
-
 
 
 The Master DARK files will be saved in the same folder where `reduce` was called
@@ -218,6 +213,7 @@ not interfere in the results.
 
     $ dataselect --tags FLAT --xtags PREPARED \
         --expr "filter_name=='Y'" *.fits > flats_Y.list
+
     $ reduce @flats_Y.list @darks_020s.list -r makeProcessedBPM
 
 Note that instead of creating a new list for the BP masks, we simply used a
