@@ -285,7 +285,7 @@ be subtracted from the associated science data. Finally, the sky-subtracted
 files will be stacked together in a single file. The final result is shown
 below:
 
-.. figure:: ../S20131121S0075_stack.fits.png
+.. figure:: _static/S20131121S0075_stack.fits.png
    :align: center
 
    S20131121S0075_stack.fits.png

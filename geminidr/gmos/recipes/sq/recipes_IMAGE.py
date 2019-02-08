@@ -26,7 +26,9 @@ def reduce(p):
     p.makeFringe()
     p.fringeCorrect()
     p.mosaicDetectors()
-    p.alignAndStack()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
     p.writeOutputs()
     return
 

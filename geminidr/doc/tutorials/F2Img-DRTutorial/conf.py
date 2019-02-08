@@ -228,8 +228,8 @@ def download_tutorial_data(_):
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('css/todo-styles.css')
-    app.add_stylesheet('css/code.xref-styles.css')
+    app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('code.xref-styles.css')
 
     # Automatic API generation
     app.connect('builder-inited', download_tutorial_data)

@@ -168,10 +168,10 @@ would do for a NumPy array:
 
    In [24]: plt.savefig("my_figure.png")
 
-.. figure:: ../my_figure.png
+.. figure:: _static/my_figure.png
    :align: center
 
-   ./data/my_figure.png
+   my_figure.png
 
 
 Common operations (like add, subtract, divide, and multiply) can be performed
