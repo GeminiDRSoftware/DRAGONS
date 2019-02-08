@@ -29,7 +29,9 @@ def reduce(p):
     p.associateSky()
     p.skyCorrect(mask_objects=False)
     p.detectSources()
-    p.alignAndStack()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
     p.writeOutputs()
     return
 

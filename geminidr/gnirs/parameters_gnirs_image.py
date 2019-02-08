@@ -11,7 +11,7 @@ class addReferenceCatalogConfig(parameters_photometry.addReferenceCatalogConfig)
         self.radius = 0.033
         self.source = "2mass"
 
-class matchWCSToReferenceConfig(parameters_register.matchWCSToReferenceConfig):
+class adjustWCSToReferenceConfig(parameters_register.adjustWCSToReferenceConfig):
     def setDefaults(self):
         self.first_pass = 2.
         self.min_sources = 1
