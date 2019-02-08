@@ -1506,7 +1506,7 @@ MetricsViewer.prototype = {
         var msg = this.formatWarningRecords(pr,"comment");
         var prepend = true;
         this.lightbox.addRecord(msg,prepend);
-        $("#lightbox_background, #lightbox_window").show();
+        // $("#lightbox_background, #lightbox_window").show();
     }
 
     }, // end update
