@@ -9,8 +9,8 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
-    // Keep the 10 most recent builds
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    // Keep the 20 most recent builds
+    buildDiscarder(logRotator(numToKeepStr: '20'))
     timestamps()
   }
 
