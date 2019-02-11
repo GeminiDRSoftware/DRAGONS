@@ -55,39 +55,14 @@ chosen program.
 
    https://archive.gemini.edu/searchform/GS-2013B-Q-15-39
 
-The bottom of the page contains a buttom to download the data. This data set
-
-
-The full data set contains 330 images and uses a total of 5.3 Gb of disk space.
-Each raw and unprocessed image has 17 Mb but some processed images have more.
-The data reduction steps are almost the same for all filters so, for this tutorial,
-we will use a sub data set that contains only the images obtained with the Y
-filter and its calibrations. This sub-set has only 49 files and 786 Mb of disk
-space.
-
-
-The files can be downloaded by clicking directly
-`here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_
-or using copy-and-pasting the address below in your browser:
+The bottom of the page contains a button to download the data. You can click on
+that, or you can download the images by clicking directly
+`here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_.
+Alternatively, you can download the date by copy-and-pasting the address below
+in your browser:
 
 ::
    https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical
-   #
-
-
-
-
-
-
-We now need retrieve exposures within about a month of the target exposures in
-2013 Nov 21. You may search the `GOA <https://archive.gemini.edu/searchform>`_
-yourself, or instead just cut-and-paste the following direct URL in your
-browser.
-
-::
-
-   # images of the WISE 0413-4750 target field:
-   https://archive.gemini.edu/searchform/GS-2013B-Q-15-39/RAW/cols=CTOWEQ/NOTAO/filter=Y/notengineering/F2/imaging/20130101-20150701/AnyQA#
 
 After retrieving the science data, click the Load Associated Calibrations tab on
 the search results page and download the associated dark and flat-field
