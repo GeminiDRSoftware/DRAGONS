@@ -120,7 +120,7 @@ pipeline {
 
   post {
     always {
-      sh 'conda remove --yes -n ${BUILD_TAG} --all --quiet'
+      sh 'conda remove --yes --all --quiet -n ${BUILD_TAG}'
     }
     failure {
       echo "Send e-mail, when failed"
