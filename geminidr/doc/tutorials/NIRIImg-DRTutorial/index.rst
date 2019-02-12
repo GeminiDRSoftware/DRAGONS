@@ -16,6 +16,7 @@ Tutorial Series - NIRI Imaging Data Reduction with DRAGONS
 
    overview
    simple_cmdline
+   simple_api
    
 
 
