@@ -58,18 +58,25 @@ chosen program.
 The bottom of the page contains a button to download the data. You can click on
 that, or you can download the images by clicking directly
 `here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_.
-Alternatively, you can download the date by copy-and-pasting the address below
+Alternatively, you can download the data by copy-and-pasting the address below
 in your browser:
 
 ::
+
    https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical
 
 After retrieving the science data, click the Load Associated Calibrations tab on
 the search results page and download the associated dark and flat-field
-exposures.
+exposures. Again, the calibration files can be downloaded by clicking `here
+<https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/canonical>`_
+or by copying the following URL to your browser:
 
-Unpack all of them in a subdirectory of your working directory
-(assumed to be named /raw in this tutorial). Be sure to uncompress the files.
+::
+
+    https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/canonical
+
+Unpack all of them in a subdirectory of your working directory (assumed to be
+named /raw in this tutorial). Be sure to uncompress the files.
 
 ::
 
