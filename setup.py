@@ -45,6 +45,7 @@ GEMINI_INST_MODULES = ['gemini_instruments',
                        'gemini_instruments.gnirs',
                        'gemini_instruments.gpi',
                        'gemini_instruments.graces',
+                       'gemini_instruments.gsaoi',
                        'gemini_instruments.hokupaa_quirc',
                        'gemini_instruments.hrwfs',
                        'gemini_instruments.igrins',
@@ -79,6 +80,11 @@ GEMINIDR_MODULES = ['geminidr',
                     'geminidr.gnirs.recipes',
                     'geminidr.gnirs.recipes.qa',
                     'geminidr.gnirs.recipes.sq',
+                    'geminidr.gsaoi',
+                    'geminidr.gsaoi.lookups',
+                    'geminidr.gsaoi.recipes',
+                    'geminidr.gsaoi.recipes.qa',
+                    'geminidr.gsaoi.recipes.sq',
                     'geminidr.niri',
                     'geminidr.niri.lookups',
                     'geminidr.niri.recipes',
@@ -125,6 +131,7 @@ PACKAGE_DATA = {}
 gemdrdir = re.compile('geminidr/')
 PACKAGE_DATA['geminidr'] = []
 instruments = ['gemini', 'f2', 'gmos', 'gnirs', 'niri']
+
 for inst in instruments:
     for root, dirs, files in os.walk(os.path.join('geminidr', inst,
                                                   'lookups', 'source_detection')):
