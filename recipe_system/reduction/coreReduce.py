@@ -95,6 +95,7 @@ class Reduce(object):
             import_module(args.adpkg)
 
         self.adinputs = None
+        self.output_filenames = None
         self.mode     = args.mode
         self.drpkg    = args.drpkg
         self.files    = args.files
@@ -216,6 +217,7 @@ class Reduce(object):
 
         if hasattr(p, 'streams'):
             self._write_final(p.streams['main'])
+            self.output_filenames = [ad.filename for ad in p.streams['main']]
         else:
             self._write_final(p.adinputs)
 

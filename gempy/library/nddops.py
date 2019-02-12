@@ -12,6 +12,8 @@ except ImportError:
 BAD = 65535 ^ (DQ.non_linear | DQ.saturated)
 DQhierarchy = (DQ.no_data, DQ.unilluminated, DQ.bad_pixel, DQ.overlap,
                DQ.cosmic_ray, DQ.non_linear | DQ.saturated)
+ZERO = DQ.datatype(0)
+ONE = DQ.datatype(DQ.bad_pixel)
 
 import inspect
 
@@ -181,15 +183,19 @@ class NDStacker(object):
             mask ^= out_mask  # Set mask=0 if all pixels have mask=1
             return mask, out_mask
 
+        consider_all = ZERO
         out_mask = np.full(mask.shape[1:], 0, dtype=DQ.datatype)
         for consider_bits in reversed(DQhierarchy):
-            out_mask |= (np.bitwise_or.reduce(mask, axis=0) & consider_bits)
-            mask &= 65535 ^ consider_bits
-            ngood = NDStacker._num_good(mask>0)
+            consider_all |= consider_bits
+            tmp_mask = (mask & consider_all != mask)
+            out_mask |= (np.bitwise_or.reduce(np.where(tmp_mask, ZERO, mask), axis=0))
+            ngood = NDStacker._num_good(tmp_mask)
 
-            # Set DQ=32768 for bad pixels where we've already found good ones
-            # so that they won't get included in future iterations of loop
-            mask = np.where(np.logical_and(ngood>0, mask>0), DQ.datatype(32768), mask)
+            # Where we've been able to construct an output pixel (ngood>0)
+            # we need to stop any further processing. Set the mask for "good"
+            # pixels to 0, and for bad pixels to 32768.
+            mask = np.where(np.logical_and(ngood>0, tmp_mask), DQ.datatype(32768), mask)
+            mask = np.where(np.logical_and(ngood>0, ~tmp_mask), ZERO, mask)
             # 32768 in output mask means we have an output pixel
             out_mask[ngood>0] |= 32768
 
@@ -280,19 +286,21 @@ class NDStacker(object):
                                           axis=0)[med_index:med_index+2]
                 out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
                 # Not strictly correct when taking the mean of the middle two
-                # but it seems more appropriate
+                # but it seems more appropriate, otherwise output variance
+                # will be lower when there's an even number of input pixels
                 out_var = (None if variance is None else
                            take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
             out_mask = None
         else:
-            arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
-            num_img = NDStacker._num_good(mask & BAD)
+            mask, out_mask = NDStacker._process_mask(mask)
+            arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
+            num_img = NDStacker._num_good(mask>0)
             med_index = num_img // 2
             med_indices = np.array([np.where(num_img % 2, med_index, med_index-1),
                                     np.where(num_img % 2, med_index, med_index)])
             indices = take_along_axis(arg, med_indices, axis=0)
             out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-            out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
+            #out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
             out_var = (None if variance is None else
                        take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
         if variance is None:  # IRAF gemcombine calculation
@@ -310,13 +318,13 @@ class NDStacker(object):
             index = np.argpartition(data, med_index, axis=0)[med_index]
             out_mask = None
         else:
+            mask, out_mask = NDStacker._process_mask(mask)
             # Because I'm sorting, I'll put large dummy values in a numpy array
             # np.choose() can't handle more than 32 input images
             # Partitioning the bottom half is slower than a full sort
-            arg = np.argsort(np.where(mask & BAD, np.inf, data), axis=0)
-            med_index = (NDStacker._num_good(mask & BAD) - 1) // 2
+            arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
+            med_index = (NDStacker._num_good(mask>0) - 1) // 2
             index = take_along_axis(arg, med_index, axis=0)
-            out_mask = take_along_axis(mask, index, axis=0)
         out_data = take_along_axis(data, index, axis=0)
         if variance is None:  # IRAF gemcombine calculation
             out_var = NDStacker.calculate_variance(data, mask, out_data)
@@ -335,6 +343,10 @@ class NDStacker(object):
     @rejector
     def minmax(data, mask=None, variance=None, nlow=0, nhigh=0):
         # minmax rejection, following IRAF rules when pixels are rejected
+        # We flag the pixels to be rejected as DQ.bad_pixel. For any pixels
+        # to be flagged this way, there have to be good (or nonlin/saturated)
+        # pixels around so they will get combined before the DQhierarchy
+        # looks at DQ.bad_pixel
         num_img = data.shape[0]
         if nlow+nhigh >= num_img:
             raise ValueError("Only {} images but nlow={} and nhigh={}"
@@ -358,18 +370,19 @@ class NDStacker(object):
             variance = take_along_axis(variance, arg, axis=0)
             mask = take_along_axis(mask, arg, axis=0)
             # IRAF imcombine maths
-            num_good = NDStacker._num_good(mask)
+            num_good = NDStacker._num_good(mask & BAD > 0)
             nlo = (num_good * float(nlow) / num_img + 0.001).astype(int)
             nhi = num_good - (num_good * float(nhigh) / num_img + 0.001).astype(int) - 1
             for i in range(num_img):
-                mask[i][i<nlo] |= DQ.datatype(1)
-                mask[i][i>nhi] |= DQ.datatype(1)
+                mask[i][i<nlo] |= ONE
+                mask[i][np.logical_and(i>nhi, i<num_good)] |= ONE
         return data, mask, variance
 
     @staticmethod
     @rejector
     def sigclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
                 hsigma=3.0, max_iters=None):
+        # Sigma-clipping based on scatter of data
         return NDStacker._cyclip(data, mask=mask, variance=variance,
                                   mclip=mclip, lsigma=lsigma, hsigma=hsigma,
                                   max_iters=max_iters, sigclip=True)
@@ -378,6 +391,7 @@ class NDStacker(object):
     @rejector
     def varclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
                 hsigma=3.0, max_iters=None):
+        # Sigma-type-clipping where VAR array is used to determine deviancy
         return NDStacker._cyclip(data, mask=mask, variance=variance,
                                   mclip=mclip, lsigma=lsigma, hsigma=hsigma,
                                   max_iters=max_iters, sigclip=False)
