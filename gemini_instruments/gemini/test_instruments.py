@@ -153,7 +153,7 @@ class TestAstrodataFits:
         (GMOSS, 'GMOS + Hamamatsu_new'),
         (NIFS,  'NIFS')
     ])
-    def test_read_a_keyword_from_phu(self, filename, expected):
+    def test_read_a_keyword_from_phu(self, filename, expected, test_path):
 
         ad = astrodata.open(os.path.join(test_path, filename))
 
@@ -166,7 +166,7 @@ class TestAstrodataFits:
                  'BI12-34-4k-1', 'BI12-34-4k-1', 'BI12-34-4k-1', 'BI12-34-4k-1']),
         (NIFS, 'Error should raise!'),
     ])
-    def Test_read_a_keyword_from_hdr(self, filename, expected):
+    def Test_read_a_keyword_from_hdr(self, filename, expected, test_path):
 
         ad = astrodata.open(os.path.join(test_path, filename))
 
