@@ -13,7 +13,8 @@ from geminidr.gemini.primitives_gemini import Gemini
 from . import parameters_f2
 
 from recipe_system.utils.decorators import parameter_override
-# ------------------------------------------------------------------------------
+
+
 @parameter_override
 class F2(Gemini, NearIR):
     """
