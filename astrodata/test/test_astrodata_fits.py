@@ -8,6 +8,8 @@ import astrodata
 import gemini_instruments
 
 from astropy.io import fits
+from astropy.table import Table
+
 
 # naming all fits files for easier legibility in code
 GRACES = "N20190116G0054i.fits"
@@ -275,11 +277,16 @@ class TestAstrodataFits:
         assert np.array_equal((adnew[0].data), pixel_data)
 
     def test_can_append_table_and_access_data(self):
-        my_astropy_table = np.random.rand(256, 256)
+
+        my_astropy_table = Table(list(np.random.rand(2,100)),
+                                 names=['col1', 'col2'])
+
         phu = fits.PrimaryHDU()
         ad = astrodata.create(phu)
-        #astrodata.add_header_to_table(my_astropy_table)
+        astrodata.add_header_to_table(my_astropy_table)
+
         ad.append(my_astropy_table, name='BOB')
+
         print(ad.info())
 
 
