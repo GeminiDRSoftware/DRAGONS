@@ -461,7 +461,7 @@ Create a MEF with basic header and data array set to zeros
     >>> hdu.data = pixel_data
 
     >>> ad = astrodata.create(phu)
-    >>> ad.append(hud, name='SCI')
+    >>> ad.append(hdu, name='SCI')
 
     or another way to do the last two blocs:
     >>> hdu = fits.ImageHDU(data=pixel_data, name='SCI')
@@ -483,7 +483,7 @@ object.
 
 ::
 
-    >>> phu.fits.PrimaryHDU()
+    >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
 
     >>> astrodata.add_header_to_table(my_astropy_table)
