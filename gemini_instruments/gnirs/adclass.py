@@ -386,7 +386,7 @@ class AstroDataGnirs(AstroDataGemini):
         if self.tags & set(['IMAGE', 'DARK']):
             # Imaging or darks
             try:
-                match = re.match("^(Short|Long)(Red|Blue)_G\d+$", camera)
+                match = re.match(r"^(Short|Long)(Red|Blue)_G\d+$", camera)
                 cameratype = match.group(1)
                 if cameratype == 'Short':
                     return 0.15
@@ -621,7 +621,7 @@ class AstroDataGnirs(AstroDataGemini):
         """
         grating = self.phu.get('GRATING')
         try:
-            match = re.match("([\d/m]+)[A-Z]*(_G)(\d+)", grating)
+            match = re.match(r"([\d/m]+)[A-Z]*(_G)(\d+)", grating)
             ret_grating = "{}{}{}".format(*match.groups())
         except (TypeError, AttributeError):
             ret_grating = grating
@@ -651,7 +651,7 @@ class AstroDataGnirs(AstroDataGemini):
         """
         prism = self.phu.get('PRISM')
         try:
-            match = re.match("[LBSR]*\+*([A-Z]*_G\d+)", prism)
+            match = re.match(r"[LBSR]*\+*([A-Z]*_G\d+)", prism)
             ret_prism = match.group(1)
         except (TypeError, AttributeError):  # prism=None, no match
             return None

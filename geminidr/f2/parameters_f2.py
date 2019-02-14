@@ -2,6 +2,7 @@
 # in the primitives_f2.py file, in alphabetical order.
 from geminidr.core import parameters_photometry
 
+
 class addReferenceCatalogConfig(parameters_photometry.addReferenceCatalogConfig):
     def setDefaults(self):
         self.radius = 0.033
