@@ -8,16 +8,14 @@ import astrodata
 import gemini_instruments
 
 
-
-TESTDATAPATH = os.getenv('DRAGONS_TESTDATA', '.')
 # naming all fits files for easier legibility in code
 GRACES = "N20190116G0054i.fits"
 GNIRS = 'N20190206S0279.fits'
 GMOSN = "N20110826S0336.fits"
 GMOSS = "S20180223S0229.fits"
 NIFS = "N20160727S0077.fits"
-NIRI  = 'N20190120S0287.fits'
-F2    = 'S20190213S0084.fits'
+NIRI = 'N20190120S0287.fits'
+F2 = 'S20190213S0084.fits'
 
 
 # Fixtures for module and class
@@ -53,9 +51,8 @@ class TestAstrodataFits:
         (NIRI, gemini_instruments.niri.adclass.AstroDataNiri),
         (F2, gemini_instruments.f2.adclass.AstroDataF2)
     ])
-    @pytest.mark.ad_local_data
-    def test_is_right_type(self, filename, expected):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+    def test_is_right_type(self, filename, expected, test_path):
+        ad = astrodata.open(os.path.join(test_path, filename))
         assert type(ad) == expected
 
     @pytest.mark.parametrize("filename, expected", [
@@ -67,12 +64,12 @@ class TestAstrodataFits:
         (NIRI, gemini_instruments.niri.adclass.AstroDataNiri),
         (F2, gemini_instruments.f2.adclass.AstroDataF2)
     ])
-    @pytest.mark.ad_local_data
-    def test_is_right_instance(self, filename, expected):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+    def test_is_right_instance(self, filename, expected, test_path):
+        
+        ad = astrodata.open(os.path.join(test_path, filename))
+        
         # YES, this *can* be different from test_is_right_type above. Metaclasses!
         assert isinstance(ad, expected)
-
 
     @pytest.mark.parametrize("filename, expected", [
         (GRACES, (28, 190747)),
@@ -83,14 +80,12 @@ class TestAstrodataFits:
         (NIRI,   (1024, 1024)),
         (F2,     (1, 2048, 2048))
     ])
-    @pytest.mark.ad_local_data
-    def test_extension_data_shape(self, filename, expected):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+    def test_extension_data_shape(self, filename, expected, test_path):
+        
+        ad = astrodata.open(os.path.join(test_path, filename))
         data = ad[0].data
+        
         assert data.shape == expected
-
-
-
 
     @pytest.mark.parametrize("filename, expected", [
         (GRACES,{'UNPREPARED', 'RAW', 'SPECT', 'GEMINI', 'GRACES'}),
@@ -103,12 +98,12 @@ class TestAstrodataFits:
         (NIRI,  {'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'NIRI'}),
         (F2,    {'IMAGE', 'F2', 'RAW', 'SOUTH', 'SIDEREAL', 'UNPREPARED', 'GEMINI', 'ACQUISITION'})
     ])
-    @pytest.mark.ad_local_data
-    def test_tags(self, filename, expected):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+    def test_tags(self, filename, expected, test_path):
+        
+        ad = astrodata.open(os.path.join(test_path, filename))
         tags = ad.tags
+        
         assert expected.issubset(tags)
-
 
     @pytest.mark.parametrize("filename, expected", [
         (GRACES,'GRACES'),
@@ -119,9 +114,10 @@ class TestAstrodataFits:
         (NIRI,  'NIRI'),
         (F2,    'F2')
     ])
-    @pytest.mark.ad_local_data
-    def test_can_return_instrument(self, filename, expected):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+    def test_can_return_instrument(self, filename, expected, test_path):
+        
+        ad = astrodata.open(os.path.join(test_path, filename))
+        
         assert ad.phu['INSTRUME'] == expected
 
     @pytest.mark.parametrize("filename, expected", [
@@ -129,19 +125,20 @@ class TestAstrodataFits:
         (GMOSS, 12),
         (NIFS,  1)
     ])
-    def test_can_return_ad_length(self, filename, expected):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+    def test_can_return_ad_length(self, filename, expected, test_path):
+        
+        ad = astrodata.open(os.path.join(test_path, filename))
+        
         assert len(ad) == expected
-
 
     @pytest.mark.parametrize("filename, expected", [
         (GMOSN, 2),
         (GMOSS, 11),
         (NIFS,  0)
     ])
-    @pytest.mark.ad_local_data
-    def test_slice_range(self, filename, expected):
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+    def test_slice_range(self, filename, expected, test_path):
+        
+        ad = astrodata.open(os.path.join(test_path, filename))
 
         metadata = ('SCI', 2), ('SCI', 3)
         slc = ad[1:]
@@ -151,20 +148,16 @@ class TestAstrodataFits:
         for ext, md in zip(slc, metadata):
             assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
-
-
     @pytest.mark.parametrize("filename, expected", [
         (GMOSN, 'GMOS + Red1'),
         (GMOSS, 'GMOS + Hamamatsu_new'),
         (NIFS,  'NIFS')
     ])
-    @pytest.mark.ad_local_data
     def test_read_a_keyword_from_phu(self, filename, expected):
 
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+        ad = astrodata.open(os.path.join(test_path, filename))
 
         assert ad.phu['DETECTOR'] == expected
-
 
     @pytest.mark.parametrize("filename, expected", [
         (GMOSN, ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']),
@@ -173,10 +166,9 @@ class TestAstrodataFits:
                  'BI12-34-4k-1', 'BI12-34-4k-1', 'BI12-34-4k-1', 'BI12-34-4k-1']),
         (NIFS, 'Error should raise!'),
     ])
-    @pytest.mark.ad_local_data
     def Test_read_a_keyword_from_hdr(self, filename, expected):
 
-        ad = astrodata.open(os.path.join(TESTDATAPATH, filename))
+        ad = astrodata.open(os.path.join(test_path, filename))
 
         try:
             assert ad.hdr['CCDNAME'] == expected
@@ -184,7 +176,6 @@ class TestAstrodataFits:
         except KeyError:
             # KeyError only accepted if it's because headers out of range
             assert len(ad) == 1
-
 
     # Access to headers: DEPRECATED METHODS
     # These should fail at some point
@@ -196,7 +187,6 @@ class TestAstrodataFits:
         with pytest.raises(AttributeError):
             assert ad.phu.DETECTOR == 'GMOS + Red1'
 
-
     @pytest.mark.skip(reason="Deprecated methods")
     def test_read_a_keyword_from_hdr_deprecated(self):
 
@@ -204,7 +194,6 @@ class TestAstrodataFits:
 
         with pytest.raises(AttributeError):
             assert ad.hdr.CCDNAME == ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']
-
 
     @pytest.mark.skip(reason="Deprecated methods")
     def test_set_a_keyword_on_phu_deprecated(self):
@@ -215,7 +204,6 @@ class TestAstrodataFits:
             assert ad.phu.DETECTOR == 'FooBar'
             assert ad.phu.ARBTRARY == 'BarBaz'
             assert ad.phu['DETECTOR'] == 'FooBar'
-
 
     @pytest.mark.skip(reason="Deprecated methods")
     def test_remove_a_keyword_from_phu_deprecated(self):
