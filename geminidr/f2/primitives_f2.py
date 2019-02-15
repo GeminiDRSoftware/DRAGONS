@@ -125,4 +125,5 @@ class F2(Gemini, NearIR):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
             adoutputs.append(ad)
+
         return adoutputs
