@@ -9,6 +9,20 @@ import astrodata, gemini_instruments
 from geminidr.f2.primitives_f2_image import F2Image
 
 
+@pytest.fixture
+def test_path():
+
+    try:
+        path = os.environ['TEST_PATH']
+    except KeyError:
+        pytest.skip("Could not find environment variable: $TEST_PATH")
+
+    if not os.path.exists(path):
+        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
+
+    return path
+
+
 def test_select_from_inputs_primitive(test_path):
 
     with open("recursion.log", 'w') as _log:
