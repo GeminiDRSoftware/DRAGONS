@@ -19,14 +19,14 @@ def caldb():
 
     calibration_service = CalibrationService()
     calibration_service.config()
-    calibration_service.init()
+    calibration_service.init(wipe=True)
 
     set_calservice()
 
     return calibration_service
 
 
-def test_reduce_darks(test_path, caldb):
+def test_reduce_image(test_path, caldb):
 
     all_files = glob.glob(os.path.join(test_path, 'F2', '*.fits'))
 
@@ -35,10 +35,11 @@ def test_reduce_darks(test_path, caldb):
     selected_files = dataselect.select_data(
         all_files, ['F2', 'DARK'], [], parsed_expr)
 
-    dataset = [astrodata.open(f) for f in selected_files]
-
-    p = geminidr.f2.primitives_f2.F2(dataset)
+    dark_data_set = [astrodata.open(f) for f in selected_files]
+    p = geminidr.f2.primitives_f2_image.F2Image(dark_data_set)
     makeProcessedDark(p)
+
+
 
 
 if __name__ == '__main__':
