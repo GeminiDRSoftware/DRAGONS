@@ -258,12 +258,24 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
+    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'matplotlib': ('http://matplotlib.sourceforge.net/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'python': ('https://docs.python.org/3', None),
+}
 
 # Activate the todos
 todo_include_todos=True
 
-# Adding style in order to have the todos show up in a red box.
+# -- Finishing with a setup that will run always -----------------------------
 def setup(app):
-   app.add_stylesheet('todo-styles.css')
 
+    # Adding style in order to have the todos show up in a red box.
+    app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('rtd_theme_overrides.css')
+    app.add_stylesheet('css/rtd_theme_overrides_references.css')
