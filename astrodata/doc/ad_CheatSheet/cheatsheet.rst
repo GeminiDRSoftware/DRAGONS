@@ -1,6 +1,13 @@
 .. cheatsheet
 
-.. _cheatsheet::
+.. |astrodata_class| replace:: :class:`~astrodata.AstroData`
+.. |astropy| replace:: :mod:`astropy`
+.. |gemini_instruments| replace:: :mod:`gemini_instruments`
+.. |NDAstroData| replace:: :class:`~astrodata.nddata.NDAstroData`
+.. |Table| replace:: :class:`~astropy.table.Table`
+
+
+.. _cheatsheet:
 
 *********************
 Astrodata Cheat Sheet
@@ -9,7 +16,7 @@ Astrodata Cheat Sheet
 Imports
 =======
 
-Import Astrodata and the Gemini instruments configurations.
+Import :mod:`astrodata` and :mod:`gemini_instruments`:
 
 ::
 
@@ -48,22 +55,25 @@ Object structure
 
 Description
 -----------
-The astrodata object is assigned by "tags" that describe the type of data it contains.
-The tags are drawn from rules defined in ``gemini_instruments`` and are based on header
-information.
+The |astrodata_class| object is assigned by "tags" that describe the
+type of data it contains. The tags are drawn from rules defined in
+|gemini_instruments| and are based on header information.
 
-When mapping a FITS file, each science pixel extension is loaded as a NDData object.  The list
-is zero-based.  So FITS extension 1 becomes element 0 of the astrodata object.  If a ``VAR``
-extension is present, it is loaded to the ``.variance`` attribute of the NDData.  If a ``DQ``
-extension is present, it is loaded to the ``.mask`` attribute of the NDData.  ``SCI``, ``VAR``
-and ``DQ`` are associated through the ``EXTVER`` keyword value.
+When mapping a FITS file, each science pixel extension is loaded as a
+|NDAstroData| object. The list is zero-based. So FITS
+extension 1 becomes element 0 of the |astrodata_class| object. If a ``VAR``
+extension is present, it is loaded to the variance attribute of the
+|NDAstroData|. If a ``DQ`` extension is present, it is loaded to the ``.mask``
+attribute of the |NDAstroData|. ``SCI``, ``VAR`` and ``DQ`` are associated
+through the ``EXTVER`` keyword value.
 
-In the file below, each astrodata "extension" contains the pixel data, then an error
-plane (``.variance``) and a bad pixel mask plane (``.mask``). Tables can be attached to an
-extension, like OBJCAT, or to the astrodata
-object globally, like REFCAT. (In this case, OBJCAT is a catalogue of the sources detected in the image,
-REFCAT is a reference catalog for the area covered by the whole file.)  If other 2D data
-needs to be associated with an extension this can also be done, like here with OBJMASK,
+In the file below, each |astrodata_class| "extension" contains the pixel data,
+then an error plane (``.variance``) and a bad pixel mask plane (``.mask``).
+|Table| can be attached to an extension, like OBJCAT, or to the
+|astrodata_class| object globally, like REFCAT. (In this case, OBJCAT is a
+catalogue of the sources detected in the image, REFCAT is a reference catalog
+for the area covered by the whole file.)  If other 2D data needs to be
+associated with an extension this can also be done, like here with OBJMASK,
 a 2D mask matching the sources in the image.
 
 ::
@@ -104,8 +114,9 @@ a 2D mask matching the sources in the image.
 Modifying the structure
 -----------------------
 
-Let's first get our play data loaded.  You are encouraged to do a ``.info()`` before and after each
-structure-modification step, to see how things change.
+Let's first get our play data loaded. You are encouraged to do a
+:meth:`~astrodata.AstroData.info` before and after each structure-modification
+step, to see how things change.
 
 ::
 
@@ -134,7 +145,7 @@ Attach a table to an extension::
 
     >>> adcopy[3].append(advar[0].OBJCAT, name='BOB')
 
-Attach a table to the astrodata object::
+Attach a table to the |astrodata_class| object::
 
     >>> adcopy.append(advar.REFCAT, name='BILL')
 
@@ -166,8 +177,10 @@ Astrodata tags
 
 Headers
 =======
-The use of Descriptors is favored over direct header access when retrieving values already represented by
-Descriptors, and when writing instrument agnostic routines.
+
+The use of descriptors is favored over direct header access when retrieving
+values already represented by descriptors, and when writing instrument agnostic
+routines.
 
 Descriptors
 -----------
@@ -202,6 +215,7 @@ Direct access to header keywords
 
 Primary Header Unit
 *******************
+
 To see a print out of the full PHU:
 
     >>> ad.phu
@@ -265,7 +279,8 @@ Pixel data
 
 Arithmetics
 -----------
-Arithmetics with variance and mask propagation is offered for ``+``, ``-``, ``*``, ``/``, and ``**``.
+Arithmetics with variance and mask propagation is offered for
+``+``, ``-``, ``*``, ``/``, and ``**``.
 
 ::
 
@@ -326,9 +341,11 @@ Other pixel data operations
 Tables
 ======
 
-Tables are stored as ``astropy.table`` ``Table`` class.   FITS tables are represented in astrodata as ``Table``
-and FITS headers are stored in the NDData `.meta` attribute.  Most table access should be done through the ``Table``
-interface.   The best reference is the Astropy documentation itself.  Below are just a few examples.
+Tables are stored as :class:`astropy.table.Table` class. FITS tables are
+represented in :mod:`astrodata` as |Table| and FITS headers are stored in the
+|NDAstroData| :attr:`~astrodata.nddata.NDAstroData.meta` attribute. Most table
+access should be done through the |Table| interface. The best reference is the
+|astropy| documentation itself. Below are just a few examples.
 
 ::
 
@@ -368,7 +385,7 @@ Selecting value from criterion::
     >>> ad.REFCAT['zmag'][ad.REFCAT['Cat_Id'] == '1237662500002005475']
     >>> ad.REFCAT['zmag'][ad.REFCAT['zmag'] < 18.]
 
-Rejecting ``nan`` before doing something with the values::
+Rejecting :class:`numpy.nan` before doing something with the values::
 
     >>> t = ad.REFCAT   # to save typing.
     >>> t['zmag'][np.where(np.isnan(t['zmag']), 99, t['zmag']) < 18.]
@@ -403,6 +420,7 @@ Create new AstroData object
 Basic header and data array set to zeros::
 
     >>> from astropy.io import fits
+
     >>> phu = fits.PrimaryHDU()
     >>> pixel_data = np.zeros((100,100))
 
@@ -415,10 +433,13 @@ Basic header and data array set to zeros::
     >>> hdu = fits.ImageHDU(data=pixel_data, name='SCI')
     >>> ad = astrodata.create(phu, [hdu])
 
-A table as an astrodata object::
+A |Table| as an |astrodata_class| object::
 
-    From an astropy.table.table.Table:
+    >>> from astropy.table import Table
+
+    >>> my_astropy_table = Table(list(np.random.rand(2,100)), names=['col1', 'col2'])
     >>> phu = fits.PrimaryHDU()
+
     >>> astrodata.add_header_to_table(my_astropy_table)
     >>> ad = astrodata.create(phu)
     >>> ad.append(my_astropy_table, name='BOB')
