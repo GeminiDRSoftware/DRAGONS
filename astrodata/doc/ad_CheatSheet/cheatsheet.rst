@@ -18,7 +18,7 @@ Imports
 
 Import :mod:`astrodata` and :mod:`gemini_instruments`:
 
-::
+
 
     >>> import astrodata
     >>> import gemini_instruments
