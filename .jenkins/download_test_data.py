@@ -28,7 +28,7 @@ except KeyError as err:
 
     print('\n This script needs the environment variable TEST_PATH'
           '\n Please, add is using the following command: ' \
-          '\n     $ export TEST_PATH="/my/test/path/'
+          '\n     $ export TEST_PATH="/my/test/path/"'
           '\n and run again. Leaving now.'
           '\n ')
 
@@ -43,10 +43,11 @@ def download_test_data():
 
 def create_test_folder_if_does_not_exist():
 
+    print('')
     if os.path.exists(TEST_PATH):
-        print('Skip creation of existing folder: {}'.format(TEST_PATH))
+        print(' Skip creation of existing folder: {}'.format(TEST_PATH))
     else:
-        print('Create non-existing test folder: {}'.format(TEST_PATH))
+        print(' Create non-existing test folder: {}'.format(TEST_PATH))
         os.makedirs(TEST_PATH)
 
 
@@ -54,20 +55,32 @@ def download_non_existing_test_files():
 
     with open(FILE_WITH_TEST_FILES, 'r') as list_of_files:
 
+        print('')
+
         for _filename in list_of_files.readlines():
 
             current_file = os.path.join(TEST_PATH, _filename).strip()
 
+            if len(_filename.strip()) == 0:
+                print('')
+                continue
+
+            if _filename.startswith('#'):
+                print(" {}".format(_filename.strip()))
+                continue
+
             if os.path.exists(current_file):
-                print('Skip existing file: {:s}'.format(current_file))
+                print(' Skip existing file: {:s}'.format(current_file))
 
             else:
-                print('Download missing file: {:s}'.format(current_file))
+                print(' Download missing file: {:s}'.format(current_file))
                 _path, _file = os.path.split(current_file)
                 if not os.path.exists(_path):
                     os.makedirs(_path)
                 subprocess.run(['curl', '--silent', URL + _file, '--output',
                                 current_file])
+
+        print('')
 
 
 if __name__ == "__main__":

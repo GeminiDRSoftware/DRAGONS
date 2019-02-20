@@ -6,7 +6,7 @@ from gempy.library import config
 def statsec_check(value):
     """Confirm that the statsec Field is given a value consisting of 4
        integers, x1:x2,y1:y2 with optional []"""
-    m = re.match('\[?(\d+):(\d+),(\d+):(\d+)\]?', value)
+    m = re.match(r'\[?(\d+):(\d+),(\d+):(\d+)\]?', value)
     if m is None:
         return False
     try:
