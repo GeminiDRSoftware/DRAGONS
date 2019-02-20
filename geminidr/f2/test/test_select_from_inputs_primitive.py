@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
-import astrodata
-import gemini_instruments
+import glob
 import os
 import pytest
 
-from copy import deepcopy
-from glob import glob
+import astrodata, gemini_instruments
 
 from geminidr.f2.primitives_f2_image import F2Image
 
@@ -20,7 +18,7 @@ def test_path():
         pytest.skip("Could not find environment variable: $TEST_PATH")
 
     if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: ".format(path))
+        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
     return path
 
@@ -29,7 +27,7 @@ def test_select_from_inputs_primitive(test_path):
 
     with open("recursion.log", 'w') as _log:
 
-        for f in glob(os.path.join(test_path, 'F2', '*.fits')):
+        for f in glob.glob(os.path.join(test_path, 'F2', '*.fits')):
 
             ad = astrodata.open(f)
 
@@ -55,6 +53,7 @@ def test_select_from_inputs_primitive(test_path):
 
             del ad
             del p
+
 
 if __name__ == '__main__':
 
