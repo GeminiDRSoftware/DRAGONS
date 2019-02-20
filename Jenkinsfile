@@ -9,8 +9,8 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
-    // Keep the 10 most recent builds
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    // Keep the 20 most recent builds
+    buildDiscarder(logRotator(numToKeepStr: '20'))
     timestamps()
   }
 
@@ -115,7 +115,7 @@ pipeline {
 
   post {
     always {
-      sh 'conda remove --yes -n ${BUILD_TAG} --all --quiet'
+      sh 'conda remove --yes --all --quiet -n ${BUILD_TAG}'
     }
     failure {
       echo "Send e-mail, when failed"

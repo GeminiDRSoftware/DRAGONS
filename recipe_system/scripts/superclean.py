@@ -224,7 +224,7 @@ if optka or optkr or optsap or optsup:
     userid = pw.pw_uid
     showstr = ""
     for line in lines:
-        processinfo = string.split(line)
+        processinfo = line.split()
 
         # skips over grep and superclean commands
         if (line.rfind("grep") > -1) or (line.rfind("superclean") > -1):
