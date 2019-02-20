@@ -6,18 +6,6 @@
 Data Reduction
 **************
 
-This chapter contains a short guide on how to reduce GSAOI data using DRAGONS.
-
-Before start, make sure you have:
-
-    - Conda is properly installed;
-
-    - A Conda Virtual Environment is properly created and is active;
-
-    - AstroConda (STScI) is properly installed within the Virtual Environment;
-
-    - DRAGONS was successfully installed within the Conda Virtual Environment;
-
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. One of the most important scripts is called
 ``reduce``, which is extensively explained in the
@@ -47,10 +35,10 @@ call the command tool ``typewalk```:::
     ...
 
 This command will open every FITS file within the current folder (recursively)
-and will print a table with the file names and the associated tags. Calibration
-files will always have the ``CAL`` tag, so we can start getting to know a bit
-more about our data set. The output above was trimmed for simplicity.
-
+and will print a table with the file names and the associated tags. For example,
+calibration files will always have the ``CAL`` tag. This means that we we can
+start getting to know a bit more about our data set just by looking the tags.
+The output above was trimmed for simplicity.
 
 
 .. _create_file_lists:
@@ -58,17 +46,21 @@ more about our data set. The output above was trimmed for simplicity.
 Create File lists
 -----------------
 
+This data set science images obtained with the Kshort and with the J filters. It
+also contains images of standard stars obtained in the same night with the same
+filters. Finally, it contains flat images in both filters. We first need to
+identify these files and create lists that will be used in the data-reduction
+process.
 
-.. _process_dark_files:
+Let's first check all the FLAT files:::
 
-Process DARK files
-------------------
+    $ dataselect --tags FLAT --expr 'filter_name=="J"' raw/*.fits > flats_J.list
 
+    $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' raw/*.fits > flats_Kshort.list
 
-.. _process_bpm_files:
+Everything else is science data:::
 
-Process BPM files
------------------
+    $ dataselect --xtags FLAT raw/*.fits > science.list
 
 
 .. _process_flat_files:
@@ -76,9 +68,23 @@ Process BPM files
 Process FLAT files
 ------------------
 
+.. piece of cake. Very easy to do.
 
 .. _processing_science_files:
 
 Process Science files
 ---------------------
+
+.. It's the same as any other IR instrument. It uses the positional offsets to
+   work out whether the images all overlap or not. The image with the smallest
+   offsets is assumed to contain the science target. If some images are clearly
+   in a different position, these are assumed to be sky frames and only these
+   are stacked to construct sky frames to be subtracted from the science images.
+   If all the images overlap, then all frames can be used to make skies provided
+   they're more than a certain distance (a couple of arcseconds) from the
+   science frame (to avoid objects falling on top of each other and cancelling
+   out).
+
+.. The final reduced data is crap: I have files with no sources or a file
+   with a lot of residuum and with a bad WCS. Need to check on this tomorrow.
 
