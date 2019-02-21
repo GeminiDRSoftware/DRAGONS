@@ -6,6 +6,8 @@ import numpy as np
 from gempy.utils import logutils
 from geminidr.gemini.lookups.timestamp_keywords import timestamp_keys
 
+# class CompareAD():
+
 def ad_compare(ad1, ad2):
     """
     Compares the tags, headers, and pixel values of two images
@@ -31,6 +33,7 @@ def ad_compare(ad1, ad2):
     fname1 = ad1.filename
     fname2 = ad2.filename
     ok = True
+    errorlist = []
 
     # If images have different lengths, give up now
     if len(ad1) != len(ad2):
@@ -48,6 +51,10 @@ def ad_compare(ad1, ad2):
         log.warning('TAGS do not match:')
         log.warning('  {} (1): {}'.format(fname1, ad1.tags))
         log.warning('  {} (2): {}'.format(fname2, ad2.tags))
+        errorlist.append("TAGS do not match! {} contains {}, "
+                         "while {} contains {}".format(fname1, list(set(ad1.tags) - set(ad2.tags)),
+                                                       fname2, list(set(ad2.tags) - set(ad1.tags))))
+        errorlist.append("TAGS (cont): TAGS have {} in common".format(list(set(ad1.tags).intersection(ad2.tags))))
         ok = False
 
     # Check header keywords in PHU and all extension HDUs
@@ -64,9 +71,11 @@ def ad_compare(ad1, ad2):
             if s1-s2:
                 log.warning('  {} (1) contains keywords {}'.
                             format(fname1, s1-s2))
+                errorlist.append("Header {} (1) contains keywords {}".format(fname1, s1 - s2))
             if s2-s1:
                 log.warning('  {} (2) contains keywords {}'.
                             format(fname2, s2-s1))
+                errorlist.append("Header {} (2) contains keywords {}".format(fname2, s2 - s1))
             ok = False
 
         # Compare values for meaningful keywords
@@ -82,10 +91,14 @@ def ad_compare(ad1, ad2):
                     if abs(v1 - v2) > 0.01:
                         log.warning('{} value mismatch: {} v {}'.
                                     format(kw, v1, v2))
+                        errorlist.append('{} value mismatch: {} v {}'.
+                                    format(kw, v1, v2))
                         ok = False
                 else:
                     if v1 != v2:
                         log.warning('{} value mismatch: {} v {}'.
+                                    format(kw, v1, v2))
+                        errorlist.append('{} value mismatch: {} v {}'.
                                     format(kw, v1, v2))
                         ok = False
 
@@ -95,11 +108,17 @@ def ad_compare(ad1, ad2):
     if (attr1 is None) ^ (attr2 is None):
         log.warning('    Attribute mismatch for REFCAT: {} v {}'.
                     format(attr1 is not None, attr2 is not None))
+        errorlist.append('Attribute mismatch for REFCAT: {} v {}'.
+                         format(attr1 is not None, attr2 is not None))
         ok = False
     elif attr1 is not None and attr2 is not None:
         if len(attr1) != len(attr2):
             log.warning('    REFCAT lengths differ: {} v {}'.
                         format(len(attr1), len(attr2)))
+            errorlist.append('The REFCAT lenghts differ: {} = {} vs. {} = {}'.
+                              append(attr1 is not None, len(attr1),
+                                     attr2 is not None, len(attr2)))
+
             ok = False
 
     # Extension by extension, check all the attributes
@@ -112,6 +131,8 @@ def ad_compare(ad1, ad2):
             if (attr1 is None) ^ (attr2 is None):
                 log.warning('    Attribute mismatch for {}: {} v {}'.
                             format(attr, attr1 is not None, attr2 is not None))
+                errorlist.append("Attribute error for {}: {} v {}"
+                                 .format(attr, attr1 is not None, attr2 is not None))
                 ok = False
                 continue
             if attr1 is not None and attr2 is not None:
@@ -119,15 +140,21 @@ def ad_compare(ad1, ad2):
                     if len(attr1) != len(attr2):
                         log.warning('    OBJCAT lengths differ: {} v {}'.
                                     format(len(attr1), len(attr2)))
+                        errorlist.append("OBJCAT lengths differ: {} vs {}".
+                                         append(format(len(attr1), len(attr2))))
                         ok = False
                 else:
                     # Pixel-data extensions
                     if attr1.dtype.name != attr2.dtype.name:
                         log.warning('    Datatype mismatch for {}: {} v {}'.
                                     format(attr, attr1.dtype, attr2.dtype))
+                        errorlist.append("Datatype differ for {}: {} vs {}".
+                                    format(attr, attr1.dtype, attr2.dtype))
                         ok = False
                     if attr1.shape != attr2.shape:
                         log.warning('    Shape mismatch for {}: {} v {}'.
+                                    format(attr, attr1.shape, attr2.shape))
+                        errorlist.append("Shapes differ between {}: {} vs {}".
                                     format(attr, attr1.shape, attr2.shape))
                         ok = False
                     else:
@@ -140,9 +167,14 @@ def ad_compare(ad1, ad2):
                             if maxdiff > 0:
                                 log.warning('    {} int arrays not identical: '
                                     'max difference {}'.format(attr, maxdiff))
+                                errorlist.append("{} int arrays not identical!".format(attr))
                                 ok = False
                         elif maxdiff > 0.1:
-                            log.warning('    {} float arrays differ: max difference '
+                            log.warning('    {} floaXt arrays differ: max difference '
                                         '{}'.format(attr, maxdiff))
                             ok = False
+    if not ok:
+        for i,e in enumerate(errorlist):
+            print("%d) %s" % (i, e))
     return ok
+
