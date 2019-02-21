@@ -3,11 +3,12 @@ import os
 import numpy as np
 import pytest
 import tempfile
+
 from astrodata import nddata
 import astrodata
 import gemini_instruments
 
-
+test_path = os.getenv('DRAGONS_TESTDATA', '.')
 # naming all fits files for easier legibility in code
 GRACES = "N20190116G0054i.fits"
 GNIRS = 'N20190206S0279.fits'
@@ -68,7 +69,8 @@ class TestAstrodataFits:
         
         ad = astrodata.open(os.path.join(test_path, filename))
         
-        # YES, this *can* be different from test_is_right_type above. Metaclasses!
+        # YES, this *can* be different from test_is_right_type above.
+        # Metaclasses!
         assert isinstance(ad, expected)
 
     @pytest.mark.parametrize("filename, expected", [
@@ -89,14 +91,18 @@ class TestAstrodataFits:
 
     @pytest.mark.parametrize("filename, expected", [
         (GRACES,{'UNPREPARED', 'RAW', 'SPECT', 'GEMINI', 'GRACES'}),
-        (GNIRS, {'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'GNIRS','UNPREPARED', 'SPECT', 'XD'}),
-        (GMOSN, {'RAW', 'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'SPECT', 'MOS'}),
+        (GNIRS, {'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'GNIRS',
+                 'UNPREPARED', 'SPECT', 'XD'}),
+        (GMOSN, {'RAW', 'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL',
+                 'UNPREPARED', 'SPECT', 'MOS'}),
         (GMOSS, {'SOUTH', 'RAW', 'GMOS', 'GEMINI', 'SIDEREAL',
                  'UNPREPARED', 'IMAGE', 'MASK', 'ACQUISITION'}),
         (NIFS,  {'DARK', 'RAW', 'AT_ZENITH', 'NORTH', 'AZEL_TARGET',
                  'CAL', 'UNPREPARED', 'NIFS', 'GEMINI', 'NON_SIDEREAL'}),
-        (NIRI,  {'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'NIRI'}),
-        (F2,    {'IMAGE', 'F2', 'RAW', 'SOUTH', 'SIDEREAL', 'UNPREPARED', 'GEMINI', 'ACQUISITION'})
+        (NIRI,  {'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED',
+                 'IMAGE', 'NIRI'}),
+        (F2,    {'IMAGE', 'F2', 'RAW', 'SOUTH', 'SIDEREAL', 'UNPREPARED',
+                 'GEMINI', 'ACQUISITION'})
     ])
     def test_tags(self, filename, expected, test_path):
         
@@ -117,8 +123,10 @@ class TestAstrodataFits:
     def test_can_return_instrument(self, filename, expected, test_path):
         
         ad = astrodata.open(os.path.join(test_path, filename))
-        
+
         assert ad.phu['INSTRUME'] == expected
+        assert ad.instrument() == ad.phu['INSTRUME']
+
 
     @pytest.mark.parametrize("filename, expected", [
         (GMOSN, 3),
@@ -161,9 +169,10 @@ class TestAstrodataFits:
 
     @pytest.mark.parametrize("filename, expected", [
         (GMOSN, ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']),
-        (GMOSS, ['BI5-36-4k-2', 'BI5-36-4k-2', 'BI5-36-4k-2', 'BI5-36-4k-2',
-                 'BI11-33-4k-1', 'BI11-33-4k-1', 'BI11-33-4k-1', 'BI11-33-4k-1',
-                 'BI12-34-4k-1', 'BI12-34-4k-1', 'BI12-34-4k-1', 'BI12-34-4k-1']),
+        (GMOSS, ['BI5-36-4k-2', 'BI5-36-4k-2', 'BI5-36-4k-2',
+                 'BI5-36-4k-2',  'BI11-33-4k-1', 'BI11-33-4k-1',
+                 'BI11-33-4k-1', 'BI11-33-4k-1', 'BI12-34-4k-1',
+                 'BI12-34-4k-1', 'BI12-34-4k-1', 'BI12-34-4k-1']),
         (NIFS, 'Error should raise!'),
     ])
     def Test_read_a_keyword_from_hdr(self, filename, expected, test_path):
@@ -193,7 +202,9 @@ class TestAstrodataFits:
         ad = astrodata.open('N20110826S0336.fits')
 
         with pytest.raises(AttributeError):
-            assert ad.hdr.CCDNAME == ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']
+            assert ad.hdr.CCDNAME == [
+                'EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03'
+            ]
 
     @pytest.mark.skip(reason="Deprecated methods")
     def test_set_a_keyword_on_phu_deprecated(self):
@@ -213,9 +224,10 @@ class TestAstrodataFits:
             assert 'DETECTOR' not in ad.phu
 
     # Regression:
-    # Make sure that references to associated extension objects are copied across
-
-    # Trying to access a missing attribute in the data provider should raise an
+    # Make sure that references to associated
+    # extension objects are copied across
+    # Trying to access a missing attribute in
+    # the data provider should raise an
     # AttributeError
         test_data_name = "N20110826S0336.fits"
     @pytest.mark.skip(reason="uses chara")
