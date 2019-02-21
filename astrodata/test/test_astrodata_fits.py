@@ -335,5 +335,6 @@ class TestAstrodataFits:
         #           'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
         #           'requested_cc', 'requested_wv', 'requested_bg']
 
+
         for integer in ad_int:
             assert type(getattr(ad, integer)()) == str
