@@ -6,6 +6,8 @@ import tempfile
 import glob
 
 import astrodata
+import gemini_instruments
+from .conftest import test_path
 
 from astropy.io import fits
 from astropy.table import Table
@@ -22,11 +24,18 @@ from astropy.table import Table
 # GSAOI = 'S20170505S0188.fits'
 
 #testfiles = [hello, GRACES, GNIRS, GMOSN, GMOSS, NIFS, NIRI, F2]
+#
+# buffer = open('../../.jenkins/test_files.txt', 'r')
+# list_of_files = buffer.readlines()
+# # glob.glob(.jenkins/test_files.txt, )
 
-buffer = open('../../.jenkins/test_files.txt', 'r')
-list_of_files = buffer.readlines()
-testfiles = [f.strip() for f in list_of_files if "/" not in f]
-buffer.close()
+cleanup = os.path.join(test_path(), 'created_fits_file.fits')
+if os.path.exists(cleanup):
+    os.remove(cleanup)
+
+testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
+
+
 
 
 # Fixtures for module and class
@@ -55,10 +64,10 @@ def setup_astrodatafits(request):
 class TestAstrodataFits:
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_can_read_data(self, filename, test_path):
-        test_data_full_name = os.path.join(test_path, filename)
+    def test_can_read_data(self, filename):
 
-        assert os.path.exists(test_data_full_name)
+
+        assert os.path.exists(filename)
 
     @pytest.mark.parametrize("filename", testfiles)
     def test_can_open_data(self, filename, test_path):
@@ -68,9 +77,9 @@ class TestAstrodataFits:
     @pytest.mark.parametrize("filename", testfiles)
     def test_filename_recognized(self, filename, test_path):
 
-        ad = astrodata.open(os.path.join(test_path, filename))
-        adfilename = ad.filename
-        assert adfilename == filename
+        ad = astrodata.open(filename)
+        filename = os.path.split(filename)[-1]
+        assert ad.filename == filename
 
     @pytest.mark.parametrize("filename", testfiles)
     def test_can_add_and_del_extension(self, filename, test_path):
@@ -315,15 +324,16 @@ class TestAstrodataFits:
         with tempfile.TemporaryFile() as tf:
             ad.write(tf)
 
-    # @pytest.mark.parametrize("filename", testfiles)
-    # def test_descriptor_is_int(self, filename, test_path):
-    #
-    #     ad = astrodata.open(os.path.join(test_path, filename))
-    #
-    #     ad_int = ['id', 'diskfile_id', 'ut_datetime_secs', 'ra', 'dec',
-    #               'azimuth', 'elevation', 'cass_rotator_pa', 'airmass',
-    #               'exposure_time', 'central_wavelength', 'coadds',
-    #               'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
-    #               'requested_cc', 'requested_wv', 'requested_bg']
-    #
-    #     [ad.integer for integer in ad_int]
+    @pytest.mark.parametrize("filename", testfiles)
+    def test_descriptor_is_int(self, filename, test_path):
+
+        ad = astrodata.open(os.path.join(test_path, filename))
+        ad_int = ["group_id"]
+        # ad_int = ['id', 'diskfile_id', 'ut_datetime_secs', 'ra', 'dec',
+        #           'azimuth', 'elevation', 'cass_rotator_pa', 'airmass',
+        #           'exposure_time', 'central_wavelength', 'coadds',
+        #           'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
+        #           'requested_cc', 'requested_wv', 'requested_bg']
+
+        for integer in ad_int:
+            assert type(getattr(ad, integer)()) == str
