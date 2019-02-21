@@ -70,8 +70,8 @@ class TestAstrodataFits:
         assert os.path.exists(filename)
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_can_open_data(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_can_open_data(self, filename):
+        ad = astrodata.open(filename)
         assert isinstance(ad, astrodata.fits.AstroDataFits)
 
     @pytest.mark.parametrize("filename", testfiles)
@@ -82,8 +82,8 @@ class TestAstrodataFits:
         assert ad.filename == filename
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_can_add_and_del_extension(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_can_add_and_del_extension(self, filename):
+        ad = astrodata.open(filename)
         ourarray = np.array([(1, 2, 3),
                              (11, 12, 13),
                              (21, 22, 23)])
@@ -95,34 +95,34 @@ class TestAstrodataFits:
 
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_extension_data_type(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_extension_data_type(self, filename):
+        ad = astrodata.open(filename)
         data = ad[0].data
         assert type(data) == np.ndarray
 
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_can_add_and_del_extension(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_can_add_and_del_extension(self, filename):
+        ad = astrodata.open(filename)
         data = ad[0].data
         assert type(data) == np.ndarray
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_iterate_over_extensions(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_iterate_over_extensions(self, filename):
+        ad = astrodata.open(filename)
 
         metadata = (('SCI', 1), ('SCI', 2), ('SCI', 3))
         for ext, md in zip(ad, metadata):
             assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_iterate_over_extensions(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_iterate_over_extensions(self, filename):
+        ad = astrodata.open(filename)
         np.random.rand(50, 50)
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_slice_multiple(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_slice_multiple(self, filename):
+        ad = astrodata.open(filename)
         metadata = ('SCI', 2), ('SCI', 3)
 
         try:
@@ -135,8 +135,8 @@ class TestAstrodataFits:
                 assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_slice_single(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_slice_single(self, filename):
+        ad = astrodata.open(filename)
         try:
             metadata = ('SCI', 2)
             ext = ad[1]
@@ -148,8 +148,8 @@ class TestAstrodataFits:
             assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == metadata
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_iterate_over_single_slice(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_iterate_over_single_slice(self, filename):
+        ad = astrodata.open(filename)
 
         metadata = ('SCI', 1)
 
@@ -157,8 +157,8 @@ class TestAstrodataFits:
             assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == metadata
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_slice_negative(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_slice_negative(self, filename):
+        ad = astrodata.open(filename)
 
         assert ad.data[-1] is ad[-1].data
 
@@ -297,8 +297,8 @@ class TestAstrodataFits:
     # Make sure that references to associated
     # extension objects are copied across
     @pytest.mark.parametrize("filename", testfiles)
-    def test_do_arith_and_retain_features(self, filename, test_path):
-        ad = astrodata.open(os.path.join(test_path, filename))
+    def test_do_arith_and_retain_features(self, filename):
+        ad = astrodata.open(filename)
 
         ad[0].NEW_FEATURE = np.array([1, 2, 3, 4, 5])
         ad2 = ad * 5
@@ -334,7 +334,5 @@ class TestAstrodataFits:
         #           'exposure_time', 'central_wavelength', 'coadds',
         #           'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
         #           'requested_cc', 'requested_wv', 'requested_bg']
-
-
         for integer in ad_int:
             assert type(getattr(ad, integer)()) == str
