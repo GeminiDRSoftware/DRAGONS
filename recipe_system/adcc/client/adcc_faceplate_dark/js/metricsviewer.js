@@ -1507,7 +1507,12 @@ MetricsViewer.prototype = {
         var msg = this.formatWarningRecords(pr,"comment");
         var prepend = true;
         this.lightbox.addRecord(msg,prepend);
-        $("#lightbox_background, #lightbox_window").show();
+	// popups have been requested suppressed.
+        // $("#lightbox_background, #lightbox_window").show();
+	//
+	// As alt, the popup can show and then be dismissed after delay
+	// in microseconds.
+	// $("#lightbox_background, #lightbox_window").show(0).delay(1000).hide(0);
     }
 
     }, // end update

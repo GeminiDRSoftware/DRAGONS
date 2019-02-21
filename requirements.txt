@@ -1,9 +1,8 @@
-future
-pytest
-pylint
-coveralls
-python-dateutil
-psutil
-numpy
-scipy
 astropy
+cython
+future
+ipython
+matplotlib
+numpy
+python-dateutil
+scipy

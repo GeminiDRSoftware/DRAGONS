@@ -48,7 +48,6 @@ class F2Image(F2, Image, Photometry):
             if dark_list:
                 self.showInputs(dark_list, purpose='darks')
                 dark_list = self.stackDarks(dark_list, **stack_params)
-                self.writeOutputs(dark_list)
             self.showInputs(flat_list, purpose='flats')
             stack_params.update({'zero': False, 'scale': False})
             flat_list = self.stackFrames(flat_list, **stack_params)

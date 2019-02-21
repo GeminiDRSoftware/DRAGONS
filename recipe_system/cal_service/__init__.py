@@ -111,7 +111,6 @@ def set_calservice(local_db_dir=None):
     return
 
 
-
 class CalibrationService(object):
     """
     The CalibrationService class provides a limited API on the LocalManager

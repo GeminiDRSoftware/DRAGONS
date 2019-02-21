@@ -145,8 +145,8 @@ Flats are FLAT and IMAGE, this is why we need to exclude FLAT.
 
 
 
-A list of the science sequence
-------------------------------
+A list for the science observations
+-----------------------------------
 The science frames are all the IMAGE non-FLAT that are also not the standard.
 This translates to the following expression::
 
@@ -241,7 +241,7 @@ stack.
 We create the master flat field and add it to the calibration manager as
 follow::
 
-    reduce @allflats.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits
+    reduce @flats.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits
     caldb add N20160102S0373_flat.fits
 
 Note how we pass in the BPM we created in the previous step.  The ``addDQ``
@@ -277,8 +277,8 @@ recommended) needs to be specified by the user.
     reduce @stdstar.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits darkCorrect:do_dark=False
 
 
-Science Target
---------------
+Science Observations
+--------------------
 The science target is an extended source.  We need to turn off
 the scaling of the sky because the target fills the field of view and does
 not represent a reasonable sky background.  If scaling is not turned off in

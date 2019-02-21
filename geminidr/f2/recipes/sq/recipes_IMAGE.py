@@ -36,7 +36,9 @@ def reduce(p):
     p.skyCorrect(mask_objects=True)
     p.flushPixels()
     p.detectSources()
-    p.alignAndStack()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
     p.writeOutputs()
     return
 
