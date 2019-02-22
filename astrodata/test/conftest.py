@@ -15,4 +15,3 @@ def test_path():
         pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
     return path
-
