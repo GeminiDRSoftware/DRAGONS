@@ -63,6 +63,19 @@ information above, or simply copy the link below and past to your browser:::
 Here is the `link that can be used to download the science files
 <https://archive.gemini.edu/download/sr=180/20170201-20171231/object=NGC+104/notengineering/GSAOI/ra=6.0223292/science/dec=-72.0814444/NotFail/OBJECT/present/canonical>`_
 (38 files totalling 0.9 Gb).
+
 And here is the `link to download the associated calibration files
 <https://archive.gemini.edu/download/associated_calibrations/sr=180/20170201-20171231/object=NGC+104/notengineering/GSAOI/ra=6.0223292/science/dec=-72.0814444/NotFail/OBJECT/canonical>`_
 (61 files totalling 1.02 Gb).
+
+You might also want to download a set of DARK and H-Band FLAT images in
+order to build Bad Pixel Masks (BPM) if you do not have one. The DARK files
+can be downloaded using `this link
+<https://archive.gemini.edu/download/exposure_time=150/notengineering/GSAOI/Pass/DARK/present/canonical>`_.
+The link to the search form can be found below:::
+
+    https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
+
+..  Search Form https://archive.gemini.edu/searchform/GS-2017A-Q-44-28/cols=CTOWEQ/notengineering/GSAOI/imaging/20170101-20171201/science/NotFail/OBJECT
+    (43 files totalling 0.84 Gb) https://archive.gemini.edu/download/GS-2017A-Q-44-28/20170101-20171201/notengineering/GSAOI/imaging/science/NotFail/OBJECT/present/canonical
+    (53 files totalling 0.99 Gb) https://archive.gemini.edu/download/associated_calibrations/GS-2017A-Q-44-28/20170101-20171201/notengineering/GSAOI/imaging/science/NotFail/OBJECT/canonical

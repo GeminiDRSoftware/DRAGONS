@@ -29,6 +29,7 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
+
 def makeProcessedBPM(p):
     """
     This recipe requires flats and *short* darks, not darks that match
@@ -46,5 +47,6 @@ def makeProcessedBPM(p):
     p.normalizeFlat()
     p.makeBPM()
     return
+
 
 default = makeProcessedFlat
