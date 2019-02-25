@@ -13,42 +13,17 @@ from astropy.io import fits
 from astropy.table import Table
 
 
-# naming all fits files for easier legibility in code
-# GRACES = "N20190116G0054i.fits"
-# GNIRS = 'N20190206S0279.fits'
-# GMOSN = "N20110826S0336.fits"
-# GMOSS = "S20180223S0229.fits"
-# NIFS = "N20160727S0077.fits"
-# NIRI = 'N20190120S0287.fits'
-# F2 = 'S20190213S0084.fits'
-# GSAOI = 'S20170505S0188.fits'
-
-#testfiles = [hello, GRACES, GNIRS, GMOSN, GMOSS, NIFS, NIRI, F2]
-#
-# buffer = open('../../.jenkins/test_files.txt', 'r')
-# list_of_files = buffer.readlines()
-# # glob.glob(.jenkins/test_files.txt, )
-
+# Cleans up a fake file created in the tests in case it's still there
 cleanup = os.path.join(test_path(), 'created_fits_file.fits')
 if os.path.exists(cleanup):
     os.remove(cleanup)
 
+# test_path() needs to be exported as the path with
+# all the reuired files you wish to test
 testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
 
 
-
-
 # Fixtures for module and class
-@pytest.fixture(scope='module')
-def setup_module(request):
-    print('setup test_astrodata_fits module')
-
-    def fin():
-        print('\nteardown test_astrodata_fits module')
-    request.addfinalizer(fin)
-    return
-
-
 @pytest.fixture(scope='class')
 def setup_astrodatafits(request):
     print('setup TestAstrodataFits')
@@ -58,24 +33,27 @@ def setup_astrodatafits(request):
     request.addfinalizer(fin)
     return
 
-#
 
 @pytest.mark.usefixtures('setup_astrodatafits')
 class TestAstrodataFits:
 
     @pytest.mark.parametrize("filename", testfiles)
+    def test_filename_exists(self, filename):
+        assert os.path.exists(filename)
+
+    # TODO: Replace this so tests reads data, not just checks if exists
+    @pytest.mark.parametrize("filename", testfiles)
     def test_can_read_data(self, filename):
-
-
         assert os.path.exists(filename)
 
     @pytest.mark.parametrize("filename", testfiles)
     def test_can_open_data(self, filename):
         ad = astrodata.open(filename)
+
         assert isinstance(ad, astrodata.fits.AstroDataFits)
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_filename_recognized(self, filename, test_path):
+    def test_filename_recognized(self, filename):
 
         ad = astrodata.open(filename)
         filename = os.path.split(filename)[-1]
@@ -87,24 +65,29 @@ class TestAstrodataFits:
         ourarray = np.array([(1, 2, 3),
                              (11, 12, 13),
                              (21, 22, 23)])
+
         original_index = len(ad)
         ad.append(ourarray)
+
         assert len(ad) == (original_index + 1)
+
         del ad[original_index]
         assert len(ad) == original_index
 
-
     @pytest.mark.parametrize("filename", testfiles)
     def test_extension_data_type(self, filename):
+
         ad = astrodata.open(filename)
         data = ad[0].data
-        assert type(data) == np.ndarray
 
+        assert type(data) == np.ndarray
 
     @pytest.mark.parametrize("filename", testfiles)
     def test_can_add_and_del_extension(self, filename):
+
         ad = astrodata.open(filename)
         data = ad[0].data
+
         assert type(data) == np.ndarray
 
     @pytest.mark.parametrize("filename", testfiles)
@@ -115,10 +98,10 @@ class TestAstrodataFits:
         for ext, md in zip(ad, metadata):
             assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
-    @pytest.mark.parametrize("filename", testfiles)
-    def test_iterate_over_extensions(self, filename):
-        ad = astrodata.open(filename)
-        np.random.rand(50, 50)
+    # @pytest.mark.parametrize("filename", testfiles)
+    # def test_iterate_over_extensions(self, filename):
+    #     ad = astrodata.open(filename)
+    #     np.random.rand(50, 50)
 
     @pytest.mark.parametrize("filename", testfiles)
     def test_slice_multiple(self, filename):
@@ -127,8 +110,10 @@ class TestAstrodataFits:
 
         try:
             slc = ad[1, 2]
+
         except IndexError:
             assert len(ad) == 1
+
         else:
             assert len(slc) == 2
             for ext, md in zip(slc, metadata):
@@ -137,12 +122,15 @@ class TestAstrodataFits:
     @pytest.mark.parametrize("filename", testfiles)
     def test_slice_single(self, filename):
         ad = astrodata.open(filename)
+
         try:
             metadata = ('SCI', 2)
             ext = ad[1]
+
         except IndexError:
             # Make sure IndexError is due to ad being to short
             assert len(ad) == 1
+
         else:
             assert ext.is_single
             assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == metadata
@@ -162,8 +150,6 @@ class TestAstrodataFits:
 
         assert ad.data[-1] is ad[-1].data
 
-
-
     @pytest.mark.parametrize("filename", testfiles)
     def test_set_a_keyword_on_phu(self, filename, test_path):
 
@@ -174,7 +160,6 @@ class TestAstrodataFits:
 
         assert ad.phu['DETECTOR'] == 'FooBar'
         assert ad.phu['ARBTRARY'] == 'BarBaz'
-
 
     @pytest.mark.parametrize("filename", testfiles)
     def test_remove_a_keyword_from_phu(self, filename, test_path):
@@ -192,7 +177,6 @@ class TestAstrodataFits:
             else:
                 raise KeyError
 
-
     @pytest.mark.parametrize("filename", testfiles)
     def test_writes_to_new_fits(self, filename, test_path):
 
@@ -206,7 +190,6 @@ class TestAstrodataFits:
         assert os.path.exists(test_file_location)
 
         os.remove(test_file_location)
-
 
     @pytest.mark.parametrize("filename", testfiles)
     def test_can_overwrite_existing_file(self, filename, test_path):
@@ -239,8 +222,9 @@ class TestAstrodataFits:
         ad.append(hdu, name='SCI')
 
         # Write file and test it exists properly
-        test_file_location = os.path.join(test_path,
-                                          'created_fits_file.fits')
+        test_file_location = os.path.join(
+            test_path, 'created_fits_file.fits')
+
         if os.path.exists(test_file_location):
             os.remove(test_file_location)
         ad.write(test_file_location)
@@ -250,6 +234,7 @@ class TestAstrodataFits:
 
         adnew = astrodata.open(test_file_location)
         assert np.array_equal(adnew[0].data, pixel_data)
+        os.remove(test_file_location)
 
     def test_can_append_table_and_access_data(self):
 
@@ -264,21 +249,7 @@ class TestAstrodataFits:
 
         print(ad.info())
 
-    # Access to headers: DEPRECATED METHODS
-    # These should fail at some point
-    @pytest.mark.skip(reason="Deprecated methods")
-    def test_read_a_keyword_from_phu_deprecated(self):
-        ad = astrodata.open('N20110826S0336.fits')
-        with pytest.raises(AttributeError):
-            assert ad.phu.DETECTOR == 'GMOS + Red1'
 
-    @pytest.mark.skip(reason="Deprecated methods")
-    def test_read_a_keyword_from_hdr_deprecated(self):
-        ad = astrodata.open('N20110826S0336.fits')
-        with pytest.raises(AttributeError):
-            assert ad.hdr.CCDNAME == ['EEV 9273-16-03',
-                                      'EEV 9273-20-04',
-                                      'EEV 9273-20-03']
 
     @pytest.mark.skip(reason="Deprecated methods")
     def test_set_a_keyword_on_phu_deprecated(self):
@@ -291,7 +262,6 @@ class TestAstrodataFits:
             assert ad.phu.DETECTOR == 'FooBar'
             assert ad.phu.ARBTRARY == 'BarBaz'
             assert ad.phu['DETECTOR'] == 'FooBar'
-
 
     # Regression:
     # Make sure that references to associated
@@ -306,9 +276,51 @@ class TestAstrodataFits:
         np.testing.assert_array_almost_equal(ad[0].NEW_FEATURE,
                                              ad2[0].NEW_FEATURE)
 
-    # Trying to access a missing attribute in the data provider should raise an
-    # AttributeError
+
+    #Todo: this test below is broken, doesn't actually test due to os.path.join
+    ### FIX ###
+    @pytest.mark.parametrize("filename", testfiles)
+    def test_descriptor_is_int(self, filename, test_path):
+
+        ad = astrodata.open(os.path.join(test_path, "Archive/", filename))
+        ad_int = ['coadds', 'detector_x_bin', 'detector_y_bin',
+                  'requested_bg', 'requested_cc',
+                  'requested_iq', 'requested_wv']
+
+        # ad_int = ['id', 'diskfile_id', 'ut_datetime_secs', 'ra', 'dec',
+        #           'azimuth', 'elevation', 'cass_rotator_pa', 'airmass',
+        #           'exposure_time', 'central_wavelength', 'coadds',
+        #           'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
+        #           'requested_cc', 'requested_wv', 'requested_bg']
+        # for integer in ad_int:
+        #     assert type(getattr(ad, integer)()) == int
+
+        typelist = []
+        for i in ad.descriptors:
+            try:
+                typelist.append((i, type(getattr(ad, i)())))
+            except Exception as err:
+                print("{} failed on call: {}".format(i, str(err)))
+
+
+
+
+    #########################################################################################333
+    @pytest.mark.skip(reason="Deprecated methods")
+    def test_remove_a_keyword_from_phu_deprecated(self):
+        ad = astrodata.open('N20110826S0336.fits')
+        with pytest.raises(AttributeError):
+            del ad.phu.DETECTOR
+            assert 'DETECTOR' not in ad.phu
+
+        # Regression:
+        # Make sure that references to associated
+        # extension objects are copied across
+        # Trying to access a missing attribute in
+        # the data provider should raise an
+        # AttributeError
         test_data_name = "N20110826S0336.fits"
+
     @pytest.mark.skip(reason="uses chara")
     def test_raise_attribute_error_when_accessing_missing_extenions(self):
         ad = from_chara('N20131215S0202_refcatAdded.fits')
@@ -324,15 +336,21 @@ class TestAstrodataFits:
         with tempfile.TemporaryFile() as tf:
             ad.write(tf)
 
-    @pytest.mark.parametrize("filename", testfiles)
-    def test_descriptor_is_int(self, filename, test_path):
+    # Access to headers: DEPRECATED METHODS
+    # These should fail at some point
+    @pytest.mark.skip(reason="Deprecated methods")
+    def test_read_a_keyword_from_phu_deprecated(self):
+        ad = astrodata.open('N20110826S0336.fits')
 
-        ad = astrodata.open(os.path.join(test_path, filename))
-        ad_int = ["group_id"]
-        # ad_int = ['id', 'diskfile_id', 'ut_datetime_secs', 'ra', 'dec',
-        #           'azimuth', 'elevation', 'cass_rotator_pa', 'airmass',
-        #           'exposure_time', 'central_wavelength', 'coadds',
-        #           'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
-        #           'requested_cc', 'requested_wv', 'requested_bg']
-        for integer in ad_int:
-            assert type(getattr(ad, integer)()) == str
+        with pytest.raises(AttributeError):
+            assert ad.phu.DETECTOR == 'GMOS + Red1'
+
+    @pytest.mark.skip(reason="Deprecated methods")
+    def test_read_a_keyword_from_hdr_deprecated(self):
+        ad = astrodata.open('N20110826S0336.fits')
+
+        with pytest.raises(AttributeError):
+            assert ad.hdr.CCDNAME == [
+                'EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03'
+            ]
+
