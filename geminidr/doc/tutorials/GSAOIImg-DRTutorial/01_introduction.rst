@@ -72,9 +72,16 @@ You might also want to download a set of DARK and H-Band FLAT images in
 order to build Bad Pixel Masks (BPM) if you do not have one. The DARK files
 can be downloaded using `this link
 <https://archive.gemini.edu/download/exposure_time=150/notengineering/GSAOI/Pass/DARK/present/canonical>`_.
-The link to the search form can be found below:::
+or copying and pasting the following address to search form into your browser:::
 
     https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
+
+The FLAT files to build the BPM can be downloaded directly by
+`clicking here
+<https://archive.gemini.edu/download/20171201-20171231/object=Domeflat/filter=H/notengineering/GSAOI/Pass/present/canonical>`_
+or using the following address:::
+
+    https://archive.gemini.edu/searchform/object=Domeflat/cols=CTOWEQ/filter=H/notengineering/GSAOI/20171201-20171231/Pass
 
 ..  Search Form https://archive.gemini.edu/searchform/GS-2017A-Q-44-28/cols=CTOWEQ/notengineering/GSAOI/imaging/20170101-20171201/science/NotFail/OBJECT
     (43 files totalling 0.84 Gb) https://archive.gemini.edu/download/GS-2017A-Q-44-28/20170101-20171201/notengineering/GSAOI/imaging/science/NotFail/OBJECT/present/canonical

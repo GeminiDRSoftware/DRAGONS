@@ -65,7 +65,7 @@ lists that will be used in the data-reduction process.
 
 Let us start with the DARK files:::
 
-   $ dataselect --tags DARK raw/*.fits > list_of_dark_files.txt
+   $ dataselect --tags DARK raw/*.fits > list_of_dark.txt
 
 Now we can do the same with the FLAT files, separating them by filter:::
 
@@ -94,13 +94,45 @@ Process DARK files
 
 Accordingly to the `Calibration webpage for GSAOI
 <https://www.gemini.edu/sciops/instruments/gsaoi/calibrations>`_,
-DARK subtraction is not necessary since the dark noise level is too low. DARK
-files are only used to generate Bad Pixel Masks (BPM). This is described in the
-next section.
+**DARK subtraction is not necessary** since the dark noise level is too low. DARK
+files are only used to generate Bad Pixel Masks (BPM).
+
+If, for any reason, you believe that you really need to have a master DARK file,
+you can create it using the command below:::
+
+   $ reduce @list_of_darks.txt
+
+Note that ``reduce`` will no separate DARKS with different exposure times. You
+will have to create a new list for each exposure time, if that is the case.
+
+Master DARK files can be added to the local database using the ``caldb``
+command:::
+
+   $ caldb add ./calibrations/processed_dark/S20150609S0022_dark.fits
+
+Note that the name of the master dark file can be different for you.
+
+
+.. _create_bpm_files:
 
 Create BPM files
 ----------------
 
+The Bad Pixel Mask (BPM) files can be created using a set of FLAT images and a
+set of DARK files. The FLATs must be obtained in the H band with a number of
+counts around 20000 adu and no saturated pixels, usually achieved with 7 seconds
+exposure time. The download_sample_files_ contains a sample of the files to be
+used in this tutorial. If you need to download files for your own data set, use
+the `Gemini Archive Search Form <https://archive.gemini.edu/searchform>`_ to
+look for matching data.
+
+The BPM file can be created using the ``makeProcessedBPM`` recipe available
+via ``reduce`` command line:::
+
+   $ reduce -r makeProcessedBPM @list_of_H_flats.txt @list_of_darks.txt
+
+The ``-r`` argument tells ``reduce`` which recipe you want to use to replace
+the default recipe.
 
 
 .. _process_flat_files:
@@ -110,9 +142,16 @@ Process FLAT files
 
 FLAT images can be easily reduced using the ``reduce`` command line:::
 
-   $ reduce @list_of_J_flats.lis
+   $ reduce @list_of_J_flats.txt
 
-   $ reduce @list_of_Kshort_flats.lis
+   $ reduce @list_of_Kshort_flats.txt
+
+If we want ``reduce`` to use the BPM file, we need to add ``-p
+addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line:::
+
+   $ reduce @list_of_J_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
+
+   $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
 
 .. _processing_science_files:
 
@@ -122,9 +161,14 @@ Process Science files
 Once we have our calibration files processed and added to the database, we can
 run ``reduce`` on our science data:::
 
-   $ reduce @list_of_science_data
+   $ reduce @list_of_science_files.txt @list_of_standard_stars.txt
 
-``reduce`` will run on every file within ``list_of_science_data``
+This command will generate flat corrected and sky subtracted files but will
+not stack them. You can find which file is which by its suffix
+(``_flatCorrected`` or ``_skySubtracted``).
+
+.. todo: Add proper parameter values to ``reduce`` so Sky Subtraction can be
+   performed correctly.
 
 .. It's the same as any other IR instrument. It uses the positional offsets to
    work out whether the images all overlap or not. The image with the smallest
