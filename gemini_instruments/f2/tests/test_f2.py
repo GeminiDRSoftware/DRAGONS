@@ -30,8 +30,6 @@ def setup_f2(request):
 @pytest.mark.usefixtures('setup_f2')
 class TestF2:
 
-    @pytest.mark.skipif('TEST_PATH' not in os.environ, reason="Jello world")
-    @pytest.mark.skipif(not os.path.exists(os.environ['TEST_PATH']), reason="Jello world")
     def test_is_right_type(self):
 
         ad = astrodata.open(os.path.join(test_path(), filename))
