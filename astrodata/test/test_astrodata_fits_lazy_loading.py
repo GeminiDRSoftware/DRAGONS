@@ -1,11 +1,4 @@
-import pytest
-import tempfile
-import os
 
-import numpy as np
-
-import astrodata
-import gemini_instruments
 
 THIS_DIR = os.path.dirname(__file__)
 CHARA = '/net/chara/data2/pub'
@@ -18,6 +11,7 @@ import numpy as np
 
 import astrodata
 import gemini_instruments
+from .conftest import test_path
 
 
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
@@ -34,10 +28,10 @@ import gemini_instruments
 
 # Load data when accessing it
 @pytest.mark.ad_local_data
-def test_for_length(test_path):
+def test_for_length():
 
     test_filename = 'GMOS/N20110826S0336.fits'
-    ad = astrodata.open(os.path.join(test_path, test_filename))
+    ad = astrodata.open(os.path.join(test_path(), test_filename))
 
     # This should force the data to be loaded
     # Otherwise, we'll get different results - or an exception
