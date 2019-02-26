@@ -49,6 +49,7 @@ pipeline {
         sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
               source activate ${BUILD_TAG}
               .jenkins/test_env_and_install_missing_libs.sh
+              python setup.py install
               python .jenkins/download_test_data.py
               '''
       }
