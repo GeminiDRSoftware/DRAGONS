@@ -151,9 +151,9 @@ class TestAstrodataFits:
         assert ad.data[-1] is ad[-1].data
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_set_a_keyword_on_phu(self, filename, test_path):
+    def test_set_a_keyword_on_phu(self, filename):
 
-        ad = astrodata.open(os.path.join(test_path, filename))
+        ad = astrodata.open(os.path.join(test_path(), filename))
 
         ad.phu['DETECTOR'] = 'FooBar'
         ad.phu['ARBTRARY'] = 'BarBaz'
@@ -162,9 +162,9 @@ class TestAstrodataFits:
         assert ad.phu['ARBTRARY'] == 'BarBaz'
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_remove_a_keyword_from_phu(self, filename, test_path):
+    def test_remove_a_keyword_from_phu(self, filename):
 
-        ad = astrodata.open(os.path.join(test_path, filename))
+        ad = astrodata.open(os.path.join(test_path(), filename))
         exceptions = ['GNIRS', 'NIRI', 'F2']
 
         try:
@@ -178,10 +178,10 @@ class TestAstrodataFits:
                 raise KeyError
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_writes_to_new_fits(self, filename, test_path):
+    def test_writes_to_new_fits(self, filename):
 
-        ad = astrodata.open(os.path.join(test_path, filename))
-        test_file_location = os.path.join(test_path,
+        ad = astrodata.open(os.path.join(test_path(), filename))
+        test_file_location = os.path.join(test_path(),
                                           'write_to_new_fits_test_file.fits')
         if os.path.exists(test_file_location):
             os.remove(test_file_location)
@@ -192,10 +192,10 @@ class TestAstrodataFits:
         os.remove(test_file_location)
 
     @pytest.mark.parametrize("filename", testfiles)
-    def test_can_overwrite_existing_file(self, filename, test_path):
+    def test_can_overwrite_existing_file(self, filename):
 
-        ad = astrodata.open(os.path.join(test_path, filename))
-        test_file_location = os.path.join(test_path,
+        ad = astrodata.open(os.path.join(test_path(), filename))
+        test_file_location = os.path.join(test_path(),
                                           'test_fits_overwrite.fits')
         if os.path.exists(test_file_location):
             os.remove(test_file_location)
@@ -209,7 +209,7 @@ class TestAstrodataFits:
         # erasing file for cleanup
         os.remove(test_file_location)
 
-    def test_can_make_and_write_ad_object(self, test_path):
+    def test_can_make_and_write_ad_object(self):
 
         # Creates data and ad object
         phu = fits.PrimaryHDU()
@@ -223,7 +223,7 @@ class TestAstrodataFits:
 
         # Write file and test it exists properly
         test_file_location = os.path.join(
-            test_path, 'created_fits_file.fits')
+            test_path(), 'created_fits_file.fits')
 
         if os.path.exists(test_file_location):
             os.remove(test_file_location)
@@ -280,9 +280,9 @@ class TestAstrodataFits:
     #Todo: this test below is broken, doesn't actually test due to os.path.join
     ### FIX ###
     @pytest.mark.parametrize("filename", testfiles)
-    def test_descriptor_is_int(self, filename, test_path):
+    def test_descriptor_is_int(self, filename):
 
-        ad = astrodata.open(os.path.join(test_path, "Archive/", filename))
+        ad = astrodata.open(os.path.join(test_path(), "Archive/", filename))
         ad_int = ['coadds', 'detector_x_bin', 'detector_y_bin',
                   'requested_bg', 'requested_cc',
                   'requested_iq', 'requested_wv']
