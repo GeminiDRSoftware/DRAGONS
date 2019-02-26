@@ -84,6 +84,12 @@ class Stack(PrimitivesBASE):
                         "input AstroData objects are required for stackFrames")
             return adinputs
 
+        if (reject_method == "minmax" and self.mode == "qa" and
+               params["nlow"] + params["nhigh"] >= len(adinputs)):
+           log.warning("Trying to reject too many images. Setting nlow=nhigh=0.")
+           params["nlow"] = 0
+           params["nhigh"] = 0
+
         # Perform various checks on inputs
         for ad in adinputs:
             if not "PREPARED" in ad.tags:

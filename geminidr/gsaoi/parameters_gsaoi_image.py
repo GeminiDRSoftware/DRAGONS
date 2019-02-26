@@ -5,8 +5,8 @@ from geminidr.core import parameters_photometry
 class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
     def setDefaults(self):
         self.detect_minarea = 20
-        self.detect_thresh = 5.
-        self.analysis_thresh = 5.
+        self.detect_thresh = 1.
+        self.analysis_thresh = 1.
         self.phot_min_radius = 1.
-        self.back_size = 128
+        self.back_size = 256
         self.back_filtersize = 5
