@@ -3,19 +3,16 @@
 #
 #                                                      primitives_bookkeeping.py
 # ------------------------------------------------------------------------------
-import astrodata
-import gemini_instruments
-import numpy as np
-from copy import deepcopy
+import copy
+
+import astrodata, gemini_instruments
 
 from gempy.gemini import gemini_tools as gt
-
-from geminidr import PrimitivesBASE
-from geminidr import save_cache, stkindfile
-
-from . import parameters_bookkeeping
-
 from recipe_system.utils.decorators import parameter_override
+
+from geminidr import PrimitivesBASE, save_cache, stkindfile
+from geminidr.core import parameters_bookkeeping
+
 
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -332,24 +329,33 @@ class Bookkeeping(PrimitivesBASE):
         # Keep track of whether we find anything to transfer, as failing to
         # do so might indicate a problem and we should warn the user
         found = False
+
         for ad1, ad2 in zip(*gt.make_lists(adinputs, self.streams[source])):
             # Attribute could be top-level or extension-level
             # Use deepcopy so references to original object don't remain
             if hasattr(ad2, attribute):
+
                 try:
-                    setattr(ad1, attribute, deepcopy(getattr(ad2, attribute)))
+                    setattr(ad1, attribute,
+                            copy.deepcopy(getattr(ad2, attribute)))
+
                 except ValueError:  # data, mask, are gettable not settable
                     pass
+
                 else:
                     found = True
                     continue
+
             for ext1, ext2 in zip(ad1, ad2):
+
                 if hasattr(ext2, attribute):
-                    setattr(ext1, attribute, deepcopy(getattr(ext2, attribute)))
+                    setattr(ext1, attribute,
+                            copy.deepcopy(getattr(ext2, attribute)))
                     found = True
 
         if not found:
             log.warning("Did not find any {} attributes to transfer".format(attribute))
+
         return adinputs
 
     def writeOutputs(self, adinputs=None, **params):

@@ -3,7 +3,7 @@ import pytest
 import os
 
 
-#@pytest.fixture
+@pytest.fixture
 def test_path():
 
     try:
@@ -15,3 +15,4 @@ def test_path():
         pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
     return path
+

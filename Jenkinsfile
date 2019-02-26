@@ -9,8 +9,8 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
-    // Keep the 10 most recent builds
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    // Keep the 20 most recent builds
+    buildDiscarder(logRotator(numToKeepStr: '20'))
     timestamps()
   }
 
@@ -47,7 +47,9 @@ pipeline {
     stage ("Build and Test Environment") {
       steps {
         sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
+              
               source activate ${BUILD_TAG}
+              
               .jenkins/test_env_and_install_missing_libs.sh
               python .jenkins/download_test_data.py
               '''
@@ -120,7 +122,7 @@ pipeline {
 
   post {
     always {
-      sh 'conda remove --yes -n ${BUILD_TAG} --all --quiet'
+      sh 'conda remove --yes --all --quiet -n ${BUILD_TAG}'
     }
     failure {
       echo "Send e-mail, when failed"
