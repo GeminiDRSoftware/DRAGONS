@@ -1,8 +1,3 @@
-
-
-THIS_DIR = os.path.dirname(__file__)
-CHARA = '/net/chara/data2/pub'
-
 import pytest
 import tempfile
 import os
@@ -12,6 +7,11 @@ import numpy as np
 import astrodata
 import gemini_instruments
 from .conftest import test_path
+
+
+THIS_DIR = os.path.dirname(__file__)
+CHARA = '/net/chara/data2/pub'
+
 
 
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
