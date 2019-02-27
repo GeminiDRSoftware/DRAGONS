@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import tempfile
 import glob
+import warnings
 
 import astrodata
 import gemini_instruments
@@ -13,15 +14,37 @@ from astropy.io import fits
 from astropy.table import Table
 
 
-# Cleans up a fake file created in the tests in case it's still there
-cleanup = os.path.join(test_path(), 'created_fits_file.fits')
-if os.path.exists(cleanup):
-    os.remove(cleanup)
 
-# test_path() needs to be exported as the path with
-# all the reuired files you wish to test
-testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
 
+
+# @pytest.fixture(scope='module')
+# def filename():
+#     pytest.mark.parametrize()
+#
+#     testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
+#
+#     # Cleans up a fake file created in the tests in case it's still there
+#     cleanup = os.path.join(test_path(), 'created_fits_file.fits')
+#     if os.path.exists(cleanup):
+#         os.remove(cleanup)
+#
+#     return testfiles
+
+
+try:
+    path = os.environ['TEST_PATH']
+except KeyError:
+    warnings.warn("Could not find environment variable: $TEST_PATH")
+    path = ''
+    # pytest.skip("Could not find environment variable: $TEST_PATH")
+
+if not os.path.exists(path):
+    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
+    path = ''
+    # pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
+
+
+testfiles = glob.glob(os.path.join(path, "*.fits"))
 
 # Fixtures for module and class
 @pytest.fixture(scope='class')
@@ -249,8 +272,6 @@ class TestAstrodataFits:
 
         print(ad.info())
 
-
-
     @pytest.mark.skip(reason="Deprecated methods")
     def test_set_a_keyword_on_phu_deprecated(self):
         ad = astrodata.open('N20110826S0336.fits')
@@ -279,33 +300,32 @@ class TestAstrodataFits:
 
     #Todo: this test below is broken, doesn't actually test due to os.path.join
     ### FIX ###
-    @pytest.mark.parametrize("filename", testfiles)
-    def test_descriptor_is_int(self, filename):
+    # @pytest.mark.parametrize("filename", testfiles)
+    # def test_descriptor_is_int(self, filename):
+    #
+    #     # Opens all files in archive
+    #     ad = astrodata.open(glob.glob
+    #                         (os.path.join(test_path(), "Archive/", "*fits")))
+    #     ad_int = ['coadds', 'detector_x_bin', 'detector_y_bin',
+    #               'requested_bg', 'requested_cc',
+    #               'requested_iq', 'requested_wv']
+    #
+    #     # ad_int = ['id', 'diskfile_id', 'ut_datetime_secs', 'ra', 'dec',
+    #     #           'azimuth', 'elevation', 'cass_rotator_pa', 'airmass',
+    #     #           'exposure_time', 'central_wavelength', 'coadds',
+    #     #           'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
+    #     #           'requested_cc', 'requested_wv', 'requested_bg']
+    #     # for integer in ad_int:
+    #     #     assert type(getattr(ad, integer)()) == int
+    #
+    #     typelist = []
+    #     for i in ad.descriptors:
+    #         try:
+    #             typelist.append((i, type(getattr(ad, i)())))
+    #         except Exception as err:
+    #             print("{} failed on call: {}".format(i, str(err)))
 
-        ad = astrodata.open(os.path.join(test_path(), "Archive/", filename))
-        ad_int = ['coadds', 'detector_x_bin', 'detector_y_bin',
-                  'requested_bg', 'requested_cc',
-                  'requested_iq', 'requested_wv']
-
-        # ad_int = ['id', 'diskfile_id', 'ut_datetime_secs', 'ra', 'dec',
-        #           'azimuth', 'elevation', 'cass_rotator_pa', 'airmass',
-        #           'exposure_time', 'central_wavelength', 'coadds',
-        #           'raw_iq', 'raw_cc', 'raw_wv', 'raw_bg', 'requested_iq',
-        #           'requested_cc', 'requested_wv', 'requested_bg']
-        # for integer in ad_int:
-        #     assert type(getattr(ad, integer)()) == int
-
-        typelist = []
-        for i in ad.descriptors:
-            try:
-                typelist.append((i, type(getattr(ad, i)())))
-            except Exception as err:
-                print("{} failed on call: {}".format(i, str(err)))
-
-
-
-
-    #########################################################################################333
+    # ########################################################################################333
     @pytest.mark.skip(reason="Deprecated methods")
     def test_remove_a_keyword_from_phu_deprecated(self):
         ad = astrodata.open('N20110826S0336.fits')
