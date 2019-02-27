@@ -11,6 +11,8 @@ dependencies:
   - pytest
   - pylint
   - scipy
+  - sextractor
+  - sqlalchemy
   - astropy::astroquery
   - chroxvi::radon
   - conda-forge::python-dateutil

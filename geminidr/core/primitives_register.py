@@ -30,7 +30,7 @@ class Register(PrimitivesBASE):
         super(Register, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_register)
 
-    def matchWCSToReference(self, adinputs=None, **params):
+    def adjustWCSToReference(self, adinputs=None, **params):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
@@ -106,7 +106,7 @@ class Register(PrimitivesBASE):
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least "
                         "two input AstroData objects are required for "
-                        "matchWCSToReference")
+                        "adjustWCSToReference")
             return adinputs
 
         if not all(len(ad)==1 for ad in adinputs):
@@ -159,8 +159,6 @@ class Register(PrimitivesBASE):
                         log.warning("Only attempting indirect WCS alignment, "
                                     "via {} mapping".format(fallback))
                         ad = _create_wcs_from_offsets(ad, ref_image)
-                        #adoutput = _header_align(ref_image, [ad],
-                        #                         self.keyword_comments)
                     else:
                         log.warning("WCS can only be corrected indirectly "
                             "and fallback=None. Not attempting WCS correction "
@@ -173,15 +171,16 @@ class Register(PrimitivesBASE):
 
                     # GNIRS WCS is dubious, so update WCS by using the ref
                     # image's WCS and the telescope offsets
-                    #if ad.instrument() == 'GNIRS' and not use_wcs:
-                    #    ad = _create_wcs_from_offsets(ad, ref_image)
+                    if ad.instrument() == 'GNIRS':
+                        log.stdinfo("Recomputing WCS for GNIRS from offsets")
+                        ad = _create_wcs_from_offsets(ad, ref_image)
                     firstpasspix = first_pass / ad.pixel_scale()
 
                     # Calculate the offsets quickly using only a translation
                     obj_list, transform = align_images_from_wcs(ad, ref_image,
                             first_pass=firstpasspix, min_sources=min_sources,
                             cull_sources=cull_sources, full_wcs=False,
-                            rotate=False, scale=False, tolerance=0.1,
+                            rotate=False, scale=False, tolerance=0.001,
                             return_matches=True)
 
                     n_corr = len(obj_list[0])
@@ -226,7 +225,7 @@ class Register(PrimitivesBASE):
                                     initial_shift=(x_offset, y_offset),
                                     first_pass=0.2*firstpasspix, refine=True,
                                     cull_sources=cull_sources, full_wcs=True,
-                                    rotate=rotate, scale=scale, tolerance=0.01,
+                                    rotate=rotate, scale=scale, tolerance=1e-8,
                                     return_matches=False).wcs
                         _write_wcs_keywords(ad, wcs, self.keyword_comments)
                 adoutputs.append(ad)

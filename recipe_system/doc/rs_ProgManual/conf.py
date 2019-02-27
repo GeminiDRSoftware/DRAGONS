@@ -331,7 +331,7 @@ def run_api_doc(_):
     It is equivalent to run:
     >>> sphinx-apidoc --force --no-toc --separate --module --output-dir api/ ../../ ../../cal_service
 
-    It is useful because it creates .rst files on the file.
+    It is useful because it creates .rst files on the fly.
 
     NOTE
     ----

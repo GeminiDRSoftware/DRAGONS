@@ -22,9 +22,9 @@ from . import parameters_preprocess
 
 from recipe_system.utils.decorators import parameter_override
 
-import os, psutil
-def memusage(proc):
-    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
+#import os, psutil
+#def memusage(proc):
+#    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1000000)
 # ------------------------------------------------------------------------------
 @parameter_override
 class Preprocess(PrimitivesBASE):
@@ -1014,7 +1014,7 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        #print("STARTING", memusage(proc))
+        #print "STARTING", memusage(proc)
 
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
@@ -1100,6 +1100,7 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
+                log.stdinfo("Creating sky frame for {}".format(ad.filename))
                 stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
                                                   skytable], **stack_params)
                 #print ad.filename, memusage(proc)
@@ -1118,6 +1119,8 @@ class Preprocess(PrimitivesBASE):
                 for j in range(i, len(skytables)):
                     if skytables[j] == skytable:
                         stacked_skies[j] = stacked_sky
+                        if j > i:
+                            log.stdinfo("This sky will also be used for {}".format(adinputs[j].filename))
                         skytables[j] = [None]
 
             # Go through all the science frames and sky-subtract any that
@@ -1287,6 +1290,8 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             for ext in ad:
+                if ext.mask is None:
+                    ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
                 # make sure the 64 is an int16(64) else it will promote the DQ
                 # plane to int64

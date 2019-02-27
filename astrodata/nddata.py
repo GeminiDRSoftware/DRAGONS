@@ -6,20 +6,26 @@ implementing windowing and on-the-fly data scaling.
 from __future__ import (absolute_import, division, print_function)
 
 from copy import deepcopy
+import warnings
 
 from astropy.nddata import NDData
 from astropy.nddata import StdDevUncertainty
 from astropy.nddata.mixins.ndslicing import NDSlicingMixin
 from astropy.nddata.mixins.ndarithmetic import NDArithmeticMixin
 from astropy.io.fits import ImageHDU
+
 import numpy as np
 
 __all__ = ['NDAstroData']
 
+
 class StdDevAsVariance(object):
+
     def as_variance(self):
+
         if self.array is not None:
             return self.array ** 2
+
         else:
             return None
 
@@ -29,13 +35,28 @@ def new_variance_uncertainty_instance(array):
     if array is None:
         return
 
-    obj = StdDevUncertainty(np.sqrt(array))
+    with warnings.catch_warnings():
+
+        if (array < 0.).any():
+            warnings.warn("Negative variance values found. Setting to zero.",
+                          RuntimeWarning)
+            array = np.where(array >= 0., array, 0.)
+
+        warnings.simplefilter("ignore", RuntimeWarning)
+
+        obj = StdDevUncertainty(np.sqrt(array))
+
+        warnings.simplefilter("default", RuntimeWarning)
+
     cls = obj.__class__
     obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
     return obj
 
+
 class FakeArray(object):
+
     def __init__(self, very_faked):
+
         self.data = very_faked
         self.shape = (100, 100) # Won't matter. This is just to fool NDData
         self.dtype = np.float32 # Same here
@@ -47,12 +68,15 @@ class FakeArray(object):
     def __array__(self):
         return self.data
 
+
 class NDWindowing(object):
+
     def __init__(self, target):
         self._target = target
 
     def __getitem__(self, slice):
         return NDWindowingAstroData(self._target, window=slice)
+
 
 class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
@@ -90,8 +114,11 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def mask(self):
         return self._target._get_simple('_mask', section=self._window)
 
+
 def is_lazy(item):
+
     return isinstance(item, ImageHDU) or (hasattr(item, 'lazy') and item.lazy)
+
 
 class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """

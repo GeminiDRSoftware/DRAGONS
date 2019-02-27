@@ -16,21 +16,19 @@ E.g.,
 
 # ------------------------------------------------------------------------------
 import os
+import gc
 import pickle
 import warnings
+
 from copy import deepcopy
 from inspect import stack, isclass
-from multiprocessing import Process, Queue
-from subprocess import check_output, STDOUT, CalledProcessError
 
-from queue import Empty
-import atexit
-
+from gempy.eti_core.eti import ETISubprocess
 from gempy.library import config
+from gempy.utils import logutils
 
 from astropy.io.fits.verify import VerifyWarning
 
-from gempy.utils import logutils
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
 from .gemini.lookups import keyword_comments
@@ -40,6 +38,7 @@ from .gemini.lookups.source_detection import sextractor_dict
 from recipe_system.cal_service import calurl_dict
 from recipe_system.utils.decorators import parameter_override
 
+import atexit
 # ------------------------------ caches ----------------------------------------
 # Formerly in cal_service/caches.py
 #
@@ -113,18 +112,8 @@ class Calibrations(object):
         save_cache(self._dict, self._calindfile)
         return
 # ------------------------------------------------------------------------------
-def cmdloop(inQueue, outQueue):
-    # Run shell commands as they arrive and return the output
-    while True:
-        cmd = inQueue.get()
-        try:
-            result = check_output(cmd, stderr=STDOUT)
-        except CalledProcessError as e:
-            result = e
-        outQueue.put(result)
-
 def cleanup(process):
-    # Ensure the child process is terminated with the parent
+    # Function for the atexit registry to kill the ETISubprocess
     process.terminate()
 
 @parameter_override
@@ -176,16 +165,12 @@ class PrimitivesBASE(object):
 
         # Create a parallel process to which we can send shell commands.
         # Spawning a shell command makes a copy of its parent process in RAM
-        # so we need this process to have a small memory footprint.
-        self._inQueue = Queue()
-        self._outQueue = Queue()
-        self._cmd_host_process = Process(target=cmdloop, args=(self._inQueue,
-                                                               self._outQueue))
-        self._cmd_host_process.start()
-        atexit.register(cleanup, self._cmd_host_process)
-
-    def _kill_subprocess(self):
-        self._cmd_host_process.terminate()
+        # so we need this process to have a small memory footprint and hence
+        # create it now. Garbage collect too, in case stuff has happened
+        # previously.
+        gc.collect()
+        self.eti_subprocess = ETISubprocess()
+        atexit.register(cleanup, self.eti_subprocess)
 
     @property
     def upload(self):

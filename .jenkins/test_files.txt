@@ -7,4 +7,77 @@ F2/S20170103S0032.fits
 F2/S20131126S1111.fits
 F2/S20131126S1112.fits
 F2/S20131126S1113.fits
+
+# Data used for test Flamingos-2 Image Reduction ---
+# Darks 3s
+F2/test_reduce/S20131127S0257.fits
+F2/test_reduce/S20131127S0258.fits
+F2/test_reduce/S20131127S0259.fits
+F2/test_reduce/S20131127S0260.fits
+F2/test_reduce/S20131127S0261.fits
+F2/test_reduce/S20131127S0262.fits
+F2/test_reduce/S20131127S0263.fits
+
+# Darks 20s
+F2/test_reduce/S20130930S0242.fits
+F2/test_reduce/S20130930S0243.fits
+F2/test_reduce/S20130930S0244.fits
+F2/test_reduce/S20130930S0245.fits
+F2/test_reduce/S20130930S0246.fits
+
+# Darks 120s
+F2/test_reduce/S20131120S0115.fits
+F2/test_reduce/S20131120S0116.fits
+F2/test_reduce/S20131120S0117.fits
+F2/test_reduce/S20131120S0118.fits
+F2/test_reduce/S20131120S0119.fits
+F2/test_reduce/S20131120S0120.fits
+
+# Flats Y
+F2/test_reduce/S20131126S1111.fits
+F2/test_reduce/S20131126S1112.fits
+F2/test_reduce/S20131126S1113.fits
+F2/test_reduce/S20131126S1114.fits
+F2/test_reduce/S20131126S1115.fits
+F2/test_reduce/S20131126S1116.fits
+F2/test_reduce/S20131129S0320.fits
+F2/test_reduce/S20131129S0321.fits
+F2/test_reduce/S20131129S0322.fits
+F2/test_reduce/S20131129S0323.fits
+
+# Science images
+F2/test_reduce/S20131121S0075.fits
+F2/test_reduce/S20131121S0076.fits
+F2/test_reduce/S20131121S0077.fits
+F2/test_reduce/S20131121S0078.fits
+F2/test_reduce/S20131121S0079.fits
+F2/test_reduce/S20131121S0080.fits
+F2/test_reduce/S20131121S0081.fits
+F2/test_reduce/S20131121S0082.fits
+F2/test_reduce/S20131121S0083.fits
+
 S20170103S0032.fits
+N20190116G0054i.fits
+N20190206S0279.fits
+N20110826S0336.fits
+S20180223S0229.fits
+N20160727S0077.fits
+N20190120S0287.fits
+S20190213S0084.fits
+
+# Archive Discriptor Tests
+Archive/gS20190219S0207_bias.fits
+Archive/N20190216S0092.fits
+Archive/S20180211S0294.fits
+Archive/N20190112S0005.fits
+Archive/N20190219S0072.fits
+Archive/S20190203S0320.fits
+Archive/N20190214S0058.fits
+Archive/N20190221S0001.fits
+Archive/S20190214S0576.fits
+Archive/N20190216S0039.fits
+Archive/N20190221S0032.fits
+Archive/S20190217S0211.fits
+Archive/N20190216S0060.fits
+Archive/S20160905S0003.fits
+Archive/S20190221S0251.fits

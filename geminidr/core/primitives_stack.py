@@ -31,29 +31,6 @@ class Stack(PrimitivesBASE):
         super(Stack, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_stack)
 
-    def alignAndStack(self, adinputs=None, **params):
-        """
-        This primitive calls a set of primitives to perform the steps
-        needed for alignment of frames to a reference image and stacking.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        # Return entire list if only one object (which would presumably be the
-        # adinputs, or return the input list if we can't stack
-        if len(adinputs) <= 1:
-            log.stdinfo("No alignment or correction will be performed, since "
-                        "at least two input AstroData objects are required "
-                        "for alignAndStack")
-            return adinputs
-        else:
-            adinputs = self.matchWCSToReference(adinputs, **self._inherit_params(params, 'matchWCSToReference'))
-            adinputs = self.resampleToCommonFrame(adinputs, **self._inherit_params(params, 'resampleToCommonFrame'))
-            if params["save"]:
-                self.writeOutputs(adinputs)
-            adinputs = self.stackFrames(adinputs, **self._inherit_params(params, 'stackFrames'))
-        return adinputs
-
     def stackFlats(self, adinputs=None, **params):
         """Default behaviour is just to stack images as normal"""
         params["zero"] = False
@@ -106,6 +83,12 @@ class Stack(PrimitivesBASE):
             log.stdinfo("No stacking will be performed, since at least two "
                         "input AstroData objects are required for stackFrames")
             return adinputs
+
+        if (reject_method == "minmax" and self.mode == "qa" and
+               params["nlow"] + params["nhigh"] >= len(adinputs)):
+           log.warning("Trying to reject too many images. Setting nlow=nhigh=0.")
+           params["nlow"] = 0
+           params["nhigh"] = 0
 
         # Perform various checks on inputs
         for ad in adinputs:

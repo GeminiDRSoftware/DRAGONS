@@ -18,7 +18,7 @@ timestamp_keys = {
     "attachWavelengthSolution": "ATTWVSOL",
     "biasCorrect": "BIASCORR",
     "correctBackgroundToReference": "CORRBG",
-    "matchWCSToReference": "CORRWCS",
+    "adjustWCSToReference": "CORRWCS",
     "cutFootprints": "CUTSFP",
     "darkCorrect" : "DARKCORR",
     "detectSources": "DETECSRC",

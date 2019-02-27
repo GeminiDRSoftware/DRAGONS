@@ -20,7 +20,7 @@ def test_path():
         pytest.skip("Could not find environment variable: $TEST_PATH")
 
     if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: ".format(path))
+        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
     return path
 
