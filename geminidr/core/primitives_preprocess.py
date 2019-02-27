@@ -1100,6 +1100,7 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
+                log.stdinfo("Creating sky frame for {}".format(ad.filename))
                 stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
                                                   skytable], **stack_params)
                 #print ad.filename, memusage(proc)
@@ -1118,6 +1119,8 @@ class Preprocess(PrimitivesBASE):
                 for j in range(i, len(skytables)):
                     if skytables[j] == skytable:
                         stacked_skies[j] = stacked_sky
+                        if j > i:
+                            log.stdinfo("This sky will also be used for {}".format(adinputs[j].filename))
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
