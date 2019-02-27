@@ -1126,6 +1126,7 @@ class Preprocess(PrimitivesBASE):
             # Go through all the science frames and sky-subtract any that
             # aren't needed for future sky-frame creation
             for j, ad2 in enumerate(adinputs):
+                # If already been sky-subtracted or not yet processed
                 if not skytables[j] or stacked_skies[j] == 0:
                     continue
                 if ad2 not in [sky_dict.get(sky) for skytable in skytables for sky in skytable]:
