@@ -36,7 +36,6 @@ def caldb():
     yield calibration_service
 
 
-@pytest.mark.skip('I want to go to green state as quick as possible')
 def test_reduce_image(test_path, caldb):
 
     all_files = glob.glob(
