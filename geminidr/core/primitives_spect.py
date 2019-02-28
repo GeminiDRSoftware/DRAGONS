@@ -529,8 +529,12 @@ def _find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25
                                                         min_length=int(min_frac*len(widths)),
                                                         min_snr=1.)
     peaks = sorted([x[1][0] for x in filtered])
-    snr = np.divide(cwt_dat[0], np.sqrt(variance), np.zeros_like(data), where=variance>0)
-    peaks = [x for x in peaks if snr[x]>min_snr]
+    if variance is not None:
+        snr = np.divide(cwt_dat[0], np.sqrt(variance), np.zeros_like(data),
+                        where=variance>0)
+    else:
+        snr = cwt_dat[0]
+    peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
     while True:
