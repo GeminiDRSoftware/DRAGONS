@@ -113,7 +113,7 @@ cdef long num_good(unsigned short mask[], long data_size):
 # max_iters: maximum number of iterations to compute
 # mclip: clip around the median rather than mean?
 # sigclip: perform sigma-clipping using the pixel-to-pixel scatter, rather than
-           use the variance array?
+#          use the variance array?
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
