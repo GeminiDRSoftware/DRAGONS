@@ -1,19 +1,22 @@
 import os
 import pytest
-import glob
+import warnings
 
 import astrodata
 import gemini_instruments
 from astrodata.test.conftest import test_path
 
-# Cleans up a fake file created in the tests in case it's still there
-cleanup = os.path.join(test_path(), 'created_fits_file.fits')
-if os.path.exists(cleanup):
-    os.remove(cleanup)
+try:
+    path = os.environ['TEST_PATH']
+except KeyError:
+    warnings.warn("Could not find environment variable: $TEST_PATH")
+    path = ''
 
-# test_path() needs to be exported as the path with
-# all the reuired files you wish to test
-testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
+if not os.path.exists(path):
+    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
+    path = ''
+
+
 filename = 'N20160727S0077.fits'
 
 
@@ -43,7 +46,6 @@ class Test_GRACES:
 
     def test_extension_data_shape(self):
 
-        testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
         ad = astrodata.open(os.path.join(test_path(), filename))
         data = ad[0].data
 
