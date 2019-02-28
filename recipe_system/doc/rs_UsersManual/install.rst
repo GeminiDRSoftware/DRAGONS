@@ -16,7 +16,7 @@ The use of the `bash` shell is required.  This is an Anaconda limitation.
 Install Anaconda
 ----------------
 If you already have Anaconnda installed, you can skip this step.  Go to
-the ???KL ``Install geminiconda`` section below.
+the `Install geminiconda <install_geminiconda>`_ section below.
 
 The first step is to get anaconda.  You can download it at:
 
@@ -36,6 +36,9 @@ If you have downloaded the command-line installer::
 
 Of course, if you are already using ``bash`` you can forgo that line, and
 adapt the Anaconda package installer name to what you downloaded.
+
+
+.. _install_geminiconda:
 
 Install geminiconda
 -------------------

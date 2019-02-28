@@ -38,6 +38,8 @@ import astrodata, gemini_instruments
 from .astromodels import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
 
+from datetime import datetime
+
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
 # Table attribute names that should be modified to represent the
@@ -124,13 +126,19 @@ class Block(object):
         # If we're looking for the .data attributes, this may just be the
         # element, if they're ndarrays. We should handle a mix of ndarrays
         # and NDData-like objects.
+        # NB ndarray.data returns a "memoryview" object in recent numpy
         if name == "data":
             attributes = [el if not isinstance(attr, np.ndarray) else attr
                           for el, attr in zip(self._elements, attributes)]
 
         if any(isinstance(attr, np.ndarray) for attr in attributes):
-            return self._return_array(attributes)
-
+            try:
+                return self._return_array(attributes)
+            except AttributeError as e:
+                if name == "data":
+                    return self._return_array(self._elements)
+                else:
+                    raise e
         # Handle Tables
         if any(isinstance(attr, table.Table) for attr in attributes):
             return self._return_table(name)
@@ -1104,7 +1112,7 @@ class DataGroup(object):
 
     def _apply_geometric_transform(self, input_array, mapping, output_key,
                                    output_shape, cval=0., dtype=np.float32,
-                                   threshold=None, subsample=1, order=3,
+                                   threshold=None, subsample=1, order=1,
                                    jfactor=1):
         """
         None-returning function to apply geometric transform, so it can be used
@@ -1152,9 +1160,10 @@ class DataGroup(object):
             out_array = (jfactor * out_array).reshape(intermediate_shape).\
                 mean(tuple(range(len(output_shape)*2-1, 0, -2))).\
                 reshape(output_shape)
+            jfactor = 1  # Since we've done it
 
         if threshold is None:
-            self.output_arrays[output_key] = out_array.astype(dtype)
+            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype)
         else:
             self.output_arrays[output_key] = np.where(abs(out_array) > threshold,
                                                       True, False)
@@ -1260,22 +1269,26 @@ class AstroDataGroup(DataGroup):
             self.log.warning("The 'data' attribute is not specified. Adding to list.")
             attributes += ['data']
 
+        # Create the output AD object
+        ref_ext = self._arrays[self.ref_array][self.ref_index]
+        adout = astrodata.create(ref_ext.phu)
+        adout.orig_filename = ref_ext.orig_filename
+
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
         super(AstroDataGroup, self).transform(attributes=attributes, order=order,
                                               subsample=subsample, threshold=threshold,
                                               conserve=conserve, parallel=parallel)
 
-        # Create the output AD object
-        ref_ext = self._arrays[self.ref_array][self.ref_index]
-        adout = astrodata.create(ref_ext.phu)
-        adout.orig_filename = ref_ext.orig_filename
         adout.append(self.output_dict['data'], header=ref_ext.hdr.copy())
         for key, value in self.output_dict.items():
             if key != 'data':  # already done this
                 setattr(adout[0], key, value)
         self._update_headers(adout)
         self._process_tables(adout, process_objcat=process_objcat)
+
+        # Ensure the ADG object doesn't hog memory
+        self.output_dict = {}
         return adout
 
     def _update_headers(self, ad):

@@ -1,7 +1,7 @@
 # If switching to new versions of Python under anaconda,
 # you may need to run this command again under the new
 # environment.
-# cythonize -a -i cyclip.pyx
+# cythonize -i cyclip.pyx
 
 # Specify that this source is nominally based on Python 3 syntax (though the
 # code below is actually 2-vs-3 agnostic), to avoid a warning with v0.29+:
@@ -11,6 +11,7 @@ import numpy as np
 from libc.math cimport sqrt
 cimport cython
 
+# One-dimensional true median, with optional masking
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef float median(float data[], unsigned short mask[], int has_mask,
@@ -61,11 +62,18 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
             med = 0.5 * (med + tmp[k])
     return med
 
+# Returns either the mean or median (and variance) of the unmasked
+# pixels in an array.
+# data: 1D array of datapoints
+# mask: 1D array indicating which pixels are masked (non-zero)
+# has_mask: is there a mask?
+# data_size: length of array
+# return_median: return median?
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void mask_stats(float data[], unsigned short mask[], int has_mask,
-                int data_size, int return_median, double result[2]):
+                long data_size, int return_median, double result[2]):
     cdef double mean, sum = 0., sumsq = 0., sumall = 0., sumsqall=0.
     cdef int i, nused = 0
     for i in range(data_size):
@@ -86,6 +94,7 @@ cdef void mask_stats(float data[], unsigned short mask[], int has_mask,
         result[0] = mean
     result[1] = sumsq / nused - mean*mean
 
+# Returns the number of unmasked pixels in an array
 cdef long num_good(unsigned short mask[], long data_size):
     cdef long i, ngood = 0
     for i in range(data_size):
@@ -93,6 +102,18 @@ cdef long num_good(unsigned short mask[], long data_size):
             ngood += 1
     return ngood
 
+# Iterative sigma-clipping. This is the function that interfaces with python
+# data, mask, variance: 1D arrays of input, each made up of num_img points
+#                       for each input pixel
+# has_var: worry about the input variance array?
+# num_img: number of input images
+# data_size: number of pixels per input image
+# lsigma: number of standard deviations for clipping below the mean
+# hsigma: number of standard deviations for clipping above the mean
+# max_iters: maximum number of iterations to compute
+# mclip: clip around the median rather than mean?
+# sigclip: perform sigma-clipping using the pixel-to-pixel scatter, rather than
+           use the variance array?
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,

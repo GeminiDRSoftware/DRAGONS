@@ -32,7 +32,7 @@ class Register(PrimitivesBASE):
         super(Register, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_register)
 
-    def matchWCSToReference(self, adinputs=None, **params):
+    def adjustWCSToReference(self, adinputs=None, **params):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function

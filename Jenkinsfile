@@ -9,8 +9,8 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
-    // Keep the 10 most recent builds
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    // Keep the 20 most recent builds
+    buildDiscarder(logRotator(numToKeepStr: '20'))
     timestamps()
   }
 
@@ -47,7 +47,9 @@ pipeline {
     stage ("Build and Test Environment") {
       steps {
         sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
+              
               source activate ${BUILD_TAG}
+              
               .jenkins/test_env_and_install_missing_libs.sh
               python .jenkins/download_test_data.py
               '''
@@ -66,38 +68,32 @@ pipeline {
   //              pylint --disable=C astrodata || true
   //              '''
   //    }
-  //    post{
-  //      always{
-  //        step([$class: 'CoberturaPublisher',
-  //            autoUpdateHealth: false,
-  //            autoUpdateStability: false,
-  //            coberturaReportFile: 'reports/coverage.xml',
-  //            failNoReports: false,
-  //            failUnhealthy: false,
-  //            failUnstable: false,
-  //            maxNumberOfBuilds: 10,
-  //            onlyStable: false,
-  //            sourceEncoding: 'ASCII',
-  //            zoomCoverageChart: false])
-  //      }
-  //    }
-  //  } // stage: static code metrics
 
-    stage('Unit tests') {
+
+    stage('Unit tests and Code Coverage') {
       steps {
         sh  ''' source activate ${BUILD_TAG}
-                pytest recipe_system gemini_instruments astrodata \
-                    geminidr/f2 --ad_test_data_path ${TEST_PATH} \
-                    --junit-xml test-reports/results.xml
+                coverage run -m pytest --junit-xml ./reports/test_results.xml
+                coverage xml -o ./reports/coverage.xml
                 '''
       }
       post {
         always {
-          // Archive unit tests for the future
           junit (
             allowEmptyResults: true,
-            testResults: 'test-reports/results.xml'
+            testResults: 'reports/test_results.xml'
             )
+          step([$class: 'CoberturaPublisher',
+            autoUpdateHealth: false,
+            autoUpdateStability: false,
+            coberturaReportFile: 'reports/coverage.xml',
+            failNoReports: false,
+            failUnhealthy: false,
+            failUnstable: false,
+            maxNumberOfBuilds: 10,
+            onlyStable: false,
+            sourceEncoding: 'ASCII',
+            zoomCoverageChart: false])
         }
       }
     } // stage: unit tests
@@ -126,7 +122,7 @@ pipeline {
 
   post {
     always {
-      sh 'conda remove --yes -n ${BUILD_TAG} --all --quiet'
+      sh 'conda remove --yes --all --quiet -n ${BUILD_TAG}'
     }
     failure {
       echo "Send e-mail, when failed"

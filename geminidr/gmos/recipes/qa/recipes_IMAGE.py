@@ -40,7 +40,9 @@ def reduce(p):
     p.measureCC()
     p.addToList(purpose='forStack')
     p.getList(purpose='forStack')
-    p.alignAndStack()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
     p.detectSources()
     p.determineAstrometricSolution()
     p.measureIQ(display=True)
@@ -107,7 +109,7 @@ def stack(p):
         A primitive set matching the recipe_tags.
     """
     p.getList(purpose='forStack')
-    p.matchWCSToReference()
+    p.adjustWCSToReference()
     p.resampleToCommonFrame()
     p.correctBackgroundToReference()
     p.stackFrames()

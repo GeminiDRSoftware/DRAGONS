@@ -725,53 +725,61 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-#### Refactored but not tested
-#    def scaleByExposureTime(self, adinputs=None, **params):
-#        """
-#        This primitive scales input images to match the exposure time of
-#        the first image.
-#        """
-#        log = self.log
-#        log.debug(gt.log_message("primitive", "scaleByExposureTime", "starting"))
-#        timestamp_key = self.timestamp_keys["scaleByExposureTime"]
-#        sfx = params["suffix"]
-#
-#        # First check if any scaling is actually required
-#        exptimes = [ad.exposure_time() for ad in adinputs]
-#        if len(set(exptimes)) == 1:
-#            log.fullinfo("Exposure times are the same therefore no scaling "
-#                         "is required.")
-#        else:
-#            reference_exptime = None
-#            # Loop over each input AstroData object in the input list
-#            for ad in sadinputs:
-#                exptime = ad.exposure_time()
-#                # Scale by the relative exposure time
-#                if reference_exptime is None:
-#                    reference_exptime = exptime
-#                    scale = 1.0
-#                    first_filename = ad.filename
-#                else:
-#                    scale = reference_exptime / exptime
-#
-#                # Log and save the scale factor. Also change the exposure time
-#                # (not sure if this is OK, since I'd rather leave this as the
-#                # original value, but a lot of primitives match/select on
-#                # this - ED)
-#                log.fullinfo("Intensity scaled to match exposure time of {}: "
-#                             "{:.3f}".format(first_filename, scale))
-##                ad.phu.set("EXPSCALE", scale,
-##                                 comment=self.keyword_comments["EXPSCALE"])
-#                ad.phu.set("EXPTIME", reference_exptime,
-#                           comment=self.keyword_comments["EXPTIME"])
-#
-#                # Multiply by the scaling factor
-#                ad.mult(scale)
-#
-#                # Timestamp and update the filename
-#                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-#                ad.update_filename(suffix=sfx, strip=True)
-#        return adinputs
+    def scaleByExposureTime(self, adinputs=None, **params):
+        """
+        This primitive scales input images to have the same effective exposure
+        time. This can either be provided as a parameter, or the images will be
+        scaled to match the exposure time of the first image in the input list.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+        time: float/None
+            exposure time to scale to (None => use first image's exposure time)
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", "scaleByExposureTime", "starting"))
+        timestamp_key = self.timestamp_keys["scaleByExposureTime"]
+        sfx = params["suffix"]
+        time = params["time"]
+
+        # First check if any scaling is actually required
+        exptimes = [ad.exposure_time() for ad in adinputs]
+        if len(set(exptimes)) == 1 and (time is None or time == exptimes[0]):
+            if time is None:
+                log.stdinfo("Exposure times are the same therefore no scaling"
+                            " is required.")
+            else:
+                log.stdinfo("Exposure times are all equal to the requested "
+                            "time of {}".format(time))
+        else:
+            for ad, exptime in zip(adinputs, exptimes):
+                kw_exptime = ad._keyword_for('exposure_time')
+                if time is None:
+                    time = exptime
+                    log.stdinfo("Scaling to {}'s exposure time of {}".
+                                format(ad.filename, time))
+                else:
+                    scale = time / exptime
+                    if abs(scale - 1.0) > 0.001:
+                        log.stdinfo("Scaling {} by factor {:.3f}".
+                                    format(ad.filename, scale))
+                        ad.phu.set(kw_exptime, time,
+                                   comment=self.keyword_comments[kw_exptime])
+                        # ORIGTEXP should always be the *original* exposure
+                        # time, so if it already exists, leave it alone!
+                        if "ORIGTEXP" not in ad.phu:
+                            ad.phu.set("ORIGTEXP", exptime, "Original exposure time")
+
+                        ad.multiply(scale)
+                    else:
+                        log.stdinfo("{} does not require scaling".format(ad.filename))
+
+                # Timestamp and update the filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=sfx, strip=True)
+        return adinputs
 
     def separateSky(self, adinputs=None, **params):
         """
@@ -1100,6 +1108,7 @@ class Preprocess(PrimitivesBASE):
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
             if stacked_skies[i] == 0:
+                log.stdinfo("Creating sky frame for {}".format(ad.filename))
                 stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
                                                   skytable], **stack_params)
                 #print ad.filename, memusage(proc)
@@ -1118,13 +1127,30 @@ class Preprocess(PrimitivesBASE):
                 for j in range(i, len(skytables)):
                     if skytables[j] == skytable:
                         stacked_skies[j] = stacked_sky
+                        if j > i:
+                            log.stdinfo("This sky will also be used for {}".format(adinputs[j].filename))
+                        skytables[j] = [None]
+
+            # Go through all the science frames and sky-subtract any that
+            # aren't needed for future sky-frame creation
+            for j, ad2 in enumerate(adinputs):
+                # If already been sky-subtracted or not yet processed
+                if not skytables[j] or stacked_skies[j] == 0:
+                    continue
+                if ad2 not in [sky_dict.get(sky) for skytable in skytables for sky in skytable]:
+                    # Sky-subtraction is in place, so we can discard the output
+                    self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
+                                     offset_sky=offset_sky, reset_sky=reset_sky)
+                    skytables[j] = []
+                    # This deletes a reference to the AD sky object
+                    stacked_skies[j] = None
 
         # Now we have a list of skies to subtract, one per adinput, so send
         # this to subtractSky as the "sky" parameter
-        #print "ABOUT TO SUBTRACT", memusage(proc)
-        adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
-                                    offset_sky=offset_sky, reset_sky=reset_sky)
-        #print "SUBTRACTED", memusage(proc)
+        #print("ABOUT TO SUBTRACT", memusage(proc))
+        #adinputs = self.subtractSky(adinputs, sky=stacked_skies, scale_sky=scale_sky,
+        #                            offset_sky=offset_sky, reset_sky=reset_sky)
+        #print("SUBTRACTED", memusage(proc))
         return adinputs
 
     def subtractSky(self, adinputs=None, **params):
@@ -1273,6 +1299,8 @@ class Preprocess(PrimitivesBASE):
                 continue
 
             for ext in ad:
+                if ext.mask is None:
+                    ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
                 # make sure the 64 is an int16(64) else it will promote the DQ
                 # plane to int64

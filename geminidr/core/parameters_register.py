@@ -2,7 +2,7 @@
 # in the primitives_GEMINI.py file, in alphabetical order.
 from gempy.library import config
 
-class matchWCSToReferenceConfig(config.Config):
+class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wcsCorrected", optional=True)
     method = config.ChoiceField("Alignment method", str,
                                 allowed={"offsets": "Use telescope offsets",

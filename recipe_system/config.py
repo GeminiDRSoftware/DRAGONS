@@ -29,7 +29,7 @@ from collections import defaultdict
 
 __version__ = '2.0'
 
-DEFAULT_DIRECTORY = '/tmp'
+DEFAULT_DIRECTORY = '~/.geminidr'
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 
@@ -142,7 +142,11 @@ class ConfigObject(object):
             values = {}
 
             for key in cp.options(section):
-                values[key] = translate.from_config_file(section, key)
+                try:
+                    values[key] = os.path.expanduser(str(
+                        translate.from_config_file(section, key)))
+                except AttributeError:
+                    values[key] = translate.from_config_file(section, key)
 
             if env_override:
                 for key in values:

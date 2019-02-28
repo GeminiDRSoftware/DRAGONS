@@ -4,10 +4,16 @@ from __future__ import print_function
 #
 #                                                                    cal_service
 # ------------------------------------------------------------------------------
-from os.path import expanduser, exists, basename
+from os.path import basename
+from os.path import expanduser
+from os.path import exists
 
-from ..config import globalConf, STANDARD_REDUCTION_CONF, DEFAULT_DIRECTORY
+from ..config import globalConf
+from ..config import STANDARD_REDUCTION_CONF
+from ..config import DEFAULT_DIRECTORY
+
 from . import transport_request
+
 try:
     from . import localmanager
     localmanager_available = True
@@ -38,7 +44,7 @@ def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
             defaults = {
                 CONFIG_SECTION: {
                     'standalone': False,
-                    'database_dir': DEFAULT_DIRECTORY
+                    'database_dir': expanduser(DEFAULT_DIRECTORY)
                     }
                 })
 
@@ -95,7 +101,7 @@ def cal_search_factory():
 
 
 def set_calservice(local_db_dir=None):
-    globalConf.load(STANDARD_REDUCTION_CONF)
+    globalConf.load(expanduser(STANDARD_REDUCTION_CONF))
     if localmanager_available:
         if local_db_dir is not None:
             globalConf.update(CONFIG_SECTION, dict(standalone=True,
@@ -103,7 +109,6 @@ def set_calservice(local_db_dir=None):
 
     globalConf.export_section(CONFIG_SECTION)
     return
-
 
 
 class CalibrationService(object):

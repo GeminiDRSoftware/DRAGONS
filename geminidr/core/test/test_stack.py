@@ -48,9 +48,6 @@ class TestStack:
         """Run once after every test."""
         pass
 
-    def test_alignAndStack(self):
-        pass
-
     def test_stackFrames(self):
         pass
 

@@ -35,10 +35,12 @@ from gempy.utils import logutils
 
 from astrodata.core import AstroDataError
 
+# TODO: rule of three violation
 from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
 
+# TODO: rule of three violation
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_ucals
 from recipe_system.utils.reduce_utils import set_btypes
@@ -68,6 +70,8 @@ class Reduce(object):
     run reduce on the supplied argument set.
 
     """
+
+    # TODO (@kiloRomeoAlpha) : replace `sys_args` by the actual arguments
     def __init__(self, sys_args=None):
         """
 
@@ -95,6 +99,7 @@ class Reduce(object):
             import_module(args.adpkg)
 
         self.adinputs = None
+        self.output_filenames = None
         self.mode     = args.mode
         self.drpkg    = args.drpkg
         self.files    = args.files
@@ -212,12 +217,8 @@ class Reduce(object):
                 log.error(str(err))
                 xstat = signal.SIGABRT
 
-        p._kill_subprocess()
 
-        if hasattr(p, 'streams'):
-            self._write_final(p.streams['main'])
-        else:
-            self._write_final(p.adinputs)
+        self._write_final(p.streams['main'])
 
         if xstat != 0:
             msg = "reduce instance aborted."
