@@ -31,11 +31,13 @@ Organize files
 --------------
 
 First of all, let us consider that we have put all the files in the same folder
-and that we do not have any information anymore. From a bash terminal and
-from within the Conda Virtual Environment where DRAGONS was installed, we can
-call the command tool ``typewalk``:::
+called ``raw`` and that we do not have any information anymore. From a bash
+terminal and from within the Conda Virtual Environment where DRAGONS was
+installed, we can call the command tool ``typewalk``:::
 
     $ typewalk
+
+    directory:  <my_full_path>/raw
     ...
     S20171208S0091.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) ... (SOUTH) (UNPREPARED)
     S20171208S0092.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) ... (SOUTH) (UNPREPARED)
@@ -57,28 +59,27 @@ simplicity.
 Create File lists
 -----------------
 
-This data set science images obtained with the Kshort and with the J filters. It
-also contains images of standard stars obtained in the same night with the same
-filters. Finally, it contains flat images in both filters and DARK frames
-obtained far in the past. We first need to identify these files and create
-lists that will be used in the data-reduction process.
+This data set science images obtained with the Kshort and with the J filters and
+with different exposure times. It also contains images of standard stars
+obtained in the same night with the same filters. Finally, it contains flat
+images in both filters and DARK frames obtained far in the past. We first need
+to identify these files and create lists that will be used in the
+data-reduction process.
 
 Let us start with the DARK files:::
 
-   $ dataselect --tags DARK raw/*.fits > list_of_dark.txt
+   $ dataselect --tags DARK raw/*.fits > list_of_darks.txt
 
 Now we can do the same with the FLAT files, separating them by filter:::
 
-    $ dataselect --tags FLAT --expr 'filter_name=="J"' raw/*.fits > list_of_J_flats.txt
+    $ dataselect --tags FLAT --expr 'filter_name=="J"' raw/*.fits > \
+         list_of_J_flats.txt
 
-    $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' raw/*.fits > list_of_Kshort_flats.txt
+    $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' raw/*.fits > \
+         list_of_Kshort_flats.txt
 
-The rest of the data can be either your science target or other calibration
-images, like standard stars. You can select the science files using the following
-command:::
-
-    $ dataselect --xtags FLAT raw/*.fits --expr 'observation_class=="science"' \
-         > list_of_science_files.txt
+    $ dataselect --tags FLAT --expr 'filter_name=="H"' raw/*.fits > \
+         list_of_H_flats.txt
 
 Recall that the ``\`` (back-slash) is used simply to break the long line. The
 standard stars can be select using the command:::
@@ -86,6 +87,13 @@ standard stars can be select using the command:::
     $ dataselect --xtags FLAT raw/*.fits \
         --expr 'observation_class=="partnerCal"' > list_of_standard_stars.txt
 
+The rest is the data with your science target. `reduce` is still not smart
+enough to determine if the targets are the same or to compensate different
+exposure times. Because of that, we have to create a list for all the cases.
+Here is an example:::
+
+   $ dataselect --expr '(object=="NGC 104" and exposure_time==30)' raw/*.fits \
+         > list_of_science_files_30s.txt
 
 .. _process_dark_files:
 
@@ -152,6 +160,12 @@ addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line:::
    $ reduce @list_of_J_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
 
    $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
+
+.. note::
+
+   Here we used the "S20131129S0320_bpm.fits" as a BPM file. It is very unlikely
+   that your BPM file has the same name. Make sure you use the correct file name.
+   Processed BPM files will have the "_bpm.fits" sufix.
 
 .. _processing_science_files:
 
