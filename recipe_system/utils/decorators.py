@@ -41,13 +41,15 @@ E.g.,::
             [ . . . ]
 
 """
-from builtins import zip
+import gc
+import psutil
 from functools import wraps
 from copy import copy, deepcopy
-
 from gempy.utils import logutils
-import inspect
 
+def memusage():
+    proc = psutil.Process()
+    return '{:9.3f}'.format(float(proc.memory_info().rss) / 1e6)
 # ------------------------------------------------------------------------------
 LOGINDENT = 0
 log = logutils.get_logger(__name__)
@@ -84,6 +86,7 @@ def set_logging(pname):
     global LOGINDENT
     LOGINDENT += 1
     logutils.update_indent(LOGINDENT)
+    #stat_msg = "{} PRIMITIVE: {}".format(memusage(), pname)
     stat_msg = "PRIMITIVE: {}".format(pname)
     log.status(stat_msg)
     log.status("-" * len(stat_msg))
@@ -164,5 +167,6 @@ def parameter_override(fn):
                 zeroset()
                 raise
         unset_logging()
+        gc.collect()
         return ret_value
     return gn

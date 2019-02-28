@@ -14,32 +14,32 @@ if os.path.exists(cleanup):
 # test_path() needs to be exported as the path with
 # all the reuired files you wish to test
 testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
-filename = 'S20190213S0084.fits'
+filename = 'N20190206S0279.fits'
 
 
 @pytest.fixture(scope='class')
-def setup_f2(request):
-    print('setup TestF2')
+def setup_gnirs(request):
+    print('setup TestGNIRS')
 
     def fin():
-        print('\nteardown TestF2')
+        print('\nteardown TestGNIRS')
     request.addfinalizer(fin)
     return
 
 
-@pytest.mark.usefixtures('setup_f2')
+@pytest.mark.usefixtures('setup_gnirs')
 class TestF2:
 
     def test_is_right_type(self):
 
         ad = astrodata.open(os.path.join(test_path(), filename))
-        assert type(ad) ==  gemini_instruments.f2.adclass.AstroDataF2
+        assert type(ad) ==  gemini_instruments.gnirs.adclass.AstroDataGnirs
 
     def test_is_right_instance(self):
 
         ad = astrodata.open(os.path.join(test_path(), filename))
         # YES, this *can* be different from test_is_right_type. Metaclasses!
-        assert isinstance(ad, gemini_instruments.f2.adclass.AstroDataF2)
+        assert isinstance(ad, gemini_instruments.gnirs.adclass.AstroDataGnirs)
 
     def test_extension_data_shape(self):
 
@@ -47,22 +47,22 @@ class TestF2:
         ad = astrodata.open(os.path.join(test_path(), filename))
         data = ad[0].data
 
-        assert data.shape == (1, 2048, 2048)
+        assert data.shape == (1022, 1024)
 
     def test_tags(self):
 
         ad = astrodata.open(os.path.join(test_path(), filename))
         tags = ad.tags
-        expected = {'IMAGE', 'F2', 'RAW', 'SOUTH',
-                    'SIDEREAL', 'UNPREPARED',
-                    'GEMINI', 'ACQUISITION'}
+        expected = {'RAW', 'GEMINI', 'NORTH',
+                    'SIDEREAL', 'GNIRS',
+                    'UNPREPARED', 'SPECT', 'XD'}
 
         assert expected.issubset(tags)
 
     def test_can_return_instrument(self):
 
         ad = astrodata.open(os.path.join(test_path(), filename))
-        assert ad.phu['INSTRUME'] == 'F2'
+        assert ad.phu['INSTRUME'] == 'GNIRS'
         assert ad.instrument() == ad.phu['INSTRUME']
 
     def test_can_return_ad_length(self):
@@ -86,14 +86,14 @@ class TestF2:
     # def test_read_a_keyword_from_phu(self):
     #
     #     ad = astrodata.open(os.path.join(test_path(), filename))
-    #     assert ad.phu['DETECTOR'] == 'F2'
+    #     assert ad.phu['DETECTOR'] == 'GNIRS'
 
     def test_read_a_keyword_from_hdr(self):
 
         ad = astrodata.open(os.path.join(test_path(), filename))
 
         try:
-            assert ad.hdr['CCDNAME'] == 'F2'
+            assert ad.hdr['CCDNAME'] == ['EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03']
         except KeyError:
             # KeyError only accepted if it's because headers out of range
             assert len(ad) == 1

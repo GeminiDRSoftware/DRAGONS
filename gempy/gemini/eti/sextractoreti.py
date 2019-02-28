@@ -3,8 +3,6 @@ import subprocess
 from astropy.io import fits
 from collections import deque
 
-import numpy as np
-
 from gempy.eti_core.eti import ExternalTaskInterface as ETI
 from .sextractoretifile import SExtractorETIFile
 from .sextractoretiparam import SExtractorETIParam
