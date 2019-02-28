@@ -126,7 +126,6 @@ class Block(object):
         # If we're looking for the .data attributes, this may just be the
         # element, if they're ndarrays. We should handle a mix of ndarrays
         # and NDData-like objects.
-        # NB ndarray.data returns a "memoryview" object in recent numpy
         if name == "data":
             attributes = [el if not isinstance(attr, np.ndarray) else attr
                           for el, attr in zip(self._elements, attributes)]
