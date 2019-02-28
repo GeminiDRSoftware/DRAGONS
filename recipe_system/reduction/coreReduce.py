@@ -217,8 +217,8 @@ class Reduce(object):
                 log.error(str(err))
                 xstat = signal.SIGABRT
 
-
         self._write_final(p.streams['main'])
+        self.output_filenames = [ad.filename for ad in p.streams['main']]
 
         if xstat != 0:
             msg = "reduce instance aborted."
