@@ -95,6 +95,33 @@ Here is an example:::
    $ dataselect --expr '(object=="NGC 104" and exposure_time==30)' raw/*.fits \
          > list_of_science_files_30s.txt
 
+If we use ``dataselect`` together with ``showd`` we can find that this
+target was observed with exposure times of 6, 30 and 60 seconds. Here is the
+command used:::
+
+   $ dataselect --expr '(object=="NGC 104")' raw/*.fits | showd -d exposure_time
+
+   filename:   exposure_time
+   ------------------------------
+   S20171210S0033.fits: 6.0
+   ...
+   S20171210S0039.fits: 30.0
+   S20171210S0045.fits: 60.0
+   ...
+
+Part of the output was omitted to keep this document clean. The "pipe" (``|``)
+passes the output files selected by ``dataselect`` as inputs to ``showd``. The
+``-d`` flag tells ``showd`` which descriptor will be printed for each input
+file. Now that we know the other exposure times, we can create a list of files
+for them too:::
+
+   $ dataselect --expr '(object=="NGC 104" and exposure_time==60)' raw/*.fits \
+         > list_of_science_files_60s.txt
+
+   $ dataselect --expr '(object=="NGC 104" and exposure_time==6)' raw/*.fits \
+         > list_of_science_files_6s.txt
+
+
 .. _process_dark_files:
 
 Process DARK files
@@ -189,7 +216,7 @@ Process Science files
 Once we have our calibration files processed and added to the database, we can
 run ``reduce`` on our science data:::
 
-   $ reduce @list_of_science_files.txt @list_of_standard_stars.txt
+   $ reduce @list_of_science_files_30s.txt
 
 This command will generate flat corrected and sky subtracted files but will
 not stack them. You can find which file is which by its suffix
@@ -203,6 +230,8 @@ not stack them. You can find which file is which by its suffix
 The figure above shows an example of a crowded field already reduced. The
 masked pixels are represented in white color.
 
+Correct Distortion and Stack Images
+-----------------------------------
 
 .. todo: Add proper parameter values to ``reduce`` so Sky Subtraction can be
    performed correctly.
