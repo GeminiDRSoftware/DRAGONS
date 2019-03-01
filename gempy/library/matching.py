@@ -457,9 +457,10 @@ class BruteLandscapeFitter(Fitter):
         except TypeError:
             ref_coords = (ref_coords,)
 
+        # Remember, coords are x-first (reversed python order)
         if landscape is None:
-            landshape = tuple(int(max(np.max(inco), np.max(refco)))
-                              for inco, refco in zip(in_coords, ref_coords))
+            landshape = tuple(int(max(np.max(inco), np.max(refco))+10)
+                              for inco, refco in zip(in_coords, ref_coords))[::-1]
             landscape = self.mklandscape(ref_coords, sigma, maxsig, landshape)
 
         farg = (model_copy,) + _convert_input(in_coords, landscape)
@@ -882,7 +883,7 @@ def align_images_from_wcs(adinput, adref, transform=None, cull_sources=False,
         return None
 
     # OK, we can proceed
-    incoords = (input_objcat['X_IMAGE'], input_objcat['Y_IMAGE'])
+    incoords = (input_objcat['X_IMAGE'].data, input_objcat['Y_IMAGE'].data)
     refcoords = (ref_objcat['X_IMAGE'], ref_objcat['Y_IMAGE'])
     if cull_sources:
         good_src1 = gt.clip_sources(adinput)[0]

@@ -166,6 +166,12 @@ class Register(PrimitivesBASE):
             log.stdinfo("Cross-correlating sources in {}, {}".
                          format(ref_ad.filename, ad.filename))
 
+            # GNIRS WCS is dubious, so update WCS by using the ref
+            # image's WCS and the telescope offsets
+            #if ad.instrument() == 'GNIRS':
+            #    log.stdinfo("Recomputing WCS for GNIRS from offsets")
+            #    ad = _create_wcs_from_offsets(ad, ref_ad)
+
             # Calculate the offsets quickly using only a translation
             firstpasspix = first_pass / ad.pixel_scale()
             obj_list, transform = align_images_from_wcs(ad, ref_ad,
