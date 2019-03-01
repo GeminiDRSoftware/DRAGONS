@@ -78,6 +78,10 @@ class separateSkyConfig(config.Config):
 class makeSkyConfig(associateSkyConfig, separateSkyConfig):
     pass
 
+class scaleByExposureTimeConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_exposureTimeScaled", optional=True)
+    time = config.RangeField("Output exposure time", float, None, min=0.1, optional=True)
+
 class subtractSkyConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skySubtracted", optional=True)
     reset_sky = config.Field("Replace lost sky counts?", bool, False)

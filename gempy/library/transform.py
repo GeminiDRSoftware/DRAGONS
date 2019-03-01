@@ -1271,22 +1271,26 @@ class AstroDataGroup(DataGroup):
             self.log.warning("The 'data' attribute is not specified. Adding to list.")
             attributes += ['data']
 
+        # Create the output AD object
+        ref_ext = self._arrays[self.ref_array][self.ref_index]
+        adout = astrodata.create(ref_ext.phu)
+        adout.orig_filename = ref_ext.orig_filename
+
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
         super(AstroDataGroup, self).transform(attributes=attributes, order=order,
                                               subsample=subsample, threshold=threshold,
                                               conserve=conserve, parallel=parallel)
 
-        # Create the output AD object
-        ref_ext = self._arrays[self.ref_array][self.ref_index]
-        adout = astrodata.create(ref_ext.phu)
-        adout.orig_filename = ref_ext.orig_filename
         adout.append(self.output_dict['data'], header=ref_ext.hdr.copy())
         for key, value in self.output_dict.items():
             if key != 'data':  # already done this
                 setattr(adout[0], key, value)
         self._update_headers(adout)
         self._process_tables(adout, process_objcat=process_objcat)
+
+        # Ensure the ADG object doesn't hog memory
+        self.output_dict = {}
         return adout
 
     def _update_headers(self, ad):

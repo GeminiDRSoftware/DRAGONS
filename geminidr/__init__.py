@@ -14,23 +14,21 @@ E.g.,
 
 """
 
+# ------------------------------------------------------------------------------
 import os
+import gc
 import pickle
 import warnings
 
 from copy import deepcopy
 from inspect import stack, isclass
-from multiprocessing import Process, Queue
-from subprocess import check_output, STDOUT, CalledProcessError
 
-from queue import Empty
-import atexit
-
+from gempy.eti_core.eti import ETISubprocess
 from gempy.library import config
+from gempy.utils import logutils
 
 from astropy.io.fits.verify import VerifyWarning
 
-from gempy.utils import logutils
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
 from .gemini.lookups import keyword_comments
@@ -40,7 +38,7 @@ from .gemini.lookups.source_detection import sextractor_dict
 from recipe_system.cal_service import calurl_dict
 from recipe_system.utils.decorators import parameter_override
 
-
+import atexit
 # ------------------------------ caches ----------------------------------------
 # Formerly in cal_service/caches.py
 #
@@ -56,9 +54,7 @@ caches = {
 calindfile = os.path.join('.', caches['reducecache'], "calindex.pkl")
 stkindfile = os.path.join('.', caches['reducecache'], "stkindex.pkl")
 
-
 def set_caches():
-
     cachedict = {}
     for cachename, cachedir in caches.items():
         if not os.path.exists(cachedir):
@@ -66,42 +62,32 @@ def set_caches():
         cachedict.update({cachename:cachedir})
     return cachedict
 
-
 def load_cache(cachefile):
-
     if os.path.exists(cachefile):
         return pickle.load(open(cachefile, 'rb'))
     else:
         return {}
 
-
 def save_cache(object, cachefile):
-
     pickle.dump(object, open(cachefile, 'wb'), protocol=2)
     return
 
-
 # ------------------------- END caches------------------------------------------
 class Calibrations(object):
-
     def __init__(self, calindfile, user_cals={}, *args, **kwargs):
-
         self._calindfile = calindfile
         self._dict = {}
         self._dict.update(load_cache(self._calindfile))
         self._usercals = user_cals or {}                 # Handle user_cals=None
 
     def __getitem__(self, key):
-
         return self._get_cal(*key)
 
     def __setitem__(self, key, val):
-
         self._add_cal(key, val)
         return
 
     def __delitem__(self, key):
-
         # Cope with malformed keys
         try:
             self._dict.pop((key[0].calibration_key(), key[1]), None)
@@ -109,7 +95,6 @@ class Calibrations(object):
             pass
 
     def _add_cal(self, key, val):
-
         # Munge the key from (ad, caltype) to (ad.calibration_key, caltype)
         key = (key[0].calibration_key(), key[1])
         self._dict.update({key: val})
@@ -117,41 +102,19 @@ class Calibrations(object):
         return
 
     def _get_cal(self, ad, caltype):
-
         key = (ad.calibration_key(), caltype)
-
         if key in self._usercals:
             return self._usercals[key]
-
         calfile = self._dict.get(key)
         return calfile
 
     def cache_to_disk(self):
-
         save_cache(self._dict, self._calindfile)
         return
-
-
 # ------------------------------------------------------------------------------
-def cmdloop(inQueue, outQueue):
-
-    # Run shell commands as they arrive and return the output
-    while True:
-
-        cmd = inQueue.get()
-        try:
-            result = check_output(cmd, stderr=STDOUT)
-        except CalledProcessError as e:
-            result = e
-
-        outQueue.put(result)
-
-
 def cleanup(process):
-
-    # Ensure the child process is terminated with the parent
+    # Function for the atexit registry to kill the ETISubprocess
     process.terminate()
-
 
 @parameter_override
 class PrimitivesBASE(object):
@@ -202,16 +165,12 @@ class PrimitivesBASE(object):
 
         # Create a parallel process to which we can send shell commands.
         # Spawning a shell command makes a copy of its parent process in RAM
-        # so we need this process to have a small memory footprint.
-        self._inQueue = Queue()
-        self._outQueue = Queue()
-        self._cmd_host_process = Process(target=cmdloop, args=(self._inQueue,
-                                                               self._outQueue))
-        self._cmd_host_process.start()
-        atexit.register(cleanup, self._cmd_host_process)
-
-    def _kill_subprocess(self):
-        self._cmd_host_process.terminate()
+        # so we need this process to have a small memory footprint and hence
+        # create it now. Garbage collect too, in case stuff has happened
+        # previously.
+        gc.collect()
+        self.eti_subprocess = ETISubprocess()
+        atexit.register(cleanup, self.eti_subprocess)
 
     @property
     def upload(self):

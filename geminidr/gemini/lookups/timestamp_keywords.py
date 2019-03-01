@@ -48,7 +48,7 @@ timestamp_keys = {
     "removePatternNoise": "RMPTNNSE",
     "resampleToLinearCoords": "LINCOORD",
     "wcalResampleToLinearCoords": "LINCOORD",
-#    "scaleByExposureTime": "EXPSCALE",
+    "scaleByExposureTime": "EXPSCALE",
     "scaleByIntensity": "SCALEINT",
     "separateSky": "SEPSKY",
     "skyCorrectFromSlit": "SKYCORR",
