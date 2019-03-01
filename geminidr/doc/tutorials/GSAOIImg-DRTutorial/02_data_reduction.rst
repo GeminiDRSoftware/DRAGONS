@@ -233,6 +233,15 @@ masked pixels are represented in white color.
 Correct Distortion and Stack Images
 -----------------------------------
 
+Finally, you will have to stack your images. For that, you must be aware that
+GSAOI images are highly distorted and that this distorion must be corrected
+before stacking. At this moment, the standard tool for distortion correction
+and image stacking is called `disco-stu`. It can be found
+`here <https://www.gemini.edu/sciops/data-and-results/processing-software>`_.
+Alternatively, you can copy and paste the URL below into your browser:::
+
+    https://www.gemini.edu/sciops/data-and-results/processing-software
+
 .. todo: Add proper parameter values to ``reduce`` so Sky Subtraction can be
    performed correctly.
 
