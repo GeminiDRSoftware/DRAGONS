@@ -167,6 +167,20 @@ addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line:::
    that your BPM file has the same name. Make sure you use the correct file name.
    Processed BPM files will have the "_bpm.fits" sufix.
 
+Once you finish, you will have the master flat file copied in two places: inside
+the same folder where you ran ``reduce`` and inside the
+``calibrations/processed_flats/`` folder. Here is an example of a master flat:
+
+.. figure:: _static/img/master_flat_Kshort.png
+   :align: center
+
+   Master Flat - K-Short Band
+
+Note that this figure shows the masked pixels in red color but not all the
+detector features are masked. For example, the "Christmas Tree" on the detector
+2 can be easily noticed but was not masked.
+
+
 .. _processing_science_files:
 
 Process Science files
@@ -180,6 +194,15 @@ run ``reduce`` on our science data:::
 This command will generate flat corrected and sky subtracted files but will
 not stack them. You can find which file is which by its suffix
 (``_flatCorrected`` or ``_skySubtracted``).
+
+.. figure:: _static/img/S20171210S0039_skySubtracted.png
+   :align: center
+
+   S20171210S0039 - Flat corrected and sky subtracted
+
+The figure above shows an example of a crowded field already reduced. The
+masked pixels are represented in white color.
+
 
 .. todo: Add proper parameter values to ``reduce`` so Sky Subtraction can be
    performed correctly.
