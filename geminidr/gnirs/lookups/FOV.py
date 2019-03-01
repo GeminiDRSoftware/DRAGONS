@@ -42,18 +42,10 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     import math
     
     # Extract pointing info in terms of the x and y offsets
-    # Since we are only looking at the center position of the image relative
-    # to the reference image, the PA of the image to be classified is 
-    # sufficient (luckily!)
-    theta = math.radians(pos.phu['PA'])
-    scale = pos.pixel_scale()
-    position = (pos.phu['POFFSET'], pos.phu['QOFFSET'])
-    deltap = (refpos[0] - position[0]) / scale
-    deltaq = (refpos[1] - position[1]) / scale
-    xshift = (deltap * math.cos(theta)) - (deltaq * math.sin(theta))
-    yshift =  (deltap * math.sin(theta)) + (deltaq * math.cos(theta))
+    xshift = refpos[1] - pos.phu['QOFFSET']
+    yshift = refpos[0] - pos.phu['POFFSET']
     ad = pos
-    
+
     # Imaging:
     if 'IMAGE' in pos.tags:
         illum = get_illum_mask_filename(ad)
