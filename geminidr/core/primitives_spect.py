@@ -7,7 +7,7 @@ from geminidr import PrimitivesBASE
 from . import parameters_spect
 
 import numpy as np
-from scipy import signal, spatial
+from scipy import spatial
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -15,7 +15,7 @@ from astropy.table import Table
 from matplotlib import pyplot as plt
 
 from gempy.gemini import gemini_tools as gt
-from gempy.library import matching
+from gempy.library import matching, peaks_and_traces as peak
 from gempy.library.nddops import NDStacker
 from gempy.library.transform import Transform, DataGroup
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -126,7 +126,7 @@ class Spect(PrimitivesBASE):
 
                 # Mask bad columns but not saturated/non-linear data points
                 mask &= 65535 ^ (DQ.saturated | DQ.non_linear)
-                data[mask>0] = 0.
+                data[mask > 0] = 0.
 
                 cenwave = params["central_wavelength"] or ext.central_wavelength(asNanometers=True)
                 dw = params["dispersion"] or ext.dispersion(asNanometers=True)
@@ -152,8 +152,8 @@ class Spect(PrimitivesBASE):
 
                 # Find peaks; convert width FWHM to sigma
                 widths = 0.42466*fwidth * np.arange(0.8,1.21,0.05)  # TODO!
-                peaks, peak_snrs = _find_peaks(data, widths, mask=mask,
-                                               variance=variance, min_snr=min_snr)
+                peaks, peak_snrs = peak.find_peaks(data, widths, mask=mask,
+                                                   variance=variance, min_snr=min_snr)
                 log.stdinfo('{}: {} peaks and {} arc lines'.
                              format(ad.filename, len(peaks), len(arc_lines)))
 
@@ -259,8 +259,9 @@ class Spect(PrimitivesBASE):
                     plt.show()
 
                 m.sort()
-                incoords = m.input_coords
-                outcoords = m.output_coords
+                # Add 1 to pixel coordinates so they're 1-indexed
+                incoords = np.float32(m.input_coords) + 1
+                outcoords = np.float32(m.output_coords)
                 coeff_column = (list(m_final.domain) + [order] +
                                 list(getattr(m_final, 'c{}'.format(i)).value for i in range(order+1)))
                 # Ensure all columns have the same length
@@ -272,6 +273,8 @@ class Spect(PrimitivesBASE):
 
                 fit_table = Table([coeff_column, incoords, outcoords],
                                   names=("coefficients", "peaks", "wavelengths"))
+                fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
+                                              'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
 
             # Timestamp and update the filename
@@ -488,99 +491,7 @@ def _estimate_peak_width(data, fwidth):
         data[index-2*fwidth:index+2*fwidth+1] = 0.
     return sigma_clip(widths).mean()
 
-def _find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
-                rank_clip=True):
-    """
-    Find peaks in a 1D array. This uses scipy.signal routines, but requires some
-    duplication of that code since the _filter_ridge_lines() function doesn't
-    expose the *window_size* parameter, which is important. This also does some
-    rejection based on a pixel mask and/or "forensic accounting" of relative
-    peak heights.
 
-    Parameters
-    ----------
-    data: 1D array
-        The pixel values of the 1D spectrum
-    widths: array-like
-        Sigma values of line-like features to look for
-    mask: 1D array
-        Mask (peaks with bad pixels are rejected)
-    variance: 1D array
-        Variance (to estimate SNR of peaks)
-    min_snr: float
-        Minimum SNR required of peak pixel
-    min_frac: float
-        minimum number of *widths* values at which a peak must be found
-    rank_clip: bool
-        clip brightest lines based on relative SNR?
-
-    Returns
-    -------
-    2D array: peak wavelengths and SNRs
-    """
-    maxwidth = max(widths)
-    window_size = 4*maxwidth+1
-    cwt_dat = signal.cwt(data, signal.ricker, widths)
-    eps = np.finfo(np.float32).eps
-    cwt_dat[cwt_dat<eps] = eps
-    ridge_lines = signal._peak_finding._identify_ridge_lines(cwt_dat, 0.25*widths, 2)
-    filtered = signal._peak_finding._filter_ridge_lines(cwt_dat, ridge_lines,
-                                                        window_size=window_size,
-                                                        min_length=int(min_frac*len(widths)),
-                                                        min_snr=1.)
-    peaks = sorted([x[1][0] for x in filtered])
-    if variance is not None:
-        snr = np.divide(cwt_dat[0], np.sqrt(variance), np.zeros_like(data),
-                        where=variance>0)
-    else:
-        snr = cwt_dat[0]
-    peaks = [x for x in peaks if snr[x] > min_snr]
-
-    # remove adjacent points
-    while True:
-        new_peaks = peaks
-        for i in range(len(peaks)-1):
-            if peaks[i+1]-peaks[i] == 1:
-                new_peaks[i] += 0.5
-                new_peaks[i+1] = -1
-        new_peaks = [x for x in new_peaks if x>-1]
-        if len(new_peaks) == len(peaks):
-            break
-        peaks = new_peaks
-
-    # Turn into array and remove those too close to the edges
-    peaks = np.array(peaks)
-    edge = 2.35482 * maxwidth
-    peaks = peaks[np.logical_and(peaks>edge, peaks<len(data)-1-edge)]
-
-    # Improve positions of peaks with centroiding. Use a deliberately small
-    # centroiding box to avoid contamination by nearby lines
-    # Remove any peaks affected by the mask
-    clipped_data = np.where(snr<0.5, 0, data)
-    final_peaks = []
-    for peak in peaks:
-        x1 = int(peak - maxwidth)
-        x2 = int(peak + maxwidth+1)
-        if np.sum(mask[x1:x2]) == 0:
-            if max(snr[x1:x2] >= min_snr):
-                final_peaks.append(np.sum(clipped_data[x1:x2] * np.arange(x1,x2)) / np.sum(clipped_data[x1:x2]))
-    peak_snrs = list(snr[int(p+0.5)] for p in final_peaks)
-
-    # Remove suspiciously bright peaks
-    # TODO: Much improvement possible here!
-    if rank_clip:
-        diff = 3  # Compare 1st brightest to 4th brightest
-        rank_order = list(np.argsort(peak_snrs))
-        while len(rank_order) > diff and (peak_snrs[rank_order[-1]] /
-                                          peak_snrs[rank_order[-(diff+1)]]) > 3:
-            del rank_order[-1]
-            peak = final_peaks[rank_order[-1]]
-            mask[int(peak-maxwidth):int(peak+maxwidth+1)] |= DQ.bad_pixel
-        final_peaks = [final_peaks[i] for i in rank_order]
-        peak_snrs = [peak_snrs[i] for i in rank_order]
-
-    pixels, snrs = zip(*sorted(zip(final_peaks, peak_snrs)))
-    return np.array([pixels, snrs])
 
 def _set_model(model, order=None, initial=False, kdfit=False):
     """
