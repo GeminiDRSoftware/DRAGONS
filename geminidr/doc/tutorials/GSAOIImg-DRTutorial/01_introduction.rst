@@ -83,17 +83,19 @@ or copying and pasting the following address to search form into your browser:::
 
 ..    https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
 
+
 The FLAT files to build the BPM can be downloaded directly by `clicking here
 <https://archive.gemini.edu/download/20171201-20171231/object=Domeflat/filter=H/notengineering/GSAOI/Pass/present/canonical>`_
 or using the following address:::
 
 ..    https://archive.gemini.edu/searchform/object=Domeflat/cols=CTOWEQ/filter=H/notengineering/GSAOI/20171201-20171231/Pass
 
+
 Copy all the files to the same place in your computer. Then use ``tar`` and
 ``bunzip2`` to decompress them:::
 
     $ cd ${path_to_my_data}/
-    $ tar -xf gemini_calibs.GS-2017A-Q-29_GSAOI_20170301-20170331.tar
+    $ tar -xf gemini_calibs.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
     $ tar -xf gemini_data.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
     $ tar -xf gemini_data.GSAOI.tar
     $ tar -xf gemini_data.GSAOI_20171201-20171231.tar

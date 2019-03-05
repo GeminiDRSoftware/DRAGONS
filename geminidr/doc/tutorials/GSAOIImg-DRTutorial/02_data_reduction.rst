@@ -38,20 +38,25 @@ installed, we can call the command tool ``typewalk``:::
     $ typewalk
 
     directory:  <my_full_path>/raw
-    ...
-    S20171208S0091.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) ... (SOUTH) (UNPREPARED)
-    S20171208S0092.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) ... (SOUTH) (UNPREPARED)
-    ...
-    S20171210S0042.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-    S20171210S0043.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-    ...
+     S20150609S0022.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+     S20150609S0023.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+     S20150609S0024.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+     ...
+     S20170312S0180.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
+     S20170312S0181.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
+     S20170312S0198.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
+     ...
+     S20170315S0286.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+     S20170316S0090.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+     S20170316S0091.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+     ...
 
 This command will open every FITS file within the current folder (recursively)
 and will print a table with the file names and the associated tags. For example,
 calibration files will always have the ``CAL`` tag. Flat images will always have
-the ``FLAT`` tag. This means that we we can start getting to know a bit more
-about our data set just by looking the tags. The output above was trimmed for
-simplicity.
+the ``FLAT`` tag. Dark files will have the ``DARK`` tag. This means that we
+can start getting to know a bit more about our data set just by looking the
+tags. The output above was trimmed for simplicity.
 
 
 .. _create_file_lists:
@@ -59,21 +64,22 @@ simplicity.
 Create File lists
 -----------------
 
-This data set science images obtained with the Kshort and with the J filters and
-with different exposure times. It also contains images of standard stars
-obtained in the same night with the same filters. Finally, it contains flat
-images in both filters and DARK frames obtained far in the past. We first need
-to identify these files and create lists that will be used in the
-data-reduction process.
+This data set now contains science and calibration frames. It could have
+different observed targets and different exposure times. The current data
+reduction pipeline does not organize the data.
 
-Let us start with the DARK files:::
+That means that we first need to identify these files and create lists that will
+be used in the data-reduction process. For that, we will use the ``dataselect``
+command line. Please, refer to the `dataselect <>`_ page for details regarding
+its usage. Let us start with the DARK files:::
 
    $ dataselect --tags DARK raw/*.fits > list_of_darks.txt
 
-Now we can do the same with the FLAT files, separating them by filter:::
+Here, the ``>`` symbol gets the ``dataselect`` output and stores it within the
+``list_of_darks.txt`` file. If you want to see the output, simply omit it and
+everything after it.
 
-    $ dataselect --tags FLAT --expr 'filter_name=="J"' raw/*.fits > \
-         list_of_J_flats.txt
+Now we can do the same with the FLAT files, separating them by filter:::
 
     $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' raw/*.fits > \
          list_of_Kshort_flats.txt
@@ -81,46 +87,70 @@ Now we can do the same with the FLAT files, separating them by filter:::
     $ dataselect --tags FLAT --expr 'filter_name=="H"' raw/*.fits > \
          list_of_H_flats.txt
 
-Recall that the ``\`` (back-slash) is used simply to break the long line. The
-standard stars can be select using the command:::
+Recall that the ``\`` (back-slash) is used simply to break the long line .
 
-    $ dataselect --xtags FLAT raw/*.fits \
-        --expr 'observation_class=="partnerCal"' > list_of_standard_stars.txt
+You can select the standard start with the following command:::
 
-The rest is the data with your science target. `reduce` is still not smart
-enough to determine if the targets are the same or to compensate different
-exposure times. Because of that, we have to create a list for all the cases.
-Here is an example:::
+    $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits
+    raw/S20170312S0178.fits
+    raw/S20170312S0179.fits
+    raw/S20170312S0180.fits
+    ...
 
-   $ dataselect --expr '(object=="NGC 104" and exposure_time==30)' raw/*.fits \
-         > list_of_science_files_30s.txt
+The problem is that you may have more than one standard star in your data set.
+We can verify that by passing the ``dataselect`` output to the ``showd`` command
+line using "pipe" (``|``):::
 
-If we use ``dataselect`` together with ``showd`` we can find that this
-target was observed with exposure times of 6, 30 and 60 seconds. Here is the
-command used:::
+   $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits | showd -d object
 
-   $ dataselect --expr '(object=="NGC 104")' raw/*.fits | showd -d exposure_time
+   filename:   object
+   ------------------------------
+   S20170312S0178.fits: LHS 2026
+   S20170312S0179.fits: LHS 2026
+   ...
+   S20170312S0198.fits: cskd-8
+   S20170312S0199.fits: cskd-8
+   ...
+
+The ``-d`` flag tells ``showd`` which descriptor will be printed for each input
+file. You can create a list for each standard star using the ``object`` descriptor
+as an argument for ``dataselect``:::
+
+   $ dataselect --expr 'object=="LHS 2026"' raw/*.fits > list_of_std_LHS_2026.txt
+
+   $ dataselect --expr 'object=="cskd-8"' raw/*.fits > list_of_std_cskd-8.txt
+
+The rest is the data with your science target. Before we create a new list, let
+us check if we have more than one target and more than one exposure time:::
+
+   $ dataselect --expr 'observation_class=="science"' raw/*.fits | showd -d object
+
+   filename:   object
+   ------------------------------
+   S20170505S0095.fits: NGC5128
+   S20170505S0096.fits: NGC5128
+   ...
+   S20170505S0109.fits: NGC5128
+   S20170505S0110.fits: NGC5128
+
+We have only one target. Now let us check the exposure time:::
+
+   $ dataselect --expr 'observation_class=="science"' raw/*.fits | showd -d exposure_time
 
    filename:   exposure_time
    ------------------------------
-   S20171210S0033.fits: 6.0
+   S20170505S0095.fits: 60.0
+   S20170505S0096.fits: 60.0
    ...
-   S20171210S0039.fits: 30.0
-   S20171210S0045.fits: 60.0
-   ...
+   S20170505S0109.fits: 60.0
+   S20170505S0110.fits: 60.0
 
-Part of the output was omitted to keep this document clean. The "pipe" (``|``)
-passes the output files selected by ``dataselect`` as inputs to ``showd``. The
-``-d`` flag tells ``showd`` which descriptor will be printed for each input
-file. Now that we know the other exposure times, we can create a list of files
-for them too:::
+Again, only one exposure time. Just to show the example, let us consider that
+we want to filter all the files whose ``object`` is NGC5128 and that the
+``exposure_time`` is 60 seconds. We also want to pass the output to a new list:::
 
-   $ dataselect --expr '(object=="NGC 104" and exposure_time==60)' raw/*.fits \
-         > list_of_science_files_60s.txt
-
-   $ dataselect --expr '(object=="NGC 104" and exposure_time==6)' raw/*.fits \
-         > list_of_science_files_6s.txt
-
+   $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' raw/*.fits > \
+      list_of_science_files.txt
 
 .. _process_dark_files:
 
@@ -141,7 +171,9 @@ Note that ``reduce`` will no separate DARKS with different exposure times. You
 will have to create a new list for each exposure time, if that is the case.
 
 Master DARK files can be added to the local database using the ``caldb``
-command:::
+command. Before you run it, make sure you have `configured and initialized your
+caldb <>`_. Once you are set, add the Master Dark to the local database using
+the following command:::
 
    $ caldb add ./calibrations/processed_dark/S20150609S0022_dark.fits
 
@@ -177,20 +209,16 @@ Process FLAT files
 
 FLAT images can be easily reduced using the ``reduce`` command line:::
 
-   $ reduce @list_of_J_flats.txt
-
    $ reduce @list_of_Kshort_flats.txt
 
 If we want ``reduce`` to use the BPM file, we need to add ``-p
 addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line:::
 
-   $ reduce @list_of_J_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
-
    $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
 
 .. note::
 
-   Here we used the "S20131129S0320_bpm.fits" as a BPM file. It is very unlikely
+   Here we used the "S20171208S0053_bpm.fits" as a BPM file. It is very unlikely
    that your BPM file has the same name. Make sure you use the correct file name.
    Processed BPM files will have the "_bpm.fits" sufix.
 
@@ -198,7 +226,7 @@ Once you finish, you will have the master flat file copied in two places: inside
 the same folder where you ran ``reduce`` and inside the
 ``calibrations/processed_flats/`` folder. Here is an example of a master flat:
 
-.. figure:: _static/img/master_flat_Kshort.png
+.. figure:: _static/img/S20170505S0030_flat.png
    :align: center
 
    Master Flat - K-Short Band
@@ -216,16 +244,16 @@ Process Science files
 Once we have our calibration files processed and added to the database, we can
 run ``reduce`` on our science data:::
 
-   $ reduce @list_of_science_files_30s.txt
+   $ reduce @list_of_science_files.txt
 
 This command will generate flat corrected and sky subtracted files but will
 not stack them. You can find which file is which by its suffix
 (``_flatCorrected`` or ``_skySubtracted``).
 
-.. figure:: _static/img/S20171210S0039_skySubtracted.png
+.. figure:: _static/img/S20170505S0095_skySubtracted.png
    :align: center
 
-   S20171210S0039 - Flat corrected and sky subtracted
+   S20170505S0095 - Flat corrected and sky subtracted
 
 The figure above shows an example of a crowded field already reduced. The
 masked pixels are represented in white color.
