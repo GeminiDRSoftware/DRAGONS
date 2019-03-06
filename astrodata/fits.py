@@ -464,7 +464,8 @@ class FitsProviderProxy(DataProvider):
         return self
 
     @property
-    @deprecated("Access to headers through this property is deprecated and will be removed in the future")
+    @deprecated("Access to headers through this property is deprecated and will be removed in the future. "
+                "Use '.hdr' instead.")
     def header(self):
         return self._provider._get_raw_headers(with_phu=True, indices=self._mapping)
 

@@ -188,7 +188,7 @@ Create BPM files
 The Bad Pixel Mask (BPM) files can be created using a set of FLAT images and a
 set of DARK files. The FLATs must be obtained in the H band with a number of
 counts around 20000 adu and no saturated pixels, usually achieved with 7 seconds
-exposure time. The download_sample_files_ contains a sample of the files to be
+exposure time. The download_sample_files_ section contains a sample of the files to be
 used in this tutorial. If you need to download files for your own data set, use
 the `Gemini Archive Search Form <https://archive.gemini.edu/searchform>`_ to
 look for matching data.
@@ -231,7 +231,7 @@ the same folder where you ran ``reduce`` and inside the
 
    Master Flat - K-Short Band
 
-Note that this figure shows the masked pixels in red color but not all the
+Note that this figure shows the masked pixels in white color but not all the
 detector features are masked. For example, the "Christmas Tree" on the detector
 2 can be easily noticed but was not masked.
 
@@ -262,16 +262,30 @@ Correct Distortion and Stack Images
 -----------------------------------
 
 Finally, you will have to stack your images. For that, you must be aware that
-GSAOI images are highly distorted and that this distorion must be corrected
+GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction
-and image stacking is called `disco-stu`. It can be found
-`here <https://www.gemini.edu/sciops/data-and-results/processing-software>`_.
-Alternatively, you can copy and paste the URL below into your browser:::
+and image stacking is called `disco-stu`. This package can be found
+`here <https://github.com/GeminiDRSoftware/disco-stu>`_.
 
-    https://www.gemini.edu/sciops/data-and-results/processing-software
+Check this page for requirements and instruction on installing the package.
 
-.. todo: Add proper parameter values to ``reduce`` so Sky Subtraction can be
-   performed correctly.
+Once you are all set, you can simply run ``disco`` on the Sky Subtracted
+files:::
+
+   $ disco *_skySubtracted.fits
+
+By default, ``disco`` will write the output file as ``disco_stack.fits``. If you
+want to change the name of the output file during execution, run the following
+command instead:::
+
+   $ disco *_skySubtracted.fits -o my_final_image.fits
+
+The final image is shown below.
+
+.. figure:: _static/img/disco_stack.png
+   :align: center
+
+   Sky Subtracted and Stacked Final Image
 
 .. It's the same as any other IR instrument. It uses the positional offsets to
    work out whether the images all overlap or not. The image with the smallest
@@ -282,7 +296,4 @@ Alternatively, you can copy and paste the URL below into your browser:::
    they're more than a certain distance (a couple of arcseconds) from the
    science frame (to avoid objects falling on top of each other and cancelling
    out).
-
-.. The final reduced data is crap: I have files with no sources or a file
-   with a lot of residuum and with a bad WCS. Need to check on this tomorrow.
 
