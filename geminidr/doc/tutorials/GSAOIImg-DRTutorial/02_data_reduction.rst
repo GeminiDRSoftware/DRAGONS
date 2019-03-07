@@ -269,29 +269,6 @@ from the science frame (to avoid objects falling on top of each other and
 cancelling out).
 
 
-Change data reduction parameters
---------------------------------
-
-It is also important to remember that ``reduce`` is basically a recipe with
-a sequence of operations, called Primitives, and that each Primitive require
-a set of parameters. When we run ``reduce`` without any extra flag, it will
-run all the Primitives in our recipe using the default values. Depending on
-your data/science case, you may have to try to change the parameters of one or
-more Primitives.
-
-First, you need to know what are the recipes available for a given files, then
-you need to get what are Primitives living within that recipe. Finally, you need
-a list of parameters that can be modified.
-
-.. todo show_recipes
-
-.. todo show_primitives
-
-Now you can get the list of parameters for a given Primitive using the
-``showpars`` command line. Here is an example:::
-
-    $ showpars raw/
-
 Stack Science reduced images
 ----------------------------
 
@@ -343,5 +320,114 @@ dense part of the field, the staked image corrects that and complete the full
 frame which, now, can be use for science.
 
 
+Advanced Operations
+-------------------
 
+It is also important to remember that ``reduce`` is basically a recipe with
+a sequence of operations, called Primitives, and that each Primitive require
+a set of parameters. When we run ``reduce`` without any extra flag, it will
+run all the Primitives in our recipe using the default values. Depending on
+your data/science case, you may have to try to change the parameters of one or
+more Primitives.
 
+First, you need to know what are the recipes available for a given files, then
+you need to get what are Primitives living within that recipe. Finally, you need
+a list of parameters that can be modified.
+
+.. todo show_recipes
+
+The `show_recipes <>`_ command line takes care of the first step. Here is an
+example::
+
+    $ show_recipes raw/S20170505S0073.fits
+
+     DRAGONS v2.1.x - show_recipes
+     Input file: ./raw/S20170505S0073.fits
+     Input tags: (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI)
+                 (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+     Recipes available for the input file:
+       geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat
+       geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat
+       geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM
+
+The output tells me that I have two recipes for the SQ (Science Quality) mode
+and one recipe for the QA (Quality Assesment) mode. By default, ``reduce`` uses
+the SQ mode for processing the data.
+
+.. todo show_primitives
+
+The `show_primitives <>`_ command line displays what are the Primitives that
+were used within a particular Recipe:::
+
+    $ show_primitives raw/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
+
+    DRAGONS v2.1.x - show_recipes
+    Input file: ./raw/S20170505S0073.fits
+    Input mode: sq
+    Input recipe: makeProcessedBPM
+    Matched recipe: geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM
+    Primitives used:
+      p.prepare()
+      p.addDQ()
+      p.addVAR(read_noise=True, poisson_noise=True)
+      p.ADUToElectrons()
+      p.selectFromInputs(tags="DARK", outstream="darks")
+      p.selectFromInputs(tags="FLAT")
+      p.stackFrames(stream="darks")
+      p.makeLampFlat()
+      p.normalizeFlat()
+      p.makeBPM()
+
+.. todo showpars
+
+Now you can get the list of parameters for a given Primitive using the
+``showpars`` command line. Here is an example:::
+
+    $ showpars raw/S20170505S0073.fits makeLampFlat
+    Dataset tagged as {'FLAT', 'SOUTH', 'RAW', 'GEMINI', 'DOMEFLAT', 'CAL', 'AZEL_TARGET', 'GSAOI', 'NON_SIDEREAL', 'LAMPOFF', 'IMAGE', 'UNPREPARED'}
+    Settable parameters on 'makeLampFlat':
+    ========================================
+     Name			Current setting
+
+    suffix               '_stack'             Filename suffix
+    apply_dq             True                 Use DQ to mask bad pixels?
+    statsec              None                 Section for statistics
+    operation            'mean'               Averaging operation
+    Allowed values:
+        mean	arithmetic mean
+        wtmean	variance-weighted mean
+        median	median
+        lmedian	low-median
+
+    reject_method        'sigclip'            Pixel rejection method
+    Allowed values:
+        none	no rejection
+        minmax	reject highest and lowest pixels
+        sigclip	reject pixels based on scatter
+        varclip	reject pixels based on variance array
+
+    hsigma               3.0                  High rejection threshold (sigma)
+        Valid Range = [0,inf)
+    lsigma               3.0                  Low rejection threshold (sigma)
+        Valid Range = [0,inf)
+    mclip                True                 Use median for sigma-clipping?
+    max_iters            None                 Maximum number of clipping iterations
+        Valid Range = [1,inf)
+    nlow                 0                    Number of low pixels to reject
+        Valid Range = [0,inf)
+    nhigh                0                    Number of high pixels to reject
+        Valid Range = [0,inf)
+    memory               None                 Memory available for stacking (GB)
+        Valid Range = [0.1,inf)
+
+Now that we know what are is the recipe being used, what are the Primitives
+it calls and what are the parameters that are set, we can finally change the
+default values using the ``-p`` flag. We actually did this earlier in this
+tutorial when we called::
+
+   $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
+
+for example. But now you know that ``-p`` is telling ``reduce`` that the
+``addDQ`` primitive should use a different value for the ``user_bpm`` parameter.
+Since we did not say anything about the mode or the recipe, it is using the
+default values.
