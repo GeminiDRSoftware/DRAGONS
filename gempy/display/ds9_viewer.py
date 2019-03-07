@@ -127,7 +127,9 @@ class ds9(imexam.ds9_viewer.ds9):
                  quit_ds9_on_del=True):
         super().__init__(target=target, path=path, wait_time=wait_time,
                          quit_ds9_on_del=quit_ds9_on_del)
-        time.sleep(2)
+        # No need to sleep if we're connceting to an existing ds9
+        if target is None:
+            time.sleep(2)
 
     def run_inet_ds9(self):
         """start a new ds9 window using an inet socket connection.
