@@ -14,6 +14,14 @@ class ds9Viewer(imexam.connect):
         self._event_driven_exam = False  # use the imexam loop
 
         self.currentpoint = None
+        self.origin = 0
+        self.color = "green"
+        self.width = 1
+
+    def _offset(self, origin, *args):
+        """Convert coordinates to ds9 1-indexed form"""
+        offset = 1 - (self.origin if origin is None else origin)
+        return list(coord + offset for coord in args)
 
     # We define the display methods here because this is the object the
     # user creates and interacts with, even though almost everything is
@@ -58,32 +66,31 @@ class ds9Viewer(imexam.connect):
         str: string
             regions command to execute
         """
+        extras = ""
+        if self.color != "green":
+            extras += " color={}".format(self.color)
+        if self.width != 1:
+            extras += " width={}".format(self.width)
+        if extras:
+            str = str + " # " + extras
         self.window.set("regions command {{{}}}".format(str))
 
-    def set_color(self, color):
-        """Set the pen color"""
-        self.regions("color {}".format(color))
+    def clear_regions(self):
+        self.window.set("regions delete all")
 
-    def set_width(self, width):
-        """Set the pen width"""
-        try:
-            width = int(width)
-        except TypeError:
-            warnings.warn("Width {} is not an integer".format(width))
-        else:
-            self.regions("width {}".format(width))
-
-    def line(self, x1=None, y1=None, x2=None, y2=None):
+    def line(self, x1=None, y1=None, x2=None, y2=None, origin=None):
         """Draw a line from (x1, y1) to (x2, y2)"""
-        self.regions("line {} {} {} {}".format(x1, y1, x2, y2))
-        self.currentpoint = (y2, x2)
+        coords = self._offset(origin, x1, y1, x2, y2)
+        self.regions("line {} {} {} {}".format(*coords))
+        self.currentpoint = tuple(coords[-2:])
 
-    def lineto(self, x=None, y=None):
+    def lineto(self, x=None, y=None, origin=None):
         """Draw a line from the currentpoint to (x, y)"""
         try:
-            y1, x1 = self.currentpoint
+            x1, y1 = self.currentpoint
         except TypeError:
             warnings.warn("No currentpoint set. Cannot use lineto")
+        x, y = self._offset(origin, x, y)
         self.line(x1=x1, y1=y1, x2=x, y2=y)
 
     def rlineto(self, dx=None, dy=None):
@@ -94,13 +101,14 @@ class ds9Viewer(imexam.connect):
             warnings.warn("No currentpoint set. Cannot use rlineto")
         self.line(x1=x1, y1=y1, x2=x1+dx, y2=y1+dy)
 
-    def moveto(self, x=None, y=None):
+    def moveto(self, x=None, y=None, origin=None):
         """Move the currentpoint to (x,y)"""
-        self.currentpoint = (y, x)
+        self.currentpoint = tuple(self._offset(origin, x, y))
 
-    def polygon(self, points, closed=True, xfirst=False):
+    def polygon(self, points, closed=True, xfirst=False, origin=None):
         """Draw lines between consecutive points, possibly returning to the first one"""
-        for i, (v1, v2) in enumerate(points):
+        for i, point in enumerate(points):
+            v1, v2 = self._offset(origin, *point)
             kwargs = {'x': v1, 'y': v2} if xfirst else {'x': v2, 'y': v1}
             if i == 0:
                 self.moveto(**kwargs)
