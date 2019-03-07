@@ -255,11 +255,45 @@ not stack them. You can find which file is which by its suffix
 
    S20170505S0095 - Flat corrected and sky subtracted
 
-The figure above shows an example of a crowded field already reduced. The
+The figure above shows an example of a sparse field already reduced. The
 masked pixels are represented in white color.
 
-Correct Distortion and Stack Images
------------------------------------
+The sky subtraction works in the same as any other IR instrument. It uses the
+positional offsets to work out whether the images all overlap or not. The image
+with the smallest offsets is assumed to contain the science target. If some
+images are clearly in a different position, these are assumed to be sky frames
+and only these are stacked to construct sky frames to be subtracted from the
+science images. If all the images overlap, then all frames can be used to make
+skies provided they're more than a certain distance (a couple of arcseconds)
+from the science frame (to avoid objects falling on top of each other and
+cancelling out).
+
+
+Change data reduction parameters
+--------------------------------
+
+It is also important to remember that ``reduce`` is basically a recipe with
+a sequence of operations, called Primitives, and that each Primitive require
+a set of parameters. When we run ``reduce`` without any extra flag, it will
+run all the Primitives in our recipe using the default values. Depending on
+your data/science case, you may have to try to change the parameters of one or
+more Primitives.
+
+First, you need to know what are the recipes available for a given files, then
+you need to get what are Primitives living within that recipe. Finally, you need
+a list of parameters that can be modified.
+
+.. todo show_recipes
+
+.. todo show_primitives
+
+Now you can get the list of parameters for a given Primitive using the
+``showpars`` command line. Here is an example:::
+
+    $ showpars raw/
+
+Stack Science reduced images
+----------------------------
 
 Finally, you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
@@ -287,13 +321,27 @@ The final image is shown below.
 
    Sky Subtracted and Stacked Final Image
 
-.. It's the same as any other IR instrument. It uses the positional offsets to
-   work out whether the images all overlap or not. The image with the smallest
-   offsets is assumed to contain the science target. If some images are clearly
-   in a different position, these are assumed to be sky frames and only these
-   are stacked to construct sky frames to be subtracted from the science images.
-   If all the images overlap, then all frames can be used to make skies provided
-   they're more than a certain distance (a couple of arcseconds) from the
-   science frame (to avoid objects falling on top of each other and cancelling
-   out).
+This operation in known to have great impact on some science cases. For example,
+check the two images below. The first one is a single frame of the globular
+cluster "HP I", observed for the program GS-2017A-Q-44 and published in
+`Kerber et. al. (2019) <https://ui.adsabs.harvard.edu/#abs/2019MNRAS.484.5530K/abstract>`_.
+The second image, is the same object after aligning and stacking all the images
+using ``disco_stu`` as described above.
+
+.. figure:: _static/img/hp1_single.png
+   :align: center
+
+   HP 1 - Single Frame
+
+.. figure:: _static/img/hp1_stack.png
+   :align: center
+
+   HP 1 - Stacked Image
+
+Note that although the sky subtraction adds several masked regions in the most
+dense part of the field, the staked image corrects that and complete the full
+frame which, now, can be use for science.
+
+
+
 
