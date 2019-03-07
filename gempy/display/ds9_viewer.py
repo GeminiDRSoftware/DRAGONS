@@ -120,8 +120,8 @@ class ds9Viewer(imexam.connect):
 
 class ds9(imexam.ds9_viewer.ds9):
     """
-    An extension of the imexam.ds9_viewer class to provide the additional
-    high-level methods for annotating the image
+    An extension of the imexam.ds9_viewer class to allow us to name the
+    viewer as we wish, and to sleep after creation, as required.
     """
     def __init__(self, target=None, path=None, wait_time=5,
                  quit_ds9_on_del=True):
