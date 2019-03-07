@@ -13,6 +13,10 @@ reject_bad_peaks: remove suspicious-looking peaks by a variety of methods
 import numpy as np
 from scipy import signal
 
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.library.nddops import NDStacker
+from gempy.utils import logutils
+
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
@@ -147,4 +151,110 @@ def reject_bad_peaks(peaks):
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
+def trace_lines(ext, axis, start=None, initial=None, width=3, nsum=10,
+                step=1, max_shift=0.05, max_missed=10, viewer=None):
+    """
 
+    Parameters
+    ----------
+    ext: single-sliced AD object
+        the extension within which to trace features
+    axis: int (0 or 1)
+        axis along which to trace (0=y-direction, 1=x-direction)
+    start: int/None
+        row/column to start trace (None => middle)
+    initial: sequence
+        coordinates of peaks
+    width: int
+        width of centroiding box in pixels
+    nsum: int
+        number of rows/columns to combine at each step
+    step: int
+        step size along axis in pixels
+    max_shift: float
+        maximum perpendicular shift from pixel to pixel
+    max_missed: int
+        maximum number of interations without finding line before
+        line is considered lost forever
+    viewer: imexam viewer/None
+        viewer to draw lines on
+    """
+    log = logutils.get_logger(__name__)
+
+    # We really don't care about non-linear/saturated pixels
+    bad_bits = 65535 ^ (DQ.non_linear | DQ.saturated)
+
+    halfwidth = int(0.5 * width)
+
+    # Make life easier by always tracing along columns
+    if axis == 0:
+        ext_data = ext.data
+        ext_mask = None if ext.mask is None else ext.mask & bad_bits
+        direction = "row"
+    else:
+        ext_data = ext.data.T
+        ext_mask = None if ext.mask is None else ext.mask.T & bad_bits
+        direction = "column"
+
+    if start is None:
+        start = int(0.5 * ext.shape[0])
+        log.stdinfo("Starting trace at {} {}".format(direction, start))
+
+    coord_lists = [[] for peak in initial]
+    for direction in (-1, 1):
+        ypos = start
+        last_coords = [[ypos, peak] for peak in initial]
+        while True:
+            y1 = int(ypos - 0.5*nsum + 0.5)
+            data, mask, var = NDStacker.mean(ext_data[y1:y1+nsum],
+                                             mask=ext_mask[y1:y1+nsum],
+                                             variance=None)
+            clipped_data = np.where(data/np.sqrt(var) > 0.5, data, 0)
+            last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
+            peaks = pinpoint_peaks(clipped_data, mask, last_peaks)
+
+            for i, (last_row, old_peak) in enumerate(last_coords):
+                if np.isnan(old_peak):
+                    continue
+                j = np.argmin(abs(np.array(peaks) - old_peak))
+                new_peak = peaks[j]
+
+                # Is this close enough to the existing peak?
+                if abs(new_peak - old_peak) > max_shift * abs(ypos - last_row):
+                    # If it's gone for good, set the coord to NaN to avoid it
+                    # picking up a different line if there's significant tilt
+                    if abs(ypos - last_row) > max_missed * step:
+                        last_coords[i][1] = np.nan
+                    continue
+
+                # Too close to the edge?
+                if new_peak < halfwidth or new_peak > ext_data.shape[1] - 0.5*halfwidth:
+                    last_coords[i][1] = np.nan
+                    continue
+
+                new_coord = [ypos, new_peak]
+                if viewer:
+                    kwargs = dict(zip(('y1', 'x1'), last_coords[i]))
+                    kwargs.update(dict(zip(('y2', 'x2'), new_coord)))
+                    viewer.line(origin=0, **kwargs)
+
+                coord_lists[i].append(new_coord)
+                last_coords[i] = new_coord
+
+            ypos += direction * step
+            # Reached the bottom or top?
+            if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5*nsum:
+                break
+
+            # Lost all lines!
+            if all(np.isnan(c[1]) for c in last_coords):
+                break
+
+    # List of traced peak positions
+    in_coords = np.array([c for coo in coord_lists for c in coo]).T
+    # List of "reference" positions (i.e., the coordinate perpendicular to
+    # the line remains constant at its initial value
+    ref_coords = np.array([(ypos, ref) for coo, ref in zip(coord_lists, initial) for (ypos, xpos) in coo]).T
+
+    # Return the coordinate lists, but revert to the original axis order
+    return (ref_coords, in_coords) if axis == 0 else (ref_coords[::-1], in_coords[::-1])
