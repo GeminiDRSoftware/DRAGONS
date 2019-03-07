@@ -11,7 +11,7 @@
 import imexam
 
 try:
-    from . import gingaViewer
+    from .ginga_viewer import gingaViewer
     have_ginga = True
 except ImportError:
     have_ginga = False
@@ -50,7 +50,7 @@ class Connect(object):
     """
     def __new__(cls, viewer='ds9', path=None, use_existing=False,
                 use_dragons=False, wait_time=10, quit_window=True,
-                port=None):
+                port=None, browser=None):
 
         _possible_viewers = []
         if have_xpa:
@@ -78,12 +78,8 @@ class Connect(object):
                                  quit_ds9_on_del=quit_window)
 
         else:  # Must be ginga if we've got this far
-            raise NotImplementedError("Currently no support for ginga")
-            instance = gingaViewer()
-            instance.window = ginga(exam=self.exam, port=port,
-                                    close_on_del=quit_window)
-            # the viewer will track imexam with callbacks
-            instance._event_driven_exam = True
+            instance = gingaViewer(port=port, close_on_del=quit_window,
+                                   browser=browser)
 
         instance.logfile = 'imexam_log.txt'  # default logfile name
         instance.log = imexam.util.set_logging()  # points to the package logger
