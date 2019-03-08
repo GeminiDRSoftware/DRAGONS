@@ -83,20 +83,20 @@ values or ranges of values::
 With this information, users can now confidently adjust parameters for
 particular primitive functions. As we have seen already, this can be done
 easily from the `reduce` command line. Building on material covered in this
-manual, and continuing our example from above::
+manual, and continuing our example from above:::
 
-  $ reduce -p stackFlats:nhigh=3 <fitsfiles> [ <fitsfile>, ... ]
+    $ reduce -p stackFlats:nhigh=3 <fitsfiles> [ <fitsfile>, ... ]
 
 And the reduction proceeds. When the ``stackFlats`` primitive begins, the
 new value for nhigh will be used.
 
 .. note::
-   ``showpars`` is not considered the final tool for users to examine and set
-   parameters for dataset reduction. Plans are in the works to develop a more
-   graphical tool to help users view and adjust parameters on primitive functions.
-   But it does show users the important information: the parameters available
-   on a primitive's interface, the current (default) settings of the named
-   parameters, and allowed ranges of values where appropriate.
+    ``showpars`` is not considered the final tool for users to examine and set
+    parameters for dataset reduction. Plans are in the works to develop a more
+    graphical tool to help users view and adjust parameters on primitive functions.
+    But it does show users the important information: the parameters available
+    on a primitive's interface, the current (default) settings of the named
+    parameters, and allowed ranges of values where appropriate.
 
 .. todo:: Update showpars to list the parameters related to a primitive that
-belongs to a no-default recipe.
+    belongs to a no-default recipe.

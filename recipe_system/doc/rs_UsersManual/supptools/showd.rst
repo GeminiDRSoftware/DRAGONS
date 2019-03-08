@@ -47,9 +47,10 @@ the descriptors values in a data subset:::
     S20171208S0066.fits: Domeflat 7.0
     S20171208S0067.fits: Domeflat 7.0
 
-The Pipe ``|`` gets the ``dataselect`` output and passes it to ``showd``.
+The Pipe `` | `` gets the ``dataselect`` output and passes it to ``showd``.
 
-.. todo:: ``showd`` now uses space to separate columns. This may be a problem
-to the user if they want to use a table and any value also contains spaces
-within itself. A possible solution would be replacing the space to separate
-columns by comma.
+.. todo::
+    The ``showd`` now uses space to separate columns. This may be a problem
+    to the user if they want to use a table and any value also contains spaces
+    within itself. A possible solution would be replacing the space to separate
+    columns by comma.

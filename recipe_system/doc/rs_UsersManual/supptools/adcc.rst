@@ -49,7 +49,7 @@ real-time QAP produces image quality and weather related metrics that are passed
 to the adcc as message events. Users wishing to use the adcc to monitor QA
 metrics need to simply open a web browser on the service's URL.
 
-.. figure:: images/adcc_dark_metrics.png
+.. figure:: /images/adcc_dark_metrics.png
 
    Snapshot of the Nighttime Metrics GUI, using the "dark" theme and displaying
    the metrics retrieved from fitsstore for operational day 20170209.
@@ -85,6 +85,6 @@ a ``.adcc`` directory that records the process id (pid) of the adcc instance and
 port number on which the web server is listening.
 
 .. note::
-   Currently, only one `adcc`` instance is permitted to run. Any and all `
+   Currently, only one ``adcc`` instance is permitted to run. Any and all
    instances of ``reduce`` will report metrics to the currently running instance
    of the ``adcc``.
