@@ -1,6 +1,7 @@
 
 adcc
 ----
+
 The application that has been historically known as the ``adcc`` (Automated
 Data Communication Center), is an HTTP proxy server. The webservice provided
 by the ``adcc`` allows both the Recipe System and primitive functions to post

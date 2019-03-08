@@ -97,3 +97,6 @@ new value for nhigh will be used.
    But it does show users the important information: the parameters available
    on a primitive's interface, the current (default) settings of the named
    parameters, and allowed ranges of values where appropriate.
+
+.. todo:: Update showpars to list the parameters related to a primitive that
+belongs to a no-default recipe.
