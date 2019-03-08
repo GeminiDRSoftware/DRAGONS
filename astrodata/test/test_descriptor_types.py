@@ -3,7 +3,7 @@ import os
 import pytest
 import glob
 import warnings
-from datetime import datetime
+import datetime
 
 import astrodata
 import gemini_instruments
@@ -39,31 +39,21 @@ def setup_archive_test(request):
     return
 
 
-# # Opens all files in archive
-#     ad = astrodata.open(filename)
-#     typelist = []
-#     for i in# ad.descriptors:
-#         try:
-#             typelist.append((i, type(getattr(ad, i)()))
-#         except Exception as err:
-#             print("{} failed on call: {}".format(i, str(err))
-#             # warnings.warn("{} failed on call: {}".format(i, str(err)))
-
 @pytest.mark.usefixtures('setup_archive_test')
 class TestArchive:
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_airmass(self, filename):
+    def test_airmass_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
         try:
             assert ((type(ad.airmass()) == float)
                     or (ad.ao_seeing() is None))
         except Exception as err:
             print("{} failed on call: {}".format(ad.airmass, str(err)))
-            # # warnings.warn("{} failed on call: {}".format(ad.airmass, str(err)))
+            # warnings.warn("{} failed on call: {}".format(ad.airmass, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_amp_read_area(self, filename):
+    def test_amp_read_area_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -72,10 +62,10 @@ class TestArchive:
 
         except Exception as err:
             print("{} failed on call: {}".format(ad.amp_read_area, str(err)))
-            # # warnings.warn("{} failed on call: {}".format(ad.amp_read_area, str(err)))
+            # warnings.warn("{} failed on call: {}".format(ad.amp_read_area, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_ao_seeing(self, filename):
+    def test_ao_seeing_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -87,7 +77,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.ao_seeing, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_array_name(self, filename):
+    def test_array_name_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -99,7 +89,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.array_name, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_array_section(self, filename):
+    def test_array_section_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -111,7 +101,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.array_section, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_azimuth(self, filename):
+    def test_azimuth_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -123,7 +113,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.azimuth, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_calibration_key(self, filename):
+    def test_calibration_key_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -135,7 +125,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.calibration_key, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_camera(self, filename):
+    def test_camera_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -147,7 +137,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.camera, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_cass_rotator_pa(self, filename):
+    def test_cass_rotator_pa_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -159,7 +149,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.cass_rotator_pa, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_central_wavelength(self, filename):
+    def test_central_wavelength_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -171,7 +161,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.central_wavelength, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_coadds(self, filename):
+    def test_coadds_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -182,7 +172,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.coadds, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_data_label(self, filename):
+    def test_data_label_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -194,7 +184,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.data_label, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_data_section(self, filename):
+    def test_data_section_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -205,7 +195,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.data_section, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_dec(self, filename):
+    def test_dec_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -216,7 +206,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.dec, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_decker(self, filename):
+    def test_decker_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -227,7 +217,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.decker, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_name(self, filename):
+    def test_detector_name_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -240,7 +230,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.detector_name, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_roi_setting(self, filename):
+    def test_detector_roi_setting_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -254,7 +244,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.detector_roi_setting, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_rois_requested(self, filename):
+    def test_detector_rois_requested_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -267,7 +257,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.detector_rois_requested, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_section(self, filename):
+    def test_detector_section_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -281,7 +271,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.detector_section, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_x_bin(self, filename):
+    def test_detector_x_bin_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -295,7 +285,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.detector_x_bin, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_x_offset(self, filename):
+    def test_detector_x_offset_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
         if filename == os.path.join(path, "Archive/N20190216S0092.fits"):
             pytest.skip("Current issue with this file, will get back to it")
@@ -311,7 +301,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.detector_x_offset, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_y_bin(self, filename):
+    def test_detector_y_bin_descriptor_is_none_or_int(self, filename):
             ad = astrodata.open(filename)
 
             try:
@@ -325,7 +315,7 @@ class TestArchive:
                 # warnings.warn("{} failed on call: {}".format(ad.detector_y_bin, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_detector_y_offset(self, filename):
+    def test_detector_y_offset_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
         if filename == os.path.join(path, "Archive/N20190216S0092.fits"):
             pytest.skip("Current issue with this file, will get back to it")
@@ -341,7 +331,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.detector_y_offset, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_disperser(self, filename):
+    def test_disperser_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -355,7 +345,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.disperser, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_dispersion(self, filename):
+    def test_dispersion_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -369,7 +359,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.dispersion, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_dispersion_axis(self, filename):
+    def test_dispersion_axis_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -383,7 +373,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.dispersion_axis, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_effective_wavelength(self, filename):
+    def test_effective_wavelength_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -397,7 +387,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.effective_wavelength, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_elevation(self, filename):
+    def test_elevation_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -411,7 +401,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.elevation, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_exposure_time(self, filename):
+    def test_exposure_time_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -425,7 +415,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.exposure_time, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_filter_name(self, filename):
+    def test_filter_name_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -438,7 +428,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.filter_name, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_focal_plane_mask(self, filename):
+    def test_focal_plane_mask_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -450,7 +440,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.focal_plane_mask, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_gain(self, filename):
+    def test_gain_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -462,7 +452,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.gain, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_gain_setting(self, filename):
+    def test_gain_setting_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -474,7 +464,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.gain_setting, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_gcal_lamp(self, filename):
+    def test_gcal_lamp_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -486,7 +476,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.gcal_lamp, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_group_id(self, filename):
+    def test_group_id_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -498,7 +488,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.group_id, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_instrument(self, filename):
+    def test_instrument_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -510,7 +500,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.instrument, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_is_ao(self, filename):
+    def test_is_ao_descriptor_is_none_or_bool(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -522,7 +512,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.is_ao, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_is_coadds_summed(self, filename):
+    def test_is_coadds_summed_descriptor_is_none_or_bool(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -534,7 +524,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.is_coadds_summed, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_is_in_adu(self, filename):
+    def test_is_in_adu_descriptor_is_none_or_bool(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -544,13 +534,13 @@ class TestArchive:
         except Exception as err:
             print("{} failed on call: {}".format(ad.is_in_adu, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.is_in_adu, str(err)))
-    @pytest.mark.skip("just testing something")
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_local_time(self, filename):
+    def test_local_time_descriptor_is_none_or_datetime_time(self, filename):
         ad = astrodata.open(filename)
 
         try:
-            assert ((type(ad.local_time()) == datetime.time)
+            assert ((isinstance(ad.local_time(), datetime.time))
                     or (ad.local_time() is None))
 
         except Exception as err:
@@ -558,7 +548,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.local_time, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_lyot_stop(self, filename):
+    def test_lyot_stop_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -571,7 +561,7 @@ class TestArchive:
 
     # TODO: mdf_row_id returns list, but string expected??
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_mdf_row_id(self, filename):
+    def test_mdf_row_id_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -583,7 +573,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.mdf_row_id, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_nod_count(self, filename):
+    def test_nod_count_descriptor_is_none_or_tuple(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -600,7 +590,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.nod_count, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_nod_offsets(self, filename):
+    def test_nod_offsets_descriptor_is_none_or_tuple(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -617,7 +607,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.nod_offsets, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_nominal_atmospheric_extinction(self, filename):
+    def test_nominal_atmospheric_extinction_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -630,7 +620,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.nominal_atmospheric_extinction, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_nominal_photometric_zeropoint(self, filename):
+    def test_nominal_photometric_zeropoint_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -642,7 +632,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.nominal_photometric_zeropoint, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_non_linear_level(self, filename):
+    def test_non_linear_level_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -654,7 +644,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.non_linear_level, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_nonlinearity_coeffs(self, filename):
+    def test_nonlinearity_coeffs_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -671,7 +661,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.nonlinearity_coeffs, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_object(self, filename):
+    def test_object_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -683,7 +673,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.object, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_observation_class(self, filename):
+    def test_observation_class_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -695,7 +685,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.observation_class, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_observation_epoch(self, filename):
+    def test_observation_epoch_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -707,7 +697,7 @@ class TestArchive:
             # warnings.warn("{} failed on call: {}".format(ad.observation_epoch, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_observation_id(self, filename):
+    def test_observation_id_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
@@ -717,240 +707,240 @@ class TestArchive:
         except Exception as err:
             print("{} failed on call: {}".format(ad.observation_id, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.observation_id, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_observation_type(self, filename):
+    def test_observation_type_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.observation_type()) == str)
                     or (ad.observation_type() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.observation_type, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.observation_type, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_overscan_section(self, filename):
+    def test_overscan_section_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
 
         try:
             assert ((type(ad.overscan_section()) == list)
                     or (ad.overscan_section() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.overscan_section, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.overscan_section, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_pixel_scale(self, filename):
+    def test_pixel_scale_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
         if filename == os.path.join(path, "Archive/N20190216S0092.fits"):
             pytest.skip("Current issue with this file, will get back to it")
         try:
             assert ((type(ad.pixel_scale()) == float)
                     or (ad.pixel_scale() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.pixel_scale, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.pixel_scale, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_program_id(self, filename):
+    def test_program_id_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.program_id()) == str)
                     or (ad.program_id() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.program_id, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.program_id, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_pupil_mask(self, filename):
+    def test_pupil_mask_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
             assert ((type(ad.pupil_mask()) == str)
                     or (ad.pupil_mask() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.pupil_mask, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.pupil_mask, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_qa_state(self, filename):
+    def test_qa_state_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.qa_state()) == str)
                     or (ad.qa_state() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.qa_state, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.qa_state, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_ra(self, filename):
+    def test_ra_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.ra()) == float)
                     or (ad.ra() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.ra, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.ra, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_raw_bg(self, filename):
+    def test_raw_bg_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
 
         try:
             assert ((type(ad.raw_bg()) == int)
                     or (ad.raw_bg() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.raw_bg, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.raw_bg, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_raw_cc(self, filename):
+    def test_raw_cc_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.raw_cc()) == int)
                     or (ad.raw_cc() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.raw_cc, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.raw_cc, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_raw_iq(self, filename):
+    def test_raw_iq_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.raw_iq()) == int)
                     or (ad.raw_iq() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.raw_iq, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.raw_iq, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_raw_wv(self, filename):
+    def test_raw_wv_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.raw_wv()) == int)
                     or (ad.raw_wv() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.raw_wv, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.raw_wv, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_read_mode(self, filename):
+    def test_read_mode_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.read_mode()) == str)
                     or (ad.read_mode() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.read_mode, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.read_mode, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_read_noise(self, filename):
+    def test_read_noise_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.read_noise()) == list)
                     or (ad.read_noise() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.read_noise, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.read_noise, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_read_speed_setting(self, filename):
+    def test_read_speed_setting_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.read_speed_setting()) == str)
                     or (ad.read_speed_setting() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.read_speed_setting, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.read_speed_setting, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_requested_bg(self, filename):
+    def test_requested_bg_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.requested_bg()) == int)
                     or (ad.requested_bg() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.requested_bg, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.requested_bg, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_requested_cc(self, filename):
+    def test_requested_cc_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.requested_cc()) == int)
                     or (ad.requested_cc() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.requested_cc, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.requested_cc, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_requested_iq(self, filename):
+    def test_requested_iq_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.requested_iq()) == int)
                     or (ad.requested_iq() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.requested_iq, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.requested_iq, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_requested_wv(self, filename):
+    def test_requested_wv_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.requested_wv()) == int)
                     or (ad.requested_wv() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.requested_wv, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.requested_wv, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_saturation_level(self, filename):
+    def test_saturation_level_descriptor_is_none_or_list(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.saturation_level()) == list)
                     or (ad.saturation_level() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.saturation_level, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.saturation_level, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_shuffle_pixels(self, filename):
+    def test_shuffle_pixels_descriptor_is_none_or_int(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.shuffle_pixels()) == int)
                     or (ad.shuffle_pixels() is None))
@@ -963,168 +953,165 @@ class TestArchive:
         except Exception as err:
             print("{} failed on call: {}".format(ad.shuffle_pixels, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.shuffle_pixels, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_slit(self, filename):
+    def test_slit_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.slit()) == str)
                     or (ad.slit() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.slit, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.slit, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_target_dec(self, filename):
+    def test_target_dec_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.target_dec()) == float)
                     or (ad.target_dec() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.target_dec, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.target_dec, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_target_ra(self, filename):
+    def test_target_ra_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.target_ra()) == float)
                     or (ad.target_ra() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.target_ra, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.target_ra, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_telescope(self, filename):
+    def test_telescope_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.telescope()) == str)
                     or (ad.telescope() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.telescope, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.telescope, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_telescope_x_offset(self, filename):
+    def test_telescope_x_offset_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.telescope_x_offset()) == float)
                     or (ad.telescope_x_offset() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.telescope_x_offset, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.telescope_x_offset, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_telescope_y_offset(self, filename):
+    def test_telescope_y_offset_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
                 assert ((type(ad.telescope_y_offset()) == float)
                         or (ad.telescope_y_offset() is None))
-        
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.telescope_y_offset, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.telescope_y_offset, str(err)))
-        
-    @pytest.mark.skip("datetime import\compare type issues")
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_ut_date(self, filename):
+    def test_ut_date_descriptor_is_none_or_datetime_date(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
-            assert ((type(ad.ut_date()) == str)
+            assert ((isinstance(ad.ut_date(), datetime.date))
                     or (ad.ut_date() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.ut_date, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.ut_date, str(err)))
 
-    @pytest.mark.skip("datetime import\compare type issues")
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_ut_datetime(self, filename):
+    def test_ut_datetime_descriptor_is_none_or_datetime(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
-            assert ((type(ad.ut_datetime()) == str)
+            assert ((isinstance(ad.ut_datetime(), datetime.datetime))
                     or (ad.ut_datetime() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.ut_datetime, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.ut_datetime, str(err)))
 
-    @pytest.mark.skip("datetime import\compare type issues")
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_ut_time(self, filename):
+    def test_ut_time_descriptor_is_none_or_datetime_time(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
-            assert ((type(ad.ut_time()) == str)
+            assert ((isinstance(ad.ut_time(), datetime.time))
                     or (ad.ut_time() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.ut_time, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.ut_time, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_wavefront_sensor(self, filename):
+    def test_wavefront_sensor_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
 
         try:
             assert ((type(ad.wavefront_sensor()) == str)
                     or (ad.wavefront_sensor() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.wavefront_sensor, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.wavefront_sensor, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_wavelength_band(self, filename):
+    def test_wavelength_band_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.wavelength_band()) == str)
                     or (ad.wavelength_band() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.wavelength_band, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.wavelength_band, str(err)))
 
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_wcs_dec(self, filename):
+    def test_wcs_dec_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.wcs_dec()) == float)
                     or (ad.wcs_dec() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.wcs_dec, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.wcs_dec, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_wcs_ra(self, filename):
+    def test_wcs_ra_descriptor_is_none_or_float(self, filename):
         ad = astrodata.open(filename)
-    
+
         try:
             assert ((type(ad.wcs_ra()) == float)
                     or (ad.wcs_ra() is None))
-    
+
         except Exception as err:
             print("{} failed on call: {}".format(ad.wcs_ra, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.wcs_ra, str(err)))
-    
+
     @pytest.mark.parametrize("filename", archivefiles)
-    def test_well_depth_setting(self, filename):
+    def test_well_depth_setting_descriptor_is_none_or_str(self, filename):
         ad = astrodata.open(filename)
     
         try:
