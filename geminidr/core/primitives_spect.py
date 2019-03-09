@@ -75,7 +75,6 @@ class Spect(PrimitivesBASE):
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 middle = 0.5 * ext.shape[1-dispaxis]
 
-                print(datetime.now())
                 # The coordinates are always returned as (x-coords, y-coords)
                 initial = ext.WAVECAL['peaks']-1
                 #initial = [1361.560327644395]
@@ -105,13 +104,11 @@ class Spect(PrimitivesBASE):
                     model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
-                print(datetime.now())
                 self.viewer.color = "blue"
                 yref = np.arange(0, ext.shape[1-dispaxis], step)
                 for xref in initial:
                     mapped_coords = np.array(model.inverse([xref] * len(yref), yref)).T
                     self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
-                print(datetime.now())
 
 
                 columns = []

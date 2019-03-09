@@ -255,7 +255,6 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
     coord_lists = [[] for peak in initial]
     for direction in (-1, 1):
-        print(datetime.now())
         ypos = start
         last_coords = [[ypos, peak] for peak in initial]
 
@@ -267,9 +266,9 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
             clipped_data = np.where(data/np.sqrt(var) > 0.5, data, 0)
             last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
             peaks = pinpoint_peaks(clipped_data, mask, last_peaks)
-            if ypos == start:
-                print("Found {} peaks".format(len(peaks)))
-                print(peaks)
+            #if ypos == start:
+            #    print("Found {} peaks".format(len(peaks)))
+            #    print(peaks)
 
             for i, (last_row, old_peak) in enumerate(last_coords):
                 if np.isnan(old_peak):
