@@ -3,6 +3,7 @@ import os
 import time
 import warnings
 from subprocess import Popen
+import xpa
 
 from astropy.wcs import WCS
 
@@ -73,7 +74,10 @@ class ds9Viewer(imexam.connect):
             extras += " width={}".format(self.width)
         if extras:
             str = str + " # " + extras
-        self.window.set("regions command {{{}}}".format(str))
+        try:
+            self.window.set("regions command {{{}}}".format(str))
+        except xpa.XpaException:
+            print("Error with {}".format(str))
 
     def clear_regions(self):
         self.window.set("regions delete all")
@@ -91,7 +95,8 @@ class ds9Viewer(imexam.connect):
         except TypeError:
             warnings.warn("No currentpoint set. Cannot use lineto")
         x, y = self._offset(origin, x, y)
-        self.line(x1=x1, y1=y1, x2=x, y2=y)
+        # Everything is already 1-indexed
+        self.line(x1=x1, y1=y1, x2=x, y2=y, origin=1)
 
     def rlineto(self, dx=None, dy=None):
         """Draw a line from the currentpoint to a point offset by (dx, dy)"""
@@ -107,16 +112,16 @@ class ds9Viewer(imexam.connect):
 
     def polygon(self, points, closed=True, xfirst=False, origin=None):
         """Draw lines between consecutive points, possibly returning to the first one"""
-        for i, point in enumerate(points):
-            v1, v2 = self._offset(origin, *point)
+        for i, (v1, v2) in enumerate(points):
+            #v1, v2 = self._offset(origin, *point)
             kwargs = {'x': v1, 'y': v2} if xfirst else {'x': v2, 'y': v1}
             if i == 0:
-                self.moveto(**kwargs)
+                self.moveto(origin=origin, **kwargs)
                 initial_kwargs = kwargs
             else:
-                self.lineto(**kwargs)
+                self.lineto(origin=origin, **kwargs)
         if closed:
-            self.lineto(**initial_kwargs)
+            self.lineto(origin=origin, **initial_kwargs)
 
 class ds9(imexam.ds9_viewer.ds9):
     """

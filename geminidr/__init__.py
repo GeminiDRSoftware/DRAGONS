@@ -144,7 +144,7 @@ class dormantViewer(object):
         if self.viewer_name is not None:
             try:
                 self.parent().viewer = display.connect(self.viewer_name,
-                                                       use_existing=self.use_existing)
+                            use_existing=self.use_existing, quit_window=False)
             except NotImplementedError:
                 self.parent().log.warning("Attempting to display to an unknown"
                                           " display ({}). Image display turned"
@@ -295,7 +295,7 @@ class PrimitivesBASE(object):
     def _inherit_params(self, params, primname, pass_suffix=False):
         """Create a dict of params for a primitive from a larger dict,
         using only those that the primitive needs
-        
+
         Parameters
         ----------
         params: dict
