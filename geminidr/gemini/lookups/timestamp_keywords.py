@@ -23,6 +23,7 @@ timestamp_keys = {
     "darkCorrect" : "DARKCORR",
     "detectSources": "DETECSRC",
     "appwave": "APPWAVE",
+    "determineDistortion": "FITCOORD",
     "determineWavelengthSolution": "WAVECAL",
     "determineAstrometricSolution": "ASTRMTRY",
     "dilateObjectMask": "DLOBJMSK",

@@ -14,10 +14,12 @@ from astropy.table import Table
 
 from matplotlib import pyplot as plt
 
+from datetime import datetime
+
 from gempy.gemini import gemini_tools as gt
 from gempy.library import matching, peaks_and_traces as peak
 from gempy.library.nddops import NDStacker
-from gempy.library.transform import Transform, DataGroup
+from gempy.library.transform import Transform, DataGroup, AstroDataGroup
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from recipe_system.utils.decorators import parameter_override
@@ -35,9 +37,155 @@ class Spect(PrimitivesBASE):
         super(Spect, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
+    def determineDistortion(self, adinputs=None, **params):
+        """
+        This primitives maps the distortion on a detector by tracing lines
+        perpendicular to the dispersion direction, and then fitting a
+        2D Chebyshev polynomial to the distortion.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        spatial_order: int
+            order of fit in spatial direction
+        spectral_order: int
+            order of fit in spectral direction
+        nsum: int
+            number of rows/columns to sum at each step
+        step: int
+            size of step in pixels when tracing
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        spatial_order = params["spatial_order"]
+        spectral_order = params["spectral_order"]
+        nsum = params["nsum"]
+        step = params["step"]
+        max_shift = params["max_shift"]
+
+        orders = (spectral_order, spatial_order)
+
+        for ad in adinputs:
+            for ext in ad:
+                self.viewer.display_image(ext)
+                self.viewer.width = 2
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                middle = 0.5 * ext.shape[1-dispaxis]
+
+                print(datetime.now())
+                # The coordinates are always returned as (x-coords, y-coords)
+                initial = ext.WAVECAL['peaks']-1
+                #initial = [1361.560327644395]
+                ref_coords, in_coords = peak.trace_lines(ext, axis=1-dispaxis,
+                        start=middle, initial=initial,
+                        width=5, step=step, nsum=nsum, max_missed=5,
+                        max_shift=max_shift, viewer=self.viewer)
+
+                m_init = models.Chebyshev2D(x_degree=orders[1-dispaxis],
+                                            y_degree=orders[dispaxis],
+                                            x_domain=[0, ext.shape[1]-1],
+                                            y_domain=[0, ext.shape[0]-1])
+                # Find model to transform actual (x,y) locations to the
+                # value of the reference pixel along the dispersion axis
+                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                           sigma_clip, sigma=3)
+                m_final, _ = fit_it(m_init, *in_coords, ref_coords[1-dispaxis])
+                m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1-dispaxis])
+
+                diff = m_inverse(*ref_coords) - in_coords[1-dispaxis]
+                print(np.min(diff), np.max(diff), np.std(diff))
+
+                if dispaxis == 1:
+                    model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
+                    model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
+                else:
+                    model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
+                    model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
+
+                print(datetime.now())
+                self.viewer.color = "blue"
+                yref = np.arange(0, ext.shape[1-dispaxis], step)
+                for xref in initial:
+                    mapped_coords = np.array(model.inverse([xref] * len(yref), yref)).T
+                    self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
+                print(datetime.now())
+
+
+                columns = []
+                for m in (m_final, m_inverse):
+                    columns.append(['ndim', 'x_degree', 'y_degree', 'x_domain_start',
+                                    'x_domain_end', 'y_domain_start', 'y_domain_end'
+                                    ] + list(m.param_names))
+                    columns.append([2, m.x_degree, m.y_degree] +
+                                    list(m.x_domain) + list(m.y_domain) +
+                                    [getattr(m, p).value for p in m.param_names])
+                ext.FITCOORD = Table(columns,
+                                     names=("name", "coefficients", "inv_name", "inv_coefficients"))
+                ext.COORDS = Table([*in_coords] + [*ref_coords], names=('xin','yin','xref','yref'))
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def distortionCorrect(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        sfx = params["suffix"]
+        order = params["order"]
+
+        # The forward Transform is *only* used to determine the shape
+        # of the output image, which we want to be the same as the input
+        m_ident = models.Identity(2)
+
+        adoutputs = []
+        for ad in adinputs:
+            transforms = []
+            for ext in ad:
+                kwargs = dict(zip(ext.FITCOORD['inv_name'],
+                                  ext.FITCOORD['inv_coefficients']))
+                kwargs.pop('ndim')
+                kwargs['x_degree'] = int(kwargs['x_degree'])
+                kwargs['y_degree'] = int(kwargs['y_degree'])
+                kwargs['x_domain'] = [kwargs.pop('x_domain_start'),
+                                      kwargs.pop('x_domain_end')]
+                kwargs['y_domain'] = [kwargs.pop('y_domain_start'),
+                                      kwargs.pop('y_domain_end')]
+                m_inverse = models.Chebyshev2D(**kwargs)
+
+                dispaxis = ext.dispersion_axis() - 1
+                if dispaxis == 0:
+                    m_ident.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
+                else:
+                    m_ident.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
+                transforms.append(Transform(m_ident.copy()))
+
+            adg = AstroDataGroup(ad, transforms)
+            ad_out = adg.transform(order=order, parallel=False)
+
+
+            # Timestamp and update the filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad_out.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad_out)
+
+        return adoutputs
+
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
-        This primitive determines the wavelength solution
+        This primitive determines the wavelength solution for an ARC and
+        stores it as an attached WAVECAL table.
 
         Parameters
         ----------
@@ -71,9 +219,10 @@ class Spect(PrimitivesBASE):
         weighting = params["weighting"]
 
         plot = params["plot"]
+        plt.ioff()
 
         # TODO: This decision would prevent MOS data being reduced so need
-        # to think a bite more about what we're going to do. Maybe make
+        # to think a bit more about what we're going to do. Maybe make
         # central_wavelength() return a one-per-ext list? Or have the GMOS
         # determineWavelengthSolution() recipe check the input has been
         # mosaicked before calling super()?
@@ -262,17 +411,18 @@ class Spect(PrimitivesBASE):
                 # Add 1 to pixel coordinates so they're 1-indexed
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
-                coeff_column = (list(m_final.domain) + [order] +
-                                list(getattr(m_final, 'c{}'.format(i)).value for i in range(order+1)))
+                name_column = ["ndim", "degree", "domain_start", "domain_end"] + list(m_final.param_names)
+                coeff_column = [1, order] + list(m_final.domain) + [getattr(m_final, p).value for p in m_final.param_names]
                 # Ensure all columns have the same length
                 if len(coeff_column) <= nmatched:
+                    name_column += [''] * (nmatched - len(coeff_column))
                     coeff_column += [0] * (nmatched - len(coeff_column))
                 else:  # Really shouldn't be the case
                     incoords += [0] * (len(coeff_column) - nmatched)
                     outcoords += [0] * (len(coeff_column) - nmatched)
 
-                fit_table = Table([coeff_column, incoords, outcoords],
-                                  names=("coefficients", "peaks", "wavelengths"))
+                fit_table = Table([name_column, coeff_column, incoords, outcoords],
+                                  names=("name", "coefficients", "peaks", "wavelengths"))
                 fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
                                               'peaks column is 1-indexed']
                 ext.WAVECAL = fit_table
@@ -494,6 +644,7 @@ def _estimate_peak_width(data, fwidth):
 
 
 def _set_model(model, order=None, initial=False, kdfit=False):
+    # TODO: I find this ugly. Do better!
     """
     Initialize a new Model object based on an existing one, e.g., because
     the order has increased.

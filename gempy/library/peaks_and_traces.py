@@ -11,7 +11,8 @@ pinpoint_peaks:   produce more accuate positions for existing peaks by
 reject_bad_peaks: remove suspicious-looking peaks by a variety of methods
 """
 import numpy as np
-from scipy import signal
+from scipy import signal, interpolate
+from datetime import datetime
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker
@@ -97,7 +98,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
     return np.array(sorted(good_peaks)).T
 
-def pinpoint_peaks(data, mask, peaks, halfwidth=2):
+def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     """
     Improves positions of peaks with centroiding. It uses a deliberately
     small centroiding box to avoid contamination by nearby lines, which
@@ -114,17 +115,69 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=2):
         approximate (but good) location of peaks
     halfwidth: int
         number of pixels either side of initial peak to use in centroid
+    threshold: float
+        threshold to cut data
 
     Returns
     -------
     list: more accurate locations of the peaks that are unaffected by the mask
     """
+    int_limits = np.array([-1, -0.5, 0.5, 1])
+    npts = len(data)
     final_peaks = []
+    masked_data = np.where(np.logical_or(mask > 0, data < threshold), 0,
+                           data - threshold)
     for peak in peaks:
-        x1 = int(peak - halfwidth)
-        x2 = int(peak + halfwidth+1)
-        if np.sum(mask[x1:x2]) == 0:
-            final_peaks.append(np.sum(data[x1:x2] * np.arange(x1,x2)) / np.sum(data[x1:x2]))
+        xc = int(peak + 0.5)
+        xc = np.argmax(masked_data[max(xc-1,0):min(xc+2,npts)]) + xc - 1
+        if xc < halfwidth or xc > npts - halfwidth:
+            continue
+        x1 = int(xc - halfwidth)
+        x2 = int(xc + halfwidth + 1)
+        xvalues = np.arange(x1, x2)
+        t, c, k = interpolate.splrep(xvalues, masked_data[x1:x2], k=3,
+                                     s=0)
+        spline1 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
+        t, c, k = interpolate.splrep(xvalues, masked_data[x1:x2] * xvalues,
+                                     k=3, s=0)
+        spline2 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
+
+        final_peak = None
+        dxlast = x2 - x1
+        dxcheck = 0
+        for i in range(50):
+            # Triangle centering function
+            limits = xc + int_limits * halfwidth
+            splint1 = [spline1.integrate(x1, x2) for x1, x2 in zip(limits[:-1], limits[1:])]
+            splint2 = [spline2.integrate(x1, x2) for x1, x2 in zip(limits[:-1], limits[1:])]
+            sum1 = (splint2[1] - splint2[0] - splint2[2] +
+                    (xc-halfwidth) * splint1[0] - xc*splint1[1] + (xc+halfwidth)*splint1[2])
+            sum2 = splint1[1] - splint1[0] - splint1[2]
+
+            if sum2 == 0:
+                break
+
+            dx = sum1 / abs(sum2)
+            xc += max(-1, min(1, dx))
+            if xc < halfwidth or xc > npts - halfwidth:
+                break
+            if abs(dx) < 0.001:
+                final_peak = xc
+                break
+            if abs(dx) > dxlast + 0.005:
+                dxcheck += 1
+                if dxcheck > 3:
+                    break
+            elif abs(dx) > dxlast - 0.005:
+                xc -= 0.5 * max(-1, min(1, dx))
+                dxcheck = 0
+            else:
+                dxcheck = 0
+                dxlast = abs(dx)
+
+        if final_peak is not None:
+            final_peaks.append(final_peak)
+
     return final_peaks
 
 def reject_bad_peaks(peaks):
@@ -151,7 +204,7 @@ def reject_bad_peaks(peaks):
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING
 
-def trace_lines(ext, axis, start=None, initial=None, width=3, nsum=10,
+def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
                 step=1, max_shift=0.05, max_missed=10, viewer=None):
     """
 
@@ -197,13 +250,15 @@ def trace_lines(ext, axis, start=None, initial=None, width=3, nsum=10,
         direction = "column"
 
     if start is None:
-        start = int(0.5 * ext.shape[0])
+        start = int(0.5 * ext_data.shape[0])
         log.stdinfo("Starting trace at {} {}".format(direction, start))
 
     coord_lists = [[] for peak in initial]
     for direction in (-1, 1):
+        print(datetime.now())
         ypos = start
         last_coords = [[ypos, peak] for peak in initial]
+
         while True:
             y1 = int(ypos - 0.5*nsum + 0.5)
             data, mask, var = NDStacker.mean(ext_data[y1:y1+nsum],
@@ -212,15 +267,24 @@ def trace_lines(ext, axis, start=None, initial=None, width=3, nsum=10,
             clipped_data = np.where(data/np.sqrt(var) > 0.5, data, 0)
             last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
             peaks = pinpoint_peaks(clipped_data, mask, last_peaks)
+            if ypos == start:
+                print("Found {} peaks".format(len(peaks)))
+                print(peaks)
 
             for i, (last_row, old_peak) in enumerate(last_coords):
                 if np.isnan(old_peak):
                     continue
-                j = np.argmin(abs(np.array(peaks) - old_peak))
-                new_peak = peaks[j]
+                # If we found no peaks at all, then continue through
+                # the loop but nothing will match
+                if peaks:
+                    j = np.argmin(abs(np.array(peaks) - old_peak))
+                    new_peak = peaks[j]
+                else:
+                    new_peak = np.inf
 
                 # Is this close enough to the existing peak?
-                if abs(new_peak - old_peak) > max_shift * abs(ypos - last_row):
+                tolerance = 1.0 if ypos == start else max_shift * abs(ypos - last_row)
+                if (abs(new_peak - old_peak) > tolerance):
                     # If it's gone for good, set the coord to NaN to avoid it
                     # picking up a different line if there's significant tilt
                     if abs(ypos - last_row) > max_missed * step:
@@ -228,7 +292,8 @@ def trace_lines(ext, axis, start=None, initial=None, width=3, nsum=10,
                     continue
 
                 # Too close to the edge?
-                if new_peak < halfwidth or new_peak > ext_data.shape[1] - 0.5*halfwidth:
+                if (new_peak < halfwidth or
+                    new_peak > ext_data.shape[1] - 0.5*halfwidth):
                     last_coords[i][1] = np.nan
                     continue
 
@@ -238,8 +303,9 @@ def trace_lines(ext, axis, start=None, initial=None, width=3, nsum=10,
                     kwargs.update(dict(zip(('y2', 'x2'), new_coord)))
                     viewer.line(origin=0, **kwargs)
 
-                coord_lists[i].append(new_coord)
-                last_coords[i] = new_coord
+                if not (ypos == start and direction > 1):
+                    coord_lists[i].append(new_coord)
+                last_coords[i] = new_coord.copy()
 
             ypos += direction * step
             # Reached the bottom or top?
@@ -256,5 +322,6 @@ def trace_lines(ext, axis, start=None, initial=None, width=3, nsum=10,
     # the line remains constant at its initial value
     ref_coords = np.array([(ypos, ref) for coo, ref in zip(coord_lists, initial) for (ypos, xpos) in coo]).T
 
-    # Return the coordinate lists, but revert to the original axis order
-    return (ref_coords, in_coords) if axis == 0 else (ref_coords[::-1], in_coords[::-1])
+    # Return the coordinate lists, in the form (x-coords, y-coords),
+    # regardless of the dispersion axis
+    return (ref_coords, in_coords) if axis == 1 else (ref_coords[::-1], in_coords[::-1])

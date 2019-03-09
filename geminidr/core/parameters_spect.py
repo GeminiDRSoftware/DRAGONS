@@ -2,6 +2,14 @@
 # in the primitives_spect.py file, in alphabetical order.
 from gempy.library import config
 
+class determineDistortionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
+    spatial_order = config.RangeField("Fitting order in spatial direction", int, 2, min=1)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
+    max_shift = config.RangeField("Maximum shift per pixel in line position", float, 0.02, min=0.001, max=0.1)
+
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
@@ -19,6 +27,11 @@ class determineWavelengthSolutionConfig(config.Config):
     dispersion = config.Field("Estimated dispersion (nm/pixel)", float, None, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     plot = config.Field("Make diagnostic plots?", bool, False)
+
+class distortionCorrectConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
+    order = config.RangeField("Interpolation order", int, 1, min=0, max=5)
+    subsample = config.RangeField("Subsampling", int, 1, min=1)
 
 class extract1DSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
