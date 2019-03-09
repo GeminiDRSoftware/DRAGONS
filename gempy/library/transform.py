@@ -38,8 +38,6 @@ import astrodata, gemini_instruments
 from .astromodels import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
 
-from datetime import datetime
-
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 
 # Table attribute names that should be modified to represent the
@@ -859,7 +857,7 @@ class DataGroup(object):
         self.output_shape = tuple(max_ - min_ for min_, max_ in limits)
         self.origin = tuple(min_ for min_, max_ in limits)
 
-    def transform(self, attributes=['data'], order=3, subsample=1,
+    def transform(self, attributes=['data'], order=1, subsample=1,
                   threshold=0.01, conserve=False, parallel=False):
         """
         This method transforms and combines the arrays into a single output
@@ -936,7 +934,7 @@ class DataGroup(object):
                     transform.append([rescale, rescale_shift])
 
                 trans_output_shape = tuple(length * subsample for length in output_array_shape)
-                if transform.is_affine:
+                if transform.inverse.is_affine:
                     mapping = transform.inverse.affine_matrices(shape=trans_output_shape)
                 else:
                     # If we're conserving the flux, we need to compute the
@@ -1259,7 +1257,7 @@ class AstroDataGroup(DataGroup):
         if self.ref_array is None:
             raise ValueError("Cannot locate EXTVER {}".format(extver))
 
-    def transform(self, attributes=None, order=3, subsample=1, threshold=0.01,
+    def transform(self, attributes=None, order=1, subsample=1, threshold=0.01,
                   conserve=False, parallel=False, process_objcat=False):
         if attributes is None:
             attributes = [attr for attr in self.array_attributes
