@@ -1,15 +1,46 @@
 # astromodels.py
 #
-# This module contains new Model classes to aid with image transformations.
+# This module contains classes and function to interface with the
+# astropy.modeling module.
+#
+# New Model classes to aid with image transformations:
+# Pix2Sky: allows modification of a WCS object as a FittableModel
+# Rotate2D: a FittableModel version of Rotation2D
+# Scale2D: single model to scale in 2D
+# Shift2D: single model to shift in 2D
+#
+# Functions:
+# chebyshev_to_dict / dict_to_chebyshev: Turn a Chebyshev model into
+# a dict to assist with reading and writing as a Table
 
 import numpy as np
 import math
+from collections import OrderedDict
+
 from astropy.modeling import models, FittableModel, Parameter
+
+#-----------------------------------------------------------------------------
+# NEW MODEL CLASSES
 
 class Pix2Sky(FittableModel):
     """
     Wrapper to make an astropy.WCS object act like an astropy.modeling.Model
     object, including having an inverse.
+
+    Parameters
+    ----------
+    wcs: astropy.wcs.WCS object
+        the WCS object defining the transformation
+    x_offset: float
+        offset to apply to CRPIX1 value
+    y_offset: float
+        offset to apply to CRPIX2 value
+    factor: float
+        scaling factor (applied to CD matrix)
+    angle: float
+        rotation in degrees (applied to CD matrix)
+    origin: int (0 or 1)
+        value for WCS origin parameter
     """
     def __init__(self, wcs, x_offset=0.0, y_offset=0.0, factor=1.0,
                  angle=0.0, origin=1, **kwargs):
@@ -118,3 +149,81 @@ class Rotate2D(FittableModel):
         x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
         x.shape = y.shape = orig_shape
         return x, y
+
+#-----------------------------------------------------------------------------
+# MODEL -> DICT FUNCTIONS
+#
+def chebyshev_to_dict(model):
+    """
+    This function turns an instance of a ChebyshevND model into a dict of
+    parameter and property names and their values. This allows it to be
+    written as a Table and attached to an AstroData object. A Table is not
+    constructed here because it may have additional rows added to it, and
+    that's inefficient.
+
+    Parameters
+    ----------
+    model: a ChebyshevND model instance
+
+    Returns
+    -------
+    OrderedDict: property names and their values
+    """
+    if isinstance(model, models.Chebyshev1D):
+        ndim = 1
+        properties = ('degree', 'domain')
+    elif isinstance(model, models.Chebyshev2D):
+        ndim = 2
+        properties = ('x_degree', 'y_degree', 'x_domain', 'y_domain')
+    else:
+        return {}
+
+    model_dict = OrderedDict({'ndim': ndim})
+    for property in properties:
+        if 'domain' in property:
+            domain = getattr(model, property)
+            if domain is not None:
+                model_dict['{}_start'.format(property)] = domain[0]
+                model_dict['{}_end'.format(property)] = domain[1]
+        else:
+            model_dict[property] = getattr(model, property)
+    for name in model.param_names:
+        model_dict[name] = getattr(model, name).value
+
+    return model_dict
+
+def dict_to_chebyshev(model_dict):
+    """
+    This is the inverse of chebyshev_to_dict(), taking a dict of property/
+    parameter names and their values and making a ChebyshevND model instance.
+
+    Parameters
+    ----------
+    model_dict: dict-like object of names and values
+
+    Returns
+    -------
+    models.ChebyshevND instance
+    """
+    try:
+        ndim = int(model_dict.pop('ndim'))
+        if ndim == 1:
+            model = models.Chebyshev1D(degree=int(model_dict.pop('degree')))
+        elif ndim == 2:
+            model = models.Chebyshev2D(x_degree=int(model_dict.pop('x_degree')),
+                                       y_degree=int(model_dict.pop('y_degree')))
+        else:
+            return None
+    except KeyError:
+        return None
+
+    for k, v in model_dict.items():
+        try:
+            if k.endswith('domain_start'):
+                setattr(model, k.replace('_start', ''), [v, model_dict[k.replace('start', 'end')]])
+            elif k and not k.endswith('domain_end'):  # ignore k==""
+                setattr(model, k, v)
+        except (KeyError, AttributeError):
+            return None
+
+    return model
