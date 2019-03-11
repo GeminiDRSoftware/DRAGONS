@@ -16,6 +16,10 @@ Classes:
                combined into a single output (more precisely, a single output
                per attribute)
     AstroDataGroup: a subclass of DataGroup for AstroData objects
+
+Functions:
+    create_mosaic_transform: construct an AstroDataGroup instance that will
+                             mosaic the detectors
 """
 import numpy as np
 import copy
@@ -29,6 +33,7 @@ from astropy.wcs import WCS
 from scipy import ndimage
 
 from gempy.library import astrotools as at
+from gempy.gemini import gemini_tools as gt
 
 import multiprocessing as multi
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -1389,3 +1394,79 @@ class AstroDataGroup(DataGroup):
                 objcat = table.vstack(tables, metadata_conflicts='silent')
                 objcat['NUMBER'] = np.arange(len(objcat)) + 1
                 ad[0].OBJCAT = objcat
+
+#-----------------------------------------------------------------------------
+def create_mosaic_transform(ad, geotable):
+    """
+    Constructs an AstroDataGroup object that will perform the mosaicking
+    operation on an AstroData instance.
+
+    Parameters
+    ----------
+    ad: AstroData
+        the AD object that will be mosaicked
+    geotable: module
+        the geometry_conf module with the required information
+
+    Returns
+    -------
+    AstroDataGroup: the ADG object that can be transformed to perform
+                    the mosaicking
+    """
+
+
+    # Create the blocks (individual physical detectors)
+    array_info = gt.array_information(ad)
+    blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
+              zip(array_info.extensions, array_info.array_shapes)]
+    offsets = [ad[exts[0]].array_section()
+               for exts in array_info.extensions]
+
+    detname = ad.detector_name()
+    xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+    geometry = geotable.geometry[detname]
+    default_shape = geometry.get('default_shape')
+    adg = AstroDataGroup()
+
+    for block, origin, offset in zip(blocks, array_info.origins, offsets):
+        # Origins are in (x, y) order in LUT
+        block_geom = geometry[origin[::-1]]
+        nx, ny = block_geom.get('shape', default_shape)
+        nx /= xbin
+        ny /= ybin
+        shift = block_geom.get('shift', (0, 0))
+        rot = block_geom.get('rotation', 0.)
+        mag = block_geom.get('magnification', (1, 1))
+        transform = Transform()
+
+        # Shift the Block's coordinates based on its location within
+        # the full array, to ensure any rotation takes place around
+        # the true centre.
+        if offset.x1 != 0 or offset.y1 != 0:
+            transform.append(models.Shift(float(offset.x1) / xbin) &
+                             models.Shift(float(offset.y1) / ybin))
+
+        if rot != 0 or mag != (1, 1):
+            # Shift to centre, do whatever, and then shift back
+            transform.append(models.Shift(-0.5 * (nx - 1)) &
+                             models.Shift(-0.5 * (ny - 1)))
+            if rot != 0:
+                # Cope with non-square pixels by scaling in one
+                # direction to make them square before applying the
+                # rotation, and then reversing that.
+                if xbin != ybin:
+                    transform.append(models.Identity(1) & models.Scale(ybin / xbin))
+                transform.append(models.Rotation2D(rot))
+                if xbin != ybin:
+                    transform.append(models.Identity(1) & models.Scale(xbin / ybin))
+            if mag != (1, 1):
+                transform.append(models.Scale(mag[0]) &
+                                 models.Scale(mag[1]))
+            transform.append(models.Shift(0.5 * (nx - 1)) &
+                             models.Shift(0.5 * (ny - 1)))
+        transform.append(models.Shift(float(shift[0]) / xbin) &
+                         models.Shift(float(shift[1]) / ybin))
+        adg.append(block, transform)
+
+    adg.set_reference()
+    return adg
