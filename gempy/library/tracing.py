@@ -1,18 +1,22 @@
 """
-peaks_and_traces.py
+tracing.py
 
 This module contains function used to locate peaks in 1D data and trace them
 in the orthogonal direction in a 2D image.
 
 Functions in this module:
-find_peaks:       locate peaks using the scipy.signal routine
-pinpoint_peaks:   produce more accuate positions for existing peaks by
-                  centroiding
-reject_bad_peaks: remove suspicious-looking peaks by a variety of methods
+estimate_peak_width: estimate the widths of peaks
+find_peaks:          locate peaks using the scipy.signal routine
+pinpoint_peaks:      produce more accuate positions for existing peaks by
+                     centroiding
+reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
+
+trace_lines:         trace lines from a set of supplied starting positions
 """
 import numpy as np
 from scipy import signal, interpolate
-from datetime import datetime
+from astropy.modeling import models, fitting
+from astropy.stats import sigma_clip
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker
@@ -20,6 +24,40 @@ from gempy.utils import logutils
 
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
+
+def estimate_peak_width(data, fwidth):
+    """
+    Estimates the FWHM of the spectral features (arc lines) by fitting
+    Gaussians to the brightest peaks.
+
+    Parameters
+    ----------
+    data:  ndarray
+        1D data array (will be modified)
+    fwidth: float
+        Estimated FWHM of features
+
+    Returns
+    -------
+    float: Better estimate of FWHM of features
+    """
+    fwidth = int(fwidth+0.5)
+    widths = []
+    for i in range(15):
+        index = 2*fwidth + np.argmax(data[2*fwidth:-2*fwidth-1])
+        data_to_fit = data[index - 2 * fwidth:index + 2 * fwidth + 1]
+        m_init = models.Gaussian1D(stddev=0.42466*fwidth) + models.Const1D(np.min(data_to_fit))
+        m_init.mean_0.fixed = True
+        m_init.amplitude_1.fixed = True
+        fit_it = fitting.LevMarLSQFitter()
+        m_final = fit_it(m_init, np.arange(-2*fwidth, 2*fwidth+1),
+                         data_to_fit)
+        #print (index, m_final)
+        # Quick'n'dirty logic to remove "peaks" at edges of CCDs
+        if m_final.amplitude_1 != 0:
+            widths.append(m_final.stddev_0/0.42466)
+        data[index-2*fwidth:index+2*fwidth+1] = 0.
+    return sigma_clip(widths).mean()
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
                rank_clip=True):

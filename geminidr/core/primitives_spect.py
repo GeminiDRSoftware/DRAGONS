@@ -14,10 +14,8 @@ from astropy.table import Table
 
 from matplotlib import pyplot as plt
 
-from datetime import datetime
-
 from gempy.gemini import gemini_tools as gt
-from gempy.library import matching, peaks_and_traces as peak
+from gempy.library import astromodels, matching, tracing
 from gempy.library.nddops import NDStacker
 from gempy.library.transform import Transform, DataGroup, AstroDataGroup
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -75,10 +73,11 @@ class Spect(PrimitivesBASE):
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 middle = 0.5 * ext.shape[1-dispaxis]
 
+                # Peak locations in pixels are 1-indexed
+                initial = ext.WAVECAL['peaks'] - 1
+
                 # The coordinates are always returned as (x-coords, y-coords)
-                initial = ext.WAVECAL['peaks']-1
-                #initial = [1361.560327644395]
-                ref_coords, in_coords = peak.trace_lines(ext, axis=1-dispaxis,
+                ref_coords, in_coords = tracing.trace_lines(ext, axis=1-dispaxis,
                         start=middle, initial=initial,
                         width=5, step=step, nsum=nsum, max_missed=5,
                         max_shift=max_shift, viewer=self.viewer)
@@ -110,18 +109,16 @@ class Spect(PrimitivesBASE):
                     mapped_coords = np.array(model.inverse([xref] * len(yref), yref)).T
                     self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
-
                 columns = []
                 for m in (m_final, m_inverse):
-                    columns.append(['ndim', 'x_degree', 'y_degree', 'x_domain_start',
-                                    'x_domain_end', 'y_domain_start', 'y_domain_end'
-                                    ] + list(m.param_names))
-                    columns.append([2, m.x_degree, m.y_degree] +
-                                    list(m.x_domain) + list(m.y_domain) +
-                                    [getattr(m, p).value for p in m.param_names])
-                ext.FITCOORD = Table(columns,
-                                     names=("name", "coefficients", "inv_name", "inv_coefficients"))
-                ext.COORDS = Table([*in_coords] + [*ref_coords], names=('xin','yin','xref','yref'))
+                    model_dict = astromodels.chebyshev_to_dict(m)
+                    columns.append(list(model_dict.keys()))
+                    columns.append(list(model_dict.values()))
+                # If we're genuinely worried about the two models, they might
+                # have different orders and we might need to pad one
+                ext.FITCOORD = Table(columns, names=("name", "coefficients",
+                                                     "inv_name", "inv_coefficients"))
+                #ext.COORDS = Table([*in_coords] + [*ref_coords], names=('xin','yin','xref','yref'))
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -150,16 +147,14 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             transforms = []
             for ext in ad:
-                kwargs = dict(zip(ext.FITCOORD['inv_name'],
-                                  ext.FITCOORD['inv_coefficients']))
-                kwargs.pop('ndim')
-                kwargs['x_degree'] = int(kwargs['x_degree'])
-                kwargs['y_degree'] = int(kwargs['y_degree'])
-                kwargs['x_domain'] = [kwargs.pop('x_domain_start'),
-                                      kwargs.pop('x_domain_end')]
-                kwargs['y_domain'] = [kwargs.pop('y_domain_start'),
-                                      kwargs.pop('y_domain_end')]
-                m_inverse = models.Chebyshev2D(**kwargs)
+                model_dict = dict(zip(ext.FITCOORD['inv_name'],
+                                      ext.FITCOORD['inv_coefficients']))
+                m_inverse = astromodels.dict_to_chebyshev(model_dict)
+                if not isinstance(m_inverse, models.Chebyshev2D):
+                    log.warning("Could not read distortion model for {}:{} - "
+                                "continuing".format(ad.filename, ext.hdr['EXTVER']))
+                    transforms.append(Transform(models.Identity(2)))
+                    continue
 
                 dispaxis = ext.dispersion_axis() - 1
                 if dispaxis == 0:
@@ -279,7 +274,7 @@ class Spect(PrimitivesBASE):
                 log.stdinfo("Using central wavelength {:.1f} nm and dispersion "
                             "{:.3f} nm/pixel".format(cenwave, dw))
 
-                fwidth = _estimate_peak_width(data.copy(), fwidth)
+                fwidth = tracing.estimate_peak_width(data.copy(), fwidth)
                 log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
 
                 # Don't read linelist if it's the one we already have
@@ -298,7 +293,7 @@ class Spect(PrimitivesBASE):
 
                 # Find peaks; convert width FWHM to sigma
                 widths = 0.42466*fwidth * np.arange(0.8,1.21,0.05)  # TODO!
-                peaks, peak_snrs = peak.find_peaks(data, widths, mask=mask,
+                peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask,
                                                    variance=variance, min_snr=min_snr)
                 log.stdinfo('{}: {} peaks and {} arc lines'.
                              format(ad.filename, len(peaks), len(arc_lines)))
@@ -408,17 +403,18 @@ class Spect(PrimitivesBASE):
                 # Add 1 to pixel coordinates so they're 1-indexed
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
-                name_column = ["ndim", "degree", "domain_start", "domain_end"] + list(m_final.param_names)
-                coeff_column = [1, order] + list(m_final.domain) + [getattr(m_final, p).value for p in m_final.param_names]
-                # Ensure all columns have the same length
-                if len(coeff_column) <= nmatched:
-                    name_column += [''] * (nmatched - len(coeff_column))
-                    coeff_column += [0] * (nmatched - len(coeff_column))
-                else:  # Really shouldn't be the case
-                    incoords += [0] * (len(coeff_column) - nmatched)
-                    outcoords += [0] * (len(coeff_column) - nmatched)
+                model_dict = astromodels.chebyshev_to_dict(m_final)
 
-                fit_table = Table([name_column, coeff_column, incoords, outcoords],
+                # Ensure all columns have the same length
+                pad_rows = nmatched - len(model_dict)
+                if pad_rows < 0:  # Really shouldn't be the case
+                    incoords += [0] * (-pad_rows)
+                    outcoords += [0] * (-pad_rows)
+                    pad_rows = 0
+
+                fit_table = Table([list(model_dict.keys()) + [''] * pad_rows,
+                                   list(model_dict.values()) + [0] * pad_rows,
+                                   incoords, outcoords],
                                   names=("name", "coefficients", "peaks", "wavelengths"))
                 fit_table.meta['comments'] = ['coefficients are based on 0-indexing',
                                               'peaks column is 1-indexed']
@@ -491,15 +487,20 @@ class Spect(PrimitivesBASE):
                 # TODO: Properly. Simply put the linear approximation here for now
                 ext.hdr["CTYPE1"] = "Wavelength"
                 try:
-                    coeffs = ext.WAVECAL["coefficients"]
-                except AttributeError:
+                    wavecal = dict(zip(ext.WAVECAL["names"],
+                                       ext.WAVECAL["coefficients"]))
+                except (AttributeError, KeyError):
+                    log.warning("Could not read wavelength solution for {}:{}"
+                                "".format(ad.filename, ext.hdr['EXTVER']))
                     crpix = 0.5 * (len(data) + 1)
                     crval = ext.central_wavelength(asNanometers=True)
                     cdelt = ext.dispersion(asNanometers=True)
                 else:
-                    crpix = np.mean(coeffs[:2]) + 1
-                    crval = coeffs[3]
-                    cdelt = 2 * coeffs[4] / float(np.diff(coeffs[:2]))
+                    crpix = 0.5 * (wavecal['domain_start'] +
+                                   wavecal['domain_end']) + 1
+                    crval = wavecal['c0']
+                    cdelt = 2 * wavecal['c1'] / float(wavecal['domain_end'] -
+                                                      wavecal['domain_start'])
 
                 ext.hdr["CRPIX1"] = crpix
                 ext.hdr["CRVAL1"] = crval
@@ -557,18 +558,17 @@ class Spect(PrimitivesBASE):
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
                 try:
-                    coeffs = ext.WAVECAL["coefficients"]
-                except AttributeError:
+                    wavecal = dict(zip(ext.WAVECAL["names"],
+                                       ext.WAVECAL["coefficients"]))
+                except (AttributeError, KeyError):
+                    cheb = None
+                else:
+                    cheb = astromodels.dict_to_chebyshev(wavecal)
+                if cheb is None:
                     log.warning("{}:{} has no WAVECAL. Cannot linearize.".
                                 format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                # Recreate wavelength solution and construct inverse
-                order = int(coeffs[2])
-                kwargs = {"domain": [*coeffs[:2].data.astype(int)]}
-                kwargs.update({"c{}".format(i): value
-                               for i, value in enumerate(coeffs[3: 4+order])})
-                cheb = models.Chebyshev1D(degree=order, **kwargs)
                 cheb.inverse = _make_inverse_chebyshev1d(cheb, rms=0.1)
                 transform = Transform(cheb)
 
@@ -604,42 +604,6 @@ class Spect(PrimitivesBASE):
         return adinputs
 
 #-----------------------------------------------------------------------------
-def _estimate_peak_width(data, fwidth):
-    """
-    Estimates the FWHM of the spectral features (arc lines) by fitting
-    Gaussians to the brightest peaks.
-
-    Parameters
-    ----------
-    data:  ndarray
-        1D data array (will be modified)
-    fwidth: float
-        Estimated FWHM of features
-
-    Returns
-    -------
-    float: Better estimate of FWHM of features
-    """
-    fwidth = int(fwidth+0.5)
-    widths = []
-    for i in range(15):
-        index = 2*fwidth + np.argmax(data[2*fwidth:-2*fwidth-1])
-        data_to_fit = data[index - 2 * fwidth:index + 2 * fwidth + 1]
-        m_init = models.Gaussian1D(stddev=0.42466*fwidth) + models.Const1D(np.min(data_to_fit))
-        m_init.mean_0.fixed = True
-        m_init.amplitude_1.fixed = True
-        fit_it = fitting.LevMarLSQFitter()
-        m_final = fit_it(m_init, np.arange(-2*fwidth, 2*fwidth+1),
-                         data_to_fit)
-        #print (index, m_final)
-        # Quick'n'dirty logic to remove "peaks" at edges of CCDs
-        if m_final.amplitude_1 != 0:
-            widths.append(m_final.stddev_0/0.42466)
-        data[index-2*fwidth:index+2*fwidth+1] = 0.
-    return sigma_clip(widths).mean()
-
-
-
 def _set_model(model, order=None, initial=False, kdfit=False):
     # TODO: I find this ugly. Do better!
     """
