@@ -14,16 +14,6 @@ from astropy.io import fits
 from astropy.table import Table
 
 
-
-
-
-# @pytest.fixture(scope='module')
-# def filename():
-#     pytest.mark.parametrize()
-#     testfiles = glob.glob(os.path.join(test_path(), "*.fits"))
-#     return testfiles
-
-
 try:
     path = os.environ['TEST_PATH']
 except KeyError:
@@ -295,20 +285,7 @@ class TestAstrodataFits:
         np.testing.assert_array_almost_equal(ad[0].NEW_FEATURE,
                                              ad2[0].NEW_FEATURE)
 
-
-
-    ## FIX ###
-
-
-
-# typelist = []
-# for i in ad.descriptors:
-#     try:
-#         typelist.append((i, type(getattr(ad, i)())))
-#         if type(getattr(ad, i)()) == int:
-#             print((i, type(getattr(ad, i)())))
-#     except Exception as err:
-#         print("{} failed on call: {}".format(i, str(err)))
+    #
 
     # ########################################################################################333
     @pytest.mark.skip(reason="Deprecated methods")
