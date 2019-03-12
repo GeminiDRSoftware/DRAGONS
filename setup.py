@@ -130,8 +130,7 @@ PACKAGE_DATA = {}
 # sextractor files in geminidr/gemini/lookups/source_detection
 gemdrdir = re.compile('geminidr/')
 PACKAGE_DATA['geminidr'] = []
-instruments = ['gemini', 'f2', 'gmos', 'gnirs', 'niri']
-
+instruments = ['gemini', 'f2', 'gmos', 'gnirs', 'gsaoi', 'niri']
 for inst in instruments:
     for root, dirs, files in os.walk(os.path.join('geminidr', inst,
                                                   'lookups', 'source_detection')):
