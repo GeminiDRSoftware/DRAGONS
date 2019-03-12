@@ -27,6 +27,7 @@ timestamp_keys = {
     "determineWavelengthSolution": "WAVECAL",
     "determineAstrometricSolution": "ASTRMTRY",
     "dilateObjectMask": "DLOBJMSK",
+    "distortionCorrect": "TRANSFRM",
     "divide": "DIVIDE",
     "extract1DSpectra": "EXTRACT",
     "findAcquisitionSlits": "FINDACQS",

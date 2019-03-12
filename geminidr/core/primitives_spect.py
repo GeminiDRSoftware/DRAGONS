@@ -8,6 +8,8 @@ from . import parameters_spect
 
 import numpy as np
 from scipy import spatial
+from importlib import import_module
+
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -17,7 +19,7 @@ from matplotlib import pyplot as plt
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library.nddops import NDStacker
-from gempy.library.transform import Transform, DataGroup, AstroDataGroup
+from gempy.library import transform
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from recipe_system.utils.decorators import parameter_override
@@ -128,47 +130,102 @@ class Spect(PrimitivesBASE):
 
     def distortionCorrect(self, adinputs=None, **params):
         """
+        This primitive corrects for the optical distortion in science frames.
+        It uses a processed_arc with attached disotrtion map (a Chebyshev2D
+        model) to resample the input image.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
+        arc: AstroData/str/None
+            arc(s) containing distortion map
+        order: int (0-5)
+            order of interpolation when resampling
+        subsample: int
+            pixel subsampling factor
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        arc = params["arc"]
         order = params["order"]
+        subsample = params["subsample"]
+
+        # Get a suitable arc frame (with distortion map) for every science AD
+        if arc is None:
+            self.getProcessedArc(adinputs, refresh=False)
+            arc_list = self._get_cal(adinputs, 'processed_arc')
+        else:
+            arc_list = arc
 
         # The forward Transform is *only* used to determine the shape
         # of the output image, which we want to be the same as the input
         m_ident = models.Identity(2)
 
         adoutputs = []
-        for ad in adinputs:
-            transforms = []
-            for ext in ad:
-                model_dict = dict(zip(ext.FITCOORD['inv_name'],
-                                      ext.FITCOORD['inv_coefficients']))
+        # Provide an arc AD object for every science frame
+        for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
+            len_arc = len(arc)
+            len_ad = len(ad)
+            if len_arc not in (1, len_ad):
+                log.warning("Science frame {} has {} extensions and arc {} "
+                            "has {} extension.".format(ad.filename, len_ad,
+                                                       arc.filename, len_arc))
+                adoutputs.append(ad)
+                continue
+
+            # Read all the arc's distortion maps. Do this now so we only have
+            # one block of reading anc verifying them
+            distortion_models = []
+            for ext in arc:
+                fitcoord = ext.FITCOORD
+                model_dict = dict(zip(fitcoord['inv_name'],
+                                      fitcoord['inv_coefficients']))
                 m_inverse = astromodels.dict_to_chebyshev(model_dict)
                 if not isinstance(m_inverse, models.Chebyshev2D):
-                    log.warning("Could not read distortion model for {}:{} - "
-                                "continuing".format(ad.filename, ext.hdr['EXTVER']))
-                    transforms.append(Transform(models.Identity(2)))
+                    log.warning("Could not read distortion model from arc {}:{}"
+                                " - continuing".format(arc.filename,
+                                                       ext.hdr['EXTVER']))
+                    adoutputs.append(ad)
                     continue
 
-                dispaxis = ext.dispersion_axis() - 1
+                dispaxis = arc[0].dispersion_axis() - 1
                 if dispaxis == 0:
                     m_ident.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
                 else:
                     m_ident.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
-                transforms.append(Transform(m_ident.copy()))
+                distortion_models.append(m_ident.copy())
 
-            adg = AstroDataGroup(ad, transforms)
-            ad_out = adg.transform(order=order, parallel=False)
+            # Determine whether we're producing a single-extension AD
+            # or keeping the number of extensions as-is
+            if len_arc == 1:
+                if len_ad > 1:
+                    # We need to apply the mosaicking geometry, and add the
+                    # same distortion correction to each input extension
+                    geotable = import_module('.geometry_conf', self.inst_lookups)
+                    adg = transform.create_mosaic_transform(ad, geotable)
+                    for t in adg.transforms:
+                        t.append(distortion_models[0])
+                else:
+                    # Single-extension AD, with single Transform
+                    adg = transform.AstroDataGroup(ad, [transform.Transform(m_ident)])
 
+                ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
+            else:
+                for i, (ext, model) in enumerate(zip(ad, distortion_models)):
+                    adg = transform.AstroDataGroup([ext], transform.Transform(model))
+                    adg.set_reference()
+                    if i == 0:
+                        ad_out = adg.transform(order=order, subsample=subsample,
+                                               parallel=False)
+                    else:
+                        ad_out.append(adg.transform(order=order, subsample=subsample,
+                                                    parallel=False))
 
             # Timestamp and update the filename
-            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad_out)
 
@@ -570,11 +627,11 @@ class Spect(PrimitivesBASE):
                     continue
 
                 cheb.inverse = _make_inverse_chebyshev1d(cheb, rms=0.1)
-                transform = Transform(cheb)
+                t = transform.Transform(cheb)
 
                 # Linearization (and inverse)
-                transform.append(models.Shift(-w1))
-                transform.append(models.Scale(1./dw))
+                t.append(models.Shift(-w1))
+                t.append(models.Scale(1./dw))
 
                 # If we resample to a coarser pixel scale, we may interpolate
                 # over features. We avoid this by subsampling back to the
@@ -584,7 +641,7 @@ class Spect(PrimitivesBASE):
                 if subsample > 1.1:
                     subsample = int(subsample + 0.5)
 
-                dg = DataGroup([ext], [transform])
+                dg = transform.DataGroup([ext], [t])
                 dg.output_shape = (npix,)
                 output_dict = dg.transform(attributes=attributes, subsample=subsample,
                                            conserve=conserve)

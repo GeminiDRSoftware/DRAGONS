@@ -1,6 +1,7 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_spect.py file, in alphabetical order.
 from gempy.library import config
+from astrodata import AstroData
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
@@ -30,6 +31,8 @@ class determineWavelengthSolutionConfig(config.Config):
 
 class distortionCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
+    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
+                           optional=True, single=True)
     order = config.RangeField("Interpolation order", int, 1, min=0, max=5)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
