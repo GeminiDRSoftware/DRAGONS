@@ -10,14 +10,16 @@
 # Shift2D: single model to shift in 2D
 #
 # Functions:
-# chebyshev_to_dict / dict_to_chebyshev: Turn a Chebyshev model into
-# a dict to assist with reading and writing as a Table
+# chebyshev_to_dict / dict_to_chebyshev: Turn a Chebyshev model into a dict to
+#                                        assist with reading/writing as a Table
+# make_inverse_chebyshev1d:              make a Chebyshev1D model that provides
+#                                        the inverse of the given model
 
 import numpy as np
 import math
 from collections import OrderedDict
 
-from astropy.modeling import models, FittableModel, Parameter
+from astropy.modeling import models, fitting, FittableModel, Parameter
 
 #-----------------------------------------------------------------------------
 # NEW MODEL CLASSES
@@ -227,3 +229,30 @@ def dict_to_chebyshev(model_dict):
             return None
 
     return model
+
+
+def make_inverse_chebyshev1d(model, sampling=1, rms=None):
+    """
+    This creates a Chebyshev1D model that attempts to be the inverse of
+    the model provided.
+
+    Parameters
+    ----------
+    model: Chebyshev1D
+        The model to be inverted
+    rms: float/None
+        required maximum rms in input space (i.e., pixels)
+    """
+    order = model.degree
+    max_order = order if rms is None else order+2
+    incoords = np.arange(*model.domain, sampling)
+    outcoords = model(incoords)
+    while order <= max_order:
+        m_init = models.Chebyshev1D(degree=order, domain=model(model.domain))
+        fit_it = fitting.LinearLSQFitter()
+        m_inverse = fit_it(m_init, outcoords, incoords)
+        rms_inverse = np.std(m_inverse(outcoords) - incoords)
+        if rms is None or rms_inverse <= rms:
+            break
+        order += 1
+    return m_inverse

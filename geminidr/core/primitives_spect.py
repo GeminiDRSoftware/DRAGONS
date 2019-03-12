@@ -703,7 +703,7 @@ class Spect(PrimitivesBASE):
                                 format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                cheb.inverse = _make_inverse_chebyshev1d(cheb, rms=0.1)
+                cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
                 t = transform.Transform(cheb)
 
                 # Linearization (and inverse)
@@ -794,29 +794,3 @@ def plot_arc_fit(data, peaks, arc_lines, model, title):
     ax.set_ylim(0, 1)
     ax.set_xlabel("Wavelength (nm)")
     ax.set_title(title)
-
-def _make_inverse_chebyshev1d(model, sampling=1, rms=None):
-    """
-    This creates a Chebyshev1D model that attempts to be the inverse of
-    the model provided.
-
-    Parameters
-    ----------
-    model: Chebyshev1D
-        The model to be inverted
-    rms: float/None
-        required maximum rms in input space (i.e., pixels)
-    """
-    order = model.degree
-    max_order = order if rms is None else order+2
-    incoords = np.arange(*model.domain, sampling)
-    outcoords = model(incoords)
-    while order <= max_order:
-        m_init = models.Chebyshev1D(degree=order, domain=model(model.domain))
-        fit_it = fitting.LinearLSQFitter()
-        m_inverse = fit_it(m_init, outcoords, incoords)
-        rms_inverse = np.std(m_inverse(outcoords) - incoords)
-        if rms is None or rms_inverse <= rms:
-            break
-        order += 1
-    return m_inverse
