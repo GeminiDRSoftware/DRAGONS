@@ -51,10 +51,18 @@ class Spect(PrimitivesBASE):
             order of fit in spatial direction
         spectral_order: int
             order of fit in spectral direction
+        id_only: bool
+            trace using only those lines identified for wavelength calibration?
+        min_snr: float
+            minimum signal-to-noise ratio for identifying lines (if id_only=False)
         nsum: int
             number of rows/columns to sum at each step
         step: int
             size of step in pixels when tracing
+        max_shift: float
+            maximum orthogonal shift (per pixel) for line-tracing
+        max_missed: int
+            maximum number of steps to miss before a line is lost
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -62,9 +70,13 @@ class Spect(PrimitivesBASE):
         sfx = params["suffix"]
         spatial_order = params["spatial_order"]
         spectral_order = params["spectral_order"]
+        id_only = params["id_only"]
+        fwidth = params["fwidth"]
+        min_snr = params["min_snr"]
         nsum = params["nsum"]
         step = params["step"]
         max_shift = params["max_shift"]
+        max_missed = params["max_missed"]
 
         orders = (spectral_order, spatial_order)
 
@@ -73,15 +85,69 @@ class Spect(PrimitivesBASE):
                 self.viewer.display_image(ext, wcs=False)
                 self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
-                middle = 0.5 * ext.shape[1-dispaxis]
+                direction = "row" if dispaxis == 1 else "column"
 
-                # Peak locations in pixels are 1-indexed
-                initial = ext.WAVECAL['peaks'] - 1
+                # Here's a lot of input-checking
+                extname = '{}:{}'.format(ad.filename, ext.hdr['EXTVER'])
+                start = 0.5 * ext.shape[1 - dispaxis]
+                initial_peaks = None
+                try:
+                    wavecal = ext.WAVECAL
+                except AttributeError:
+                    log.warning("Cannot find a WAVECAL table on {} - "
+                                "identifying lines in middle {}".
+                                format(extname, direction))
+                else:
+                    try:
+                        index = list(wavecal['name']).index(direction)
+                    except ValueError:
+                        log.warning("Cannot find starting {} in WAVECAL "
+                                    "table on {} - identifying lines in "
+                                    "middle {}. Wavelength calibration may "
+                                    "not be correct.".format(direction, extname,
+                                            direction))
+                    else:
+                        start = wavecal['coefficients'][index]
+                    if id_only:
+                        try:
+                            # Peak locations in pixels are 1-indexed
+                            initial_peaks = (ext.WAVECAL['peaks'] - 1)
+                        except KeyError:
+                            log.warning("Cannot find peak locations in {} "
+                                        "- identifying lines in middle {}".
+                                        format(extname, direction))
+
+                # This is identical to the code in determineWavelengthSolution()
+                # but I'm not sure it's worth abstracting to a separate function
+                if initial_peaks is None:
+                    extract_slice = slice(max(0, int(start - 0.5*nsum)),
+                                          min(ext.data.shape[1-dispaxis],
+                                              int(start + 0.5*nsum)))
+                    log.stdinfo("Finding peaks by extracting {}s {} to {}".
+                                format(direction, extract_slice.start + 1, extract_slice.stop))
+
+                    if dispaxis == 0:
+                        data = ext.data.T[extract_slice]
+                        mask = None if ext.mask is None else ext.mask.T[extract_slice]
+                    else:
+                        data = ext.data[extract_slice]
+                        mask = None if ext.mask is None else ext.mask[extract_slice]
+                    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+
+                    if fwidth is None:
+                        fwidth = tracing.estimate_peak_width(data)
+                        log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+
+                    # Find peaks; convert width FWHM to sigma
+                    widths = 0.42466*fwidth * np.arange(0.8,1.21,0.05)  # TODO!
+                    initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask,
+                                                       variance=variance, min_snr=min_snr)
+                    log.stdinfo("Found {} peaks".format(len(initial_peaks)))
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1-dispaxis,
-                        start=middle, initial=initial,
-                        width=5, step=step, nsum=nsum, max_missed=5,
+                        start=start, initial=initial_peaks, width=5, step=step,
+                        nsum=nsum, max_missed=max_missed,
                         max_shift=max_shift, viewer=self.viewer)
 
                 m_init = models.Chebyshev2D(x_degree=orders[1-dispaxis],
@@ -95,7 +161,6 @@ class Spect(PrimitivesBASE):
                 m_final, _ = fit_it(m_init, *in_coords, ref_coords[1-dispaxis])
                 m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1-dispaxis])
 
-                diff = m_inverse(*ref_coords) - in_coords[1-dispaxis]
                 # TODO: Some logging about quality of fit
                 #print(np.min(diff), np.max(diff), np.std(diff))
 
@@ -107,9 +172,16 @@ class Spect(PrimitivesBASE):
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
                 self.viewer.color = "blue"
-                yref = np.arange(0, ext.shape[1-dispaxis], step)
-                for xref in initial:
-                    mapped_coords = np.array(model.inverse([xref] * len(yref), yref)).T
+                spatial_coords = np.arange(0, ext.shape[1-dispaxis], step)
+                spectral_coords = np.unique(ref_coords[1-dispaxis])
+                for coord in spectral_coords:
+                    if dispaxis == 1:
+                        xref = [coord] * len(spatial_coords)
+                        yref = spatial_coords
+                    else:
+                        xref = spatial_coords
+                        yref = [coord] * len(spatial_coords)
+                    mapped_coords = np.array(model.inverse(xref, yref)).T
                     self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
                 columns = []
@@ -299,21 +371,22 @@ class Spect(PrimitivesBASE):
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
                     slitaxis = ext.dispersion_axis() - 1
-                    middle = 0.5 * ext.data.shape[slitaxis]
-                    extract = slice(max(0, int((center or middle) - 0.5*nsum)),
-                                  min(ext.data.shape[slitaxis], int((center or middle) + 0.5*nsum)))
+                    extraction = center or (0.5 * ext.data.shape[slitaxis])
+                    extract_slice = slice(max(0, int(extraction - 0.5*nsum)),
+                                          min(ext.data.shape[slitaxis],
+                                              int(extraction + 0.5*nsum)))
                     if slitaxis == 1:
-                        data = ext.data.T[extract]
-                        mask = None if ext.mask is None else ext.mask.T[extract]
-                        variance = None if ext.variance is None else ext.variance.T[extract]
+                        data = ext.data.T[extract_slice]
+                        mask = None if ext.mask is None else ext.mask.T[extract_slice]
+                        variance = None if ext.variance is None else ext.variance.T[extract_slice]
                         direction = "column"
                     else:
-                        data = ext.data[extract]
-                        mask = None if ext.mask is None else ext.mask[extract]
-                        variance = None if ext.variance is None else ext.variance[extract]
+                        data = ext.data[extract_slice]
+                        mask = None if ext.mask is None else ext.mask[extract_slice]
+                        variance = None if ext.variance is None else ext.variance[extract_slice]
                         direction = "row"
                     log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                                format(direction, extract.start+1, extract.stop))
+                                format(direction, extract_slice.start+1, extract_slice.stop))
                 else:
                     data = ext.data
                     mask = ext.mask
@@ -332,8 +405,9 @@ class Spect(PrimitivesBASE):
                 log.stdinfo("Using central wavelength {:.1f} nm and dispersion "
                             "{:.3f} nm/pixel".format(cenwave, dw))
 
-                fwidth = tracing.estimate_peak_width(data.copy(), fwidth)
-                log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
+                if fwidth is None:
+                    fwidth = tracing.estimate_peak_width(data)
+                    log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
 
                 # Don't read linelist if it's the one we already have
                 # (For user-supplied, we read it at the start, so don't do this at all)
@@ -462,6 +536,8 @@ class Spect(PrimitivesBASE):
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
                 model_dict = astromodels.chebyshev_to_dict(m_final)
+                # Add information about where the extraction took place
+                model_dict['row' if slitaxis == 0 else 'column'] = extraction
 
                 # Ensure all columns have the same length
                 pad_rows = nmatched - len(model_dict)

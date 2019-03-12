@@ -14,6 +14,7 @@ reject_bad_peaks:    remove suspicious-looking peaks by a variety of methods
 trace_lines:         trace lines from a set of supplied starting positions
 """
 import numpy as np
+import warnings
 from scipy import signal, interpolate
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
@@ -25,7 +26,7 @@ from gempy.utils import logutils
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
-def estimate_peak_width(data, fwidth):
+def estimate_peak_width(data):
     """
     Estimates the FWHM of the spectral features (arc lines) by fitting
     Gaussians to the brightest peaks.
@@ -34,33 +35,39 @@ def estimate_peak_width(data, fwidth):
     ----------
     data:  ndarray
         1D data array (will be modified)
-    fwidth: float
-        Estimated FWHM of features
 
     Returns
     -------
-    float: Better estimate of FWHM of features
+    float: estimate of FWHM of features
     """
-    fwidth = int(fwidth+0.5)
-    widths = []
-    for i in range(15):
-        index = 2*fwidth + np.argmax(data[2*fwidth:-2*fwidth-1])
-        data_to_fit = data[index - 2 * fwidth:index + 2 * fwidth + 1]
-        m_init = models.Gaussian1D(stddev=0.42466*fwidth) + models.Const1D(np.min(data_to_fit))
-        m_init.mean_0.fixed = True
-        m_init.amplitude_1.fixed = True
-        fit_it = fitting.LevMarLSQFitter()
-        m_final = fit_it(m_init, np.arange(-2*fwidth, 2*fwidth+1),
-                         data_to_fit)
-        #print (index, m_final)
-        # Quick'n'dirty logic to remove "peaks" at edges of CCDs
-        if m_final.amplitude_1 != 0:
-            widths.append(m_final.stddev_0/0.42466)
-        data[index-2*fwidth:index+2*fwidth+1] = 0.
-    return sigma_clip(widths).mean()
+    all_widths = []
+    for fwidth in range(2, 8):  # plausible range of widths
+        data_copy = data.copy()  # We'll be editing the data
+        widths = []
+        for i in range(15):  # 15 brightest peaks, should ensure we get real ones
+            index = 2*fwidth + np.argmax(data_copy[2*fwidth:-2*fwidth-1])
+            data_to_fit = data_copy[index - 2 * fwidth:index + 2 * fwidth + 1]
+            m_init = models.Gaussian1D(stddev=0.42466*fwidth) + models.Const1D(np.min(data_to_fit))
+            m_init.mean_0.bounds = [-1, 1]
+            m_init.amplitude_1.fixed = True
+            fit_it = fitting.FittingWithOutlierRemoval(fitting.LevMarLSQFitter(),
+                                                       sigma_clip, sigma=3)
+            with warnings.catch_warnings():
+                # Ignore model linearity warning from the fitter
+                warnings.simplefilter('ignore')
+                m_final, _ = fit_it(m_init, np.arange(-2*fwidth, 2*fwidth+1),
+                                    data_to_fit)
+            # Quick'n'dirty logic to remove "peaks" at edges of CCDs
+            if m_final.amplitude_1 != 0:
+                widths.append(m_final.stddev_0/0.42466)
+
+            # Set data to zero so no peak is found here
+            data_copy[index-2*fwidth:index+2*fwidth+1] = 0.
+        all_widths.append(sigma_clip(widths).mean())
+    return sigma_clip(all_widths).mean()
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
-               rank_clip=True):
+               reject_bad=True):
     """
     Find peaks in a 1D array. This uses scipy.signal routines, but requires some
     duplication of that code since the _filter_ridge_lines() function doesn't
@@ -133,7 +140,10 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     # Remove suspiciously bright peaks and return as array of
     # locations and SNRs, sorted by location
-    good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
+    if reject_bad:
+        good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
+    else:
+        good_peaks = list(zip(final_peaks, peak_snrs))
     return np.array(sorted(good_peaks)).T
 
 def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
@@ -290,6 +300,17 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
     if start is None:
         start = int(0.5 * ext_data.shape[0])
         log.stdinfo("Starting trace at {} {}".format(direction, start))
+
+    if initial is None:
+        y1 = int(start - 0.5*nsum + 0.5)
+        data, mask, var = NDStacker.mean(ext_data[y1:y1 + nsum],
+                                         mask=ext_mask[y1:y1 + nsum],
+                                         variance=None)
+        fwidth = estimate_peak_width(data.copy(), 10)
+        widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
+        initial, _ = find_peaks(data, widths, mask=mask,
+                                variance=var, min_snr=5)
+        print("Feature width", fwidth, "nlines", len(initial))
 
     coord_lists = [[] for peak in initial]
     for direction in (-1, 1):

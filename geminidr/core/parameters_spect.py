@@ -7,9 +7,15 @@ class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 2, min=1)
     spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
+    id_only = config.Field("Use only lines identified for wavelength calibration?", bool, True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
+    fwidth = config.RangeField("Feature width in pixels if reidentifying",
+                               float, None, min=2., optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
-    max_shift = config.RangeField("Maximum shift per pixel in line position", float, 0.05, min=0.001, max=0.1)
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.05, min=0.001, max=0.1)
+    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
 
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
@@ -21,7 +27,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                             "natural": "natural weighting",
                                             "relative": "relative to local peaks"},
                                    default="natural")
-    fwidth = config.RangeField("Feature width in pixels", float, 4., min=2.)
+    fwidth = config.RangeField("Feature width in pixels", float, None, min=2., optional=True)
     order = config.RangeField("Order of fitting polynomial", int, 2, min=1)
     central_wavelength = config.RangeField("Estimated central wavelength (nm)", float, None,
                                            min=300., max=25000., optional=True)
