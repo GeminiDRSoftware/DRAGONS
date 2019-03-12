@@ -70,7 +70,7 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             for ext in ad:
-                self.viewer.display_image(ext)
+                self.viewer.display_image(ext, wcs=False)
                 self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 middle = 0.5 * ext.shape[1-dispaxis]
@@ -96,7 +96,8 @@ class Spect(PrimitivesBASE):
                 m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1-dispaxis])
 
                 diff = m_inverse(*ref_coords) - in_coords[1-dispaxis]
-                print(np.min(diff), np.max(diff), np.std(diff))
+                # TODO: Some logging about quality of fit
+                #print(np.min(diff), np.max(diff), np.std(diff))
 
                 if dispaxis == 1:
                     model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))

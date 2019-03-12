@@ -9,7 +9,7 @@ class determineDistortionConfig(config.Config):
     spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
-    max_shift = config.RangeField("Maximum shift per pixel in line position", float, 0.02, min=0.001, max=0.1)
+    max_shift = config.RangeField("Maximum shift per pixel in line position", float, 0.05, min=0.001, max=0.1)
 
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
