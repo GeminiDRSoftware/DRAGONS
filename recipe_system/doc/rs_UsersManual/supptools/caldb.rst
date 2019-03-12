@@ -32,7 +32,7 @@ One, and only one, positional argument should be provided when calling
 If this is the first time that you are using DRAGONS, you have to setup either
 a local or a remote database. For a local database, create a file called
 ``rsys.cfg`` within the ``~/.geminidr/`` directory. The ``~`` means the user's
-home folder. You can check if you already have one using the following command:
+home folder. You can check if you already have one using the following command:::
 
     $ cat ~/.geminidr/rsys.cfg
     [calibs]
