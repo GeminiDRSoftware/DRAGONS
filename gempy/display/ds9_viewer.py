@@ -28,7 +28,7 @@ class ds9Viewer(imexam.connect):
     # user creates and interacts with, even though almost everything is
     # sent to self.window
 
-    def display_image(self, ext, attribute='data', title=None):
+    def display_image(self, ext, attribute='data', title=None, wcs=True):
         """
         Displays an extension of an AD object in the current ds9 frame and
         provides the ds9 window with its WCS information.
@@ -41,22 +41,25 @@ class ds9Viewer(imexam.connect):
             which attribute to display
         title: str/None
             string for annotation
+        wcs: boolean
+            write WCS information to disk so it can be loaded?
         """
         data_to_display = getattr(ext, attribute)
         frame = self.window.frame()
         if frame is None:
             frame = 1
         self.view(data_to_display)
-        header = WCS(ext.hdr).to_header()
         if title is None:
             title = "{}:{}[{}] {}".format(ext.filename, ext.hdr['EXTVER'],
                                           attribute, ext.phu['OBJECT'])
-        header['OBJECT'] = title
-        fname = "temp{}.wcs".format(time.time())
-        with open(fname, "w") as f:
-            f.write(header.tostring())
-        self.window.set("wcs replace {} {}".format(frame, fname))
-        os.remove(fname)
+        if wcs:
+            header = WCS(ext.hdr).to_header()
+            header['OBJECT'] = title
+            fname = "temp{}.wcs".format(time.time())
+            with open(fname, "w") as f:
+                f.write(header.tostring())
+            self.window.set("wcs replace {} {}".format(frame, fname))
+            os.remove(fname)
 
     def regions(self, str):
         """
