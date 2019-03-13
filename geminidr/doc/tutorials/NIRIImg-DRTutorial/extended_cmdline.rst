@@ -1,26 +1,27 @@
-.. simple_cmdline.rst
+.. extended_cmdline.rst
 
-.. _simple_cmdline:
+.. _extended_cmdline:
 
-********************************************
-Extended source - Using the "reduce" command
-********************************************
+*********************************************************
+Example 1-A: Extended source - Using the "reduce" command
+*********************************************************
+
+In this example we will reduce a NIRI observation of an extended source using
+the ``reduce`` command that is operated directly from the unix shell.  Just
+open a terminal to get started.
+
+This observation is a simple dither on target, a galaxy, with offset to sky.
 
 The dataset
 ===========
-This is a NIRI imaging observation of the an extended source, a galaxy showing
-as a dense field of stars.  The observation sequence uses offset to sky to
-monitor it.
+If you have not already, download and unpackage the tutorial's data package.
+Refer to :ref:`datasetup` for the links and simple instructions.
 
-The calibrations we use here include:
+The dataset specific to this example is described in:
 
-* Darks for the science and sky offset frames.
-* Flats, as a sequence of lamps-on and lamps-off exposures.
-* Short darks to use with the flats to create a bad pixel mask.
-* A set of standard star observations.
+    :ref:`dataextended`.
 
-Here are the files that need to be downloaded from the Gemini Observatory
-Archive.
+Here is a copy of the table for quick reference.
 
 +---------------+--------------------------------------------+
 | Science       || N20160102S0270-274 (on-target)            |
@@ -36,29 +37,6 @@ Archive.
 | Standard star || N20160102S0295-299                        |
 +---------------+--------------------------------------------+
 
-A note about finding the short darks.  Those are used solely to create a
-fresh bad pixel mask (BPM).  In the archive, the calibration association
-will not find those darks for you, you will need to search for them
-explicitely. To do so,
-
-* Set a date range around the dates of your science observations.
-* Set **Instrument** to NIRI.
-* Set the **Obs.Type** to DARK.
-* Set the exposure time to 1 second.
-
-All the data needed to run this tutorial are found in the tutorial's data
-package (KL??? name of the package, with URL).  Download it and unpack it
-somewhere convenient.
-
-.. highlight:: bash
-
-::
-
-    cd <somewhere convenient>
-    tar xvzf KL???
-
-The datasets are found in the subdirectory ``niriimg_tutorial/playdata``, and we
-will work in the subdirectory named ``niriimg_tutorial/playground``.
 
 
 Create file lists
@@ -106,11 +84,13 @@ combination of ``dataselect`` to select all the darks and feed that list to
     N20160103S0472.fits: 1.001
 
 As one can see above the exposure times all have a small fractional increment.
-This is just a floating inaccuracy somewhere in the software that generates
-the FITS file.  As far as we are concerned here in this tutorial, we are
-dealing with 20-second and 1-second darks.  The tool ``dataselect`` is smart
-enough to match those exposure times as "close enough".  So, in our selection
-expression, we can use "1" and "20" and ignore the extra digits.
+This is just a floating point inaccuracy somewhere in the software that
+generates the FITS file.  As far as we are concerned here in this tutorial,
+we are dealing with 20-second and 1-second darks.  The tool ``dataselect`` is
+smart enough to match those exposure times as "close enough".  So, in our
+selection expression, we can use "1" and "20" and ignore the extra digits.
+
+.. note:: If a perfect match to 1.001 were required, adding the option ``--strict`` in ``dataselect`` would ensure an exact match.
 
 Let's create our two lists then.
 
@@ -132,27 +112,28 @@ that to one list.
 
 A list for the standard star
 ----------------------------
-The standard sequence is a series of IMAGE that are not FLAT and identified
-as "FS 17".  There are no keywords in the NIRI header identifying this target
-as a special standard star target.  So we need to use the name to select only
-that star and not our science target.
-
-Flats are FLAT and IMAGE, this is why we need to exclude FLAT.
+The standard sequence is a series of datasets identified as "FS 17".  There
+are no keywords in the NIRI header identifying this target as a special
+standard star target.  So we need to use the target name to select only that
+star and not our science target.
 
 ::
 
-    dataselect ../playdata/*.fits --tags IMAGE --xtags FLAT --expr='object=="FS 17"' -o stdstar.lis
+    dataselect ../playdata/*.fits --expr='object=="FS 17"' -o stdstar.lis
 
 
 
 A list for the science observations
 -----------------------------------
 The science frames are all the IMAGE non-FLAT that are also not the standard.
+Since flats are FLAT and IMAGE, we need to exclude the FLAT tag.
+
 This translates to the following expression::
 
     dataselect ../playdata/*.fits --tags IMAGE --xtags FLAT --expr='object!="FS 17"' -o target.lis
 
-One could use the name of the science target too.
+One could use the name of the science target too, like we did for the selecting
+the standard star observations in the previous section.
 
 
 
@@ -165,7 +146,8 @@ calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/, edit the configuration file ``rsys.cfg`` as follow::
+In ``~/.geminidr/`, create or edit the configuration file ``rsys.cfg`` as
+follow::
 
     [calibs]
     standalone = True
@@ -206,14 +188,18 @@ calibration database.  The name of the output master dark,
     reduce @darks20s.lis
     caldb add N20160102S0423_dark.fits
 
+.. note:: The file name of the output processed dark is the file name of the first file in the list with `_dark` appended as a suffix.  This the general naming scheme used by `reduce`.
+
 
 Bad Pixel Mask
 --------------
-The Gemini software comes with a static NIRI BPM that gets automatically added
-to all the data as it gets processed.  The user can create from the flats and
-short darks a *user* BPM that will be combined with the static BPM.  Using both
-the static and a fresh BPM from recent data is a better representation of the
-bad pixel.  It is a recommended step.
+The DRAGONS Gemini data reduction package comes with a static NIRI bad pixel
+mask (BPM) that gets automatically added to all the NIRI data as it gets
+processed.  The user can also create a supplemental, fresher BPM from the
+flats and short darks.  It is fed to ``reduce`` as a *user* BPM that will
+be combined with the static BPM.  Using both the static and a fresh BPM
+from recent data is a better representation of the bad pixels.  It is an
+optional but recommended step.
 
 The flats must be passed first for ``reduce`` to select the recipe library
 associated with NIRI flats.  We will not use the default recipe but rather
@@ -227,15 +213,15 @@ The flats and the short darks are inputs.
 
 The BPM produced is named ``N20160102S0373_bpm.fits``.
 
-The local calibration manager does not yet support BPMs so we cannot added
+The local calibration manager does not yet support BPMs so we cannot add
 it to the database.  It is a future feature.  We will have to pass it
-manually to ``reduce`` to use it.
+manually to ``reduce`` later to use it.
 
 
 Master Flat Field
 -----------------
 A NIRI master flat is created from a series of lamp-on and lamp-off exposures.
-Each flavor is stacked then the lamp-off stack is subtracted from the lamp-on
+Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
 
 We create the master flat field and add it to the calibration manager as
@@ -266,7 +252,7 @@ Standard Star
 -------------
 The standard star is reduced more or less the same way as the science
 target (next section) except that darks frames are not obtained for standard
-stars observation.  Therefore the dark correction needs to be turned off.
+star observations.  Therefore the dark correction needs to be turned off.
 
 The processed flat field that we added earlier to the local calibration
 database will be fetched automatically.  The user BPM (optional, but
