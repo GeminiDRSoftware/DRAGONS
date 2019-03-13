@@ -357,8 +357,10 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
                 new_coord = [ypos, new_peak]
                 if viewer:
-                    kwargs = dict(zip(('y1', 'x1'), last_coords[i]))
-                    kwargs.update(dict(zip(('y2', 'x2'), new_coord)))
+                    kwargs = dict(zip(('y1', 'x1'), last_coords[i] if axis == 0
+                                                    else reversed(last_coords[i])))
+                    kwargs.update(dict(zip(('y2', 'x2'), new_coord if axis == 0
+                                                         else reversed(new_coord))))
                     viewer.line(origin=0, **kwargs)
 
                 if not (ypos == start and direction > 1):
