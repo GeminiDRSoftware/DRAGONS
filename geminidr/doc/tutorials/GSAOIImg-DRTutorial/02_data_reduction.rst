@@ -199,7 +199,11 @@ via ``reduce`` command line:::
    $ reduce -r makeProcessedBPM @list_of_H_flats.txt @list_of_darks.txt
 
 The ``-r`` argument tells ``reduce`` which recipe you want to use to replace
-the default recipe.
+the default recipe. This recipe will create a new file that contains the
+Bad Pixel Mask (see the `AstroData User's Manual
+<https://astrodata-user-manual.readthedocs.io/en/latest/data.html#data-quality-plane>`_
+for more details) into a FITS file with the ``_bpm`` suffix. In this example,
+the created file is called ``./S20171208S0053_bpm.fits``.
 
 
 .. _process_flat_files:
