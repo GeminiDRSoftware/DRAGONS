@@ -26,7 +26,7 @@ from gempy.utils import logutils
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
 
-def estimate_peak_width(data):
+def estimate_peak_width(data, min=2, max=8):
     """
     Estimates the FWHM of the spectral features (arc lines) by fitting
     Gaussians to the brightest peaks.
@@ -35,13 +35,17 @@ def estimate_peak_width(data):
     ----------
     data:  ndarray
         1D data array (will be modified)
+    min: int
+        minimum plausible peak width
+    max: int
+        maximum plausible peak width
 
     Returns
     -------
     float: estimate of FWHM of features
     """
     all_widths = []
-    for fwidth in range(2, 8):  # plausible range of widths
+    for fwidth in range(min, max+1):  # plausible range of widths
         data_copy = data.copy()  # We'll be editing the data
         widths = []
         for i in range(15):  # 15 brightest peaks, should ensure we get real ones
