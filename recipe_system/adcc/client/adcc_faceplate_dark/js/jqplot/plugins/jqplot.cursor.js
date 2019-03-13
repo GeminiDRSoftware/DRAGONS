@@ -761,7 +761,7 @@
             document.selection.empty();
         }
         else if (sel && !sel().isCollapsed) {
-            sel().collapse();
+            sel().collapse(null);
         }
         return false;
     }
@@ -779,7 +779,7 @@
             document.selection.empty();
         }
         else if (sel && !sel().isCollapsed) {
-            sel().collapse();
+            sel().collapse(null);
         }
         return false;
     }
@@ -915,7 +915,7 @@
                 document.selection.empty();
             }
             else if (sel && !sel().isCollapsed) {
-                sel().collapse();
+                sel().collapse(null);
             }
             drawZoomBox.call(c);
             ctx = null;

@@ -7,10 +7,13 @@ from builtins import object
 from future.utils import with_metaclass
 __version__ = '2.0 (beta)'
 
+# ------------------------------------------------------------------------------
 import os
 import sys
 import signal
 import time
+
+from copy import copy
 from threading import Event
 from threading import Thread
 
@@ -21,7 +24,7 @@ from recipe_system.config import globalConf
 from recipe_system.config import STANDARD_REDUCTION_CONF
 from recipe_system.utils.findexe import findexe
 
-
+# ------------------------------------------------------------------------------
 def get_adcc_dir(dirtitle="adcc"):
     dotadcc = {"adcc": ".adcc"}
     if not os.path.exists(dotadcc[dirtitle]):
@@ -62,12 +65,15 @@ class ADCC(with_metaclass(Singleton, object)):
 
     def _check_adcc(self, cpid):
         adccproc = findexe('adcc')
+        xprocx = copy(adccproc)
         msg = "adcclib: adcc process {} running."
-        for i in range(len(adccproc)):
-            if adccproc[i] == cpid:
-                null = adccproc.pop(i)
-        x = [print(msg.format(p)) for p in adccproc]
-        return adccproc
+        try:
+            xprocx.pop(adccproc.index(cpid))
+        except ValueError as err:
+            pass
+
+        x = [print(msg.format(p)) for p in xprocx]
+        return xprocx
 
     def _check_kill_adcc(self, pids):
         for pid in pids:
