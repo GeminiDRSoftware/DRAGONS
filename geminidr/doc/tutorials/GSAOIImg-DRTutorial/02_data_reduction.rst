@@ -1,4 +1,23 @@
-.. 03_data_reduction.rst
+.. 02_data_reduction.rst
+
+.. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
+
+.. _dataselect: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect
+
+.. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
+
+.. _showd: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showd
+
+.. _show_primitives: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-primitives
+
+.. _show_recipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes
+
+.. _showpars: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars
+
+.. _typewalk: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
+
+.. |github| image:: /_static/img/GitHub-Mark-32px.png
+    :scale: 75%
 
 
 .. _command_line_data_reduction:
@@ -8,22 +27,15 @@ Data Reduction
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. One of the most important scripts is called
-``reduce``, which is extensively explained in the `Recipe System Users Manual
+reduce_, which is extensively explained in the `Recipe System Users Manual
 <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
 For this tutorial, we will be also using other `Supplemental tools
 <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
-like ``dataselect``, ``showd``, ``typewalk``, and ``caldb``.
+like dataselect_, showd_, typewalk_, and caldb_.
 
-.. todo: write dataselect documentation
+.. http://www.gemini.edu/sciops/data-and-results/processing-software
+.. https://www.gemini.edu/sciops/instruments/gsaoi/calibrations/baseline-calibrations
 
-.. todo: write showd documentation
-
-.. todo: write typewalk documentation
-
-.. todo: write caldb documentation
-
-http://www.gemini.edu/sciops/data-and-results/processing-software
-https://www.gemini.edu/sciops/instruments/gsaoi/calibrations/baseline-calibrations
 
 .. _organize_files:
 
@@ -33,7 +45,7 @@ Organize files
 First of all, let us consider that we have put all the files in the same folder
 called ``raw`` and that we do not have any information anymore. From a bash
 terminal and from within the Conda Virtual Environment where DRAGONS was
-installed, we can call the command tool ``typewalk``:::
+installed, we can call the command tool typewalk_: ::
 
     $ typewalk
 
@@ -69,17 +81,17 @@ different observed targets and different exposure times. The current data
 reduction pipeline does not organize the data.
 
 That means that we first need to identify these files and create lists that will
-be used in the data-reduction process. For that, we will use the ``dataselect``
-command line. Please, refer to the `dataselect <>`_ page for details regarding
-its usage. Let us start with the DARK files:::
+be used in the data-reduction process. For that, we will use the dataselect_
+command line. Please, refer to the `dataselect page <dataselect>`_ for details
+regarding its usage. Let us start with the DARK files: ::
 
    $ dataselect --tags DARK raw/*.fits > list_of_darks.txt
 
-Here, the ``>`` symbol gets the ``dataselect`` output and stores it within the
+Here, the ``>`` symbol gets the dataselect_ output and stores it within the
 ``list_of_darks.txt`` file. If you want to see the output, simply omit it and
 everything after it.
 
-Now we can do the same with the FLAT files, separating them by filter:::
+Now we can do the same with the FLAT files, separating them by filter: ::
 
     $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' raw/*.fits > \
          list_of_Kshort_flats.txt
@@ -89,7 +101,7 @@ Now we can do the same with the FLAT files, separating them by filter:::
 
 Recall that the ``\`` (back-slash) is used simply to break the long line .
 
-You can select the standard start with the following command:::
+You can select the standard start with the following command: ::
 
     $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits
     raw/S20170312S0178.fits
@@ -98,8 +110,8 @@ You can select the standard start with the following command:::
     ...
 
 The problem is that you may have more than one standard star in your data set.
-We can verify that by passing the ``dataselect`` output to the ``showd`` command
-line using "pipe" (``|``):::
+We can verify that by passing the dataselect_ output to the showd_ command
+line using "pipe" (``|``): ::
 
    $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits | showd -d object
 
@@ -112,16 +124,16 @@ line using "pipe" (``|``):::
    S20170312S0199.fits: cskd-8
    ...
 
-The ``-d`` flag tells ``showd`` which descriptor will be printed for each input
+The ``-d`` flag tells showd_ which descriptor will be printed for each input
 file. You can create a list for each standard star using the ``object`` descriptor
-as an argument for ``dataselect``:::
+as an argument for dataselect_: ::
 
    $ dataselect --expr 'object=="LHS 2026"' raw/*.fits > list_of_std_LHS_2026.txt
 
    $ dataselect --expr 'object=="cskd-8"' raw/*.fits > list_of_std_cskd-8.txt
 
 The rest is the data with your science target. Before we create a new list, let
-us check if we have more than one target and more than one exposure time:::
+us check if we have more than one target and more than one exposure time: ::
 
    $ dataselect --expr 'observation_class=="science"' raw/*.fits | showd -d object
 
@@ -133,7 +145,7 @@ us check if we have more than one target and more than one exposure time:::
    S20170505S0109.fits: NGC5128
    S20170505S0110.fits: NGC5128
 
-We have only one target. Now let us check the exposure time:::
+We have only one target. Now let us check the exposure time: ::
 
    $ dataselect --expr 'observation_class=="science"' raw/*.fits | showd -d exposure_time
 
@@ -147,7 +159,7 @@ We have only one target. Now let us check the exposure time:::
 
 Again, only one exposure time. Just to show the example, let us consider that
 we want to filter all the files whose ``object`` is NGC5128 and that the
-``exposure_time`` is 60 seconds. We also want to pass the output to a new list:::
+``exposure_time`` is 60 seconds. We also want to pass the output to a new list: ::
 
    $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' raw/*.fits > \
       list_of_science_files.txt
@@ -163,17 +175,17 @@ Accordingly to the `Calibration webpage for GSAOI
 files are only used to generate Bad Pixel Masks (BPM).
 
 If, for any reason, you believe that you really need to have a master DARK file,
-you can create it using the command below:::
+you can create it using the command below: ::
 
    $ reduce @list_of_darks.txt
 
 Note that ``reduce`` will no separate DARKS with different exposure times. You
 will have to create a new list for each exposure time, if that is the case.
 
-Master DARK files can be added to the local database using the ``caldb``
+Master DARK files can be added to the local database using the caldb_
 command. Before you run it, make sure you have `configured and initialized your
-caldb <>`_. Once you are set, add the Master Dark to the local database using
-the following command:::
+caldb <caldb>`_. Once you are set, add the Master Dark to the local database using
+the following command: ::
 
    $ caldb add ./calibrations/processed_dark/S20150609S0022_dark.fits
 
@@ -188,13 +200,13 @@ Create BPM files
 The Bad Pixel Mask (BPM) files can be created using a set of FLAT images and a
 set of DARK files. The FLATs must be obtained in the H band with a number of
 counts around 20000 adu and no saturated pixels, usually achieved with 7 seconds
-exposure time. The download_sample_files_ section contains a sample of the files to be
-used in this tutorial. If you need to download files for your own data set, use
-the `Gemini Archive Search Form <https://archive.gemini.edu/searchform>`_ to
-look for matching data.
+exposure time. The :ref:`download_sample_files` section contains a sample of the
+files to be used in this tutorial. If you need to download files for your own
+data set, use the `Gemini Archive Search Form <https://archive.gemini.edu/searchform>`_
+to look for matching data.
 
 The BPM file can be created using the ``makeProcessedBPM`` recipe available
-via ``reduce`` command line:::
+via ``reduce`` command line: ::
 
    $ reduce -r makeProcessedBPM @list_of_H_flats.txt @list_of_darks.txt
 
@@ -211,12 +223,12 @@ the created file is called ``./S20171208S0053_bpm.fits``.
 Process FLAT files
 ------------------
 
-FLAT images can be easily reduced using the ``reduce`` command line:::
+FLAT images can be easily reduced using the ``reduce`` command line: ::
 
    $ reduce @list_of_Kshort_flats.txt
 
 If we want ``reduce`` to use the BPM file, we need to add ``-p
-addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line:::
+addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line: ::
 
    $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
 
@@ -239,6 +251,13 @@ Note that this figure shows the masked pixels in white color but not all the
 detector features are masked. For example, the "Christmas Tree" on the detector
 2 can be easily noticed but was not masked.
 
+Once you are done, add the Master Flat to the local database using caldb_: ::
+
+   $ caldb add ./calibrations/processed_flat/S20170505S0030_flat.fits
+
+If you do so, ``reduce`` will "see" this calibration file when performing
+the data reduction of our science files.
+
 
 .. _processing_science_files:
 
@@ -246,7 +265,7 @@ Process Science files
 ---------------------
 
 Once we have our calibration files processed and added to the database, we can
-run ``reduce`` on our science data:::
+run ``reduce`` on our science data: ::
 
    $ reduce @list_of_science_files.txt
 
@@ -279,19 +298,21 @@ Stack Science reduced images
 Finally, you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction
-and image stacking is called `disco-stu`. This package can be found
-`here <https://github.com/GeminiDRSoftware/disco-stu>`_.
+and image stacking is called `disco-stu`. This package can be found in the
+link bellow:
+
+  |github|  `See disco-stu on GitHub <https://github.com/GeminiDRSoftware/disco-stu/releases/latest>`_
 
 Check this page for requirements and instruction on installing the package.
 
 Once you are all set, you can simply run ``disco`` on the Sky Subtracted
-files:::
+files: ::
 
    $ disco *_skySubtracted.fits
 
 By default, ``disco`` will write the output file as ``disco_stack.fits``. If you
 want to change the name of the output file during execution, run the following
-command instead:::
+command instead: ::
 
    $ disco *_skySubtracted.fits -o my_final_image.fits
 
@@ -340,7 +361,7 @@ a list of parameters that can be modified.
 
 .. todo show_recipes
 
-The `show_recipes <>`_ command line takes care of the first step. Here is an
+The show_recipes_ command line takes care of the first step. Here is an
 example::
 
     $ show_recipes raw/S20170505S0073.fits
@@ -360,8 +381,8 @@ the SQ mode for processing the data.
 
 .. todo show_primitives
 
-The `show_primitives <>`_ command line displays what are the Primitives that
-were used within a particular Recipe:::
+The show_primitives_ command line displays what are the Primitives that
+were used within a particular Recipe: ::
 
     $ show_primitives raw/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
 
@@ -385,7 +406,7 @@ were used within a particular Recipe:::
 .. todo showpars
 
 Now you can get the list of parameters for a given Primitive using the
-``showpars`` command line. Here is an example:::
+showpars_ command line. Here is an example: ::
 
     $ showpars raw/S20170505S0073.fits makeLampFlat
     Dataset tagged as {'FLAT', 'SOUTH', 'RAW', 'GEMINI', 'DOMEFLAT', 'CAL', 'AZEL_TARGET', 'GSAOI', 'NON_SIDEREAL', 'LAMPOFF', 'IMAGE', 'UNPREPARED'}
