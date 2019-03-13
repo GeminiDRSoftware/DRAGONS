@@ -16,6 +16,7 @@ Tutorial Series - GSAOI Imaging Data Reduction with DRAGONS
    
    01_introduction
    02_data_reduction
+   03_api_reduction
 
 Appendix
 --------
