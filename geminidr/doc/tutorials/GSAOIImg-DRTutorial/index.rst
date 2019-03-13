@@ -16,15 +16,16 @@ Tutorial Series - GSAOI Imaging Data Reduction with DRAGONS
    
    01_introduction
    02_data_reduction
-   
+
 Appendix
 --------
 
 .. toctree::
    :numbered:
-   :maxdepth: 1
-   
-   appendices/appendix_yourcontent
+   :maxdepth: 2
+   :caption: More
+
+   api.rst
 
 Indices and tables
 ==================

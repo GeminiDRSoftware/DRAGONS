@@ -17,7 +17,18 @@ import os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+
+# -- Setting up path to import modules ---------------------------------------
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+print(' Printing current working directory for debugging:')
+print(' ' + os.getcwd())
+
+if on_rtd:
+    sys.path.insert(0, os.path.abspath('./../../../'))
+else:
+    sys.path.insert(0, os.path.abspath('./../../../'))
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -59,6 +70,7 @@ release = ''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
@@ -276,9 +288,86 @@ intersphinx_mapping = {
 # Activate the todos
 todo_include_todos=True
 
+# -- Automatically generate API documentation --------------------------------
+# -- Enable autoapi ----------------------------------------------------------
+def run_api_doc(_):
+    """
+    Automatic API generator
+
+    This method is used to generate API automatically by importing all the
+    modules and sub-modules inside a package.
+
+    It is equivalent to run:
+    >>> sphinx-apidoc --force --no-toc --separate --module --output-dir api/ ../../ ../../cal_service
+
+    It is useful because it creates .rst files on the file.
+
+    NOTE
+    ----
+        This does not work with PyCharm default build. If you want to trigger
+        this function, use the standard `$ make html` in the command line.
+        The .rst files will be generated. After that, you can use PyCharm's
+        build helper.
+    """
+    build_packages = [
+        'geminidr'
+    ]
+
+    is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
+
+    if is_running_in_pycharm:
+        current_path = os.path.split(__file__)[0]
+    else:
+        current_path = os.getcwd()
+
+    relative_path = "../../../../"
+
+    print("Current Path: {}", current_path)
+
+    for p in build_packages:
+
+        build_path = os.path.join(current_path, relative_path, p)
+
+        ignore_paths = [
+            'doc',
+            'f2',
+            'gmos',
+            'gnirs',
+            'niri',
+            'test',
+            'tests',
+        ]
+
+        ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+
+        argv = [
+                   "--force",
+                   "--no-toc",
+                   # "--separate",
+                   "--module",
+                   "--output-dir", "api/",
+                   build_path
+               ] + ignore_paths
+
+        sys.path.insert(0, build_path)
+
+        try:
+            # Sphinx 1.7+
+            from sphinx.ext import apidoc
+            apidoc.main(argv)
+
+        except ImportError:
+            # Sphinx 1.6 (and earlier)
+            from sphinx import apidoc
+            argv.insert(0, apidoc.__file__)
+            apidoc.main(argv)
+
 
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
     app.add_stylesheet('code.xref-styles.css')
+
+    # Automatic API generation
+    app.connect('builder-inited', run_api_doc)
