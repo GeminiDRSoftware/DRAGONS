@@ -322,6 +322,7 @@ def run_api_doc(_):
 
     relative_path = "../../../../"
 
+    print("Am I running on PyCharm? {}", is_running_in_pycharm)
     print("Current Path: {}", current_path)
 
     for p in build_packages:

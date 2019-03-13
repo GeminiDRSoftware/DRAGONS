@@ -21,11 +21,10 @@ Appendix
 --------
 
 .. toctree::
-   :numbered:
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: More
 
-   api.rst
+   api
 
 Indices and tables
 ==================
