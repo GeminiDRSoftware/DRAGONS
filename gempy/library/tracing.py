@@ -92,9 +92,9 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     min_snr: float
         Minimum SNR required of peak pixel
     min_frac: float
-        minimum number of *widths* values at which a peak must be found
-    rank_clip: bool
-        clip brightest lines based on relative SNR?
+        minimum fraction of *widths* values at which a peak must be found
+    reject_bad: bool
+        clip lines using the reject_bad() function?
 
     Returns
     -------
@@ -105,14 +105,16 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     cwt_dat = signal.cwt(data, signal.ricker, widths)
     eps = np.finfo(np.float32).eps
     cwt_dat[cwt_dat<eps] = eps
-    ridge_lines = signal._peak_finding._identify_ridge_lines(cwt_dat, 0.25*widths, 2)
+    ridge_lines = signal._peak_finding._identify_ridge_lines(cwt_dat, 0.03*widths, 2)
     filtered = signal._peak_finding._filter_ridge_lines(cwt_dat, ridge_lines,
                                                         window_size=window_size,
                                                         min_length=int(min_frac*len(widths)),
-                                                        min_snr=1.)
+                                                        min_snr=min_snr)
     peaks = sorted([x[1][0] for x in filtered])
 
-    # If no variance is supplied we take the "snr" to be the data
+    # If no variance is supplied we take the "snr" to be the data.
+    # We do this on the filtered data because the continuum level gets
+    # subtracted by the Ricker filter
     if variance is not None:
         snr = np.divide(cwt_dat[0], np.sqrt(variance), np.zeros_like(data),
                         where=variance>0)
@@ -121,25 +123,27 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
-    while True:
-        new_peaks = peaks
-        for i in range(len(peaks)-1):
-            if peaks[i+1]-peaks[i] == 1:
-                new_peaks[i] += 0.5
-                new_peaks[i+1] = -1
-        new_peaks = [x for x in new_peaks if x>-1]
-        if len(new_peaks) == len(peaks):
-            break
-        peaks = new_peaks
+    min_separation = min(widths)
+    new_peaks = []
+    i = 0
+    while i < len(peaks) - 1:
+        j = i + 1
+        while j <= len(peaks) - 1 and (peaks[j] - peaks[j-1] < min_separation):
+            j += 1
+        new_peaks.append(np.mean(peaks[i:j]))
+        i = j
+        if i == len(peaks) - 1:
+            new_peaks.append(peaks[i])
 
     # Turn into array and remove those too close to the edges
-    peaks = np.array(peaks)
+    peaks = np.array(new_peaks)
     edge = 2.35482 * maxwidth
     peaks = peaks[np.logical_and(peaks>edge, peaks<len(data)-1-edge)]
 
     # Clip the really noisy parts of the data before getting more accurate
-    # peak positions
-    final_peaks = pinpoint_peaks(np.where(snr<0.5, 0, data), mask, peaks)
+    # peak positions and clip SNR again with new positions
+    peaks = pinpoint_peaks(np.where(snr<0.5, 0, data), mask, peaks)
+    final_peaks = [x for x in peaks if snr[int(x+0.5)] > min_snr]
     peak_snrs = list(snr[int(p+0.5)] for p in final_peaks)
 
     # Remove suspiciously bright peaks and return as array of
