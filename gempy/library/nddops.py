@@ -249,7 +249,7 @@ class NDStacker(object):
         # gemcombine-style estimate of variance about the returned value
         ngood = data.shape[0] if mask is None else NDStacker._num_good(mask)
         return NDStacker._divide0(np.ma.masked_array(np.square(data - out_data),
-                                            mask=mask).data.sum(axis=0).astype(data.dtype), ngood*(ngood-1))
+                                            mask=mask).sum(axis=0).data.astype(data.dtype), ngood*(ngood-1))
 
     @staticmethod
     def _num_good(mask):
