@@ -19,6 +19,10 @@
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 
+.. todo: update the datasets accondingly with the restricted data
+
+.. todo: add warning for issues regarding memory management
+
 
 .. _command_line_data_reduction:
 
