@@ -80,7 +80,13 @@ class ds9Viewer(imexam.connect):
         try:
             self.window.set("regions command {{{}}}".format(str))
         except xpa.XpaException:
-            print("Error with {}".format(str))
+            # If at first you don't succeed, try again.
+            time.sleep(0.1)
+            try:
+                self.window.set("regions command {{{}}}".format(str))
+            except xpa.XpaException:
+                # Then quit. There's no point being a damn fool about it.
+                print("Error with {}".format(str))
 
     def clear_regions(self):
         self.window.set("regions delete all")
