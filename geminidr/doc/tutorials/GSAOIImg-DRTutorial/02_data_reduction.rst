@@ -37,9 +37,10 @@ For this tutorial, we will be also using other `Supplemental tools
 <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
 like dataselect_, showd_, typewalk_, and caldb_.
 
-.. http://www.gemini.edu/sciops/data-and-results/processing-software
-.. https://www.gemini.edu/sciops/instruments/gsaoi/calibrations/baseline-calibrations
-
+.. warning:: Some primitives use a lot of RAM memory and they can make `reduce`
+    crash. Our team is aware of this problem and we are working on that. For
+    now, if that happens to you, you might need to run the pipeline on a
+    smaller data set.
 
 .. _organize_files:
 
