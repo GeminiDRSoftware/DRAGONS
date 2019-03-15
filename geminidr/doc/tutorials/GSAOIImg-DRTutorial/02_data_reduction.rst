@@ -19,10 +19,6 @@
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 
-.. todo: update the datasets accondingly with the restricted data
-
-.. todo: add warning for issues regarding memory management
-
 
 .. _command_line_data_reduction:
 
@@ -109,33 +105,32 @@ Recall that the ``\`` (back-slash) is used simply to break the long line .
 You can select the standard start with the following command: ::
 
     $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits
-    raw/S20170312S0178.fits
-    raw/S20170312S0179.fits
-    raw/S20170312S0180.fits
-    ...
+    raw/S20170504S0114.fits
+    raw/S20170504S0115.fits
+    raw/S20170504S0116.fits
+    raw/S20170504S0117.fits
 
-The problem is that you may have more than one standard star in your data set.
-We can verify that by passing the dataselect_ output to the showd_ command
-line using "pipe" (``|``): ::
+Here we have only four files. But the problem is that you may have more than one
+standard star in your data set. We can verify that by passing the dataselect_
+output to the showd_ command line using "pipe" (``|``): ::
 
-   $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits | showd -d object
+    $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits | showd -d object
 
-   filename:   object
-   ------------------------------
-   S20170312S0178.fits: LHS 2026
-   S20170312S0179.fits: LHS 2026
-   ...
-   S20170312S0198.fits: cskd-8
-   S20170312S0199.fits: cskd-8
-   ...
+    filename:   object
+    ------------------------------
+    S20170504S0114.fits: 9132
+    S20170504S0115.fits: 9132
+    S20170504S0116.fits: 9132
+    S20170504S0117.fits: 9132
+
 
 The ``-d`` flag tells showd_ which descriptor will be printed for each input
-file. You can create a list for each standard star using the ``object`` descriptor
-as an argument for dataselect_: ::
+file. As you can see, it was not our case. If you see more than one object, you
+can create a list for each standard star using the ``object`` descriptor
+as an argument for dataselect_ (spaces are allowed if you use double quotes): ::
 
-   $ dataselect --expr 'object=="LHS 2026"' raw/*.fits > list_of_std_LHS_2026.txt
+   $ dataselect --expr 'object=="9132"' raw/*.fits > list_of_std_9132.txt
 
-   $ dataselect --expr 'object=="cskd-8"' raw/*.fits > list_of_std_cskd-8.txt
 
 The rest is the data with your science target. Before we create a new list, let
 us check if we have more than one target and more than one exposure time: ::
