@@ -15,8 +15,9 @@ Tutorial Series - NIRI Imaging Data Reduction with DRAGONS
    :caption: Contents:
 
    overview
-   simple_cmdline
-   simple_api
+   datasets
+   extended_cmdline
+   extended_api
    
 
 
