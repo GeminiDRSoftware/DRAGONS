@@ -341,12 +341,23 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
+        'gempy',
         'geminidr',
         'recipe_system',
     ]
 
-    current_path = os.getcwd()
-    relative_path = "../../../"
+
+    is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
+
+    if is_running_in_pycharm:
+        current_path = os.path.split(__file__)[0]
+    else:
+        current_path = os.getcwd()
+
+    relative_path = "../../../../"
+
+    print("Am I running on PyCharm? {}", is_running_in_pycharm)
+    print("Current Path: {}", current_path)
 
     for p in build_packages:
 
