@@ -58,6 +58,29 @@ initialize it::
     >>>
     >>> cal_service.set_calservice()
 
+The ``wipe=True`` can be omitted if you want to keep old calibration files that
+were added to the local database.
+
+
+Create list of files
+--------------------
+
+Here, again, we have to create lists of files that will be used on each of the
+data reduction step. We can start by creating a list will all the file names::
+
+    >>> all_files = glob.glob(os.path.join(test_path, 'raw/'*.fits'))
+
+Now we can select the files that will be used to create a master DARK frame.
+Remember that **GSAOI data does not require DARK correction**. So let's just
+create a list that will hold our DARK files as part of the tutorial::
+
+    >>> darks_150s = dataselect.select_data(
+    ...     all_files, ['F2', 'DARK', 'RAW'], [],
+    ...     dataselect.expr_parser('exposure_time==3'))
+    >>>
+
+Here, we are using the :mod:``
+
 Process DARK files
 ------------------
 
