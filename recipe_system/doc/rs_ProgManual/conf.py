@@ -354,7 +354,7 @@ def run_api_doc(_):
     else:
         current_path = os.getcwd()
 
-    relative_path = "../../../../"
+    relative_path = "../../../"
 
     print("Am I running on PyCharm? {}", is_running_in_pycharm)
     print("Current Path: {}", current_path)
