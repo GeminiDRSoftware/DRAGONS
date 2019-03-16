@@ -22,6 +22,9 @@ from gempy.library.nddops import NDStacker
 from gempy.library import transform
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
+import astrodata
+from astrodata import NDAstroData
+
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -41,7 +44,9 @@ class Spect(PrimitivesBASE):
         """
         This primitives maps the distortion on a detector by tracing lines
         perpendicular to the dispersion direction, and then fitting a
-        2D Chebyshev polynomial to the distortion.
+        2D Chebyshev polynomial to the fitted coordinates in the dispersion
+        direction. The distortion map does not change the coordinates in the
+        spatial direction.
 
         Parameters
         ----------
@@ -207,6 +212,9 @@ class Spect(PrimitivesBASE):
         It uses a processed_arc with attached disotrtion map (a Chebyshev2D
         model) to resample the input image.
 
+        If the input image requires mosaicking, then this is done as part of
+        the resampling, to ensure one, rather than two, interpolations.
+
         Parameters
         ----------
         suffix: str
@@ -286,6 +294,10 @@ class Spect(PrimitivesBASE):
                     adg = transform.AstroDataGroup(ad, [transform.Transform(m_ident)])
 
                 ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
+                try:
+                    ad_out[0].WAVECAL = arc[0].WAVECAL
+                except AttributeError:
+                    log.warning("No WAVECAL table in {}".format(arc.filename))
             else:
                 for i, (ext, model) in enumerate(zip(ad, distortion_models)):
                     adg = transform.AstroDataGroup([ext], transform.Transform(model))
@@ -296,9 +308,14 @@ class Spect(PrimitivesBASE):
                     else:
                         ad_out.append(adg.transform(order=order, subsample=subsample,
                                                     parallel=False))
+                    try:
+                        ad_out[i].WAVECAL = arc[i].WAVECAL
+                    except AttributeError:
+                        log.warning("No WAVECAL table in {}:{}".
+                                    format(arc.filename, arc[i].hdr['EXTVER']))
 
             # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=sfx, strip=True)
             adoutputs.append(ad_out)
 
@@ -307,7 +324,10 @@ class Spect(PrimitivesBASE):
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         This primitive determines the wavelength solution for an ARC and
-        stores it as an attached WAVECAL table.
+        stores it as an attached WAVECAL table. 2D input images are converted
+        to 1D by collapsing a slice of the image along the dispersion
+        direction, and peaks are identified. These are then matched to an
+        arc line list, using the KDTreeFitter.
 
         Parameters
         ----------
@@ -578,68 +598,291 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        center = params["center"]
-        nsum = params["nsum"]
+        width = params["width"]
 
+        ad_extracted = []
         # This is just cut-and-paste code from determineWavelengthSolution()
         for ad in adinputs:
+            ad_spec = astrodata.create(ad.phu)
+            ad_spec.filename = ad.filename
+            ad_spec.orig_filename = ad.orig_filename
             for ext in ad:
+                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 if len(ext.shape) == 1:
-                    log.warning("{}:{} is already one-dimensional".
-                                format(ad.filename, ext.hdr['EXTVER']))
+                    log.warning("{} is already one-dimensional".format(extname))
                     continue
 
-                # Determine direction of extraction for 2D spectrum
-                slitaxis = ext.dispersion_axis() - 1
-                middle = 0.5 * ext.shape[slitaxis]
-                extract = slice(max(0, int((center or middle) - 0.5*nsum)),
-                              min(ext.shape[slitaxis], int((center or middle) + 0.5*nsum)))
-                if slitaxis == 1:
-                    data = ext.data.T[extract]
-                    mask = None if ext.mask is None else ext.mask.T[extract]
-                    variance = None if ext.variance is None else ext.variance.T[extract]
-                    direction = "column"
-                else:
-                    data = ext.data[extract]
-                    mask = None if ext.mask is None else ext.mask[extract]
-                    variance = None if ext.variance is None else ext.variance[extract]
-                    direction = "row"
-                log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                            format(direction, extract.start+1, extract.stop))
-
-                data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
-                ext.reset(data, mask=mask, variance=variance)
-
-                # Update some header keywords
-                for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
-                    for ax in (1, 2):
-                        try:
-                            del ext.hdr["{}{}".format(kw, ax)]
-                        except KeyError:
-                            pass
-
-                # TODO: Properly. Simply put the linear approximation here for now
-                ext.hdr["CTYPE1"] = "Wavelength"
                 try:
-                    wavecal = dict(zip(ext.WAVECAL["names"],
+                    aptable = ext.APERTURE
+                except AttributeError:
+                    log.warning("{} has no APERTURE table. Cannot extract "
+                                "spectra.".format(extname))
+                    continue
+
+                num_spec = len(aptable)
+                log.stdinfo("Extracting {} spectra from {}".format(num_spec,
+                            extname))
+
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                # Create dict of wavelength keywords to add to new headers
+                # TODO: Properly. Simply put the linear approximation here for now
+                hdr_dict = {'CTYPE1': 'Wavelength',
+                            'CUNIT1': 'nanometers'}
+
+                try:
+                    wavecal = dict(zip(ext.WAVECAL["name"],
                                        ext.WAVECAL["coefficients"]))
                 except (AttributeError, KeyError):
                     log.warning("Could not read wavelength solution for {}:{}"
                                 "".format(ad.filename, ext.hdr['EXTVER']))
-                    crpix = 0.5 * (len(data) + 1)
-                    crval = ext.central_wavelength(asNanometers=True)
-                    cdelt = ext.dispersion(asNanometers=True)
+                    hdr_dict.update({'CRPIX1': 0.5 * (ext.shape[dispaxis] + 1),
+                                     'CRVAL1': ext.central_wavelength(asNanometers=True),
+                                     'CDELT1': ext.dispersion(asNanometers=True)})
                 else:
-                    crpix = 0.5 * (wavecal['domain_start'] +
-                                   wavecal['domain_end']) + 1
-                    crval = wavecal['c0']
-                    cdelt = 2 * wavecal['c1'] / float(wavecal['domain_end'] -
-                                                      wavecal['domain_start'])
+                    wave_model = astromodels.dict_to_chebyshev(wavecal)
+                    hdr_dict.update({'CRPIX1': 0.5 * np.sum(wave_model.domain) + 1,
+                                     'CRVAL1': wave_model.c0.value,
+                                     'CDELT1':  2 * wave_model.c1.value / np.diff(wave_model.domain)[0]})
+                hdr_dict['CD1_1'] = hdr_dict['CDELT1']
 
-                ext.hdr["CRPIX1"] = crpix
-                ext.hdr["CRVAL1"] = crval
-                ext.hdr["CDELT1"] = cdelt
-                ext.hdr["CUNIT1"] = "nanometers"
+                for row in aptable:
+                    model_dict = dict(zip(aptable.colnames, row))
+                    trace_model = astromodels.dict_to_chebyshev(model_dict)
+                    aperture = tracing.Aperture(trace_model)
+                    ndd_spec = aperture.extract(ext, width=width)
+                    trace_model.c0 -= 50
+                    sky_aperture = tracing.Aperture(trace_model)
+                    sky_spec = sky_aperture.extract(ext, width=width)
+                    ad_spec.append(ndd_spec.subtract(sky_spec, handle_meta='first_found',
+                                                     handle_mask=np.bitwise_or))
+
+                    # Delete some header keywords
+                    for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
+                        for ax in (1, 2):
+                            try:
+                                del ad_spec[-1].hdr["{}{}".format(kw, ax)]
+                            except KeyError:
+                                pass
+
+                    for k, v in hdr_dict.items():
+                        ad_spec[-1].hdr[k] = (v, self.keyword_comments.get(k))
+
+            # Don't output a file with no extracted spectra
+            if len(ad_spec) > 0:
+                try:
+                    del ad_spec.hdr['RADECSYS']
+                except KeyError:
+                    pass
+                gt.mark_history(ad_spec, primname=self.myself(), keyword=timestamp_key)
+                ad_spec.update_filename(suffix=sfx, strip=True)
+                ad_extracted.append(ad_spec)
+
+        return adinputs + ad_extracted
+
+    def findSourceApertures(self, adinputs=None, **params):
+        """
+        This primitive finds sources in 2D spectra. This information is
+        stored in an APERTURE table for each extension, to which data will
+        be added by later primitives.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        sources: int/None
+            number of sources to find (None => all down to some threshold)
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        sources = params["sources"]
+        min_sky_pix = params["min_sky_region"]
+
+        for ad in adinputs:
+            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                log.warning("{} has not been distortion corrected".
+                            format(ad.filename))
+            for ext in ad:
+                log.stdinfo("Searching for sources in {}:{}".
+                            format(ad.filename, ext.hdr['EXTVER']))
+
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+
+                # data, mask, variance are all arrays in the GMOS orientation
+                # with spectra dispersed horizontally
+                if dispaxis == 0:
+                    data = ext.data.T
+                    mask = None if ext.mask is None else ext.mask.T
+                    variance = None if ext.variance is None else ext.variance.T
+                    direction = "column"
+                else:
+                    data = ext.data
+                    mask = ext.mask
+                    variance = ext.variance
+                    direction = "row"
+
+                # Collapse image along spatial direction to find noisy regions
+                # (caused by sky lines, regardless of whether image has been
+                # sky-subtracted or not)
+                data1d, mask1d, var1d = NDStacker.mean(data, mask=mask,
+                                                       variance=variance)
+                ndd = NDAstroData(var1d, mask=mask1d)
+                mean, sigma, _ = gt.measure_bg_from_image(ndd, sampling=1)
+
+                # Mask sky-line regions and find clumps of unmasked pixels
+                mask1d[var1d > mean+sigma] = 1
+                slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
+                sky_regions = [slice_ for slice_ in slices
+                               if slice_.stop - slice_.start >= min_sky_pix]
+
+                sky_mask = np.ones_like(mask, dtype=np.uint16)
+                for reg in sky_regions:
+                    sky_mask[(slice(None), reg)] = 0
+                sky_mask |= (mask > 0)
+
+                # We probably don't want the median because of, e.g., a
+                # Lyman Break Galaxy that may have signal for less than half
+                # the dispersion direction.
+                profile, prof_mask, prof_var = NDStacker.mean(*NDStacker.sigclip(data.T, mask=sky_mask.T, variance=None if variance is None else variance.T))
+
+                # TODO: find_peaks might not be best considering we have no
+                # idea whether sources will be extended or not
+                widths = np.arange(5, 30)
+                peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
+                                                    variance=prof_var, reject_bad=False,
+                                                    min_snr=3, min_frac=0.2)
+                # Reverse-sort by SNR and return only the locations
+                locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
+                                            reverse=True)[:sources]).T[0]
+                log.stdinfo("Found sources at {}s: {}".format(direction,
+                            ' '.join(['{:.1f}'.format(loc) for loc in locations])))
+                aperture_table = Table([locations], names=('center',))
+                ext.APERTURE = aperture_table
+
+            # Timestamp and update the filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+        return adinputs
+
+    def traceApertures(self, adinputs=None, **params):
+        """
+        The primitive traces apertures listed in the APERTURE table along
+        the dispersion direction, and estimates the optimal extraction
+        aperture size from the spatial profile of each source.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        trace_order: int
+            fitting order along spectrum
+        """
+        def averaging_func(data, mask=None, variance=None):
+            """Use a sigma-clipped mean to collapse in the dispersion
+            direction, which should reject sky lines"""
+            return NDStacker.mean(*NDStacker.sigclip(data, mask=mask,
+                                                     variance=variance))
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        order = params["trace_order"]
+
+        for ad in adinputs:
+            for ext in ad:
+                try:
+                    aptable = ext.APERTURE
+                    locations = aptable['center'].data
+                except (AttributeError, KeyError):
+                    log.warning("Could not find aperture locations in {}:{} - "
+                                "continuing".format(ad.filename, ext.hdr['EXTVER']))
+                    continue
+
+                self.viewer.display_image(ext, wcs=False)
+                self.viewer.width = 2
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+
+                step = 20
+                nsum = 20
+                max_missed = 6
+                max_shift = 0.02
+                start = 0.5 * ext.shape[dispaxis]
+
+                # The coordinates are always returned as (x-coords, y-coords)
+                all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                        start=start, initial=locations, width=5, step=step,
+                        nsum=nsum, max_missed=max_missed,
+                        max_shift=max_shift, viewer=self.viewer)
+
+                self.viewer.color = "blue"
+                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
+                all_column_names = []
+                all_model_dicts = []
+                for location in locations:
+                    # Funky stuff to extract the coords associated with each
+                    # aperture and sort by coordinate along the spectrum
+                    coords = np.array([list(c1)+list(c2)
+                                       for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
+                                       if c1[dispaxis]==location])
+                    values = np.array(sorted(coords, key=lambda c: c[1-dispaxis])).T
+                    ref_coords, in_coords = values[:2], values[2:]
+
+                    m_init = models.Chebyshev1D(degree=order,
+                                                domain=[0, ext.shape[dispaxis]-1])
+                    # Find model to transform actual (x,y) locations to the
+                    # value of the reference pixel along the dispersion axis
+                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                               sigma_clip, sigma=3)
+                    m_final, _ = fit_it(m_init, in_coords[1-dispaxis], in_coords[dispaxis])
+                    plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
+                    self.viewer.polygon(plot_coords, closed=False,
+                                        xfirst=(dispaxis==1), origin=0)
+                    model_dict = astromodels.chebyshev_to_dict(m_final)
+                    all_column_names.extend([k for k in model_dict.keys()
+                                             if k not in all_column_names])
+                    all_model_dicts.append(model_dict)
+
+                for name in all_column_names:
+                    aptable[name] = [model_dict.get(name, 0) for model_dict in all_model_dicts]
+                # We don't need to reattach the Table because it was a
+                # reference all along!
+
+            # Timestamp and update the filename
+            # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+        return adinputs
+
+    def skyCorrectFromSlit(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+
+        for ad in adinputs:
+            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                log.warning("{} has not been distortion corrected. Sky "
+                            "subtraction is likely to suck.".format(ad.filename))
+
+            for ext in ad:
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                sky_model = np.empty_like(ext.data)
+                for i in range(ext.shape[dispaxis]):
+                    slice_ = ((slice(None), slice(i, i+1)) if dispaxis == 1
+                              else (slice(i, i+1)))
+                    sky_model[slice_] = np.mean(ext.data[slice_])
+
+                ext.data -= sky_model
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

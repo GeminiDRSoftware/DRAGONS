@@ -44,8 +44,20 @@ class distortionCorrectConfig(config.Config):
 
 class extract1DSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
-    center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
-    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    width = config.RangeField("Width of extraction aperture (pixels)", int, 10, min=1, optional=True)
+
+class findSourceAperturesConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
+    sources = config.RangeField("Number of sources to find", int, None, min=1, optional=True)
+    min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
+
+class traceAperturesConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)
+
+    trace_order = config.RangeField("Fitting order in spectral direction", int, 2, min=1)
+
+class skyCorrectFromSlitConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_skySubtracted", optional=True)
 
 class linearizeSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_linearized", optional=True)

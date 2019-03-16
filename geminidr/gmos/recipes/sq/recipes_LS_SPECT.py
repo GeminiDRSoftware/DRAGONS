@@ -10,10 +10,14 @@ def reduce(p):
     p.addDQ(static_bpm=None)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.biasCorrect()
+    #p.biasCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.distortionCorrect()
+    p.writeOutputs()
+    p.findSourceApertures()
+    p.traceApertures()
+    p.extract1DSpectra()
     p.writeOutputs()
 
 default = reduce
