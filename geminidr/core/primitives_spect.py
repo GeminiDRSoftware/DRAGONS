@@ -907,7 +907,7 @@ class Spect(PrimitivesBASE):
         conserve: bool
             Conserve flux (rather than interpolate)?
 
-        Exactly 3 of (w1, w2, dw, npix) must be specified.
+        Exactly 0 or 3 of (w1, w2, dw, npix) must be specified.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -919,32 +919,46 @@ class Spect(PrimitivesBASE):
         npix = params["npix"]
         conserve = params["conserve"]
 
-        # Work out the missing variable from the others
-        if npix is None:
-            npix = int(np.ceil((w2 - w1) / dw)) + 1
-            w2 = w1 + (npix-1) * dw
-        elif w1 is None:
-            w1 = w2 - (npix-1) * dw
-        elif w2 is None:
-            w2 = w1 + (npix-1) * dw
-        else:
-            dw = (w2 - w1) / (npix-1)
+        # There are either 1 or 4 Nones, due to validation
+        nones = [w1, w2, dw, npix].count(None)
+        if nones == 1:
+            # Work out the missing variable from the others
+            if npix is None:
+                npix = int(np.ceil((w2 - w1) / dw)) + 1
+                w2 = w1 + (npix-1) * dw
+            elif w1 is None:
+                w1 = w2 - (npix-1) * dw
+            elif w2 is None:
+                w2 = w1 + (npix-1) * dw
+            else:
+                dw = (w2 - w1) / (npix-1)
 
         for ad in adinputs:
             for ext in ad:
+                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
                 try:
-                    wavecal = dict(zip(ext.WAVECAL["names"],
+                    wavecal = dict(zip(ext.WAVECAL["name"],
                                        ext.WAVECAL["coefficients"]))
                 except (AttributeError, KeyError):
                     cheb = None
                 else:
                     cheb = astromodels.dict_to_chebyshev(wavecal)
                 if cheb is None:
-                    log.warning("{}:{} has no WAVECAL. Cannot linearize.".
-                                format(ad.filename, ext.hdr['EXTVER']))
+                    log.warning("{} has no WAVECAL. Cannot linearize.".
+                                format(extname))
                     continue
+
+                if nones == 4:
+                    w1 = cheb(0)
+                    npix = ext.data.size
+                    w2 = cheb(npix - 1)
+                    dw = (w2 - w1) / (npix - 1)
+
+                log.stdinfo("Linearizing {}: w1={:.3f} w2={:.3f} dw={:.3f} "
+                            "npix={}".format(extname, w1, w2, dw, npix))
 
                 cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
                 t = transform.Transform(cheb)

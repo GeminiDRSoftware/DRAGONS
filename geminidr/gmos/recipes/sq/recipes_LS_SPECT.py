@@ -18,6 +18,7 @@ def reduce(p):
     p.findSourceApertures()
     p.traceApertures()
     p.extract1DSpectra()
+    p.linearizeSpectra()
     p.writeOutputs()
 
 default = reduce

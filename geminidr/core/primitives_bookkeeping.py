@@ -193,6 +193,30 @@ class Bookkeeping(PrimitivesBASE):
         log.stdinfo("Removing " + start_text + conjunction + end_text + ".")
         return adinputs[at_start:len(adinputs) - at_end]
 
+    def removeFromInputs(self, adinputs=None, tags=None):
+        """
+        Removes frames whose tags match any one of a list of supplied tags.
+        The user is likely to want to redirect the output list.
+
+        Parameters
+        ----------
+        tags: str/None
+            Tags which frames must match to be selected
+        """
+        if tags is None:
+            return adinputs
+        required_tags = tags.split(',')
+
+        # Commented lines select AD that match *all* the tags. While possibly
+        # more natural, one can achieve this by a series of matches to each tag
+        # individually. There is, however, no way to combine lists produced
+        # this way to create one as if produced by matching *any* of the tags.
+        # Hence a match to *any* tag makes more sense as the implementation.
+        #adoutputs = [ad for ad in adinputs
+        #             if set(required_tags).issubset(ad.tags)]
+        adoutputs = [ad for ad in adinputs if not (set(required_tags) & ad.tags)]
+        return adoutputs
+
     def selectFromInputs(self, adinputs=None, tags=None):
         """
         Selects frames whose tags match any one of a list of supplied tags.
