@@ -3,9 +3,10 @@
 DRAGONS - Flamingos 2 Data Reduction Tutorial
 =============================================
 
-This is a brief tutorial on how to manipulate and reduce Flamingos 2 data
+This is a brief tutorial on how to manipulate and reduce Flamingos-2 images
 using DRAGONS (Data Reduction for Astronomy from Gemini Observatory North and
-South).
+South). It is based on information found in the `GEMINI Flamingos-2
+WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_.
 
 In order to carry on, you will need `Python <https://www.python.org/>`_ (which
 is probably installed on your machine) and a few libraries. We recommend Python 3
@@ -22,9 +23,8 @@ Flamingos 2 (F2) FITS file.
    :maxdepth: 2
    :caption: Table of Contents
 
-   get_ready
-   data_manipulation
-   command_line_data_reduction
+   01_get_ready
+   02_data_reduction
 
 Related Documents
 -----------------

@@ -1,32 +1,30 @@
-.. simple_api.rst
+.. extended_api.rst
 
-.. _simple_api:
+.. _extended_api:
 
-******************************************
-Extended source - Using the "Reduce" class
-******************************************
+*******************************************************
+Example 1-B: Extended source - Using the "Reduce" class
+*******************************************************
 
-A reduction can be initiated from the command line but it can also be done
-programmatically.  The classes and modules of the RecipeSystem can be
+A reduction can be initiated from the command line as shown in
+:ref:`extended_cmdline` and it can also be done programmatically as we will
+show here.  The classes and modules of the RecipeSystem can be
 accessed directly for those who want to write Python programs to drive their
-reduction.  In this section we replicate the previous reduction but using
-Python instead of the command line.
+reduction.  In this example we replicate the command line reduction from
+Example 1-A, this time using the Python interface instead of the command line.
+Of course what is shown here could be packaged in modules for full automation.
+
 
 The dataset
 ===========
-This is a NIRI imaging observation of the an extended source, a galaxy showing
-as a dense field of stars.  The observation sequence uses offset to sky to
-monitor it.
+If you have not already, download and unpackage the tutorial's data package.
+Refer to :ref:`datasetup` for the links and simple instructions.
 
-The calibrations we use here include:
+The dataset specific to this example is described in:
 
-* Darks for the science and sky offset frames.
-* Flats, as a sequence of lamps-on and lamps-off exposures.
-* Short darks to use with the flats to create a bad pixel mask.
-* A set of standard star observations.
+    :ref:`dataextended`.
 
-Here are the files that need to be downloaded from the Gemini Observatory
-Archive.
+Here is a copy of the table for quick reference.
 
 +---------------+--------------------------------------------+
 | Science       || N20160102S0270-274 (on-target)            |
@@ -42,29 +40,6 @@ Archive.
 | Standard star || N20160102S0295-299                        |
 +---------------+--------------------------------------------+
 
-A note about finding the short darks.  Those are used solely to create a
-fresh bad pixel mask (BPM).  In the archive, the calibration association
-will not find those darks for you, you will need to search for them
-explicitely. To do so,
-
-* Set a date range around the dates of your science observations.
-* Set **Instrument** to NIRI.
-* Set the **Obs.Type** to DARK.
-* Set the exposure time to 1 second.
-
-All the data needed to run this tutorial are found in the tutorial's data
-package (KL??? name of the package, with URL).  Download it and unpack it
-somewhere convenient.
-
-.. highlight:: bash
-
-::
-
-    cd <somewhere convenient>
-    tar xvzf KL???
-
-The datasets are found in the subdirectory ``niriimg_tutorial/playdata``, and we
-will work in the subdirectory named ``niriimg_tutorial/playground``.
 
 
 Setting up

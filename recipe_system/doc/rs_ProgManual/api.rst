@@ -13,3 +13,4 @@ Reference API
     :hidden:
 
     api/geminidr
+    api/gempy

@@ -56,8 +56,8 @@ available, like ``ad.telescope()`` and ``ad.instrument()``:
    In [6]: ad.instrument()
 
 ``ad`` is an object that represents a FITS file with a single extension. It knows
-that it is a data from the GEMINI South telescope and that it was obtained with
-F2 but there is no much more information than that. For more details,
+that it is a data from the GEMINI South telescope, and that it was obtained with
+F2; but there is not much more information than that. For more details,
 |astrodata| requires the :class:`~astrodata.AstroData` class to be subclassed for
 each instrument. This subclass contains the tags and parses the metadata as
 attributes.
@@ -85,7 +85,7 @@ Note that this object has a different class:
 
 As you can see above, instead of having an :class:`astrodata.fits.AstroDataFits`
 object, we have a :class:`gemini_instruments.f2.adclass.AstroDataF2` object. So,
-yes, there is a lot of things happening behind the curtains. Our FITS file was
+yes, there are a lot of things happening behind the curtains. Our FITS file was
 loaded and its meta-data was used by |astrodata| and |gemini_instruments|
 together to build a :class:`~gemini_instruments.f2.adclass.AstroDataF2` object,
 which knows much more about itself:
