@@ -235,6 +235,11 @@ class AstroDataGemini(AstroDataFits):
         if self.phu['OBSTYPE'] == 'OBJECT':
             return TagSet(['PROCESSED_SCIENCE'])
 
+    @astro_data_tag
+    def _type_extracted(self):
+        if 'EXTRACT' in self.phu:
+            return TagSet(['EXTRACTED'])
+
     def _parse_section(self, keyword, pretty):
         try:
             value_filter = (str if pretty else section_to_tuple)
