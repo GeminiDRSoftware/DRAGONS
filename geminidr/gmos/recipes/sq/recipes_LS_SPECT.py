@@ -18,6 +18,9 @@ def reduce(p):
     p.findSourceApertures()
     p.traceApertures()
     p.extract1DSpectra()
+    p.removeFromInputs(tags='EXTRACTED', outstream='2d')
+    p.writeOutputs(stream='2d')
+    p.selectFromInputs(tags='EXTRACTED')
     p.linearizeSpectra()
     p.writeOutputs()
 
