@@ -655,6 +655,7 @@ class Spect(PrimitivesBASE):
                     sky_spec = sky_aperture.extract(ext, width=width)
                     ad_spec.append(ndd_spec.subtract(sky_spec, handle_meta='first_found',
                                                      handle_mask=np.bitwise_or))
+                    ad_spec[-1].WAVECAL = ext.WAVECAL
 
                     # Delete some header keywords
                     for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
@@ -952,9 +953,9 @@ class Spect(PrimitivesBASE):
                     continue
 
                 if nones == 4:
-                    w1 = cheb(0)
                     npix = ext.data.size
-                    w2 = cheb(npix - 1)
+                    limits = cheb([0, npix-1])
+                    w1, w2 = min(limits), max(limits)
                     dw = (w2 - w1) / (npix - 1)
 
                 log.stdinfo("Linearizing {}: w1={:.3f} w2={:.3f} dw={:.3f} "
@@ -971,7 +972,7 @@ class Spect(PrimitivesBASE):
                 # over features. We avoid this by subsampling back to the
                 # original pixel scale (approximately).
                 input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = dw / abs(input_dw)
+                subsample = abs(dw / input_dw)
                 if subsample > 1.1:
                     subsample = int(subsample + 0.5)
 
