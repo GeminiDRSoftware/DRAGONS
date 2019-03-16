@@ -1,7 +1,7 @@
 """
 tracing.py
 
-This module contains function used to locate peaks in 1D data and trace them
+This module contains functions used to locate peaks in 1D data and trace them
 in the orthogonal direction in a 2D image.
 
 Functions in this module:
@@ -22,6 +22,153 @@ from astropy.stats import sigma_clip
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker
 from gempy.utils import logutils
+
+from astrodata import NDAstroData
+
+log = logutils.get_logger(__name__)
+
+################################################################################
+class Aperture(object):
+    def __init__(self, model, width=None):
+        self._model = model
+        self._width = width
+
+    @property
+    def width(self):
+        """Aperture width in pixels. Since the model is pixel-based, it makes
+        sense for this to be stored in pixels rather than arcseconds."""
+        return self._width
+
+    @width.setter
+    def width(self, value):
+        if value > 0:
+            self._width = value
+        else:
+            raise ValueError("Width must be positive ()".format(value))
+
+    def check_domain(self, npix):
+        """Simple function to warn user if aperture model appears inconsistent
+        with the array containing the data"""
+        try:
+            if self._model.domain != [0, npix - 1]:
+                log.warning("Model's domain is inconsistent with image size. "
+                            "Results may be incorrect.")
+        except AttributeError:  # no "domain" attribute
+            pass
+
+    def aperture_mask(self, ext=None, width=None, grow=None):
+        """
+
+        Parameters
+        ----------
+        ext: single-slice AD object
+            image containing aperture (needs .shape attribute and
+            .dispersion_axis() descriptor)
+        width: float/None
+            total extraction width (None => use self.width)
+        grow: float/None
+            additional buffer zone around width
+
+        Returns
+        -------
+        ndarray: boolean array, set to True if a pixel will be used in the
+                 extraction
+        """
+        if width is None:
+            width = self.width
+        if width is None:
+            width = self.calculate_optimal_width(ext)
+        if grow is not None:
+            width += 2 * grow  # on each side
+
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+        npix = ext.shape[dispaxis]
+        slitlength = ext.shape[1-dispaxis]
+        self.check_domain(npix)
+        center_pixels = self._model(np.arange(npix))
+        x1, x2 = center_pixels - 0.5 * width, center_pixels + 0.5 * width
+        ix1 = np.where(x1 < -0.5, 0, int(x1 + 0.5))
+        ix2 = np.where(x2 >= slitlength - 0.5, None, int(x2 + 1.5))
+        apmask = np.zeros_like(ext.data, dtype=bool)
+        for i, limits in enumerate(zip(ix1, ix2)):
+            apmask[i, slice(*limits)] = True
+        return apmask
+
+    def calculate_optimal_width(self, ext):
+        width = 1
+        self.width = width
+        return width
+
+    def extract(self, ext, width=None):
+        """
+        Extract a 1D spectrum by following the model trace and extracting in
+        an aperture of a given number of pixels.
+
+        Parameters
+        ----------
+        ext: single-slice AD object
+            spectral image from which spectrum is to be extracted
+        width: float/None
+            full width of extraction aperture
+
+        Returns
+        -------
+        NDAstroData: 1D spectrum
+        """
+        if width is None:
+            width = self.width
+        if width is None:
+            width = self.calculate_optimal_width(ext)
+
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+        slitlength = ext.shape[1-dispaxis]
+        npix = ext.shape[dispaxis]
+        direction = "row" if dispaxis == 0 else "column"
+
+        self.check_domain(npix)
+
+        # make data look like it's dispersed vertically
+        data = ext.data if dispaxis == 0 else ext.data.T
+        apdata = np.zeros((npix,), dtype=np.float32)
+        has_mask = ext.mask is not None
+        if has_mask:
+            apmask = np.zeros_like(apdata, dtype=DQ.datatype)
+            mask = ext.mask if dispaxis == 0 else ext.mask.T
+        has_var = ext.variance is not None
+        if has_var:
+            apvar = np.zeros_like(apdata)
+            var = ext.variance if dispaxis == 0 else ext.variance.T
+        center_pixels = self._model(np.arange(npix))
+
+        warned = False
+        for i, center in enumerate(center_pixels):
+            x1, x2 = center - 0.5 * width, center + 0.5 * width
+            # Remember how pixel coordinates are defined!
+            if x1 < -0.5 or x2 >= slitlength - 0.5:
+                if not warned:
+                    log.warning("Aperture extends off image at {} {}".format(direction, i))
+                    warned = True
+                x1 = max(x1, -0.5)
+                x2 = min(x2, slitlength - 0.5)
+            ix1, ix2 = int(x1 + 0.5), int(x2 + 1.5)
+
+            # Mask has to consider bits from all pixels with even a fractional
+            # contribution, but add only a fraction of edge pixels in data, var
+            if has_mask:
+                apmask[i] = np.bitwise_or.reduce(mask[i, ix1:ix2])
+            apdata[i] = (data[i, ix1:ix2].sum() - (x1-ix1+0.5) * data[i, ix1] -
+                         (ix2-x2-0.5) * data[i, ix2-1])
+            if has_var:
+                apvar[i] = (var[i, ix1:ix2].sum() - (x1-ix1+0.5) * var[i, ix1] -
+                            (ix2-x2-0.5) * var[i, ix2-1])
+
+
+        ndd = NDAstroData(apdata, mask=None if not has_mask else apmask,
+                          meta={'header': ext.hdr.copy()})
+        if has_var:
+            ndd.variance = apvar
+        return ndd
+
 
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-FINDING
@@ -143,7 +290,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     # Clip the really noisy parts of the data before getting more accurate
     # peak positions and clip SNR again with new positions
     peaks = pinpoint_peaks(np.where(snr<0.5, 0, data), mask, peaks)
-    final_peaks = [x for x in peaks if snr[int(x+0.5)] > min_snr]
+    final_peaks = [p for p in peaks if snr[int(p+0.5)] > min_snr]
     peak_snrs = list(snr[int(p+0.5)] for p in final_peaks)
 
     # Remove suspiciously bright peaks and return as array of
@@ -261,7 +408,8 @@ def reject_bad_peaks(peaks):
 # FUNCTIONS RELATED TO PEAK-TRACING
 
 def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
-                step=1, max_shift=0.05, max_missed=10, viewer=None):
+                step=1, initial_tolerance=1.0, max_shift=0.05, max_missed=10,
+                func=NDStacker.mean, viewer=None):
     """
 
     Parameters
@@ -280,11 +428,17 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
         number of rows/columns to combine at each step
     step: int
         step size along axis in pixels
+    initial_tolerance: float
+        maximum perpendicular shift (in pixels) between provided
+        location and first calculation of peak
     max_shift: float
-        maximum perpendicular shift from pixel to pixel
+        maximum perpendicular shift (in pixels) from pixel to pixel
     max_missed: int
         maximum number of interations without finding line before
         line is considered lost forever
+    func: callable
+        function to use when collapsing to 1D. This takes the data,
+        mask, and variance as arguments
     viewer: imexam viewer/None
         viewer to draw lines on
     """
@@ -327,9 +481,11 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
         while True:
             y1 = int(ypos - 0.5*nsum + 0.5)
-            data, mask, var = NDStacker.mean(ext_data[y1:y1+nsum],
-                                             mask=ext_mask[y1:y1+nsum],
-                                             variance=None)
+            data, mask, var = func(ext_data[y1:y1+nsum],
+                                   mask=ext_mask[y1:y1+nsum],
+                                   variance=None)
+            # Variance could plausibly be zero
+            var = np.where(var<=0, np.inf, var)
             clipped_data = np.where(data/np.sqrt(var) > 0.5, data, 0)
             last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
             peaks = pinpoint_peaks(clipped_data, mask, last_peaks)
@@ -349,7 +505,8 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
                     new_peak = np.inf
 
                 # Is this close enough to the existing peak?
-                tolerance = 1.0 if ypos == start else max_shift * abs(ypos - last_row)
+                tolerance = (initial_tolerance if ypos == start
+                             else max_shift * abs(ypos - last_row))
                 if (abs(new_peak - old_peak) > tolerance):
                     # If it's gone for good, set the coord to NaN to avoid it
                     # picking up a different line if there's significant tilt
