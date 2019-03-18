@@ -118,13 +118,23 @@ class CalibrationService(object):
     lower level LocalManager class, and provides limited access to let
     users/callers easy configuration and use of the local calibration database.
 
-    Public Methods
-    --------------
-    config     -- configure a session with the database via the rsys.conf file.
-    init       -- initialize a calibration database.
-    add_cal    -- Add a calibration file to the database.
-    remove_cal -- Delete a calibration from the database.
-    list_files -- List files in the database. Returns a generator object.
+    Methods
+    -------
+
+    config(db_dir=None, verbose=True)
+        configure a session with the database via the rsys.conf file.
+
+    init(wipe=True)
+        initialize a calibration database.
+
+    add_cal(path)
+        Add a calibration file to the database.
+
+    remove_cal(path)
+        Delete a calibration from the database.
+
+    list_files()
+        List files in the database. Returns a generator object.
 
     E.g.,
 
@@ -214,30 +224,30 @@ class CalibrationService(object):
         """
         return self._mgr.init_database(wipe=wipe)
 
-    def add_cal(self, apath):
+    def add_cal(self, path):
         """
         Registers a calibration file specified by 'apath' into the database
 
         Parameters
         ----------
-        path: <str>
+        path: str
             Path to the file. It can be either absolute or relative.
 
         """
-        return self._mgr.ingest_file(apath)
+        return self._mgr.ingest_file(path)
 
-    def remove_cal(self, rpath):
+    def remove_cal(self, path):
         """
         Removes a calibration file from the database. Note that only the filename
         is relevant. All duplicate copies in the database will be removed.
 
         Parameters
         ----------
-        path: <str>
+        path: str
             Path to the file. It can be either absolute or relative
 
         """
-        return self._mgr.remove_file(basename(rpath))
+        return self._mgr.remove_file(basename(path))
 
     def list_files(self):
         """
