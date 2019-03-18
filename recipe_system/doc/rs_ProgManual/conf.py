@@ -374,12 +374,13 @@ def run_api_doc(_):
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+        api_path = os.path.normpath(os.path.join(current_path, 'api'))
 
         argv = [
                    "--force",
                    "--no-toc",
                    "--module",
-                   "--output-dir", "api/",
+                   "--output-dir", api_path,
                    build_path
                ] + ignore_paths
 
