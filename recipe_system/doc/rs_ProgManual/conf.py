@@ -65,6 +65,7 @@ extensions = [
    'sphinx.ext.ifconfig',
    'sphinx.ext.viewcode',
    'sphinx.ext.napoleon',
+   'sphinx.ext.graphviz',
 ]
 
 
@@ -346,7 +347,6 @@ def run_api_doc(_):
         'recipe_system',
     ]
 
-
     is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
 
     if is_running_in_pycharm:
@@ -356,13 +356,16 @@ def run_api_doc(_):
 
     relative_path = "../../../"
 
-    print("Am I running on PyCharm? {}", is_running_in_pycharm)
-    print("Current Path: {}", current_path)
+    print("\n Am I running on PyCharm? {}".format(is_running_in_pycharm))
+    print(" Current Path: {}\n".format(current_path))
 
     for p in build_packages:
 
-        build_path = os.path.join(current_path, relative_path, p)
-        print('\n Building API using the following build_path: \n'.format(
+        build_path = os.path.normpath(
+            os.path.join(current_path, relative_path, p)
+        )
+
+        print('\n Building API using the following build_path: {}\n'.format(
             build_path))
 
         ignore_paths = [
@@ -375,7 +378,6 @@ def run_api_doc(_):
         argv = [
                    "--force",
                    "--no-toc",
-                   # "--separate",
                    "--module",
                    "--output-dir", "api/",
                    build_path

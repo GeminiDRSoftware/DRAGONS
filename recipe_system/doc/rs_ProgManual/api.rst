@@ -7,10 +7,6 @@ Reference API
 
 .. toctree::
 
-    api/recipe_system
-
-.. toctree::
-    :hidden:
-
     api/geminidr
     api/gempy
+    api/recipe_system
