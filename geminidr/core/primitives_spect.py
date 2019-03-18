@@ -624,6 +624,7 @@ class Spect(PrimitivesBASE):
                             extname))
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
+                direction = "row" if dispaxis == 1 else "column"
                 # Create dict of wavelength keywords to add to new headers
                 # TODO: Properly. Simply put the linear approximation here for now
                 hdr_dict = {'CTYPE1': 'Wavelength',
@@ -655,7 +656,13 @@ class Spect(PrimitivesBASE):
                     sky_spec = sky_aperture.extract(ext, width=width)
                     ad_spec.append(ndd_spec.subtract(sky_spec, handle_meta='first_found',
                                                      handle_mask=np.bitwise_or))
+
+                    # Copy wavelength solution and add a header keyword
+                    # with the extraction location
                     ad_spec[-1].WAVECAL = ext.WAVECAL
+                    center = model_dict['center']
+                    ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
+                                "from {} {}".format(direction, int(center + 0.5)))
 
                     # Delete some header keywords
                     for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
