@@ -136,13 +136,13 @@ def unpack_nddata(fn):
 # NDStacker.<method>.required_args will return a list of required arguments
 def combiner(fn):
     fn.is_combiner = True
-    args = inspect.getargspec(fn).args[3:]
+    args = inspect.getfullargspec(fn).args[3:]
     fn.required_args = list(args)
     return fn
 
 def rejector(fn):
     fn.is_rejector = True
-    args = inspect.getargspec(fn).args[3:]
+    args = inspect.getfullargspec(fn).args[3:]
     fn.required_args = list(args)
     return fn
 
@@ -281,6 +281,22 @@ class NDStacker(object):
         comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
                      if arg in self._dict}
         out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
+        return out_data, out_mask, out_var
+
+    @classmethod
+    def combine(cls, data, mask=None, variance=None, rejector="none", combiner="mean", **kwargs):
+        """
+        Perform the same job as calling an instance of the NDStacker class,
+        but without the data unpacking. A convenience method.
+        """
+        rej_func = getattr(cls, rejector)
+        comb_func = getattr(cls, combiner)
+        rej_args = {arg: kwargs[arg] for arg in rej_func.required_args
+                    if arg in kwargs}
+        data, mask, variance = rej_func(data, mask, variance, **rej_args)
+        comb_args = {arg: kwargs[arg] for arg in comb_func.required_args
+                     if arg in kwargs}
+        out_data, out_mask, out_var = comb_func(data, mask, variance, **comb_args)
         return out_data, out_mask, out_var
 
     #------------------------ COMBINER METHODS ----------------------------
