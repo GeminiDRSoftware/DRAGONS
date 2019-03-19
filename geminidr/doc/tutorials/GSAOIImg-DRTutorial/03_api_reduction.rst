@@ -83,9 +83,12 @@ data reduction step. We can start by creating a :class:`list` will all the file 
     :linenos:
     :lineno-start: 12
 
-    all_files = glob.glob(os.path.join(test_path, 'raw/'*.fits'))
+    all_files = glob.glob('./raw/*.fits')
 
-Where ``test_path`` is a string containing the path where you saved your data.
+Where the string between parenthesis means that we are selecting every file that
+ends with ``.fits`` and that lives withing the ``./raw`` directory. Before you
+carry on, we recommend that you use ``print(all_files)`` to check if they were
+properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
 :func:`~gempy.adlibrary.dataselect.select_data`. Your will may have to add
@@ -234,7 +237,7 @@ We can now reduce our FLAT files by using the following commands:
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
+    calibration_service.add_cal(reduce_flats.output_filenames[0])
 
 On Line 52, we get the first (only) output file from the ``reduce_bpm`` pipeline
 and store it in the ``bpm_filename`` variable. Then, we pass it to the
@@ -336,8 +339,8 @@ position arguments.
     disco.disco(
         infiles=reduce_target.output_filenames,
         output_identifier="my_stacked_image.fits",
-        objmatch_info,
-        refmatch_info,
+        objmatch_info=object_match_info,
+        refmatch_info=reference_match_info,
     )
 
 This function has many other parameters that can be used to customize this step
