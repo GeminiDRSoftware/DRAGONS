@@ -6,6 +6,7 @@ from gempy.eti_core.pyrafetiparam import PyrafETIParam, IrafStdout
 
 log = logutils.get_logger(__name__)
 
+
 class GmosaicParam(PyrafETIParam):
     """This class coordinates the ETI parameters as it pertains to the IRAF
     task gireduce directly.
@@ -14,6 +15,7 @@ class GmosaicParam(PyrafETIParam):
     params = None
     key = None
     value = None
+
     def __init__(self, inputs=None, params=None, key=None, value=None):
         """
         :param rc: Used to store reduction information
@@ -40,6 +42,7 @@ class GmosaicParam(PyrafETIParam):
         log.debug("Gmosaic prepare()")
         self.paramdict.update({self.key:self.value})
 
+
 class FlPaste(GmosaicParam):
     inputs = None
     params = None
@@ -56,6 +59,7 @@ class FlPaste(GmosaicParam):
     def prepare(self):
         log.debug("Flpaste prepare()")
         self.paramdict.update({"fl_paste":self.fl_paste})
+
 
 class FlFixpix(GmosaicParam):
     inputs = None
@@ -74,6 +78,7 @@ class FlFixpix(GmosaicParam):
         log.debug("FlFixpix prepare()")
         self.paramdict.update({"fl_fixpix":self.fl_fixpix})
 
+
 class Geointer(GmosaicParam):
     inputs = None
     params = None
@@ -89,6 +94,7 @@ class Geointer(GmosaicParam):
     def prepare(self):
         log.debug("Geointer prepare()")
         self.paramdict.update({"geointer":self.geointer})
+
 
 class FlVardq(GmosaicParam):
     inputs = None

@@ -65,6 +65,7 @@ extensions = [
    'sphinx.ext.ifconfig',
    'sphinx.ext.viewcode',
    'sphinx.ext.napoleon',
+   'sphinx.ext.graphviz',
 ]
 
 
@@ -341,17 +342,30 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
+        'gempy',
         'geminidr',
         'recipe_system',
     ]
 
-    current_path = os.getcwd()
+    is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
+
+    if is_running_in_pycharm:
+        current_path = os.path.split(__file__)[0]
+    else:
+        current_path = os.getcwd()
+
     relative_path = "../../../"
+
+    print("\n Am I running on PyCharm? {}".format(is_running_in_pycharm))
+    print(" Current Path: {}\n".format(current_path))
 
     for p in build_packages:
 
-        build_path = os.path.join(current_path, relative_path, p)
-        print('\n Building API using the following build_path: \n'.format(
+        build_path = os.path.normpath(
+            os.path.join(current_path, relative_path, p)
+        )
+
+        print('\n Building API using the following build_path: {}\n'.format(
             build_path))
 
         ignore_paths = [
@@ -360,13 +374,13 @@ def run_api_doc(_):
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+        api_path = os.path.normpath(os.path.join(current_path, 'api'))
 
         argv = [
                    "--force",
                    "--no-toc",
-                   # "--separate",
                    "--module",
-                   "--output-dir", "api/",
+                   "--output-dir", api_path,
                    build_path
                ] + ignore_paths
 

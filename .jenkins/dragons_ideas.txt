@@ -1,0 +1,302 @@
+
+DRAGONS
+=======
+
+Just for the record, this would be the DRAGONS architecture if we split it
+into several repositories in the future. This would make it easier to test,
+debug, document and maintain. In the other hand, many things may break in the
+process.
+
+It also shows an example of single repository and single package case. This
+would not solve the problem of testing the whole thing on every build but
+would tie together a package and avoid duplicated code/documentation.
+
+
+Questions:
+----------
+1) This architecture does not support the current interface where the user
+imports `astrodata` and `gemini_instruments` and that `astrodata.open()` would
+map the instrument class properly. How do I fix this?
+
+2) DRAGONS is already being used in several places within the observatory.
+Changing the current API to any of the two would cause a big crash. How long
+would the transition take? Risks? Is it possible to slowly towards one way or
+another?
+
+
+Version 1 - Split Repositories
+------------------------------
+
+Pro:
+- Simpler architecture. Easier to maintain and document.
+- Weaker link to the dragons name
+
+Con:
+- Uses sub-modules.
+
+::
+
+    |--- dragons
+    |    |--- .gitignore
+    |    |--- setup.py
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+    |    |--- @astrodata/
+    |    |--- @recipe_system/
+    |    |--- @gempy/
+    |    |--- @gemini/
+    |    |--- @flamingos_2/
+    |    |--- @gsaoi/
+    |    |    ...
+
+    |--- astrodata
+    |    |--- astrodata/
+    |    |    |--- providers/
+    |    |    |    |--- fits.py
+    |    |    |    |--- hdf5.py
+    |    |    |    |--- ...
+    |    |    |--- __init__.py
+    |    |    |--- core.py
+    |    |    |--- factory.py
+    |    |    |--- nddata.py
+    |    |--- doc/
+    |    |--- tests/
+    |    |--- setup.py
+    |    |--- .gitignore
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+
+    |--- recipe_system
+    |    |--- recipe_system/
+    |    |    |--- mappers/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- base_mappers.py
+    |    |    |    |--- primitive_mappers.py
+    |    |    |    |--- recipe_mappers.py
+    |    |    |--- reduce/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- reduce.py
+    |    |    |--- scripts/
+    |    |    |    |--- reduce
+    |    |    |--- utils/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- decorators.py
+    |    |    |    |--- errors.py
+    |    |    |    |--- mappers_utils.py
+    |    |    |    |--- reduce_utils.py
+    |    |    |    |--- reduce_actions.py
+    |    |    |--- __init__.py
+    |    |    |--- config.py
+    |    |--- doc/
+    |    |--- tests/
+    |    |--- setup.py
+    |    |--- .gitignore
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+
+    |--- gempy
+    |    |--- doc/
+    |    |--- tests/
+    |    |--- gempy/
+    |    |    |--- dataselect/
+    |    |    |--- ...?
+    |    |--- scripts/
+    |    |    |--- dataselect
+    |    |--- .gitignore
+    |    |--- setup.py
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+
+    |--- gemini
+    |    |--- docs/
+    |    |--- tests/
+    |    |--- gemini/
+    |    |    |--- __init__.py
+    |    |    |--- adclass.py
+    |    |    |--- primitives/
+    |    |    |    |--- __init__.py
+    |    |    |    |---
+    |    |--- .gitignore
+    |    |--- setup.py
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+
+    |--- flamingos-2
+    |    |--- flamingos-2/
+    |    |    |--- __init__.py
+    |    |    |--- adclass.py
+    |    |    |--- lookup.py
+    |    |    |--- primitives/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- primitives.py
+    |    |    |    |--- imaging.py
+    |    |    |    |--- spectroscopy.py
+    |    |    |--- parameters/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- imaging.py
+    |    |    |    |--- spectroctopy.py
+    |    |--- .gitignore
+    |    |--- setup.py
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+
+    |--- gsaoi
+    |    |--- gsaoi/
+    |    |    |--- __init__.py
+    |    |    |--- adclass.py
+    |    |    |--- lookup.py
+    |    |    |--- primitives/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- primitives.py
+    |    |    |    |--- imaging.py
+    |    |    |    |--- spectroscopy.py
+    |    |    |--- parameters/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- imaging.py
+    |    |    |    |--- spectroctopy.py
+    |    |--- .gitignore
+    |    |--- setup.py
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+
+
+Version 2 - Single Repo
+-----------------------
+
+Pros:
+- Single repository
+- Uses "import dragons"
+
+Con: Deeper package levels
+
+::
+
+    |--- dragons
+    |    |--- .gitignore
+    |    |--- setup.py
+    |    |--- README.rst
+    |    |--- LICENSE.rst
+    |    |--- docs/
+    |    |    |--- astrodata/
+    |    |    |    ...
+    |    |    |--- recipe_system/
+    |    |    |    ...
+    |    |
+    |    |--- scripts/
+    |    |    |--- reduce
+    |    |    |--- dataselect
+    |    |    |--- fwhm_histogram
+    |    |    |--- gmosn_fix_headers
+    |    |    |--- gmoss_fix_HAM_BPMs
+    |    |    |--- gmoss_fix_headers
+    |    |    |--- pipeline2iraf
+    |    |    |--- profile_all_obj
+    |    |    |--- psf_plot
+    |    |    |--- showd
+    |    |    |--- showpars
+    |    |    |--- swapper
+    |    |    |--- typewalk
+    |    |    |--- zp_histogram
+    |    |    ...
+    |    |
+    |    |--- dragons/
+    |    |    |--- astrodata/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- core.py
+    |    |    |    |--- factory.py
+    |    |    |    |--- nddata.py
+    |    |    |    |--- providers/
+    |    |    |    |    |--- fits.py
+    |    |    |    |    |--- hdf5.py
+    |    |    |    |    |--- tests/
+    |    |    |    |    ...
+    |    |    |    |--- tests/
+    |    |    |    ...
+    |    |    |
+    |    |    |--- recipe_system/
+    |    |    |    |--- __init__.py
+    |    |    |    |--- config.py
+    |    |    |    |--- mappers/
+    |    |    |    |    |--- __init__.py
+    |    |    |    |    |--- base_mappers.py
+    |    |    |    |    |--- primitive_mappers.py
+    |    |    |    |    |--- recipe_mappers.py
+    |    |    |    |    |--- tests/
+    |    |    |    |    |    ...
+    |    |    |    |
+    |    |    |    |--- reduce/
+    |    |    |    |    |--- __init__.py
+    |    |    |    |    |--- reduce.py
+    |    |    |    |    |--- tests/
+    |    |    |    |    |    ...
+    |    |    |    |
+    |    |    |    |--- utils/
+    |    |    |    |    |    |--- __init__.py
+    |    |    |    |    |    |--- decorators.py
+    |    |    |    |    |    |--- errors.py
+    |    |    |    |    |    |--- mappers_utils.py
+    |    |    |    |    |    |--- reduce_utils.py
+    |    |    |    |    |    |--- reduce_actions.py
+    |    |    |    |    |    |--- tests/
+    |    |    |    |    |    ...
+    |    |    |
+    |    |    |--- gempy
+    |    |    |    |--- adlibrary/
+    |    |    |    |    |--- __init__.py
+    |    |    |    |    |--- dataselect.py
+    |    |    |    |    |--- show_pars.py
+    |    |    |    |    |--- show_primitives.py
+    |    |    |    |    |--- show_recipes.py
+    |    |    |    |    |--- tests/
+    |    |    |    |    |    ...
+    |    |    |    |--- external_task_interface/
+    |    |    |    |    |--- __init__.py
+    |    |    |    |    |--- eti.py
+    |    |    |    |    |--- etifile.py
+    |    |    |    |    |--- etiparam.py
+    |    |    |    |    |--- pyrafeti.py
+    |    |    |    |    |--- pyrafetifile.py
+    |    |    |    |    |--- parafetiparam.py
+    |    |    |    |    |--- tests/
+    |    |    |    |    |    ...
+    |    |    |    ...
+    |    |    |
+    |    |    |--- gemini_instruments
+    |    |    |    |--- gemini/
+    |    |    |    |    |--- __init__.py
+    |    |    |    |    |--- adclass.py
+    |    |    |    |    |--- primitives/
+    |    |    |    |    |--- tests/
+    |    |    |    |    ...
+    |    |    |    |
+    |    |    |    |--- f2
+    |    |    |    |    |--- __init__.py
+    |    |    |    |    |--- adclass.py
+    |    |    |    |    |--- lookup.py
+    |    |    |    |    |--- primitives/
+    |    |    |    |    |    |--- __init__.py
+    |    |    |    |    |    |--- primitives.py
+    |    |    |    |    |    |--- imaging.py
+    |    |    |    |    |    |--- spectroscopy.py
+    |    |    |    |    |--- parameters/
+    |    |    |    |    |    |--- __init__.py
+    |    |    |    |    |    |--- imaging.py
+    |    |    |    |    |    |--- spectroctopy.py
+    |    |    |    |    |--- tests/
+    |    |    |    |    ...
+    |    |    |    |
+    |    |    |    |--- gsaoi
+    |    |    |    |    |--- __init__.py
+    |    |    |    |    |--- adclass.py
+    |    |    |    |    |--- lookup.py
+    |    |    |    |    |--- primitives/
+    |    |    |    |    |    |--- __init__.py
+    |    |    |    |    |    |--- primitives.py
+    |    |    |    |    |    |--- imaging.py
+    |    |    |    |    |    |--- spectroscopy.py
+    |    |    |    |    |--- parameters/
+    |    |    |    |    |    |--- __init__.py
+    |    |    |    |    |    |--- imaging.py
+    |    |    |    |    |    |--- spectroctopy.py
+    |    |    |    |    |--- tests/
+    |    |    |    |    ...
