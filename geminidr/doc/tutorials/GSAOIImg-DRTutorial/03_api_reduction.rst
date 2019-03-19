@@ -318,7 +318,7 @@ We now create instances of ``MatchInfo`` object:
     object_match_info = MatchInfo(
         disco_pars.OBJCAT_ALIGN_RADIUS[0],
         disco_pars.OBJCAT_ALIGN_RADIUS[1],
-        disco_pars.OBJCAT_MIN_MATCHES,
+        None,
         disco_pars.OBJCAT_POLY_DEGREE
     )
 
@@ -341,6 +341,7 @@ position arguments.
         output_identifier="my_stacked_image.fits",
         objmatch_info=object_match_info,
         refmatch_info=reference_match_info,
+        pixel_scale=disco_pars.PIXEL_SCALE,
     )
 
 This function has many other parameters that can be used to customize this step
