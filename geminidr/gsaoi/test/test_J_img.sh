@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 name=GSAOI/J/raw
 
 # Source a couple of helper functions etc.:

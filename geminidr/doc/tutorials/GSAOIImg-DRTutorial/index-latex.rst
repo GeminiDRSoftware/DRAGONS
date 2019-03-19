@@ -11,28 +11,22 @@ Tutorial Series - GSAOI Imaging Data Reduction with DRAGONS
    PIPE-USER-000_GSAOIImg-DRTutorial
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
    
    01_introduction
    02_data_reduction
-   03_api_reduction
 
-Appendix
---------
+.. raw:: latex
+
+   % Set up the appendix mode and modify the LaTeX toc behavior
+   \appendix
+   \noappendicestocpagenum
+   \addappheadtotoc
 
 .. toctree::
    :maxdepth: 1
-   :caption: More
-
-   api
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   
+   appendices/appendix_yourcontent
+   
 
 .. todolist::
-

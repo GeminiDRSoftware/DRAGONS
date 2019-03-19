@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 name=GSAOI/Ksc/raw
 
 # Source a couple of helper functions etc.:

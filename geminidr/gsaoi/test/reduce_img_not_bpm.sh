@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Quick-and-dirty test for imaging reduction (command-line interface) until we
 # re-establish a proper test framework for DRAGONS. This is mostly unrelated to
 # existing Python tests. It expects raw data in $GEMPYTHON_TESTDATA/$test_dir
