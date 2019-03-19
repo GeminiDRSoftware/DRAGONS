@@ -289,8 +289,7 @@ intersphinx_mapping = {
 # Activate the todos
 todo_include_todos=True
 
-# -- Automatically generate API documentation --------------------------------
-# -- Enable autoapi ----------------------------------------------------------
+
 def run_api_doc(_):
     """
     Automatic API generator
