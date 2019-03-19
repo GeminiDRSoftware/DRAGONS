@@ -28,7 +28,7 @@ from gemini_calmgr import gemini_metadata_utils as gmu
 # ------------------------------------------------------------------------------
 from recipe_system import __version__
 # ------------------------------------------------------------------------------
-__all__ = ['LocalManager, LocalManagerError']
+__all__ = ['LocalManager', 'LocalManagerError']
 
 # ------------------------------------------------------------------------------
 # SQLAlchemy complains about SQLite details. We can't do anything about the
