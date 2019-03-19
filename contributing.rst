@@ -29,7 +29,7 @@ New Tests
   tests and they need to be readily understood. See the `Django Tutorial 05
   <https://docs.djangoproject.com/en/2.1/intro/tutorial05/>`_ for more examples.
 
-.. highlight:: python
+::
 
     # Yes
     def test_can_perform_task(_):
@@ -65,9 +65,9 @@ Tests using real data
 
 - All the data must be stored within a directory (sub-directories allowed).
 
-- Every test file that uses real data should have the following fixture:
+- Every test file that uses real data should have the following fixture
 
-.. highlight:: python
+::
 
     @pytest.fixture
     def test_path():
