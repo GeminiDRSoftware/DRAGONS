@@ -708,6 +708,9 @@ class Spect(PrimitivesBASE):
         sources = params["sources"]
         min_sky_pix = params["min_sky_region"]
 
+        combine_function = NDStacker(combine="mean", reject="sigclip",
+                                     log=self.log)
+
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
                 log.warning("{} has not been distortion corrected".
@@ -753,7 +756,9 @@ class Spect(PrimitivesBASE):
                 # We probably don't want the median because of, e.g., a
                 # Lyman Break Galaxy that may have signal for less than half
                 # the dispersion direction.
-                profile, prof_mask, prof_var = NDStacker.mean(*NDStacker.sigclip(data.T, mask=sky_mask.T, variance=None if variance is None else variance.T))
+                profile, prof_mask, prof_var = NDStacker.combine(data.T, mask=sky_mask.T,
+                                                                 variance=None if variance is None else variance.T,
+                                                                 rejector="sigclip", combiner="mean")
 
                 # TODO: find_peaks might not be best considering we have no
                 # idea whether sources will be extended or not
