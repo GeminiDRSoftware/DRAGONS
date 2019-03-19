@@ -18,7 +18,7 @@ F2/test_reduce/S20131127S0261.fits
 F2/test_reduce/S20131127S0262.fits
 F2/test_reduce/S20131127S0263.fits
 
-# Darks 20s
+# Darks
 F2/test_reduce/S20130930S0242.fits
 F2/test_reduce/S20130930S0243.fits
 F2/test_reduce/S20130930S0244.fits
@@ -64,6 +64,20 @@ S20180223S0229.fits
 N20160727S0077.fits
 N20190120S0287.fits
 S20190213S0084.fits
+
+
+# GSAOI Image Reduction
+GSAOI/test_reduce/S20170505S0095.fits
+GSAOI/test_reduce/S20170505S0096.fits
+GSAOI/test_reduce/S20170505S0030.fits
+GSAOI/test_reduce/S20170505S0031.fits
+GSAOI/test_reduce/S20170505S0073.fits
+GSAOI/test_reduce/S20170505S0074.fits
+GSAOI/test_reduce/S20171208S0053.fits
+GSAOI/test_reduce/S20171208S0054.fits
+GSAOI/test_reduce/S20171208S0055.fits
+GSAOI/test_reduce/S20150609S0022.fits
+GSAOI/test_reduce/S20150609S0023.fits
 
 # Archive Discriptor Tests
 Archive/gS20190219S0207_bias.fits
