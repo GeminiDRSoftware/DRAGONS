@@ -483,7 +483,8 @@ class NDStacker(object):
         shape = data.shape
         num_img = shape[0]
         data_size = np.multiply.reduce(data.shape[1:])
-        data, mask, variance = cyclip.iterclip(data.ravel(), mask.ravel(), variance.ravel(),
+        data, mask, variance = cyclip.iterclip(data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
+                                               variance.ravel().astype(np.float32),
                                                has_var=has_var, num_img=num_img, data_size=data_size,
                                                mclip=int(mclip), lsigma=lsigma, hsigma=hsigma,
                                                max_iters=max_iters, sigclip=int(sigclip))
