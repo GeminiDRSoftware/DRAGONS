@@ -33,9 +33,9 @@ def caldb(request):
     from recipe_system.cal_service import set_calservice, CalibrationService
 
     caldb_folder = os.path.dirname(__file__)
-    caldb_configuration_file = 'rsys.cfg'
+    caldb_conf_file = os.path.join(caldb_folder, 'rsys.cfg')
 
-    with open(caldb_configuration_file, 'w') as buffer:
+    with open(caldb_conf_file, 'w') as buffer:
 
         buffer.write(
             "[calibs]\n"
@@ -44,7 +44,7 @@ def caldb(request):
         )
 
     calibration_service = CalibrationService()
-    calibration_service.config(db_dir=caldb_folder)
+    calibration_service.config(config_file=caldb_conf_file)
     calibration_service.init(wipe=True)
 
     set_calservice()
