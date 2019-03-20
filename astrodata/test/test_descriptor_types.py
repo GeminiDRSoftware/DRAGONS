@@ -47,7 +47,7 @@ class TestArchive:
         ad = astrodata.open(filename)
         try:
             assert ((type(ad.airmass()) == float)
-                    or (ad.ao_seeing() is None))
+                    or (ad.airmass() is None))
         except Exception as err:
             print("{} failed on call: {}".format(ad.airmass, str(err)))
             # warnings.warn("{} failed on call: {}".format(ad.airmass, str(err)))
@@ -58,7 +58,7 @@ class TestArchive:
 
         try:
             assert ((type(ad.amp_read_area()) is list)
-                    or (ad.ao_seeing() is None))
+                    or (ad.amp_read_area() is None))
 
         except Exception as err:
             print("{} failed on call: {}".format(ad.amp_read_area, str(err)))
