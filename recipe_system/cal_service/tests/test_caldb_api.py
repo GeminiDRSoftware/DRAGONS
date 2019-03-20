@@ -6,8 +6,7 @@ import sys
 from contextlib import contextmanager
 from io import StringIO
 
-from recipe_system.cal_service import CalibrationService
-from recipe_system.config import globalConf
+from recipe_system import cal_service
 
 
 on_travis = pytest.mark.skipif(
@@ -18,7 +17,7 @@ print('TRAVIS' in os.environ)
 
 @pytest.fixture
 def caldb():
-    return CalibrationService()
+    return cal_service.CalibrationService()
 
 
 @contextmanager
