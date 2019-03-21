@@ -34,6 +34,21 @@ STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 
 class ConfigObject(object):
+    """
+    (add docstring)
+
+
+    Attributes
+    ----------
+    _sections : dict
+
+    _conv : (add type)
+        (add docstring)
+
+    _exports : (add type)
+        (add docstring)
+    """
+
     def __init__(self):
         self._sections = {}
         self._conv = {}
@@ -45,48 +60,31 @@ class ConfigObject(object):
         except KeyError:
             raise KeyError("There is no {0!r} section".format(item))
 
-    def update(self, section, values):
-        """Regenerates a section from scratch. If the section had been loaded
-        before, it will take the previous values as a basis and update them
-        with the new ones.
+    def export_section(self, section):
+        """Some options from the specified section may be published as
+        environment variables, where spawned processes can find them.
+
+        The exported variables would be the ones speficied using
+        `update_exports`.
 
         Parameters
         ----------
+        section : string
+            The name of the section.
         """
-        prev = self._sections[section].as_dict() if section in self._sections else {}
-        prev.update(values)
-        self._sections[section] = Section(prev)
+        try:
+            sect = self._sections[section]
+        except KeyError:
+            # Nothing to export...
+            return
 
-    def update_exports(self, expdict):
-        """Updates the internal export table that will be used to share config
-        information with process spawns.
-
-        Parameters
-        ----------
-        expdict : dict
-            Each key is the name of a section. The values of the dictionary are
-            sequences of strings, with each string in the sequence being the
-            name of a config entry in that section that will be exported, if
-            found.
-        """
-        for section, opts in list(expdict.items()):
-            self._exports[section].update(opts)
-
-    def update_translation(self, conv):
-        """Updates the internal mapping table for automatic translation of data
-        types when reading from config files.
-
-        Parameters
-        ----------
-        conv : dict
-            A mapping `(section_name, item)` -> Python type. Used internally for
-            type translation when reading values from the config file. If a
-            section/item pair is missing then a fallback `(None, item)` will be
-            tried. If no match is found, no translation will be performed.
-
-            The only types to be considered are: `int`, `float`, `bool`
-        """
-        self._conv.update(conv)
+        for option in self._exports.get(section, ()):
+            try:
+                env = environment_variable_name(section, option)
+                os.environ[env] = str(getattr(sect, option))
+            except AttributeError:
+                # The option was not defined...
+                pass
 
     def load(self, filenames, defaults=None, env_override=False):
         """Loads all or some entries from the specified section in a config file.
@@ -156,31 +154,48 @@ class ConfigObject(object):
 
             self.update(section, values)
 
-    def export_section(self, section):
-        """Some options from the specified section may be published as
-        environment variables, where spawned processes can find them.
-
-        The exported variables would be the ones speficied using
-        `update_exports`.
+    def update(self, section, values):
+        """Regenerates a section from scratch. If the section had been loaded
+        before, it will take the previous values as a basis and update them
+        with the new ones.
 
         Parameters
         ----------
-        section : string
-            The name of the section.
         """
-        try:
-            sect = self._sections[section]
-        except KeyError:
-            # Nothing to export...
-            return
+        prev = self._sections[section].as_dict() if section in self._sections else {}
+        prev.update(values)
+        self._sections[section] = Section(prev)
 
-        for option in self._exports.get(section, ()):
-            try:
-                env = environment_variable_name(section, option)
-                os.environ[env] = str(getattr(sect, option))
-            except AttributeError:
-                # The option was not defined...
-                pass
+    def update_exports(self, expdict):
+        """Updates the internal export table that will be used to share config
+        information with process spawns.
+
+        Parameters
+        ----------
+        expdict : dict
+            Each key is the name of a section. The values of the dictionary are
+            sequences of strings, with each string in the sequence being the
+            name of a config entry in that section that will be exported, if
+            found.
+        """
+        for section, opts in list(expdict.items()):
+            self._exports[section].update(opts)
+
+    def update_translation(self, conv):
+        """Updates the internal mapping table for automatic translation of data
+        types when reading from config files.
+
+        Parameters
+        ----------
+        conv : dict
+            A mapping `(section_name, item)` -> Python type. Used internally for
+            type translation when reading values from the config file. If a
+            section/item pair is missing then a fallback `(None, item)` will be
+            tried. If no match is found, no translation will be performed.
+
+            The only types to be considered are: `int`, `float`, `bool`
+        """
+        self._conv.update(conv)
 
 
 class Converter(object):

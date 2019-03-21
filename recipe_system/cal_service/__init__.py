@@ -34,6 +34,8 @@ globalConf.update_exports({
 })
 # END Setting up the calibs section for config files
 # ------------------------------------------------------------------------------
+
+
 def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
     """
     Load the configuration from the specified path to file (or files), and
@@ -50,8 +52,10 @@ def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
 
     return get_calconf()
 
+
 def update_calconf(items):
     globalConf.update(CONFIG_SECTION, items)
+
 
 def get_calconf():
     try:
@@ -62,20 +66,25 @@ def get_calconf():
         # the user has called 'load_calconf' before.
         pass
 
+
 def is_local():
+
     try:
         if get_calconf().standalone:
-           if not localmanager_available:
+            if not localmanager_available:
                 raise RuntimeError(
-                        "Local calibs manager has been chosen, but there "
-                        "are missing dependencies: {}".format(import_error))
-           return True
+                    "Local calibs manager has been chosen, but there "
+                    "are missing dependencies: {}".format(import_error))
+            return True
+
     except AttributeError:
         # This may happen if there's no calibration config section or, in
         # case there is one, if either calconf.standalone or calconf.database_dir
         # are not defined
         pass
+
     return False
+
 
 def handle_returns_factory():
     return (
@@ -83,6 +92,7 @@ def handle_returns_factory():
         if is_local() else
         transport_request.handle_returns
     )
+
 
 def cal_search_factory():
     """
@@ -100,15 +110,36 @@ def cal_search_factory():
     )
 
 
-def set_calservice(local_db_dir=None):
-    globalConf.load(expanduser(STANDARD_REDUCTION_CONF))
+def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
+    """
+    Update the calibration service global configuration stored in
+    :data:`recipe_system.config.globalConf` by changing the path to the
+    configuration file and to the data base directory.
+
+    Parameters
+    ----------
+    local_db_dir: str
+        Name of the directory where the database will be stored.
+
+    config_file: str
+        Name of the configuration file that will be loaded.
+    """
+    globalConf.load(expanduser(config_file))
+
     if localmanager_available:
-        if local_db_dir is not None:
-            globalConf.update(CONFIG_SECTION, dict(standalone=True,
-                            database_dir=expanduser(local_db_dir)))
+
+        if local_db_dir is None:
+            local_db_dir = globalConf['calibs'].database_dir
+
+        globalConf.update(
+            CONFIG_SECTION, dict(
+                standalone=True,
+                database_dir=expanduser(local_db_dir),
+                config_file=expanduser(config_file)
+            )
+        )
 
     globalConf.export_section(CONFIG_SECTION)
-    return
 
 
 class CalibrationService(object):
@@ -172,7 +203,8 @@ class CalibrationService(object):
     def __init__(self):
         self._mgr = None
 
-    def config(self, db_dir=None, verbose=True):
+    def config(self, db_dir=None, verbose=True,
+               config_file=STANDARD_REDUCTION_CONF):
         """
         Configure the Calibration Service and database.
 
@@ -187,11 +219,16 @@ class CalibrationService(object):
             Configuration information will be displayed to stdout.
             Default is True.
 
+        config_file: str
+            Path to the configuration file.
+
         """
-        set_calservice(local_db_dir=db_dir)
+        set_calservice(local_db_dir=db_dir, config_file=config_file)
         conf = get_calconf()
+
         if not conf.standalone:
             print("The database is not configured as standalone.")
+
         else:
             self._mgr = localmanager.LocalManager(expanduser(conf.database_dir))
 
@@ -271,17 +308,22 @@ class CalibrationService(object):
         return self._mgr.list_files()
 
     def _config_info(self, conf):
-        path = self._mgr._db_path
-        isactive = "The 'standalone' flag is active; local calibrations will be used."
-        inactive = "The 'standalone' flag is not active; remote calibrations will be"
-        inactive += " downloaded."
 
-        print("Using configuration file: {}".format(STANDARD_REDUCTION_CONF))
+        path = self._mgr._db_path
+
+        is_active = \
+            "The 'standalone' flag is active; local calibrations will be used."
+
+        inactive = (
+            "The 'standalone' flag is not active; remote calibrations will be"
+            " downloaded.")
+
+        print("Using configuration file: {}".format(conf.config_file))
         print()
         print("The active database directory is:  {}".format(conf.database_dir))
         print("The database file to be used: {}".format(path))
         if conf.standalone:
-            print(isactive)
+            print(is_active)
         else:
             print(inactive)
 
