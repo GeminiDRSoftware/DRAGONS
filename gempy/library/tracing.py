@@ -87,12 +87,13 @@ class Aperture(object):
         self.check_domain(npix)
         center_pixels = self._model(np.arange(npix))
         x1, x2 = center_pixels - 0.5 * width, center_pixels + 0.5 * width
-        ix1 = np.where(x1 < -0.5, 0, int(x1 + 0.5))
-        ix2 = np.where(x2 >= slitlength - 0.5, None, int(x2 + 1.5))
-        apmask = np.zeros_like(ext.data, dtype=bool)
+        ix1 = np.where(x1 < -0.5, 0, (x1 + 0.5).astype(int))
+        ix2 = np.where(x2 >= slitlength - 0.5, None, (x2 + 1.5).astype(int))
+        apmask = np.zeros_like(ext.data if dispaxis == 0 else ext.data.T,
+                               dtype=bool)
         for i, limits in enumerate(zip(ix1, ix2)):
             apmask[i, slice(*limits)] = True
-        return apmask
+        return apmask if dispaxis == 0 else apmask.T
 
     def calculate_optimal_width(self, ext):
         width = 1

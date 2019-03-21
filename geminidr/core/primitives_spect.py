@@ -25,6 +25,8 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 import astrodata
 from astrodata import NDAstroData
 
+from datetime import datetime
+
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -582,8 +584,10 @@ class Spect(PrimitivesBASE):
 
     def extract1DSpectra(self, adinputs=None, **params):
         """
-        This primitive extracts a 1D spectrum. No tracing is done yet, it's
-        basically a placeholder.
+        This primitive extracts a 1D spectrum. Currently sky subtraction
+        is done by extraction from a similar aperture nearby.
+
+        TODO: Much
 
         Parameters
         ----------
@@ -723,16 +727,9 @@ class Spect(PrimitivesBASE):
 
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
-                if dispaxis == 0:
-                    data = ext.data.T
-                    mask = None if ext.mask is None else ext.mask.T
-                    variance = None if ext.variance is None else ext.variance.T
-                    direction = "column"
-                else:
-                    data = ext.data
-                    mask = ext.mask
-                    variance = ext.variance
-                    direction = "row"
+                data, mask, variance = _transpose_if_needed(ext.data, ext.mask,
+                                        ext.variance, transpose=dispaxis==0)
+                direction = "column" if dispaxis == 0 else "row"
 
                 # Collapse image along spatial direction to find noisy regions
                 # (caused by sky lines, regardless of whether image has been
@@ -781,7 +778,7 @@ class Spect(PrimitivesBASE):
 
     def traceApertures(self, adinputs=None, **params):
         """
-        The primitive traces apertures listed in the APERTURE table along
+        This primitive traces apertures listed in the APERTURE table along
         the dispersion direction, and estimates the optimal extraction
         aperture size from the spatial profile of each source.
 
@@ -870,33 +867,105 @@ class Spect(PrimitivesBASE):
 
     def skyCorrectFromSlit(self, adinputs=None, **params):
         """
+        This primitives performs row-by-row or column-by-column sky
+        subtraction of a 2D spectral image. In addition to bad pixels being
+        masked in the fitting of each row/column, any apertures defined in
+        the APERTURE table are also masked. If a specific order of spline
+        (i.e., number of spline pieces) is specified, this is reduced
+        proportionately to the number of good pixels in each row/column, as
+        a fraction of the total number of pixels. If less than 4 good pixels
+        exist, then the fit is performed to all pixels, good or bad.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-
+        order: int/None
+            order of piecewise cubic spline fit to each row/column (None =>
+            use as many pieces as required to get chi^2=1)
+        width: float/None
+            width (in pixels) for each aperture, if not specified in the
+            APERTURE table. None will use the value in the aperture table
+            and, if one doesn't exist there, will result in the optimal width
+            being calculated for each aperture
+        grow: float
+            masking growth radius (in pixels) for each aperture
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        order = params["order"]
+        default_width = params["width"]
+        grow = params["grow"]
+        knots = None  # will be recalculated if order is not None
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
                 log.warning("{} has not been distortion corrected. Sky "
-                            "subtraction is likely to suck.".format(ad.filename))
+                            "subtraction is likely to be poor.".format(ad.filename))
 
+            start = datetime.now()
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
-                sky_model = np.empty_like(ext.data)
-                for i in range(ext.shape[dispaxis]):
-                    slice_ = ((slice(None), slice(i, i+1)) if dispaxis == 1
-                              else (slice(i, i+1)))
-                    sky_model[slice_] = np.mean(ext.data[slice_])
+                slitlen = ext.shape[1-dispaxis]
+                pixels = np.arange(slitlen)
 
-                ext.data -= sky_model
+                # We want to mask pixels in apertures in addition to the mask
+                sky_mask = (np.zeros_like(data, dtype=DQ.datatype)
+                            if ext.mask is None else ext.mask.copy())
 
+                # If there's an aperture table, go through it row by row,
+                # masking the pixels
+                try:
+                    aptable = ext.APERTURE
+                except AttributeError:
+                    pass
+                else:
+                    for row in aptable:
+                        model_dict = dict(zip(aptable.colnames, row))
+                        # Is it a traced aperture, or just a center?
+                        if 'degree' in model_dict:
+                            trace_model = astromodels.dict_to_chebyshev(model_dict)
+                        else:
+                            trace_model = models.Const1D(model_dict['center'])
+                        aperture = tracing.Aperture(trace_model)
+                        width = model_dict.get('width', default_width)
+                        sky_mask |= aperture.aperture_mask(ext, width=width, grow=grow)
+
+                # Transpose if needed so we're iterating along rows
+                data, mask, var = _transpose_if_needed(ext.data, sky_mask, ext.variance, transpose=dispaxis==1)
+                sky_model = np.empty_like(data)
+                sky_weights = (np.ones_like(data) if var is None
+                               else np.sqrt(np.divide(1., var, out=np.zeros_like(data),
+                                                      where=var>0)))
+
+                # Now fit the model for each row/column along dispersion axis
+                for i, (data_row, mask_row, weight_row) in enumerate(zip(data, mask,
+                                                                         sky_weights)):
+                    sky = np.ma.masked_array(data_row, mask=mask_row)
+
+                    # Need at least 4 good pixels for a spline.
+                    good_pixels = np.nonzero(mask_row == 0)[0]
+                    if len(good_pixels) < 4:
+                        sky.mask = np.ma.nomask
+                        good_pixels = pixels
+                    if order is not None:
+                        # Scale order based on number of good pixels and
+                        # create equally-spaced knots
+                        this_order = order * (len(good_pixels) - 1) / slitlen + 1
+                        knots = np.linspace(good_pixels[0], good_pixels[-1],
+                                            this_order + 1)[1:-1]
+                    if weight_row.sum() == 0:
+                        weight_row = None
+
+                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, sky, t=knots, w=weight_row)
+                    # Spline fit has been returned so no need to recompute
+                    sky_model[i] = spline.data
+
+                ext.data -= (sky_model if dispaxis == 0 else sky_model.T)
+
+            print(datetime.now() - start, ad.filename)
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
@@ -1008,6 +1077,25 @@ class Spect(PrimitivesBASE):
         return adinputs
 
 #-----------------------------------------------------------------------------
+def _transpose_if_needed(*args, transpose=False):
+    """
+    This function takes a list of arrays and returns them, either untouched,
+    or transposed, according to the parameter.
+
+    Parameters
+    ----------
+    args: sequence of arrays
+        the input arrays
+    rotate: bool
+        if True, return transposed versions
+
+    Returns
+    -------
+    list of arrays: the input arrays, or transposed versions
+    """
+    return list(None if arg is None
+                else arg.T if transpose else arg for arg in args)
+
 def _set_model(model, order=None, initial=False, kdfit=False):
     # TODO: I find this ugly. Do better!
     """

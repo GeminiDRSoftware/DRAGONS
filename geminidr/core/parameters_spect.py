@@ -57,7 +57,10 @@ class traceAperturesConfig(config.Config):
     trace_order = config.RangeField("Fitting order in spectral direction", int, 2, min=1)
 
 class skyCorrectFromSlitConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_skySubtracted", optional=True)
+    suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    order = config.RangeField("Sky spline fitting order", int, 10, min=1, optional=True)
+    width = config.RangeField("Default width for apertures (pixels)", float, 10, min=0, optional=True)
+    grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
 
 class linearizeSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_linearized", optional=True)

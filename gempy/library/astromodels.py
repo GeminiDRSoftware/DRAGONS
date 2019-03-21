@@ -20,7 +20,11 @@ import math
 from collections import OrderedDict
 
 from astropy.modeling import models, fitting, FittableModel, Parameter
+from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline
+from astropy.stats import sigma_clip
 
+from datetime import datetime
+from .nddops import NDStacker
 #-----------------------------------------------------------------------------
 # NEW MODEL CLASSES
 
@@ -151,6 +155,55 @@ class Rotate2D(FittableModel):
         x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
         x.shape = y.shape = orig_shape
         return x, y
+
+class UnivariateSplineWithOutlierRemoval(object):
+    def __new__(self, x, y, t=None, s=None, w=None, bbox=[None]*2, k=3,
+                ext=0, check_finite=False, outlier_func=sigma_clip,
+                niter=3, **outlier_kwargs):
+
+        # Decide what sort of spline object we're making
+        spline_kwargs = {'bbox': bbox, 'k': k, 'ext': ext,
+                         'check_finite': check_finite}
+        if t is None:
+            cls = UnivariateSpline
+            spline_args = ()
+            spline_kwargs['s'] = s
+        elif s is None:
+            cls = LSQUnivariateSpline
+            spline_args = (t,)
+        else:
+            raise ValueError("Both t and s have been specified")
+
+        if isinstance(y, np.ma.masked_array):
+            mask = [False] * len(x) if y.mask is np.ma.nomask else y.mask
+            y = y.data
+
+        iter = 0
+        start = datetime.now()
+        while iter < niter+1:
+            last_mask = mask
+            # Create appropriate spline object using current mask
+            instance = object.__new__(cls)
+            instance.__init__(x[~mask], y[~mask],
+                              *spline_args, w=None if w is None else w[~mask], **spline_kwargs)
+            #print(iter, datetime.now()-start)
+            spline_y = instance(x)
+            #print(iter, datetime.now()-start)
+            #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
+            #mask = masked_residuals.mask
+            d, mask, v = NDStacker.sigclip(spline_y-y, mask=mask, variance=None, **outlier_kwargs)
+            mask = mask.astype(bool)
+            #print(iter, datetime.now()-start)
+
+            # Check if the mask is unchanged
+            if not np.logical_or.reduce(last_mask ^ mask):
+                break
+            iter += 1
+
+        # Attach the mask and model (may be useful)
+        instance.mask = mask
+        instance.data = spline_y
+        return instance
 
 #-----------------------------------------------------------------------------
 # MODEL -> DICT FUNCTIONS
