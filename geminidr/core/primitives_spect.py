@@ -664,7 +664,7 @@ class Spect(PrimitivesBASE):
                     # Copy wavelength solution and add a header keyword
                     # with the extraction location
                     ad_spec[-1].WAVECAL = ext.WAVECAL
-                    center = model_dict['center']
+                    center = model_dict['c0']
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
                                 "from {} {}".format(direction, int(center + 0.5)))
 
@@ -724,6 +724,7 @@ class Spect(PrimitivesBASE):
                             format(ad.filename, ext.hdr['EXTVER']))
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
+                npix = ext.shape[dispaxis]
 
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
@@ -768,8 +769,18 @@ class Spect(PrimitivesBASE):
                                             reverse=True)[:sources]).T[0]
                 log.stdinfo("Found sources at {}s: {}".format(direction,
                             ' '.join(['{:.1f}'.format(loc) for loc in locations])))
-                aperture_table = Table([locations], names=('center',))
-                ext.APERTURE = aperture_table
+
+                all_model_dicts = []
+                for loc in locations:
+                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix-1], c0=loc)
+                    model_dict = astromodels.chebyshev_to_dict(cheb)
+                    all_model_dicts.append(model_dict)
+
+                aptable = Table()
+                for name in model_dict.keys():  # Still defined from above loop
+                    aptable[name] = [model_dict.get(name, 0)
+                                     for model_dict in all_model_dicts]
+                ext.APERTURE = aptable
 
             # Timestamp and update the filename
             #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -805,7 +816,7 @@ class Spect(PrimitivesBASE):
             for ext in ad:
                 try:
                     aptable = ext.APERTURE
-                    locations = aptable['center'].data
+                    locations = aptable['c0'].data
                 except (AttributeError, KeyError):
                     log.warning("Could not find aperture locations in {}:{} - "
                                 "continuing".format(ad.filename, ext.hdr['EXTVER']))
@@ -924,11 +935,7 @@ class Spect(PrimitivesBASE):
                 else:
                     for row in aptable:
                         model_dict = dict(zip(aptable.colnames, row))
-                        # Is it a traced aperture, or just a center?
-                        if 'degree' in model_dict:
-                            trace_model = astromodels.dict_to_chebyshev(model_dict)
-                        else:
-                            trace_model = models.Const1D(model_dict['center'])
+                        trace_model = astromodels.dict_to_chebyshev(model_dict)
                         aperture = tracing.Aperture(trace_model)
                         width = model_dict.get('width', default_width)
                         sky_mask |= aperture.aperture_mask(ext, width=width, grow=grow)
