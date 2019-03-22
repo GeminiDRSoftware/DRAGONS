@@ -81,7 +81,7 @@ pipeline {
             post {
                 always {
                     echo 'Report pyLint warnings using the warnings-ng-plugin'
-                    recordIssues enabledForFailure: true, tool: pyLint('**/reports/pylint_*.log')
+                    // recordIssues enabledForFailure: true, tool: pyLint('**/reports/pylint_*.log')
                 }
             }
         }
@@ -101,7 +101,7 @@ pipeline {
             post {
                 always {
                     echo 'Report pydocstyle using the warnings-ng-plugin'
-                    recordIssues enabledForFailure: true, tool: pyDocStyle('**/reports/pds_*.log')
+                    // recordIssues enabledForFailure: true, tool: pyDocStyle('**/reports/pds_*.log')
                 }
             }
         }
