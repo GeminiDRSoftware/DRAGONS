@@ -44,11 +44,12 @@ class distortionCorrectConfig(config.Config):
 
 class extract1DSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
-    width = config.RangeField("Width of extraction aperture (pixels)", int, 10, min=1, optional=True)
+    width = config.RangeField("Width of extraction aperture (pixels)", float, 10, min=1, optional=True)
+    grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
 
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
-    sources = config.RangeField("Number of sources to find", int, None, min=1, optional=True)
+    max_sources = config.RangeField("Maximum number of sources to find", int, None, min=1, optional=True)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
 
 class traceAperturesConfig(config.Config):
@@ -58,7 +59,7 @@ class traceAperturesConfig(config.Config):
 
 class skyCorrectFromSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
-    order = config.RangeField("Sky spline fitting order", int, 10, min=1, optional=True)
+    order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
     width = config.RangeField("Default width for apertures (pixels)", float, 10, min=0, optional=True)
     grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
 

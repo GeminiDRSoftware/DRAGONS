@@ -46,6 +46,12 @@ class Aperture(object):
         else:
             raise ValueError("Width must be positive ()".format(value))
 
+    def limits(self):
+        """Return maximum and minimum values of the model across the domain"""
+        pixels = np.arange(*self._model.domain)
+        values = self._model(pixels)
+        return np.min(values), np.max(values)
+
     def check_domain(self, npix):
         """Simple function to warn user if aperture model appears inconsistent
         with the array containing the data"""
@@ -96,21 +102,26 @@ class Aperture(object):
         return apmask if dispaxis == 0 else apmask.T
 
     def calculate_optimal_width(self, ext):
-        width = 1
+        # TODO: All of it!
+        width = 20
         self.width = width
         return width
 
-    def extract(self, ext, width=None):
+    def extract(self, ext, width=None, dispaxis=None, viewer=None):
         """
         Extract a 1D spectrum by following the model trace and extracting in
         an aperture of a given number of pixels.
 
         Parameters
         ----------
-        ext: single-slice AD object
+        ext: single-slice AD object/ndarray
             spectral image from which spectrum is to be extracted
         width: float/None
             full width of extraction aperture
+        dispaxis: int/None
+            dispersion axis (python sense)
+        viewer: Viewer/None
+            Viewer object on which to display extraction apertures
 
         Returns
         -------
@@ -121,7 +132,8 @@ class Aperture(object):
         if width is None:
             width = self.calculate_optimal_width(ext)
 
-        dispaxis = 2 - ext.dispersion_axis()  # python sense
+        if dispaxis is None:
+            dispaxis = 2 - ext.dispersion_axis()  # python sense
         slitlength = ext.shape[1-dispaxis]
         npix = ext.shape[dispaxis]
         direction = "row" if dispaxis == 0 else "column"
@@ -129,21 +141,36 @@ class Aperture(object):
         self.check_domain(npix)
 
         # make data look like it's dispersed vertically
-        data = ext.data if dispaxis == 0 else ext.data.T
         apdata = np.zeros((npix,), dtype=np.float32)
-        has_mask = ext.mask is not None
-        if has_mask:
-            apmask = np.zeros_like(apdata, dtype=DQ.datatype)
-            mask = ext.mask if dispaxis == 0 else ext.mask.T
-        has_var = ext.variance is not None
-        if has_var:
-            apvar = np.zeros_like(apdata)
-            var = ext.variance if dispaxis == 0 else ext.variance.T
+        try:
+            has_mask = ext.mask is not None
+        except AttributeError:  # ext is just an ndarray
+            data = ext if dispaxis == 0 else ext.T
+            has_mask = False
+            has_var = False
+        else:
+            data = ext.data if dispaxis == 0 else ext.data.T
+            if has_mask:
+                apmask = np.zeros_like(apdata, dtype=DQ.datatype)
+                mask = ext.mask if dispaxis == 0 else ext.mask.T
+            has_var = ext.variance is not None
+            if has_var:
+                apvar = np.zeros_like(apdata)
+                var = ext.variance if dispaxis == 0 else ext.variance.T
+
         center_pixels = self._model(np.arange(npix))
+        all_x1 = center_pixels - 0.5 * width
+        all_x2 = center_pixels + 0.5 * width
+        if viewer is not None:
+            # Display extraction edges on viewer, every 10 pixels (for speed)
+            pixels = np.arange(npix)
+            edge_coords = np.array([pixels, all_x1]).T
+            viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis==1), origin=0)
+            edge_coords = np.array([pixels, all_x2]).T
+            viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis==1), origin=0)
 
         warned = False
-        for i, center in enumerate(center_pixels):
-            x1, x2 = center - 0.5 * width, center + 0.5 * width
+        for i, (center, x1, x2) in enumerate(zip(center_pixels, all_x1, all_x2)):
             # Remember how pixel coordinates are defined!
             if x1 < -0.5 or x2 >= slitlength - 0.5:
                 if not warned:
@@ -164,10 +191,13 @@ class Aperture(object):
                             (ix2-x2-0.5) * var[i, ix2-1])
 
 
-        ndd = NDAstroData(apdata, mask=None if not has_mask else apmask,
-                          meta={'header': ext.hdr.copy()})
+        ndd = NDAstroData(apdata, mask=None if not has_mask else apmask)
         if has_var:
             ndd.variance = apvar
+        try:
+            ndd.meta['header'] = ext.hdr.copy()
+        except AttributeError:
+            pass
         return ndd
 
 

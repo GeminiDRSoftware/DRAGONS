@@ -323,6 +323,7 @@ class Spect(PrimitivesBASE):
 
         return adoutputs
 
+
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         This primitive determines the wavelength solution for an ARC and
@@ -582,27 +583,39 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+
     def extract1DSpectra(self, adinputs=None, **params):
         """
-        This primitive extracts a 1D spectrum. Currently sky subtraction
-        is done by extraction from a similar aperture nearby.
+        This primitive extracts one or more 1D spectra from a 2D spectral
+        image, according to the contents of the APERTURE table. If the
+        skyCorrectFromSlit() primitive has not been performed, then a 1D sky
+        spectrum is constructed from a nearby region of the image, and
+        subtracted from the source spectrum.
 
-        TODO: Much
+        Each 1D spectrum is stored as a separate extension in a new AstroData
+        object, and the WAVECAL table (if it exists) is copied from the
+        parent. These new AD objects are placed in a separate stream from the
+        parent 2D images, which are returned in the default stream.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        center: int/None
-            central row/column for 1D extraction (None => use middle)
-        nsum: int
-            number of rows/columns to average
+        width: float
+            width of extraction aperture (in pixels)
+        grow: float/None
+            avoidance region around each source aperture if a sky aperture
+            is required
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         width = params["width"]
+        grow = params["grow"]
+
+        colors = ("green", "blue", "red", "yellow", "cyan", "magenta")
+        offset_step = 2
 
         ad_extracted = []
         # This is just cut-and-paste code from determineWavelengthSolution()
@@ -610,8 +623,15 @@ class Spect(PrimitivesBASE):
             ad_spec = astrodata.create(ad.phu)
             ad_spec.filename = ad.filename
             ad_spec.orig_filename = ad.orig_filename
+            skysub_needed = self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu
+            if skysub_needed:
+                log.stdinfo("Sky subtraction has not been performed on {} "
+                            "- extracting sky from separate aperture".
+                            format(ad.filename))
+
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                self.viewer.display_image(ext, wcs=False)
                 if len(ext.shape) == 1:
                     log.warning("{} is already one-dimensional".format(extname))
                     continue
@@ -650,16 +670,69 @@ class Spect(PrimitivesBASE):
                                      'CDELT1':  2 * wave_model.c1.value / np.diff(wave_model.domain)[0]})
                 hdr_dict['CD1_1'] = hdr_dict['CDELT1']
 
+                # We loop twice so we can construct the aperture mask if needed
+                apertures = []
                 for row in aptable:
                     model_dict = dict(zip(aptable.colnames, row))
                     trace_model = astromodels.dict_to_chebyshev(model_dict)
-                    aperture = tracing.Aperture(trace_model)
-                    ndd_spec = aperture.extract(ext, width=width)
-                    trace_model.c0 -= 50
-                    sky_aperture = tracing.Aperture(trace_model)
-                    sky_spec = sky_aperture.extract(ext, width=width)
-                    ad_spec.append(ndd_spec.subtract(sky_spec, handle_meta='first_found',
-                                                     handle_mask=np.bitwise_or))
+                    apertures.append(tracing.Aperture(trace_model))
+
+                if skysub_needed:
+                    apmask = np.logical_or.reduce([ap.aperture_mask(ext, width=width, grow=grow)
+                                                   for ap in apertures])
+
+                for i, aperture in enumerate(apertures):
+                    self.viewer.width = 2
+                    self.viewer.color = colors[i % len(colors)]
+                    ndd_spec = aperture.extract(ext, width=width, viewer=self.viewer)
+                    if skysub_needed:
+                        self.viewer.width = 1
+                        # We're going to try to create half-size apertures
+                        # equidistant from the source aperture on both sides
+                        aperture_model = aperture._model
+                        sky_trace_model = aperture_model.copy()
+                        sky_width = 0.5 * width
+
+                        # Compute maximum offsets on each side for the sky
+                        # aperture to still be entirely on the image
+                        min_, max_ = aperture.limits()
+                        lo_offset = min_ - 0.5 * sky_width
+                        hi_offset = ext.shape[1-dispaxis] - 1 - (max_ + 0.5 * sky_width)
+                        offset = 0.75 * width + grow - offset_step
+                        sides = [-1, 1]
+                        ok = False
+                        while not ok:
+                            offset += offset_step
+                            if offset > lo_offset:
+                                sides.remove(-1)
+                            if offset > hi_offset:
+                                sides.remove(1)
+                            if not sides:
+                                break
+                            ok = True
+                            for side in sides:
+                                sky_trace_model.c0 = aperture_model.c0 + side * offset
+                                sky_aperture = tracing.Aperture(sky_trace_model)
+                                sky_spec = sky_aperture.extract(apmask, width=sky_width, dispaxis=dispaxis)
+                                ok &= np.sum(sky_spec.data) == 0
+
+                        if ok:
+                            sky_spectra = []
+                            for side in sides:
+                                sky_trace_model.c0 = aperture_model.c0 + side * offset
+                                sky_aperture = tracing.Aperture(sky_trace_model)
+                                sky_spectra.append(sky_aperture.extract(ext, width=width,
+                                                                        viewer=self.viewer))
+                            # If only one, add it to itself (since it's half-width)
+                            sky_spec = sky_spectra[0].add(sky_spectra[-1])
+                            ad_spec.append(ndd_spec.subtract(sky_spec, handle_meta='first_found',
+                                                             handle_mask=np.bitwise_or))
+                        else:
+                            log.warning("Difficulty finding sky aperture. No sky"
+                                        " subtraction for aperture {}".format(i))
+                            ad_spec.append(ndd_spec)
+                    else:
+                        ad_spec.append(ndd_spec)
 
                     # Copy wavelength solution and add a header keyword
                     # with the extraction location
@@ -689,7 +762,9 @@ class Spect(PrimitivesBASE):
                 ad_spec.update_filename(suffix=sfx, strip=True)
                 ad_extracted.append(ad_spec)
 
-        return adinputs + ad_extracted
+        # Only return extracted spectra
+        return ad_extracted
+
 
     def findSourceApertures(self, adinputs=None, **params):
         """
@@ -709,7 +784,7 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        sources = params["sources"]
+        max_sources = params["sources"]
         min_sky_pix = params["min_sky_region"]
 
         combine_function = NDStacker(combine="mean", reject="sigclip",
@@ -766,7 +841,7 @@ class Spect(PrimitivesBASE):
                                                     min_snr=3, min_frac=0.2)
                 # Reverse-sort by SNR and return only the locations
                 locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                            reverse=True)[:sources]).T[0]
+                                            reverse=True)[:max_sources]).T[0]
                 log.stdinfo("Found sources at {}s: {}".format(direction,
                             ' '.join(['{:.1f}'.format(loc) for loc in locations])))
 
@@ -787,94 +862,111 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-    def traceApertures(self, adinputs=None, **params):
-        """
-        This primitive traces apertures listed in the APERTURE table along
-        the dispersion direction, and estimates the optimal extraction
-        aperture size from the spatial profile of each source.
 
+    def linearizeSpectra(self, adinputs=None, **params):
+        """
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        trace_order: int
-            fitting order along spectrum
-        """
-        def averaging_func(data, mask=None, variance=None):
-            """Use a sigma-clipped mean to collapse in the dispersion
-            direction, which should reject sky lines"""
-            return NDStacker.mean(*NDStacker.sigclip(data, mask=mask,
-                                                     variance=variance))
+        w1: float
+            Wavelength of first pixel (nm)
+        w2: float
+            Wavelength of last pixel (nm)
+        dw: float
+            Dispersion (nm/pixel)
+        npix: int
+            Number of pixels in output spectrum
+        conserve: bool
+            Conserve flux (rather than interpolate)?
 
+        Exactly 0 or 3 of (w1, w2, dw, npix) must be specified.
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        order = params["trace_order"]
+        w1 = params["w1"]
+        w2 = params["w2"]
+        dw = params["dw"]
+        npix = params["npix"]
+        conserve = params["conserve"]
+
+        # There are either 1 or 4 Nones, due to validation
+        nones = [w1, w2, dw, npix].count(None)
+        if nones == 1:
+            # Work out the missing variable from the others
+            if npix is None:
+                npix = int(np.ceil((w2 - w1) / dw)) + 1
+                w2 = w1 + (npix-1) * dw
+            elif w1 is None:
+                w1 = w2 - (npix-1) * dw
+            elif w2 is None:
+                w2 = w1 + (npix-1) * dw
+            else:
+                dw = (w2 - w1) / (npix-1)
 
         for ad in adinputs:
             for ext in ad:
+                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+
+                attributes = [attr for attr in ('data', 'mask', 'variance')
+                              if getattr(ext, attr) is not None]
                 try:
-                    aptable = ext.APERTURE
-                    locations = aptable['c0'].data
+                    wavecal = dict(zip(ext.WAVECAL["name"],
+                                       ext.WAVECAL["coefficients"]))
                 except (AttributeError, KeyError):
-                    log.warning("Could not find aperture locations in {}:{} - "
-                                "continuing".format(ad.filename, ext.hdr['EXTVER']))
+                    cheb = None
+                else:
+                    cheb = astromodels.dict_to_chebyshev(wavecal)
+                if cheb is None:
+                    log.warning("{} has no WAVECAL. Cannot linearize.".
+                                format(extname))
                     continue
 
-                self.viewer.display_image(ext, wcs=False)
-                self.viewer.width = 2
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                if nones == 4:
+                    npix = ext.data.size
+                    limits = cheb([0, npix-1])
+                    w1, w2 = min(limits), max(limits)
+                    dw = (w2 - w1) / (npix - 1)
 
-                step = 20
-                nsum = 20
-                max_missed = 6
-                max_shift = 0.02
-                start = 0.5 * ext.shape[dispaxis]
+                log.stdinfo("Linearizing {}: w1={:.3f} w2={:.3f} dw={:.3f} "
+                            "npix={}".format(extname, w1, w2, dw, npix))
 
-                # The coordinates are always returned as (x-coords, y-coords)
-                all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
-                        start=start, initial=locations, width=5, step=step,
-                        nsum=nsum, max_missed=max_missed,
-                        max_shift=max_shift, viewer=self.viewer)
+                cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
+                t = transform.Transform(cheb)
 
-                self.viewer.color = "blue"
-                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-                all_column_names = []
-                all_model_dicts = []
-                for location in locations:
-                    # Funky stuff to extract the coords associated with each
-                    # aperture and sort by coordinate along the spectrum
-                    coords = np.array([list(c1)+list(c2)
-                                       for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
-                                       if c1[dispaxis]==location])
-                    values = np.array(sorted(coords, key=lambda c: c[1-dispaxis])).T
-                    ref_coords, in_coords = values[:2], values[2:]
+                # Linearization (and inverse)
+                t.append(models.Shift(-w1))
+                t.append(models.Scale(1./dw))
 
-                    m_init = models.Chebyshev1D(degree=order,
-                                                domain=[0, ext.shape[dispaxis]-1])
-                    # Find model to transform actual (x,y) locations to the
-                    # value of the reference pixel along the dispersion axis
-                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                               sigma_clip, sigma=3)
-                    m_final, _ = fit_it(m_init, in_coords[1-dispaxis], in_coords[dispaxis])
-                    plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
-                    self.viewer.polygon(plot_coords, closed=False,
-                                        xfirst=(dispaxis==1), origin=0)
-                    model_dict = astromodels.chebyshev_to_dict(m_final)
-                    all_column_names.extend([k for k in model_dict.keys()
-                                             if k not in all_column_names])
-                    all_model_dicts.append(model_dict)
+                # If we resample to a coarser pixel scale, we may interpolate
+                # over features. We avoid this by subsampling back to the
+                # original pixel scale (approximately).
+                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
+                subsample = abs(dw / input_dw)
+                if subsample > 1.1:
+                    subsample = int(subsample + 0.5)
 
-                for name in all_column_names:
-                    aptable[name] = [model_dict.get(name, 0) for model_dict in all_model_dicts]
-                # We don't need to reattach the Table because it was a
-                # reference all along!
+                dg = transform.DataGroup([ext], [t])
+                dg.output_shape = (npix,)
+                output_dict = dg.transform(attributes=attributes, subsample=subsample,
+                                           conserve=conserve)
+                for key, value in output_dict.items():
+                    setattr(ext, key, value)
+
+                ext.hdr["CRPIX1"] = 1.
+                ext.hdr["CRVAL1"] = w1
+                ext.hdr["CDELT1"] = dw
+                ext.hdr["CD1_1"] = dw
+                ext.hdr["CUNIT1"] = "nanometers"
 
             # Timestamp and update the filename
-            # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
         return adinputs
+
 
     def skyCorrectFromSlit(self, adinputs=None, **params):
         """
@@ -979,108 +1071,95 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
-    def linearizeSpectra(self, adinputs=None, **params):
+
+    def traceApertures(self, adinputs=None, **params):
         """
+        This primitive traces apertures listed in the APERTURE table along
+        the dispersion direction, and estimates the optimal extraction
+        aperture size from the spatial profile of each source.
+
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        w1: float
-            Wavelength of first pixel (nm)
-        w2: float
-            Wavelength of last pixel (nm)
-        dw: float
-            Dispersion (nm/pixel)
-        npix: int
-            Number of pixels in output spectrum
-        conserve: bool
-            Conserve flux (rather than interpolate)?
-
-        Exactly 0 or 3 of (w1, w2, dw, npix) must be specified.
+        trace_order: int
+            fitting order along spectrum
         """
+
+        def averaging_func(data, mask=None, variance=None):
+            """Use a sigma-clipped mean to collapse in the dispersion
+            direction, which should reject sky lines"""
+            return NDStacker.mean(*NDStacker.sigclip(data, mask=mask,
+                                                     variance=variance))
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        # timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        w1 = params["w1"]
-        w2 = params["w2"]
-        dw = params["dw"]
-        npix = params["npix"]
-        conserve = params["conserve"]
-
-        # There are either 1 or 4 Nones, due to validation
-        nones = [w1, w2, dw, npix].count(None)
-        if nones == 1:
-            # Work out the missing variable from the others
-            if npix is None:
-                npix = int(np.ceil((w2 - w1) / dw)) + 1
-                w2 = w1 + (npix-1) * dw
-            elif w1 is None:
-                w1 = w2 - (npix-1) * dw
-            elif w2 is None:
-                w2 = w1 + (npix-1) * dw
-            else:
-                dw = (w2 - w1) / (npix-1)
+        order = params["trace_order"]
 
         for ad in adinputs:
             for ext in ad:
-                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
-
-                attributes = [attr for attr in ('data', 'mask', 'variance')
-                              if getattr(ext, attr) is not None]
                 try:
-                    wavecal = dict(zip(ext.WAVECAL["name"],
-                                       ext.WAVECAL["coefficients"]))
+                    aptable = ext.APERTURE
+                    locations = aptable['c0'].data
                 except (AttributeError, KeyError):
-                    cheb = None
-                else:
-                    cheb = astromodels.dict_to_chebyshev(wavecal)
-                if cheb is None:
-                    log.warning("{} has no WAVECAL. Cannot linearize.".
-                                format(extname))
+                    log.warning("Could not find aperture locations in {}:{} - "
+                                "continuing".format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                if nones == 4:
-                    npix = ext.data.size
-                    limits = cheb([0, npix-1])
-                    w1, w2 = min(limits), max(limits)
-                    dw = (w2 - w1) / (npix - 1)
+                self.viewer.display_image(ext, wcs=False)
+                self.viewer.width = 2
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-                log.stdinfo("Linearizing {}: w1={:.3f} w2={:.3f} dw={:.3f} "
-                            "npix={}".format(extname, w1, w2, dw, npix))
+                step = 20
+                nsum = 20
+                max_missed = 6
+                max_shift = 0.02
+                start = 0.5 * ext.shape[dispaxis]
 
-                cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
-                t = transform.Transform(cheb)
+                # The coordinates are always returned as (x-coords, y-coords)
+                all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
+                                                                    start=start, initial=locations, width=5, step=step,
+                                                                    nsum=nsum, max_missed=max_missed,
+                                                                    max_shift=max_shift, viewer=self.viewer)
 
-                # Linearization (and inverse)
-                t.append(models.Shift(-w1))
-                t.append(models.Scale(1./dw))
+                self.viewer.color = "blue"
+                spectral_coords = np.arange(0, ext.shape[dispaxis], step)
+                all_column_names = []
+                all_model_dicts = []
+                for location in locations:
+                    # Funky stuff to extract the coords associated with each
+                    # aperture and sort by coordinate along the spectrum
+                    coords = np.array([list(c1) + list(c2)
+                                       for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
+                                       if c1[dispaxis] == location])
+                    values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
+                    ref_coords, in_coords = values[:2], values[2:]
 
-                # If we resample to a coarser pixel scale, we may interpolate
-                # over features. We avoid this by subsampling back to the
-                # original pixel scale (approximately).
-                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = abs(dw / input_dw)
-                if subsample > 1.1:
-                    subsample = int(subsample + 0.5)
+                    m_init = models.Chebyshev1D(degree=order,
+                                                domain=[0, ext.shape[dispaxis] - 1])
+                    # Find model to transform actual (x,y) locations to the
+                    # value of the reference pixel along the dispersion axis
+                    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                               sigma_clip, sigma=3)
+                    m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
+                    plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
+                    self.viewer.polygon(plot_coords, closed=False,
+                                        xfirst=(dispaxis == 1), origin=0)
+                    model_dict = astromodels.chebyshev_to_dict(m_final)
+                    all_column_names.extend([k for k in model_dict.keys()
+                                             if k not in all_column_names])
+                    all_model_dicts.append(model_dict)
 
-                dg = transform.DataGroup([ext], [t])
-                dg.output_shape = (npix,)
-                output_dict = dg.transform(attributes=attributes, subsample=subsample,
-                                           conserve=conserve)
-                print(dg.jfactors)
-                for key, value in output_dict.items():
-                    setattr(ext, key, value)
-
-                ext.hdr["CRPIX1"] = 1.
-                ext.hdr["CRVAL1"] = w1
-                ext.hdr["CDELT1"] = dw
-                ext.hdr["CUNIT1"] = "nanometers"
+                for name in all_column_names:
+                    aptable[name] = [model_dict.get(name, 0) for model_dict in all_model_dicts]
+                # We don't need to reattach the Table because it was a
+                # reference all along!
 
             # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
-
         return adinputs
 
 #-----------------------------------------------------------------------------

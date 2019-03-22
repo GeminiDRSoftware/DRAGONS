@@ -16,11 +16,10 @@ def reduce(p):
     p.distortionCorrect()
     p.writeOutputs()
     p.findSourceApertures()
+    p.skyCorrectFromSlit()
     p.traceApertures()
+    p.writeOutputs()
     p.extract1DSpectra()
-    p.removeFromInputs(tags='EXTRACTED', outstream='2d')
-    p.writeOutputs(stream='2d')
-    p.selectFromInputs(tags='EXTRACTED')
     p.linearizeSpectra()
     p.writeOutputs()
 
