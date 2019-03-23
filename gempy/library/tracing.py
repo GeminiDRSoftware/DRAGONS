@@ -143,20 +143,21 @@ class Aperture(object):
         # make data look like it's dispersed vertically
         apdata = np.zeros((npix,), dtype=np.float32)
         try:
-            has_mask = ext.mask is not None
+            mask = ext.mask
         except AttributeError:  # ext is just an ndarray
             data = ext if dispaxis == 0 else ext.T
-            has_mask = False
-            has_var = False
+            mask = None
+            var = None
         else:
             data = ext.data if dispaxis == 0 else ext.data.T
-            if has_mask:
-                apmask = np.zeros_like(apdata, dtype=DQ.datatype)
-                mask = ext.mask if dispaxis == 0 else ext.mask.T
-            has_var = ext.variance is not None
-            if has_var:
-                apvar = np.zeros_like(apdata)
-                var = ext.variance if dispaxis == 0 else ext.variance.T
+            if dispaxis == 1 and mask is not None:
+                mask = mask.T
+            var = ext.variance
+            if dispaxis == 1 and var is not None:
+                var = var.T
+
+        apmask = None if mask is None else np.zeros_like(apdata, dtype=DQ.datatype)
+        apvar = None if var is None else np.zeros_like(apdata)
 
         center_pixels = self._model(np.arange(npix))
         all_x1 = center_pixels - 0.5 * width
@@ -182,21 +183,20 @@ class Aperture(object):
 
             # Mask has to consider bits from all pixels with even a fractional
             # contribution, but add only a fraction of edge pixels in data, var
-            if has_mask:
+            if mask is not None:
                 apmask[i] = np.bitwise_or.reduce(mask[i, ix1:ix2])
             apdata[i] = (data[i, ix1:ix2].sum() - (x1-ix1+0.5) * data[i, ix1] -
                          (ix2-x2-0.5) * data[i, ix2-1])
-            if has_var:
+            if var is not None:
                 apvar[i] = (var[i, ix1:ix2].sum() - (x1-ix1+0.5) * var[i, ix1] -
                             (ix2-x2-0.5) * var[i, ix2-1])
 
 
-        ndd = NDAstroData(apdata, mask=None if not has_mask else apmask)
-        if has_var:
-            ndd.variance = apvar
+        ndd = NDAstroData(apdata, mask=apmask)
+        ndd.variance = apvar
         try:
             ndd.meta['header'] = ext.hdr.copy()
-        except AttributeError:
+        except AttributeError:  # we only had an ndarray
             pass
         return ndd
 
