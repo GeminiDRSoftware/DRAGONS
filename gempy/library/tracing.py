@@ -107,6 +107,28 @@ class Aperture(object):
         self.width = width
         return width
 
+    def uniform_weighting(self, data, mask, var, width):
+        """Uniform extraction across an aperture of width pixels"""
+        slitlength = data.shape[1]
+        all_x1 = self.center_pixels - 0.5 * width
+        all_x2 = self.center_pixels + 0.5 * width
+        for i, (x1, x2) in enumerate(zip(all_x1, all_x2)):
+            if x1 < -0.5 or x2 >= slitlength - 0.5:
+                x1 = max(x1, -0.5)
+                x2 = min(x2, slitlength - 0.5)
+            ix1, ix2 = int(x1 + 0.5), int(x2 + 1.5)
+
+            # Mask has to consider bits from all pixels with even a fractional
+            # contribution, but add only a fraction of edge pixels in data, var
+            if mask is not None:
+                self.mask[i] = np.bitwise_or.reduce(mask[i, ix1:ix2])
+            self.data[i] = (data[i, ix1:ix2].sum() - (x1-ix1+0.5) * data[i, ix1] -
+                         (ix2-x2-0.5) * data[i, ix2-1])
+            if var is not None:
+                self.var[i] = (var[i, ix1:ix2].sum() - (x1-ix1+0.5) * var[i, ix1] -
+                            (ix2-x2-0.5) * var[i, ix2-1])
+
+
     def extract(self, ext, width=None, dispaxis=None, viewer=None):
         """
         Extract a 1D spectrum by following the model trace and extracting in
@@ -141,7 +163,6 @@ class Aperture(object):
         self.check_domain(npix)
 
         # make data look like it's dispersed vertically
-        apdata = np.zeros((npix,), dtype=np.float32)
         try:
             mask = ext.mask
         except AttributeError:  # ext is just an ndarray
@@ -156,12 +177,10 @@ class Aperture(object):
             if dispaxis == 1 and var is not None:
                 var = var.T
 
-        apmask = None if mask is None else np.zeros_like(apdata, dtype=DQ.datatype)
-        apvar = None if var is None else np.zeros_like(apdata)
-
-        center_pixels = self._model(np.arange(npix))
-        all_x1 = center_pixels - 0.5 * width
-        all_x2 = center_pixels + 0.5 * width
+        # Avoid having to recalculate them
+        self.center_pixels = self._model(np.arange(npix))
+        all_x1 = self.center_pixels - 0.5 * width
+        all_x2 = self.center_pixels + 0.5 * width
         if viewer is not None:
             # Display extraction edges on viewer, every 10 pixels (for speed)
             pixels = np.arange(npix)
@@ -170,30 +189,30 @@ class Aperture(object):
             edge_coords = np.array([pixels, all_x2]).T
             viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis==1), origin=0)
 
-        warned = False
-        for i, (center, x1, x2) in enumerate(zip(center_pixels, all_x1, all_x2)):
-            # Remember how pixel coordinates are defined!
-            if x1 < -0.5 or x2 >= slitlength - 0.5:
-                if not warned:
-                    log.warning("Aperture extends off image at {} {}".format(direction, i))
-                    warned = True
-                x1 = max(x1, -0.5)
-                x2 = min(x2, slitlength - 0.5)
-            ix1, ix2 = int(x1 + 0.5), int(x2 + 1.5)
+        # Remember how pixel coordinates are defined!
+        off_low = np.where(all_x1 < -0.5)[0]
+        if len(off_low):
+            log.warning("Aperture extends off {} of image between {}s {} and {}".
+                        format(("left", "bottom")[dispaxis], direction,
+                               min(off_low), max(off_low)))
+        off_high = np.where(all_x2 >= slitlength - 0.5)[0]
+        if len(off_high):
+            log.warning("Aperture extends off {} of image between {}s {} and {}".
+                        format(("right", "top")[dispaxis], direction,
+                               min(off_high), max(off_high)))
 
-            # Mask has to consider bits from all pixels with even a fractional
-            # contribution, but add only a fraction of edge pixels in data, var
-            if mask is not None:
-                apmask[i] = np.bitwise_or.reduce(mask[i, ix1:ix2])
-            apdata[i] = (data[i, ix1:ix2].sum() - (x1-ix1+0.5) * data[i, ix1] -
-                         (ix2-x2-0.5) * data[i, ix2-1])
-            if var is not None:
-                apvar[i] = (var[i, ix1:ix2].sum() - (x1-ix1+0.5) * var[i, ix1] -
-                            (ix2-x2-0.5) * var[i, ix2-1])
+        # Create the outputs here so the extraction function has access to them
+        self.data = np.zeros((len(data),), dtype=np.float32)
+        self.mask = None if mask is None else np.zeros_like(self.data,
+                                                            dtype=DQ.datatype)
+        self.var = None if var is None else np.zeros_like(self.data)
 
+        extraction_func = self.uniform_weighting
+        extraction_func(data, mask, var, width)
 
-        ndd = NDAstroData(apdata, mask=apmask)
-        ndd.variance = apvar
+        del self.center_pixels
+        ndd = NDAstroData(self.data, mask=self.mask)
+        ndd.variance = self.var
         try:
             ndd.meta['header'] = ext.hdr.copy()
         except AttributeError:  # we only had an ndarray
