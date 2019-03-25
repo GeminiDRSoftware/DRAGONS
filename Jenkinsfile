@@ -64,14 +64,11 @@ pipeline {
                 echo "PEP8 style check"
                 sh  '''
                     source activate ${BUILD_TAG}
-
-                    if [ ! -d "reports" ]; then
-                        mkdir reports
-                        fi
+                    mkdir -p ./reports
 
                     pylint --exit-zero --jobs=4 --rcfile=.pylintrc \
                         astrodata gemini_instruments gempy geminidr \
-                        recipe_system > reports/pylint.log
+                        recipe_system > ./reports/pylint.log
                     '''
             }
         }
