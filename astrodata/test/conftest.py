@@ -3,7 +3,7 @@ import pytest
 import os
 import glob
 
-#@pytest.fixture
+@pytest.fixture
 def test_path():
 
     try:
