@@ -66,7 +66,7 @@ pipeline {
                     source activate ${BUILD_TAG}
                     pylint --exit-zero --jobs=4 --rcfile=.pylintrc \
                         astrodata gemini_instruments gempy geminidr \
-                        recipe_system > reports>pylint.log
+                        recipe_system > reports/pylint.log
                     '''
             }
         }
