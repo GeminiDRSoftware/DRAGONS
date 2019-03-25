@@ -89,7 +89,7 @@ pipeline {
             }
         }
 
-        step('Code coverage') {
+        stage('Code coverage') {
             steps {
                 sh  '''
                 source activate ${BUILD_TAG}
