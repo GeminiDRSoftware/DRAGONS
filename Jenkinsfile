@@ -64,7 +64,6 @@ pipeline {
                 echo "PEP8 style check"
                 sh  '''
                     source activate ${BUILD_TAG}
-                    rm -Rf ./reports*
                     mkdir -p ./reports
 
                     pylint --exit-zero --jobs=4 --rcfile=.pylintrc \
