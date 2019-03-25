@@ -49,12 +49,13 @@ def caldb(request):
     calibration_service.config(config_file=caldb_conf_file)
     calibration_service.init(wipe=True)
 
-    return calibration_service
+    yield calibration_service
+
+    os.remove(caldb_conf_file)
 
 
 def test_reduce_image(test_path, caldb):
 
-    caldb.config()
     caldb.init(wipe=True)
 
     all_files = glob.glob(
