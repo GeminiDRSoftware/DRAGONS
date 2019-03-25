@@ -18,16 +18,17 @@ if not os.path.exists(path):
     warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
     path = ''
 
-archivefiles = glob.glob(os.path.join(path, "Archive/", "*fits"))
+# Returns list of all files in the TEST_PATH directory
+archive_files = glob.glob(os.path.join(path, "Archive/", "*fits"))
 
-
-
+# Separates the directory from the list, helps cleanup code
+fits_files = [_file.split('/')[-1] for _file in archive_files]
 
 
 # Opens all files in archive
-@pytest.mark.parametrize('filename', archivefiles)
-def test_all_descriptors_can_parse(filename):
-    ad = astrodata.open(filename)
+@pytest.mark.parametrize('filename', fits_files)
+def test_all_descriptors_can_parse(test_path, filename):
+    ad = astrodata.open(os.path.join(test_path, "Archive/", filename))
     typelist = []
     for descriptor in ad.descriptors:
         try:
