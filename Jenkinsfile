@@ -72,8 +72,10 @@ pipeline {
                     '''
             }
             post {
-                echo 'Report pyLint warnings using the warnings-ng-plugin'
-                recordIssues enabledForFailure: true, tool: pyLint(pattern: '**/reports/pylint.log')
+                always {
+                    echo 'Report pyLint warnings using the warnings-ng-plugin'
+                    recordIssues enabledForFailure: true, tool: pyLint(pattern: '**/reports/pylint.log')
+                }
             }
         }
 
@@ -140,32 +142,10 @@ pipeline {
                 }
             }
         }
-
-        stage('Build package') {
-            when {
-                expression {
-                    currentBuild.result == null || currentBuild.result == 'SUCCESS'
-                }
-            }
-            steps {
-                sh  '''
-                    source activate ${BUILD_TAG}
-                    python setup.py sdist bdist_egg
-                    '''
-            }
-            post {
-                always {
-                    // Archive unit tests for the future
-                    archiveArtifacts (allowEmptyArchive: true,
-                        artifacts: 'dist/*whl',
-                        fingerprint: true)
-                }
-            }
-        }
     }
     post {
         always {
-            sh 'conda remove --yes --all --quiet -n ${BUILD_TAG}'
+            sh 'conda remove --quiet --yes --all -n ${BUILD_TAG}'
         }
         failure {
             echo "Send e-mail, when failed"
