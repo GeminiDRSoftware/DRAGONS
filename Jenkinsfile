@@ -43,7 +43,7 @@ pipeline {
                     else
                         echo "Anaconda is already installed --- Skipping step."
                     fi
-                '''
+                    '''
             }
         }
 
@@ -64,6 +64,11 @@ pipeline {
                 echo "PEP8 style check"
                 sh  '''
                     source activate ${BUILD_TAG}
+
+                    if [ ! -d "reports" ]; then
+                        mkdir reports
+                        fi
+
                     pylint --exit-zero --jobs=4 --rcfile=.pylintrc \
                         astrodata gemini_instruments gempy geminidr \
                         recipe_system > reports/pylint.log
@@ -123,9 +128,9 @@ pipeline {
             }
             steps {
                 sh  '''
-                source activate ${BUILD_TAG}
-                python setup.py sdist bdist_egg
-                '''
+                    source activate ${BUILD_TAG}
+                    python setup.py sdist bdist_egg
+                    '''
             }
             post {
                 always {
@@ -145,4 +150,4 @@ pipeline {
             echo "Send e-mail, when failed"
         }
     }
-} // pipeline
+}
