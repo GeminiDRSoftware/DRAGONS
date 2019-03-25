@@ -43,7 +43,7 @@ pipeline {
                     else
                         echo "Anaconda is already installed --- Skipping step."
                     fi
-              '''
+                '''
             }
         }
 
