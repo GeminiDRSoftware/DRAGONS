@@ -22,13 +22,8 @@ if not os.path.exists(path):
 
 archive_files = glob.glob(os.path.join(path, "Archive/", "*fits"))
 
-fits_files = []
-for i in archive_files:
-    fits_files.append(i.split('/')[-1])
-# Cleans up a fake file created in the tests in case it's still there
-cleanup = os.path.join(path, 'created_fits_file.fits')
-if os.path.exists(cleanup):
-    os.remove(cleanup)
+fits_files = [_file.split('/')[-1] for _file in archive_files]
+
 
 
 # Fixtures for module and class
@@ -46,7 +41,7 @@ def setup_test_descriptor_values(request):
 class TestDescriptorValues:
 
     @pytest.mark.parametrize("filename", fits_files)
-    def test_airmass_descriptor_is_none_or_float(self, test_path, filename):
+    def test_airmass_descriptor_value_is_acceptable(self, test_path, filename):
         ad = astrodata.open(os.path.join(test_path, "Archive/", filename))
         try:
             assert ((ad.airmass() >= 1.0)
