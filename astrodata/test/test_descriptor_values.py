@@ -20,11 +20,13 @@ if not os.path.exists(path):
     warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
     path = ''
 
+
+# Returns list of all files in the TEST_PATH directory
 archive_files = glob.glob(os.path.join(path, "Archive/", "*fits"))
 
+# Separates the directory from the list, helps cleanup code
 fits_files = [_file.split('/')[-1] for _file in archive_files]
-
-
+full_dir = archive_files[0].rsplit('/', 1)[0]
 
 # Fixtures for module and class
 @pytest.fixture(scope='class')
@@ -42,7 +44,7 @@ class TestDescriptorValues:
 
     @pytest.mark.parametrize("filename", fits_files)
     def test_airmass_descriptor_value_is_acceptable(self, test_path, filename):
-        ad = astrodata.open(os.path.join(test_path, "Archive/", filename))
+        ad = astrodata.open(os.path.join(full_dir, filename))
         try:
             assert ((ad.airmass() >= 1.0)
                     or (ad.airmass() is None))
