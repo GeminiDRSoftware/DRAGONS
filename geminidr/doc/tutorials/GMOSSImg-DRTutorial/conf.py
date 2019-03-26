@@ -12,14 +12,23 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+print(' Printing current working directory for debugging:')
+print(' ' + os.getcwd())
+
+if on_rtd:
+    sys.path.insert(0, os.path.abspath('./../../../'))
+else:
+    sys.path.insert(0, os.path.abspath('./../../../'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'DRAGONS Tutorials - GMOS-S Imaging Data Reduction'
+project = 'DRAGONS Tutorial - GMOS-S Imaging Data Reduction'
 copyright = '2019, Bruno Quint'
 author = 'Bruno Quint'
 
@@ -39,6 +48,13 @@ release = ''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.githubpages',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -58,7 +74,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -74,7 +90,7 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -101,7 +117,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'DRAGONSTutorials-GMOS-SImagingDataReductiondoc'
+htmlhelp_basename = 'DRAGONSTutorial-GMOS-SImagingDataReductiondoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -128,7 +144,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'DRAGONSTutorials-GMOS-SImagingDataReduction.tex', 'DRAGONS Tutorials - GMOS-S Imaging Data Reduction Documentation',
+    (master_doc, 'DRAGONSTutorial-GMOS-SImagingDataReduction.tex', 'DRAGONS Tutorial - GMOS-S Imaging Data Reduction Documentation',
      'Bruno Quint', 'manual'),
 ]
 
@@ -138,7 +154,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dragonstutorials-gmos-simagingdatareduction', 'DRAGONS Tutorials - GMOS-S Imaging Data Reduction Documentation',
+    (master_doc, 'dragonsTutorial-gmos-simagingdatareduction', 'DRAGONS Tutorial - GMOS-S Imaging Data Reduction Documentation',
      [author], 1)
 ]
 
@@ -149,7 +165,115 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'DRAGONSTutorials-GMOS-SImagingDataReduction', 'DRAGONS Tutorials - GMOS-S Imaging Data Reduction Documentation',
-     author, 'DRAGONSTutorials-GMOS-SImagingDataReduction', 'One line description of project.',
+    (master_doc, 'DRAGONSTutorial-GMOS-SImagingDataReduction', 'DRAGONS Tutorial - GMOS-S Imaging Data Reduction Documentation',
+     author, 'DRAGONSTutorial-GMOS-SImagingDataReduction', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+# Documents to append as an appendix to all manuals.
+#texinfo_appendices = []
+
+# If false, no module index is generated.
+#texinfo_domain_indices = True
+
+# How to display URL addresses: 'footnote', 'no', or 'inline'.
+#texinfo_show_urls = 'footnote'
+
+intersphinx_mapping = {
+    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
+    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'gemini_instruments': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
+    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'matplotlib': ('http://matplotlib.sourceforge.net/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'python': ('https://docs.python.org/3', None),
+    'recipe_system': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+}
+
+
+# Activate the todos
+todo_include_todos=True
+
+
+def run_api_doc(_):
+    """
+    Automatic API generator
+
+    This method is used to generate API automatically by importing all the
+    modules and sub-modules inside a package.
+
+    It is equivalent to run:
+    >>> sphinx-apidoc --force --no-toc --separate --module --output-dir api/ ../../ ../../cal_service
+
+    It is useful because it creates .rst files on the file.
+
+    NOTE
+    ----
+        This does not work with PyCharm default build. If you want to trigger
+        this function, use the standard `$ make html` in the command line.
+        The .rst files will be generated. After that, you can use PyCharm's
+        build helper.
+    """
+    build_packages = [
+        'geminidr'
+    ]
+
+    is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
+
+    if is_running_in_pycharm:
+        current_path = os.path.split(__file__)[0]
+    else:
+        current_path = os.getcwd()
+
+    relative_path = "../../../../"
+
+    print("Am I running on PyCharm? {}", is_running_in_pycharm)
+    print("Current Path: {}", current_path)
+
+    for p in build_packages:
+
+        build_path = os.path.join(current_path, relative_path, p)
+
+        ignore_paths = [
+            'doc',
+            'f2',
+            'gsaoi',
+            'gnirs',
+            'niri',
+            'test',
+            'tests',
+        ]
+
+        ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+
+        argv = [
+                   "--force",
+                   "--no-toc",
+                   # "--separate",
+                   "--module",
+                   "--output-dir", "api/",
+                   build_path
+               ] + ignore_paths
+
+        sys.path.insert(0, build_path)
+
+        try:
+            # Sphinx 1.7+
+            from sphinx.ext import apidoc
+            apidoc.main(argv)
+
+        except ImportError:
+            # Sphinx 1.6 (and earlier)
+            from sphinx import apidoc
+            argv.insert(0, apidoc.__file__)
+            apidoc.main(argv)
+
+
+def setup(app):
+
+    # Adding style in order to have the todos show up in a red box.
+    app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('code.xref-styles.css')
+
+    # Automatic API generation
+    app.connect('builder-inited', run_api_doc)

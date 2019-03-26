@@ -193,7 +193,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'ReplaceWithTitle'
+htmlhelp_basename = 'DRAGONSTutorials-GSAOIImagingDataReductiondoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -217,9 +217,11 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index-latex', 'ReplaceWithTitle.tex', u'<REPLACE-WITH-TILE>',
-   u'Your Name', 'manual'),
+  ('index-latex', 'DRAGONSTutorials-GSAOIImagingDataReduction.tex',
+   u'DRAGONS Tutorials - GSAOI Imaging Data Reduction Documentation',
+   u'Bruno Quint', 'manual'),
 ]
+
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -247,8 +249,9 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'replacewithtitle', u'<REPLACE-WITH-TITLE>',
-     [u'Your Name'], 1)
+    ('index', 'dragonstutorials-gsaoiimagingdatareduction',
+     u'<DRAGONS Tutorials - GMOS-S Imaging Data Reduction Documentation>',
+     [author], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -261,10 +264,13 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'ReplaceWithTitle', u'<REPLACE-WITH-TITLE>',
-   u'Your Name', 'ReplaceWithTitle', 'One line description of project.',
-   'Miscellaneous'),
+    (master_doc, 'DRAGONSTutorials-GSAOIImagingDataReduction',
+     'DRAGONS Tutorials - GSAOI Imaging Data Reduction Documentation',
+     author, 'DRAGONSTutorials-GSAOIImagingDataReduction',
+     'One line description of project.',
+     'Miscellaneous'),
 ]
+
 
 # Documents to append as an appendix to all manuals.
 #texinfo_appendices = []
