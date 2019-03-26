@@ -54,7 +54,6 @@ def caldb(request):
 
 def test_reduce_image(test_path, caldb):
 
-    caldb.config()
     caldb.init(wipe=True)
 
     all_files = glob.glob(
