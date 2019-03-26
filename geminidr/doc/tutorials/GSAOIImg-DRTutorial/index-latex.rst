@@ -26,7 +26,7 @@ Tutorial Series - GSAOI Imaging Data Reduction with DRAGONS
 .. toctree::
    :maxdepth: 1
    
-   appendices/appendix_yourcontent
+   api
    
 
 .. todolist::

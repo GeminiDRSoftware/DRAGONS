@@ -74,7 +74,7 @@ were added to the local database.
 
 
 Create :class:`list` of files
---------------------
+-----------------------------
 
 Here, again, we have to create lists of files that will be used on each of the
 data reduction step. We can start by creating a :class:`list` will all the file names:
