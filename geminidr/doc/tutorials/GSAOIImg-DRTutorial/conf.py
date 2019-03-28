@@ -21,13 +21,17 @@ import os
 # -- Setting up path to import modules ---------------------------------------
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
+relative_path = './../../../'
+dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
+
 print(' Printing current working directory for debugging:')
 print(' ' + os.getcwd())
+print(' Dragons path: {}'.format(dragons_path))
 
 if on_rtd:
-    sys.path.insert(0, os.path.abspath('./../../../'))
+    sys.path.insert(0, dragons_path)
 else:
-    sys.path.insert(0, os.path.abspath('./../../../'))
+    sys.path.insert(0, dragons_path)
 
 
 # Add any paths that contain templates here, relative to this directory.
@@ -310,7 +314,7 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
-        'geminidr'
+        'geminidr/gsaoi'
     ]
 
     is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
@@ -332,11 +336,6 @@ def run_api_doc(_):
         build_path = os.path.join(root_build_path, p)
 
         ignore_paths = [
-            'doc',
-            'f2',
-            'gmos',
-            'gnirs',
-            'niri',
             'test',
             'tests',
         ]
@@ -346,7 +345,6 @@ def run_api_doc(_):
         argv = [
                    "--force",
                    "--no-toc",
-                   # "--separate",
                    "--module",
                    "--output-dir", "api/",
                    build_path
