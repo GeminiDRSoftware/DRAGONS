@@ -50,26 +50,26 @@ installed, we can call the command tool typewalk_: ::
 
     $ typewalk
 
-    directory:  <my_full_path>/raw
-     S20150609S0022.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20150609S0023.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20150609S0024.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     ...
-     S20170312S0180.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-     S20170312S0181.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-     S20170312S0198.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-     ...
-     S20170315S0286.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20170316S0090.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20170316S0091.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     ...
+    directory:  <path_to_my>/playground/raw
+         S20060624S0065.fits ............... (AZEL_TARGET) (BIAS) (CAL) (GEMINI) (GMOS) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+         S20060624S0066.fits ............... (AZEL_TARGET) (BIAS) (CAL) (GEMINI) (GMOS) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+         S20060624S0067.fits ............... (AZEL_TARGET) (BIAS) (CAL) (GEMINI) (GMOS) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+         ...
+         S20060818S0188.fits ............... (CAL) (FLAT) (GEMINI) (GMOS) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (TWILIGHT) (UNPREPARED)
+         S20060818S0189.fits ............... (CAL) (FLAT) (GEMINI) (GMOS) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (TWILIGHT) (UNPREPARED)
+         S20060818S0190.fits ............... (CAL) (FLAT) (GEMINI) (GMOS) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (TWILIGHT) (UNPREPARED)
+         ...
+         S20060910S0007.fits ............... (GEMINI) (GMOS) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
+         S20060910S0008.fits ............... (GEMINI) (GMOS) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
+         S20060910S0009.fits ............... (GEMINI) (GMOS) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
+         ...
 
 This command will open every FITS file within the current folder (recursively)
 and will print a table with the file names and the associated tags. For example,
 calibration files will always have the ``CAL`` tag. Flat images will always have
-the ``FLAT`` tag. Dark files will have the ``DARK`` tag. This means that we
+the ``FLAT`` tag. Bias files will have the ``BIAS`` tag. This means that we
 can start getting to know a bit more about our data set just by looking the
-tags. The output above was trimmed for simplicity.
+tags. The output above was trimmed to keep this document short.
 
 
 .. _create_file_lists:
@@ -77,16 +77,62 @@ tags. The output above was trimmed for simplicity.
 Create File lists
 -----------------
 
-This data set now contains science and calibration frames. It could have
-different observed targets and different exposure times. The current data
-reduction pipeline does not organize the data.
+This data set now contains science and calibration frames. It contains
+data and calibrations obtained on different dates and have exposure times. The
+current data reduction pipeline does not organize the data.
 
 That means that we first need to identify these files and create lists that will
 be used in the data-reduction process. For that, we will use the dataselect_
 command line. Please, refer to the `dataselect page <dataselect>`_ for details
-regarding its usage. Let us start with the DARK files: ::
+regarding its usage. Let us start with the BIAS files::
 
-   $ dataselect --tags DARK raw/*.fits > list_of_darks.txt
+    $ dataselect --tags BIAS raw/*.fits
+    raw/S20060624S0065.fits
+    raw/S20060624S0066.fits
+    raw/S20060624S0067.fits
+    ...
+    raw/S20060906S0056.fits
+    raw/S20060906S0057.fits
+    raw/S20060906S0058.fits
+    ...
+    raw/S20070308S0276.fits
+    raw/S20070308S0277.fits
+    raw/S20070308S0278.fits
+
+Again, the output was trimmed. The files names tell us that these data were
+obtained on different days. Let us use the `showd`_ command to check if we have
+more than one configuration::
+
+    $ dataselect --tags BIAS raw/*.fits | showd -d detector_name
+
+    filename:   detector_name
+    ------------------------------
+    S20060624S0065.fits: EEV2037-06-03EEV8194-19-04EEV8261-07-04
+    S20060624S0066.fits: EEV2037-06-03EEV8194-19-04EEV8261-07-04
+    S20060624S0067.fits: EEV2037-06-03EEV8194-19-04EEV8261-07-04
+    ...
+    S20070308S0277.fits: 2
+    S20070308S0278.fits: 2
+
+The "pipe" (``|``) gets the output from `dataselect`_ and passes it to `showd`_.
+That shows us that all the files were obtained with the same detector. What
+about binning? ::
+
+    $ dataselect --tags BIAS raw/*.fits | showd -d detector_x_bin,detector_y_bin
+
+    filename:   detector_x_bin   detector_y_bin
+    ------------------------------
+    S20060624S0065.fits: 2 2
+    S20060624S0066.fits: 2 2
+    S20060624S0067.fits: 2 2
+    ...
+    S20070308S0277.fits: 2 2
+    S20070308S0278.fits: 2 2
+
+All the files have the same binning.
+
+    $ dataselect --tags BIAS raw/*.fits > list_of_bias.txt
+
 
 Here, the ``>`` symbol gets the dataselect_ output and stores it within the
 ``list_of_darks.txt`` file. If you want to see the output, simply omit it and
