@@ -321,13 +321,15 @@ def run_api_doc(_):
         current_path = os.getcwd()
 
     relative_path = "../../../../"
+    root_build_path = os.path.normpath(os.path.join(current_path, relative_path))
 
     print("Am I running on PyCharm? {}".format(is_running_in_pycharm))
     print("Current Path: {}".format(current_path))
+    print("Root build path: {}".format(root_build_path))
 
     for p in build_packages:
 
-        build_path = os.path.join(current_path, relative_path, p)
+        build_path = os.path.join(root_build_path, p)
 
         ignore_paths = [
             'doc',
