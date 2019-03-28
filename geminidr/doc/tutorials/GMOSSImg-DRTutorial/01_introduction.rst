@@ -54,26 +54,24 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-This tutorial will use data obtained for the #GS-2006B-Q-18 program
-(P.I. J. Arias) which consists on narrow- and broad-band imaging of three
-adjacent regions in M8 (or NGC 6523, the Lagoon Nebula). The science application
-was published on `Arias and Barba, 2009
-<https://ui.adsabs.harvard.edu/#abs/2009RMxAC..35..288A/abstract>`_
+This tutorial will use data obtained for the GS-2017A-Q-90 program
+(P.I.: Walter Weidmann) which consists on broad-band imaging the central star
+of some Planetary Nebulaes.
 
 The link for the search form is provided below::
 
-    https://archive.gemini.edu/searchform/sr=600/RAW/cols=CTOWEQ/GS-2006B-Q-18/notengineering/GMOS-S/imaging/NotFail
+    https://archive.gemini.edu/searchform/RAW/object=PN+G314.5-01.0/cols=CTOWEQ/GS-2017A-Q-90/notengineering/GMOS-S/imaging/science/NotFail/OBJECT
 
 You can copy and paste the URL address on your browser to get all the images,
-scroll to the bottom of the page and press the "Download all 90 files totalling
-0.54 Gb" button. Then, click on the "Load Associated Calibrations" tab to bring
-up a list of calibration files and press the "Download all 307 files totalling
-1.80 Gb" button in the bottom of the page to download them.
+scroll to the bottom of the page and press the "Download all 36 files totalling
+0.20 Gb" button. Then, click on the "Load Associated Calibrations" tab to bring
+up a list of calibration files and press the "Download all 418 files totalling
+1.64 Gb" button in the bottom of the page to download them.
 
 Alternatively you can use the links below to download the data directly:
 
-    - `Science Data <https://archive.gemini.edu/download/sr=600/notengineering/GS-2006B-Q-18/RAW/GMOS-S/imaging/NotFail/present/canonical>`_
-    - `Associated Calibration Files <https://archive.gemini.edu/download/associated_calibrations/sr=600/notengineering/GS-2006B-Q-18/RAW/GMOS-S/imaging/NotFail/canonical>`_
+    - `Science Data <https://archive.gemini.edu/download/object=PN+G314.5-01.0/notengineering/GS-2017A-Q-90/RAW/GMOS-S/imaging/science/NotFail/OBJECT/present/canonical>`_
+    - `Associated Calibration Files <https://archive.gemini.edu/download/associated_calibrations/object=PN+G314.5-01.0/notengineering/GS-2017A-Q-90/RAW/GMOS-S/imaging/science/NotFail/OBJECT/canonical>`_
 
 Copy the two ``.tar`` files to your favorite folder (e.g.: ``~/playground/``).
 Decompress them using the following commands::
