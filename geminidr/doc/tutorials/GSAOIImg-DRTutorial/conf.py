@@ -21,13 +21,17 @@ import os
 # -- Setting up path to import modules ---------------------------------------
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
+relative_path = './../../../'
+dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
+
 print(' Printing current working directory for debugging:')
 print(' ' + os.getcwd())
+print(' Dragons path: {}'.format(dragons_path))
 
 if on_rtd:
-    sys.path.insert(0, os.path.abspath('./../../../'))
+    sys.path.insert(0, dragons_path)
 else:
-    sys.path.insert(0, os.path.abspath('./../../../'))
+    sys.path.insert(0, dragons_path)
 
 
 # Add any paths that contain templates here, relative to this directory.
@@ -280,8 +284,8 @@ intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None),
     'gemini_instruments': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
     'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('http://matplotlib.sourceforge.net/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'python': ('https://docs.python.org/3', None),
     'recipe_system': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
 }
@@ -310,7 +314,7 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
-        'geminidr'
+        'geminidr/gsaoi'
     ]
 
     is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
@@ -321,20 +325,17 @@ def run_api_doc(_):
         current_path = os.getcwd()
 
     relative_path = "../../../../"
+    root_build_path = os.path.normpath(os.path.join(current_path, relative_path))
 
-    print("Am I running on PyCharm? {}", is_running_in_pycharm)
-    print("Current Path: {}", current_path)
+    print("Am I running on PyCharm? {}".format(is_running_in_pycharm))
+    print("Current Path: {}".format(current_path))
+    print("Root build path: {}".format(root_build_path))
 
     for p in build_packages:
 
-        build_path = os.path.join(current_path, relative_path, p)
+        build_path = os.path.join(root_build_path, p)
 
         ignore_paths = [
-            'doc',
-            'f2',
-            'gmos',
-            'gnirs',
-            'niri',
             'test',
             'tests',
         ]
@@ -344,7 +345,6 @@ def run_api_doc(_):
         argv = [
                    "--force",
                    "--no-toc",
-                   # "--separate",
                    "--module",
                    "--output-dir", "api/",
                    build_path

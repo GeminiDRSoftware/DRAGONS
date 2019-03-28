@@ -7,4 +7,4 @@ Reference API
 
 .. toctree::
 
-    api/geminidr
+    api/gsaoi
