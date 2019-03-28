@@ -1,4 +1,11 @@
 
+.. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
+
+.. _dataselect: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect
+
+.. _showd: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showd
+
+
 .. _data_reduction:
 
 **************
@@ -56,8 +63,8 @@ chosen program.
    https://archive.gemini.edu/searchform/GS-2013B-Q-15-39
 
 The bottom of the page contains a button to download the data. You can click on
-that, or you can download the images by clicking directly
-`here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_.
+that, or you can download the images by `clicking directly
+here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_.
 Alternatively, you can download the data by copy-and-pasting the address below
 in your browser:
 
@@ -67,7 +74,7 @@ in your browser:
 
 After retrieving the science data, click the Load Associated Calibrations tab on
 the search results page and download the associated dark and flat-field
-exposures. Again, the calibration files can be downloaded by clicking `here
+exposures. Again, the calibration files can be downloaded by `clicking here
 <https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/canonical>`_
 or by copying the following URL to your browser:
 
@@ -102,19 +109,19 @@ Process DARK files
 We usually start our data reduction by stacking the DARKS files that contains
 the same exposure time into a Master DARK file. Before we do that, let us create
 file lists that will be used later. These lists can be easily produced using the
-|dataselect| command line, which is available after installing DRAGONS in your
+dataselect_ command line, which is available after installing DRAGONS in your
 conda environment.
 
 We start with the creating of lists that contains DARK images for every exposure
 time available. If you don't know what are the existing exposure times, you can
-"pipe" the |dataselect| results and use the |showd| command line tool:
+"pipe" the dataselect_ results and use the showd_ command line tool:
 
 .. code-block:: bash
 
     $ dataselect --tags DARK --xtags PROCESSED raw/*.fits | showd -d exposure_time
 
-The ``|`` is what we call "pipe" and it is used to pass output from |dataselect|
-to |showd|. The following line creates a list of DARK files that were not
+The ``|`` is what we call "pipe" and it is used to pass output from dataselect_
+to showd_. The following line creates a list of DARK files that were not
 processed and that have exposure time of 20 seconds:
 
 .. code-block:: bash
@@ -161,14 +168,14 @@ And then pass this list to the ``reduce`` command.
 The Master DARK files will be saved in the same folder where ``reduce`` was
 called and inside the ``./calibration/processed_dark`` folder. The former is
 used to save cashed calibration files. If you have
-|your local database configured|, you can add the Master DARK files to it. This
-can be done using the following command:
+`your local database configured <caldb>`_, you can add the Master DARK files to
+it. This can be done using the following command:
 
 .. code-block:: bash
 
     $ caldb add ./calibration/processed_dark/S20130930S0242_dark.fits
 
-``caldb`` only accepts **one file per command**. If you want to add more files,
+`caldb`_ only accepts **one file per command**. If you want to add more files,
 you can repeat the command for each of them.
 
 .. tip::
@@ -267,7 +274,7 @@ Reduce Science Images
 
 Now that we have the Master Dark and Master Flat images, we can tell ``reduce``
 to process our data. ``reduce`` will look at the remote or at the local database
-for calibration files. Make sure that you have |configured your database|
+for calibration files. Make sure that you have `configured your database <caldb>`_
 before running it. We want to run ``reduce`` on any file that is not calibration
 nor a bad-pixel-mask (``--xtags CAL,BPM``). We also want to run this pipeline
 only on Y band images (``--expr 'filter_name=="Y"'``)
