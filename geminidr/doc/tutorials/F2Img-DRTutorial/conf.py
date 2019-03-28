@@ -12,8 +12,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+
 import os
-# import sys
+import sys
+
 # sys.path.insert(0, os.path.abspath('.'))
 
 
@@ -202,32 +204,9 @@ intersphinx_mapping = {
 todo_include_todos = True
 
 
-# -- Enable autoapi ----------------------------------------------------------
-def download_tutorial_data(_):
-    """
-    Method created to download data that will be used in the tutorial.
-    """
-    import requests
-
-    base_url = 'https://archive.gemini.edu/file/'
-    filename = 'S20130622S0040.fits'
-
-    if os.path.exists(filename):
-        return
-
-    else:
-        r = requests.get(base_url + filename)
-
-        with open(os.path.join(filename), 'wb') as f:
-            f.write(r.content)
-
-
 # -- Finishing with a setup that will run always -----------------------------
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
     app.add_stylesheet('code.xref-styles.css')
-
-    # Automatic API generation
-    app.connect('builder-inited', download_tutorial_data)
