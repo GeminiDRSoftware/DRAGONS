@@ -26,11 +26,6 @@ Flamingos 2 (F2) FITS file.
    01_get_ready
    02_data_reduction
 
-Related Documents
------------------
-
-- `Flamingos 2 Cookbook <http://rashaw-science.org/F2_drc/index.html>`_
-
 Indices and tables
 ==================
 
