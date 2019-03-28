@@ -3,108 +3,42 @@
 
 .. _dataselect: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect
 
+.. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
+
 .. _showd: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showd
 
+.. _show_primitives: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-primitives
 
-.. _data_reduction:
+.. _show_recipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes
 
-**************
+.. _showpars: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars
+
+.. _typewalk: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
+
+
+.. _command_line_data_reduction:
+
 Data Reduction
 **************
 
-This chapter will guide you on reducing **Flamingos-2 Images**. Before we start,
-make sure you have:
-
-    - Anaconda is properly installed;
-    - A Conda Environment was properly created and is active;
-    - AstroConda (STScI) is properly installed within the Conda Environment;
-    - DRAGONS was successfully installed within the Conda Environment;
+This chapter will guide you on reducing **Flamingos-2 Images** using command
+line tools.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. One of the most important scripts is called
-``reduce``, which is extensively explained in the
-`Recipe System Users Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
-For this tutorial, we will be also using other
-`Supplemental tools <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_.
+reduce_, which is extensively explained in the `Recipe System Users Manual
+<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
+For this tutorial, we will be also using other `Supplemental tools
+<https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
+like dataselect_, showd_, typewalk_, and caldb_.
 
-.. todo::
-    Add `caldb` to the supplemental tools
-
-.. todo::
-    Add `dataselect` to the supplemental tools
-
-.. todo::
-    Add `typewalk` to the supplemental tools
-
-.. todo::
-    Add `showd` to the supplemental tools
-
-
-Retrieve and Organize Data
-==========================
-
-This tutorial will use observations from program GS-2013B-Q-15 (PI:Leggett),
-NIR photometry of the faint T-dwarf star WISE J041358.14-475039.3, obtained on
-2013-Nov-21. Images of this sparse field were obtained in the Y, J, H, Ks bands
-using a dither sequence; dayCal DARKS and GCAL flats were obtained as well.
-Leggett, et al. (2015; `[L15]
-<https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_)
-briefly describes the data reduction procedures they followed, which are
-similar to those described below.
-
-The first step is to retrieve the data from the Gemini Observatory Archive
-(GOA). For more details on using the Archive, check its
-`Help Page <https://archive.gemini.edu/help/index.html>`_. The link below takes
-you to the result obtained when searching for data that corresponds to the
-chosen program.
-
-::
-
-   https://archive.gemini.edu/searchform/GS-2013B-Q-15-39
-
-The bottom of the page contains a button to download the data. You can click on
-that, or you can download the images by `clicking directly
-here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_.
-Alternatively, you can download the data by copy-and-pasting the address below
-in your browser:
-
-::
-
-   https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical
-
-After retrieving the science data, click the Load Associated Calibrations tab on
-the search results page and download the associated dark and flat-field
-exposures. Again, the calibration files can be downloaded by `clicking here
-<https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/canonical>`_
-or by copying the following URL to your browser:
-
-::
-
-    https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/canonical
-
-Unpack all of them in a subdirectory of your working directory (assumed to be
-named /raw in this tutorial). Be sure to uncompress the files.
-
-.. code-block:: bash
-
-   $ cd <my_main_working_directory>
-
-   $ tar -xvf *calib*.tar # extract calibration files from .TAR file
-
-   $ tar -xvf *data*.tar # extract science files from .TAR file
-
-   $ bunzip2 *.fits.bz2 # command that will decompress FITS files
-
-   $ mkdir raw/ # create directory named "raw" (optional)
-
-   $ mv *.fits raw/ # move all the raw FITS files to raw (optional)
-
-The full de-compressed data set will have 310 files and use 4.9 Gb of disk
-space.
-
+.. warning:: Some primitives use a lot of RAM memory and they can make `reduce`
+    crash. Our team is aware of this problem and we are working on that. For
+    now, if that happens to you, you might need to run the pipeline on a
+    smaller data set.
 
 Process DARK files
-==================
+------------------
 
 We usually start our data reduction by stacking the DARKS files that contains
 the same exposure time into a Master DARK file. Before we do that, let us create
@@ -139,7 +73,7 @@ times (3 s, 8 s, 15 s, 60 s, 120 s). Use ``dataselect --help`` for more
 information.
 
 Once we have the list of DARK files for each exposure time, we can use the
-``reduce`` command line to reduce and stack them into a single Master DARK file:
+`reduce`_ command line to reduce and stack them into a single Master DARK file:
 
 .. code-block:: bash
 
@@ -159,13 +93,13 @@ same exposure times:
     $ dataselect --tags DARK --xtags PROCESSED \
         --expr "exposure_time==120" raw/*.fits > darks_120s.list
 
-And then pass this list to the ``reduce`` command.
+And then pass this list to the `reduce`_ command.
 
 .. code-block:: bash
 
     $ reduce @darks_120s.list
 
-The Master DARK files will be saved in the same folder where ``reduce`` was
+The Master DARK files will be saved in the same folder where `reduce`_ was
 called and inside the ``./calibration/processed_dark`` folder. The former is
 used to save cashed calibration files. If you have
 `your local database configured <caldb>`_, you can add the Master DARK files to
@@ -187,7 +121,7 @@ you can repeat the command for each of them.
     add them to the ``caldb`` one by one.
 
 
-Now ``reduce`` will be able to find these files if needed while processing other
+Now `reduce`_ will be able to find these files if needed while processing other
 data.
 
 .. note::
@@ -198,11 +132,11 @@ data.
 
 
 Create Bad-Pixel-Mask
-=====================
+---------------------
 
 The Bad Pixel Mask (BPM) can be built using a set of flat images with the
 lamps on and off and a set of short exposure dark files. Here, our shortest dark
-files have 3 second exposure time. Again, we use the ``reduce`` command to
+files have 3 second exposure time. Again, we use the `reduce`_ command to
 produce the BPMs.
 
 It is important to note that **the recipe system only opens the first AD object
@@ -221,14 +155,14 @@ not interfere in the results.
     $ reduce @flats_Y.list @darks_003s.list -r makeProcessedBPM
 
 Note that instead of creating a new list for the BP masks, we simply used a
-flat list followed by the dark list. Note also the ``-r`` tells ``reduce`` to
+flat list followed by the dark list. Note also the ``-r`` tells `reduce`_ to
 use a different recipe instead of the default.
 
 
 Process Flat-Field images
-=========================
+-------------------------
 
-Master Flats can also be created using the ``reduce`` command line with the
+Master Flats can also be created using the `reduce`_ command line with the
 default recipe. For that, we start creating the lists containing the
 corresponding files for each filter:
 
@@ -251,8 +185,8 @@ corresponding files for each filter:
     $ reduce @flats_Y.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
 
 
-Here, the ``-p`` argument tells ``reduce`` to modify the ``user_bpm`` in the ``addDQ``
-primitive. Then, we add the master flat file to the database so ``reduce`` can
+Here, the ``-p`` argument tells `reduce`_ to modify the ``user_bpm`` in the ``addDQ``
+primitive. Then, we add the master flat file to the database so `reduce`_ can
 find and use it when reducing the science files.
 
 .. code-block:: bash
@@ -270,12 +204,12 @@ find and use it when reducing the science files.
 
 
 Reduce Science Images
-=====================
+---------------------
 
-Now that we have the Master Dark and Master Flat images, we can tell ``reduce``
-to process our data. ``reduce`` will look at the remote or at the local database
+Now that we have the Master Dark and Master Flat images, we can tell `reduce`_
+to process our data. `reduce`_ will look at the remote or at the local database
 for calibration files. Make sure that you have `configured your database <caldb>`_
-before running it. We want to run ``reduce`` on any file that is not calibration
+before running it. We want to run `reduce`_ on any file that is not calibration
 nor a bad-pixel-mask (``--xtags CAL,BPM``). We also want to run this pipeline
 only on Y band images (``--expr 'filter_name=="Y"'``)
 
