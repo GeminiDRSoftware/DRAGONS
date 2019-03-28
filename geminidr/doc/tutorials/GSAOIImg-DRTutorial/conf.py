@@ -280,8 +280,8 @@ intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None),
     'gemini_instruments': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
     'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('http://matplotlib.sourceforge.net/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'python': ('https://docs.python.org/3', None),
     'recipe_system': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
 }
@@ -322,8 +322,8 @@ def run_api_doc(_):
 
     relative_path = "../../../../"
 
-    print("Am I running on PyCharm? {}", is_running_in_pycharm)
-    print("Current Path: {}", current_path)
+    print("Am I running on PyCharm? {}".format(is_running_in_pycharm))
+    print("Current Path: {}".format(current_path))
 
     for p in build_packages:
 
