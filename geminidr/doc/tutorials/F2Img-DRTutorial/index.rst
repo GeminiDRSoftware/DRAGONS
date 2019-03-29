@@ -25,6 +25,7 @@ WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_.
 
    01_introduction
    02_data_reduction
+   03_api_reduction
 
 Indices and tables
 ==================
