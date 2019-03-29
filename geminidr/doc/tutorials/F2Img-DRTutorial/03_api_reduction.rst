@@ -13,7 +13,7 @@ Reduction using API
 
 There may be cases where you might be interested in accessing the DRAGONS'
 Application Program Interface (API) directly instead of using the command
-line wrappers to reduce your data. In this case, you will need to access
+line wrappers to reduce your data. In this scenario, you will need to access
 DRAGONS' tools by importing the appropriate modules and packages.
 
 
@@ -72,12 +72,12 @@ initialize it:
 The ``wipe=True`` can be omitted if you want to keep old calibration files that
 were added to the local database.
 
-
 Create :class:`list` of files
 -----------------------------
 
 Here, again, we have to create lists of files that will be used on each of the
-data reduction step. We can start by creating a :class:`list` will all the file names:
+data reduction step. We can start by creating a :class:`list` will all the file
+names:
 
 .. code-block:: python
     :linenos:
@@ -98,73 +98,83 @@ arguments are positional arguments (position matters) and they are separated
 by comma.
 
 As an example, let us can select the files that will be used to create a master
-DARK frame. Remember that **GSAOI data does not require DARK correction**. So
-this step is simply to make the tutorial complete:
+DARK frame for the files that have 20s exposure time:
 
 .. code-block:: python
     :linenos:
     :lineno-start: 13
 
-    darks_150s = dataselect.select_data(
+    dark_files_3s = dataselect.select_data(
         all_files,
-        ['GSAOI', 'DARK', 'RAW'],
+        ['F2', 'DARK', 'RAW'],
         [],
-        dataselect.expr_parser('exposure_time==150')
+        dataselect.expr_parser('exposure_time==3')
     )
-    
 
-Note the empty :class:`list` ``[]`` in the fourth line. It means that we are not passing
-any argument for the Tags exclusion.
+    dark_files_8s = dataselect.select_data(
+        all_files,
+        ['F2', 'DARK', 'RAW'],
+        [],
+        dataselect.expr_parser('exposure_time==8')
+    )
 
-The lists with the FLAT images for ``Kshort`` and ``H`` using:
+    dark_files_15s = dataselect.select_data(
+        all_files,
+        ['F2', 'DARK', 'RAW'],
+        [],
+        dataselect.expr_parser('exposure_time==15')
+    )
+
+    dark_files_20s = dataselect.select_data(
+        all_files,
+        ['F2', 'DARK', 'RAW'],
+        [],
+        dataselect.expr_parser('exposure_time==20')
+    )
+
+    dark_files_60s = dataselect.select_data(
+        all_files,
+        ['F2', 'DARK', 'RAW'],
+        [],
+        dataselect.expr_parser('exposure_time==60')
+    )
+
+    dark_files_120s = dataselect.select_data(
+        all_files,
+        ['F2', 'DARK', 'RAW'],
+        [],
+        dataselect.expr_parser('exposure_time==120')
+    )
+
+Note the empty list ``[]`` in the fourth line of each command. This
+position argument receives a list of tags that will be used to exclude
+any files with the matching tag from our selection.
+
+Now you must create a list of FLAT images for each filter. You can do that by
+using the following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 19
+    :lineno-start: 54
 
-    list_of_flats_Ks = dataselect.select_data(
+    list_of_flats_Y = dataselect.select_data(
          all_files,
-         ['GSAOI', 'FLAT', 'RAW'],
+         ['F2', 'FLAT', 'RAW'],
          [],
-         dataselect.expr_parser('filter_name=="Kshort"')
+         dataselect.expr_parser('filter_name=="Y"')
     )
-
-    list_of_flats_H = dataselect.select_data(
-        all_files,
-        ['GSAOI', 'FLAT', 'RAW'],
-        [],
-        dataselect.expr_parser(' filter_name=="H" ')
-    )
-
-
-For the standard start selection, we use:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 32
-
-    list_of_std_stars = dataselect.select_data(
-        all_files,
-        [],
-        [],
-        dataselect.expr_parser('observation_class=="partnerCal"')
-    )
-
-
-Here, we are passing empty lists to the second and the third argument since
-we do not need to use the Tags for selection nor for exclusion.
 
 Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 38
+    :lineno-start: 60
 
     list_of_science_images = dataselect.select_data(
         all_files,
+        ['F2'],
         [],
-        [],
-        dataselect.expr_parser('(observation_class=="science" and exposure_time==60.)')
+        dataselect.expr_parser('(observation_class=="science" and filter_name=="Y")')
     )
 
 
@@ -173,30 +183,41 @@ Finally, the science data can be selected using:
 Process DARK files
 ------------------
 
-Again, accordingly to the `Calibration webpage for GSAOI
-<https://www.gemini.edu/sciops/instruments/gsaoi/calibrations>`_,
-**DARK subtraction is not necessary** since the dark noise level is too low.
-DARK files are only used to generate Bad Pixel Masks (BPM).
-
-If, for any reason, you believe that you really need to have a master DARK file,
-you can create it using the commands below:
+For each exposure time, we will have to run the command lines below:
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 44
+   :lineno-start: 66
 
     reduce_darks = Reduce()
-    reduce_darks.files.extend(darks_150s)
+    reduce_darks.files.extend(dark_files_003s)
     reduce_darks.runr()
+
+    calibration_service.add_cal(reduce_darks.output_filenames[0])
 
 The first line creates an instance of the
 :class:`~recipe_system.reduction.coreReduce.Reduce` class. It is responsible to
-check on the first image in the input :class:`list` and find what is the appropriate
-Recipe it should apply. The second line passes the :class:`list` of dark frames to the
-:class:`~recipe_system.reduction.coreReduce.Reduce` ``files`` attribute.
-The :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` triggers the
-start of the data reduction.
+check on the first image in the input :class:`list` and find what is the
+appropriate Recipe it should apply. The second line passes the :class:`list` of
+dark frames to the :class:`~recipe_system.reduction.coreReduce.Reduce`
+``files`` attribute. The
+:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` triggers the start of
+the data reduction.
 
+Instead of repeating the code block above, you can simply use a ``for`` loop:
+
+.. code-block:: python
+   :linenos:
+   :lineno-start: 71
+
+    for dark_list in [dark_files_3s, dark_files_8s, dark_files_15s,
+                     dark_files_20s, dark_files_60s, dark_files_120s]:
+
+        reduce_darks = Reduce()
+        reduce_darks.files.extend(dark_list)
+        reduce_darks.runr()
+
+        calibration_service.add_cal(reduce_darks.output_filenames[0])
 
 .. _api_create_bpm_files:
 
@@ -207,16 +228,16 @@ The Bad Pixel Mask files can be easily created using the follow commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 79
 
     reduce_bpm = Reduce()
-    reduce_bpm.files.extend(list_of_flats_H)
-    reduce_bpm.files.extend(darks_150s)
+    reduce_bpm.files.extend(list_of_flats_Y)
+    reduce_bpm.files.extend(dark_files_3s)
     reduce_bpm.recipename = 'makeProcessedBPM'
     reduce_bpm.runr()
 
 Note that, here, we are setting the recipe name to 'makeProcessedBPM' on
-line 50.
+line 82.
 
 
 .. _api_process_flat_files:
@@ -228,24 +249,24 @@ We can now reduce our FLAT files by using the following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 52
+    :lineno-start: 84
 
     bpm_filename = reduce_bpm.output_filenames[0]
 
     reduce_flats = Reduce()
-    reduce_flats.files.extend(list_of_flats_Ks)
+    reduce_flats.files.extend(list_of_flats_Y)
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
     calibration_service.add_cal(reduce_flats.output_filenames[0])
 
-On Line 52, we get the first (only) output file from the ``reduce_bpm`` pipeline
+On Line 84, we get the first (only) output file from the ``reduce_bpm`` pipeline
 and store it in the ``bpm_filename`` variable. Then, we pass it to the
 ``reduce_flats`` pipeline by updating the ``.uparms`` attribute. Remember
 that ``.uparms`` must be a :class:`list` of :class:`Tuples`.
 
 After the pipeline, we add master flat file to the calibration manager using
-the line 59.
+the line 91.
 
 
 .. _api_process_science_files:
@@ -253,100 +274,16 @@ the line 59.
 Process Science files
 ---------------------
 
-We can use similar commands to create a new pipeline and reduce the science
-data:
+Finally, we can use similar commands to create a new pipeline and reduce the
+science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 60
+    :lineno-start: 92
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
     reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_target.runr()
-
-
-.. _api_stack_science_images:
-
-Stack Science reduced images
-----------------------------
-
-Now you will have to stack your images. For that, you must be aware that
-GSAOI images are highly distorted and that this distortion must be corrected
-before stacking. At this moment, the standard tool for distortion correction
-and image stacking is called `disco-stu`. This package can be found in the
-link bellow:
-
-  |github|  `See disco-stu on GitHub <https://github.com/GeminiDRSoftware/disco-stu/releases/latest>`_
-
-Check this page for requirements and instruction on installing the package.
-
-This package was created to be accessed via command line. Because of that, we
-need a few more steps while running it. First, let's import some libraries:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 64
-
-    from collections import namedtuple
-
-    from disco_stu import disco
-    from disco_stu.lookups import general_parameters as disco_pars
-
-
-Then we need to create a special object using :func:`~collections.namedtuple`.
-This object will hold information about matching the objects between files:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 68
-
-    MatchInfo = namedtuple(
-        'MatchInfo', [
-            'offset_radius',
-            'match_radius',
-            'min_matches',
-            'degree'
-            ])
-
-We now create instances of ``MatchInfo`` object:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 76
-
-    object_match_info = MatchInfo(
-        disco_pars.OBJCAT_ALIGN_RADIUS[0],
-        disco_pars.OBJCAT_ALIGN_RADIUS[1],
-        None,
-        disco_pars.OBJCAT_POLY_DEGREE
-    )
-
-    reference_match_info = MatchInfo(
-        disco_pars.REFCAT_ALIGN_RADIUS[0],
-        disco_pars.REFCAT_ALIGN_RADIUS[1],
-        disco_pars.REFCAT_MIN_MATCHES,
-        disco_pars.REFCAT_POLY_DEGREE
-    )
-
-Now, we simply call the :func:`~disco_stu.disco.disco` function and pass the
-position arguments.
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 76
-
-    disco.disco(
-        infiles=reduce_target.output_filenames,
-        output_identifier="my_stacked_image.fits",
-        objmatch_info=object_match_info,
-        refmatch_info=reference_match_info,
-        pixel_scale=disco_pars.PIXEL_SCALE,
-    )
-
-This function has many other parameters that can be used to customize this step
-but further details are out of the scope of this tutorial. Please, refer to the
-`disco-stu GitHub Page <https://github.com/GeminiDRSoftware/disco-stu>`_ for the
-corresponding information.
 
 

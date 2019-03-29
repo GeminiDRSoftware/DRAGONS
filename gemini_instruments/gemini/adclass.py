@@ -1675,7 +1675,12 @@ class AstroDataGemini(AstroDataFits):
             # Is this a full date+time string?
             if re.match("(\d\d\d\d-[01]\d-[0123]\d)(T)"
                         "([012]\d:[012345]\d:\d\d.*\d*)", utdate_hdr):
-                return dateutil.parser.parse(utdate_hdr)
+                ut_datetime = dateutil.parser.parse(utdate_hdr)
+                if dateonly:
+                    return ut_datetime.date()
+                elif timeonly:
+                    return ut_datetime.time()
+                return ut_datetime
 
             # Did we just get a date?
             if re.match("\d\d\d\d-[01]\d-[0123]\d", utdate_hdr):
