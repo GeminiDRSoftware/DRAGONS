@@ -48,6 +48,45 @@ def get_descriptor_value(ad, descriptors):
         values.append(getattr(ad, descriptor)())
     return values
 
+def printtable(results):
+    """
+    Format and print in a nice table the results stored in the input list
+    of lists.
+
+    Parameters
+    ----------
+    results : list of list
+        List of lists with the results to be printed to screen.  First row is
+        the header.  First column is the filename, the other columns are the
+        requested descriptors.
+
+    """
+    # Find max width of each column.
+    max_widths = [max(len(str(item)) for item in row) for row in zip(*results)]
+
+    # Define format
+    # Max column widths, plus 3 spaces between columns.
+    # First column left justified, the rest right justified.
+
+    dash_line = "-" * (sum(max_widths) + (len(max_widths)-1)*3)
+
+    display_format = '{:<'+str(max_widths[0])+'s}'
+    for i in range(1,len(max_widths)):
+        display_format += '   {:>'+str(max_widths[i])+'s}'
+
+
+    # Print the table to screen.
+    header = True
+    for row in results:
+        if header:
+            print(dash_line)
+            print(display_format.format(*[str(item) for item in row]))
+            print(dash_line)
+            header = False
+        else:
+            print(display_format.format(*[str(item) for item in row]))
+
+    return
 
 def parse_args(command_line_args):
     """
@@ -59,6 +98,8 @@ def parse_args(command_line_args):
     parser.add_argument('--descriptors', '-d', type=str, nargs=1,
                         dest='descriptors', action='store', required=True,
                         help='comma-separated list of descriptor values to return')
+    parser.add_argument('--csv', default=False, action='store_true',
+                        help='Format as CSV list.')
     parser.add_argument('--debug', default=False, action='store_true',
                         help='Toggle debug mode')
 
@@ -86,18 +127,29 @@ def main(argv=None):
 
     args = parse_args(argv)
 
-    hdr = "\nfilename:"
+    # Go through the files and store the descriptors in a list of list.
+    hdr = ['filename']
     for descriptor in args.descriptors:
-        hdr += '   '+descriptor
-    hdr += '\n------------------------------'
-    print(hdr)
+        hdr.append(descriptor)
+
+    results = [hdr]
     for filename in args.inputs:
         ad = astrodata.open(filename)
         values = get_descriptor_value(ad, args.descriptors)
-        msg = "%s: " % ad.filename
-        for value in values:
-            msg += "%s " % value
-        print(msg)
+        new_entry = [filename]
+        new_entry.extend(values)
+        results.append(new_entry)
+
+    # Print the results to screen either in a CSV format if requested,
+    # or in a human readable table.
+
+    if args.csv:
+        for row in results:
+            print(",".join([str(item) for item in row]))
+    else:
+        printtable(results)
+
+
 
 
 if __name__ == '__main__':
