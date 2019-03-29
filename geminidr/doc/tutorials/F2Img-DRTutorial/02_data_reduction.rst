@@ -37,6 +37,8 @@ like dataselect_, showd_, typewalk_, and caldb_.
     now, if that happens to you, you might need to run the pipeline on a
     smaller data set.
 
+.. _process_dark_files:
+
 Process DARK files
 ------------------
 
