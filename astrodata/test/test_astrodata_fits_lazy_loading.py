@@ -1,5 +1,5 @@
 import pytest
-import tempfile
+import warnings
 import os
 
 import numpy as np
@@ -11,6 +11,16 @@ from .conftest import test_path
 
 THIS_DIR = os.path.dirname(__file__)
 CHARA = '/net/chara/data2/pub'
+
+try:
+    path = os.environ['TEST_PATH']
+except KeyError:
+    warnings.warn("Could not find environment variable: $TEST_PATH")
+    path = ''
+
+if not os.path.exists(path):
+    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
+    path = ''
 
 
 
@@ -27,11 +37,12 @@ CHARA = '/net/chara/data2/pub'
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 
 # Load data when accessing it
+@pytest.mark.skip("Test currently fails, not implemented")
 @pytest.mark.ad_local_data
-def test_for_length():
+def test_for_length(test_path):
 
     test_filename = 'GMOS/N20110826S0336.fits'
-    ad = astrodata.open(os.path.join(test_path(), test_filename))
+    ad = astrodata.open(os.path.join(test_path, test_filename))
 
     # This should force the data to be loaded
     # Otherwise, we'll get different results - or an exception

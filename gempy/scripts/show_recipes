@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import sys
+from gempy.utils import show_recipes
+
+
+__author__ = 'Ivan Sharankov'
+
+
+def main():
+    args = show_recipies_argparser()
+    show_recipes.show_recipes(args.inputfile)
+
+
+def show_recipies_argparser():
+
+    from argparse import ArgumentParser
+    from argparse import RawDescriptionHelpFormatter
+
+    parser = ArgumentParser(description="desc", prog='show_recipes',
+                            formatter_class=RawDescriptionHelpFormatter)
+
+    parser.add_argument('inputfile', type=str,
+                        help="The fits file needed to extract the tags. This "
+                            "file must be opened by astrodata as an object")
+
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    main()
+
+
