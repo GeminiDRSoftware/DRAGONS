@@ -25,7 +25,7 @@ if not os.path.exists(path):
 archive_files = glob.glob(os.path.join(path, "Archive/", "*fits"))
 
 # Separates the directory from the list, helps cleanup code
-fits_files = [_file.split('/')[-1] for _file in archive_files]
+fits_files = [os.path.split(_file)[-1] for _file in archive_files]
 
 
 
