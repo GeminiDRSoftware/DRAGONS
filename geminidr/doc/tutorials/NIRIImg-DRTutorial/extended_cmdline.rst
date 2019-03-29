@@ -14,7 +14,7 @@ This observation is a simple dither on target, a galaxy, with offset to sky.
 
 The dataset
 ===========
-If you have not already, download and unpackage the tutorial's data package.
+If you have not already, download and unpack the tutorial's data package.
 Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
@@ -43,18 +43,19 @@ Create file lists
 =================
 The first step is to create input file lists.  The tool ``dataselect`` helps
 with that.  It uses Astrodata tags and descriptors to select the files and
-send the information to a text file that can then be fed to ``reduce``.
+send the filenames to a text file that can then be fed to ``reduce``.
 
 First, navigate to the ``playground`` directory in the unpacked data package.
 
 Two lists for the darks
 -----------------------
 We have two sets of darks; one set for the science frames, the 20-second darks,
-and another for the BPM, the 1-second darks.  We will create two lists.
+and another for making the BPM, the 1-second darks.  We will create two lists.
 
 If you did not know the exposure times for the darks, you could have use a
-combination of ``dataselect`` to select all the darks and feed that list to
-``showd`` to show descriptor values, in this case ``exposure_time``.
+combination of ``dataselect`` to select all the darks (tag ``DARK``) and feed
+that list to ``showd`` to show descriptor values, in this case
+``exposure_time``.
 
 .. highlight:: text
 
@@ -62,6 +63,8 @@ combination of ``dataselect`` to select all the darks and feed that list to
 
     dataselect ../playdata/*.fits --tags DARK | showd -d exposure_time
 
+    filename   exposure_time
+    ------------------------------
     N20160102S0423.fits: 20.002
     N20160102S0424.fits: 20.002
     N20160102S0425.fits: 20.002
@@ -85,14 +88,14 @@ combination of ``dataselect`` to select all the darks and feed that list to
 
 As one can see above the exposure times all have a small fractional increment.
 This is just a floating point inaccuracy somewhere in the software that
-generates the FITS file.  As far as we are concerned here in this tutorial,
+generates the raw NIRI FITS files.  As far as we are concerned here in this tutorial,
 we are dealing with 20-second and 1-second darks.  The tool ``dataselect`` is
 smart enough to match those exposure times as "close enough".  So, in our
 selection expression, we can use "1" and "20" and ignore the extra digits.
 
 .. note:: If a perfect match to 1.001 were required, adding the option ``--strict`` in ``dataselect`` would ensure an exact match.
 
-Let's create our two lists then.
+Let's create our two lists now.
 
 ::
 
@@ -103,7 +106,7 @@ Let's create our two lists then.
 A list for the flats
 --------------------
 The flats are a sequence of lamp-on and lamp-off exposures.  We just send all
-that to one list.
+of them to one list.
 
 ::
 
@@ -112,10 +115,10 @@ that to one list.
 
 A list for the standard star
 ----------------------------
-The standard sequence is a series of datasets identified as "FS 17".  There
+The standard star sequence is a series of datasets identified as "FS 17".  There
 are no keywords in the NIRI header identifying this target as a special
-standard star target.  So we need to use the target name to select only that
-star and not our science target.
+standard star target.  We need to use the target name to select only
+observations from that star and not our science target.
 
 ::
 
@@ -125,28 +128,29 @@ star and not our science target.
 
 A list for the science observations
 -----------------------------------
-The science frames are all the IMAGE non-FLAT that are also not the standard.
-Since flats are FLAT and IMAGE, we need to exclude the FLAT tag.
+The science frames are all the ``IMAGE`` non-``FLAT`` that are also not the standard.
+Since flats are tagged ``FLAT`` and ``IMAGE``, we need to exclude the ``FLAT`` tag.
 
 This translates to the following expression::
 
     dataselect ../playdata/*.fits --tags IMAGE --xtags FLAT --expr='object!="FS 17"' -o target.lis
 
-One could use the name of the science target too, like we did for the selecting
-the standard star observations in the previous section.
-
+One could have used the name of the science target too, like we did for
+selecting the standard star observation in the previous section.  The example
+above shows how to *exclude* a tag if needed and was considered more
+educational.
 
 
 Set up the Local Calibration Manager
 ====================================
-DRAGONS comes with a local calibration manager and local light weight database
+DRAGONS comes with a local calibration manager and a local light weight database
 that uses the same calibration association rules as the Gemini Observatory
 Archive.  This allows ``reduce`` to make requests for matching **processed**
 calibrations when needed to reduce a dataset.
 
 Let's set up the local calibration manager for this session.
 
-In ``~/.geminidr/`, create or edit the configuration file ``rsys.cfg`` as
+In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
 follow::
 
     [calibs]
@@ -157,6 +161,9 @@ This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibration we are going to
 send to it.
 
+.. note:: ``~`` in the path above refers to your home directory.  Also, don't miss the dot in ``.geminidr``.
+
+
 Then initialize the calibration database::
 
     caldb init
@@ -165,23 +172,23 @@ That's it.  It is ready to use.
 
 You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and
-``caldb remove <filename>`` to remove a file from the database (it will not
+``caldb remove <filename>`` to remove a file from the database (it will **not**
 remove the file on disk.)
 
 
 Reduce the data
 ===============
-We have our input lists, we have identified and initialzed the calibration
-database, we are ready to reduce the data.
+We have our input filename lists, we have identified and initialzed the
+calibration database, we are ready to reduce the data.
 
-Please make sure that you are in the ``playground`` directory.
+Please make sure that you are still in the ``playground`` directory.
 
 
 Master Dark
 -----------
 We first create the master dark for the science target, then add it to the
 calibration database.  The name of the output master dark,
-``N20160102S0423_dark.fits`` is written to the screen at the end of the process.
+``N20160102S0423_dark.fits``, is written to the screen at the end of the process.
 
 ::
 
@@ -193,19 +200,21 @@ calibration database.  The name of the output master dark,
 
 Bad Pixel Mask
 --------------
-The DRAGONS Gemini data reduction package comes with a static NIRI bad pixel
-mask (BPM) that gets automatically added to all the NIRI data as it gets
-processed.  The user can also create a supplemental, fresher BPM from the
-flats and short darks.  It is fed to ``reduce`` as a *user* BPM that will
-be combined with the static BPM.  Using both the static and a fresh BPM
-from recent data is a better representation of the bad pixels.  It is an
-optional but recommended step.
+The DRAGONS Gemini data reduction package, ``geminidr``, comes with a static
+NIRI bad pixel mask (BPM) that gets automatically added to all the NIRI data
+as they gets processed.  The user can also create a *supplemental*, fresher BPM
+from the flats and recent short darks.  That new BPM is later fed to
+``reduce`` as a *user BPM* to be combined with the static BPM.  Using both the
+static and a fresh BPM from recent data lead to a better representation of the
+bad pixels.  It is an optional but recommended step.
 
-The flats must be passed first for ``reduce`` to select the recipe library
-associated with NIRI flats.  We will not use the default recipe but rather
-the special recipe from that library called ``makeProcessedBPM``.
+The flats and the short darks are the inputs.
 
-The flats and the short darks are inputs.
+The flats must be passed first to the input list to ensure that the recipe
+library associated with NIRI flats is selected.  We will not use the default
+recipe but rather the special recipe from that library called
+``makeProcessedBPM``.
+
 
 ::
 
@@ -214,8 +223,8 @@ The flats and the short darks are inputs.
 The BPM produced is named ``N20160102S0373_bpm.fits``.
 
 The local calibration manager does not yet support BPMs so we cannot add
-it to the database.  It is a future feature.  We will have to pass it
-manually to ``reduce`` later to use it.
+it to the database.  It is a future feature.  Until then we have to pass it
+manually to ``reduce`` to use it, as we will show below.
 
 
 Master Flat Field
@@ -267,15 +276,15 @@ Science Observations
 --------------------
 The science target is an extended source.  We need to turn off
 the scaling of the sky because the target fills the field of view and does
-not represent a reasonable sky background.  If scaling is not turned off in
-this particular case, it results in an over-subtraction of the sky frame.
+not represent a reasonable sky background.  If scaling is not turned off *in
+this particular case*, it results in an over-subtraction of the sky frame.
 
 The sky frame comes from off-target sky observations.  We feed the pipeline
 all the on-target and off-target frames.  The software will split the
 on-target and the off-target appropriately as long as the first frame is
 on-target.
 
-The master dark and master flats will be retrieved automatically from the
+The master dark and the master flat will be retrieved automatically from the
 local calibration database. Again, the user BPM needs to be specified on
 the command line.
 
@@ -284,11 +293,11 @@ the command line.
     reduce @target.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits skyCorrect:scale=False
 
 .. image:: _graphics/extended_before.png
-   :scale: 55%
+   :scale: 60%
    :align: left
 
 .. image:: _graphics/extended_after.png
-   :scale: 55%
+   :scale: 60%
    :align: left
 
 The attentive reader will note that the reduced image is slightly larger
