@@ -192,6 +192,8 @@ GEMPY_SCRIPTS = [
                   os.path.join('gempy', 'scripts', 'pipeline2iraf'),
                   os.path.join('gempy', 'scripts', 'profile_all_obj'),
                   os.path.join('gempy', 'scripts', 'psf_plot'),
+                  os.path.join('gempy', 'scripts', 'show_primitives'),
+                  os.path.join('gempy', 'scripts', 'show_recipes'),
                   os.path.join('gempy', 'scripts', 'showd'),
                   os.path.join('gempy', 'scripts', 'showpars'),
                   os.path.join('gempy', 'scripts', 'swapper'),
