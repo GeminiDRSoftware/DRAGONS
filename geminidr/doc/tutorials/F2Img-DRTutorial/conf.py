@@ -21,7 +21,7 @@ import sys
 
 # -- Project information -----------------------------------------------------
 
-project = 'DRAGONS - Flamingos 2 Data Reduction Tutorial'
+project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
 copyright = '2018, Bruno Quint'
 author = 'Bruno Quint'
 
@@ -111,7 +111,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'DRAGONSTutorial-Flamingos2doc'
+htmlhelp_basename = 'DRAGONSTutorial-Flamingos2tut'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -138,7 +138,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'DRAGONSTutorial-Flamingos2.tex', 'DRAGONS Tutorial - Flamingos 2 Documentation',
+    (master_doc, 'DRAGONSTutorial-Flamingos2tut.tex', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
      'Bruno Quint', 'manual'),
 ]
 
@@ -148,7 +148,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dragonstutorial-flamingos2', 'DRAGONS Tutorial - Flamingos 2 Documentation',
+    (master_doc, 'dragonstutorial-flamingos2', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
      [author], 1)
 ]
 
@@ -158,10 +158,14 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'DRAGONSTutorial-Flamingos2', 'DRAGONS Tutorial - Flamingos 2 Documentation',
-     author, 'DRAGONSTutorial-Flamingos2', 'One line description of project.',
-     'Miscellaneous'),
+texinfo_documents = [(
+    master_doc,
+    'DRAGONSTutorial-Flamingos2DataReduction',
+    'DRAGONS Tutorial - Flamingos-2 Data Reduction',
+    author,
+    'DRAGONSTutorial-Flamingos2',
+    'A quick tutorial on how to reduce F2 images with the DRAGONS command line tools',
+    'Miscellaneous'),
 ]
 
 
