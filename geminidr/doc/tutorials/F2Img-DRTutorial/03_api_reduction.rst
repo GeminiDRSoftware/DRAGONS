@@ -104,21 +104,21 @@ DARK frame for the files that have 20s exposure time:
     :linenos:
     :lineno-start: 13
 
-    dark_files_003s = dataselect.select_data(
+    dark_files_3s = dataselect.select_data(
         all_files,
         ['F2', 'DARK', 'RAW'],
         [],
         dataselect.expr_parser('exposure_time==3')
     )
 
-    dark_files_008s = dataselect.select_data(
+    dark_files_8s = dataselect.select_data(
         all_files,
         ['F2', 'DARK', 'RAW'],
         [],
         dataselect.expr_parser('exposure_time==8')
     )
 
-    dark_files_015s = dataselect.select_data(
+    dark_files_15s = dataselect.select_data(
         all_files,
         ['F2', 'DARK', 'RAW'],
         [],
@@ -146,15 +146,16 @@ DARK frame for the files that have 20s exposure time:
         dataselect.expr_parser('exposure_time==120')
     )
 
-Note the empty :class:`list` ``[]`` in the fourth line of each command. It means
-that we are not passing any argument for the Tags exclusion.
+Note the empty list ``[]`` in the fourth line of each command. This
+position argument receives a list of tags that will be used to exclude
+any files with the matching tag from our selection.
 
 Now you must create a list of FLAT images for each filter. You can do that by
 using the following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 19
+    :lineno-start: 54
 
     list_of_flats_Y = dataselect.select_data(
          all_files,
@@ -167,14 +168,15 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 38
+    :lineno-start: 60
 
     list_of_science_images = dataselect.select_data(
         all_files,
         ['F2'],
-        ['CAL', 'BPM'],
+        [],
         dataselect.expr_parser('(observation_class=="science" and filter_name=="Y")')
     )
+
 
 .. _api_process_dark_files:
 
@@ -185,7 +187,7 @@ For each exposure time, we will have to run the command lines below:
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 44
+   :lineno-start: 66
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(dark_files_003s)
@@ -206,10 +208,16 @@ Instead of repeating the code block above, you can simply use a ``for`` loop:
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 44
+   :lineno-start: 71
 
-   for dark_list in [dark_files_3s, dark_files_8s, dark_files_15s,
-        dark_files_20s]
+    for dark_list in [dark_files_3s, dark_files_8s, dark_files_15s,
+                     dark_files_20s, dark_files_60s, dark_files_120s]:
+
+        reduce_darks = Reduce()
+        reduce_darks.files.extend(dark_list)
+        reduce_darks.runr()
+
+        calibration_service.add_cal(reduce_darks.output_filenames[0])
 
 .. _api_create_bpm_files:
 
@@ -220,16 +228,16 @@ The Bad Pixel Mask files can be easily created using the follow commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 79
 
     reduce_bpm = Reduce()
-    reduce_bpm.files.extend(list_of_flats_H)
-    reduce_bpm.files.extend(darks_150s)
+    reduce_bpm.files.extend(list_of_flats_Y)
+    reduce_bpm.files.extend(dark_files_3s)
     reduce_bpm.recipename = 'makeProcessedBPM'
     reduce_bpm.runr()
 
 Note that, here, we are setting the recipe name to 'makeProcessedBPM' on
-line 50.
+line 82.
 
 
 .. _api_process_flat_files:
@@ -241,24 +249,24 @@ We can now reduce our FLAT files by using the following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 52
+    :lineno-start: 84
 
     bpm_filename = reduce_bpm.output_filenames[0]
 
     reduce_flats = Reduce()
-    reduce_flats.files.extend(list_of_flats_Ks)
+    reduce_flats.files.extend(list_of_flats_Y)
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
     calibration_service.add_cal(reduce_flats.output_filenames[0])
 
-On Line 52, we get the first (only) output file from the ``reduce_bpm`` pipeline
+On Line 84, we get the first (only) output file from the ``reduce_bpm`` pipeline
 and store it in the ``bpm_filename`` variable. Then, we pass it to the
 ``reduce_flats`` pipeline by updating the ``.uparms`` attribute. Remember
 that ``.uparms`` must be a :class:`list` of :class:`Tuples`.
 
 After the pipeline, we add master flat file to the calibration manager using
-the line 59.
+the line 91.
 
 
 .. _api_process_science_files:
@@ -266,12 +274,12 @@ the line 59.
 Process Science files
 ---------------------
 
-We can use similar commands to create a new pipeline and reduce the science
-data:
+Finally, we can use similar commands to create a new pipeline and reduce the
+science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 60
+    :lineno-start: 92
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
