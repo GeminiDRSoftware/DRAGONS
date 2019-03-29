@@ -20,7 +20,8 @@ def show_recipes(_file):
     file - str
         file name for the fits file
 
-    Returns - multiple string lines
+    Returns - None
+    Prints out information
     -------
     """
 

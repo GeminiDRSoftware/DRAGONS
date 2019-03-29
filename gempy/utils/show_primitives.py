@@ -28,7 +28,8 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
         'recipe' is needed to isolate the exact recipe (if there are multiple) that
         the user wants to see the source code from.
 
-    Returns - multiple string lines
+    Returns - None
+    Prints out information
     -------
     """
 
@@ -145,7 +146,6 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
                              "The recipes found for this file and mode combination "
                              "are: {}".format(functions_list))
 
-
     # Makes sure recipe exists in the module imported above.  TIP: This also protects
     # any unwanted input from recipe, as it is used in an eval() later, eval() can
     # be unsafe to use without checking user input
@@ -178,4 +178,3 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
     for primitive in re.findall(r'p\..*', source_code):
         print("  " + primitive)
     return
-
