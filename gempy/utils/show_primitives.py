@@ -1,11 +1,13 @@
 import inspect
-import astrodata
-import gemini_instruments
 import re
 import importlib
 import sys
 import os
 
+import geminidr
+import astrodata
+import gemini_instruments
+from astrodata.core import AstroDataError
 
 def show_primitives(_file, mode='sq', recipe='reduce'):
     """
@@ -39,17 +41,9 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
 
     # Find the file and open it with astrodata
     try:
-        if os.path.isabs(_file):
-            ad = astrodata.open(_file)
-            assert ad.tags
-        elif not os.path.isabs(_file):
-            ad = astrodata.open(os.path.join(os.getcwd(), _file))
-        else:
-            raise OSError("Could not find file. The file provided was neither"
-                          " an absolute file location or part of the current "
-                          "\n working directory. Please check if file exists "
-                          " in path provided")
-    except:
+        ad = astrodata.open(_file)
+        tags = ad.tags
+    except AstroDataError:
         print("There was an issue using the selected file, please check"
               "the format and directory:", sys.exc_info()[0])
         raise
@@ -59,9 +53,12 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
     # static list, user may add instrument
     list_of_found_instruments = []
 
-    # returns every folder/subfolders (which need to be parsed out)
+    # will return the location of dragons, as ".../dragons/"
+    local_dir = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
+
+    # returns every folder, including all subfolders which need to be parsed
     all_folders = [x[0] for x in os.walk(
-        os.path.expanduser("~/workspace/dragons/geminidr/"))]
+        os.path.expanduser(local_dir + 'geminidr/'))]
 
     for i in all_folders:
 
@@ -119,8 +116,7 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
 
     # Tests to make sure the discovered path where the recipe is stores exists
     absolute_path = absolute_dir.replace(".", "/")
-    exp_usr = os.path.expanduser("~/workspace/dragons/" +
-                                 absolute_path + ".py")
+    exp_usr = os.path.expanduser(local_dir + absolute_path + ".py")
     try:
         assert (os.path.exists(exp_usr))
     except AssertionError:

@@ -1,13 +1,17 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
-
-
+# -*- coding: utf8 -*-=
+import os
+import sys
 import inspect
+import importlib
+
+import geminidr
 import astrodata
 import gemini_instruments
-import os
-import importlib
-import sys
+from astrodata.core import AstroDataError
+
+
+from recipe_system.mappers.recipeMapper import RecipeMapper
 
 
 def show_recipes(_file):
@@ -27,17 +31,9 @@ def show_recipes(_file):
 
     # Find the file and open it with astrodata
     try:
-        if os.path.isabs(_file):
-            ad = astrodata.open(_file)
-            assert ad.tags
-        elif not os.path.isabs(_file):
-            ad = astrodata.open(os.path.join(os.getcwd(), _file))
-        else:
-            raise OSError("Could not find file. The file provided was neither"
-                          " an absolute file location or part of the current"
-                          "\n working directory. Please check if file exists"
-                          " in path provided")
-    except:
+        ad = astrodata.open(_file)
+        tags = ad.tags
+    except AstroDataError:
         print("There was an issue using the selected file, please check"
               "the format and directory:", sys.exc_info()[0])
         raise
@@ -47,9 +43,12 @@ def show_recipes(_file):
     # assume static list, user may add instrument
     list_of_found_instruments = []
 
+    # will return the location of dragons, as ".../dragons/"
+    local_dir = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
+
     # returns every folder, including all subfolders which need to be parsed
     all_folders = [x[0] for x in os.walk(
-        os.path.expanduser("~/workspace/dragons/geminidr/"))]
+        os.path.expanduser(local_dir + 'geminidr/'))]
 
     for i in all_folders:
 
@@ -74,7 +73,7 @@ def show_recipes(_file):
         " Check to see if the file provided has an instrument" \
         " associated with it, and that the instrument exists in /geminidr." \
         " \n The instrument was found to be {}, and the tags " \
-        "were {}".format(ad.instrument(), ad.tags)
+        "were {}".format(ad.instrument(), tags)
 
     instrument = ad.instrument().lower()
 
@@ -85,16 +84,18 @@ def show_recipes(_file):
 
     # Finds of the file is DARK, FLAT, BIAS, NS or IMAGE so import_module
     # can import the correct module to obtain the proper recipe
-    if "DARK" in ad.tags:
+
+    # This will be cleaned up!
+    if "DARK" in tags:
         tag_object = "DARK"
         module = 'recipes_DARK'
-    elif "FLAT" in ad.tags:
+    elif "FLAT" in tags:
         tag_object = "FLAT"
         module = 'recipes_FLAT_IMAGE'
-    elif "BIAS" in ad.tags:
+    elif "BIAS" in tags:
         tag_object = "BIAS"
         module = 'recipes_BIAS'
-    elif "NODANDSHUFFLE" in ad.tags:
+    elif "NODANDSHUFFLE" in tags:
         tag_object = "NODANDSHUFFLE"
         module = 'recipes_NS'
     else:
@@ -103,7 +104,7 @@ def show_recipes(_file):
 
     all_recipies = []
 
-    for mode in ['sq', 'qa']:
+    for mode in ['sq', 'qa', 'ql']:
 
         # sets up full path to import, dynamically finds  characteristics
         absolute_dir = 'geminidr.' + instrument + '.recipes.' \
@@ -111,39 +112,26 @@ def show_recipes(_file):
 
         # Makes sure the discovered path where the recipe is stores exists
         absolute_path = absolute_dir.replace(".", "/")
-        exp_usr = os.path.expanduser("~/workspace/dragons/" +
-                                     absolute_path + ".py")
+        exp_usr = os.path.expanduser(local_dir + absolute_path + ".py")
 
-        try:
-            assert (os.path.exists(exp_usr))
-        except AssertionError:
-            raise Warning(
-                "The expected location of the recipe does not exist. "
-                "'show_recipes' found the instrument to be '{}', the mode \n"
-                "to be '{}', and the object to be '{}', but could not find a"
-                " module in the expected directory: '{}.recipes.{}.{}.py'. \n"
-                "This may mean that the given file lacks a '{}' mode or that "
-                "there no recipes for either the instrument '{}', or the "
-                "objecttype '{}'".format(instrument, mode.lower(), tag_object,
-                                         instrument, mode.lower(), module,
-                                         mode.lower(), instrument, tag_object))
+        if os.path.exists(exp_usr):
+            # creates the import statement of the module that is needed
+            mod = importlib.import_module(absolute_dir)
 
-        # creates the import statement of the module that is needed
-        mod = importlib.import_module(absolute_dir)
+            # finds all functions(recipies) in the module except for 'default'
+            functions_list = [i[0] for i in inspect.getmembers(mod)
+                              if inspect.isfunction(i[1]) and (i[0] != 'default')]
 
-        # finds all functions(recipies) in the module except for 'default'
-        functions_list = [i[0] for i in inspect.getmembers(mod)
-                          if inspect.isfunction(i[1]) and (i[0] != 'default')]
-
-        # Appends said recipes to an external list so it can be called later
-        for i in range(len(functions_list)):
-            all_recipies.append(absolute_dir + "::" + functions_list[i])
+            # Appends said recipes to an external list so it can be called later
+            for i in range(len(functions_list)):
+                all_recipies.append(absolute_dir + "::" + functions_list[i])
 
     # Output
     print("Input file: .{}".format(_file))
-    print("Input tags: {}".format(ad.tags))
+    print("Input tags: {}".format(tags))
     print("Recipes available for the input file: ")
-
+    if all_recipies == []:
+        print("No recipes were found for this file!")
     for recipe in all_recipies:
         print("  " + recipe)
     return
