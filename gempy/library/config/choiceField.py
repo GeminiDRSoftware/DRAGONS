@@ -33,7 +33,6 @@ class ChoiceField(Field):
     Defines a Config Field which allows only a set of values
     All allowed must be of the same type.
     Allowed values should be provided as a dict of value, doc string pairs
-
     """
     def __init__(self, doc, dtype, allowed, default=None, optional=True):
         self.allowed = dict(allowed)
