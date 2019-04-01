@@ -44,11 +44,11 @@ def show_recipes(_file):
     list_of_found_instruments = []
 
     # will return the location of dragons, as ".../dragons/"
-    local_dir = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
-
+    # local_dir = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
+    local_dirr = (os.path.split(geminidr.__file__)[0]) + '/'
     # returns every folder, including all subfolders which need to be parsed
     all_folders = [x[0] for x in os.walk(
-        os.path.expanduser(local_dir + 'geminidr/'))]
+        os.path.expanduser(local_dirr))]
 
     for i in all_folders:
 
@@ -67,11 +67,11 @@ def show_recipes(_file):
     # Tests to make sure an instrument was found
     intersect_string = \
         " The instrument in the file provided did not match any of" \
-        " the know instruments in the /geminidr directory. All \n" \
+        " the know instruments in the geminidr directory. All \n" \
         " recipes exist in this directory, and no folder was" \
         " associated with the name of the instrument provided.\n" \
         " Check to see if the file provided has an instrument" \
-        " associated with it, and that the instrument exists in /geminidr." \
+        " associated with it, and that the instrument exists in geminidr." \
         " \n The instrument was found to be {}, and the tags " \
         "were {}".format(ad.instrument(), tags)
 
@@ -112,7 +112,7 @@ def show_recipes(_file):
 
         # Makes sure the discovered path where the recipe is stores exists
         absolute_path = absolute_dir.replace(".", "/")
-        exp_usr = os.path.expanduser(local_dir + absolute_path + ".py")
+        exp_usr = os.path.expanduser(local_dirr[:-9] + absolute_path + ".py")
 
         if os.path.exists(exp_usr):
             # creates the import statement of the module that is needed
