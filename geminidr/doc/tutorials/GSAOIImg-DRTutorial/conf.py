@@ -24,9 +24,9 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 relative_path = './../../../'
 dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
 
-print(' Printing current working directory for debugging:')
-print(' ' + os.getcwd())
-print(' Dragons path: {}'.format(dragons_path))
+print('\n Printing current working directory for debugging:')
+print(' Current working directory: {}'.format(os.getcwd()))
+print(' Dragons path: {}\n'.format(dragons_path))
 
 if on_rtd:
     sys.path.insert(0, dragons_path)
@@ -328,9 +328,9 @@ def run_api_doc(_):
     relative_path = "../../../../"
     root_build_path = os.path.normpath(os.path.join(current_path, relative_path))
 
-    print("Am I running on PyCharm? {}".format(is_running_in_pycharm))
-    print("Current Path: {}".format(current_path))
-    print("Root build path: {}".format(root_build_path))
+    print("\n Am I running on PyCharm? {}".format(is_running_in_pycharm))
+    print(" Current Path: {}".format(current_path))
+    print(" Root build path: {}\n".format(root_build_path))
 
     for p in build_packages:
 
