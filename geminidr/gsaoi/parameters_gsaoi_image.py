@@ -2,8 +2,11 @@
 # in the primitives_gsaoi_image.py file, in alphabetical order.
 from geminidr.core import parameters_photometry
 
+
 class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
+
     def setDefaults(self):
+
         self.detect_minarea = 20
         self.detect_thresh = 1.
         self.analysis_thresh = 1.
