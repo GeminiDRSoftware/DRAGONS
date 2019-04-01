@@ -315,7 +315,6 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
-        'geminidr/core',
         'geminidr/gsaoi'
     ]
 
