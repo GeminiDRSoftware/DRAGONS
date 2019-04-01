@@ -30,7 +30,7 @@ def test_path():
 @pytest.fixture(scope='module')
 def caldb(request):
 
-    from recipe_system.cal_service import set_calservice, CalibrationService
+    from recipe_system.cal_service import CalibrationService
 
     caldb_folder = os.path.dirname(__file__)
     caldb_conf_file = os.path.join(caldb_folder, 'rsys.cfg')
@@ -46,8 +46,6 @@ def caldb(request):
     calibration_service = CalibrationService()
     calibration_service.config(config_file=caldb_conf_file)
     calibration_service.init(wipe=True)
-
-    set_calservice()
 
     return calibration_service
 
