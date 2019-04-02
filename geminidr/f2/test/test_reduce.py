@@ -10,9 +10,6 @@ from recipe_system.reduction.coreReduce import Reduce
 from gempy.utils import logutils
 
 
-logutils.config(file_name='dummy.log')
-
-
 @pytest.fixture
 def test_path():
 
@@ -57,6 +54,8 @@ def caldb(request):
 
 
 def test_reduce_image(test_path, caldb):
+
+    logutils.config(file_name='f2_test_reduce_image.log')
 
     caldb.init(wipe=True)
 
