@@ -58,6 +58,7 @@ class stackSkyFramesConfig(stackFramesConfig):
         self.suffix = "_skyStacked"
         self.operation = "median"
         self.reject_method = "minmax"
+        self.nlow = 1
         self.nhigh = 1
         self.scale = True
         self.zero = False
