@@ -34,6 +34,7 @@ def caldb(request):
 
     caldb_folder = os.path.dirname(__file__)
     caldb_conf_file = os.path.join(caldb_folder, 'rsys.cfg')
+    caldb_database_file = os.path.join(caldb_folder, 'cal_manager.db')
 
     with open(caldb_conf_file, 'w') as buffer:
 
@@ -52,6 +53,7 @@ def caldb(request):
     yield calibration_service
 
     os.remove(caldb_conf_file)
+    os.remove(caldb_database_file)
 
 
 def test_reduce_image(test_path, caldb):
