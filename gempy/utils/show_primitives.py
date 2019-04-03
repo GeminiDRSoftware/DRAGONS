@@ -7,7 +7,12 @@ import os
 import geminidr
 import astrodata
 import gemini_instruments
+
 from astrodata.core import AstroDataError
+from recipe_system.utils.errors import ModeError
+from recipe_system.utils.errors import RecipeNotFound
+from recipe_system.mappers.recipeMapper import RecipeMapper
+
 
 def show_primitives(_file, mode='sq', recipe='reduce'):
     """
@@ -36,8 +41,8 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
     """
 
     # Make sure mode is a valid input
-    if mode.lower() not in ["sq", "qa"]:
-        raise ValueError("mode must be 'sq' or 'qa'!")
+    if mode.lower() not in ['sq', 'qa', 'ql']:
+        raise ValueError("mode must be 'sq', 'qa', or 'ql'!")
 
     # Find the file and open it with astrodata
     try:
@@ -48,143 +53,62 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
               "the format and directory:", sys.exc_info()[0])
         raise
 
-    # a list of current instruments needs to be found so show_primitives can
-    # parse through those directories to find the recipes. Can't assume
-    # static list, user may add instrument
-    list_of_found_instruments = []
-
-    # will return the location of dragons, as ".../dragons/"
-    local_dir = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
-
-    # returns every folder, including all subfolders which need to be parsed
-    all_folders = [x[0] for x in os.walk(
-        os.path.expanduser(local_dir + 'geminidr/'))]
-
-    for i in all_folders:
-
-        # 6th element of directory is where any folder under /geminidr is
-        instrument_name = (i.split("/")[6]).lower()
-
-        # Folders in the same directory, but are known not to be instruments
-        not_instruments = ['doc', '', 'core', '__pycache__', 'gemini']
-
-        # If instrument_name has not been added to the list,
-        # and isn't in not_instruments, add it
-        if instrument_name not in list_of_found_instruments:
-            if instrument_name not in not_instruments:
-                list_of_found_instruments.append(instrument_name)
-
-    # Tests to make sure an instrument was found
-    intersect_string = \
-        " The instrument in the file provided did not match any of" \
-        " the know instruments in the /geminidr directory. All \n" \
-        " recipies exist in this directory, and no folder was" \
-        " associated with the name of the instrument provided.\n" \
-        " Check to see if the file provided has an instrument" \
-        " associated with it, and that the instrument exists in /geminidr"
-
-    instrument = ad.instrument().lower()
-
-    if instrument in ["gmos-s", "gmos-n"]:
-        instrument = "gmos"
-
-    assert instrument in list_of_found_instruments, intersect_string
-
-    # Finds of the file is DARK, FLAT, BIAS, NS or IMAGE so import_module
-    # can import the correct module to obtain the proper recipe
-    # TODO: this is hardcoded and does not consider new types of modules.
-    # If that needs to be added, it is possible.
-    if "DARK" in ad.tags:
-        tag_object = "DARK"
-        module = 'recipes_DARK'
-    elif "FLAT" in ad.tags:
-        tag_object = "FLAT"
-        module = 'recipes_FLAT_IMAGE'
-    elif "BIAS" in ad.tags:
-        tag_object = "BIAS"
-        module = 'recipes_BIAS'
-    elif "NODANDSHUFFLE" in ad.tags:
-        tag_object = "NODANDSHUFFLE"
-        module = 'recipes_NS'
-    else:
-        tag_object = "IMAGE"
-        module = 'recipes_IMAGE'
-
-    # sets up full path to import, dynamically finds all characteristics
-    absolute_dir = 'geminidr.' + instrument + '.recipes.' + \
-                   mode.lower() + '.' + module
-
-    # Tests to make sure the discovered path where the recipe is stores exists
-    absolute_path = absolute_dir.replace(".", "/")
-    exp_usr = os.path.expanduser(local_dir + absolute_path + ".py")
     try:
-        assert (os.path.exists(exp_usr))
-    except AssertionError:
-        raise ModuleNotFoundError(
-            "The expected location of the recipe does not exist. "
-            "'show_primitives' found the instrument to be '{}', the mode \n"
-            "to be '{}', and the object to be '{}', but could not find a"
-            " module in the expected directory: '{}.recipes.{}.{}.py'. \n"
-            "This may mean the object type in the file provided does not "
-            "have a recipe with the given mode and recipename "
-            "parameters"
-                .format(instrument, mode.lower(), tag_object,
-                        instrument, mode.lower(), module))
 
-    # creates the import statement, BUT DOES NOT import directory yet.
-    mod = importlib.import_module(absolute_dir)
+        rm = RecipeMapper([ad], mode, recipename=recipe)
+        mapper_recipe = rm.get_applicable_recipe()
 
-    # Used show_recipes to give user all possible recipes
-    # if the recipe provided does not exist
-    functions_list = [i[0] for i in inspect.getmembers(mod) if
-                      inspect.isfunction(i[1])]
+    except RecipeNotFound:
+        if recipe == 'default':
 
-    # If recipe not provided/'default' input used, check if
-    # default recipe exists, otherwise error
-    if recipe is 'default':
-        if 'default' in functions_list:
+            error_message = \
+                "Recipe was not provided, and the module that corresponded " \
+                "to the file (and mode) provided did not specify a default " \
+                "recipe to use. Please make sure a recipe is provided."
+
+        else:
+            error_message = \
+                "The RecipeMapper returned a RecipeNotFound error. For " \
+                "show_primitives, this may mean that there does not exist " \
+                "a recipe for the given file. This may be because the tags" \
+                "given as input do not match any recipe tags"
+
+        raise RecipeNotFound(error_message)
+
+    except ModeError:
+        raise ModeError("The mode provided either does not exist, or has not "
+                        "been implemented yet. Because of this, no recipe "
+                        "can be found for it.")
+
+    else:
+        mod = importlib.import_module(mapper_recipe.__module__)
+
+        # show_primitives only imports the function(recipe) that was requested.
+        # eval is used to append strings and create an object for getsource.
+        recipe_in_module = eval("mod." + recipe)
+
+        # Retrieves all the source code of the function
+        source_code = inspect.getsource(recipe_in_module)
+
+        # Just helps the user understand that the default recipe was used
+        if recipe == 'default':
             print("Recipe was not provided, but file contained default "
                   "recipe. Show_primitives will use the default recipe.")
-            recipe = 'default'
-        else:
-            raise ValueError(
-                "Recipe was not provided, and the module that corresponded "
-                "to the file and mode provided did not specify a default "
-                "recipe to use. Please make sure a recipe is provided. \n \n"
-                "The recipes found for this file and mode combination "
-                "are: {}".format(functions_list))
 
-    # Makes sure recipe exists in the module imported above.  TIP: This also
-    #  protects any unwanted input from recipe, as it is used in an eval()
-    # later, eval() can be unsafe to use without checking user input
-
-    try:
-        assert (recipe in dir(mod))
-    except AssertionError:
-        # Failure in assertion error means file does not exist in module.
-        raise ImportError(
-            "\n The requested recipe was not found in the expected module, "
-            "more likely than not, this is because the recipe name given "
-            "(in this case:'{}'), has a typo or isn't a real recipe. "
-            "Please check parameters. \n \n"
-            "The recipes found for this file and mode combination "
-            "are: {}".format(recipe, functions_list))
-
-    # show_primitives only imports the one function(recipe) that was requested.
-    # eval is used to append strings and create an object for getsource.
-    recipe_in_module = eval("mod." + recipe)
-
-    # Retrieves all the source code of the function
-    source_code = inspect.getsource(recipe_in_module)
+        dragons_location = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
 
     # output
-    print("Input file: .{}".format(_file))
+    print("Input file: {}".format(_file))
+    print("Input tags: {}".format(ad.tags))
     print("Input mode: {}".format(mode.lower()))
     print("Input recipe: {}".format(recipe_in_module.__name__))
-    print("Matched recipe: {}".format(absolute_dir + "::" +
+    print("Matched recipe: {}".format(mapper_recipe.__module__ + "::" +
                                       recipe_in_module.__name__))
+    print("Recipe location: {}".format(os.path.join(os.path.normpath(
+        dragons_location + mapper_recipe.__module__ + ".py"))))
+    print("Recipe tags: {}".format(mod.recipe_tags))
     print("Primitives used:")
 
     for primitive in re.findall(r'p\..*', source_code):
-        print("  " + primitive)
+        print("   " + primitive)
     return
