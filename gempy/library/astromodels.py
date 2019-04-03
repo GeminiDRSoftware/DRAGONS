@@ -175,8 +175,10 @@ class UnivariateSplineWithOutlierRemoval(object):
             raise ValueError("Both t and s have been specified")
 
         if isinstance(y, np.ma.masked_array):
-            mask = [False] * len(x) if y.mask is np.ma.nomask else y.mask
+            mask = np.zeros_like(x, dtype=bool) if y.mask is np.ma.nomask else y.mask
             y = y.data
+        else:
+            mask = np.zeros_like(x, dtype=bool)
 
         iter = 0
         start = datetime.now()
