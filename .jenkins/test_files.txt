@@ -56,6 +56,7 @@ F2/test_reduce/S20131121S0081.fits
 F2/test_reduce/S20131121S0082.fits
 F2/test_reduce/S20131121S0083.fits
 
+# Astrodata test files
 S20170103S0032.fits
 N20190116G0054i.fits
 N20190206S0279.fits
@@ -64,6 +65,7 @@ S20180223S0229.fits
 N20160727S0077.fits
 N20190120S0287.fits
 S20190213S0084.fits
+S20170111S0166.fits
 
 
 # GSAOI Image Reduction

@@ -5,12 +5,11 @@ import sys
 import inspect
 import importlib
 
-import geminidr
 import astrodata
 import gemini_instruments
 from astrodata.core import AstroDataError
-
-
+from recipe_system.utils.errors import ModeError
+from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.mappers.recipeMapper import RecipeMapper
 
 
@@ -24,114 +23,82 @@ def show_recipes(_file):
     file - str
         file name for the fits file
 
-    Returns - None
-    Prints out information
+    Returns - str
+        returns  string with all the information provided
     -------
     """
+    # string that results are appended to
+    result = ""
 
     # Find the file and open it with astrodata
     try:
         ad = astrodata.open(_file)
         tags = ad.tags
     except AstroDataError:
-        print("There was an issue using the selected file, please check"
-              "the format and directory:", sys.exc_info()[0])
+        result  += ("There was an issue using the selected file, please check"
+                    "the format and directory.")
         raise
 
-    # a list of current instruments needs to be found so show_recipies
-    # can parse through those directories to find the recipes. Can't
-    # assume static list, user may add instrument
-    list_of_found_instruments = []
-
-    # will return the location of dragons, as ".../dragons/"
-    local_dir = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
-
-    # returns every folder, including all subfolders which need to be parsed
-    all_folders = [x[0] for x in os.walk(
-        os.path.expanduser(local_dir + 'geminidr/'))]
-
-    for i in all_folders:
-
-        # 6th element of directory is where any folder under /geminidr is
-        instrument_name = (i.split("/")[6]).lower()
-
-        # Folders in the same directory, but are known not to be instruments
-        not_instruments = ['doc', '', 'core', '__pycache__', 'gemini']
-
-        # If instrument_name has not been added to the list,
-        # and isn't in not_instruments, add it
-        if instrument_name not in list_of_found_instruments:
-            if instrument_name not in not_instruments:
-                list_of_found_instruments.append(instrument_name)
-
-    # Tests to make sure an instrument was found
-    intersect_string = \
-        " The instrument in the file provided did not match any of" \
-        " the know instruments in the /geminidr directory. All \n" \
-        " recipes exist in this directory, and no folder was" \
-        " associated with the name of the instrument provided.\n" \
-        " Check to see if the file provided has an instrument" \
-        " associated with it, and that the instrument exists in /geminidr." \
-        " \n The instrument was found to be {}, and the tags " \
-        "were {}".format(ad.instrument(), tags)
-
-    instrument = ad.instrument().lower()
-
-    if instrument in ["gmos-s", "gmos-n"]:
-        instrument = "gmos"
-
-    assert instrument in list_of_found_instruments, intersect_string
-
-    # Finds of the file is DARK, FLAT, BIAS, NS or IMAGE so import_module
-    # can import the correct module to obtain the proper recipe
-
-    # This will be cleaned up!
-    if "DARK" in tags:
-        tag_object = "DARK"
-        module = 'recipes_DARK'
-    elif "FLAT" in tags:
-        tag_object = "FLAT"
-        module = 'recipes_FLAT_IMAGE'
-    elif "BIAS" in tags:
-        tag_object = "BIAS"
-        module = 'recipes_BIAS'
-    elif "NODANDSHUFFLE" in tags:
-        tag_object = "NODANDSHUFFLE"
-        module = 'recipes_NS'
-    else:
-        tag_object = "IMAGE"
-        module = 'recipes_IMAGE'
-
     all_recipies = []
-
+    functions_list = []
     for mode in ['sq', 'qa', 'ql']:
 
-        # sets up full path to import, dynamically finds  characteristics
-        absolute_dir = 'geminidr.' + instrument + '.recipes.' \
-                       + mode + '.' + module
+        try:
 
-        # Makes sure the discovered path where the recipe is stores exists
-        absolute_path = absolute_dir.replace(".", "/")
-        exp_usr = os.path.expanduser(local_dir + absolute_path + ".py")
+            rm = RecipeMapper([ad], mode)
+            recipe = rm.get_applicable_recipe()
 
-        if os.path.exists(exp_usr):
-            # creates the import statement of the module that is needed
-            mod = importlib.import_module(absolute_dir)
+        except RecipeNotFound:
+            error_message = "The RecipeMapper returned a RecipeNotFound " \
+                            "error. For show_recipes, this means that " \
+                            "there does not exist a recipe for the given " \
+                            "file. This may be because the observation type " \
+                            "found in the astrodata tags does not match any" \
+                            "module for the given mode"
+
+            # If on the last run of the for loop, function_list is still empty,
+            # and a RecipeNotFound error was raised again, then raise error.
+            # Else module may just not exist for the current mode,
+            if functions_list == [] and mode == mode[-1]:
+                raise RecipeNotFound(error_message)
+
+            else:
+                pass
+
+        except ModeError:
+            # ModeError returned if the mode does not exist for the file
+            # ql is not implemented yet, so this catches that exception
+            pass
+
+        else:
+            mod = importlib.import_module(recipe.__module__)
 
             # finds all functions(recipies) in the module except for 'default'
-            functions_list = [i[0] for i in inspect.getmembers(mod)
-                              if inspect.isfunction(i[1]) and (i[0] != 'default')]
+            functions_list = [i[0] for i in inspect.getmembers(mod) if
+                              inspect.isfunction(i[1]) and (i[0] != 'default')]
 
             # Appends said recipes to an external list so it can be called later
             for i in range(len(functions_list)):
-                all_recipies.append(absolute_dir + "::" + functions_list[i])
+                all_recipies.append(recipe.__module__ + "::"
+                                    + functions_list[i])
 
-    # Output
-    print("Input file: .{}".format(_file))
-    print("Input tags: {}".format(tags))
-    print("Recipes available for the input file: ")
+    # Todo: ad.path may be updated to always return absolute path, if that
+    # happens, remove os.getcwd()
+    result += ("Input file: {}".format(os.path.normpath(
+        os.path.join(os.getcwd(), ad.path))))
+
+
+    result += ("\nInput tags: {}".format(tags))
+
+    # Edge case exists where ql mode isn't implemented, sq/qa both pass due to
+    # except clause, and then no recipes were found.
+
     if all_recipies == []:
-        print("No recipes were found for this file!")
-    for recipe in all_recipies:
-        print("  " + recipe)
-    return
+        result += ("\n!!! No recipes were found for this file !!!")
+    else:
+        result += ("\nRecipes available for the input file: ")
+        for recipe in all_recipies:
+            result += ("\n   " + recipe)
+
+    return result
+
