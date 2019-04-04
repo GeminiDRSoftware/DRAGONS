@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+"""
+Create the directory structure for a DR package that will be used by
+the Recipe System.
+"""
+
+from __future__ import print_function
+
+import sys
+import argparse
+
+from recipe_system.utils.rs_utilities import makedrpkg
+
+SHORT_DESCRIPTION = "Create a DR package directory structure for use with " \
+                    "the Recipe System."
+
+def parse_args(command_line_args):
+    """
+    Parse the command line
+
+    """
+
+    parser = argparse.ArgumentParser(description=SHORT_DESCRIPTION)
+    parser.add_argument('drpkgname', type=str, nargs=1,
+                        help="Name of the DR package")
+    parser.add_argument('-i', dest='instruments', type=str, nargs='*',
+                       help='List of instruments')
+    parser.add_argument('-m', dest='modes', type=str, nargs='*',
+                        help='List of modes')
+    parser.add_argument('--debug', default=False, action='store_true',
+                        help='Toggle debug mode.')
+
+    args = parser.parse_args(command_line_args)
+
+    if args.debug:
+        print(args)
+
+    return args
+
+def main(argv=None):
+    """
+    Create the directory structure for a DR package that will be used
+    by the Recipe System.
+
+    """
+    if argv is None:
+        argv = sys.argv[1:]
+
+    args = parse_args(argv)
+
+    makedrpkg(args.drpkgname[0], args.instruments, args.modes)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

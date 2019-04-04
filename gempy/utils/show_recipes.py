@@ -36,7 +36,7 @@ def show_recipes(_file):
         tags = ad.tags
     except AstroDataError:
         result  += ("There was an issue using the selected file, please check"
-                    "the format and directory:", sys.exc_info()[0])
+                    "the format and directory.")
         raise
 
     all_recipies = []
@@ -84,8 +84,8 @@ def show_recipes(_file):
 
     # Todo: ad.path may be updated to always return absolute path, if that
     # happens, remove os.getcwd()
-    result += ("Input file: " + format(os.path.normpath(
-        os.path.join(os.getcwd() + "/" + ad.path))))
+    result += ("Input file: {}".format(os.path.normpath(
+        os.path.join(os.getcwd(), ad.path))))
 
 
     result += ("\nInput tags: {}".format(tags))
