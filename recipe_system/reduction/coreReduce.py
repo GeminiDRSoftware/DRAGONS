@@ -23,7 +23,6 @@ which calls on the mapper classes and passes the received data to them.
 import os
 import sys
 import inspect
-import signal
 import traceback
 
 from importlib import import_module
@@ -133,25 +132,21 @@ class Reduce(object):
 
         Returns
         -------
-        xstat : <int> exit code
+        <void>
 
         """
-        xstat = 0
         recipe = None
-
         try:
             ffiles = self._check_files(self.files)
         except IOError as err:
-            xstat = signal.SIGIO
             log.error(str(err))
-            return xstat
+            raise
 
         try:
             self.adinputs = self._convert_inputs(ffiles)
         except IOError as err:
-            xstat = signal.SIGIO
             log.error(str(err))
-            return xstat
+            raise
 
         rm = RecipeMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.recipename)
@@ -171,9 +166,8 @@ class Reduce(object):
         try:
             p = pm.get_applicable_primitives()
         except PrimitivesNotFound as err:
-            xstat = signal.SIGIO
             log.error(str(err))
-            return xstat
+            raise
 
         # If the RecipeMapper was unable to find a specified user recipe,
         # it is possible that the recipe passed was a primitive name.
@@ -182,50 +176,36 @@ class Reduce(object):
         if recipe is None:
             try:
                 primitive_as_recipe = getattr(p, self.recipename)
-                pname = primitive_as_recipe.__name__
-                log.stdinfo("Found '{}' as a primitive.".format(pname))
-                self._logheader(primitive_as_recipe.__name__)
             except AttributeError as err:
                 err = "Recipe {} Not Found".format(self.recipename)
-                xstat = signal.SIGIO
                 log.error(str(err))
-                return xstat
+                raise
+            
+            pname = primitive_as_recipe.__name__
+            log.stdinfo("Found '{}' as a primitive.".format(pname))
+            self._logheader(pname)
             try:
                 primitive_as_recipe()
-            except AttributeError as err:
-                xstat = signal.SIGABRT
+            except Exception as err:
                 _log_traceback()
                 log.error(str(err))
-                return xstat
+                raise
         else:
             self._logheader(recipe)
             try:
                 recipe(p)
-            except KeyboardInterrupt:
-                log.error("Caught KeyboardInterrupt (^C) signal")
-                xstat = signal.SIGINT
-            except IOError as err:
-                log.error(str(err))
-                xstat = signal.SIGABRT
-            except TypeError as err:
-                _log_traceback()
-                log.error(str(err))
-                xstat = signal.SIGABRT
             except Exception as err:
-                log.error("runr() caught an unhandled exception.")
-                _log_traceback()
-                log.error(str(err))
-                xstat = signal.SIGABRT
+                log.error("Reduce recieved an unhandled exception. Aborting ...")
+                log.stdinfo("Writing final outputs ...")
+                self._write_final(p.streams['main'])
+                self.output_filenames = [ad.filename for ad in p.streams['main']]
+                raise
 
         self._write_final(p.streams['main'])
         self.output_filenames = [ad.filename for ad in p.streams['main']]
-
-        if xstat != 0:
-            msg = "reduce instance aborted."
-        else:
-            msg = "\nreduce completed successfully."
+        msg = "\n\treduce completed successfully."
         log.stdinfo(str(msg))
-        return xstat
+        return
 
     # -------------------------------- prive -----------------------------------
     def _check_files(self, ffiles):
@@ -373,7 +353,7 @@ class Reduce(object):
             type: <void>
 
         """
-        outstr = "Wrote {} in output directory"
+        outstr = "\tWrote {} in output directory"
         def _sname(name):
             head, tail = os.path.splitext(name)
             ohead = head.split("_")[0]
