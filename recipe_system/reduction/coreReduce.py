@@ -195,7 +195,7 @@ class Reduce(object):
             try:
                 recipe(p)
             except Exception as err:
-                log.error("Reduce recieved an unhandled exception. Aborting ...")
+                log.error("Reduce received an unhandled exception. Aborting ...")
                 log.stdinfo("Writing final outputs ...")
                 self._write_final(p.streams['main'])
                 self.output_filenames = [ad.filename for ad in p.streams['main']]
