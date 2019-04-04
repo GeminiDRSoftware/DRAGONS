@@ -9,8 +9,8 @@ __author__ = 'Ivan Sharankov'
 
 def main():
     args = show_recipies_argparser()
-    show_recipes.show_recipes(args.inputfile)
-
+    recipes_found = show_recipes.show_recipes(args.inputfile)
+    print(recipes_found)
 
 def show_recipies_argparser():
 

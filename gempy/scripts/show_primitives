@@ -8,7 +8,8 @@ __author__ = 'Ivan Sharankov'
 
 def main():
     args = show_primitives_argparser()
-    show_primitives.show_primitives(args.inputfile, args.mode, args.recipe)
+    primitives_found = show_primitives.show_primitives(args.inputfile, args.mode, args.recipe)
+    print(primitives_found)
 
 
 

@@ -14,7 +14,7 @@ from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.mappers.recipeMapper import RecipeMapper
 
 
-def show_primitives(_file, mode='sq', recipe='reduce'):
+def show_primitives(_file, mode='sq', recipe='default'):
     """
     show_primitives takes in a file, observing mode, and the data reduction
     recipe name, and will return the source code pertaining to that recipe,
@@ -35,10 +35,12 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
         in, the parameter 'recipe' is needed to isolate the exact recipe (if
         there are multiple) that the user wants to see the source code from.
 
-    Returns - None
-    Prints out information
+    Returns - str
+        returns  string with all the information provided
     -------
     """
+    # string that results are appended to
+    result = ""
 
     # Make sure mode is a valid input
     if mode.lower() not in ['sq', 'qa', 'ql']:
@@ -64,7 +66,8 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
             error_message = \
                 "Recipe was not provided, and the module that corresponded " \
                 "to the file (and mode) provided did not specify a default " \
-                "recipe to use. Please make sure a recipe is provided."
+                "recipe to use. Please make sure a recipe is provided. \n" \
+                "\n Mode = {}  \n Recipe = {}".format(mode, recipe)
 
         else:
             error_message = \
@@ -92,23 +95,41 @@ def show_primitives(_file, mode='sq', recipe='reduce'):
 
         # Just helps the user understand that the default recipe was used
         if recipe == 'default':
-            print("Recipe was not provided, but file contained default "
-                  "recipe. Show_primitives will use the default recipe.")
+            result += ("Recipe not provided, default recipe ({}) will "
+                       "be used.".format(recipe_in_module.__name__))
 
         dragons_location = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
 
     # output
-    print("Input file: {}".format(_file))
-    print("Input tags: {}".format(ad.tags))
-    print("Input mode: {}".format(mode.lower()))
-    print("Input recipe: {}".format(recipe_in_module.__name__))
-    print("Matched recipe: {}".format(mapper_recipe.__module__ + "::" +
-                                      recipe_in_module.__name__))
-    print("Recipe location: {}".format(os.path.join(os.path.normpath(
-        dragons_location + mapper_recipe.__module__ + ".py"))))
-    print("Recipe tags: {}".format(mod.recipe_tags))
-    print("Primitives used:")
+
+
+    result += ("\nInput file: " + str(_file))
+    result += ("\nInput tags: " + str(ad.tags))
+    result += ("\nInput mode: " + str(mode.lower()))
+    result += ("\nInput recipe: " + recipe_in_module.__name__)
+    result += ("\nMatched recipe: " + mapper_recipe.__module__ + "::" +
+                                      recipe_in_module.__name__)
+    result += ("\nRecipe location: " + (os.path.normpath(os.path.join(
+        dragons_location, mapper_recipe.__module__.replace(".", "/") + ".py"))))
+    result += ("\nRecipe tags: " + str(mod.recipe_tags))
+    result += ("\nPrimitives used: ")
 
     for primitive in re.findall(r'p\..*', source_code):
-        print("   " + primitive)
-    return
+        result += ("\n   " + primitive)
+
+
+
+    # print("Input file: {}".format(_file))
+    # print("Input tags: {}".format(ad.tags))
+    # print("Input mode: {}".format(mode.lower()))
+    # print("Input recipe: {}".format(recipe_in_module.__name__))
+    # print("Matched recipe: {}".format(mapper_recipe.__module__ + "::" +
+    #                                   recipe_in_module.__name__))
+    # print("Recipe location: {}".format(os.path.join(os.path.normpath(
+    #     dragons_location + mapper_recipe.__module__ + ".py"))))
+    # print("Recipe tags: {}".format(mod.recipe_tags))
+    # print("Primitives used:")
+    #
+    # for primitive in re.findall(r'p\..*', source_code):
+    #     print("   " + primitive)
+    return result
