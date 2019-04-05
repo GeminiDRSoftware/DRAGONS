@@ -293,14 +293,15 @@ The data reduction packages provide some hooks that the Recipe System depends
 on to map recipes and primitives to the data.
 
 Instructions on how to structure a data reduction package for use by the Recipe
-System are provided in appendix.   ??KL add ref.
+System are provided in appendix.
+.. todo:: add ref.
 
 The primitive signature must be able to accept this instantiation call::
 
    primitive_actual(self.adinputs, mode=self.mode, ucals=self.usercals,
                     uparms=self.userparams, upload=self.upload)
 
-??KL describe the types and format of each argument.
+.. todo:: describe the types and format of each argument.
 
 The recipes must be located in subdirectory named after the *mode*.  For
 example::
@@ -323,7 +324,8 @@ masks.  Because the Recipe System conducts depth-first searches,
 the optimization expedites mapping by known exclusion: bypassing subpackages
 and modules that are known not contain primitives or recipes.
 
-Refer to the appendix for more a more complete discussion.  ??KL add ref.
+Refer to the appendix for more a more complete discussion.
+.. todo::  add ref.
 
 .. _calrq:
 
