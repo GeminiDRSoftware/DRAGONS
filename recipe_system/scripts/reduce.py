@@ -24,12 +24,6 @@ from recipe_system.utils.reduce_utils import show_parser_options
 from recipe_system.cal_service import set_calservice
 from recipe_system.cal_service import localmanager_available
 # ------------------------------------------------------------------------------
-def _log_traceback():
-    exc_type, exc_value, exc_traceback = sys.exc_info()
-    tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
-    [log.error(line.rstrip()) for line in tblist]
-    return
-
 def main(args):
     """
     'main' is called with a Namespace 'args' parameter, or an object that
@@ -101,7 +95,6 @@ def main(args):
         estat = signal.SIGINT
     except Exception as err:
         log.error("reduce caught an unhandled exception.")
-        _log_traceback()
         log.error("\nReduce instance aborted.")
         estat = signal.SIGABRT
 
