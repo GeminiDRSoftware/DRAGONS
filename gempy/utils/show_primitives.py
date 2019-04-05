@@ -96,14 +96,14 @@ def show_primitives(_file, mode='sq', recipe='default'):
         # Just helps the user understand that the default recipe was used
         if recipe == 'default':
             result += ("Recipe not provided, default recipe ({}) will "
-                       "be used.".format(recipe_in_module.__name__))
+                       "be used.\n".format(recipe_in_module.__name__))
 
         dragons_location = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
 
     # output
 
 
-    result += ("\nInput file: " + str(_file))
+    result += ("Input file: " + str(_file))
     result += ("\nInput tags: " + str(ad.tags))
     result += ("\nInput mode: " + str(mode.lower()))
     result += ("\nInput recipe: " + recipe_in_module.__name__)
