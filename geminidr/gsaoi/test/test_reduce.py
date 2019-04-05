@@ -75,15 +75,15 @@ def test_reduce_image(test_path, caldb):
         dataselect.expr_parser('filter_name=="H"'))
 
     list_of_std_LHS_2026 = dataselect.select_data(
-        all_files, ['FLAT'], [],
+        all_files, [], [],
         dataselect.expr_parser('object=="LHS 2026"'))
 
     list_of_std_cskd8 = dataselect.select_data(
-        all_files, ['FLAT'], [],
+        all_files, [], [],
         dataselect.expr_parser('object=="cskd-8"'))
 
     list_of_science_files = dataselect.select_data(
-        all_files, ['FLAT'], [],
+        all_files, [], [],
         dataselect.expr_parser('observation_class=="science" and exposure_time==60.'))
 
     for darks in [list_of_darks]:
