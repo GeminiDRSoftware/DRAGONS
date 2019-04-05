@@ -1,6 +1,4 @@
 .. drpkg.rst
-.. include interfaces
-.. include overview
 
 .. include:: references.txt
 

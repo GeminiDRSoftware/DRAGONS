@@ -1,5 +1,4 @@
 .. interfaces.rst
-.. include overview
 
 .. include:: references.txt
 
@@ -7,14 +6,6 @@
 
 The Mappers
 ***********
-
-**map** (verb) - *(OED)*
-
-1. *Associate (a group of elements or qualities) with an equivalent group, 
-   according to a particular formula or model.*
-2. *Associate each element of (a set) with an element of another set.*
-
-----
 
 In a nominal pipeline context, the mappers receive input data and parameters from 
 the |Reduce| class, either through the ``reduce`` command or the class's API.

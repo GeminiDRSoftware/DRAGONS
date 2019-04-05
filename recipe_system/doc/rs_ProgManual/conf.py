@@ -39,14 +39,14 @@ else:
 project = u"DRAGONS - Recipe System Programmer's Manual"
 copyright = u'Gemini Observatory (AURA), 2018'
 
-author = 'Kenneth Anderson'
+author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-version = '2.0'  # The short X.Y version.
-release = '2.0.8'  # The full version, including alpha/beta/rc tags.
+version = '2.2'  # The short X.Y version.
+release = '2.2.0'  # The full version, including alpha/beta/rc tags.
 
 
 # -- General configuration -----------------------------------------------------
@@ -342,8 +342,8 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
-        'gempy',
-        'geminidr',
+        #'gempy',
+        #'geminidr',
         'recipe_system',
     ]
 
