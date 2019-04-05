@@ -133,7 +133,8 @@ f2_answer = \
     "   geminidr.f2.recipes.qa.recipes_IMAGE::reduce\n" \
     "   geminidr.f2.recipes.qa.recipes_IMAGE::reduce_nostack"
 
-import_error = "Import Error"
+
+# Creates a list of the files and answers, in same order so they can be parsed
 files = [GNIRS_SPECT, GMOS_SPECT, GSAOI_DARK, GSAOI_IMAGE, GSAOI_FLAT,
          GMOS_NS, GNIRS, GMOS, NIRI, F2, NIFS, GRACES]
 
@@ -143,34 +144,7 @@ answers = [gnirs_spect_answer, gmos_spect_answer, gsaoi_dark_answer,
            "ImportError", "ImportError"]
 
 
-@pytest.mark.skip("Because I said so")
-@pytest.mark.parametrize('filename, str_answer', [
-    (GNIRS_SPECT, gnirs_spect_answer),
-    # (GMOS_SPECT, gmos_spect_answer),
-    # (GSAOI_DARK, gsaoi_dark_answer),
-    # (GSAOI_IMAGE, gsaoi_image_answer),
-    # (GSAOI_FLAT, gsaoi_flat_answer),
-    # (GMOS_NS, gmos_ns_answer),
-    # (GNIRS, gnirs_answer),
-    # (GMOS, gmos_answer),
-    # (NIRI, niri_answer),
-    # (F2, f2_answer),
-    # (NIFS, "ImportError"),
-    # (GRACES, "ImportError")
-    ])
-def test_show_recipes(test_path, filename, str_answer):
-    try:
-        file_location = test_path + 'geminidr/' + filename
-        answer = show_recipes(file_location)
-        assert str_answer == answer
-    except ImportError:
-        if str_answer == 'ImportError':
-            pass
-        else:
-            raise ImportError
-
-
-def test_show_recipes_two(test_path):
+def test_show_recipes_with_all_instruments(test_path):
     for i in range(len(files)):
         try:
             file_location = test_path + 'geminidr/' + files[i]
