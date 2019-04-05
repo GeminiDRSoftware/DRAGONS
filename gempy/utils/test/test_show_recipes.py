@@ -21,12 +21,12 @@ if not os.path.exists(path):
     path = ''
 
 
-# Returns list of all files in the TEST_PATH directory
-geminidr_files = glob.glob(os.path.join(path, 'geminidr/', "*fits"))
-
-# Separates the directory from the list, helps cleanup code
-fits_files = [_file.split('/')[-1] for _file in geminidr_files]
-
+# # Returns list of all files in the TEST_PATH directory
+# geminidr_files = glob.glob(os.path.join(path, 'geminidr/', "*fits"))
+#
+# # Separates the directory from the list, helps cleanup code
+# fits_files = [_file.split('/')[-1] for _file in geminidr_files]
+path = path + "geminidr/"
 # TODO: Clean this ip, reference what you did in astrodata, need to get the
 # right path working in a way thay you don't need to change the string answers
 GNIRS = "S20171208S0054.fits"
