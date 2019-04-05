@@ -56,7 +56,7 @@ def _log_traceback():
     tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
     [log.error(line.rstrip()) for line in tblist]
     return
-# ------------------------------------------------------------------------------
+
 
 class Reduce(object):
     """
@@ -69,24 +69,39 @@ class Reduce(object):
     The class provides one (1) public method, runr(), the only call needed to
     run reduce on the supplied argument set.
 
+    Parameters
+    ----------
+    sys_args : :class:`argparse.Namespace` (optional) or <duck-type object>
+            This object type is not required, per se, but only that any passed
+            object *must* present an equivalent interface to that of an
+            :class:`argparse.Namespace` instance.
+
+    Attributes
+    ----------
+    adinputs : list
+
+    output_filenames : list
+
+    mode : str
+
+    drpkg : (add type)
+
+    files : list
+
+    suffix : str
+
+    ucals : (add type)
+
+    uparms : (add type)
+
+    _upload : (add type)
+
+    recipename : str (optional)
+        The name of the recipe that will be run. If None, its set to 'default'.
     """
 
     # TODO (@kiloRomeoAlpha) : replace `sys_args` by the actual arguments
     def __init__(self, sys_args=None):
-        """
-
-        Parameters
-        ----------
-        sys_args : <Nameapace> or <duck-type object>
-                   argparse.Namespace instance (optional)
-                   This object type is not required, per se, but only that any
-                   passed object *must* present an equivalent interface to
-                   that of an <argparse.Namespace> instance.
-        Returns
-        -------
-        <Reduce instance>
-
-        """
         if sys_args:
             args = sys_args
         elif self._confirm_args():
@@ -100,14 +115,14 @@ class Reduce(object):
 
         self.adinputs = None
         self.output_filenames = None
-        self.mode     = args.mode
-        self.drpkg    = args.drpkg
-        self.files    = args.files
-        self.suffix   = args.suffix
-        self.ucals    = normalize_ucals(args.files, args.user_cal)
-        self.uparms   = set_btypes(args.userparam)
-        self._upload  = args.upload
-        self.recipename  = args.recipename if args.recipename else 'default'
+        self.mode = args.mode
+        self.drpkg = args.drpkg
+        self.files = args.files
+        self.suffix = args.suffix
+        self.ucals = normalize_ucals(args.files, args.user_cal)
+        self.uparms = set_btypes(args.userparam)
+        self._upload = args.upload
+        self.recipename = args.recipename if args.recipename else 'default'
 
     @property
     def upload(self):
