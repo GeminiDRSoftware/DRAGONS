@@ -71,6 +71,7 @@ In the Recipe System, the default data reduction package is ``geminidr``.  This
 can be changed by setting the value of the ``drpkg`` attribute to the |Reduce|
 class or with the ``--drpkg`` options on the ``reduce`` command line.
 
+.. _modedef:
 
 **Mode**
 

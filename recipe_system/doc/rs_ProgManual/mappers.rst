@@ -7,58 +7,105 @@
 The Mappers
 ***********
 
-In a nominal pipeline context, the mappers receive input data and parameters from 
-the |Reduce| class, either through the ``reduce`` command or the class's API.
-This document describes how to import and use the mapper classes programmatically.
-The mapper classes are the main component of the Recipe System and serve as
-arbiters between the input data and parameters and the instrument packages defined
-by the ``drpkg`` parameter. This parameter defaults to |geminidr| , which is the
-Gemini Observatory's data reduction package under DRAGONS.
+The mappers are the heart of the Recipe System.  The mappers associate recipes
+and primitives to the data being reduced.
 
-The mapper classes implement search/match/capture algorithms optimized for the 
-instrument packages defined in |geminidr|  under a DRAGONS installation. 
-The algorithm exploits attributes of an |AstroData|  instance, determines the 
-applicable instrument package (e.g. 'niri', 'gnirs', 'gmos', etc.) defined under 
-|geminidr|, then conducts a search of that package, looking for specific
-attributes: a class attribute called `tagset` defined on discoverable 
-primitive classes, and a module attribute defined in recipe library files, 
-called `recipe_tags`. The mappers look for the "best" match between an AstroData 
-object's tags and the tags defined on recipe libraries and primitive classes, 
-where best here requires that the target tagsets are a *complete subset* of the 
-larger set of tags defined for the input dataset.
+Normally called from the |Reduce| (which might have been called by the command
+line ``reduce``), the mappers will search a data reduction package (DR package)
+specified by
+the argument ``drpkg`` for recipes and primitives matching the AstroData tags
+of the data to be processed.  (The default ``drpkg`` is DRAGONS ``geminidr``
+package.)
 
-Mapper
-======
+The search for matching primitives and recipes is optimized for a certain
+directory structure.  Other structure would work though.  In the appendix,
+we introduce a tool to easily create the data reduction package structure that
+will be most efficient.  The reader can also look at ``geminidr`` for a
+working example.
+.. todo:: add reference to appendix.
 
-|Mapper| serves as the base class for all other `Recipe System` mapper classes.
-The base |Mapper| class defines *only* the initialisation function, which sets
-important instance attributes, such as the applicable instrument package name
-(based on instrument name), and a recipe name. This base class'
-``__init__()`` function receives all data and parameters passed by either
-|Reduce| or other caller. As readers may infer from the
-:ref:`Mapper class diagram <mappercls>` below, the |Mapper|
-initializer determines certain instance attributes `from` the passed input
-datasets provided by the list, ``adinputs``.
+The mapping algorithm uses attributes of an ``AstroData`` instance to first
+determines the applicable instrument package defined under the DR package,
+for example ``gmos`` in ``geminidr``. Then the algorithm conducts a search of
+that instrument package looking for specific attributes: a class attribute
+called ``tagset`` defined in discoverable primitive classes, and a module
+attribute, called ``recipe_tags``, defined in recipe library modules.
+The mappers look for the "best" match between an AstroData
+object's tags and the tagset defined in recipe libraries and primitive classes.
+The best match requires that the primitive and recipe tagsets are a
+*complete subset* of the larger set of tags defined for the input dataset. The
+association with the greatest number of matched tags wins the test.
 
-For instance, the mapper attribute, ``pkg``, which is used as the description of 
-the applicable instrument package in *geminidr*, is derived from an |AstroData|  
-instance "descriptor," ``instrument()``, which returns the actual instrument used 
-for the observation. (While details about AstroData classes are beyond the scope 
-of this document, readers are encouraged to consult the AstroData documents listed
-in Chapter 2, :ref:`Related Documents <refdocs>`.)
 
-The Mapper classes receive a required list of input datasets and some, or all, of 
-the following arguments. Of the arguments listed below, only ``adinputs``, 
-``recipename``, and ``mode`` are used by currently defined mappers to find 
-recipes and primitive classes. All other arguments listed are passed to, and used 
-by, the selected primitive class.
+Mapper Class
+============
 
-.. _mappercls:
+|Mapper| serves as the base class for the other Recipe System mapper classes.
+The base |Mapper| class defines *only* the initialisation function.  Subclasses
+inherit and do not override ``Mapper.__init__()``.
 
-.. figure:: images/mapper_classes.jpeg
-   :scale: 80
+It is important to note that only the first AstroData dataset in the list of
+input datasets is used to set the tags and the import path of the instrument
+package.  It is assumed that all the datasets in the list are of the same type
+and will be reduced with the same recipes and primitives.
 
-   |Mapper| subclasses inherit and do not override ``Mapper.__init__()``.
+.. todo:: below in drpkg, add reference to appendix
+
+
+**Class Mapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload=None)*
+
+   Arguments to __init__
+    adinputs
+        A ``list`` of input AstroData objects (required).
+    mode
+        A ``str`` indicating mode name. This defines which recipe set to use.
+        Default is ``'sq'``. See the
+        :ref:`mode definition <modedef>` for addtional information.
+    drpkg
+        A ``str`` indicating the name of the data reduction package to inspect.
+        The default is ``geminidr``. The package *must* be importable and
+        should provide instrument packages of the same form as defined in
+        appendix.
+    recipename
+        A ``str`` indicating the recipe to use for processing. This will
+        override the mapping in part or in whole.  The default is "default".
+        A recipe library should have a module attribute ``default`` that
+        is assigned the name of the default function (recipe) to run if that
+        library is selected. This guarantee that if a library is selected there
+        will always be a recipe matching ``recipename`` to run.
+
+        ``recipename`` can also be the name of a specific recipe that will be
+        expected to be found in the selected recipe library.
+
+        To completely bypass the recipe mapping and use a user-provided
+        recipe library and a recipe within, ``recipename`` is set to
+        `<(path)library_file_name>.<name_of_recipe_function>`.
+
+        Finally, ``recipename`` can be set to be the name of a single primitive.
+        In that case, the primitive of that name in the mapped primitive set
+        will be run.
+    usercals
+        A `dictionary` of user-specified calibration files, keyed on
+        calibration type.
+        E.g., ``{'processed_bias':'foo_bias.fits'}``
+    uparms
+        A `list` of tuples representing user parameters passed via command line or
+        other caller. Each may have a specified primitive.
+        E.g., [('foo','bar'), ('tileArrays:par1','val1')]
+    upload
+        A `list` of strings indicating the processing products to be uploaded to
+        fitsstore. For example, in running the QA pipeline, upload = ['metrics'],
+        where the *geminidr* primitives, measureBG, measureCC, and measureIQ produce
+        these QA metrics. Default is None.
+
+   Attributes
+    pkg
+        blah
+    dotpackage
+        blah
+    userparams
+        blah
+
 
 PrimitiveMapper
 ===============
