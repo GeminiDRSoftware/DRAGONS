@@ -44,17 +44,22 @@ class distortionCorrectConfig(config.Config):
 
 class extract1DSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
+    method = config.ChoiceField("Extraction method", str,
+                                allowed = {"standard": "no weighting",
+                                           "weighted": "inverse-variance weighted",
+                                           "optimal": "optimal extraction"},
+                                default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, 10, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
 
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
     max_sources = config.RangeField("Maximum number of sources to find", int, None, min=1, optional=True)
+    threshold = config.RangeField("Threshold relative to peak for automatic width determination", float, 0.01, min=0, max=1)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
 
 class traceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)
-
     trace_order = config.RangeField("Fitting order in spectral direction", int, 2, min=1)
 
 class skyCorrectFromSlitConfig(config.Config):

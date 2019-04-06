@@ -15,34 +15,40 @@ trace_lines:         trace lines from a set of supplied starting positions
 """
 import numpy as np
 import warnings
-from scipy import signal, interpolate
+from scipy import signal, interpolate, optimize
 from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip
+from astropy.stats import sigma_clip, sigma_clipped_stats
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.nddops import NDStacker
 from gempy.utils import logutils
 
+from . import astromodels
+
 from astrodata import NDAstroData
+from matplotlib import pyplot as plt
 
 log = logutils.get_logger(__name__)
 
 ################################################################################
 class Aperture(object):
-    def __init__(self, model, width=None):
+    def __init__(self, model, width=None, aper_lower=None, aper_upper=None):
         self._model = model
-        self._width = width
+        if width is not None:
+            aper_lower = aper_upper = 0.5 * width
+        self.aper_lower = aper_lower
+        self.aper_upper = aper_upper
 
     @property
     def width(self):
         """Aperture width in pixels. Since the model is pixel-based, it makes
         sense for this to be stored in pixels rather than arcseconds."""
-        return self._width
+        return self.aper_lower + self.aper_upper
 
     @width.setter
     def width(self, value):
         if value > 0:
-            self._width = value
+            self.aper_lower = self.aper_upper = 0.5 * value
         else:
             raise ValueError("Width must be positive ()".format(value))
 
@@ -62,8 +68,11 @@ class Aperture(object):
         except AttributeError:  # no "domain" attribute
             pass
 
-    def aperture_mask(self, ext=None, width=None, grow=None):
+    def aperture_mask(self, ext=None, width=None, aper_lower=None,
+                      aper_upper=None, grow=None):
         """
+        This method creates a boolean array indicating pixels that will be
+        used to extract a spectrum from the parent Aperture object.
 
         Parameters
         ----------
@@ -71,7 +80,11 @@ class Aperture(object):
             image containing aperture (needs .shape attribute and
             .dispersion_axis() descriptor)
         width: float/None
-            total extraction width (None => use self.width)
+            total extraction width for symmetrical aperture (pixels)
+        aper_lower: float/None
+            lower extraction limit (pixels)
+        aper_upper: float/None
+            upper extraction limit (pixels)
         grow: float/None
             additional buffer zone around width
 
@@ -80,19 +93,22 @@ class Aperture(object):
         ndarray: boolean array, set to True if a pixel will be used in the
                  extraction
         """
-        if width is None:
-            width = self.width
-        if width is None:
-            width = self.calculate_optimal_width(ext)
+        if width is not None:
+            aper_lower = aper_upper = 0.5 * width
+        if aper_lower is None:
+            aper_lower = self.aper_lower
+        if aper_upper is None:
+            aper_upper = self.aper_upper
         if grow is not None:
-            width += 2 * grow  # on each side
+            aper_lower += grow
+            aper_upper += grow
 
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         npix = ext.shape[dispaxis]
         slitlength = ext.shape[1-dispaxis]
         self.check_domain(npix)
         center_pixels = self._model(np.arange(npix))
-        x1, x2 = center_pixels - 0.5 * width, center_pixels + 0.5 * width
+        x1, x2 = center_pixels - aper_lower, center_pixels + aper_upper
         ix1 = np.where(x1 < -0.5, 0, (x1 + 0.5).astype(int))
         ix2 = np.where(x2 >= slitlength - 0.5, None, (x2 + 1.5).astype(int))
         apmask = np.zeros_like(ext.data if dispaxis == 0 else ext.data.T,
@@ -101,17 +117,11 @@ class Aperture(object):
             apmask[i, slice(*limits)] = True
         return apmask if dispaxis == 0 else apmask.T
 
-    def calculate_optimal_width(self, ext):
-        # TODO: All of it!
-        width = 20
-        self.width = width
-        return width
-
-    def uniform_weighting(self, data, mask, var, width):
+    def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
-        slitlength = data.shape[1]
-        all_x1 = self.center_pixels - 0.5 * width
-        all_x2 = self.center_pixels + 0.5 * width
+        slitlength = data.shape[0]
+        all_x1 = self.center_pixels - aper_lower
+        all_x2 = self.center_pixels + aper_upper
         for i, (x1, x2) in enumerate(zip(all_x1, all_x2)):
             if x1 < -0.5 or x2 >= slitlength - 0.5:
                 x1 = max(x1, -0.5)
@@ -121,15 +131,104 @@ class Aperture(object):
             # Mask has to consider bits from all pixels with even a fractional
             # contribution, but add only a fraction of edge pixels in data, var
             if mask is not None:
-                self.mask[i] = np.bitwise_or.reduce(mask[i, ix1:ix2])
-            self.data[i] = (data[i, ix1:ix2].sum() - (x1-ix1+0.5) * data[i, ix1] -
-                         (ix2-x2-0.5) * data[i, ix2-1])
+                self.mask[i] = np.bitwise_or.reduce(mask[ix1:ix2, i])
+            self.data[i] = (data[ix1:ix2, i].sum() - (x1-ix1+0.5) * data[ix1, i] -
+                         (ix2-x2-0.5) * data[ix2-1, i])
             if var is not None:
-                self.var[i] = (var[i, ix1:ix2].sum() - (x1-ix1+0.5) * var[i, ix1] -
-                            (ix2-x2-0.5) * var[i, ix2-1])
+                self.var[i] = (var[ix1:ix2, i].sum() - (x1-ix1+0.5) * var[ix1, i] -
+                            (ix2-x2-0.5) * var[ix2-1, i])
+
+    def optimal_extraction(self, data, mask, var, aper_lower, aper_upper,
+                           cr_rej=5, max_iters=None):
+        """Optimal extraction following Horne (1986, PASP 98, 609)"""
+
+        def divide0(num, denom, like_num=False):
+            return np.divide(num, denom,
+                             out=np.zeros_like(num if like_num else denom),
+                             where=denom>0)
+
+        BAD_BITS = DQ.bad_pixel | DQ.cosmic_ray | DQ.no_data | DQ.unilluminated
+
+        slitlength, npix = data.shape
+        pixels = np.arange(npix)
+
+        all_x1 = self.center_pixels - aper_lower
+        all_x2 = self.center_pixels + aper_upper
+        ix1 = max(int(min(all_x1) + 0.5), 0)
+        ix2 = min(int(max(all_x2) + 1.5), slitlength)
+
+        fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                   outlier_func=sigma_clip, sigma_upper=3, sigma_lower=None)
+
+        # If we don't have a VAR plane, assume uniform variance based
+        # on the pixel-to-pixel variations in the data
+        if var is None:
+            var_model = models.Const1D(sigma_clipped_stats(data, mask=mask)[2]**2)
+            var = np.full_like(data[ix1:ix2], var_model.amplitude)
+            var_mask = np.zeros_like(var, dtype=bool)
+        else:
+            mvar_init = models.Polynomial1D(degree=1)
+            var_model, var_mask = fit_it(mvar_init, np.ma.masked_where(mask.ravel(), abs(data).ravel()), var.ravel())
+            var_mask = var_mask.reshape(var.shape)[ix1:ix2]
+            var = np.where(var_mask, var[ix1:ix2], var_model(data[ix1:ix2]))
+
+        if mask is None:
+            mask = np.zeros((ix2-ix1, npix), dtype=DQ.datatype)
+        else:
+            mask = mask[ix1:ix2]
+
+        data = data[ix1:ix2]
+        # Step 4; first calculation of spectrum. We don't do any masking
+        # here since we need all the flux
+        spectrum = data.sum(axis=0)
+        weights = np.where(var > 0, var, 0)
+        unmask = np.ones_like(data, dtype=bool)
+
+        iter = 0
+        while True:
+            # Step 5: construct spatial profile for each wavelength pixel
+            profile = np.divide(data, spectrum,
+                                out=np.zeros_like(data), where=spectrum>0)
+            profile_models = []
+            for row, wt_row in zip(profile, weights):
+                m_init = models.Chebyshev1D(degree=3, domain=[0, npix-1])
+                m_final, _ = fit_it(m_init, pixels, row, weights=wt_row)
+                profile_models.append(m_final(pixels))
+            profile_model_spectrum = np.array([np.where(pm < 0, 0, pm) for pm in profile_models])
+            sums = profile_model_spectrum.sum(axis=0)
+            model_profile = divide0(profile_model_spectrum, sums, like_num=True)
+
+            # Step 6: revise variance estimates
+            var = np.where(var_mask | mask & BAD_BITS, var, var_model(abs(model_profile * spectrum)))
+            weights = divide0(1.0, var)
+
+            # Step 7: identify cosmic ray hits: we're (probably) OK
+            # to flag more than 1 per wavelength
+            sigma_deviations = divide0(data - model_profile * spectrum, np.sqrt(var)) * unmask
+            mask[sigma_deviations > cr_rej] |= DQ.cosmic_ray
+            #most_deviant = np.argmax(sigma_deviations, axis=0)
+            #for i, most in enumerate(most_deviant):
+            #    if sigma_deviations[most, i] > cr_rej:
+            #        mask[most, i] |= DQ.cosmic_ray
+
+            last_unmask = unmask
+            unmask = (mask & BAD_BITS) == 0
+            spec_numerator = np.sum(unmask * model_profile * data * weights, axis=0)
+            spec_denominator = np.sum(unmask * model_profile**2 * weights, axis=0)
+            self.data = divide0(spec_numerator, spec_denominator)
+            self.var = divide0(np.sum(unmask * model_profile, axis=0), spec_denominator)
+            self.mask = np.bitwise_and.reduce(mask, axis=0)
+            spectrum = self.data
+
+            iter += 1
+            # An unchanged mask means XORing always produces False
+            if ((np.sum(unmask ^ last_unmask) == 0) or
+                    (max_iters is not None and iter > max_iters)):
+                break
 
 
-    def extract(self, ext, width=None, dispaxis=None, viewer=None):
+    def extract(self, ext, width=None, aper_lower=None, aper_upper=None,
+                method='standard', dispaxis=None, viewer=None):
         """
         Extract a 1D spectrum by following the model trace and extracting in
         an aperture of a given number of pixels.
@@ -139,7 +238,13 @@ class Aperture(object):
         ext: single-slice AD object/ndarray
             spectral image from which spectrum is to be extracted
         width: float/None
-            full width of extraction aperture
+            full width of extraction aperture (in pixels)
+        aper_lower: float/None
+            lower extraction limit (pixels)
+        aper_upper: float/None
+            upper extraction limit (pixels)
+        method: str (standard|optimal)
+            type of extraction
         dispaxis: int/None
             dispersion axis (python sense)
         viewer: Viewer/None
@@ -149,10 +254,12 @@ class Aperture(object):
         -------
         NDAstroData: 1D spectrum
         """
-        if width is None:
-            width = self.width
-        if width is None:
-            width = self.calculate_optimal_width(ext)
+        if width is not None:
+            aper_lower = aper_upper = 0.5 * width
+        if aper_lower is None:
+            aper_lower = self.aper_lower
+        if aper_upper is None:
+            aper_upper = self.aper_upper
 
         if dispaxis is None:
             dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -162,25 +269,25 @@ class Aperture(object):
 
         self.check_domain(npix)
 
-        # make data look like it's dispersed vertically
+        # make data look like it's dispersed horizontally
         try:
             mask = ext.mask
         except AttributeError:  # ext is just an ndarray
-            data = ext if dispaxis == 0 else ext.T
+            data = ext if dispaxis == 1 else ext.T
             mask = None
             var = None
         else:
-            data = ext.data if dispaxis == 0 else ext.data.T
-            if dispaxis == 1 and mask is not None:
+            data = ext.data if dispaxis == 1 else ext.data.T
+            if dispaxis == 0 and mask is not None:
                 mask = mask.T
             var = ext.variance
-            if dispaxis == 1 and var is not None:
+            if dispaxis == 0 and var is not None:
                 var = var.T
 
         # Avoid having to recalculate them
         self.center_pixels = self._model(np.arange(npix))
-        all_x1 = self.center_pixels - 0.5 * width
-        all_x2 = self.center_pixels + 0.5 * width
+        all_x1 = self.center_pixels - aper_lower
+        all_x2 = self.center_pixels + aper_upper
         if viewer is not None:
             # Display extraction edges on viewer, every 10 pixels (for speed)
             pixels = np.arange(npix)
@@ -202,13 +309,13 @@ class Aperture(object):
                                min(off_high), max(off_high)))
 
         # Create the outputs here so the extraction function has access to them
-        self.data = np.zeros((len(data),), dtype=np.float32)
+        self.data = np.zeros((npix,), dtype=np.float32)
         self.mask = None if mask is None else np.zeros_like(self.data,
                                                             dtype=DQ.datatype)
         self.var = None if var is None else np.zeros_like(self.data)
 
-        extraction_func = self.uniform_weighting
-        extraction_func(data, mask, var, width)
+        extraction_func = getattr(self, "{}_extraction".format(method))
+        extraction_func(data, mask, var, aper_lower, aper_upper)
 
         del self.center_pixels
         ndd = NDAstroData(self.data, mask=self.mask)
@@ -453,6 +560,106 @@ def reject_bad_peaks(peaks):
     while len(peaks) > diff and (peaks[-1][1] / peaks[-(diff+1)][1] > 3):
         del peaks[-1]
     return peaks
+
+def get_limits(data, mask, peaks=[], threshold=0, method=None):
+    """
+    This function determines the region in a 1D array associated with each
+    already-identified peak. It operates by fitting a spline to the data
+    (with weighting set based on pixel-to-pixel scatter) and then
+    differentiating this to find maxima and minima. For each peak, the
+    region is between the two closest minima, one on each side.
+
+    If the threshold_function is None, then the locations of these minima
+    are returned. Otherwise, this must be a callable function that takes
+    the spline and the location of the minimum and the peak and returns
+    zero at the location one wants to be returned.
+
+    Parameters
+    ----------
+    data: ndarray
+        1D profile containing the peaks
+    mask: ndarray (bool-like)
+        mask indicating pixels in data to ignore
+    peaks: sequence
+        peaks for which limits are to be found
+    threshold_function: None/callable
+        takes 3 arguments: the spline, the peak location, and the
+                           location of the minimum, and returns a value
+                           that must be zero at the desired limit's location
+
+    Returns
+    -------
+    list of 2-element lists:
+        the lower and upper limits for each peak
+    """
+
+    functions = {'threshold': threshold_limit,
+                 'integral': integral_limit}
+    try:
+        limit_finding_function = functions[method]
+    except KeyError:
+        method = None
+
+    x = np.arange(len(data))[mask==0]
+    y = data[mask==0]
+
+    # Try to better estimate the true noise from the pixel-to-pixel
+    # variations (the difference between adjacent pixels will be
+    # sqrt(2) times larger than the rms noise).
+    w = np.full_like(x, np.sqrt(2)/sigma_clipped_stats(np.diff(y))[2])
+
+    # We need to fit a quartic spline since we want to know its
+    # minima (roots of its derivative), and can only find the
+    # roots of a cubic spline
+    spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=4)
+    derivative = spline.derivative(n=1)
+    extrema = derivative.roots()
+    second_derivatives = spline.derivative(n=2)(extrema)
+    minima = [ex for ex, second in zip(extrema, second_derivatives) if second > 0]
+
+    all_limits = []
+    for peak in peaks:
+        tweaked_peak = extrema[np.argmin(abs(extrema-peak))]
+
+        # Now find the nearest minima above and below the peak
+        for upper in minima:
+            if upper > peak:
+                break
+        else:
+            upper = len(data) - 1
+        for lower in reversed(minima):
+            if lower < peak:
+                break
+        else:
+            lower = 0
+
+        if method is None:
+            all_limits.append((lower, upper))
+        else:
+            limit1 = limit_finding_function(spline, tweaked_peak, lower, upper, threshold)
+            limit2 = limit_finding_function(spline, tweaked_peak, upper, lower, threshold)
+            all_limits.append((limit1, limit2))
+
+    return all_limits
+
+def threshold_limit(spline, peak, limit, other_limit, threshold):
+    """Finds a threshold as a fraction of the way from the signal at the
+       minimum to the signal at the peak"""
+    target = spline(limit) + threshold * (spline(peak) - spline(limit))
+    func = lambda x: spline(x) - target
+    return optimize.bisect(func, limit, peak)
+
+def integral_limit(spline, peak, limit, other_limit, threshold):
+    """Finds a threshold as a fraction of the missing flux, defined as the
+       area under the signal between the peak and this limit, removing a
+       straight line between the two points"""
+    integral = spline.antiderivative()
+    slope = (spline(other_limit) - spline(limit)) / (other_limit - limit)
+    definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * ((spline(limit) - slope * limit) + 0.5 * slope * (x + limit))
+    flux_this_side = definite_integral(limit) - definite_integral(peak)
+    func = lambda x: definite_integral(x) / flux_this_side - threshold
+    return optimize.bisect(func, limit, peak)
+
 
 ################################################################################
 # FUNCTIONS RELATED TO PEAK-TRACING

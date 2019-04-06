@@ -7,11 +7,11 @@ from geminidr import PrimitivesBASE
 from . import parameters_spect
 
 import numpy as np
-from scipy import spatial
+from scipy import spatial, optimize
 from importlib import import_module
 
 from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip
+from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
 
 from matplotlib import pyplot as plt
@@ -601,6 +601,8 @@ class Spect(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+        method: str ['standard'|'weighted'|'optimal']
+            extraction method
         width: float
             width of extraction aperture (in pixels)
         grow: float/None
@@ -611,6 +613,7 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        method = params["method"]
         width = params["width"]
         grow = params["grow"]
 
@@ -675,54 +678,54 @@ class Spect(PrimitivesBASE):
                 for row in aptable:
                     model_dict = dict(zip(aptable.colnames, row))
                     trace_model = astromodels.dict_to_chebyshev(model_dict)
-                    apertures.append(tracing.Aperture(trace_model))
+                    aperture = tracing.Aperture(trace_model,
+                                                aper_lower=model_dict['aper_lower'],
+                                                aper_upper=model_dict['aper_upper'])
+                    if width is not None:
+                        aperture.width = width
+                    apertures.append(aperture)
 
                 if skysub_needed:
                     apmask = np.logical_or.reduce([ap.aperture_mask(ext, width=width, grow=grow)
                                                    for ap in apertures])
 
                 for i, aperture in enumerate(apertures):
+                    log.stdinfo("    Extracting spectrum from aperture {}".format(i+1))
                     self.viewer.width = 2
                     self.viewer.color = colors[i % len(colors)]
-                    ndd_spec = aperture.extract(ext, width=width, viewer=self.viewer)
+                    ndd_spec = aperture.extract(ext, width=width,
+                                                method=method, viewer=self.viewer)
+
+                    # This whole (rather large) section is an attempt to ensure
+                    # that sky apertures don't overlap with source apertures
                     if skysub_needed:
                         self.viewer.width = 1
                         # We're going to try to create half-size apertures
                         # equidistant from the source aperture on both sides
                         aperture_model = aperture._model
                         sky_trace_model = aperture_model.copy()
-                        sky_width = 0.5 * width
+                        sky_width = 0.5 * aperture.width
+                        sky_spectra = []
 
-                        # Compute maximum offsets on each side for the sky
-                        # aperture to still be entirely on the image
                         min_, max_ = aperture.limits()
-                        lo_offset = min_ - 0.5 * sky_width
-                        hi_offset = ext.shape[1-dispaxis] - 1 - (max_ + 0.5 * sky_width)
-                        offset = 0.75 * width + grow - offset_step
-                        sides = [-1, 1]
-                        ok = False
-                        while not ok:
-                            offset += offset_step
-                            if offset > lo_offset:
-                                sides.remove(-1)
-                            if offset > hi_offset:
-                                sides.remove(1)
-                            if not sides:
-                                break
-                            ok = True
-                            for side in sides:
-                                sky_trace_model.c0 = aperture_model.c0 + side * offset
+                        for direction in (-1, 1):
+                            offset = (direction * (0.5 * sky_width + grow) +
+                                      (self.aper_upper if direction > 0 else -self.aper_lower))
+                            ok = False
+                            while not ok:
+                                if ((min_ + offset - 0.5 * sky_width < -0.5) or
+                                     (max_ + offset + 0.5 * sky_width > ext.shape[1-dispaxis] - 0.5)):
+                                    break
+
+                                sky_trace_model.c0 = aperture_model.c0 + offset
                                 sky_aperture = tracing.Aperture(sky_trace_model)
                                 sky_spec = sky_aperture.extract(apmask, width=sky_width, dispaxis=dispaxis)
-                                ok &= np.sum(sky_spec.data) == 0
+                                if np.sum(sky_spec.data) == 0:
+                                    sky_spectra.append(sky_aperture.extract(ext, width=sky_width,
+                                                       viewer=self.viewer))
+                                    ok = True
 
-                        if ok:
-                            sky_spectra = []
-                            for side in sides:
-                                sky_trace_model.c0 = aperture_model.c0 + side * offset
-                                sky_aperture = tracing.Aperture(sky_trace_model)
-                                sky_spectra.append(sky_aperture.extract(ext, width=width,
-                                                                        viewer=self.viewer))
+                        if sky_spectra:
                             # If only one, add it to itself (since it's half-width)
                             sky_spec = sky_spectra[0].add(sky_spectra[-1])
                             ad_spec.append(ndd_spec.subtract(sky_spec, handle_meta='first_found',
@@ -782,13 +785,13 @@ class Spect(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        max_sources = params["sources"]
+        max_sources = params["max_sources"]
+        threshold = params["threshold"]
         min_sky_pix = params["min_sky_region"]
 
-        combine_function = NDStacker(combine="mean", reject="sigclip",
-                                     log=self.log)
+        limit_method = 'threshold'
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -845,20 +848,41 @@ class Spect(PrimitivesBASE):
                 log.stdinfo("Found sources at {}s: {}".format(direction,
                             ' '.join(['{:.1f}'.format(loc) for loc in locations])))
 
+                plt.ioff()
+                fig, ax = plt.subplots()
+                x = np.arange(len(profile))
+                slices = np.ma.clump_unmasked(np.ma.masked_array(profile, prof_mask))
+                for slice_ in slices:
+                    ax.plot(x[slice_], profile[slice_], 'k-')
+                axis_limits = ax.get_ylim()
+
+                all_limits = tracing.get_limits(profile, prof_mask, locations,
+                                                threshold=threshold, method=limit_method)
+
                 all_model_dicts = []
-                for loc in locations:
+                ap_number = 1
+                for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix-1], c0=loc)
                     model_dict = astromodels.chebyshev_to_dict(cheb)
+                    model_dict['aper_lower'] = limits[0] - loc
+                    model_dict['aper_upper'] = limits[1] - loc
                     all_model_dicts.append(model_dict)
+                    for lim in limits:
+                        ax.plot([lim,lim], axis_limits, 'r-')
+                    ax.text(loc, axis_limits[1]*1.01-0.01*axis_limits[0], str(ap_number), ha='center', color='red')
+                    ap_number += 1
 
-                aptable = Table()
+                ax.set_ylim(*axis_limits)
+                plt.show()
+
+                aptable = Table([np.arange(len(locations))+1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
                     aptable[name] = [model_dict.get(name, 0)
                                      for model_dict in all_model_dicts]
                 ext.APERTURE = aptable
 
             # Timestamp and update the filename
-            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
@@ -1130,7 +1154,7 @@ class Spect(PrimitivesBASE):
                 all_model_dicts = []
                 for location in locations:
                     # Funky stuff to extract the coords associated with each
-                    # aperture and sort by coordinate along the spectrum
+                    # aperture and sort them by coordinate along the spectrum
                     coords = np.array([list(c1) + list(c2)
                                        for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
                                        if c1[dispaxis] == location])
@@ -1148,6 +1172,8 @@ class Spect(PrimitivesBASE):
                     self.viewer.polygon(plot_coords, closed=False,
                                         xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
+                    model_dict['aper_lower'] = None
+                    model_dict['aper_upper'] = None
                     all_column_names.extend([k for k in model_dict.keys()
                                              if k not in all_column_names])
                     all_model_dicts.append(model_dict)
