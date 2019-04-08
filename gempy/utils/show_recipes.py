@@ -35,8 +35,8 @@ def show_recipes(_file):
         ad = astrodata.open(_file)
         tags = ad.tags
     except AstroDataError:
-        result  += ("There was an issue using the selected file, please check"
-                    "the format and directory.")
+        result += ("There was an issue using the selected file, please check "
+                   "the format and directory.")
         raise
 
     all_recipies = []
@@ -82,23 +82,18 @@ def show_recipes(_file):
                 all_recipies.append(recipe.__module__ + "::"
                                     + functions_list[i])
 
-    # Todo: ad.path may be updated to always return absolute path, if that
-    # happens, remove os.getcwd()
-    result += ("Input file: {}".format(os.path.normpath(
-        os.path.join(os.getcwd(), ad.path))))
-
+    result += ("Input file: {}".format(os.path.abspath(ad.path)))
 
     result += ("\nInput tags: {}".format(tags))
 
     # Edge case exists where ql mode isn't implemented, sq/qa both pass due to
     # except clause, and then no recipes were found.
 
-    if all_recipies == []:
-        result += ("\n!!! No recipes were found for this file !!!")
+    if all_recipies:
+        result += "\n!!! No recipes were found for this file !!!"
     else:
-        result += ("\nRecipes available for the input file: ")
+        result += "\nRecipes available for the input file: "
         for recipe in all_recipies:
-            result += ("\n   " + recipe)
+            result += "\n   " + recipe
 
     return result
-

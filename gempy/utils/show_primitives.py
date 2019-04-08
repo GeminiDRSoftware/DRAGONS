@@ -100,36 +100,18 @@ def show_primitives(_file, mode='sq', recipe='default'):
 
         dragons_location = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
 
-    # output
-
-
-    result += ("Input file: " + str(_file))
-    result += ("\nInput tags: " + str(ad.tags))
+    result += ("Input file: " + os.path.abspath(ad.path))
+    result += ("\nInput tags: " + str(tags))
     result += ("\nInput mode: " + str(mode.lower()))
     result += ("\nInput recipe: " + recipe_in_module.__name__)
     result += ("\nMatched recipe: " + mapper_recipe.__module__ + "::" +
-                                      recipe_in_module.__name__)
+               recipe_in_module.__name__)
     result += ("\nRecipe location: " + (os.path.normpath(os.path.join(
         dragons_location, mapper_recipe.__module__.replace(".", "/") + ".py"))))
     result += ("\nRecipe tags: " + str(mod.recipe_tags))
-    result += ("\nPrimitives used: ")
+    result += "\nPrimitives used: "
 
     for primitive in re.findall(r'p\..*', source_code):
         result += ("\n   " + primitive)
 
-
-
-    # print("Input file: {}".format(_file))
-    # print("Input tags: {}".format(ad.tags))
-    # print("Input mode: {}".format(mode.lower()))
-    # print("Input recipe: {}".format(recipe_in_module.__name__))
-    # print("Matched recipe: {}".format(mapper_recipe.__module__ + "::" +
-    #                                   recipe_in_module.__name__))
-    # print("Recipe location: {}".format(os.path.join(os.path.normpath(
-    #     dragons_location + mapper_recipe.__module__ + ".py"))))
-    # print("Recipe tags: {}".format(mod.recipe_tags))
-    # print("Primitives used:")
-    #
-    # for primitive in re.findall(r'p\..*', source_code):
-    #     print("   " + primitive)
     return result
