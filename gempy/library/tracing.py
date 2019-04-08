@@ -465,6 +465,10 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     means the original positions must be good. It also removes any peaks
     affected by the mask
 
+    The method used here is a direct recoding from IRAF's center1d function,
+    as utilized by the identify and reidentify tasks. Extensive use has
+    demonstrated the reliability of that method.
+
     Parameters
     ----------
     data: 1D array
@@ -495,6 +499,8 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
         x1 = int(xc - halfwidth)
         x2 = int(xc + halfwidth + 1)
         xvalues = np.arange(x1, x2)
+
+        # We fit splines to y(x) and x * y(x)
         t, c, k = interpolate.splrep(xvalues, masked_data[x1:x2], k=3,
                                      s=0)
         spline1 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
@@ -502,6 +508,8 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
                                      k=3, s=0)
         spline2 = interpolate.BSpline.construct_fast(t, c, k, extrapolate=False)
 
+        # Then there's some centroiding around the peak, with convergence
+        # tolerances. This is still just an IRAF re-code.
         final_peak = None
         dxlast = x2 - x1
         dxcheck = 0
@@ -593,6 +601,10 @@ def get_limits(data, mask, peaks=[], threshold=0, method=None):
         the lower and upper limits for each peak
     """
 
+    # We abstract the limit-finding function. Any function can be added here,
+    # providing it has a standard call signature, taking parameters:
+    # spline representation, location of peak, location of limit on this side,
+    # location of limit on other side, thresholding value
     functions = {'threshold': threshold_limit,
                  'integral': integral_limit}
     try:
@@ -645,6 +657,8 @@ def get_limits(data, mask, peaks=[], threshold=0, method=None):
 def threshold_limit(spline, peak, limit, other_limit, threshold):
     """Finds a threshold as a fraction of the way from the signal at the
        minimum to the signal at the peak"""
+
+    # target is the signal level at the threshold
     target = spline(limit) + threshold * (spline(peak) - spline(limit))
     func = lambda x: spline(x) - target
     return optimize.bisect(func, limit, peak)
@@ -657,6 +671,10 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
     slope = (spline(other_limit) - spline(limit)) / (other_limit - limit)
     definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * ((spline(limit) - slope * limit) + 0.5 * slope * (x + limit))
     flux_this_side = definite_integral(limit) - definite_integral(peak)
+
+    # definite_integral is the flux from the limit towards the peak, so this
+    # should be equal to the required fraction of the flux om that side of
+    # the peak.
     func = lambda x: definite_integral(x) / flux_this_side - threshold
     return optimize.bisect(func, limit, peak)
 
@@ -706,7 +724,8 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
     halfwidth = int(0.5 * width)
 
-    # Make life easier by always tracing along columns
+    # Make life easier for the poor coder by transposing data if needed,
+    # so that we're always tracing along columns
     if axis == 0:
         ext_data = ext.data
         ext_mask = None if ext.mask is None else ext.mask & bad_bits
