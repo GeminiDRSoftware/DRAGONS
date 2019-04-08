@@ -702,28 +702,27 @@ class Spect(PrimitivesBASE):
                         self.viewer.width = 1
                         # We're going to try to create half-size apertures
                         # equidistant from the source aperture on both sides
-                        aperture_model = aperture.model
-                        sky_trace_model = aperture_model.copy()
                         sky_width = 0.5 * aperture.width
                         sky_spectra = []
 
                         min_, max_ = aperture.limits()
                         for direction in (-1, 1):
                             offset = (direction * (0.5 * sky_width + grow) +
-                                      (self.aper_upper if direction > 0 else -self.aper_lower))
+                                      (aperture.aper_upper if direction > 0 else aperture.aper_lower))
                             ok = False
                             while not ok:
                                 if ((min_ + offset - 0.5 * sky_width < -0.5) or
                                      (max_ + offset + 0.5 * sky_width > ext.shape[1-dispaxis] - 0.5)):
                                     break
 
-                                sky_trace_model.c0 = aperture_model.c0 + offset
+                                sky_trace_model = aperture.model | models.Shift(offset)
                                 sky_aperture = tracing.Aperture(sky_trace_model)
                                 sky_spec = sky_aperture.extract(apmask, width=sky_width, dispaxis=dispaxis)
                                 if np.sum(sky_spec.data) == 0:
                                     sky_spectra.append(sky_aperture.extract(ext, width=sky_width,
                                                        viewer=self.viewer))
                                     ok = True
+                                offset += direction * offset_step
 
                         if sky_spectra:
                             # If only one, add it to itself (since it's half-width)
