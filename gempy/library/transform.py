@@ -470,7 +470,9 @@ class Transform(object):
         if index == 0:
             self._ndim = model.n_inputs
 
-        # Ugly stuff to break down a CompoundModel.
+        # Ugly stuff to break down a CompoundModel. We need a general except
+        # here because there are multuple reasons this might fail -- it's not
+        # a CompoundModel, or it is, but the mappings are i
         try:
             sequence = self.split_compound_model(model._tree, required_inputs)
         except AttributeError:
@@ -520,8 +522,13 @@ class Transform(object):
                 # we have on the stack takes the right number of inputs.
                 # If so, leave it there and updated the required number of
                 # inputs; otherwise, combine the models and continue.
-                if operand == "|" and stack[-1].n_inputs == ndim:
-                    ndim = stack[1].n_outputs
+
+                # TODO: Allowing the number of inputs/outputs to change is
+                # causing problems with complicated compound models.
+                # For now, we will only consider as discrete models those
+                # that preserve the number of inputs/outputs
+                if operand == "|" and stack[-1].n_inputs == stack[-1].n_outputs == ndim:
+                    #ndim = stack[1].n_outputs
                     continue
                 right = stack.pop()
                 left = stack.pop()
