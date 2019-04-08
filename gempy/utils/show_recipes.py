@@ -89,7 +89,7 @@ def show_recipes(_file):
     # Edge case exists where ql mode isn't implemented, sq/qa both pass due to
     # except clause, and then no recipes were found.
 
-    if all_recipies:
+    if not all_recipies:
         result += "\n!!! No recipes were found for this file !!!"
     else:
         result += "\nRecipes available for the input file: "
