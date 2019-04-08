@@ -51,7 +51,7 @@ def show_primitives(_file, mode='sq', recipe='default'):
         ad = astrodata.open(_file)
         tags = ad.tags
     except AstroDataError:
-        print("There was an issue using the selected file, please check"
+        print("There was an issue using the selected file, please check "
               "the format and directory:", sys.exc_info()[0])
         raise
 

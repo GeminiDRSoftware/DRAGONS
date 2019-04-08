@@ -23,7 +23,7 @@ if not os.path.exists(path):
     path = ''
 
 
-path = path + "geminidr/"
+path = path + "Gempy/"
 dragons_location = '/'.join(geminidr.__file__.split("/")[:-1]) + '/'
 
 GNIRS = "S20171208S0054.fits"
@@ -70,14 +70,14 @@ gnirs_answer = \
 
 
 def test_show_primitives_on_gnirs(test_path):
-    file_location = test_path + 'geminidr/' + GNIRS
+    file_location = test_path + 'Gempy/' + GNIRS
     answer = show_primitives(file_location)
     assert gnirs_answer == answer
 
 
 def test_show_primitives_on_gnirs_spect(test_path):
     try:
-        file_location = test_path + 'geminidr/' + GNIRS_SPECT
+        file_location = test_path + 'Gempy/' + GNIRS_SPECT
         answer = show_primitives(file_location, 'qa')
         assert "RecipeNotFound Error" == answer
     except RecipeNotFound:
@@ -117,14 +117,14 @@ gmos_answer = \
 
 
 def test_show_primitives_on_gmos(test_path):
-    file_location = test_path + 'geminidr/' + GMOS
+    file_location = test_path + 'Gempy/' + GMOS
     answer = show_primitives(file_location)
     assert gmos_answer == answer
 
 
 def test_show_primitives_on_gmos_spect(test_path):
     try:
-        file_location = test_path + 'geminidr/' + GMOS_SPECT
+        file_location = test_path + 'Gempy/' + GMOS_SPECT
         answer = show_primitives(file_location)
         assert "RecipeNotFound Error" == answer
     except RecipeNotFound:
@@ -157,14 +157,14 @@ gmos_ns_answer = \
 
 
 def test_show_primitives_on_gmos_ns(test_path):
-    file_location = test_path + 'geminidr/' + GMOS_NS
+    file_location = test_path + 'Gempy/' + GMOS_NS
     answer = show_primitives(file_location, 'qa')
     assert gmos_ns_answer == answer
 
 
 def test_show_primitives_on_gmos_spect_default_mode(test_path):
     try:
-        file_location = test_path + 'geminidr/' + GMOS_NS
+        file_location = test_path + 'Gempy/' + GMOS_NS
         answer = show_primitives(file_location)
         assert "RecipeNotFound Error" == answer
     except RecipeNotFound:
@@ -199,14 +199,14 @@ gsaoi_dark_answer = \
 
 
 def test_show_primitives_on_gsaoi_dark(test_path):
-    file_location = test_path + 'geminidr/' + GSAOI_DARK
+    file_location = test_path + 'Gempy/' + GSAOI_DARK
     answer = show_primitives(file_location, 'sq', 'default')
     assert gsaoi_dark_answer == answer
 
 
 def test_show_primitives_on_gsaoi_dark_qa_mode(test_path):
     try:
-        file_location = test_path + 'geminidr/' + GSAOI_DARK
+        file_location = test_path + 'Gempy/' + GSAOI_DARK
         answer = show_primitives(file_location, 'qa')
         assert "RecipeNotFound Error" == answer
     except RecipeNotFound:
@@ -246,7 +246,7 @@ gsaoi_image_answer_sq = \
 
 
 def test_show_primitives_on_gsaoi_image_sq_mode(test_path):
-    file_location = test_path + 'geminidr/' + GSAOI_IMAGE
+    file_location = test_path + 'Gempy/' + GSAOI_IMAGE
     answer = show_primitives(file_location)
     assert gsaoi_image_answer_sq == answer
 
@@ -289,7 +289,7 @@ gsaoi_image_answer_qa = \
 
 
 def test_show_primitives_on_gsaoi_image_qa_mode(test_path):
-    file_location = test_path + 'geminidr/' + GSAOI_IMAGE
+    file_location = test_path + 'Gempy/' + GSAOI_IMAGE
     answer = show_primitives(file_location, 'qa', 'reduce_nostack')
     assert gsaoi_image_answer_qa == answer
 
@@ -321,14 +321,14 @@ gsaoi_flat_answer = \
 
 
 def test_show_primitives_on_gsaoi_flat(test_path):
-    file_location = test_path + 'geminidr/' + GSAOI_FLAT
+    file_location = test_path + 'Gempy/' + GSAOI_FLAT
     answer = show_primitives(file_location)
     assert gsaoi_flat_answer == answer
 
 
 def test_show_primitives_on_gsaoi_flat_ql_mode(test_path):
     try:
-        file_location = test_path + 'geminidr/' + GSAOI_FLAT
+        file_location = test_path + 'Gempy/' + GSAOI_FLAT
         answer = show_primitives(file_location, 'ql')
         assert "ModuleNotFoundError" == answer
     except ModeError:
@@ -375,7 +375,7 @@ niri_answer = \
 
 
 def test_show_primitives_on_niri(test_path):
-    file_location = test_path + 'geminidr/' + NIRI
+    file_location = test_path + 'Gempy/' + NIRI
     answer = show_primitives(file_location)
     assert niri_answer == answer
 
@@ -421,6 +421,6 @@ f2_answer = \
 
 
 def test_show_primitives_on_f2(test_path):
-    file_location = test_path + 'geminidr/' + F2
+    file_location = test_path + 'Gempy/' + F2
     answer = show_primitives(file_location)
     assert f2_answer == answer
