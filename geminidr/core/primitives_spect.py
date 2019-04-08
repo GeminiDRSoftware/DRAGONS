@@ -702,7 +702,7 @@ class Spect(PrimitivesBASE):
                         self.viewer.width = 1
                         # We're going to try to create half-size apertures
                         # equidistant from the source aperture on both sides
-                        aperture_model = aperture._model
+                        aperture_model = aperture.model
                         sky_trace_model = aperture_model.copy()
                         sky_width = 0.5 * aperture.width
                         sky_spectra = []

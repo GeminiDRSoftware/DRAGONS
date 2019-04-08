@@ -33,7 +33,7 @@ log = logutils.get_logger(__name__)
 ################################################################################
 class Aperture(object):
     def __init__(self, model, width=None, aper_lower=None, aper_upper=None):
-        self._model = model
+        self.model = model
         if width is not None:
             aper_lower = aper_upper = 0.5 * width
         self.aper_lower = aper_lower
@@ -54,15 +54,15 @@ class Aperture(object):
 
     def limits(self):
         """Return maximum and minimum values of the model across the domain"""
-        pixels = np.arange(*self._model.domain)
-        values = self._model(pixels)
+        pixels = np.arange(*self.model.domain)
+        values = self.model(pixels)
         return np.min(values), np.max(values)
 
     def check_domain(self, npix):
         """Simple function to warn user if aperture model appears inconsistent
         with the array containing the data"""
         try:
-            if self._model.domain != [0, npix - 1]:
+            if self.model.domain != [0, npix - 1]:
                 log.warning("Model's domain is inconsistent with image size. "
                             "Results may be incorrect.")
         except AttributeError:  # no "domain" attribute
@@ -107,7 +107,7 @@ class Aperture(object):
         npix = ext.shape[dispaxis]
         slitlength = ext.shape[1-dispaxis]
         self.check_domain(npix)
-        center_pixels = self._model(np.arange(npix))
+        center_pixels = self.model(np.arange(npix))
         x1, x2 = center_pixels - aper_lower, center_pixels + aper_upper
         ix1 = np.where(x1 < -0.5, 0, (x1 + 0.5).astype(int))
         ix2 = np.where(x2 >= slitlength - 0.5, None, (x2 + 1.5).astype(int))
@@ -285,7 +285,7 @@ class Aperture(object):
                 var = var.T
 
         # Avoid having to recalculate them
-        self.center_pixels = self._model(np.arange(npix))
+        self.center_pixels = self.model(np.arange(npix))
         all_x1 = self.center_pixels - aper_lower
         all_x2 = self.center_pixels + aper_upper
         if viewer is not None:
