@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 import sys
-from gempy.utils import show_recipes
+from gempy.utils import showrecipes
 
 
 __author__ = 'Ivan Sharankov'
 
 
 def main():
-    args = show_recipies_argparser()
-    recipes_found = show_recipes.show_recipes(args.inputfile)
+    args = showrecipies_argparser()
+    recipes_found = showrecipes.showrecipes(args.inputfile)
     print(recipes_found)
 
-def show_recipies_argparser():
+def showrecipies_argparser():
 
     from argparse import ArgumentParser
     from argparse import RawDescriptionHelpFormatter
 
-    parser = ArgumentParser(description="desc", prog='show_recipes',
+    parser = ArgumentParser(description="desc", prog='showrecipes',
                             formatter_class=RawDescriptionHelpFormatter)
 
     parser.add_argument('inputfile', type=str,

@@ -13,9 +13,9 @@ from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.mappers.recipeMapper import RecipeMapper
 
 
-def show_recipes(_file):
+def showrecipes(_file):
     """
-    show_recipes takes in a file, and will return all the possible recipes
+    showrecipes takes in a file, and will return all the possible recipes
     that can be used on the file.
 
     Parameters
@@ -50,7 +50,7 @@ def show_recipes(_file):
 
         except RecipeNotFound:
             error_message = "The RecipeMapper returned a RecipeNotFound " \
-                            "error. For show_recipes, this means that " \
+                            "error. For showrecipes, this means that " \
                             "there does not exist a recipe for the given " \
                             "file. This may be because the observation type " \
                             "found in the astrodata tags does not match any" \

@@ -14,9 +14,9 @@ from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.mappers.recipeMapper import RecipeMapper
 
 
-def show_primitives(_file, mode='sq', recipe='default'):
+def showprims(_file, mode='sq', recipe='default'):
     """
-    show_primitives takes in a file, observing mode, and the data reduction
+    showprims takes in a file, observing mode, and the data reduction
     recipe name, and will return the source code pertaining to that recipe,
     straight from the source file. This source codes shows all the primitives
     that are used, helping user distinguish what primitives are used.
@@ -72,7 +72,7 @@ def show_primitives(_file, mode='sq', recipe='default'):
         else:
             error_message = \
                 "The RecipeMapper returned a RecipeNotFound error. For " \
-                "show_primitives, this may mean that there does not exist " \
+                "showprims, this may mean that there does not exist " \
                 "a recipe for the given file. This may be because the tags" \
                 "given as input do not match any recipe tags"
 
@@ -86,28 +86,23 @@ def show_primitives(_file, mode='sq', recipe='default'):
     else:
         mod = importlib.import_module(mapper_recipe.__module__)
 
-        # show_primitives only imports the function(recipe) that was requested.
-        # eval is used to append strings and create an object for getsource.
-        recipe_in_module = eval("mod." + recipe)
-
         # Retrieves all the source code of the function
-        source_code = inspect.getsource(recipe_in_module)
+        source_code = inspect.getsource(mapper_recipe)
 
         # Just helps the user understand that the default recipe was used
         if recipe == 'default':
             result += ("Recipe not provided, default recipe ({}) will "
-                       "be used.\n".format(recipe_in_module.__name__))
+                       "be used.\n".format(mapper_recipe.__name__))
 
         dragons_location = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
 
     result += ("Input file: " + os.path.abspath(ad.path))
     result += ("\nInput tags: " + str(tags))
     result += ("\nInput mode: " + str(mode.lower()))
-    result += ("\nInput recipe: " + recipe_in_module.__name__)
+    result += ("\nInput recipe: " + mapper_recipe.__name__)
     result += ("\nMatched recipe: " + mapper_recipe.__module__ + "::" +
-               recipe_in_module.__name__)
-    result += ("\nRecipe location: " + (os.path.normpath(os.path.join(
-        dragons_location, mapper_recipe.__module__.replace(".", "/") + ".py"))))
+               mapper_recipe.__name__)
+    result += ("\nRecipe location: " + mapper_recipe.__globals__['__file__'])
     result += ("\nRecipe tags: " + str(mod.recipe_tags))
     result += "\nPrimitives used: "
 
