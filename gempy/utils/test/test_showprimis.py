@@ -11,7 +11,6 @@ from recipe_system.utils.errors import RecipeNotFound
 from gempy.utils.showprims import showprims
 
 
-
 try:
     path = os.environ['TEST_PATH']
 except KeyError:

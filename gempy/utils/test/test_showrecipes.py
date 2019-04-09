@@ -214,27 +214,3 @@ def test_showrecipes_on_f2(test_path):
     answer = showrecipes(file_location)
     for i in range(len(f2_answer)):
         assert f2_answer[i] in answer
-
-#
-# # Creates a list of the files and answers, in same order so they can be parsed
-# files = [GNIRS_SPECT, GMOS_SPECT, GSAOI_DARK, GSAOI_IMAGE, GSAOI_FLAT,
-#          GMOS_NS, GNIRS, GMOS, NIRI, F2, NIFS, GRACES]
-#
-# answers = [gnirs_spect_answer, gmos_spect_answer, gsaoi_dark_answer,
-#            gsaoi_image_answer, gsaoi_flat_answer, gmos_ns_answer,
-#            gnirs_answer, gmos_answer, niri_answer, f2_answer,
-#            "ImportError", "ImportError"]
-#
-#
-# def test_showrecipes_with_all_instruments(test_path):
-#     for i in range(len(files)):
-#         try:
-#             for t in range(len(answers[i])):
-#                 file_location = test_path + 'Gempy/' + files[i]
-#                 answer = showrecipes(file_location)
-#                 assert answers[i] == answer
-#         except ImportError:
-#             if answers[i] == 'ImportError':
-#                 pass
-#             else:
-#                 raise ImportError
