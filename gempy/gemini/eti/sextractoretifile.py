@@ -36,8 +36,8 @@ class SExtractorETIFile(ETIFile):
         self.mask = input.mask
         self.header = input.hdr
         if mask_dq_bits and self.mask is not None:
-            self.data[self.mask & mask_dq_bits>0] = np.median(
-                self.data[self.mask & mask_dq_bits==0])
+            self.data[(self.mask & mask_dq_bits)>0] = np.median(
+                self.data[(self.mask & mask_dq_bits)==0])
         self._disk_file = None
         self._catalog_file = None
 
