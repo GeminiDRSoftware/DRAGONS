@@ -40,8 +40,6 @@ GSAOI_FLAT = 'S20170505S0031.fits'
 gnirs_answer = [
     "Input file: {}".format(os.path.normpath(os.path.join(path, GNIRS))),
     "Input tags: ",
-    "'FLAT', 'AZEL_TARGET', 'IMAGE', 'DOMEFLAT', 'GSAOI', 'LAMPON', ",
-    "'RAW', 'GEMINI', 'NON_SIDEREAL', 'CAL', 'UNPREPARED', 'SOUTH'",
     "Recipes available for the input file: ",
     "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM",
     "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat",
@@ -58,9 +56,7 @@ def test_showrecipes_on_gnirs(test_path):
 gnirs_spect_answer = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GNIRS_SPECT))),
-    "Input tags: ", 
-    "'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'GNIRS', ",
-    "'UNPREPARED', 'SPECT', 'XD'",
+    "Input tags: ",
     "!!! No recipes were found for this file !!!"]
 
 
@@ -73,9 +69,7 @@ def test_showrecipes_on_gnirs_spect(test_path):
 
 gmos_answer = [
     "Input file: {}".format(os.path.normpath(os.path.join(path, GMOS))),
-    "Input tags: ", 
-    "'SOUTH', 'RAW', 'GMOS', 'GEMINI', 'SIDEREAL', ",
-    "'UNPREPARED', 'IMAGE', 'MASK', 'ACQUISITION'",
+    "Input tags: ",
     "Recipes available for the input file: ",
     "   geminidr.gmos.recipes.sq.recipes_IMAGE::makeProcessedFringe",
     "   geminidr.gmos.recipes.sq.recipes_IMAGE::reduce",
@@ -94,9 +88,7 @@ def test_showrecipes_on_gmos(test_path):
 
 gmos_ns_answer = [
     "Input file: {}".format(os.path.normpath(os.path.join(path, GMOS_NS))),
-    "Input tags: ", 
-    "'RAW', 'GMOS', 'GEMINI', 'LS', 'UNPREPARED', ",
-    "'SPECT', 'NODANDSHUFFLE', 'SOUTH', 'SIDEREAL'",
+    "Input tags: ",
     "Recipes available for the input file: ",
     "   geminidr.gmos.recipes.qa.recipes_NS::reduce"]
 
@@ -112,8 +104,6 @@ gmos_spect_answer = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GMOS_SPECT))),
     "Input tags: ",
-    "'RAW', 'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', ",
-    "'UNPREPARED', 'SPECT', 'MOS'",
     "!!! No recipes were found for this file !!!"]
 
 
@@ -127,9 +117,7 @@ def test_showrecipes_on_gmos_spect(test_path):
 gsaoi_dark_answer = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_DARK))),
-    "Input tags: ", 
-    "'DARK', 'RAW', 'AT_ZENITH', 'AZEL_TARGET', 'CAL', ",
-    "'UNPREPARED', 'SOUTH', 'GEMINI', 'GSAOI', 'NON_SIDEREAL'",
+    "Input tags: ",
     "Recipes available for the input file: ",
     "   geminidr.gsaoi.recipes.sq.recipes_DARK::makeProcessedDark"]
 
@@ -144,9 +132,7 @@ def test_showrecipes_on_gsaoi_dark(test_path):
 gsaoi_image_answer = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_IMAGE))),
-    "Input tags: ", 
-    "'SOUTH', 'RAW', 'GEMINI', 'SIDEREAL', 'UNPREPARED', ",
-    "'IMAGE', 'GSAOI'",
+    "Input tags: ",
     "Recipes available for the input file: ",
     "   geminidr.gsaoi.recipes.sq.recipes_IMAGE::reduce_nostack",
     "   geminidr.gsaoi.recipes.qa.recipes_IMAGE::reduce_nostack"]
@@ -162,10 +148,7 @@ def test_showrecipes_on_gsaoi_image(test_path):
 gsaoi_flat_answer = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_FLAT))),
-    "Input tags: ", 
-    "'FLAT', 'AZEL_TARGET', 'IMAGE', 'DOMEFLAT', ",
-    "'GSAOI', 'LAMPON', 'RAW', 'GEMINI', 'NON_SIDEREAL'",
-    "'CAL', 'UNPREPARED', 'SOUTH'",
+    "Input tags: ",
     "Recipes available for the input file: ",
     "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM",
     "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat",
@@ -181,8 +164,7 @@ def test_showrecipes_on_gsaoi_flat(test_path):
 
 niri_answer = [
     "Input file: {}".format(os.path.normpath(os.path.join(path, NIRI))),
-    "Input tags: ", 
-    "'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'NIRI'",
+    "Input tags: ",
     "Recipes available for the input file: ",
     "   geminidr.niri.recipes.sq.recipes_IMAGE::makeSkyFlat",
     "   geminidr.niri.recipes.sq.recipes_IMAGE::reduce",
@@ -199,9 +181,7 @@ def test_showrecipes_on_niri(test_path):
 
 f2_answer = [
     "Input file: {}".format(os.path.normpath(os.path.join(path, F2))),
-    "Input tags: ", 
-    "'SOUTH', 'RAW', 'F2', 'GEMINI', 'SIDEREAL', ",
-    "'UNPREPARED', 'IMAGE', 'ACQUISITION'",
+    "Input tags: ",
     "Recipes available for the input file: ",
     "   geminidr.f2.recipes.sq.recipes_IMAGE::makeSkyFlat",
     "   geminidr.f2.recipes.sq.recipes_IMAGE::reduce",
@@ -214,3 +194,27 @@ def test_showrecipes_on_f2(test_path):
     answer = showrecipes(file_location)
     for i in range(len(f2_answer)):
         assert f2_answer[i] in answer
+
+#
+# # Creates a list of the files and answers, in same order so they can be parsed
+# files = [GNIRS_SPECT, GMOS_SPECT, GSAOI_DARK, GSAOI_IMAGE, GSAOI_FLAT,
+#          GMOS_NS, GNIRS, GMOS, NIRI, F2, NIFS, GRACES]
+#
+# answers = [gnirs_spect_answer, gmos_spect_answer, gsaoi_dark_answer,
+#            gsaoi_image_answer, gsaoi_flat_answer, gmos_ns_answer,
+#            gnirs_answer, gmos_answer, niri_answer, f2_answer,
+#            "ImportError", "ImportError"]
+#
+#
+# def test_showrecipes_with_all_instruments(test_path):
+#     for i in range(len(files)):
+#         try:
+#             for t in range(len(answers[i])):
+#                 file_location = test_path + 'Gempy/' + files[i]
+#                 answer = showrecipes(file_location)
+#                 assert answers[i] == answer
+#         except ImportError:
+#             if answers[i] == 'ImportError':
+#                 pass
+#             else:
+#                 raise ImportError

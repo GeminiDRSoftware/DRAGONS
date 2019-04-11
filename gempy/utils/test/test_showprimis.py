@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import glob
 import pytest
@@ -9,6 +11,7 @@ import gemini_instruments
 from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from gempy.utils.showprims import showprims
+
 
 
 try:
@@ -47,22 +50,20 @@ gnirs_answer = [
     "Recipe not provided, default recipe (makeProcessedFlat) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, GNIRS))),
     "Input tags: ",
-    "'FLAT', 'AZEL_TARGET', 'IMAGE', 'DOMEFLAT', 'GSAOI', 'LAMPON', ",
-    "'RAW', 'GEMINI', 'NON_SIDEREAL', 'CAL', 'UNPREPARED', 'SOUTH'",
     "Input mode: sq",
     "Input recipe: makeProcessedFlat",
     "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE",
     "::makeProcessedFlat",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-            dragons_location + "gsaoi/recipes/sq/recipes_FLAT_IMAGE.pyc"))),
-    "Recipe tags: ", 
-    "'FLAT', 'IMAGE', 'GSAOI', 'CAL'",
+            dragons_location, "gsaoi/recipes/sq/recipes_FLAT_IMAGE.py"))),
+    "Recipe tags: ",
     "Primitives used: "]
 
 
 def test_showprims_on_gnirs(test_path):
-    file_location = test_path + 'Gempy/' + GNIRS
+    file_location = os.path.join(test_path, 'Gempy/', GNIRS)
     answer = showprims(file_location)
+    print(gnirs_answer)
     for i in range(len(gnirs_answer)):
         assert gnirs_answer[i] in answer
 
@@ -83,15 +84,12 @@ gmos_answer = [
     "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, GMOS))),
     "Input tags: ",
-    "'SOUTH', 'RAW', 'GMOS', 'GEMINI', 'SIDEREAL', ",
-    "'UNPREPARED', 'IMAGE', 'MASK', 'ACQUISITION'",
     "Input mode: sq",
     "Input recipe: reduce",
     "Matched recipe: geminidr.gmos.recipes.sq.recipes_IMAGE::reduce",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "gmos/recipes/sq/recipes_IMAGE.pyc"))),
+        dragons_location + "gmos/recipes/sq/recipes_IMAGE.py"))),
     "Recipe tags: ", 
-    "'GMOS', 'IMAGE'",
     "Primitives used: "]
 
 
@@ -115,15 +113,12 @@ gmos_ns_answer = [
     "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, GMOS_NS))),
     "Input tags: ",
-    "'RAW', 'GMOS', 'GEMINI', 'LS', 'UNPREPARED', ",
-    "'SPECT', 'NODANDSHUFFLE', 'SOUTH', 'SIDEREAL'",
     "Input mode: qa",
     "Input recipe: reduce",
     "Matched recipe: geminidr.gmos.recipes.qa.recipes_NS::reduce",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "gmos/recipes/qa/recipes_NS.pyc"))),
+        dragons_location + "gmos/recipes/qa/recipes_NS.py"))),
     "Recipe tags: ", 
-    "'GMOS', 'NODANDSHUFFLE', 'SPECT'",
     "Primitives used: "]
 
 
@@ -151,16 +146,13 @@ gsaoi_dark_answer = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_DARK))),
     "Input tags: ",
-    "'DARK', 'RAW', 'AT_ZENITH', 'AZEL_TARGET', 'CAL', ",
-    "'UNPREPARED', 'SOUTH', 'GEMINI', 'GSAOI', 'NON_SIDEREAL'",
     "Input mode: sq",
     "Input recipe: makeProcessedDark",
     "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_DARK",
     "::makeProcessedDark",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "gsaoi/recipes/sq/recipes_DARK.pyc"))),
+        dragons_location + "gsaoi/recipes/sq/recipes_DARK.py"))),
     "Recipe tags: ", 
-    "'DARK', 'GSAOI', 'CAL'",
     "Primitives used: "]
 
 
@@ -185,14 +177,12 @@ gsaoi_image_answer_sq = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_IMAGE))),
     "Input tags: ",
-    "'SOUTH', 'RAW', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'GSAOI'",
     "Input mode: sq",
     "Input recipe: reduce_nostack",
     "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_IMAGE::reduce_nostack",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "gsaoi/recipes/sq/recipes_IMAGE.pyc"))),
+        dragons_location + "gsaoi/recipes/sq/recipes_IMAGE.py"))),
     "Recipe tags: ", 
-    "'IMAGE', 'GSAOI'",
     "Primitives used: "]
 
 
@@ -207,14 +197,12 @@ gsaoi_image_answer_qa = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_IMAGE))),
     "Input tags: ",
-    "'SOUTH', 'RAW', 'GEMINI', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'GSAOI'",
     "Input mode: qa",
     "Input recipe: reduce_nostack",
     "Matched recipe: geminidr.gsaoi.recipes.qa.recipes_IMAGE::reduce_nostack",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "gsaoi/recipes/qa/recipes_IMAGE.pyc"))),
+        dragons_location + "gsaoi/recipes/qa/recipes_IMAGE.py"))),
     "Recipe tags: ", 
-    "'IMAGE', 'GSAOI'",
     "Primitives used: "]
 
 
@@ -230,16 +218,13 @@ gsaoi_flat_answer = [
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_FLAT))),
     "Input tags: ",
-    "'FLAT', 'AZEL_TARGET', 'IMAGE', 'DOMEFLAT', 'GSAOI', 'LAMPON', ",
-    "'RAW', 'GEMINI', 'NON_SIDEREAL', 'CAL', 'UNPREPARED', 'SOUTH'",
     "Input mode: sq",
     "Input recipe: makeProcessedFlat",
     "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::",
     "makeProcessedFlat",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "gsaoi/recipes/sq/recipes_FLAT_IMAGE.pyc"))),
+        dragons_location + "gsaoi/recipes/sq/recipes_FLAT_IMAGE.py"))),
     "Recipe tags: ",
-    "'FLAT', 'IMAGE', 'GSAOI', 'CAL'",
     "Primitives used: "]
 
 
@@ -266,14 +251,12 @@ niri_answer = [
     "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, NIRI))),
     "Input tags: ",
-    "'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'NIRI'",
     "Input mode: sq",
     "Input recipe: reduce",
     "Matched recipe: geminidr.niri.recipes.sq.recipes_IMAGE::reduce",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "niri/recipes/sq/recipes_IMAGE.pyc"))),
+        dragons_location + "niri/recipes/sq/recipes_IMAGE.py"))),
     "Recipe tags: ",
-    "'IMAGE', 'NIRI'",
     "Primitives used:"]
 
 
@@ -291,15 +274,12 @@ f2_answer = [
     "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, F2))),
     "Input tags: ",
-    "'SOUTH', 'RAW', 'F2', 'GEMINI', 'SIDEREAL', "
-    "'UNPREPARED', 'IMAGE', 'ACQUISITION'",
     "Input mode: sq",
     "Input recipe: reduce",
     "Matched recipe: geminidr.f2.recipes.sq.recipes_IMAGE::reduce",
     "Recipe location: {}".format(os.path.normpath(os.path.join(
-        dragons_location + "f2/recipes/sq/recipes_IMAGE.pyc"))),
+        dragons_location + "f2/recipes/sq/recipes_IMAGE.py"))),
     "Recipe tags: ",
-    "'F2', 'IMAGE'",
     "Primitives used: "]
 
 
