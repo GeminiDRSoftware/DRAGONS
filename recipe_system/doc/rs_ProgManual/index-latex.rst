@@ -32,6 +32,5 @@ Recipe System Programmers Manual
    :maxdepth: 1
    
    appendices/glossary
-   appendices/primitives_catalog
    
 .. todolist::
