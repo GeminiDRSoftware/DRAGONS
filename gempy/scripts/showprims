@@ -1,22 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 import sys
-from gempy.utils import show_primitives
+from gempy.utils import showprims
 
 
 __author__ = 'Ivan Sharankov'
 
 def main():
-    args = show_primitives_argparser()
-    show_primitives.show_primitives(args.inputfile, args.mode, args.recipe)
+    args = showprims_argparser()
+    primitives_found = showprims.showprims(args.inputfile, args.mode, args.recipe)
+    print(primitives_found)
 
 
 
-def show_primitives_argparser():
+def showprims_argparser():
     from argparse import ArgumentParser
     from argparse import RawDescriptionHelpFormatter
 
-    parser = ArgumentParser(description="desc", prog='show_primitives',
+    parser = ArgumentParser(description="desc", prog='showprims',
                             formatter_class=RawDescriptionHelpFormatter)
 
     parser.add_argument('inputfile', type=str,
