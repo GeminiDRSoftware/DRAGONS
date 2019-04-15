@@ -13,9 +13,9 @@ from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.mappers.recipeMapper import RecipeMapper
 
 
-def show_recipes(_file):
+def showrecipes(_file):
     """
-    show_recipes takes in a file, and will return all the possible recipes
+    showrecipes takes in a file, and will return all the possible recipes
     that can be used on the file.
 
     Parameters
@@ -35,8 +35,8 @@ def show_recipes(_file):
         ad = astrodata.open(_file)
         tags = ad.tags
     except AstroDataError:
-        result  += ("There was an issue using the selected file, please check"
-                    "the format and directory.")
+        result += ("There was an issue using the selected file, please check "
+                   "the format and directory.")
         raise
 
     all_recipies = []
@@ -50,7 +50,7 @@ def show_recipes(_file):
 
         except RecipeNotFound:
             error_message = "The RecipeMapper returned a RecipeNotFound " \
-                            "error. For show_recipes, this means that " \
+                            "error. For showrecipes, this means that " \
                             "there does not exist a recipe for the given " \
                             "file. This may be because the observation type " \
                             "found in the astrodata tags does not match any" \
@@ -82,23 +82,18 @@ def show_recipes(_file):
                 all_recipies.append(recipe.__module__ + "::"
                                     + functions_list[i])
 
-    # Todo: ad.path may be updated to always return absolute path, if that
-    # happens, remove os.getcwd()
-    result += ("Input file: {}".format(os.path.normpath(
-        os.path.join(os.getcwd(), ad.path))))
-
+    result += ("Input file: {}".format(os.path.abspath(ad.path)))
 
     result += ("\nInput tags: {}".format(tags))
 
     # Edge case exists where ql mode isn't implemented, sq/qa both pass due to
     # except clause, and then no recipes were found.
 
-    if all_recipies == []:
-        result += ("\n!!! No recipes were found for this file !!!")
+    if not all_recipies:
+        result += "\n!!! No recipes were found for this file !!!"
     else:
-        result += ("\nRecipes available for the input file: ")
+        result += "\nRecipes available for the input file: "
         for recipe in all_recipies:
-            result += ("\n   " + recipe)
+            result += "\n   " + recipe
 
     return result
-
