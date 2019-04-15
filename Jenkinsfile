@@ -131,13 +131,13 @@ pipeline {
 //                }
 //            }
 //        }
-//    }
-//    post {
-//        always {
-//            sh 'conda remove --quiet --yes --all -n ${BUILD_TAG}'
-//        }
-//        failure {
-//            echo "Send e-mail, when failed"
-//        }
-//    }
+    }
+    post {
+        always {
+            sh 'conda remove --quiet --yes --all -n ${BUILD_TAG}'
+        }
+        failure {
+            echo "Send e-mail, when failed"
+        }
+    }
 }
