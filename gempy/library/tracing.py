@@ -569,7 +569,7 @@ def reject_bad_peaks(peaks):
         del peaks[-1]
     return peaks
 
-def get_limits(data, mask, peaks=[], threshold=0, method=None):
+def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     """
     This function determines the region in a 1D array associated with each
     already-identified peak. It operates by fitting a spline to the data
@@ -588,6 +588,8 @@ def get_limits(data, mask, peaks=[], threshold=0, method=None):
         1D profile containing the peaks
     mask: ndarray (bool-like)
         mask indicating pixels in data to ignore
+    variance: ndarray/None
+        variance of each pixel (None => recalculate)
     peaks: sequence
         peaks for which limits are to be found
     threshold_function: None/callable
@@ -618,7 +620,11 @@ def get_limits(data, mask, peaks=[], threshold=0, method=None):
     # Try to better estimate the true noise from the pixel-to-pixel
     # variations (the difference between adjacent pixels will be
     # sqrt(2) times larger than the rms noise).
-    w = np.full_like(x, np.sqrt(2)/sigma_clipped_stats(np.diff(y))[2])
+    if variance is None:
+        w = np.full_like(y, np.sqrt(2)/sigma_clipped_stats(np.diff(y))[2])
+    else:
+        w = np.divide(1.0, np.sqrt(variance[mask==0]), out=np.zeros_like(y),
+                      where=variance[mask==0]>0)
 
     # We need to fit a quartic spline since we want to know its
     # minima (roots of its derivative), and can only find the
@@ -670,7 +676,7 @@ def integral_limit(spline, peak, limit, other_limit, threshold):
     integral = spline.antiderivative()
     slope = (spline(other_limit) - spline(limit)) / (other_limit - limit)
     definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * ((spline(limit) - slope * limit) + 0.5 * slope * (x + limit))
-    flux_this_side = definite_integral(limit) - definite_integral(peak)
+    flux_this_side = definite_integral(peak) - definite_integral(limit)
 
     # definite_integral is the flux from the limit towards the peak, so this
     # should be equal to the required fraction of the flux om that side of

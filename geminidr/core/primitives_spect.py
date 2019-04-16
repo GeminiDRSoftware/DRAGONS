@@ -7,11 +7,11 @@ from geminidr import PrimitivesBASE
 from . import parameters_spect
 
 import numpy as np
-from scipy import spatial, optimize
+from scipy import spatial
 from importlib import import_module
 
 from astropy.modeling import models, fitting
-from astropy.stats import sigma_clip, sigma_clipped_stats
+from astropy.stats import sigma_clip
 from astropy.table import Table
 
 from matplotlib import pyplot as plt
@@ -847,32 +847,17 @@ class Spect(PrimitivesBASE):
                 log.stdinfo("Found sources at {}s: {}".format(direction,
                             ' '.join(['{:.1f}'.format(loc) for loc in locations])))
 
-                plt.ioff()
-                fig, ax = plt.subplots()
-                x = np.arange(len(profile))
-                slices = np.ma.clump_unmasked(np.ma.masked_array(profile, prof_mask))
-                for slice_ in slices:
-                    ax.plot(x[slice_], profile[slice_], 'k-')
-                axis_limits = ax.get_ylim()
 
-                all_limits = tracing.get_limits(profile, prof_mask, locations,
+                all_limits = tracing.get_limits(profile, prof_mask, peaks=locations,
                                                 threshold=threshold, method=limit_method)
 
                 all_model_dicts = []
-                ap_number = 1
                 for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix-1], c0=loc)
                     model_dict = astromodels.chebyshev_to_dict(cheb)
                     model_dict['aper_lower'] = limits[0] - loc
                     model_dict['aper_upper'] = limits[1] - loc
                     all_model_dicts.append(model_dict)
-                    for lim in limits:
-                        ax.plot([lim,lim], axis_limits, 'r-')
-                    ax.text(loc, axis_limits[1]*1.01-0.01*axis_limits[0], str(ap_number), ha='center', color='red')
-                    ap_number += 1
-
-                ax.set_ylim(*axis_limits)
-                plt.show()
 
                 aptable = Table([np.arange(len(locations))+1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
@@ -1120,6 +1105,10 @@ class Spect(PrimitivesBASE):
         # timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         order = params["trace_order"]
+        step = params["step"]
+        nsum = params["nsum"]
+        max_missed = params["max_missed"]
+        max_shift = params["max_shift"]
 
         for ad in adinputs:
             for ext in ad:
@@ -1135,10 +1124,8 @@ class Spect(PrimitivesBASE):
                 self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
 
-                step = 20
-                nsum = 20
-                max_missed = 6
-                max_shift = 0.02
+                # TODO: Do we need to keep track of where the initial
+                # centering took place?
                 start = 0.5 * ext.shape[dispaxis]
 
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -1151,19 +1138,22 @@ class Spect(PrimitivesBASE):
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
                 all_column_names = []
                 all_model_dicts = []
-                for location in locations:
-                    # Funky stuff to extract the coords associated with each
-                    # aperture and sort them by coordinate along the spectrum
+                for aperture in aptable:
+                    location = aperture['c0']
+                    # Funky stuff to extract the traced coords associated with
+                    # each aperture (there's just a big list of all the coords
+                    # from all the apertures) and sort them by coordinate
+                    # along the spectrum
                     coords = np.array([list(c1) + list(c2)
                                        for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
                                        if c1[dispaxis] == location])
                     values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
                     ref_coords, in_coords = values[:2], values[2:]
 
-                    m_init = models.Chebyshev1D(degree=order,
-                                                domain=[0, ext.shape[dispaxis] - 1])
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis
+                    m_init = models.Chebyshev1D(degree=order,
+                                                domain=[0, ext.shape[dispaxis] - 1])
                     fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                                sigma_clip, sigma=3)
                     m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
@@ -1171,8 +1161,11 @@ class Spect(PrimitivesBASE):
                     self.viewer.polygon(plot_coords, closed=False,
                                         xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
-                    model_dict['aper_lower'] = None
-                    model_dict['aper_upper'] = None
+
+                    # Recalculate aperture limits after rectification
+                    apcoords = m_final(np.arange(ext.shape[dispaxis]))
+                    model_dict['aper_lower'] = aperture['aper_lower'] + (location - np.min(apcoords))
+                    model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()
                                              if k not in all_column_names])
                     all_model_dicts.append(model_dict)
