@@ -31,21 +31,11 @@ pipeline {
                 sh  '''
                     .jenkins/download_and_install_anaconda.sh
                     .jenkins/build_and_test_venv.sh
+                    .jenkins/test_env_and_install_missing_libs.sh
+                    .jenkins/download_test_data.py
                     '''
             }
         }
-
-//        stage ("Build and Test Environment") {
-//            steps {
-//                sh  '''
-//                    conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
-//                    source activate ${BUILD_TAG}
-//
-//                    .jenkins/test_env_and_install_missing_libs.sh
-//                    python .jenkins/download_test_data.py
-//                    '''
-//            }
-//        }
 
 //        stage('Static code metrics') {
 //            steps {
