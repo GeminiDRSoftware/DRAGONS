@@ -30,9 +30,9 @@ pipeline {
             steps {
                 sh  '''
                     .jenkins/download_and_install_anaconda.sh
-                    .jenkins/build_and_test_venv.sh
-                    .jenkins/test_env_and_install_missing_libs.sh
                     .jenkins/download_test_data.py
+                    // .jenkins/build_and_test_venv.sh
+                    // .jenkins/test_env_and_install_missing_libs.sh
                     '''
             }
         }
@@ -75,7 +75,7 @@ pipeline {
             }
         }
 
-//        stage('Unit tests') {
+//        stage('Unit tests') {X
 //            steps {
 //                sh  '''
 //                    source activate ${BUILD_TAG}
@@ -124,7 +124,7 @@ pipeline {
     }
     post {
         always {
-            sh 'conda env remove --quiet --yes -n ${BUILD_TAG}'
+            // sh 'conda env remove --quiet --yes -n ${BUILD_TAG}'
         }
         failure {
             echo "Send e-mail, when failed"
