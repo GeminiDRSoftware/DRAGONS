@@ -6,4 +6,3 @@ numpy
 python-dateutil
 scipy
 sqlalchemy
-stsci.numdisplay
