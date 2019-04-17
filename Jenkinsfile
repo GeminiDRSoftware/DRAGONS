@@ -123,9 +123,9 @@ pipeline {
 //        }
     }
     post {
-        always {
+        //always {
             // sh 'conda env remove --quiet --yes -n ${BUILD_TAG}'
-        }
+        //}
         failure {
             echo "Send e-mail, when failed"
         }
