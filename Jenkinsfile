@@ -28,7 +28,9 @@ pipeline {
 
         stage ("Set up") {
             steps {
-                echo 'Setup'
+                sh  '''
+                    . .jenkins/download_and_install_anaconda.sh
+                    '''
             }
         }
 
