@@ -74,19 +74,22 @@ pipeline {
 
         stage('Tests') {
             parallel {
-                stage('py27') {
-                    steps {
-                        sh 'tox -e py27'
-                    }
-                }
                 stage('py36') {
                     steps {
-                        sh 'tox -e py36'
+                        sh  '''
+                            if ! [ -d ".conda/py36" ]; then
+                                conda create --yes --quiet --path .conda/py36 python=3.6
+                            fi
+                            conda install stsci gemini
+                            '''
                     }
                 }
                 stage('py37') {
                     steps {
-                        sh 'tox -e py37'
+                        if ! [ -d ".conda/py37" ]; then
+                                conda create --yes --quiet --path .conda/py37 python=3.7
+                            fi
+                            conda install stsci gemini
                     }
                 }
             }
