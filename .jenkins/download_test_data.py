@@ -18,9 +18,7 @@ import subprocess
 import sys
 
 
-FILE_WITH_TEST_FILES = os.path.abspath(
-    os.path.join(__file__, '.jenkins/test_files.txt'))
-
+FILE_WITH_TEST_FILES = os.path.join(os.path.dirname(__file__), 'test_files.txt')
 URL = u'https://archive.gemini.edu/file/'
 
 try:
