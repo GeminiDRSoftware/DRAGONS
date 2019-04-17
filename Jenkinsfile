@@ -37,7 +37,7 @@ pipeline {
             }
         }
 
-        stage('Static code metrics') {
+        stage('Static Metrics') {
            steps {
                echo "PEP8 style check"
                sh  '''
@@ -46,54 +46,62 @@ pipeline {
                    pylint --exit-zero --jobs=4 \
                        astrodata gemini_instruments gempy geminidr \
                        recipe_system > ./reports/pylint.log
+
+                   pydocstyle --add-ignore D400,D401,D205,D105,D105 \
+                        astrodata gemini_instruments gempy geminidr \
+                        recipe_system > 'reports/pydocstyle.log' || exit 0
                    '''
            }
            post {
                always {
                    echo 'Report pyLint warnings using the warnings-ng-plugin'
                    recordIssues enabledForFailure: true, tool: pyLint(pattern: '**/reports/pylint.log')
+                   echo 'Report pyDocStyle warnings using the warnings-ng-plugin'
+                   recordIssues enabledForFailure: true, tool: pyDocStyle(pattern: '**/reports/pydocstyle.log')
                }
            }
         }
 
-        stage('Checking docstrings') {
-            steps {
-                sh  '''
-                    pydocstyle --add-ignore D400,D401,D205,D105,D105 \
-                        astrodata gemini_instruments gempy geminidr \
-                        recipe_system > 'reports/pydocstyle.log' || exit 0
-                    '''
-            }
-            post {
-                always {
-                    echo 'Report pyDocStyle warnings using the warnings-ng-plugin'
-                    recordIssues enabledForFailure: true, tool: pyDocStyle(pattern: '**/reports/pydocstyle.log')
+        stage('Build') {
+            parallel {
+                stage('build_1') {
+                    steps {
+                        echo "build 1"
+                    }
+                }
+                stage('build_2') {
+                    steps {
+                        echo "build 2"
+                    }
                 }
             }
         }
 
-        stage('Tests') {
+        stage('Test') {
             parallel {
-                stage('py36') {
+                stage('test_1') {
                     steps {
-                        sh  '''
-                            if ! [ -d ".conda/py36" ]; then
-                                conda create --yes --quiet --path .conda/py36 python=3.6
-                            fi
-                            conda activate .conda/py36
-                            conda install stsci gemini
-                            '''
+                        echo "test 1"
                     }
                 }
-                stage('py37') {
+                stage('test_2') {
                     steps {
-                        sh  '''
-                            if ! [ -d ".conda/py37" ]; then
-                                    conda create --yes --quiet --path .conda/py37 python=3.7
-                            fi
-                            conda activate .conda/py36
-                            conda install stsci gemini
-                            '''
+                        echo "test 2"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            parallel {
+                stage('deploy_1') {
+                    steps {
+                        echo "deploy 1"
+                    }
+                }
+                stage('deploy_2') {
+                    steps {
+                        echo "deploy 2"
                     }
                 }
             }
@@ -147,9 +155,6 @@ pipeline {
 //        }
     }
     post {
-        //always {
-            // sh 'conda env remove --quiet --yes -n ${BUILD_TAG}'
-        //}
         failure {
             echo "Send e-mail, when failed"
         }
