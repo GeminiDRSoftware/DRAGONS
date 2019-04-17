@@ -76,10 +76,10 @@ pipeline {
             steps {
                 parallel(
                     stage('py27') {
-                        sh 'I am running py27'
+                        echo 'I am running py27'
                     }
                     stage('py37') {
-                        sh 'I am running py37'
+                        echo 'I am running py37'
                     }
                 )
             }
