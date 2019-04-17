@@ -41,7 +41,6 @@ pipeline {
            steps {
                echo "PEP8 style check"
                sh  '''
-                   source activate ${BUILD_TAG}
                    mkdir -p ./reports
 
                    pylint --exit-zero --jobs=4 \
@@ -61,7 +60,6 @@ pipeline {
         stage('Checking docstrings') {
             steps {
                 sh  '''
-                    source activate ${BUILD_TAG}
                     pydocstyle --add-ignore D400,D401,D205,D105,D105 \
                         astrodata gemini_instruments gempy geminidr \
                         recipe_system > 'reports/pydocstyle.log' || exit 0
