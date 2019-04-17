@@ -74,7 +74,7 @@ pipeline {
 
         stage('Tests') {
             steps {
-                parallel(
+                parallel {
                     stage('py27') {
                         steps {
                             echo 'I am running py27'
@@ -85,7 +85,7 @@ pipeline {
                             echo 'I am running py37'
                         }
                     }
-                )
+                }
             }
         }
 
