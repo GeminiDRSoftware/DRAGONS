@@ -4,7 +4,7 @@
 .. |ADUser| replace:: Astrodata User Manual
 .. _ADUser: https://astrodata-user-manual.readthedocs.io/
 .. |ADProg| replace:: AstroData Programmer Manual
-.. _ADProg: https://astrodata-prog-manual.readthedocs.io/
+.. _ADProg: https://astrodata-programmer-manual.readthedocs.io/
 
 .. |mappers| replace:: :mod:`recipe_system.mappers`
 .. |reduce| replace:: ``reduce``
