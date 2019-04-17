@@ -6,5 +6,3 @@ numpy
 python-dateutil
 scipy
 sqlalchemy
-stsci.numdisplay
-stsci.distutils==0.3.8
