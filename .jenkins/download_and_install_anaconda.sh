@@ -18,3 +18,5 @@ fi
 
 echo ". /data/jenkins/anaconda3/etc/profile.d/conda.sh" >> ~/.bashrc
 echo "conda activate" >> ~/.bashrc
+
+pip install --upgrade tox

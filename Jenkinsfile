@@ -26,7 +26,7 @@ pipeline {
             }
         }
 
-        stage ("Setting up Environment") {
+        stage ("Set up") {
             steps {
                 sh  '''
                     .jenkins/download_and_install_anaconda.sh
@@ -69,6 +69,19 @@ pipeline {
                     echo 'Report pyDocStyle warnings using the warnings-ng-plugin'
                     recordIssues enabledForFailure: true, tool: pyDocStyle(pattern: '**/reports/pydocstyle.log')
                 }
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                parallel(
+                    stage('py27') {
+                        sh 'I am running py27'
+                    }
+                    stage('py37') {
+                        sh 'I am running py37'
+                    }
+                )
             }
         }
 
