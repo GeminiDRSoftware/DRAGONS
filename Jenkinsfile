@@ -76,12 +76,17 @@ pipeline {
             parallel {
                 stage('py27') {
                     steps {
-                        echo 'I am running py27'
+                        sh 'tox -e py27'
+                    }
+                }
+                stage('py36') {
+                    steps {
+                        sh 'tox -e py36'
                     }
                 }
                 stage('py37') {
                     steps {
-                        echo 'I am running py37'
+                        sh 'tox -e py37'
                     }
                 }
             }
