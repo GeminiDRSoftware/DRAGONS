@@ -58,22 +58,22 @@ pipeline {
            }
         }
 
-//        stage('Checking docstrings') {
-//            steps {
-//                sh  '''
-//                    source activate ${BUILD_TAG}
-//                    pydocstyle --add-ignore D400,D401,D205,D105,D105 \
-//                        astrodata gemini_instruments gempy geminidr \
-//                        recipe_system > 'reports/pydocstyle.log' || exit 0
-//                    '''
-//            }
-//            post {
-//                always {
-//                    echo 'Report pyDocStyle warnings using the warnings-ng-plugin'
-//                    recordIssues enabledForFailure: true, tool: pyDocStyle(pattern: '**/reports/pydocstyle.log')
-//                }
-//            }
-//        }
+        stage('Checking docstrings') {
+            steps {
+                sh  '''
+                    source activate ${BUILD_TAG}
+                    pydocstyle --add-ignore D400,D401,D205,D105,D105 \
+                        astrodata gemini_instruments gempy geminidr \
+                        recipe_system > 'reports/pydocstyle.log' || exit 0
+                    '''
+            }
+            post {
+                always {
+                    echo 'Report pyDocStyle warnings using the warnings-ng-plugin'
+                    recordIssues enabledForFailure: true, tool: pyDocStyle(pattern: '**/reports/pydocstyle.log')
+                }
+            }
+        }
 
 //        stage('Unit tests') {
 //            steps {
