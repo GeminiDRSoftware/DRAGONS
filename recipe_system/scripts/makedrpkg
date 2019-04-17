@@ -37,6 +37,10 @@ def parse_args(command_line_args):
         # split if it's a comma separated list
         args.instruments = args.instruments[0].split(',')
 
+    if len(args.modes) == 1:
+        # split if it's a comma separated list
+        args.modes = args.modes[0].split(',')
+
     if args.debug:
         print(args)
 

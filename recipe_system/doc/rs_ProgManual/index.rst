@@ -18,7 +18,6 @@ Recipe System Programmers Manual
    overview
    mappers
    interfaces
-   drpkg
    ack
 
 .. toctree::
@@ -26,6 +25,7 @@ Recipe System Programmers Manual
    :numbered:
    :caption: Appendices
 
+   appendices/drpkg
    appendices/jit
    appendices/glossary
    api

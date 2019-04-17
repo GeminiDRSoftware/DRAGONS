@@ -294,15 +294,25 @@ The data reduction packages provide some hooks that the Recipe System depends
 on to map recipes and primitives to the data.
 
 Instructions on how to structure a data reduction package for use by the Recipe
-System are provided in appendix.
-.. todo:: add ref.
+System are provided in :ref:`appendix <drpkg>`.
 
-The primitive signature must be able to accept this instantiation call::
+The primitive class signature must be able to accept this instantiation call::
 
    primitive_actual(self.adinputs, mode=self.mode, ucals=self.usercals,
                     uparms=self.userparams, upload=self.upload)
 
-.. todo:: describe the types and format of each argument.
+    adinputs: Python list of AstroData objects
+    mode:     One of 'sq', 'qa', or 'ql'
+    ucals:    Python dict with format
+                 {(<data_label>, <type_of_calib>): <calib_filename>},
+                 one key-value pair for each input, with the type of
+                 calibration matching one from the list in
+                 cal_service.transport_request.CALTYPES.
+    uparms:   Python dict with format ``{'<prim>:<param>': <value>}``
+    upload:   Python list of any combination of 'calibs', 'metrics', or
+                 'science'.
+
+In ``geminidr``, the primtive classes use a decorator to process those inputs.
 
 The recipes must be located in subdirectory named after the *mode*.  For
 example::
@@ -325,8 +335,7 @@ masks.  Because the Recipe System conducts depth-first searches,
 the optimization expedites mapping by known exclusion: bypassing subpackages
 and modules that are known not contain primitives or recipes.
 
-Refer to the appendix for more a more complete discussion.
-.. todo::  add ref.
+Refer to the :ref:`appendix <drpkg>` for more a more complete discussion.
 
 .. _calrq:
 

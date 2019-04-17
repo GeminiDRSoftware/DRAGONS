@@ -53,8 +53,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Astrodata Programmer\'s Manual'
-copyright = u'2018, Ricardo Cardenes'
+project = u'Astrodata Programmer Manual'
+copyright = u'2019, Ricardo Cardenes'
 author = u'Ricardo Cardenes'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -85,7 +85,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -124,7 +124,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -238,12 +238,16 @@ html_static_path = ['_static']
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'AstrodataProgrammersManualdoc'
+htmlhelp_basename = 'AstrodataProgrammerManual'
 
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-     # The paper size ('letterpaper' or 'a4paper').
+    # This will remove blank pages.
+    'classoptions': ',openany,oneside',
+    'babel': '\\usepackage[english]{babel}',
+
+    # The paper size ('letterpaper' or 'a4paper').
      #
      # 'papersize': 'letterpaper',
 
@@ -264,14 +268,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'AstrodataProgrammersManual.tex', u'Astrodata Programmer\'s Manual Documentation',
+    ('index-latex', 'AstrodataProgrammerManual.tex', u'Astrodata Programmer Manual',
      u'Ricardo Cardenes', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
 #
-# latex_logo = None
+latex_logo = 'images/GeminiLogo_new_2014.jpg'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
@@ -306,7 +310,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'astrodataprogrammersmanual', u'Astrodata Programmer\'s Manual Documentation',
+    (master_doc, 'astrodataprogrammermanual', u'Astrodata Programmer Manual',
      [author], 1)
 ]
 
@@ -321,8 +325,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'AstrodataProgrammersManual', u'Astrodata Programmer\'s Manual Documentation',
-     author, 'AstrodataProgrammersManual', 'One line description of project.',
+    (master_doc, 'AstrodataProgrammerManual', u'Astrodata Programmer Manual',
+     author, 'AstrodataProgrammerManual',
+     'Programmer manual for the astrodata package',
      'Miscellaneous'),
 ]
 
@@ -345,3 +350,12 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+
+# -- Finishing with a setup that will run always -----------------------------
+def setup(app):
+
+    # Adding style in order to have the todos show up in a red box.
+    app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('rtd_theme_overrides.css')
+    app.add_stylesheet('css/rtd_theme_overrides_references.css')
