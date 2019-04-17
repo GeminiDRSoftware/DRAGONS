@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 if ! [ "$(command -v conda)" ]; then
     echo "Conda is not installed - Downloading and installing"
 
@@ -18,5 +17,3 @@ fi
 
 echo ". /data/jenkins/anaconda3/etc/profile.d/conda.sh" >> ~/.bashrc
 echo "conda activate" >> ~/.bashrc
-
-pip install --upgrade tox
