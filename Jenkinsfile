@@ -37,26 +37,27 @@ pipeline {
             }
         }
 
-//        stage('Static code metrics') {
-//            steps {
-//                echo "PEP8 style check"
-//                sh  '''
-//                    source activate ${BUILD_TAG}
-//                    mkdir -p ./reports
-//
-//                    pylint --exit-zero --jobs=4 \
-//                        --rcfile=gempy/support_files/pylintrc \
-//                        astrodata gemini_instruments gempy geminidr \
-//                        recipe_system > ./reports/pylint.log
-//                    '''
-//            }
-//            post {
-//                always {
-//                    echo 'Report pyLint warnings using the warnings-ng-plugin'
-//                    recordIssues enabledForFailure: true, tool: pyLint(pattern: '**/reports/pylint.log')
-//                }
-//            }
-//        }
+
+        stage('Static code metrics') {
+           steps {
+               echo "PEP8 style check"
+               sh  '''
+                   source activate ${BUILD_TAG}
+                   mkdir -p ./reports
+
+                   pylint --exit-zero --jobs=4 \
+                       --rcfile=gempy/support_files/pylintrc \
+                       astrodata gemini_instruments gempy geminidr \
+                       recipe_system > ./reports/pylint.log
+                   '''
+           }
+           post {
+               always {
+                   echo 'Report pyLint warnings using the warnings-ng-plugin'
+                   recordIssues enabledForFailure: true, tool: pyLint(pattern: '**/reports/pylint.log')
+               }
+           }
+        }
 
 //        stage('Checking docstrings') {
 //            steps {
