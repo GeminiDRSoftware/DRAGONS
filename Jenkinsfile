@@ -30,7 +30,7 @@ pipeline {
             steps {
                 sh  '''
                     .jenkins/download_and_install_anaconda.sh
-                    .jenkins/download_test_data.py
+                    #.jenkins/download_test_data.py
                     # .jenkins/build_and_test_venv.sh
                     # .jenkins/test_env_and_install_missing_libs.sh
                     '''
