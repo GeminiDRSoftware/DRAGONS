@@ -80,16 +80,20 @@ pipeline {
                             if ! [ -d ".conda/py36" ]; then
                                 conda create --yes --quiet --path .conda/py36 python=3.6
                             fi
+                            conda activate .conda/py36
                             conda install stsci gemini
                             '''
                     }
                 }
                 stage('py37') {
                     steps {
-                        if ! [ -d ".conda/py37" ]; then
-                                conda create --yes --quiet --path .conda/py37 python=3.7
+                        sh  '''
+                            if ! [ -d ".conda/py37" ]; then
+                                    conda create --yes --quiet --path .conda/py37 python=3.7
                             fi
+                            conda activate .conda/py36
                             conda install stsci gemini
+                            '''
                     }
                 }
             }
