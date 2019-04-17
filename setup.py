@@ -192,8 +192,8 @@ GEMPY_SCRIPTS = [
                   os.path.join('gempy', 'scripts', 'pipeline2iraf'),
                   os.path.join('gempy', 'scripts', 'profile_all_obj'),
                   os.path.join('gempy', 'scripts', 'psf_plot'),
-                  os.path.join('gempy', 'scripts', 'show_primitives'),
-                  os.path.join('gempy', 'scripts', 'show_recipes'),
+                  os.path.join('gempy', 'scripts', 'showprims'),
+                  os.path.join('gempy', 'scripts', 'showrecipes'),
                   os.path.join('gempy', 'scripts', 'showd'),
                   os.path.join('gempy', 'scripts', 'showpars'),
                   os.path.join('gempy', 'scripts', 'swapper'),
@@ -224,7 +224,7 @@ else:
 EXTENSIONS.extend(CYTHON_EXTENSIONS)
 
 
-setup( name='dragons',
+setup(name='dragons',
         version='2.0.8',
         description='Gemini Data Processing Python Package',
         author='Gemini Data Processing Software Group',
