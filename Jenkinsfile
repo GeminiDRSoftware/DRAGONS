@@ -19,15 +19,15 @@ pipeline {
     }
 
     stages {
-        stage('Checkout and Build') {
+        stage('Checkout') {
+            steps {
+                echo "Checkout code"
+            }
+        }
+        stage('Build') {
             parallel {
                 stage('os1') {
                     stages {
-                        stage('checkout') {
-                            steps {
-                                echo "build 1"
-                            }
-                        }
                         stage('build') {
                             steps {
                                 echo "build 1"
@@ -37,11 +37,6 @@ pipeline {
                 }
                 stage('os2') {
                     stages {
-                        stage('checkout') {
-                            steps {
-                                echo "build 1"
-                            }
-                        }
                         stage('build') {
                             steps {
                                 echo "build 1"
@@ -51,11 +46,6 @@ pipeline {
                 }
                 stage('os3') {
                     stages {
-                        stage('checkout') {
-                            steps {
-                                echo "build 1"
-                            }
-                        }
                         stage('build') {
                             steps {
                                 echo "build 1"
