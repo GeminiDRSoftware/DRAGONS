@@ -19,6 +19,41 @@ pipeline {
     }
 
     stages {
+        stage('Checkout and Build') {
+            parallel {
+                stages {
+                    stage('checkout_1') {
+                        steps {
+                            echo "checkout 1"
+                        }
+                    }
+                    stage('build_2') {
+                        steps {
+                            echo "build 2"
+                        }
+                    }
+                }
+                stages {
+                    stage('checkout_2') {
+                        steps {
+                            echo "checkout 2"
+                        }
+                    }
+                    stage('build_2') {
+                        steps {
+                            echo "build 2"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        failure {
+            echo "Send e-mail, when failed"
+        }
+    }
+}
 
 //        stage ("Code pull"){
 //            steps{
@@ -59,69 +94,42 @@ pipeline {
 //           }
 //        }
 
-        stage('Checkout and Build') {
-            parallel {
-                stages {
-                    stage('checkout_1') {
-                        steps {
-                            echo "checkout 1"
-                        }
-                    }
-                    stage('build_2') {
-                        steps {
-                            echo "build 2"
-                        }
-                    }
-                }
-                stages {
-                    stage('checkout_2') {
-                        steps {
-                            echo "checkout 2"
-                        }
-                    }
-                    stage('build_2') {
-                        steps {
-                            echo "build 2"
-                        }
-                    }
-                }
-            }
-        }
 
-        stage('Test') {
-            parallel {
-                stage('test_1') {
-                    steps {
-                        echo "test 1"
-                    }
-                }
-                stage('test_2') {
-                    steps {
-                        echo "test 2"
-                    }
-                }
-                stage('static metrics') {
-                    steps {
-                        echo "run PyLint and PyDocStyle"
-                    }
-                }
-            }
-        }
 
-        stage('Deploy') {
-            parallel {
-                stage('deploy_1') {
-                    steps {
-                        echo "deploy 1"
-                    }
-                }
-                stage('deploy_2') {
-                    steps {
-                        echo "deploy 2"
-                    }
-                }
-            }
-        }
+//        stage('Test') {
+//            parallel {
+//                stage('test_1') {
+//                    steps {
+//                        echo "test 1"
+//                    }
+//                }
+//                stage('test_2') {
+//                    steps {
+//                        echo "test 2"
+//                    }
+//                }
+//                stage('static metrics') {
+//                    steps {
+//                        echo "run PyLint and PyDocStyle"
+//                    }
+//                }
+//            }
+//        }
+//
+//        stage('Deploy') {
+//            parallel {
+//                stage('deploy_1') {
+//                    steps {
+//                        echo "deploy 1"
+//                    }
+//                }
+//                stage('deploy_2') {
+//                    steps {
+//                        echo "deploy 2"
+//                    }
+//                }
+//            }
+//        }
 
 //        stage('Unit tests') {X
 //            steps {
@@ -169,10 +177,4 @@ pipeline {
 //                }
 //            }
 //        }
-    }
-    post {
-        failure {
-            echo "Send e-mail, when failed"
-        }
-    }
-}
+
