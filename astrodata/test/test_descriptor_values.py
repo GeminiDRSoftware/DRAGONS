@@ -13,11 +13,9 @@ from .conftest import test_path
 try:
     path = os.environ['TEST_PATH']
 except KeyError:
-    warnings.warn("Could not find environment variable: $TEST_PATH")
     path = ''
 
 if not os.path.exists(path):
-    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
     path = ''
 
 
