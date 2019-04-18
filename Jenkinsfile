@@ -67,14 +67,32 @@ pipeline {
         }
         stage('Test') {
             parallel {
-                stage('test using os1') {
-                    steps {
-                        echo "test 1"
+                stage('test build 1') {
+                    stages {
+                        stage('Pull build 1') {
+                            steps {
+                                echo "pull build 1"
+                            }
+                        }
+                        stage('test') {
+                            steps {
+                                echo "test 1"
+                            }
+                        }
                     }
                 }
-                stage('test using os2') {
-                    steps {
-                        echo "test 2"
+                stage('test build 2') {
+                    stages {
+                        stage('Pull build 2') {
+                            steps {
+                                echo "pull build 1"
+                            }
+                        }
+                        stage('test') {
+                            steps {
+                                echo "test 2"
+                            }
+                        }
                     }
                 }
                 stage('static metrics') {
@@ -92,11 +110,6 @@ pipeline {
                     }
                 }
                 stage('deploy build 2') {
-                    steps {
-                        echo "test 1"
-                    }
-                }
-                stage('deploy build 3') {
                     steps {
                         echo "test 1"
                     }
