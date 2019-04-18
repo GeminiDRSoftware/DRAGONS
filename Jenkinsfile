@@ -21,28 +21,14 @@ pipeline {
     stages {
         stage('Checkout and Build') {
             parallel {
-                stages {
-                    stage('checkout_1') {
-                        steps {
-                            echo "checkout 1"
-                        }
-                    }
-                    stage('build_2') {
-                        steps {
-                            echo "build 2"
-                        }
+                stage('build_1') {
+                    steps {
+                        echo "build 1"
                     }
                 }
-                stages {
-                    stage('checkout_2') {
-                        steps {
-                            echo "checkout 2"
-                        }
-                    }
-                    stage('build_2') {
-                        steps {
-                            echo "build 2"
-                        }
+                stage('build_2') {
+                    steps {
+                        echo "build 2"
                     }
                 }
             }
