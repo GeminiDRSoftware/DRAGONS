@@ -20,55 +20,69 @@ pipeline {
 
     stages {
 
-        stage ("Code pull"){
-            steps{
-                checkout scm
-            }
-        }
+//        stage ("Code pull"){
+//            steps{
+//                checkout scm
+//            }
+//        }
+//
+//        stage ("Set up") {
+//            steps {
+//                sh  '''
+//                    . .jenkins/download_and_install_anaconda.sh
+//                    '''
+//            }
+//        }
+//
+//        stage('Static Metrics') {
+//           steps {
+//               echo "PEP8 style check"
+//               sh  '''
+//                   mkdir -p ./reports
+//
+//                   pylint --exit-zero --jobs=4 \
+//                       astrodata gemini_instruments gempy geminidr \
+//                       recipe_system > ./reports/pylint.log
+//
+//                   pydocstyle --add-ignore D400,D401,D205,D105,D105 \
+//                        astrodata gemini_instruments gempy geminidr \
+//                        recipe_system > 'reports/pydocstyle.log' || exit 0
+//                   '''
+//           }
+//           post {
+//               always {
+//                   echo 'Report pyLint warnings using the warnings-ng-plugin'
+//                   recordIssues enabledForFailure: true, tool: pyLint(pattern: '**/reports/pylint.log')
+//                   echo 'Report pyDocStyle warnings using the warnings-ng-plugin'
+//                   recordIssues enabledForFailure: true, tool: pyDocStyle(pattern: '**/reports/pydocstyle.log')
+//               }
+//           }
+//        }
 
-        stage ("Set up") {
-            steps {
-                sh  '''
-                    . .jenkins/download_and_install_anaconda.sh
-                    '''
-            }
-        }
-
-        stage('Static Metrics') {
-           steps {
-               echo "PEP8 style check"
-               sh  '''
-                   mkdir -p ./reports
-
-                   pylint --exit-zero --jobs=4 \
-                       astrodata gemini_instruments gempy geminidr \
-                       recipe_system > ./reports/pylint.log
-
-                   pydocstyle --add-ignore D400,D401,D205,D105,D105 \
-                        astrodata gemini_instruments gempy geminidr \
-                        recipe_system > 'reports/pydocstyle.log' || exit 0
-                   '''
-           }
-           post {
-               always {
-                   echo 'Report pyLint warnings using the warnings-ng-plugin'
-                   recordIssues enabledForFailure: true, tool: pyLint(pattern: '**/reports/pylint.log')
-                   echo 'Report pyDocStyle warnings using the warnings-ng-plugin'
-                   recordIssues enabledForFailure: true, tool: pyDocStyle(pattern: '**/reports/pydocstyle.log')
-               }
-           }
-        }
-
-        stage('Build') {
+        stage('Checkout and Build') {
             parallel {
-                stage('build_1') {
-                    steps {
-                        echo "build 1"
+                stages {
+                    stage('checkout_1') {
+                        steps {
+                            echo "checkout 1"
+                        }
+                    }
+                    stage('build_2') {
+                        steps {
+                            echo "build 2"
+                        }
                     }
                 }
-                stage('build_2') {
-                    steps {
-                        echo "build 2"
+                stages {
+                    stage('checkout_2') {
+                        steps {
+                            echo "checkout 2"
+                        }
+                    }
+                    stage('build_2') {
+                        steps {
+                            echo "build 2"
+                        }
                     }
                 }
             }
@@ -84,6 +98,11 @@ pipeline {
                 stage('test_2') {
                     steps {
                         echo "test 2"
+                    }
+                }
+                stage('static metrics') {
+                    steps {
+                        echo "run PyLint and PyDocStyle"
                     }
                 }
             }
