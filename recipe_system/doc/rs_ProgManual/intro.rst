@@ -42,8 +42,8 @@ Reference Documents
 Related Documents
 =================
 
-  - `Astrodata Cheat Sheet <https://astrodata-cheat-sheet.readthedocs.io/>`_
-  - `Astrodata User’s Manual <https://astrodata-user-manual.readthedocs.io/>`_
+  - |ADUser|_
+  - |ADProg|_
 
 
 Further Information
