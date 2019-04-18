@@ -49,6 +49,58 @@ pipeline {
                         }
                     }
                 }
+                stage('os3') {
+                    stages {
+                        stage('checkout') {
+                            steps {
+                                echo "build 1"
+                            }
+                        }
+                        stage('build') {
+                            steps {
+                                echo "build 1"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Test') {
+            parallel {
+                stage('test using os1') {
+                    steps {
+                        echo "test 1"
+                    }
+                }
+                stage('test using os2') {
+                    steps {
+                        echo "test 2"
+                    }
+                }
+                stage('static metrics') {
+                    steps {
+                        echo "run PyLint and PyDocStyle"
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            parallel {
+                stage('deploy build 1') {
+                    steps {
+                        echo "test 1"
+                    }
+                }
+                stage('deploy build 2') {
+                    steps {
+                        echo "test 1"
+                    }
+                }
+                stage('deploy build 3') {
+                    steps {
+                        echo "test 1"
+                    }
+                }
             }
         }
     }
@@ -100,25 +152,6 @@ pipeline {
 
 
 
-//        stage('Test') {
-//            parallel {
-//                stage('test_1') {
-//                    steps {
-//                        echo "test 1"
-//                    }
-//                }
-//                stage('test_2') {
-//                    steps {
-//                        echo "test 2"
-//                    }
-//                }
-//                stage('static metrics') {
-//                    steps {
-//                        echo "run PyLint and PyDocStyle"
-//                    }
-//                }
-//            }
-//        }
 //
 //        stage('Deploy') {
 //            parallel {
