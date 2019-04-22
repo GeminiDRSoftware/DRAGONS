@@ -147,7 +147,7 @@ pipeline {
         }
         stage('Test') {
             parallel {
-                stage(" ") {
+                stage("build_1") {
                     stages {
                         stage('pull build 1') {
                             steps {
@@ -165,7 +165,7 @@ pipeline {
                         }
                     }
                 }
-                stage(" ") {
+                stage("build_3") {
                     stages {
                         stage('pull build 3') {
                             steps {
@@ -183,7 +183,7 @@ pipeline {
                         }
                     }
                 }
-                stage(" ") {
+                stage("build_5") {
                     stages {
                         stage('pull build 5') {
                             steps {
@@ -201,7 +201,7 @@ pipeline {
                         }
                     }
                 }
-                stage(' ') {
+                stage('build_6') {
                     stages {
                         stage('pull build 6') {
                             steps {
