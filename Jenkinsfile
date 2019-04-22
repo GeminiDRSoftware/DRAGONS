@@ -93,7 +93,7 @@ pipeline {
         }
         stage('Test') {
             parallel {
-                stage {
+                stage("") {
                     stages {
                         stage('pull build 1') {
                             steps {
@@ -111,7 +111,7 @@ pipeline {
                         }
                     }
                 }
-                stage {
+                stage("") {
                     stages {
                         stage('pull build 3') {
                             steps {
