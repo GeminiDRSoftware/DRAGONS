@@ -201,7 +201,7 @@ pipeline {
                         }
                     }
                 }
-                stage {
+                stage('') {
                     stages {
                         stage('pull build 6') {
                             steps {
