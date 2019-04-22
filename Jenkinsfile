@@ -35,16 +35,16 @@ pipeline {
         }
         stage('Build') {
             parallel {
-                stage("Linux 1") {
+                stage("CentOS 7") {
                     stages {
-                        stage('build os1') {
+                        stage('build 1') {
                             steps {
                                 echo "build 1 - step 1"
                                 echo "build 1 - step 2"
                                 echo "build 1 - step 3"
                             }
                         }
-                        stage('pre-deploy os1') {
+                        stage('pre-deploy') {
                             steps {
                                 echo "pre-deploy 1 - step 1"
                                 echo "pre-deploy 1 - step 2"
@@ -53,16 +53,16 @@ pipeline {
                         }
                     }
                 }
-                stage("Linux 2") {
+                stage("Centos 6") {
                     stages {
-                        stage('build os2') {
+                        stage('build 2') {
                             steps {
                                 echo "build 2 - step 1"
                                 echo "build 2 - step 2"
                                 echo "build 2 - step 3"
                             }
                         }
-                        stage('pre-deploy os2') {
+                        stage('pre-deploy') {
                             steps {
                                 echo "pre-deploy 2 - step 1"
                                 echo "pre-deploy 2 - step 2"
@@ -71,16 +71,16 @@ pipeline {
                         }
                     }
                 }
-                stage("MacOs 1") {
+                stage("MacOs 10.14") {
                     stages {
-                        stage('build os3') {
+                        stage('build 3') {
                             steps {
                                 echo "build 3 - step 1"
                                 echo "build 3 - step 2"
                                 echo "build 3 - step 3"
                             }
                         }
-                        stage('pre-deploy os3') {
+                        stage('pre-deploy') {
                             steps {
                                 echo "pre-deploy 3 - step 1"
                                 echo "pre-deploy 3 - step 2"
@@ -89,9 +89,9 @@ pipeline {
                         }
                     }
                 }
-                stage("MacOs 2") {
+                stage("MacOs 10.13") {
                     stages {
-                        stage('build os4') {
+                        stage('build 4') {
                             steps {
                                 echo "build 4 - step 1"
                                 echo "build 4 - step 2"
@@ -109,14 +109,14 @@ pipeline {
                 }
                 stage("Nightly") {
                     stages {
-                        stage('build os5') {
+                        stage('build 5') {
                             steps {
                                 echo "build 5 - step 1"
                                 echo "build 5 - step 2"
                                 echo "build 5 - step 3"
                             }
                         }
-                        stage('pre-deploy os5') {
+                        stage('pre-deploy') {
                             steps {
                                 echo "pre-deploy 5 - step 1"
                                 echo "pre-deploy 5 - step 2"
@@ -125,11 +125,29 @@ pipeline {
                         }
                     }
                 }
+                stage("Stable") {
+                    stages {
+                        stage('build 6') {
+                            steps {
+                                echo "build 6 - step 1"
+                                echo "build 6 - step 2"
+                                echo "build 6 - step 3"
+                            }
+                        }
+                        stage('pre-deploy') {
+                            steps {
+                                echo "pre-deploy 6 - step 1"
+                                echo "pre-deploy 6 - step 2"
+                                echo "pre-deploy 6 - step 3"
+                            }
+                        }
+                    }
+                }
             }
         }
         stage('Test') {
             parallel {
-                stage("") {
+                stage("CentOS") {
                     stages {
                         stage('pull build 1') {
                             steps {
@@ -138,7 +156,7 @@ pipeline {
                                 echo "pull build 1 - step 3"
                             }
                         }
-                        stage('test build 1') {
+                        stage('tests') {
                             steps {
                                 echo "test 1 - step 1"
                                 echo "test 1 - step 2"
@@ -147,7 +165,7 @@ pipeline {
                         }
                     }
                 }
-                stage("") {
+                stage("MacOS") {
                     stages {
                         stage('pull build 3') {
                             steps {
@@ -156,11 +174,47 @@ pipeline {
                                 echo "pull build 3 - step 3"
                             }
                         }
-                        stage('test build 3') {
+                        stage('tests') {
                             steps {
                                 echo "test 3 - step 1"
                                 echo "test 3 - step 2"
                                 echo "test 3 - step 3"
+                            }
+                        }
+                    }
+                }
+                stage("Nightly") {
+                    stages {
+                        stage('pull build 5') {
+                            steps {
+                                echo "pull build 5 - step 1"
+                                echo "pull build 5 - step 2"
+                                echo "pull build 5 - step 3"
+                            }
+                        }
+                        stage('tests') {
+                            steps {
+                                echo "test 5 - step 1"
+                                echo "test 5 - step 2"
+                                echo "test 5 - step 3"
+                            }
+                        }
+                    }
+                }
+                stage("Stable") {
+                    stages {
+                        stage('pull build 6') {
+                            steps {
+                                echo "pull build 6 - step 1"
+                                echo "pull build 6 - step 2"
+                                echo "pull build 6 - step 3"
+                            }
+                        }
+                        stage('tests') {
+                            steps {
+                                echo "test 6 - step 1"
+                                echo "test 6 - step 2"
+                                echo "test 6 - step 3"
                             }
                         }
                     }
@@ -176,12 +230,22 @@ pipeline {
             parallel {
                 stage('deploy build 1') {
                     steps {
-                        echo "test 1"
+                        echo "deploy build 1"
                     }
                 }
-                stage('deploy build 2') {
+                stage('deploy build 3') {
                     steps {
-                        echo "test 1"
+                        echo "deploy build 3"
+                    }
+                }
+                stage('deploy build 5') {
+                    steps {
+                        echo "deploy build 5"
+                    }
+                }
+                stage('deploy build 6') {
+                    steps {
+                        echo "deploy build 6"
                     }
                 }
             }
