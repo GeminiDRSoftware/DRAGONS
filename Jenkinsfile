@@ -228,24 +228,24 @@ pipeline {
         }
         stage('Deploy') {
             parallel {
-                stage('deploy build 1') {
+                stage('deploy linux-32') {
                     steps {
-                        echo "deploy build 1"
+                        echo "deploy linux-32"
                     }
                 }
-                stage('deploy build 3') {
+                stage('deploy linux-64') {
                     steps {
-                        echo "deploy build 3"
+                        echo "deploy linux-64"
                     }
                 }
-                stage('deploy build 5') {
+                stage('deploy noarch') {
                     steps {
-                        echo "deploy build 5"
+                        echo "deploy noarch"
                     }
                 }
-                stage('deploy build 6') {
+                stage('deploy osx-64') {
                     steps {
-                        echo "deploy build 6"
+                        echo "deploy osx-64"
                     }
                 }
             }
