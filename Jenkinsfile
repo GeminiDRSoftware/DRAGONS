@@ -35,7 +35,7 @@ pipeline {
         }
         stage('Build') {
             parallel {
-                stage("") {
+                stage("Linux 1") {
                     stages {
                         stage('build os1') {
                             steps {
@@ -49,42 +49,6 @@ pipeline {
                                 echo "pre-deploy 1 - step 1"
                                 echo "pre-deploy 1 - step 2"
                                 echo "pre-deploy 1 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("") {
-                    stages {
-                        stage('build os2') {
-                            steps {
-                                echo "build 2 - step 1"
-                                echo "build 2 - step 2"
-                                echo "build 2 - step 3"
-                            }
-                        }
-                        stage('pre-deploy os2') {
-                            steps {
-                                echo "pre-deploy 2 - step 1"
-                                echo "pre-deploy 2 - step 2"
-                                echo "pre-deploy 2 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("") {
-                    stages {
-                        stage('build os3') {
-                            steps {
-                                echo "build 3 - step 1"
-                                echo "build 3 - step 2"
-                                echo "build 3 - step 3"
-                            }
-                        }
-                        stage('pre-deploy os1') {
-                            steps {
-                                echo "pre-deploy 3 - step 1"
-                                echo "pre-deploy 3 - step 2"
-                                echo "pre-deploy 3 - step 3"
                             }
                         }
                     }
