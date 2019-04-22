@@ -71,6 +71,60 @@ pipeline {
                         }
                     }
                 }
+                stage("MacOs 1") {
+                    stages {
+                        stage('build os3') {
+                            steps {
+                                echo "build 3 - step 1"
+                                echo "build 3 - step 2"
+                                echo "build 3 - step 3"
+                            }
+                        }
+                        stage('pre-deploy os3') {
+                            steps {
+                                echo "pre-deploy 3 - step 1"
+                                echo "pre-deploy 3 - step 2"
+                                echo "pre-deploy 3 - step 3"
+                            }
+                        }
+                    }
+                }
+                stage("MacOs 2") {
+                    stages {
+                        stage('build os4') {
+                            steps {
+                                echo "build 4 - step 1"
+                                echo "build 4 - step 2"
+                                echo "build 4 - step 3"
+                            }
+                        }
+                        stage('pre-deploy os4') {
+                            steps {
+                                echo "pre-deploy 4 - step 1"
+                                echo "pre-deploy 4 - step 2"
+                                echo "pre-deploy 4 - step 3"
+                            }
+                        }
+                    }
+                }
+                stage("Nightly") {
+                    stages {
+                        stage('build os5') {
+                            steps {
+                                echo "build 5 - step 1"
+                                echo "build 5 - step 2"
+                                echo "build 5 - step 3"
+                            }
+                        }
+                        stage('pre-deploy os5') {
+                            steps {
+                                echo "pre-deploy 5 - step 1"
+                                echo "pre-deploy 5 - step 2"
+                                echo "pre-deploy 5 - step 3"
+                            }
+                        }
+                    }
+                }
             }
         }
         stage('Test') {
