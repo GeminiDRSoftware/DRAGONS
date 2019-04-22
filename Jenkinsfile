@@ -53,6 +53,24 @@ pipeline {
                         }
                     }
                 }
+                stage("Linux 2") {
+                    stages {
+                        stage('build os2') {
+                            steps {
+                                echo "build 2 - step 1"
+                                echo "build 2 - step 2"
+                                echo "build 2 - step 3"
+                            }
+                        }
+                        stage('pre-deploy os2') {
+                            steps {
+                                echo "pre-deploy 2 - step 1"
+                                echo "pre-deploy 2 - step 2"
+                                echo "pre-deploy 2 - step 3"
+                            }
+                        }
+                    }
+                }
             }
         }
         stage('Test') {
