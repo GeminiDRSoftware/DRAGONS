@@ -84,30 +84,38 @@ pipeline {
         }
         stage('Test') {
             parallel {
-                stage('test build 1') {
+                stage {
                     stages {
-                        stage('Pull build 1') {
+                        stage('pull build 1') {
                             steps {
-                                echo "pull build 1"
+                                echo "pull build 1 - step 1"
+                                echo "pull build 1 - step 2"
+                                echo "pull build 1 - step 3"
                             }
                         }
-                        stage('test') {
+                        stage('test build 1') {
                             steps {
-                                echo "test 1"
+                                echo "test 1 - step 1"
+                                echo "test 1 - step 2"
+                                echo "test 1 - step 3"
                             }
                         }
                     }
                 }
-                stage('test build 2') {
+                stage {
                     stages {
-                        stage('Pull build 2') {
+                        stage('pull build 3') {
                             steps {
-                                echo "pull build 1"
+                                echo "pull build 3 - step 1"
+                                echo "pull build 3 - step 2"
+                                echo "pull build 3 - step 3"
                             }
                         }
-                        stage('test') {
+                        stage('test build 3') {
                             steps {
-                                echo "test 2"
+                                echo "test 3 - step 1"
+                                echo "test 3 - step 2"
+                                echo "test 3 - step 3"
                             }
                         }
                     }
