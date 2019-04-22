@@ -250,6 +250,11 @@ pipeline {
                 }
             }
         }
+        stage('Report') {
+            steps {
+                echo "Report on something"
+            }
+        }
     }
     post {
         failure {
