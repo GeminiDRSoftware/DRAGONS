@@ -12,14 +12,16 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+
 import os
-# import sys
+import sys
+
 # sys.path.insert(0, os.path.abspath('.'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'DRAGONS - Flamingos 2 Data Reduction Tutorial'
+project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
 copyright = '2018, Bruno Quint'
 author = 'Bruno Quint'
 
@@ -47,8 +49,6 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'IPython.sphinxext.ipython_console_highlighting',
-    'IPython.sphinxext.ipython_directive',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -111,7 +111,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'DRAGONSTutorial-Flamingos2doc'
+htmlhelp_basename = 'DRAGONSTutorial-Flamingos2tut'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -138,7 +138,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'DRAGONSTutorial-Flamingos2.tex', 'DRAGONS Tutorial - Flamingos 2 Documentation',
+    (master_doc, 'DRAGONSTutorial-Flamingos2tut.tex', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
      'Bruno Quint', 'manual'),
 ]
 
@@ -148,7 +148,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dragonstutorial-flamingos2', 'DRAGONS Tutorial - Flamingos 2 Documentation',
+    (master_doc, 'dragonstutorial-flamingos2', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
      [author], 1)
 ]
 
@@ -158,10 +158,14 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'DRAGONSTutorial-Flamingos2', 'DRAGONS Tutorial - Flamingos 2 Documentation',
-     author, 'DRAGONSTutorial-Flamingos2', 'One line description of project.',
-     'Miscellaneous'),
+texinfo_documents = [(
+    master_doc,
+    'DRAGONSTutorial-Flamingos2DataReduction',
+    'DRAGONS Tutorial - Flamingos-2 Data Reduction',
+    author,
+    'DRAGONSTutorial-Flamingos2',
+    'A quick tutorial on how to reduce F2 images with the DRAGONS command line tools',
+    'Miscellaneous'),
 ]
 
 
@@ -193,8 +197,8 @@ intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None),
     'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
     'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('http://matplotlib.sourceforge.net/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'python': ('https://docs.python.org/3', None),
 }
 
@@ -204,32 +208,9 @@ intersphinx_mapping = {
 todo_include_todos = True
 
 
-# -- Enable autoapi ----------------------------------------------------------
-def download_tutorial_data(_):
-    """
-    Method created to download data that will be used in the tutorial.
-    """
-    import requests
-
-    base_url = 'https://archive.gemini.edu/file/'
-    filename = 'S20130622S0040.fits'
-
-    if os.path.exists(filename):
-        return
-
-    else:
-        r = requests.get(base_url + filename)
-
-        with open(os.path.join(filename), 'wb') as f:
-            f.write(r.content)
-
-
 # -- Finishing with a setup that will run always -----------------------------
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
     app.add_stylesheet('code.xref-styles.css')
-
-    # Automatic API generation
-    app.connect('builder-inited', download_tutorial_data)

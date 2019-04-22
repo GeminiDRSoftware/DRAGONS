@@ -13,19 +13,18 @@ from .conftest import test_path
 try:
     path = os.environ['TEST_PATH']
 except KeyError:
-    warnings.warn("Could not find environment variable: $TEST_PATH")
     path = ''
 
 if not os.path.exists(path):
-    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
     path = ''
 
-archivefiles = glob.glob(os.path.join(path, "Archive/", "*fits"))
 
-# Cleans up a fake file created in the tests in case it's still there
-cleanup = os.path.join(path, 'created_fits_file.fits')
-if os.path.exists(cleanup):
-    os.remove(cleanup)
+# Returns list of all files in the TEST_PATH directory
+archive_files = glob.glob(os.path.join(path, "Archive/", "*fits"))
+
+# Separates the directory from the list, helps cleanup code
+fits_files = [os.path.split(_file)[-1] for _file in archive_files]
+
 
 
 # Fixtures for module and class
@@ -42,9 +41,9 @@ def setup_test_descriptor_values(request):
 @pytest.mark.usefixtures('setup_test_descriptor_values')
 class TestDescriptorValues:
 
-    @pytest.mark.parametrize("filename", archivefiles)
-    def test_airmass_descriptor_is_none_or_float(self, filename):
-        ad = astrodata.open(filename)
+    @pytest.mark.parametrize("filename", fits_files)
+    def test_airmass_descriptor_value_is_acceptable(self, test_path, filename):
+        ad = astrodata.open(os.path.join(test_path, "Archive/", filename))
         try:
             assert ((ad.airmass() >= 1.0)
                     or (ad.airmass() is None))

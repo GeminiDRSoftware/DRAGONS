@@ -1,6 +1,9 @@
 astropy
+astroquery
 cython
 future
 numpy
 python-dateutil
 scipy
+sqlalchemy
+stsci.numdisplay

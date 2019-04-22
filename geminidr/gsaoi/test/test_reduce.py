@@ -10,9 +10,6 @@ from recipe_system.reduction.coreReduce import Reduce
 from gempy.utils import logutils
 
 
-logutils.config(file_name='dummy.log')
-
-
 @pytest.fixture
 def test_path():
 
@@ -28,12 +25,13 @@ def test_path():
 
 
 @pytest.fixture(scope='module')
-def caldb(request):
+def caldb():
 
-    from recipe_system.cal_service import set_calservice, CalibrationService
+    from recipe_system.cal_service import CalibrationService
 
     caldb_folder = os.path.dirname(__file__)
     caldb_conf_file = os.path.join(caldb_folder, 'rsys.cfg')
+    caldb_database_file = os.path.join(caldb_folder, 'cal_manager.db')
 
     with open(caldb_conf_file, 'w') as buffer:
 
@@ -43,16 +41,21 @@ def caldb(request):
             "database_dir = {:s}".format(caldb_folder)
         )
 
+    print(' Test file path: {}'.format(caldb_conf_file))
+
     calibration_service = CalibrationService()
     calibration_service.config(config_file=caldb_conf_file)
     calibration_service.init(wipe=True)
 
-    set_calservice()
+    yield calibration_service
 
-    return calibration_service
+    os.remove(caldb_conf_file)
+    os.remove(caldb_database_file)
 
 
 def test_reduce_image(test_path, caldb):
+
+    logutils.config(file_name='gsaoi_test_reduce_image.log')
 
     caldb.init(wipe=True)
 
@@ -63,26 +66,25 @@ def test_reduce_image(test_path, caldb):
     list_of_darks = dataselect.select_data(
         all_files, ['DARK'], [])
 
-    list_of_Kshort_flats = dataselect.select_data(
+    list_of_kshort_flats = dataselect.select_data(
         all_files, ['FLAT'], [],
         dataselect.expr_parser('filter_name=="Kshort"'))
 
-    list_of_H_flats = dataselect.select_data(
+    list_of_h_flats = dataselect.select_data(
         all_files, ['FLAT'], [],
         dataselect.expr_parser('filter_name=="H"'))
 
     list_of_std_LHS_2026 = dataselect.select_data(
-        all_files, ['FLAT'], [],
+        all_files, [], [],
         dataselect.expr_parser('object=="LHS 2026"'))
 
     list_of_std_cskd8 = dataselect.select_data(
-        all_files, ['FLAT'], [],
+        all_files, [], [],
         dataselect.expr_parser('object=="cskd-8"'))
 
     list_of_science_files = dataselect.select_data(
-        all_files, ['FLAT'], [],
+        all_files, [], [],
         dataselect.expr_parser('observation_class=="science" and exposure_time==60.'))
-
 
     for darks in [list_of_darks]:
 
@@ -97,7 +99,7 @@ def test_reduce_image(test_path, caldb):
         caldb.add_cal(reduce_darks.output_filenames[0])
 
     reduce_bpm = Reduce()
-    reduce_bpm.files.extend(list_of_H_flats)
+    reduce_bpm.files.extend(list_of_h_flats)
     reduce_bpm.files.extend(list_of_darks)
     reduce_bpm.recipename = 'makeProcessedBPM'
     reduce_bpm.runr()
@@ -105,7 +107,7 @@ def test_reduce_image(test_path, caldb):
     bpm_filename = reduce_bpm.output_filenames[0]
 
     reduce_flats = Reduce()
-    reduce_flats.files.extend(list_of_Kshort_flats)
+    reduce_flats.files.extend(list_of_kshort_flats)
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
@@ -122,4 +124,3 @@ def test_reduce_image(test_path, caldb):
 
 if __name__ == '__main__':
     pytest.main()
-

@@ -26,7 +26,6 @@ geminidr_dir=$(cd $(dirname "$0")/../..; pwd)
 . "$geminidr_dir/gemini/test/sh_functions"
 
 # Generate file lists for calibrations:
-# For the time being, only use 
 dataselect "$data_dir/*.fits" --tags DARK,RAW > "$work_dir/darks.lis"
 grep -E "$bpm_dark_patt" darks.lis | sort | head -5 > darks_bpm.lis
 

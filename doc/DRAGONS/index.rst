@@ -21,9 +21,13 @@ DRAGONS Manuals
 
    Document ID: PIPE-USER-105_AstrodataCheatSheet
 
-* `AstroData User Manual <http://astrodata-user-manual.readthedocs.io/en/latest/>`_
+* `Astrodata User Manual <http://astrodata-user-manual.readthedocs.io/en/latest/>`_
 
    Document ID: PIPE-USER-106_AstrodataUserManual
+
+* `Astrodata Programmer Manual <http://astrodata-programmer-manual.readthedocs.io/en/latest/>`_
+
+   Document ID: PIPE-USER-104_AstrodataProgManual
 
 * `Recipe System Programmers Manual <http://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/>`_
 
