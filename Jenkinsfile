@@ -1,4 +1,13 @@
 #!/usr/bin/env groovy
+/*
+ * Jenkins Pipeline for DRAGONS
+ *
+ * by Bruno C. Quint
+ *
+ * Required Plug-ins:
+ * - Cobertura Plug-in
+ */
+
 pipeline {
 
     agent any
