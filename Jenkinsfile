@@ -147,7 +147,7 @@ pipeline {
         }
         stage('Test') {
             parallel {
-                stage("CentOS") {
+                stage(" ") {
                     stages {
                         stage('pull build 1') {
                             steps {
@@ -165,7 +165,7 @@ pipeline {
                         }
                     }
                 }
-                stage("MacOS") {
+                stage(" ") {
                     stages {
                         stage('pull build 3') {
                             steps {
@@ -183,7 +183,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Nightly") {
+                stage(" ") {
                     stages {
                         stage('pull build 5') {
                             steps {
