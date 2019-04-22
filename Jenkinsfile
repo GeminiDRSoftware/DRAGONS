@@ -24,7 +24,7 @@ pipeline {
 
     environment {
         PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
-        TEST_PATH = "$WORKSPACE/DRAGONS/test_path/"
+        TEST_PATH = "$JENKINS_HOME/DRAGONS/test_path/"
     }
 
     stages {
@@ -35,7 +35,7 @@ pipeline {
         }
         stage('Build') {
             parallel {
-                stage {
+                stage("") {
                     stages {
                         stage('build os1') {
                             steps {
@@ -53,7 +53,7 @@ pipeline {
                         }
                     }
                 }
-                stage {
+                stage("") {
                     stages {
                         stage('build os2') {
                             steps {
@@ -71,7 +71,7 @@ pipeline {
                         }
                     }
                 }
-                stage {
+                stage("") {
                     stages {
                         stage('build os3') {
                             steps {
