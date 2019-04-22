@@ -148,75 +148,38 @@ pipeline {
         stage('Test') {
             parallel {
                 stage("build_1") {
-                    stages {
-                        stage('pull build 1') {
-                            steps {
-                                echo "pull build 1 - step 1"
-                                echo "pull build 1 - step 2"
-                                echo "pull build 1 - step 3"
-                            }
-                        }
-                        stage('tests') {
-                            steps {
-                                echo "test 1 - step 1"
-                                echo "test 1 - step 2"
-                                echo "test 1 - step 3"
-                            }
-                        }
+                    steps {
+                        echo "pull build"
+                        echo "install build"
+                        echo "run tests"
                     }
                 }
                 stage("build_3") {
-                    stages {
-                        stage('pull build 3') {
-                            steps {
-                                echo "pull build 3 - step 1"
-                                echo "pull build 3 - step 2"
-                                echo "pull build 3 - step 3"
-                            }
-                        }
-                        stage('tests') {
-                            steps {
-                                echo "test 3 - step 1"
-                                echo "test 3 - step 2"
-                                echo "test 3 - step 3"
-                            }
-                        }
+                    steps {
+                        echo "pull build"
+                        echo "install build"
+                        echo "run tests"
                     }
                 }
                 stage("build_5") {
-                    stages {
-                        stage('pull build 5') {
-                            steps {
-                                echo "pull build 5 - step 1"
-                                echo "pull build 5 - step 2"
-                                echo "pull build 5 - step 3"
-                            }
-                        }
-                        stage('tests') {
-                            steps {
-                                echo "test 5 - step 1"
-                                echo "test 5 - step 2"
-                                echo "test 5 - step 3"
-                            }
-                        }
+                    steps {
+                        echo "pull build"
+                        echo "install build"
+                        echo "run tests"
                     }
                 }
-                stage('build_6') {
-                    stages {
-                        stage('pull build 6') {
-                            steps {
-                                echo "pull build 6 - step 1"
-                                echo "pull build 6 - step 2"
-                                echo "pull build 6 - step 3"
-                            }
-                        }
-                        stage('tests') {
-                            steps {
-                                echo "test 6 - step 1"
-                                echo "test 6 - step 2"
-                                echo "test 6 - step 3"
-                            }
-                        }
+                stage("build_5") {
+                    steps {
+                        echo "pull build"
+                        echo "install build"
+                        echo "run tests"
+                    }
+                }
+                stage("build_6") {
+                    steps {
+                        echo "pull build"
+                        echo "install build"
+                        echo "run tests"
                     }
                 }
                 stage('static metrics') {
