@@ -818,6 +818,8 @@ def match_sources(incoords, refcoords, radius=2.0):
         # min_arg has value (number_of_incoord, order_in_distance_list)
         matched[min_arg[0]] = i
         # Remove this incoord from the pool
+        dist[min_arg[0], :] = np.inf
+        # Remove this refcoord from the pool
         dist[idx==i] = np.inf
     return matched
 
