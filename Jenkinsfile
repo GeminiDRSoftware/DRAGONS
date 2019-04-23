@@ -33,9 +33,6 @@ pipeline {
                 echo "Checkout code"
             }
         }
-        when {
-            branch "jenkins.*"
-        }
         stage('Build') {
             parallel {
                 stage("CentOS 7") {
