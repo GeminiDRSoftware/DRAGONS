@@ -111,6 +111,9 @@ pipeline {
                     agent {
                         label "macos10.11"
                     }
+                    when {
+                        branch "*"
+                    }
                     steps {
                         echo "build on ${env.NODE_NAME}"
                         echo "pre-deploy on ${env.NODE_NAME}"
