@@ -109,7 +109,7 @@ pipeline {
                 }
                 stage("MacOs 10.11") {
                     when {
-                        branch "jenkins*"
+                        branch "*"
                     }
                     agent {
                         label "macos10.11"
