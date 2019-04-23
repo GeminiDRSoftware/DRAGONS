@@ -36,9 +36,6 @@ pipeline {
         stage('Build') {
             parallel {
                 stage("CentOS 7") {
-                    when {
-                        branch 'jenkins.*'
-                    }
                     stages {
                         stage('build 1') {
                             steps {
@@ -111,6 +108,9 @@ pipeline {
                     }
                 }
                 stage("MacOs 10.11") {
+                    when {
+                        branch "jenkins*"
+                    }
                     agent {
                         label "macos10.11"
                     }
