@@ -38,6 +38,9 @@ pipeline {
                 stage("CentOS 7") {
                     stages {
                         stage('build 1') {
+                            when {
+                                branch 'master'
+                            }
                             steps {
                                 echo "build 1 - step 1"
                                 echo "build 1 - step 2"
