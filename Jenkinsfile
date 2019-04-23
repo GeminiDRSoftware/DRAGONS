@@ -35,7 +35,7 @@ pipeline {
         }
         stage('Build') {
             when {
-                branch 'jenkins.*'
+                branch '*'
             }
             parallel {
                 stage("CentOS 7") {
