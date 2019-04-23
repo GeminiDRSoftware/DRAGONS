@@ -17,11 +17,9 @@ from astropy.table import Table
 try:
     path = os.environ['TEST_PATH']
 except KeyError:
-    warnings.warn("Could not find environment variable: $TEST_PATH")
     path = ''
 
 if not os.path.exists(path):
-    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
     path = ''
 
 # Returns list of all files in the TEST_PATH directory

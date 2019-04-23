@@ -108,11 +108,11 @@ pipeline {
                     }
                 }
                 stage("MacOs 10.11") {
-                    agent {
-                        label "macos10.11"
-                    }
                     when {
                         branch "jenkins/*"
+                    }
+                    agent {
+                        label "macos10.11"
                     }
                     steps {
                         echo "build on ${env.NODE_NAME}"

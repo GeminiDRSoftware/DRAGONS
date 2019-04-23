@@ -101,7 +101,8 @@ def _typeStr(x):
 
 
 class ConfigMeta(type):
-    """A metaclass for Config
+    """
+    A metaclass for Config
 
     Adds a dictionary containing all Field class attributes
     as a class attribute called '_fields', and adds the name of each field as

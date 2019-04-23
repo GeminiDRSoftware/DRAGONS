@@ -220,6 +220,3 @@ convention is to name the modules with the tags and descriptor ``adclass.py``.
 This is just a convention.
 
 For more information on the AstroData configuration, see the |ADProg|_.
-
-.. todo:: make the ADprog public and make sure the link is okay.
-
