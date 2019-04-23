@@ -27,213 +27,220 @@ pipeline {
         TEST_PATH = "$JENKINS_HOME/DRAGONS/test_path/"
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                echo "Checkout code"
-            }
-        }
-        when {
-            branch 'jenkins.*'
-        }
-        stage('Build') {
-            parallel {
-                stage("CentOS 7") {
-                    stages {
-                        stage('build 1') {
-                            steps {
-                                echo "build 1 - step 1"
-                                echo "build 1 - step 2"
-                                echo "build 1 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 1 - step 1"
-                                echo "pre-deploy 1 - step 2"
-                                echo "pre-deploy 1 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("Centos 6") {
-                    stages {
-                        stage('build 2') {
-                            steps {
-                                echo "build 2 - step 1"
-                                echo "build 2 - step 2"
-                                echo "build 2 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 2 - step 1"
-                                echo "pre-deploy 2 - step 2"
-                                echo "pre-deploy 2 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("MacOs 10.14") {
-                    stages {
-                        stage('build 3') {
-                            steps {
-                                echo "build 3 - step 1"
-                                echo "build 3 - step 2"
-                                echo "build 3 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 3 - step 1"
-                                echo "pre-deploy 3 - step 2"
-                                echo "pre-deploy 3 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("MacOs 10.13") {
-                    stages {
-                        stage('build 4') {
-                            steps {
-                                echo "build 4 - step 1"
-                                echo "build 4 - step 2"
-                                echo "build 4 - step 3"
-                            }
-                        }
-                        stage('pre-deploy os4') {
-                            steps {
-                                echo "pre-deploy 4 - step 1"
-                                echo "pre-deploy 4 - step 2"
-                                echo "pre-deploy 4 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("MacOs 10.11") {
-                    agent {
-                        label "macos10.11"
-                    }
-                    steps {
-                        echo "build on ${env.NODE_NAME}"
-                        echo "pre-deploy on ${env.NODE_NAME}"
-                    }
-                }
-                stage("Nightly") {
-                    stages {
-                        stage('build 5') {
-                            steps {
-                                echo "build 5 - step 1"
-                                echo "build 5 - step 2"
-                                echo "build 5 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 5 - step 1"
-                                echo "pre-deploy 5 - step 2"
-                                echo "pre-deploy 5 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("Stable") {
-                    stages {
-                        stage('build 6') {
-                            steps {
-                                echo "build 6 - step 1"
-                                echo "build 6 - step 2"
-                                echo "build 6 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 6 - step 1"
-                                echo "pre-deploy 6 - step 2"
-                                echo "pre-deploy 6 - step 3"
-                            }
-                        }
-                    }
+    if (env.BRANCH_NAME == "jenkins.new_pipeline_design") {
+        stages {
+            stage('Checkout') {
+                steps {
+                    echo "Checkout code"
                 }
             }
-        }
-        stage('Test') {
-            parallel {
-                stage("build_1") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
+            stage('Build') {
+                parallel {
+                    stage("CentOS 7") {
+                        stages {
+                            stage('build 1') {
+                                steps {
+                                    echo "build 1 - step 1"
+                                    echo "build 1 - step 2"
+                                    echo "build 1 - step 3"
+                                }
+                            }
+                            stage('pre-deploy') {
+                                steps {
+                                    echo "pre-deploy 1 - step 1"
+                                    echo "pre-deploy 1 - step 2"
+                                    echo "pre-deploy 1 - step 3"
+                                }
+                            }
+                        }
                     }
-                }
-                stage("build_3") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
+                    stage("Centos 6") {
+                        stages {
+                            stage('build 2') {
+                                steps {
+                                    echo "build 2 - step 1"
+                                    echo "build 2 - step 2"
+                                    echo "build 2 - step 3"
+                                }
+                            }
+                            stage('pre-deploy') {
+                                steps {
+                                    echo "pre-deploy 2 - step 1"
+                                    echo "pre-deploy 2 - step 2"
+                                    echo "pre-deploy 2 - step 3"
+                                }
+                            }
+                        }
                     }
-                }
-                stage("build_5") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
+                    stage("MacOs 10.14") {
+                        stages {
+                            stage('build 3') {
+                                steps {
+                                    echo "build 3 - step 1"
+                                    echo "build 3 - step 2"
+                                    echo "build 3 - step 3"
+                                }
+                            }
+                            stage('pre-deploy') {
+                                steps {
+                                    echo "pre-deploy 3 - step 1"
+                                    echo "pre-deploy 3 - step 2"
+                                    echo "pre-deploy 3 - step 3"
+                                }
+                            }
+                        }
                     }
-                }
-                stage("build_5") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
+                    stage("MacOs 10.13") {
+                        stages {
+                            stage('build 4') {
+                                steps {
+                                    echo "build 4 - step 1"
+                                    echo "build 4 - step 2"
+                                    echo "build 4 - step 3"
+                                }
+                            }
+                            stage('pre-deploy os4') {
+                                steps {
+                                    echo "pre-deploy 4 - step 1"
+                                    echo "pre-deploy 4 - step 2"
+                                    echo "pre-deploy 4 - step 3"
+                                }
+                            }
+                        }
                     }
-                }
-                stage("build_6") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
+                    stage("MacOs 10.11") {
+                        agent {
+                            label "macos10.11"
+                        }
+                        steps {
+                            echo "build on ${env.NODE_NAME}"
+                            echo "pre-deploy on ${env.NODE_NAME}"
+                        }
                     }
-                }
-                stage('static metrics') {
-                    steps {
-                        echo "run PyLint and PyDocStyle"
+                    stage("Nightly") {
+                        stages {
+                            stage('build 5') {
+                                steps {
+                                    echo "build 5 - step 1"
+                                    echo "build 5 - step 2"
+                                    echo "build 5 - step 3"
+                                }
+                            }
+                            stage('pre-deploy') {
+                                steps {
+                                    echo "pre-deploy 5 - step 1"
+                                    echo "pre-deploy 5 - step 2"
+                                    echo "pre-deploy 5 - step 3"
+                                }
+                            }
+                        }
+                    }
+                    stage("Stable") {
+                        stages {
+                            stage('build 6') {
+                                steps {
+                                    echo "build 6 - step 1"
+                                    echo "build 6 - step 2"
+                                    echo "build 6 - step 3"
+                                }
+                            }
+                            stage('pre-deploy') {
+                                steps {
+                                    echo "pre-deploy 6 - step 1"
+                                    echo "pre-deploy 6 - step 2"
+                                    echo "pre-deploy 6 - step 3"
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
-        stage('Deploy') {
-            parallel {
-                stage('deploy linux-32') {
-                    steps {
-                        echo "deploy linux-32"
+            stage('Test') {
+                parallel {
+                    stage("build_1") {
+                        steps {
+                            echo "pull build"
+                            echo "install build"
+                            echo "run tests"
+                        }
                     }
-                }
-                stage('deploy linux-64') {
-                    steps {
-                        echo "deploy linux-64"
+                    stage("build_3") {
+                        steps {
+                            echo "pull build"
+                            echo "install build"
+                            echo "run tests"
+                        }
                     }
-                }
-                stage('deploy noarch') {
-                    steps {
-                        echo "deploy noarch"
+                    stage("build_5") {
+                        steps {
+                            echo "pull build"
+                            echo "install build"
+                            echo "run tests"
+                        }
                     }
-                }
-                stage('deploy osx-64') {
-                    steps {
-                        echo "deploy osx-64"
+                    stage("build_5") {
+                        steps {
+                            echo "pull build"
+                            echo "install build"
+                            echo "run tests"
+                        }
+                    }
+                    stage("build_6") {
+                        steps {
+                            echo "pull build"
+                            echo "install build"
+                            echo "run tests"
+                        }
+                    }
+                    stage('static metrics') {
+                        steps {
+                            echo "run PyLint and PyDocStyle"
+                        }
                     }
                 }
             }
-        }
-        stage('Report') {
-            steps {
-                echo "Report on something"
+            stage('Deploy') {
+                parallel {
+                    stage('deploy linux-32') {
+                        steps {
+                            echo "deploy linux-32"
+                        }
+                    }
+                    stage('deploy linux-64') {
+                        steps {
+                            echo "deploy linux-64"
+                        }
+                    }
+                    stage('deploy noarch') {
+                        steps {
+                            echo "deploy noarch"
+                        }
+                    }
+                    stage('deploy osx-64') {
+                        steps {
+                            echo "deploy osx-64"
+                        }
+                    }
+                }
+            }
+            stage('Report') {
+                steps {
+                    echo "Report on something"
+                }
             }
         }
-    }
-    post {
-        failure {
-            echo "Send e-mail, when failed"
+        post {
+            failure {
+                echo "Send e-mail, when failed"
+            }
+        }
+    } else {
+        stages {
+            stage('Do nothing') {
+                steps {
+                    echo "Just relax"
+                }
+            }
         }
     }
 }
