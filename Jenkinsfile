@@ -112,7 +112,7 @@ pipeline {
                         label "macos10.11"
                     }
                     when {
-                        branch "*"
+                        branch "jenkins/*"
                     }
                     steps {
                         echo "build on ${env.NODE_NAME}"
