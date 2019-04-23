@@ -107,6 +107,15 @@ pipeline {
                         }
                     }
                 }
+                stage("MacOs 10.11") {
+                    agent {
+                        label "macos10.11"
+                    }
+                    steps {
+                        echo 'build'
+                        echo 'pre-deploy'
+                    }
+                }
                 stage("Nightly") {
                     stages {
                         stage('build 5') {
