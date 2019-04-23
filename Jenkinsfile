@@ -112,8 +112,8 @@ pipeline {
                         label "macos10.11"
                     }
                     steps {
-                        echo 'build on ' + ${NODE_NAME}
-                        echo 'pre-deploy on ${NODE_NAME}'
+                        echo "build on ${env.NODE_NAME}"
+                        echo "pre-deploy on ${env.NODE_NAME}"
                     }
                 }
                 stage("Nightly") {
