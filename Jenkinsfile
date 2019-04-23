@@ -107,6 +107,18 @@ pipeline {
                         }
                     }
                 }
+                stage("MacOs 10.10") {
+                    when {
+                        branch "jenkins/*"
+                    }
+                    agent {
+                        label "macos10.10"
+                    }
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                        echo "pre-deploy on ${env.NODE_NAME}"
+                    }
+                }
                 stage("MacOs 10.11") {
                     when {
                         branch "jenkins/*"
