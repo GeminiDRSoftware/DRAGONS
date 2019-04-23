@@ -36,11 +36,11 @@ pipeline {
         stage('Build') {
             parallel {
                 stage("CentOS 7") {
+                    when {
+                        branch 'master'
+                    }
                     stages {
                         stage('build 1') {
-                            when {
-                                branch 'master'
-                            }
                             steps {
                                 echo "build 1 - step 1"
                                 echo "build 1 - step 2"
