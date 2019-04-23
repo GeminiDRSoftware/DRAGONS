@@ -35,171 +35,70 @@ pipeline {
         }
         stage("Build") {
             parallel {
+                stage("CentOS 6") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
                 stage("CentOS 7") {
-                    stages {
-                        stage('build 1') {
-                            steps {
-                                echo "build 1 - step 1"
-                                echo "build 1 - step 2"
-                                echo "build 1 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 1 - step 1"
-                                echo "pre-deploy 1 - step 2"
-                                echo "pre-deploy 1 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("Centos 6") {
-                    stages {
-                        stage('build 2') {
-                            steps {
-                                echo "build 2 - step 1"
-                                echo "build 2 - step 2"
-                                echo "build 2 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 2 - step 1"
-                                echo "pre-deploy 2 - step 2"
-                                echo "pre-deploy 2 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("MacOs 10.14") {
-                    stages {
-                        stage('build 3') {
-                            steps {
-                                echo "build 3 - step 1"
-                                echo "build 3 - step 2"
-                                echo "build 3 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 3 - step 1"
-                                echo "pre-deploy 3 - step 2"
-                                echo "pre-deploy 3 - step 3"
-                            }
-                        }
-                    }
-                }
-                stage("MacOs 10.13") {
-                    stages {
-                        stage('build 4') {
-                            steps {
-                                echo "build 4 - step 1"
-                                echo "build 4 - step 2"
-                                echo "build 4 - step 3"
-                            }
-                        }
-                        stage('pre-deploy os4') {
-                            steps {
-                                echo "pre-deploy 4 - step 1"
-                                echo "pre-deploy 4 - step 2"
-                                echo "pre-deploy 4 - step 3"
-                            }
-                        }
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
                     }
                 }
                 stage("MacOs 10.10") {
-                    when {
-                        branch "jenkins/*"
-                    }
-                    agent {
-                        label "macos10.10"
-                    }
                     steps {
                         echo "build on ${env.NODE_NAME}"
-                        echo "pre-deploy on ${env.NODE_NAME}"
                     }
                 }
                 stage("MacOs 10.11") {
-                    when {
-                        branch "jenkins/*"
-                    }
                     agent {
                         label "macos10.11"
                     }
                     steps {
                         echo "build on ${env.NODE_NAME}"
-                        echo "pre-deploy on ${env.NODE_NAME}"
                     }
                 }
-                stage("Nightly") {
-                    stages {
-                        stage('build 5') {
-                            steps {
-                                echo "build 5 - step 1"
-                                echo "build 5 - step 2"
-                                echo "build 5 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 5 - step 1"
-                                echo "pre-deploy 5 - step 2"
-                                echo "pre-deploy 5 - step 3"
-                            }
-                        }
+                stage("MacOs 10.12") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
                     }
                 }
-                stage("Stable") {
-                    stages {
-                        stage('build 6') {
-                            steps {
-                                echo "build 6 - step 1"
-                                echo "build 6 - step 2"
-                                echo "build 6 - step 3"
-                            }
-                        }
-                        stage('pre-deploy') {
-                            steps {
-                                echo "pre-deploy 6 - step 1"
-                                echo "pre-deploy 6 - step 2"
-                                echo "pre-deploy 6 - step 3"
-                            }
-                        }
+                stage("MacOs 10.13") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("MacOs 10.14") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+            }
+        }
+        stage('Pre-Deploy') {
+            parallel {
+                stage("linux-64") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("osx-64") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
                     }
                 }
             }
         }
         stage('Test') {
             parallel {
-                stage("build_1") {
+                stage("linux-64") {
                     steps {
                         echo "pull build"
                         echo "install build"
                         echo "run tests"
                     }
                 }
-                stage("build_3") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
-                    }
-                }
-                stage("build_5") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
-                    }
-                }
-                stage("build_5") {
-                    steps {
-                        echo "pull build"
-                        echo "install build"
-                        echo "run tests"
-                    }
-                }
-                stage("build_6") {
+                stage("osx-64") {
                     steps {
                         echo "pull build"
                         echo "install build"
