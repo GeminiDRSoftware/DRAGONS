@@ -29,7 +29,7 @@ pipeline {
 
     when {
         branch 'jenkins.new_pipeline_design'
-    {
+    }
     stages {
         stage('Checkout') {
             steps {
