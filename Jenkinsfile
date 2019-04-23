@@ -27,6 +27,9 @@ pipeline {
         TEST_PATH = "$JENKINS_HOME/DRAGONS/test_path/"
     }
 
+    when {
+        branch 'jenkins.new_pipeline_design'
+    {
     stages {
         stage('Checkout') {
             steps {
