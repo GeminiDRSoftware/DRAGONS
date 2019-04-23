@@ -34,123 +34,120 @@ pipeline {
             }
         }
         stage("Build") {
-            steps {
-                echo "BLAH"
-                parallel {
-                    stage("CentOS 7") {
-                        stages {
-                            stage('build 1') {
-                                steps {
-                                    echo "build 1 - step 1"
-                                    echo "build 1 - step 2"
-                                    echo "build 1 - step 3"
-                                }
+            parallel {
+                stage("CentOS 7") {
+                    stages {
+                        stage('build 1') {
+                            steps {
+                                echo "build 1 - step 1"
+                                echo "build 1 - step 2"
+                                echo "build 1 - step 3"
                             }
-                            stage('pre-deploy') {
-                                steps {
-                                    echo "pre-deploy 1 - step 1"
-                                    echo "pre-deploy 1 - step 2"
-                                    echo "pre-deploy 1 - step 3"
-                                }
+                        }
+                        stage('pre-deploy') {
+                            steps {
+                                echo "pre-deploy 1 - step 1"
+                                echo "pre-deploy 1 - step 2"
+                                echo "pre-deploy 1 - step 3"
                             }
                         }
                     }
-                    stage("Centos 6") {
-                        stages {
-                            stage('build 2') {
-                                steps {
-                                    echo "build 2 - step 1"
-                                    echo "build 2 - step 2"
-                                    echo "build 2 - step 3"
-                                }
+                }
+                stage("Centos 6") {
+                    stages {
+                        stage('build 2') {
+                            steps {
+                                echo "build 2 - step 1"
+                                echo "build 2 - step 2"
+                                echo "build 2 - step 3"
                             }
-                            stage('pre-deploy') {
-                                steps {
-                                    echo "pre-deploy 2 - step 1"
-                                    echo "pre-deploy 2 - step 2"
-                                    echo "pre-deploy 2 - step 3"
-                                }
+                        }
+                        stage('pre-deploy') {
+                            steps {
+                                echo "pre-deploy 2 - step 1"
+                                echo "pre-deploy 2 - step 2"
+                                echo "pre-deploy 2 - step 3"
                             }
                         }
                     }
-                    stage("MacOs 10.14") {
-                        stages {
-                            stage('build 3') {
-                                steps {
-                                    echo "build 3 - step 1"
-                                    echo "build 3 - step 2"
-                                    echo "build 3 - step 3"
-                                }
+                }
+                stage("MacOs 10.14") {
+                    stages {
+                        stage('build 3') {
+                            steps {
+                                echo "build 3 - step 1"
+                                echo "build 3 - step 2"
+                                echo "build 3 - step 3"
                             }
-                            stage('pre-deploy') {
-                                steps {
-                                    echo "pre-deploy 3 - step 1"
-                                    echo "pre-deploy 3 - step 2"
-                                    echo "pre-deploy 3 - step 3"
-                                }
+                        }
+                        stage('pre-deploy') {
+                            steps {
+                                echo "pre-deploy 3 - step 1"
+                                echo "pre-deploy 3 - step 2"
+                                echo "pre-deploy 3 - step 3"
                             }
                         }
                     }
-                    stage("MacOs 10.13") {
-                        stages {
-                            stage('build 4') {
-                                steps {
-                                    echo "build 4 - step 1"
-                                    echo "build 4 - step 2"
-                                    echo "build 4 - step 3"
-                                }
+                }
+                stage("MacOs 10.13") {
+                    stages {
+                        stage('build 4') {
+                            steps {
+                                echo "build 4 - step 1"
+                                echo "build 4 - step 2"
+                                echo "build 4 - step 3"
                             }
-                            stage('pre-deploy os4') {
-                                steps {
-                                    echo "pre-deploy 4 - step 1"
-                                    echo "pre-deploy 4 - step 2"
-                                    echo "pre-deploy 4 - step 3"
-                                }
+                        }
+                        stage('pre-deploy os4') {
+                            steps {
+                                echo "pre-deploy 4 - step 1"
+                                echo "pre-deploy 4 - step 2"
+                                echo "pre-deploy 4 - step 3"
                             }
                         }
                     }
-                    stage("MacOs 10.11") {
-                        agent {
-                            label "macos10.11"
+                }
+                stage("MacOs 10.11") {
+                    agent {
+                        label "macos10.11"
+                    }
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                        echo "pre-deploy on ${env.NODE_NAME}"
+                    }
+                }
+                stage("Nightly") {
+                    stages {
+                        stage('build 5') {
+                            steps {
+                                echo "build 5 - step 1"
+                                echo "build 5 - step 2"
+                                echo "build 5 - step 3"
+                            }
                         }
-                        steps {
-                            echo "build on ${env.NODE_NAME}"
-                            echo "pre-deploy on ${env.NODE_NAME}"
+                        stage('pre-deploy') {
+                            steps {
+                                echo "pre-deploy 5 - step 1"
+                                echo "pre-deploy 5 - step 2"
+                                echo "pre-deploy 5 - step 3"
+                            }
                         }
                     }
-                    stage("Nightly") {
-                        stages {
-                            stage('build 5') {
-                                steps {
-                                    echo "build 5 - step 1"
-                                    echo "build 5 - step 2"
-                                    echo "build 5 - step 3"
-                                }
-                            }
-                            stage('pre-deploy') {
-                                steps {
-                                    echo "pre-deploy 5 - step 1"
-                                    echo "pre-deploy 5 - step 2"
-                                    echo "pre-deploy 5 - step 3"
-                                }
+                }
+                stage("Stable") {
+                    stages {
+                        stage('build 6') {
+                            steps {
+                                echo "build 6 - step 1"
+                                echo "build 6 - step 2"
+                                echo "build 6 - step 3"
                             }
                         }
-                    }
-                    stage("Stable") {
-                        stages {
-                            stage('build 6') {
-                                steps {
-                                    echo "build 6 - step 1"
-                                    echo "build 6 - step 2"
-                                    echo "build 6 - step 3"
-                                }
-                            }
-                            stage('pre-deploy') {
-                                steps {
-                                    echo "pre-deploy 6 - step 1"
-                                    echo "pre-deploy 6 - step 2"
-                                    echo "pre-deploy 6 - step 3"
-                                }
+                        stage('pre-deploy') {
+                            steps {
+                                echo "pre-deploy 6 - step 1"
+                                echo "pre-deploy 6 - step 2"
+                                echo "pre-deploy 6 - step 3"
                             }
                         }
                     }
