@@ -459,11 +459,14 @@ class AstroDataGmos(AstroDataGemini):
             if not self.is_single:
                 disp = [disp] * len(self)
 
+        grating_order = self.phu.get('GRORDER', 1)
+
         if self.is_single:
-            dispersion = gmu.convert_units('meters', disp, output_units)
+            dispersion = gmu.convert_units('meters', disp / grating_order,
+                                           output_units)
         else:
-            dispersion = [gmu.convert_units('meters', d, output_units)
-                          for d in disp]
+            dispersion = [gmu.convert_units('meters', d / grating_order,
+                                            output_units) for d in disp]
         return dispersion
 
     @returns_list
