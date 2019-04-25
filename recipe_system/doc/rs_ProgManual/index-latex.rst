@@ -18,7 +18,6 @@ Recipe System Programmers Manual
    overview
    mappers
    interfaces
-   drpkg
    ack
 
 .. raw:: latex
@@ -31,7 +30,8 @@ Recipe System Programmers Manual
 .. toctree::
    :maxdepth: 1
    
+   appendices/drpkg
+   appendices/jit
    appendices/glossary
-   appendices/primitives_catalog
    
 .. todolist::

@@ -72,6 +72,8 @@ initialize it:
 The ``wipe=True`` can be omitted if you want to keep old calibration files that
 were added to the local database.
 
+.. _create_file_lists:
+
 Create :class:`list` of files
 -----------------------------
 

@@ -12,23 +12,22 @@ Recipe System Programmers Manual
 
 .. toctree::
    :maxdepth: 2
+   :caption: Table of Contents
 
    intro
    overview
    mappers
    interfaces
-   drpkg
    ack
-
-Appendix
---------
 
 .. toctree::
    :maxdepth: 1
-   :caption: More
+   :numbered:
+   :caption: Appendices
 
+   appendices/drpkg
+   appendices/jit
    appendices/glossary
-   appendices/primitives_catalog
    api
 
 .. todolist::

@@ -5,7 +5,7 @@ the path stored in the TEST_PATH environment variable. Before running it, make
 sure that you set this path using the following command:
 
     $ export TEST_PATH="/path/to/my/test/data/"
-    $ echo $TEST_PATH
+    $ echo $TEST_PATH      
       /path/to/my/test/data/
 
 The test data is listed inside the global variable FILE_WITH_TEST_FILES. Each

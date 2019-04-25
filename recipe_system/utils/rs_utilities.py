@@ -5,6 +5,7 @@ Set of functions in support of the recipe_system.
 import itertools
 from os import makedirs
 from os.path import join
+import errno
 
 def makedrpkg(pkgname, instruments, modes=None):
     """
@@ -35,7 +36,14 @@ def makedrpkg(pkgname, instruments, modes=None):
 
     for (instr, mode) in itertools.product(instruments, modes):
         modpath = join(pkgname, instr, 'recipes', mode)
-        makedirs(modpath)
+        try:
+            makedirs(modpath)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            pass
+        # when ready to ditch python 2.7, replace try except with this:
+        # makedirs(modpath, exist_ok=True)
         touch(join(modpath, '__init__.py'))
 
     for instr in instruments:

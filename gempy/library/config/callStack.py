@@ -102,9 +102,8 @@ class StackFrame(object):
 
     @property
     def content(self):
-        """Getter for content being executed
-
-        Load from file on demand.
+        """
+        Getter for content being executed. Load from file on demand.
         """
         if self._content is None:
             self._content = linecache.getline(self.filename, self.lineno).strip()
@@ -112,7 +111,8 @@ class StackFrame(object):
 
     @classmethod
     def fromFrame(cls, frame):
-        """Construct from a Frame object
+        """
+        Construct from a Frame object
 
         inspect.currentframe() provides a Frame object. This is
         a convenience constructor to interpret that Frame object.
@@ -155,7 +155,8 @@ class StackFrame(object):
 
 
 def getCallStack(skip=0):
-    """Retrieve the call stack for the caller
+    """
+    Retrieve the call stack for the caller
 
     By "caller", we mean our user's caller - we don't include ourselves
     or our caller.
