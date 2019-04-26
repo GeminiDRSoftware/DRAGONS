@@ -403,7 +403,9 @@ def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('rtd_theme_overrides.css')
     app.add_stylesheet('css/custom_code.css')
+    app.add_stylesheet('fonts.css')
 
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)
