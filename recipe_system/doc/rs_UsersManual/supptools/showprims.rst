@@ -1,6 +1,6 @@
 
-show_primitives
----------------
+showprims
+=========
 
 The show_primitives_ command line displays what are the Primitives that
 were used within a particular Recipe:::
