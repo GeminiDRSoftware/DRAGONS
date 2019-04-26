@@ -49,22 +49,21 @@ pipeline {
 
         stage ("Build and Test Environment") {
             steps {
+                sh  'conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}'
                 sh  '''
-                    conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
                     source activate ${BUILD_TAG}
-
                     .jenkins/test_env_and_install_missing_libs.sh
-                    python .jenkins/download_test_data.py
                     '''
+                sh  'python .jenkins/download_test_data.py'
             }
         }
 
         stage('Static code metrics') {
             steps {
                 echo "PEP8 style check"
+                sh  'mkdir -p ./reports'
                 sh  '''
                     source activate ${BUILD_TAG}
-                    mkdir -p ./reports
 
                     pylint --exit-zero --jobs=4 \
                         --rcfile=gempy/support_files/pylintrc \
@@ -146,7 +145,7 @@ pipeline {
     }
     post {
         always {
-            sh 'conda remove --quiet --yes --all -n ${BUILD_TAG}'
+            sh 'conda remove --name ${BUILD_TAG} --all --quiet --yes'
         }
         failure {
             echo "Send e-mail, when failed"

@@ -39,19 +39,34 @@ def getComparisonName(name1, name2):
 
 
 def compareScalars(name, v1, v2, output, rtol=1E-8, atol=1E-8, dtype=None):
-    """Helper function for Config.compare; used to compare two scalar values for equality.
+    """
+    Helper function for Config.compare; used to compare two scalar values for
+    equality.
 
-    @param[in] name       Name to use when reporting differences
-    @param[in] dtype      Data type for comparison; may be None if it's definitely not floating-point.
-    @param[in] v1         LHS value to compare
-    @param[in] v2         RHS value to compare
-    @param[in] output     If not None, a callable that takes a string, used (possibly repeatedly)
-                          to report inequalities.
-    @param[in] rtol       Relative tolerance for floating point comparisons.
-    @param[in] atol       Absolute tolerance for floating point comparisons.
-    @param[in] dtype      Data type for comparison; may be None if it's definitely not floating-point.
+    Floating point comparisons are performed by :func:`numpy.allclose`; refer to
+    that for details.
 
-    Floating point comparisons are performed by numpy.allclose; refer to that for details.
+    Parameters
+    ----------
+    name :
+        Name to use when reporting differences
+    v1 :
+        LHS value to compare
+    v2 :
+        RHS value to compare
+    dtype :
+        Data type for comparison; may be None if it's definitely not
+        floating-point.
+    output : str
+        If not None, a callable that takes a string, used (possibly repeatedly)
+        to report inequalities.
+    rtol :
+        Relative tolerance for floating point comparisons.
+    atol :
+        Absolute tolerance for floating point comparisons.
+    dtype :
+        Data type for comparison; may be None if it's definitely not
+        floating-point.
     """
     if isinstance(dtype, tuple):
         dtype = type(v1)
@@ -67,43 +82,75 @@ def compareScalars(name, v1, v2, output, rtol=1E-8, atol=1E-8, dtype=None):
 
 
 def compareConfigs(name, c1, c2, shortcut=True, rtol=1E-8, atol=1E-8, output=None):
-    """Helper function for Config.compare; used to compare two Configs for equality.
+    """
+    Helper function for Config.compare; used to compare two Configs for
+    equality.
 
-    If the Configs contain RegistryFields or ConfigChoiceFields, unselected Configs
-    will not be compared.
+    If the Configs contain RegistryFields or ConfigChoiceFields, unselected
+    Configs will not be compared.
 
-    @param[in] name       Name to use when reporting differences
-    @param[in] c1         LHS config to compare
-    @param[in] c2         RHS config to compare
-    @param[in] shortcut   If True, return as soon as an inequality is found.
-    @param[in] rtol       Relative tolerance for floating point comparisons.
-    @param[in] atol       Absolute tolerance for floating point comparisons.
-    @param[in] output     If not None, a callable that takes a string, used (possibly repeatedly)
-                          to report inequalities.
+    Floating point comparisons are performed by :func:`numpy.allclose`; refer to
+    that for details.
 
-    Floating point comparisons are performed by numpy.allclose; refer to that for details.
+    Parameters
+    ----------
+    name :
+        Name to use when reporting differences
+    c1 :
+        LHS config to compare
+    c2 :
+        RHS config to compare
+    shortcut :
+        If True, return as soon as an inequality is found.
+    rtol :
+        Relative tolerance for floating point comparisons.
+    atol :
+        Absolute tolerance for floating point comparisons.
+    output :
+        If not None, a callable that takes a string, used (possibly repeatedly)
+        to report inequalities.
     """
     assert name is not None
+
     if c1 is None:
+
         if c2 is None:
             return True
+
         else:
+
             if output is not None:
                 output("LHS is None for %s" % name)
+
             return False
+
     else:
+
         if c2 is None:
+
             if output is not None:
                 output("RHS is None for %s" % name)
+
             return False
+
     if type(c1) != type(c1):
+
         if output is not None:
-            output("Config types do not match for %s: %s != %s" % (name, type(c1), type(c2)))
+            output("Config types do not match for %s: %s != %s" % (
+                name, type(c1), type(c2)))
+
         return False
+
     equal = True
+
     for field in c1._fields.values():
-        result = field._compare(c1, c2, shortcut=shortcut, rtol=rtol, atol=atol, output=output)
+
+        result = field._compare(
+            c1, c2, shortcut=shortcut, rtol=rtol, atol=atol, output=output)
+
         if not result and shortcut:
             return False
+
         equal = equal and result
+
     return equal

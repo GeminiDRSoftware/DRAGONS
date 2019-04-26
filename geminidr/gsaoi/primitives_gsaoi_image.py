@@ -5,12 +5,13 @@
 # ------------------------------------------------------------------------------
 from gempy.gemini import gemini_tools as gt
 
-from ..core import Image, Photometry
+from geminidr.core import Image, Photometry
+from recipe_system.utils.decorators import parameter_override
+
 from .primitives_gsaoi import GSAOI
 from . import parameters_gsaoi_image
 
-from recipe_system.utils.decorators import parameter_override
-# ------------------------------------------------------------------------------
+
 @parameter_override
 class GSAOIImage(GSAOI, Image, Photometry):
     """
