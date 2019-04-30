@@ -366,7 +366,7 @@ def estimate_peak_width(data, min=2, max=8):
                 m_final, _ = fit_it(m_init, np.arange(-2*fwidth, 2*fwidth+1),
                                     data_to_fit)
             # Quick'n'dirty logic to remove "peaks" at edges of CCDs
-            if m_final.amplitude_1 != 0:
+            if m_final.amplitude_1 != 0 and m_final.stddev_0 < fwidth:
                 widths.append(m_final.stddev_0/0.42466)
 
             # Set data to zero so no peak is found here
@@ -443,6 +443,12 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     peaks = np.array(new_peaks)
     edge = 2.35482 * maxwidth
     peaks = peaks[np.logical_and(peaks>edge, peaks<len(data)-1-edge)]
+
+    # Remove peaks very close to unilluminated/no-data pixels
+    # (e.g., chip gaps in GMOS)
+    if mask is not None:
+        peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)]
+                                            & (DQ.no_data | DQ.unilluminated))==0]
 
     # Clip the really noisy parts of the data before getting more accurate
     # peak positions and clip SNR again with new positions
