@@ -21,7 +21,7 @@ class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=3.)
     weighting = config.ChoiceField("Weighting of identified peaks", str,
                                    allowed={"none": "no weighting",
                                             "natural": "natural weighting",

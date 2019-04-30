@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 from geminidr import PrimitivesBASE
 from . import parameters_spect
+import os
 
 import numpy as np
 from scipy import spatial
@@ -350,6 +351,8 @@ class Spect(PrimitivesBASE):
             name of file containing arc lines
         weighting: str (none/natural/relative)
             how to weight the detected peaks
+        nbright: int
+            number of brightest lines to cull before fitting
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -362,6 +365,7 @@ class Spect(PrimitivesBASE):
         fwidth = params["fwidth"]
         arc_file = params["linelist"]
         weighting = params["weighting"]
+        nbright = params.get("nbright", 0)
 
         plot = params["plot"]
         plt.ioff()
@@ -386,7 +390,13 @@ class Spect(PrimitivesBASE):
                 log.warning("Cannot read file {} - using default linelist".format(arc_file))
                 arc_file = None
             else:
-                linelists[arc_file] = arc_lines
+                log.stdinfo("Read arc line list {}".format(arc_file))
+                try:
+                    arc_weights = np.sqrt(np.loadtxt(arc_file, usecols=[1]))
+                except IndexError:
+                    arc_weights = None
+                else:
+                    log.stdinfo("Read arc line relative weights")
 
         for ad in adinputs:
             for ext in ad:
@@ -425,6 +435,8 @@ class Spect(PrimitivesBASE):
 
                 cenwave = params["central_wavelength"] or ext.central_wavelength(asNanometers=True)
                 dw = params["dispersion"] or ext.dispersion(asNanometers=True)
+                w1 = cenwave - 0.5 * len(data) * abs(dw)
+                w2 = cenwave + 0.5 * len(data) * abs(dw)
                 log.stdinfo("Using central wavelength {:.1f} nm and dispersion "
                             "{:.3f} nm/pixel".format(cenwave, dw))
 
@@ -435,14 +447,11 @@ class Spect(PrimitivesBASE):
                 # Don't read linelist if it's the one we already have
                 # (For user-supplied, we read it at the start, so don't do this at all)
                 if arc_file is None:
-                    linelist = self._get_linelist_filename(ext, cenwave, dw)
-                    try:
-                        arc_lines = linelists[linelist]
-                    except KeyError:
-                        arc_lines = np.loadtxt(linelist, usecols=[0])
-                        linelists[linelist] = arc_lines
+                    arc_lines, arc_weights = self._get_arc_linelist(ext, w1=w1, w2=w2, dw=dw)
 
-                if min(arc_lines) > cenwave+0.5*len(data)*abs(dw):
+                #arc_weights = None
+
+                if min(arc_lines) > cenwave + 0.5*len(data)*abs(dw):
                     log.warning("Line list appears to be in Angstroms; converting to nm")
                     arc_lines *= 0.1
 
@@ -453,18 +462,28 @@ class Spect(PrimitivesBASE):
                 log.stdinfo('{}: {} peaks and {} arc lines'.
                              format(ad.filename, len(peaks), len(arc_lines)))
 
-                if weighting == "none":
-                    in_weights = np.ones((len(peaks),))
-                elif weighting == "natural":
-                    in_weights = peak_snrs
-                elif weighting == "relative":
-                    tree = spatial.cKDTree(np.array([peaks]).T)
-                    # Find lines within 10% of the array size
-                    indices = tree.query(np.array([peaks]).T, k=10,
-                                         distance_upper_bound=abs(0.1*len(data)*dw))[1]
-                    snrs = np.array(list(peak_snrs) + [np.nan])[indices]
-                    # Normalize weights by the maximum of these lines
-                    in_weights = peak_snrs / np.nanmax(snrs, axis=1)
+                # Compute all the different types of weightings so we can
+                # change between them as needs require
+                weights = {'none': np.ones((len(peaks),)),
+                           'natural': peak_snrs}
+
+                # The "relative" weights compares each line strength to
+                # those of the lines close to it
+                tree = spatial.cKDTree(np.array([peaks]).T)
+                # Find lines within 10% of the array size
+                indices = tree.query(np.array([peaks]).T, k=10,
+                                     distance_upper_bound=abs(0.1*len(data)*dw))[1]
+                snrs = np.array(list(peak_snrs) + [np.nan])[indices]
+                # Normalize weights by the maximum of these lines
+                weights['relative'] = peak_snrs / np.nanmedian(snrs, axis=1)
+
+                # Construct a sequence for making progressively improved fits
+                sequence = [(1, 'none')]
+                if order > 1:
+                    sequence += [(2, 'none')]
+                    sequence += [(ord, weighting) for ord in range(2, order+1)]
+                else:
+                    sequence += [(1, weighting)]
 
                 # Construct a new array of data to plot
                 #x = np.arange(len(data))
@@ -482,65 +501,110 @@ class Spect(PrimitivesBASE):
 
                 # Some diagnostic plotting
                 yplot = 0
+                plt.ioff()
                 if plot:
                     fig, ax = plt.subplots()
 
-                init_order = 1
-                ord = init_order
-                m_init = models.Chebyshev1D(degree=ord, c0=cenwave,
-                                            c1=0.5*dw*len(data), domain=[0, len(data)-1])
-                kdsigma = 3*fwidth*abs(dw)
-                #min_snr = 1
-                while (ord <= order) or (kdsigma > fwidth*abs(dw)):
-                    ord = min(ord, order)
-                    peaks_to_fit = peaks[peak_snrs>min_snr]
-                    m_init = _set_model(m_init, order=int(ord), initial=(ord==1), kdfit=True)
-                    if ord == init_order:
-                        if plot:
-                            plot_arc_fit(data, peaks, arc_lines, m_init, "Initial model")
-                        log.stdinfo('Initial model: {}'.format(repr(m_init)))
-                    fit_it = matching.KDTreeFitter()
-                    m_final = fit_it(m_init, peaks_to_fit, arc_lines, maxsig=10, k=1,
-                                     in_weights=in_weights[peak_snrs>min_snr], ref_weights=None,
-                                     sigma=kdsigma, method='Nelder-Mead',
-                                     options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
+                # The very first model is called "m_final" because at each
+                # iteration the next initial model comes from the fitted
+                # (final) model of the previous iteration
+                m_final = models.Chebyshev1D(degree=1, c0=cenwave,
+                                             c1=0.5*dw*len(data), domain=[0, len(data)-1])
+                if plot:
+                    plot_arc_fit(data, peaks, arc_lines, arc_weights, m_final, "Initial model")
+                log.stdinfo('Initial model: {}'.format(repr(m_final)))
+
+                fit_it = matching.KDTreeFitter()
+                kdsigma = fwidth*abs(dw)
+                #kdsigma = 0.003 * cenwave
+                peaks_to_fit = peak_snrs > min_snr
+                peaks_to_fit[np.argsort(peak_snrs)[len(peaks)-nbright:]] = False
+
+                # Temporary code to help with testing
+                try:
+                    sequence = self.fit_sequence
+                except AttributeError:
+                    sequence = ((1, 'none', 'basinhopping'),
+                                (2, 'none', 'Nelder-Mead'),
+                                (2, 'relative', 'Nelder-Mead'),
+                                (3, 'relative', 'Nelder-Mead'),
+                                (4, 'relative', 'Nelder-Mead'),
+                                )
+
+                # Now make repeated fits, increasing the polynomial order
+                for item in sequence:
+                    if len(item) == 3:
+                        ord, weight_type, method = item
+                        fixems = None
+                    else:
+                        ord, weight_type, method, fixems = item
+                    in_weights = weights[weight_type]
+
+                    # Create new initial model based on latest model
+                    m_init = models.Chebyshev1D(degree=ord, domain=m_final.domain)
+                    for i in range(ord + 1):
+                        param = 'c{}'.format(i)
+                        setattr(m_init, param, getattr(m_final, param, 0))
+
+                    # Set some bounds; this may need to be abstracted for
+                    # different instruments? TODO
+                    dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
+                    c0_unc = 0.01 * cenwave
+                    m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
+                    c1_unc = (0.0 if ord == 1 else 0.005) * abs(m_init.c1)
+                    m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
+                    for i in range(2, ord + 1):
+                        getattr(m_init, 'c{}'.format(i)).bounds = (-5, 5)
+
+                    if fixems is not None:
+                        for fx in fixems:
+                            getattr(m_init, fx).fixed = True
+
+                    m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines, maxsig=10, k=2,
+                                     in_weights=in_weights[peaks_to_fit],
+                                     ref_weights=None if weight_type is 'none' else arc_weights,
+                                     sigma=kdsigma,
+                                     method=method)
+                    #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
+                    #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
+
                     log.stdinfo('{} {}'.format(repr(m_final), fit_it.statistic))
                     if plot:
-                        plot_arc_fit(plot_data, peaks, arc_lines, m_final,
+                        plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final,
                                      "KDFit model order {} KDsigma = {}".format(ord, kdsigma))
 
-                    kdsigma = fwidth * abs(dw)
-                    if ord < order:
-                        ord += 1
-                        yplot += 1
-                        m_init = m_final
-                        continue
-
-                    # Remove bounds from the model
+                    match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
                     m_final._constraints['bounds'] = {p: (None, None)
                                                       for p in m_final.param_names}
-                    match_radius = 2*fwidth*abs(m_final.c1) / len(data)  # fwidth pixels
-                    #match_radius = kdsigma
                     m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                                    model=m_final, match_radius=match_radius, sigma_clip=5)
-                    if plot:
-                        for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
-                           ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
-                                   ha='center', va='top')
+                                                                       model=m_final, match_radius=match_radius,
+                                                                       sigma_clip=3)
+                    #kdsigma = m.rms_output
+                    #print("New kdsigma {}".format(kdsigma))
+                    kdsigma = fwidth * abs(dw)
+                    yplot += 1
 
-                    log.stdinfo('{} {} {}'.format(repr(m.forward), len(m.input_coords), m.rms_output))
-                    if plot:
-                        plot_arc_fit(plot_data, peaks, arc_lines, m.forward,
-                                     "MatchBox model order {}".format(ord))
+                # Remove bounds from the model
+                m_final._constraints['bounds'] = {p: (None, None)
+                                                  for p in m_final.param_names}
+                match_radius = 2*fwidth*abs(m_final.c1) / len(data)  # fwidth pixels
+                #match_radius = kdsigma
+                m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
+                                model=m_final, match_radius=match_radius, sigma_clip=3)
+                if plot:
+                    for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
+                       ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
+                               ha='center', va='top')
 
-                    # Choice of kdsigma can have a big effect. This oscillates
-                    # around the initial choice, with increasing amplitude.
-                    #kdsigma = 10.*abs(dw) * (((1.0+0.1*((kditer+1)//2)))**((-1)**kditer)
-                    #                    if kditer<21 else 1)
+                log.stdinfo('{} {} {}'.format(repr(m.forward), len(m.input_coords), m.rms_output))
+                if plot:
+                    plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m.forward,
+                                 "MatchBox model order {ord}")
 
-                    kdsigma *= 0.5
-                    ord += 1
-                    m_init = m.forward
+                # Choice of kdsigma can have a big effect. This oscillates
+                # around the initial choice, with increasing amplitude.
+                #kdsigma = 10.*abs(dw) * (((1.0+0.1*((kditer+1)//2)))**((-1)**kditer)
+                #                    if kditer<21 else 1)
 
                 m_final = m.forward
                 rms = m.rms_output
@@ -549,16 +613,19 @@ class Spect(PrimitivesBASE):
                 log.stdinfo("Matched {} lines with rms = {:.3f} nm.".format(nmatched, rms))
 
                 if plot:
-                    plot_arc_fit(plot_data, peaks, arc_lines, m_final, "Final fit")
-
+                    plot_arc_fit(plot_data, peaks, arc_lines, arc_weights, m_final, "Final fit")
                     m.display_fit()
                     plt.show()
+
+                m.display_fit()
+                plt.savefig(ad.filename.replace('_mosaic.fits', '.jpg'))
 
                 m.sort()
                 # Add 1 to pixel coordinates so they're 1-indexed
                 incoords = np.float32(m.input_coords) + 1
                 outcoords = np.float32(m.output_coords)
                 model_dict = astromodels.chebyshev_to_dict(m_final)
+                model_dict['rms'] = rms
                 # Add information about where the extraction took place
                 model_dict['row' if slitaxis == 0 else 'column'] = extraction
 
@@ -1180,6 +1247,36 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
+    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, **kwargs):
+        """
+        This private method returns a list of wavelengths of the arc reference
+        lines used by the primitive determineWavelengthSolution(), if the user
+        paramater linelist=None (i.e., the default list is requested).
+
+        Parameters
+        ----------
+        ext: single-slice AD object
+            extension being calibrated (allows descriptors to be calculated)
+        w1: float
+            approximate shortest wavelength (nm)
+        w2: float
+            approximate longest wavelength (nm)
+        dw: float
+            approximate dispersion (nm/pixel)
+
+        Returns
+        -------
+        array: arc line wavelengths
+        array/None: arc line weights
+        """
+        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        filename = os.path.join(lookup_dir, 'linelist.dat')
+        arc_lines = np.loadtxt(filename, usecols=[0])
+        try:
+            weights = np.loadtxt(filename, usecols=[1])
+        except IndexError:
+            weights = None
+        return arc_lines, weights
 #-----------------------------------------------------------------------------
 def _transpose_if_needed(*args, transpose=False):
     """
@@ -1200,55 +1297,13 @@ def _transpose_if_needed(*args, transpose=False):
     return list(None if arg is None
                 else arg.T if transpose else arg for arg in args)
 
-def _set_model(model, order=None, initial=False, kdfit=False):
-    # TODO: I find this ugly. Do better!
-    """
-    Initialize a new Model object based on an existing one, e.g., because
-    the order has increased.
 
-    Parameters
-    ----------
-    model: Model (Chebyshev1D)
-        existing model transformation
-    order: int
-        degree of new Chebyshev1D model
-    initial: bool
-        is this the first fit attempt? (if so, bounds are larger)
-    kdfit: bool
-        will this model be fit with KDTreeFitter (if not, bounds aren't allowed)
-
-    Returns
-    -------
-    Model: a new Chebyshev1D model instance
-    TODO: This is kind of hacky
-    """
-    old_order = model.degree
-    assert old_order > 0
-    if order is None:
-        order = old_order
-
-    # Creating an entirely new model means we don't have to worry about
-    # deleting the bounds from the existing model
-    new_model = models.Chebyshev1D(degree=order, domain=model.domain)
-    for i in range(order+1):
-        param = 'c{}'.format(i)
-        setattr(new_model, param, getattr(model, param, 0))
-
-    if kdfit:
-        dw = abs(2 * new_model.c1 / np.diff(new_model.domain)[0])
-        c0_unc = 50*dw if initial else 50*dw
-        new_model.c0.bounds = (new_model.c0-c0_unc, new_model.c0+c0_unc)
-        c1_unc = (0.1 if initial else 0.02)*abs(new_model.c1)
-        new_model.c1.bounds = tuple(sorted([new_model.c1-c1_unc, new_model.c1+c1_unc]))
-        for i in range(2, order+1):
-            getattr(new_model, 'c{}'.format(i)).bounds = (-5, 5)
-    return new_model
-
-def plot_arc_fit(data, peaks, arc_lines, model, title):
+def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     fig, ax = plt.subplots()
     ax.plot(model(np.arange(len(data))), data/np.max(data))
-    for line in arc_lines:
-        ax.plot([line,line], [0,1], 'k')
+    weights = np.full_like(arc_lines, 5) if arc_weights is None else arc_weights
+    for line, wt in zip(arc_lines, weights):
+        ax.plot([line,line], [0,1], 'k', color='{}'.format(0.05*(9-wt)))
     for peak in model(peaks):
         ax.plot([peak,peak], [0,1], 'r:')
     limits = model([0, len(data)])

@@ -577,8 +577,15 @@ class KDTreeFitter(Fitter):
         farg = (model_copy, in_coords, in_weights, ref_weights, sigma, maxsig, k, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
-        result = self._opt_method(self.objective_function, p0, farg,
-                                  **kwargs)
+        if kwargs.get('method') == 'basinhopping':
+            kwargs['args'] = farg
+            kwargs['method'] = 'Nelder-Mead'
+            result = optimize.basinhopping(self.objective_function, p0, T=0.1*len(in_coords),
+                                           niter=20, stepsize=5, minimizer_kwargs=kwargs)
+        else:
+            result = self._opt_method(self.objective_function, p0, farg,
+                                      **kwargs)
+
         fitted_params = result['x']
         _fitter_to_model_params(model_copy, fitted_params)
         self.statistic = result['fun']
