@@ -114,7 +114,6 @@ class Reduce(object):
             import_module(args.adpkg)
 
         self.adinputs = None
-        self.output_filenames = None
         self.mode = args.mode
         self.drpkg = args.drpkg
         self.files = args.files
@@ -122,6 +121,7 @@ class Reduce(object):
         self.ucals = normalize_ucals(args.files, args.user_cal)
         self.uparms = set_btypes(args.userparam)
         self._upload = args.upload
+        self._output_filenames = None
         self.recipename = args.recipename if args.recipename else 'default'
 
     @property
@@ -137,6 +137,11 @@ class Reduce(object):
         elif isinstance(upl, list):
             self._upload = upl
         return
+
+    @property
+    def output_filenames(self):
+        return self._output_filenames
+
 
     def runr(self):
         """
@@ -233,7 +238,7 @@ class Reduce(object):
                 xstat = signal.SIGABRT
 
         self._write_final(p.streams['main'])
-        self.output_filenames = [ad.filename for ad in p.streams['main']]
+        self._output_filenames = [ad.filename for ad in p.streams['main']]
 
         if xstat != 0:
             msg = "reduce instance aborted."
