@@ -203,7 +203,7 @@ class CalibrationService(object):
     def __init__(self):
         self._mgr = None
 
-    def config(self, db_dir=None, verbose=True,
+    def config(self, db_dir=None, verbose=False,
                config_file=STANDARD_REDUCTION_CONF):
         """
         Configure the Calibration Service and database.
