@@ -211,7 +211,6 @@ if __name__ == '__main__':
             usage(argp, message="The database is not configured as standalone.")
         else:
             act = args.action
-            print(conf.database_dir)
             lm = LocalManager(expanduser(conf.database_dir))
             logstream = sys.stderr if args.verbose else None
             disp = Dispatcher(subp.choices[act], lm,
