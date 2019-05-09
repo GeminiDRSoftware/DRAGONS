@@ -75,10 +75,15 @@ def download_non_existing_test_files():
             else:
                 print(' Download missing file: {:s}'.format(current_file))
                 _path, _file = os.path.split(current_file)
+
                 if not os.path.exists(_path):
                     os.makedirs(_path)
-                subprocess.run(['curl', '--silent', URL + _file, '--output',
-                                current_file])
+
+                try:
+                    subprocess.run(['curl', '--silent', URL + _file, '--output',
+                         current_file], check=True)
+                except subprocess.CalledProcessError:
+                    print(' Failed to download file: {}'.format(current_file))
 
         print('')
 
