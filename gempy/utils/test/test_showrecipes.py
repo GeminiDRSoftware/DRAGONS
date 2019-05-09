@@ -1,13 +1,16 @@
+#!/usr/bin/env python
 
 import os
 import glob
 import pytest
 import warnings
+
+import geminidr
 import astrodata
 import gemini_instruments
-
-from gempy.utils.showrecipes import showrecipes
-
+from recipe_system.utils.errors import ModeError
+from recipe_system.utils.errors import RecipeNotFound
+from gempy.utils.showrecipes import showprims
 
 try:
     path = os.environ['TEST_PATH']
@@ -19,9 +22,8 @@ if not os.path.exists(path):
     warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
     path = ''
 
-
-path = path + "Gempy/"
-
+path = os.path.join(path, "Gempy")
+dragons_location = '/'.join(geminidr.__file__.split("/")[:-1]) + '/'
 
 GNIRS = "S20171208S0054.fits"
 GNIRS_SPECT = "N20190206S0279.fits"
@@ -36,185 +38,253 @@ GSAOI_DARK = 'S20150609S0023.fits'
 GSAOI_IMAGE = 'S20170505S0095.fits'
 GSAOI_FLAT = 'S20170505S0031.fits'
 
+# # # # # #  GNIRS  # # # # # #
+
 
 gnirs_answer = [
+    "Recipe not provided, default recipe (makeProcessedFlat) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, GNIRS))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM",
-    "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat",
-    "   geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat"]
+    "Input mode: sq",
+    "Input recipe: makeProcessedFlat",
+    "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE",
+    "::makeProcessedFlat",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location, "gsaoi/recipes/sq/recipes_FLAT_IMAGE.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
 
 
-def test_showrecipes_on_gnirs(test_path):
-    file_location = test_path + 'Gempy/' + GNIRS
-    answer = showrecipes(file_location)
+def test_showprims_on_gnirs(test_path):
+    file_location = os.path.join(test_path, 'Gempy/', GNIRS)
+    answer = showprims(file_location)
+
     for i in range(len(gnirs_answer)):
         assert gnirs_answer[i] in answer
 
 
-gnirs_spect_answer = [
-    "Input file: {}".format(os.path.normpath(
-        os.path.join(path, GNIRS_SPECT))),
-    "Input tags: ",
-    "!!! No recipes were found for this file !!!"]
+def test_showprims_on_gnirs_spect(test_path):
+    try:
+        file_location = os.path.join(test_path, 'Gempy', GNIRS_SPECT)
+        answer = showprims(file_location, 'qa')
+        assert "RecipeNotFound Error" in answer
+
+    except RecipeNotFound:
+        pass
 
 
-def test_showrecipes_on_gnirs_spect(test_path):
-    file_location = test_path + 'Gempy/' + GNIRS_SPECT
-    answer = showrecipes(file_location)
-    for i in range(len(gnirs_spect_answer)):
-        assert gnirs_spect_answer[i] in answer
+# # # # # #  GMOS  # # # # # #
 
 
 gmos_answer = [
+    "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, GMOS))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.gmos.recipes.sq.recipes_IMAGE::makeProcessedFringe",
-    "   geminidr.gmos.recipes.sq.recipes_IMAGE::reduce",
-    "   geminidr.gmos.recipes.qa.recipes_IMAGE::makeProcessedFringe",
-    "   geminidr.gmos.recipes.qa.recipes_IMAGE::reduce",
-    "   geminidr.gmos.recipes.qa.recipes_IMAGE::reduce_nostack",
-    "   geminidr.gmos.recipes.qa.recipes_IMAGE::stack"]
+    "Input mode: sq",
+    "Input recipe: reduce",
+    "Matched recipe: geminidr.gmos.recipes.sq.recipes_IMAGE::reduce",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "gmos/recipes/sq/recipes_IMAGE.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
 
 
-def test_showrecipes_on_gmos(test_path):
-    file_location = test_path + 'Gempy/' + GMOS
-    answer = showrecipes(file_location)
+def test_showprims_on_gmos(test_path):
+    file_location = os.path.join(test_path, 'Gempy', GMOS)
+    answer = showprims(file_location)
+
     for i in range(len(gmos_answer)):
         assert gmos_answer[i] in answer
 
 
+def test_showprims_on_gmos_spect(test_path):
+    try:
+        file_location = os.path.join(test_path, 'Gempy', GMOS_SPECT)
+        answer = showprims(file_location)
+        assert "RecipeNotFound Error" in answer
+
+    except RecipeNotFound:
+        pass
+
+
 gmos_ns_answer = [
+    "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, GMOS_NS))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.gmos.recipes.qa.recipes_NS::reduce"]
+    "Input mode: qa",
+    "Input recipe: reduce",
+    "Matched recipe: geminidr.gmos.recipes.qa.recipes_NS::reduce",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "gmos/recipes/qa/recipes_NS.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
 
 
-def test_showrecipes_on_gmos_ns(test_path):
-    file_location = test_path + 'Gempy/' + GMOS_NS
-    answer = showrecipes(file_location)
+def test_showprims_on_gmos_ns(test_path):
+    file_location = os.path.join(test_path, 'Gempy', GMOS_NS)
+    answer = showprims(file_location, 'qa')
+
     for i in range(len(gmos_ns_answer)):
         assert gmos_ns_answer[i] in answer
 
 
-gmos_spect_answer = [
-    "Input file: {}".format(os.path.normpath(
-        os.path.join(path, GMOS_SPECT))),
-    "Input tags: ",
-    "!!! No recipes were found for this file !!!"]
+def test_showprims_on_gmos_spect_default_mode(test_path):
+    try:
+        file_location = os.path.join(test_path, 'Gempy', GMOS_NS)
+        answer = showprims(file_location)
+        assert "RecipeNotFound Error" in answer
+    except RecipeNotFound:
+        pass
 
 
-def test_showrecipes_on_gmos_spect(test_path):
-    file_location = test_path + 'Gempy/' + GMOS_SPECT
-    answer = showrecipes(file_location)
-    for i in range(len(gmos_spect_answer)):
-        assert gmos_spect_answer[i] in answer
+# # # # # #  GSAOI  # # # # # #
 
 
 gsaoi_dark_answer = [
+    "Recipe not provided, default recipe (makeProcessedDark) will be used.",
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_DARK))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.gsaoi.recipes.sq.recipes_DARK::makeProcessedDark"]
+    "Input mode: sq",
+    "Input recipe: makeProcessedDark",
+    "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_DARK",
+    "::makeProcessedDark",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "gsaoi/recipes/sq/recipes_DARK.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
 
 
-def test_showrecipes_on_gsaoi_dark(test_path):
-    file_location = test_path + 'Gempy/' + GSAOI_DARK
-    answer = showrecipes(file_location)
+def test_showprims_on_gsaoi_dark(test_path):
+    file_location = os.path.join(test_path, 'Gempy', GSAOI_DARK)
+    answer = showprims(file_location, 'sq', 'default')
+
     for i in range(len(gsaoi_dark_answer)):
         assert gsaoi_dark_answer[i] in answer
 
 
-gsaoi_image_answer = [
+def test_showprims_on_gsaoi_dark_qa_mode(test_path):
+    try:
+        file_location = os.path.join(test_path, 'Gempy', GSAOI_DARK)
+        answer = showprims(file_location, 'qa')
+        assert "RecipeNotFound Error" in answer
+    except RecipeNotFound:
+        pass
+
+
+gsaoi_image_answer_sq = [
+    "Recipe not provided, default recipe (reduce_nostack) will be used.",
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_IMAGE))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.gsaoi.recipes.sq.recipes_IMAGE::reduce_nostack",
-    "   geminidr.gsaoi.recipes.qa.recipes_IMAGE::reduce_nostack"]
+    "Input mode: sq",
+    "Input recipe: reduce_nostack",
+    "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_IMAGE::reduce_nostack",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "gsaoi/recipes/sq/recipes_IMAGE.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
 
 
-def test_showrecipes_on_gsaoi_image(test_path):
-    file_location = test_path + 'Gempy/' + GSAOI_IMAGE
-    answer = showrecipes(file_location)
-    for i in range(len(gsaoi_image_answer)):
-        assert gsaoi_image_answer[i] in answer
+def test_showprims_on_gsaoi_image_sq_mode(test_path):
+    file_location = os.path.join(test_path, 'Gempy', GSAOI_IMAGE)
+    answer = showprims(file_location)
+    for i in range(len(gsaoi_image_answer_sq)):
+        assert gsaoi_image_answer_sq[i] in answer
+
+
+gsaoi_image_answer_qa = [
+    "Input file: {}".format(os.path.normpath(
+        os.path.join(path, GSAOI_IMAGE))),
+    "Input tags: ",
+    "Input mode: qa",
+    "Input recipe: reduce_nostack",
+    "Matched recipe: geminidr.gsaoi.recipes.qa.recipes_IMAGE::reduce_nostack",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "gsaoi/recipes/qa/recipes_IMAGE.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
+
+
+def test_showprims_on_gsaoi_image_qa_mode(test_path):
+    file_location = os.path.join(test_path, 'Gempy', GSAOI_IMAGE)
+    answer = showprims(file_location, 'qa', 'reduce_nostack')
+    for i in range(len(gsaoi_image_answer_qa)):
+        assert gsaoi_image_answer_qa[i] in answer
 
 
 gsaoi_flat_answer = [
+    "Recipe not provided, default recipe (makeProcessedFlat) will be used.",
     "Input file: {}".format(os.path.normpath(
         os.path.join(path, GSAOI_FLAT))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM",
-    "   geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat",
-    "   geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat"]
+    "Input mode: sq",
+    "Input recipe: makeProcessedFlat",
+    "Matched recipe: geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::",
+    "makeProcessedFlat",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "gsaoi/recipes/sq/recipes_FLAT_IMAGE.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
 
 
-def test_showrecipes_on_gsaoi_flat(test_path):
-    file_location = test_path + 'Gempy/' + GSAOI_FLAT
-    answer = showrecipes(file_location)
+def test_showprims_on_gsaoi_flat(test_path):
+    file_location = os.path.join(test_path, 'Gempy', GSAOI_FLAT)
+    answer = showprims(file_location)
     for i in range(len(gsaoi_flat_answer)):
         assert gsaoi_flat_answer[i] in answer
 
 
+def test_showprims_on_gsaoi_flat_ql_mode(test_path):
+    try:
+        file_location = os.path.join(test_path, 'Gempy', GSAOI_FLAT)
+        answer = showprims(file_location, 'ql')
+        assert "ModuleNotFoundError" in answer
+    except ModeError:
+        pass
+
+
+# # # # # #  NIRI  # # # # # #
+
+
 niri_answer = [
+    "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, NIRI))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.niri.recipes.sq.recipes_IMAGE::makeSkyFlat",
-    "   geminidr.niri.recipes.sq.recipes_IMAGE::reduce",
-    "   geminidr.niri.recipes.qa.recipes_IMAGE::makeSkyFlat",
-    "   geminidr.niri.recipes.qa.recipes_IMAGE::reduce"]
+    "Input mode: sq",
+    "Input recipe: reduce",
+    "Matched recipe: geminidr.niri.recipes.sq.recipes_IMAGE::reduce",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "niri/recipes/sq/recipes_IMAGE.py"))),
+    "Recipe tags: ",
+    "Primitives used:"]
 
 
-def test_showrecipes_on_niri(test_path):
-    file_location = test_path + 'Gempy/' + NIRI
-    answer = showrecipes(file_location)
+def test_showprims_on_niri(test_path):
+    file_location = os.path.join(test_path, 'Gempy', NIRI)
+    answer = showprims(file_location)
     for i in range(len(niri_answer)):
         assert niri_answer[i] in answer
 
 
+# # # # # #  F2  # # # # # #
+
+
 f2_answer = [
+    "Recipe not provided, default recipe (reduce) will be used.",
     "Input file: {}".format(os.path.normpath(os.path.join(path, F2))),
     "Input tags: ",
-    "Recipes available for the input file: ",
-    "   geminidr.f2.recipes.sq.recipes_IMAGE::makeSkyFlat",
-    "   geminidr.f2.recipes.sq.recipes_IMAGE::reduce",
-    "   geminidr.f2.recipes.qa.recipes_IMAGE::reduce",
-    "   geminidr.f2.recipes.qa.recipes_IMAGE::reduce_nostack"]
+    "Input mode: sq",
+    "Input recipe: reduce",
+    "Matched recipe: geminidr.f2.recipes.sq.recipes_IMAGE::reduce",
+    "Recipe location: {}".format(os.path.normpath(os.path.join(
+        dragons_location + "f2/recipes/sq/recipes_IMAGE.py"))),
+    "Recipe tags: ",
+    "Primitives used: "]
 
 
-def test_showrecipes_on_f2(test_path):
-    file_location = test_path + 'Gempy/' + F2
-    answer = showrecipes(file_location)
+def test_showprims_on_f2(test_path):
+    file_location = os.path.join(test_path, 'Gempy', F2)
+    answer = showprims(file_location)
     for i in range(len(f2_answer)):
         assert f2_answer[i] in answer
-
-#
-# # Creates a list of the files and answers, in same order so they can be parsed
-# files = [GNIRS_SPECT, GMOS_SPECT, GSAOI_DARK, GSAOI_IMAGE, GSAOI_FLAT,
-#          GMOS_NS, GNIRS, GMOS, NIRI, F2, NIFS, GRACES]
-#
-# answers = [gnirs_spect_answer, gmos_spect_answer, gsaoi_dark_answer,
-#            gsaoi_image_answer, gsaoi_flat_answer, gmos_ns_answer,
-#            gnirs_answer, gmos_answer, niri_answer, f2_answer,
-#            "ImportError", "ImportError"]
-#
-#
-# def test_showrecipes_with_all_instruments(test_path):
-#     for i in range(len(files)):
-#         try:
-#             for t in range(len(answers[i])):
-#                 file_location = test_path + 'Gempy/' + files[i]
-#                 answer = showrecipes(file_location)
-#                 assert answers[i] == answer
-#         except ImportError:
-#             if answers[i] == 'ImportError':
-#                 pass
-#             else:
-#                 raise ImportError

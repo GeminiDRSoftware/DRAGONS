@@ -5,8 +5,8 @@ from __future__ import print_function
 
 from gempy.utils import showrecipes
 
-
 __author__ = 'Ivan Sharankov'
+
 
 def main():
     args = showprims_argparser()
@@ -14,9 +14,9 @@ def main():
         recipes_found = showrecipes.showrecipes(args.inputfile)
         print(recipes_found)
     else:
-        primitives_found = showrecipes.showprims(args.inputfile, args.mode, args.recipe)
+        primitives_found = showrecipes.showprims(
+            args.inputfile, args.mode, args.recipe)
         print(primitives_found)
-
 
 
 def showprims_argparser():
@@ -27,13 +27,12 @@ def showprims_argparser():
                             formatter_class=RawDescriptionHelpFormatter)
 
     parser.add_argument('inputfile', type=str,
-                    help="The fits file needed to extract the tags. This "
-                            "file must be opened by astrodata as an object")
+                        help="The fits file needed to extract the tags. This "
+                             "file must be opened by astrodata as an object")
 
     parser.add_argument("-m", "--mode", dest="mode", default='sq',
                         help="determines if the mode of the recipe "
                              "is either 'qa' or 'sq'.")
-
 
     parser.add_argument("-r", "--recipe", dest="recipe", default='default',
                         help="Determines the recipe that the user wants "
