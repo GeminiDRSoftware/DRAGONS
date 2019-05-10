@@ -2,10 +2,10 @@
 showprims
 =========
 
-The show_primitives_ command line displays what are the Primitives that
+The showprims_ command line displays what are the Primitives that
 were used within a particular Recipe:::
 
-    $ show_primitives raw/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
+    $ showprims raw/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
 
     DRAGONS v2.1.x - show_recipes
     Input file: ./raw/S20170505S0073.fits

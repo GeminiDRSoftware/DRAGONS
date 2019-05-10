@@ -16,9 +16,11 @@ Recipe System Users Manual
 
    intro
    install
-   howto
+   definitions
+   reduce
+   reduceapi
+   caldb
    supptools
-   discuss
    ack
 
 .. raw:: latex
@@ -32,7 +34,5 @@ Recipe System Users Manual
    :maxdepth: 1
    
    appendices/glossary
-   appendices/appendix_demo
-   appendices/reduce_properties   
    
 .. todolist::
