@@ -5,15 +5,15 @@
 
 .. role:: small
 
+.. .. image:: images/DRAGONS\ -\ DGlogo.png
+
 DRAGONS Documentation
 =====================
 
-.. admonition:: Document ID
+.. admonition:: :small:`Document ID: PIPE-USER-103_DRAGONSManual`
 
-   <PIPE-USER-103_DRAGONSManual>
-
-   This document is a collection of links and document IDs making up the
-   DRAGONS documentation.
+   :small:`This document is a collection of links and document IDs making up the
+   DRAGONS documentation.`
 
 
 DRAGONS Manuals
