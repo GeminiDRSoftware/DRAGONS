@@ -77,7 +77,7 @@ class Reduce(object):
           the 'files' list (see 'files' below).
 
     output_filenames: <list>
-          attribute is a list of final output filenames.
+          read-only property is a list of final output filenames.
 
     mode: <str>
           operational mode. Currently, only 'qa', 'sq' modes are supported.
@@ -101,7 +101,7 @@ class Reduce(object):
           Dictionary of user parameters as passed by -p, --param flag.
 
     upload : <list>
-          List of products to upload to fitsstore and passed by --upload.
+          List of products to upload to fitsstore as passed by --upload.
           E.g.,
               --upload metrics calibs
                                     ==> upload == ['metrics', 'calibs']
