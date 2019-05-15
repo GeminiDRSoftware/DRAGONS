@@ -33,7 +33,7 @@ For this tutorial, we will be also using other `Supplemental tools
 <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
 like dataselect_, showd_, typewalk_, and caldb_.
 
-.. warning:: Some primitives use a lot of RAM memory and they can make `reduce`
+.. warning:: Some primitives use a lot of RAM memory and they can make reduce_
     crash. Our team is aware of this problem and we are working on that. For
     now, if that happens to you, you might need to run the pipeline on a
     smaller data set.
@@ -83,8 +83,8 @@ reduction pipeline does not organize the data.
 
 That means that we first need to identify these files and create lists that will
 be used in the data-reduction process. For that, we will use the dataselect_
-command line. Please, refer to the `dataselect page <dataselect>`_ for details
-regarding its usage. Let us start with the DARK files: ::
+command line. Please, refer to the dataselect_ page for details regarding its
+usage. Let us start with the DARK files: ::
 
    $ dataselect --tags DARK raw/*.fits > list_of_darks.txt
 
