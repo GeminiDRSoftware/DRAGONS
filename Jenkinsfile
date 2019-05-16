@@ -75,7 +75,7 @@ pipeline {
                 }
             }
         }
-        stage('Preview') {
+        stage('Pack') {
             parallel {
                 stage("linux-64") {
                     steps {
