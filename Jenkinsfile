@@ -75,7 +75,7 @@ pipeline {
                 }
             }
         }
-        stage('Pre-Deploy') {
+        stage('Preview') {
             parallel {
                 stage("linux-64") {
                     steps {
@@ -114,22 +114,22 @@ pipeline {
         }
         stage('Deliver') {
             parallel {
-                stage('deliver linux-32') {
+                stage('linux-32') {
                     steps {
                         echo "deploy linux-32"
                     }
                 }
-                stage('deliver linux-64') {
+                stage('linux-64') {
                     steps {
                         echo "deploy linux-64"
                     }
                 }
-                stage('deliver noarch') {
+                stage('noarch') {
                     steps {
                         echo "deploy noarch"
                     }
                 }
-                stage('deliver osx-64') {
+                stage('osx-64') {
                     steps {
                         echo "deploy osx-64"
                     }
