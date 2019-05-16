@@ -37,7 +37,7 @@ machine. You can test that by typing the following commands:
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
 be installed. If you have an error message, make sure:
 
-    - Conda is properly installed;
+    - AnaConda or MiniConda is properly installed;
 
     - A Conda Virtual Environment is properly created and is active;
 
@@ -51,9 +51,8 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-For this tutorial we selected a very sparse field. This makes the sky
-subtraction less prone to errors. The selected data set was observed for the
-GS-2017A-Q-29 program on the night starting on May 04, 2017.
+For this tutorial we selected data observed for for the GS-2017A-Q-29 program on
+the night starting on May 04, 2017.
 
 You can search and download the files on the
 `Gemini Archive <https://archive.gemini.edu/searchform>`_ using the
@@ -78,14 +77,14 @@ can be downloaded using `this link
 <https://archive.gemini.edu/download/exposure_time=150/notengineering/GSAOI/Pass/DARK/present/canonical>`_.
 or copying and pasting the following address to search form into your browser: ::
 
-..    https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
+    https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
 
 
 The FLAT files to build the BPM can be downloaded directly by `clicking here
 <https://archive.gemini.edu/download/20171201-20171231/object=Domeflat/filter=H/notengineering/GSAOI/Pass/present/canonical>`_
 or using the following address: ::
 
-..    https://archive.gemini.edu/searchform/object=Domeflat/cols=CTOWEQ/filter=H/notengineering/GSAOI/20171201-20171231/Pass
+    https://archive.gemini.edu/searchform/object=Domeflat/cols=CTOWEQ/filter=H/notengineering/GSAOI/20171201-20171231/Pass
 
 
 Copy all the files to the same place in your computer. Then use ``tar`` and

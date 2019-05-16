@@ -54,7 +54,7 @@ time available. If you don't know what are the existing exposure times, you can
 
 .. code-block:: bash
 
-    $ dataselect --tags DARK --xtags PROCESSED raw/*.fits | showd -d exposure_time
+    $ dataselect --tags DARK raw/*.fits | showd -d exposure_time
 
 The ``|`` is what we call "pipe" and it is used to pass output from dataselect_
 to showd_. The following line creates a list of DARK files that were not
@@ -62,14 +62,11 @@ processed and that have exposure time of 20 seconds:
 
 .. code-block:: bash
 
-   $ dataselect --tags DARK --xtags PROCESSED \
-       --expr "exposure_time==20" raw/*.fits > darks_020s.list
+   $ dataselect --tags DARK --expr "exposure_time==20" raw/*.fits > darks_020s.list
 
-The ``\`` is simply a special character to break the line. The ``--tags`` is a
-comma-separated argument that is used to select the files that matches the
-tag(s) listed there. ``--xtags`` is used to exclude the files which tags
-matches the one(s) listed here. ``--expr`` is used to filter the files based
-on their attributes. Here we are selecting files with exposure time of
+The ``--tags`` is a comma-separated argument that is used to select the files
+that matches the tag(s) listed there. ``--expr`` is used to filter the
+files based on their attributes. Here we are selecting files with exposure time of
 20 seconds. You can repeat the same command for the other existing exposure
 times (3 s, 8 s, 15 s, 60 s, 120 s). Use ``dataselect --help`` for more
 information.
@@ -92,8 +89,7 @@ same exposure times:
 
 .. code-block:: bash
 
-    $ dataselect --tags DARK --xtags PROCESSED \
-        --expr "exposure_time==120" raw/*.fits > darks_120s.list
+    $ dataselect --tags DARK --expr "exposure_time==120" raw/*.fits > darks_120s.list
 
 And then pass this list to the `reduce`_ command.
 
@@ -151,8 +147,7 @@ not interfere in the results.
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --xtags PREPARED \
-        --expr "filter_name=='Y'" raw/*.fits > flats_Y.list
+    $ dataselect --tags FLAT --expr "filter_name=='Y'" raw/*.fits > flats_Y.list
 
     $ reduce @flats_Y.list @darks_003s.list -r makeProcessedBPM
 
@@ -170,8 +165,7 @@ corresponding files for each filter:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --xtags PREPARED \
-        --expr "filter_name=='Y'" raw/*.fits > flats_Y.list
+    $ dataselect --tags FLAT --expr "filter_name=='Y'" raw/*.fits > flats_Y.list
 
 
 .. note::
@@ -212,13 +206,13 @@ Now that we have the Master Dark and Master Flat images, we can tell `reduce`_
 to process our data. `reduce`_ will look at the remote or at the local database
 for calibration files. Make sure that you have `configured your database <caldb>`_
 before running it. We want to run `reduce`_ on any file that is not calibration
-nor a bad-pixel-mask (``--xtags CAL,BPM``). We also want to run this pipeline
-only on Y band images (``--expr 'filter_name=="Y"'``)
+nor a bad-pixel-mask. To exclude files from our selection we can use the
+``--xtags``, e.g., ``--xtags CAL,BPM``. We also want to run this pipeline
+only on Y band images (``--expr 'filter_name=="Y"'``).
 
 .. code-block:: bash
 
-    $ dataselect --xtags CAL,BPM --expr 'filter_name=="Y"' \
-        raw/*.fits > sci_images_Y.list
+    $ dataselect --xtags CAL,BPM --expr 'filter_name=="Y"' raw/*.fits > sci_images_Y.list
 
     $ reduce @sci_images_Y.list
 
@@ -234,12 +228,14 @@ files will be stacked together in a single file.
     The science exposures in all bands suffer from vignetting of the field in
     the NW quadrant (upper left in the image above). This may have been caused
     by the PWFS2 guide probe, which was used because of a hardware problem with
-    the OIWFS (see the F2 instrument status note for 2013 Sep. 5). Therefore the
-    photometry of this portion of the image will be seriously compromised.
+    the OIWFS (see the `F2 instrument status note <https://www.gemini.edu/sciops/instruments/flamingos2/status-and-availability>`_
+    for 2013 Sep. 5). Therefore the photometry of this portion of the image will
+    be seriously compromised.
 
 The final product file will have a ``_stack.fits`` sufix and it is shown below:
 
+.. the figure below can be created using the script inside the ``savefig``
+   folder.
+
 .. figure:: _static/S20131121S0075_stack.fits.png
    :align: center
-
-   S20131121S0075_stack.fits.png

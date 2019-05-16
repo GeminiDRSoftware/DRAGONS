@@ -150,7 +150,8 @@ DARK frame for the files that have 20s exposure time:
 
 Note the empty list ``[]`` in the fourth line of each command. This
 position argument receives a list of tags that will be used to exclude
-any files with the matching tag from our selection.
+any files with the matching tag from our selection (i.e., equivalent to the
+``--xtags`` option).
 
 Now you must create a list of FLAT images for each filter. You can do that by
 using the following commands:
