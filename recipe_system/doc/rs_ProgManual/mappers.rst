@@ -7,22 +7,20 @@
 The Mappers
 ***********
 
-The mappers are the heart of the Recipe System.  The mappers associate recipes
+The mappers are the core of the Recipe System.  The mappers match recipes
 and primitives to the data being reduced.
 
-Normally called from the |Reduce| (which might have been called by the command
-line ``reduce``), the mappers will search a data reduction package (DR package)
-specified by
-the argument ``drpkg`` for recipes and primitives matching the AstroData tags
-of the data to be processed.  (The default ``drpkg`` is DRAGONS ``geminidr``
-package.)
+Normally called from the |Reduce| class (which might have been called by the
+command line ``reduce``), the mappers will search a data reduction package
+(DR package) specified by the argument ``drpkg`` for recipes and primitives
+matching the AstroData tags of the data to be processed. (The default ``drpkg``
+is DRAGONS ``geminidr`` package.)
 
 The search for matching primitives and recipes is optimized for a certain
-directory structure.  Other structure would work though.  In the
-:ref:`appendix <drpkg>`,
-we introduce a tool to easily create the data reduction package structure that
-will be most efficient.  The reader can also look at ``geminidr`` for a
-working example.
+directory structure.  Other structures would work though. In the
+:ref:`appendix <drpkg>`, we introduce a tool to easily create the data reduction
+package structure that will be most efficient.  The reader can also look at
+``geminidr`` for a working example.
 
 The mapping algorithm uses attributes of an ``AstroData`` instance to first
 determines the applicable instrument package defined under the DR package,
@@ -51,7 +49,8 @@ input datasets is used to set the tags and the import path of the instrument
 package.  It is assumed that all the datasets in the list are of the same type
 and will be reduced with the same recipes and primitives.
 
-**Class Mapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload=None)*
+**Class Mapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default',
+                   usercals=None, uparms=None, upload=None)*
 
    Arguments to __init__
     adinputs
@@ -70,7 +69,7 @@ and will be reduced with the same recipes and primitives.
         override the mapping in part or in whole.  The default is "default".
         A recipe library should have a module attribute ``default`` that
         is assigned the name of the default function (recipe) to run if that
-        library is selected. This guarantee that if a library is selected there
+        library is selected. This guarantees that if a library is selected there
         will always be a recipe matching ``recipename`` to run.
 
         ``recipename`` can also be the name of a specific recipe that will be
@@ -78,6 +77,7 @@ and will be reduced with the same recipes and primitives.
 
         To completely bypass the recipe mapping and use a user-provided
         recipe library and a recipe within, ``recipename`` is set to
+	
         `<(path)library_file_name>.<name_of_recipe_function>`.
 
         Finally, ``recipename`` can be set to be the name of a single primitive.
@@ -91,8 +91,9 @@ and will be reduced with the same recipes and primitives.
     uparms
         A ``list`` of tuples representing user parameters passed via command
         line or the |Reduce| API.  Each may have a specified primitive. If no
-        primitive is specified, the value will be applied to all the parameter
-        matching the name in any primitives.
+        primitive is specified, the value is applied to all parameters matching
+	the name in any primitives.
+
         E.g., [('param','value'), ('<primitive_name>:param1','val1')]
     upload
         *Internal to Gemini only.*  Default is None.
@@ -147,7 +148,8 @@ PrimitiveMapper
 ``__init__()``.  |PrimitiveMapper| implements the primitive search algorithm
 and provides one public method on the class: ``get_applicable_primitives()``.
 
-**Class PrimitiveMapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload=None)*
+**Class PrimitiveMapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default',
+                            usercals=None, uparms=None, upload=None)*
 
    Arguments to __init__
     See :ref:`Mapper <mapperclass>` above.
@@ -166,8 +168,8 @@ and provides one public method on the class: ``get_applicable_primitives()``.
 
 The primitive set search is conducted by comparing the AstroData ``tags``
 attribute of the first input dataset to the ``tagset`` attribute of each
-primitive class.  The best matched primitive set should in principle be found in
-an instrument package that matches the instrument descriptor of the input
+primitive class.  The best matched primitive set should, in principle, be found
+in an instrument package that matches the instrument descriptor of the input
 datasets.  In fact, the way the search is optimized right now, it enforces that
 principle.
 
@@ -207,10 +209,10 @@ RecipeMapper
 |RecipeMapper| implements the recipe search algorithm and provides one
 public method on the class: ``get_applicable_recipe()``.
 
-**Class RecipeMapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default', usercals=None, uparms=None, upload=None)*
+**Class RecipeMapper** *(adinputs,mode='sq',drpkg='geminidr',recipename='default',
+                         usercals=None, uparms=None, upload=None)*
 
-
-   Arguments to __init__
+    Arguments to __init__
     See :ref:`Mapper <mapperclass>` above.
 
    Attributes
@@ -235,45 +237,44 @@ principle.
 
 The ``mode`` narrows the recipe search in the instrument package to the
 corresponding subdirectory, while the AstroData tags are used to locate the
-desired recipe library within that subdirectory. As the search of instrument
-recipe modules (libraries) progresses, modules are inspected, looking for a
-``recipe_tags`` attribute. A recipe tags match is assessed against all
-previous matches and the best matching recipe library is imported.
+desired recipe library within that ``mode`` subdirectory. As the search of
+instrument recipe modules (libraries) progresses, modules are inspected,
+looking for a ``recipe_tags`` attribute. A recipe tags match is assessed against
+all previous matches and the best matching recipe library is imported.
 The *default* or the named recipe function is retrieved from the recipe
 library.
 
 A match requires that the primitive class *tagset* be a subset of the
 AstroData *tags* descriptor.  The *best match* is the one with the
-largest *tagset*.  If two or more primitive classes return best matches with
-the same number of tags in their *tagset*, then the current algorithm will
-only return the first *best match* primitive class it has encountered.  It is
-therefore very important to be specific with the *tagset* attributes to avoid
-such multiple match situation and to ensure only one true best match.
+largest matching subset of the data's tags attribute.  If two or more primitive
+classes return best matches with the same number of tags in their *tagset*,
+then the current algorithm will only return the first *best match* primitive
+class it has encountered.  It is therefore very important to be specific with
+the *tagset* attributes to avoid such multiple match situation and to ensure
+only one true best match.
 
 The ``get_applicable_recipe()`` method returns this *best match* recipe
 function to the caller.  This is a function object and is callable.
 
 The Handling of ``recipename``
 ==============================
-The input argument ``recipename`` is multiplexed.  The default value is the
+The input argument ``recipename`` is multiplexed. The default value is the
 string *default* that matches a module attribute in the recipe library
 identifying which of the recipes is to be considered the default.
 
-``recipename`` can all be set to the name of a specific recipe (function)
-within the recipe library.  This will override the default setting. It does
-require that indeed that function is present in the *best match* recipe
-library.
+``recipename`` may be set to the name of a specific recipe (function)
+within a recipe library. This will override the default setting. Of course,
+the function must be present in the *best match* recipe library.
 
-The ``recipename`` can also contain a user-provided recipe.  The syntax for
+The ``recipename`` can also specify a user-provided recipe.  The syntax for
 this form is ``<recipe_library>.<recipe>``.  If the <recipe_library> string
 does not contain the full path to the module, the current directory is assumed
 to be the location of the library.  The |RecipeMapper| first tries to find
-such recipe, if it is not found, then the mapper begins the process of
+such a recipe. If it is not found, then the mapper begins the process of
 searching for the *best match* recipe in the data reduction package.
 
 Finally, the ``recipename`` can be the name of a primitive rather than the
 name of a recipe (eg. ``reduce N20120212S0012.fits -r display``).  In that
-case, the |RecipeMapper| will fail to find a match.  The recognizition of
-the string as a valid primitive is done in |Reduce|, in the ``runr()``
-function.  The primitive must be one of the primitives from the *best
-match* primitive set.
+case, the |RecipeMapper| will fail to find a matching recipe. Recognition
+of the string as a valid primitive is done in the ``runr()`` method of  |Reduce|.
+The primitive must be one of the primitives from the *best match* primitive set.
