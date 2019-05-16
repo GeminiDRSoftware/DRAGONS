@@ -45,6 +45,7 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 
+
 def _log_traceback():
     exc_type, exc_value, exc_traceback = sys.exc_info()
     tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
@@ -232,7 +233,7 @@ class Reduce(object):
                 _log_traceback()
                 log.stdinfo("Writing final outputs ...")
                 self._write_final(p.streams['main'])
-                self.output_filenames = [ad.filename for ad in p.streams['main']]
+                self._output_filenames = [ad.filename for ad in p.streams['main']]
                 raise
 
         self._write_final(p.streams['main'])
