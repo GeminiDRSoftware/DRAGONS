@@ -118,7 +118,7 @@ def get_cal_requests(inputs, caltype):
 
     rq_events = []
     for ad in inputs:
-        log.stdinfo("Recieved calibration request for {}".format(ad.filename))
+        log.stdinfo("Received calibration request for {}".format(ad.filename))
         rq = CalibrationRequest(ad, caltype)
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
