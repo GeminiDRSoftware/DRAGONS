@@ -18,8 +18,6 @@ Of course what is shown here could be packaged in modules for greater
 automation.
 
 
-|test|
-
 The dataset
 ===========
 If you have not already, download and unpack the tutorial's data package.
@@ -65,11 +63,8 @@ Then, we start Python and import the necessary modules, classes, and functions.
     >>> import glob
 
     # DRAGONS imports
-    >>> import astrodata
-    >>> import gemini_instruments
     >>> from recipe_system.reduction.coreReduce import Reduce
-    >>> from recipe_system.cal_service import CalibrationService
-    >>> from recipe_system.cal_service import set_calservice
+    >>> from recipe_system import cal_service
     >>> from gempy.utils import logutils
     >>> from gempy.adlibrary import dataselect
 
@@ -81,10 +76,14 @@ it will not break anything.
 
 Create file lists
 =================
+.. |astrouser_link| raw:: html
+
+   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
+
 The first step is to create input file lists.  The tool ``dataselect`` helps
 with that.  It uses Astrodata tags and descriptors to select the files and
 store the filenames to a Python list that can then be fed to the ``Reduce``
-class.
+class. (See the |astrouser_link| for information about Astrodata.)
 
 Two lists for the darks
 -----------------------
@@ -220,14 +219,12 @@ send to it.
 The calibration database is initialized and the calibration service is
 configured like this::
 
-    >>> from recipe_system.cal_service import CalibrationService
-    >>> caldb = CalibrationService()
+    >>> caldb = cal_service.CalibrationService()
     >>> caldb.config()
 
     >>> caldb.init()
 
-    >>> from recipe_system.cal_service import set_calservice
-    >>> set_calservice()
+    >>> cal_service.set_calservice()
 
 The calibration service is now ready to use.
 
@@ -248,7 +245,7 @@ First we quickly set up the logging::
 Master Dark
 -----------
 We first create the master dark for the science target, then add it to the
-calibration databae.  The name of the output master dark is
+calibration database.  The name of the output master dark is
 ``N20160102S0423_dark.fits``.  The output is written to disk and its name is
 stored in the ``Reduce`` instance.  The calibration service expects the
 name of a file on disk.
@@ -305,7 +302,7 @@ A NIRI master flat is created from a series of lamp-on and lamp-off exposures.
 Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
 
-We create the master flat field and add it to the calibration manager as
+We create the master flat field and add it to the calibration database as
 follow::
 
 ::
