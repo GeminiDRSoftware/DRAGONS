@@ -45,6 +45,7 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 
+
 def _log_traceback():
     exc_type, exc_value, exc_traceback = sys.exc_info()
     tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
@@ -77,7 +78,7 @@ class Reduce(object):
           the 'files' list (see 'files' below).
 
     output_filenames: <list>
-          attribute is a list of final output filenames.
+          read-only property is a list of final output filenames.
 
     mode: <str>
           operational mode. Currently, only 'qa', 'sq' modes are supported.
@@ -101,7 +102,7 @@ class Reduce(object):
           Dictionary of user parameters as passed by -p, --param flag.
 
     upload : <list>
-          List of products to upload to fitsstore and passed by --upload.
+          List of products to upload to fitsstore as passed by --upload.
           E.g.,
               --upload metrics calibs
                                     ==> upload == ['metrics', 'calibs']
@@ -232,7 +233,7 @@ class Reduce(object):
                 _log_traceback()
                 log.stdinfo("Writing final outputs ...")
                 self._write_final(p.streams['main'])
-                self.output_filenames = [ad.filename for ad in p.streams['main']]
+                self._output_filenames = [ad.filename for ad in p.streams['main']]
                 raise
 
         self._write_final(p.streams['main'])
