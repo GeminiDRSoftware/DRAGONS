@@ -58,14 +58,14 @@ gemini_keyword_names = dict(
     detector_roi_setting = 'DROISET',
     detector_rois_requested = 'DROIREQ',
     detector_section = 'DETSEC',
-    detector_x_bin = 'XCCDBIN',
-    detector_y_bin = 'YCCDBIN',
+    detector_x_bin = 'XBIN',
+    detector_y_bin = 'YBIN',
     disperser = 'DISPERSR',
     dispersion = 'WDELTA',
     dispersion_axis = 'DISPAXIS',
     elevation = 'ELEVATIO',
     exposure_time = 'EXPTIME',
-    filter_name = 'FILTNAME',
+    filter_name = 'FILTER1',
     focal_plane_mask = 'FPMASK',
     gain = 'GAIN',
     gain_setting = 'GAINSET',
@@ -81,8 +81,9 @@ gemini_keyword_names = dict(
     nominal_photometric_zeropoint = 'NOMPHOTZ',
     non_linear_level = 'NONLINEA',
     observation_epoch = 'OBSEPOCH',
+    observation_mode = 'OBSMODE',
     oiwfs = 'OIWFS_ST',
-    overscan_section = 'OVERSSEC',
+    overscan_section = 'OVERSEC',
     pixel_scale = 'PIXSCALE',
     prism = 'PRISM',
     pupil_mask = 'PUPILMSK',
@@ -170,6 +171,18 @@ class AstroDataGemini(AstroDataFits):
             return TagSet(['SOUTH'])
 
     @astro_data_tag
+    def _type_mode(self):
+        mode = self.phu.get(self._keyword_for('observation_mode'), '').upper()
+        print(type(mode))
+
+        if mode:
+            tags = [mode]
+            if mode != 'IMAGE':
+                # assume SPECT
+                tags.append('SPECT')
+            return TagSet(tags)
+
+    @astro_data_tag
     def _type_nodandchop(self):
         if self.phu.get('DATATYPE') == "marked-nodandchop":
             return TagSet(['NODCHOP'])
@@ -228,12 +241,10 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _status_processed_science(self):
-        for pattern in ('GMOSAIC', 'PREPAR'):
-            if not any((pattern in kw) for kw in self.phu):
-                return
+        kwords = {'GMOSAIC', 'PROCSCI'}
 
-        if self.phu['OBSTYPE'] == 'OBJECT':
-            return TagSet(['PROCESSED_SCIENCE'])
+        if self.phu['OBSTYPE'] == 'OBJECT' and set(self.phu.keys()) & kwords:
+            return TagSet(['PROCESSED_SCIENCE', 'PROCESSED'], blocks=['RAW'])
 
     def _parse_section(self, keyword, pretty):
         try:
@@ -538,7 +549,10 @@ class AstroDataGemini(AstroDataFits):
         float
             declination in degrees
         """
-        return self.wcs_dec()
+        dec = self.wcs_dec()
+        if dec is None:
+            dec = self.phu.get('DEC', None)
+        return dec
 
     @astro_data_descriptor
     def decker(self, stripID=False, pretty=False):
@@ -1303,7 +1317,10 @@ class AstroDataGemini(AstroDataFits):
         float
             right ascension in degrees
         """
-        return self.wcs_ra()
+        ra = self.wcs_ra()
+        if ra is None:
+            ra = self.phu.get('RA', None)
+        return ra
 
     @astro_data_descriptor
     def raw_bg(self):

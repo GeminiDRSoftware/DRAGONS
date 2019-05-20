@@ -18,8 +18,10 @@ class AstroDataTrecs(AstroDataGemini):
     def _tag_instrument(self):
         return TagSet(['TRECS'])
 
+    # override gemini-level "type_mode" because OBSMODE is used for something
+    # else in TReCS.
     @astro_data_tag
-    def _tag_image_spect(self):
+    def _type_mode(self):
         if 'MIRROR' in self.phu.get('GRATING', '').upper():
             return TagSet(['IMAGE'])
         else:
