@@ -117,8 +117,15 @@ class AstroDataGemini(AstroDataFits):
     @staticmethod
     def _matches_data(source):
         obs = source[0].header.get('OBSERVAT', '').upper()
-        # This covers variants like 'Gemini-North', 'Gemini North', etc.
-        return obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
+        tel = source[0].header.get('TELESCOP', '').upper()
+
+        isGemini = False
+        if obs in ('GEMINI-NORTH', 'GEMINI-SOUTH'):
+            isGemini = True
+        elif tel in ('GEMINI-NORTH', 'GEMINI-SOUTH'):
+            isGemini = True
+
+        return isGemini
 
     @astro_data_tag
     def _type_observatory(self):
@@ -173,7 +180,6 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_tag
     def _type_mode(self):
         mode = self.phu.get(self._keyword_for('observation_mode'), '').upper()
-        print(type(mode))
 
         if mode:
             tags = [mode]
