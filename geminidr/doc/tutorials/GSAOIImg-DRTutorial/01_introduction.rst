@@ -1,5 +1,10 @@
 .. 01_introduction.rst
 
+.. warning::
+
+  This tutorial is under development. The pipeline is not ready for a release
+  yet. Please, have that in mind while running it.
+
 
 .. _introduction:
 
@@ -51,6 +56,11 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
+.. todo::
+
+  ?BQ? - Upload a ``.tar.gz`` file with the full dataset and use the URL here.
+
+
 For this tutorial we selected data observed for for the GS-2017A-Q-29 program on
 the night starting on May 04, 2017.
 
@@ -101,8 +111,21 @@ You can add ``-v`` after each command to make it verbose since they can take a
 while to be executed. The files names may change depending on the parameters you
 used when searching in the `Gemini Archive <https://archive.gemini.edu/searchform>`_.
 
-For this tutorial, we will store the raw data within the ``./raw/`` directory to
-keep things cleaner: ::
+For this tutorial, we will use a directory to separate the raw data from
+the processed data. This is how the data should be organized: ::
 
-   $ mkdir ./raw  # create directory
-   $ mv *.fits ./raw  # move all the FITS files to this directory
+  |-- ${path to my data}
+  |   |-- playdata  # directory for raw data
+  |   |-- playground  # working directory
+
+Use the following commands to have a directory structure consistent the one
+used in this tutorial: ::
+
+  $ cd ${path_to_my_data}
+  $ mkdir playdata  # create directory for raw data
+  $ mkdir playground  #  create working directory
+  $ mv *.fits ./raw  # move all the FITS files to this directory
+
+
+
+
