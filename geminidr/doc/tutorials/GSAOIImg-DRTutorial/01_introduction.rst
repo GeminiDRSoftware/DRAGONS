@@ -127,5 +127,13 @@ used in this tutorial: ::
   $ mv *.fits ./raw  # move all the FITS files to this directory
 
 
+.. _about_data_set:
+
+About the dataset
+=================
+
+For this tutorial we selected data observed for for the GS-2017A-Q-29 program on
+the night starting on May 04, 2017.
+
 
 
