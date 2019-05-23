@@ -287,6 +287,11 @@ cancelling out).
 Stack Science reduced images
 ----------------------------
 
+.. todo::
+
+  ?BQ? make .tar.gz file available for public access and change the url below.
+
+
 Finally, you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction

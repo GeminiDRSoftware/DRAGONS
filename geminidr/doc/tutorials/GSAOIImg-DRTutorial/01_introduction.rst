@@ -114,9 +114,9 @@ used when searching in the `Gemini Archive <https://archive.gemini.edu/searchfor
 For this tutorial, we will use a directory to separate the raw data from
 the processed data. This is how the data should be organized: ::
 
-  |-- ${path to my data}
-  |   |-- playdata  # directory for raw data
-  |   |-- playground  # working directory
+  |-- ${path to my data}/
+  |   |-- playdata/  # directory for raw data
+  |   |-- playground/  # working directory
 
 Use the following commands to have a directory structure consistent the one
 used in this tutorial: ::
@@ -124,7 +124,7 @@ used in this tutorial: ::
   $ cd ${path_to_my_data}
   $ mkdir playdata  # create directory for raw data
   $ mkdir playground  #  create working directory
-  $ mv *.fits ./raw  # move all the FITS files to this directory
+  $ mv *.fits ./playdata/  # move all the FITS files to this directory
 
 
 .. _about_data_set:
@@ -133,7 +133,7 @@ About the dataset
 =================
 
 The table below contains a summary of the dataset downloaded in the previous
-section: ::
+section:
 
 +---------------+---------------------+--------------------------------+
 | Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
@@ -145,5 +145,5 @@ section: ::
 |               || S20170505S0060-074 || Lamp off, Kshort, for science |
 +---------------+---------------------+--------------------------------+
 | Standard star || S20170504S0114-117 || Kshort, standart star, 30 s   |
-+---------------+------------------------------------------------------+
++---------------+---------------------+--------------------------------+
 
