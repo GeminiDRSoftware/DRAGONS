@@ -291,7 +291,8 @@ Finally, you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction
 and image stacking is called `disco-stu`. This package can be found in the
-link bellow (only available within Gemini Internal Network for now):
+link bellow (only available within Gemini Internal Network for now and requires
+login):
 
 *  `disco-stu v1.3.4 <https://gitlab.gemini.edu/DRSoftware/disco_stu/repository/v1.3.4/archive.tar.gz>`_
 

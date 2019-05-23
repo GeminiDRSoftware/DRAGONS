@@ -132,8 +132,18 @@ used in this tutorial: ::
 About the dataset
 =================
 
-For this tutorial we selected data observed for for the GS-2017A-Q-29 program on
-the night starting on May 04, 2017.
+The table below contains a summary of the dataset downloaded in the previous
+section: ::
 
-
++---------------+---------------------+--------------------------------+
+| Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
++---------------+---------------------+--------------------------------+
+| Darks         || S20150609S0022-031 || Only to create BPM, 150 s     |
++---------------+---------------------+--------------------------------+
+| Flats         || S20171208S0053-067 || Lamp on, H-band, for BPM      |
+|               || S20170505S0030-044 || Lamp on, Kshort, for science  |
+|               || S20170505S0060-074 || Lamp off, Kshort, for science |
++---------------+---------------------+--------------------------------+
+| Standard star || S20170504S0114-117 || Kshort, standart star, 30 s   |
++---------------+------------------------------------------------------+
 
