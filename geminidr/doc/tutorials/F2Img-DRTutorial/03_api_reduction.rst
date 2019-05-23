@@ -85,12 +85,12 @@ names:
     :linenos:
     :lineno-start: 12
 
-    all_files = glob.glob('./raw/*.fits')
+    all_files = glob.glob('../playdata/*.fits')
 
 Where the string between parenthesis means that we are selecting every file that
-ends with ``.fits`` and that lives withing the ``./raw`` directory. Before you
-carry on, we recommend that you use ``print(all_files)`` to check if they were
-properly read.
+ends with ``.fits`` and that lives withing the ``../playdata/`` directory.
+Before you carry on, we recommend that you use ``print(all_files)`` to check if
+they were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
 :func:`~gempy.adlibrary.dataselect.select_data`. Your will may have to add
