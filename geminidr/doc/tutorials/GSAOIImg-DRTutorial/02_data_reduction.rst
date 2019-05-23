@@ -8,9 +8,7 @@
 
 .. _showd: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showd
 
-.. _show_primitives: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-primitives
-
-.. _show_recipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes
+.. _showrecipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showrecipes
 
 .. _showpars: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars
 
@@ -48,28 +46,22 @@ called ``raw`` and that we do not have any information anymore. From a bash
 terminal and from within the Conda Virtual Environment where DRAGONS was
 installed, we can call the command tool typewalk_: ::
 
-    $ typewalk
+    $ typewalk -d ../playdata/
 
-    directory:  <my_full_path>/raw
-     S20150609S0022.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20150609S0023.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20150609S0024.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     ...
-     S20170312S0180.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-     S20170312S0181.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-     S20170312S0198.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-     ...
-     S20170315S0286.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20170316S0090.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     S20170316S0091.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     ...
+    directory:  /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata
+         S20171208S0054.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+         S20150609S0029.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+         ...
+         S20170505S0102.fits ............... (GEMINI) (GSAOI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
+         S20170505S0066.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPOFF) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
+    Done DataSpider.typewalk(..)
 
-This command will open every FITS file within the current folder (recursively)
-and will print a table with the file names and the associated tags. For example,
-calibration files will always have the ``CAL`` tag. Flat images will always have
-the ``FLAT`` tag. Dark files will have the ``DARK`` tag. This means that we
-can start getting to know a bit more about our data set just by looking the
-tags. The output above was trimmed for simplicity.
+This command will open every FITS file within the folder passed after the ``-d``
+flag (recursively) and will print an unsorted table with the file names and the
+associated tags. For example, calibration files will always have the ``CAL``
+tag. Flat images will always have the ``FLAT`` tag. Dark files will have the
+``DARK`` tag. This means that we can start getting to know a bit more about our
+data set just by looking the tags. The output above was trimmed for simplicity.
 
 
 .. _create_file_lists:
@@ -86,7 +78,7 @@ be used in the data-reduction process. For that, we will use the dataselect_
 command line. Please, refer to the dataselect_ page for details regarding its
 usage. Let us start with the DARK files: ::
 
-   $ dataselect --tags DARK raw/*.fits > list_of_darks.txt
+   $ dataselect --tags DARK ../playdata/*.fits > list_of_darks.txt
 
 Here, the ``>`` symbol gets the dataselect_ output and stores it within the
 ``list_of_darks.txt`` file. If you want to see the output, simply omit it and
@@ -94,13 +86,9 @@ everything after it.
 
 Now we can do the same with the FLAT files, separating them by filter: ::
 
-    $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' raw/*.fits > \
-         list_of_Kshort_flats.txt
+    $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' ../playdata/*.fits > list_of_Kshort_flats.txt
 
-    $ dataselect --tags FLAT --expr 'filter_name=="H"' raw/*.fits > \
-         list_of_H_flats.txt
-
-Recall that the ``\`` (back-slash) is used simply to break the long line .
+    $ dataselect --tags FLAT --expr 'filter_name=="H"' ../playdata/*.fits > list_of_H_flats.txt
 
 You can select the standard start with the following command: ::
 
@@ -114,55 +102,59 @@ Here we have only four files. But the problem is that you may have more than one
 standard star in your data set. We can verify that by passing the dataselect_
 output to the showd_ command line using "pipe" (``|``): ::
 
-    $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits | showd -d object
-
-    filename:   object
-    ------------------------------
-    S20170504S0114.fits: 9132
-    S20170504S0115.fits: 9132
-    S20170504S0116.fits: 9132
-    S20170504S0117.fits: 9132
-
+    $ dataselect --expr 'observation_class=="partnerCal"' ../playdata/*.fits | showd -d object
+    ----------------------------------------
+    filename                          object
+    ----------------------------------------
+    ../playdata/S20170504S0114.fits     9132
+    ../playdata/S20170504S0115.fits     9132
+    ../playdata/S20170504S0116.fits     9132
+    ../playdata/S20170504S0117.fits     9132
 
 The ``-d`` flag tells showd_ which descriptor will be printed for each input
 file. As you can see, it was not our case. If you see more than one object, you
 can create a list for each standard star using the ``object`` descriptor
 as an argument for dataselect_ (spaces are allowed if you use double quotes): ::
 
-   $ dataselect --expr 'object=="9132"' raw/*.fits > list_of_std_9132.txt
+    $ dataselect --expr 'object=="9132"' ../playdata/*.fits > list_of_std_9132.txt
 
 
 The rest is the data with your science target. Before we create a new list, let
 us check if we have more than one target and more than one exposure time: ::
 
-   $ dataselect --expr 'observation_class=="science"' raw/*.fits | showd -d object
-
-   filename:   object
-   ------------------------------
-   S20170505S0095.fits: NGC5128
-   S20170505S0096.fits: NGC5128
-   ...
-   S20170505S0109.fits: NGC5128
-   S20170505S0110.fits: NGC5128
+    $ dataselect --expr 'observation_class=="science"' ../playdata/*.fits | showd -d object
+    -----------------------------------------
+    filename                           object
+    -----------------------------------------
+    ../playdata/S20170505S0095.fits   NGC5128
+    ../playdata/S20170505S0096.fits   NGC5128
+    ...
+    ../playdata/S20170505S0109.fits   NGC5128
+    ../playdata/S20170505S0110.fits   NGC5128
 
 We have only one target. Now let us check the exposure time: ::
 
-   $ dataselect --expr 'observation_class=="science"' raw/*.fits | showd -d exposure_time
+    $ dataselect --expr 'observation_class=="science"' ../playdata/*.fits | showd -d exposure_time
+    -----------------------------------------------
+    filename                          exposure_time
+    -----------------------------------------------
+    ../playdata/S20170505S0095.fits            60.0
+    ../playdata/S20170505S0096.fits            60.0
+    ...
+    ../playdata/S20170505S0109.fits            60.0
+    ../playdata/S20170505S0110.fits            60.0
 
-   filename:   exposure_time
-   ------------------------------
-   S20170505S0095.fits: 60.0
-   S20170505S0096.fits: 60.0
-   ...
-   S20170505S0109.fits: 60.0
-   S20170505S0110.fits: 60.0
 
-Again, only one exposure time. Just to show the example, let us consider that
-we want to filter all the files whose ``object`` is NGC5128 and that the
-``exposure_time`` is 60 seconds. We also want to pass the output to a new list: ::
+Again, only one exposure time. You can print more than one descriptor by passing
+a comma-sepparated argument to the ``-d`` argument (e.g.,
+``-d object_name,exposure_time``).
 
-   $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' raw/*.fits > \
-      list_of_science_files.txt
+Just to show the example, let us consider that we want to filter all the files
+whose ``object`` is NGC5128 and that the ``exposure_time`` is 60 seconds. We
+also want to pass the output to a new list: ::
+
+   $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' ../playdata/*.fits > list_of_science_files.txt
+
 
 .. _process_dark_files:
 
@@ -189,7 +181,7 @@ the following command: ::
 
    $ caldb add ./calibrations/processed_dark/S20150609S0022_dark.fits
 
-Note that the name of the master dark file can be different for you.
+Note that the prefix name of the master dark file can be different for you.
 
 
 .. _create_bpm_files:
@@ -299,11 +291,20 @@ Finally, you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction
 and image stacking is called `disco-stu`. This package can be found in the
-link bellow:
+link bellow (only available within Gemini Internal Network for now):
 
-  |github|  `See disco-stu on GitHub <https://github.com/GeminiDRSoftware/disco-stu/releases/latest>`_
+*  `disco-stu v1.3.4 <https://gitlab.gemini.edu/DRSoftware/disco_stu/repository/v1.3.4/archive.tar.gz>`_
 
-Check this page for requirements and instruction on installing the package.
+.. Warning::
+
+  The functionality of ``disco-stu`` is being incorporated withing DRAGONS.
+  Because of that, you might find unexpected results. Specially in very
+  crowded fields where the sky cannot be properly measured. This section
+  will be changed in the future.
+
+
+De-compress the file, enter in the decompressed directory and use pip to install
+it: ``$ pip install . ``.
 
 Once you are all set, you can simply run ``disco`` on the Sky Subtracted
 files: ::
@@ -359,98 +360,93 @@ First, you need to know what are the recipes available for a given files, then
 you need to get what are Primitives living within that recipe. Finally, you need
 a list of parameters that can be modified.
 
-.. todo show_recipes
+The showrecipes_ command line takes care of both steps. In order to list
+all the recipes available for a given file, we can pass the file as an input and
+the ``--all`` option. Here is an example::
 
-The show_recipes_ command line takes care of the first step. Here is an
-example::
-
-    $ show_recipes raw/S20170505S0073.fits
-
-     DRAGONS v2.1.x - show_recipes
-     Input file: ./raw/S20170505S0073.fits
-     Input tags: (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI)
-                 (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-     Recipes available for the input file:
-       geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat
-       geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat
-       geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM
+  $ showrecipes ../playdata/S20170505S0073.fits --all
+  Input file: /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata/S20170505S0073.fits
+  Input tags: {'GEMINI', 'LAMPOFF', 'UNPREPARED', 'GSAOI', 'NON_SIDEREAL', 'DOMEFLAT', 'CAL', 'RAW', 'IMAGE', 'SOUTH', 'FLAT', 'AZEL_TARGET'}
+  Recipes available for the input file:
+     geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM
+     geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedFlat
+     geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat
 
 The output tells me that I have two recipes for the SQ (Science Quality) mode
 and one recipe for the QA (Quality Assesment) mode. By default, ``reduce`` uses
 the SQ mode for processing the data.
 
-.. todo show_primitives
+The showrecipes_ command line can also display what are the Primitives that
+were used within a particular Recipe. Check the example below: ::
 
-The show_primitives_ command line displays what are the Primitives that
-were used within a particular Recipe: ::
-
-    $ show_primitives raw/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
-
-    DRAGONS v2.1.x - show_recipes
-    Input file: ./raw/S20170505S0073.fits
+    $ showrecipes ../playdata/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
+    Input file: /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata/S20170505S0073.fits
+    Input tags: ['SOUTH', 'AZEL_TARGET', 'IMAGE', 'GEMINI', 'NON_SIDEREAL', 'LAMPOFF', 'FLAT', 'CAL', 'DOMEFLAT', 'UNPREPARED', 'RAW', 'GSAOI']
     Input mode: sq
     Input recipe: makeProcessedBPM
     Matched recipe: geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM
+    Recipe location: /data/bquint/Repos/DRAGONS/geminidr/gsaoi/recipes/sq/recipes_FLAT_IMAGE.py
+    Recipe tags: {'CAL', 'IMAGE', 'FLAT', 'GSAOI'}
     Primitives used:
-      p.prepare()
-      p.addDQ()
-      p.addVAR(read_noise=True, poisson_noise=True)
-      p.ADUToElectrons()
-      p.selectFromInputs(tags="DARK", outstream="darks")
-      p.selectFromInputs(tags="FLAT")
-      p.stackFrames(stream="darks")
-      p.makeLampFlat()
-      p.normalizeFlat()
-      p.makeBPM()
+       p.prepare()
+       p.addDQ()
+       p.addVAR(read_noise=True, poisson_noise=True)
+       p.ADUToElectrons()
+       p.selectFromInputs(tags="DARK", outstream="darks")
+       p.selectFromInputs(tags="FLAT")
+       p.stackFrames(stream="darks")
+       p.makeLampFlat()
+       p.normalizeFlat()
+       p.makeBPM()
 
-.. todo showpars
 
 Now you can get the list of parameters for a given Primitive using the
 showpars_ command line. Here is an example: ::
 
-    $ showpars raw/S20170505S0073.fits makeLampFlat
-    Dataset tagged as {'FLAT', 'SOUTH', 'RAW', 'GEMINI', 'DOMEFLAT', 'CAL', 'AZEL_TARGET', 'GSAOI', 'NON_SIDEREAL', 'LAMPOFF', 'IMAGE', 'UNPREPARED'}
-    Settable parameters on 'makeLampFlat':
-    ========================================
-     Name			Current setting
+    $ showpars ../playdata/S20170505S0073.fits makeLampFlat
 
-    suffix               '_stack'             Filename suffix
-    apply_dq             True                 Use DQ to mask bad pixels?
-    statsec              None                 Section for statistics
-    operation            'mean'               Averaging operation
-    Allowed values:
-        mean	arithmetic mean
-        wtmean	variance-weighted mean
-        median	median
-        lmedian	low-median
-
-    reject_method        'sigclip'            Pixel rejection method
-    Allowed values:
-        none	no rejection
-        minmax	reject highest and lowest pixels
-        sigclip	reject pixels based on scatter
-        varclip	reject pixels based on variance array
-
-    hsigma               3.0                  High rejection threshold (sigma)
-        Valid Range = [0,inf)
-    lsigma               3.0                  Low rejection threshold (sigma)
-        Valid Range = [0,inf)
-    mclip                True                 Use median for sigma-clipping?
-    max_iters            None                 Maximum number of clipping iterations
-        Valid Range = [1,inf)
-    nlow                 0                    Number of low pixels to reject
-        Valid Range = [0,inf)
-    nhigh                0                    Number of high pixels to reject
-        Valid Range = [0,inf)
-    memory               None                 Memory available for stacking (GB)
-        Valid Range = [0.1,inf)
 
 Now that we know what are is the recipe being used, what are the Primitives
 it calls and what are the parameters that are set, we can finally change the
 default values using the ``-p`` flag. We actually did this earlier in this
 tutorial when we called::
 
-   $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
+    $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
+    Dataset tagged as {'RAW', 'DOMEFLAT', 'NON_SIDEREAL', 'SOUTH', 'AZEL_TARGET', 'CAL', 'GEMINI', 'FLAT', 'LAMPOFF', 'GSAOI', 'IMAGE', 'UNPREPARED'}
+    Settable parameters on 'makeLampFlat':
+    ========================================
+     Name                   Current setting
+
+    suffix               '_stack'             Filename suffix
+    apply_dq             True                 Use DQ to mask bad pixels?
+    statsec              None                 Section for statistics
+    operation            'mean'               Averaging operation
+    Allowed values:
+            mean    arithmetic mean
+            wtmean  variance-weighted mean
+            median  median
+            lmedian low-median
+
+    reject_method        'sigclip'            Pixel rejection method
+    Allowed values:
+            none    no rejection
+            minmax  reject highest and lowest pixels
+            sigclip reject pixels based on scatter
+            varclip reject pixels based on variance array
+
+    hsigma               3.0                  High rejection threshold (sigma)
+            Valid Range = [0,inf)
+    lsigma               3.0                  Low rejection threshold (sigma)
+            Valid Range = [0,inf)
+    mclip                True                 Use median for sigma-clipping?
+    max_iters            None                 Maximum number of clipping iterations
+            Valid Range = [1,inf)
+    nlow                 0                    Number of low pixels to reject
+            Valid Range = [0,inf)
+    nhigh                0                    Number of high pixels to reject
+            Valid Range = [0,inf)
+    memory               None                 Memory available for stacking (GB)
+            Valid Range = [0.1,inf)
 
 for example. But now you know that ``-p`` is telling ``reduce`` that the
 ``addDQ`` primitive should use a different value for the ``user_bpm`` parameter.
