@@ -72,5 +72,5 @@ explicitly. If you need to find short darks for your program, do as follow:
 
 * Set a date range around the dates of your science observations.
 * Set **Instrument** to NIRI.
-* Set the **Obs.Type** to DARK.
+* Set **Obs.Type** to DARK.
 * Set the exposure time to 1 second.

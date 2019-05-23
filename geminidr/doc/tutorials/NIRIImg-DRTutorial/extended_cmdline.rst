@@ -41,9 +41,14 @@ Here is a copy of the table for quick reference.
 
 Create file lists
 =================
+.. |astrouser_link| raw:: html
+
+   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
+
 The first step is to create input file lists.  The tool ``dataselect`` helps
 with that.  It uses Astrodata tags and descriptors to select the files and
-send the filenames to a text file that can then be fed to ``reduce``.
+send the filenames to a text file that can then be fed to ``reduce``.  (See the
+|astrouser_link| for information about Astrodata.)
 
 First, navigate to the ``playground`` directory in the unpacked data package.
 
@@ -128,7 +133,7 @@ observations from that star and not our science target.
 
 A list for the science observations
 -----------------------------------
-The science frames are all the ``IMAGE`` non-``FLAT`` that are also not the standard.
+The science frames are all the ``IMAGE`` non-``FLAT`` frames that are also not the standard.
 Since flats are tagged ``FLAT`` and ``IMAGE``, we need to exclude the ``FLAT`` tag.
 
 This translates to the following expression::
@@ -158,7 +163,7 @@ follow::
     database_dir = <where_the_data_package_is>/niriimg_tutorial/playground
 
 This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibration we are going to
+database that will keep track of the processed calibrations we are going to
 send to it.
 
 .. note:: ``~`` in the path above refers to your home directory.  Also, don't miss the dot in ``.geminidr``.
@@ -233,7 +238,7 @@ A NIRI master flat is created from a series of lamp-on and lamp-off exposures.
 Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
 
-We create the master flat field and add it to the calibration manager as
+We create the master flat field and add it to the calibration database as
 follow::
 
     reduce @flats.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits

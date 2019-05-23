@@ -1,29 +1,23 @@
-#
-#                                                                        DRAGONS
-#
-#                                                                  coreReduce.py
-# ------------------------------------------------------------------------------
-# The Reduce class. Used by reduce, v2.0 cli.
-# ------------------------------------------------------------------------------
-from __future__ import print_function
-from builtins import str
-from builtins import object
-# ------------------------------------------------------------------------------
-from recipe_system import __version__
-# ------------------------------------------------------------------------------
 """
-class Reduce {} provides one (1) public method:
+class Reduce provides one (1) public method:
 
     runr()
 
 which calls on the mapper classes and passes the received data to them.
 
-""".format(__version__)
+"""
+# ------------------------------------------------------------------------------
+#                                                                        DRAGONS
+#
+#                                                                  coreReduce.py
+# ------------------------------------------------------------------------------
+from __future__ import print_function
+from builtins import str
+from builtins import object
 # ---------------------------- Package Import ----------------------------------
 import os
 import sys
 import inspect
-import signal
 import traceback
 
 from importlib import import_module
@@ -35,12 +29,12 @@ from gempy.utils import logutils
 
 from astrodata.core import AstroDataError
 
-# TODO: rule of three violation
+from recipe_system import __version__
+
 from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
 
-# TODO: rule of three violation
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_ucals
 from recipe_system.utils.reduce_utils import set_btypes
@@ -50,6 +44,7 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
+
 
 def _log_traceback():
     exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -78,29 +73,47 @@ class Reduce(object):
 
     Attributes
     ----------
-    adinputs : list
+    adinputs: <list>
+          attribute is a list of the input astrodata objects as made from
+          the 'files' list (see 'files' below).
 
-    output_filenames : list
+    output_filenames: <list>
+          read-only property is a list of final output filenames.
 
-    mode : str
+    mode: <str>
+          operational mode. Currently, only 'qa', 'sq' modes are supported.
 
-    drpkg : (add type)
+    drpkg: <str>
+          Data reduction package name. Default is 'geminidr', the Gemini
+          Observatory data reduction package.
 
-    files : list
+    files: <list>
+          List of input filenames. Passed to Reduce.__init__(), these are
+          converted to astrodata objects.
 
-    suffix : str
+    suffix: <str>
+          User supplied suffix to be applied as a final suffix to output
+          filenames.
 
-    ucals : (add type)
+    ucals: <dict>
+          Dictionary of calibration files passed by --user_cals flag.
 
-    uparms : (add type)
+    uparms: <dict>
+          Dictionary of user parameters as passed by -p, --param flag.
 
-    _upload : (add type)
+    upload : <list>
+          List of products to upload to fitsstore as passed by --upload.
+          E.g.,
+              --upload metrics calibs
+                                    ==> upload == ['metrics', 'calibs']
+         will upload QA metrics to fitsstore and processing calibration
+         files.
 
-    recipename : str (optional)
-        The name of the recipe that will be run. If None, its set to 'default'.
+    recipename: <str>
+        The name of the recipe that will be run. If None, the 'default'
+        recipe is used, as specified in the appropriate recipe library.
+
     """
-
-    # TODO (@kiloRomeoAlpha) : replace `sys_args` by the actual arguments
     def __init__(self, sys_args=None):
         if sys_args:
             args = sys_args
@@ -114,7 +127,6 @@ class Reduce(object):
             import_module(args.adpkg)
 
         self.adinputs = None
-        self.output_filenames = None
         self.mode = args.mode
         self.drpkg = args.drpkg
         self.files = args.files
@@ -122,6 +134,7 @@ class Reduce(object):
         self.ucals = normalize_ucals(args.files, args.user_cal)
         self.uparms = set_btypes(args.userparam)
         self._upload = args.upload
+        self._output_filenames = None
         self.recipename = args.recipename if args.recipename else 'default'
 
     @property
@@ -138,6 +151,11 @@ class Reduce(object):
             self._upload = upl
         return
 
+    @property
+    def output_filenames(self):
+        return self._output_filenames
+
+
     def runr(self):
         """
         Map and run the requested or defaulted recipe.
@@ -148,25 +166,21 @@ class Reduce(object):
 
         Returns
         -------
-        xstat : <int> exit code
+        <void>
 
         """
-        xstat = 0
         recipe = None
-
         try:
             ffiles = self._check_files(self.files)
         except IOError as err:
-            xstat = signal.SIGIO
             log.error(str(err))
-            return xstat
+            raise
 
         try:
             self.adinputs = self._convert_inputs(ffiles)
         except IOError as err:
-            xstat = signal.SIGIO
             log.error(str(err))
-            return xstat
+            raise
 
         rm = RecipeMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.recipename)
@@ -186,9 +200,8 @@ class Reduce(object):
         try:
             p = pm.get_applicable_primitives()
         except PrimitivesNotFound as err:
-            xstat = signal.SIGIO
             log.error(str(err))
-            return xstat
+            raise
 
         # If the RecipeMapper was unable to find a specified user recipe,
         # it is possible that the recipe passed was a primitive name.
@@ -197,61 +210,52 @@ class Reduce(object):
         if recipe is None:
             try:
                 primitive_as_recipe = getattr(p, self.recipename)
-                pname = primitive_as_recipe.__name__
-                log.stdinfo("Found '{}' as a primitive.".format(pname))
-                self._logheader(primitive_as_recipe.__name__)
             except AttributeError as err:
                 err = "Recipe {} Not Found".format(self.recipename)
-                xstat = signal.SIGIO
                 log.error(str(err))
-                return xstat
+                raise
+
+            pname = primitive_as_recipe.__name__
+            log.stdinfo("Found '{}' as a primitive.".format(pname))
+            self._logheader(pname)
             try:
                 primitive_as_recipe()
-            except AttributeError as err:
-                xstat = signal.SIGABRT
+            except Exception as err:
                 _log_traceback()
                 log.error(str(err))
-                return xstat
+                raise
         else:
             self._logheader(recipe)
             try:
                 recipe(p)
-            except KeyboardInterrupt:
-                log.error("Caught KeyboardInterrupt (^C) signal")
-                xstat = signal.SIGINT
-            except IOError as err:
-                log.error(str(err))
-                xstat = signal.SIGABRT
-            except TypeError as err:
-                _log_traceback()
-                log.error(str(err))
-                xstat = signal.SIGABRT
             except Exception as err:
-                log.error("runr() caught an unhandled exception.")
+                log.error("Reduce received an unhandled exception. Aborting ...")
                 _log_traceback()
-                log.error(str(err))
-                xstat = signal.SIGABRT
+                log.stdinfo("Writing final outputs ...")
+                self._write_final(p.streams['main'])
+                self._output_filenames = [ad.filename for ad in p.streams['main']]
+                raise
 
         self._write_final(p.streams['main'])
-        self.output_filenames = [ad.filename for ad in p.streams['main']]
-
-        if xstat != 0:
-            msg = "reduce instance aborted."
-        else:
-            msg = "\nreduce completed successfully."
+        self._output_filenames = [ad.filename for ad in p.streams['main']]
+        msg = "\nreduce completed successfully."
         log.stdinfo(str(msg))
-        return xstat
+        return
 
     # -------------------------------- prive -----------------------------------
     def _check_files(self, ffiles):
         """
         Sanity check on submitted files.
 
-        :parameter ffiles: list of passed FITS files.
-        :type ffiles: <list>
+        Parameters
+        --------
+        ffiles: <list>
+                list of passed FITS files.
 
-        :return: list of 'good' input fits datasets.
-        :rtype: <list>
+        Return
+        ------
+        input_files: <list>
+              list of 'good' input fits datasets.
 
         """
         try:
@@ -262,7 +266,7 @@ class Reduce(object):
             raise IOError("NO INPUT FILE(s) specified")
 
         input_files = []
-        bad_files   = []
+        bad_files = []
 
         for image in ffiles:
             if not os.access(image, os.R_OK):
@@ -271,13 +275,13 @@ class Reduce(object):
             else:
                 input_files.append(image)
         try:
-            assert(bad_files)
+            assert bad_files
             err = "\n\t".join(bad_files)
             log.warn("Files not found or cannot be loaded:\n\t%s" % err)
             try:
-                assert(input_files)
+                assert input_files
                 found = "\n\t".join(input_files)
-                log.stdinfo("These datasets were found and loaded:\n\t%s" % found)
+                log.stdinfo("These datasets were loaded:\n\t%s" % found)
             except AssertionError:
                 log.error("Caller passed no valid input files")
                 raise IOError("No valid files passed.")
@@ -297,11 +301,13 @@ class Reduce(object):
         """
         Convert files into AstroData objects.
 
-        :parameter inputs: list of FITS file names
-        :type inputs: <list>
+        Parameters
+        ----------
+        inputs: <list>, list of FITS file names
 
-        :return: list of AstroData objects
-        :rtype: <list>
+        Return
+        ------
+        allinputs: <list>, list of AstroData objects
 
         """
         allinputs = []
@@ -333,11 +339,14 @@ class Reduce(object):
         of an 'args' key in the stack's 'f_locals' namespace. If the Namespace
         objects are not equal, reduce is not calling this class.
 
-        :parameters: <void>
+        Parameters
+        ----------
+        <void>
 
-        :returns: Value of whether 'reduce' or some other executable is
-                  instantiating this class.
-        :rtype: <bool>
+        Returns
+        -------
+        is_reduce: <bool>,
+            Did 'reduce' call this?
 
         """
         is_reduce = False
@@ -349,7 +358,7 @@ class Reduce(object):
                 if local == 'args':
                     try:
                         assert(
-                            list(value.__dict__.keys()) == 
+                            list(value.__dict__.keys()) ==
                             list(red_namespace.__dict__.keys())
                         )
                         is_reduce = True
@@ -378,17 +387,16 @@ class Reduce(object):
         Write final outputs. Write only if filename is not == orig_filename, or
         if there is a user suffix (self.suffix)
 
-        Parameters:
-        -----------
-            outputs: List of AstroData objects
-            type: <list>
+        Parameters
+        ----------
+        outputs: <list>, List of AstroData objects
 
-        Return:
-        -------
-            type: <void>
+        Return
+        ------
+        <void>
 
         """
-        outstr = "Wrote {} in output directory"
+        outstr = "\tWrote {} in output directory"
         def _sname(name):
             head, tail = os.path.splitext(name)
             ohead = head.split("_")[0]

@@ -362,16 +362,6 @@ def normalize_ucals(files, cals):
     a returned dict,
         {('GS-2017A-Q-32-7-029', 'processed_flat'): '/path/to/XXX_flat.fits'}
     """
-    def _site(tags):
-        site = None
-        if "SOUTH" in tags:
-            site = 'GS'
-        elif "NORTH" in tags:
-            site = 'GN'
-        else:
-            emsg = "Site cannot be determined."
-            raise TypeError(emsg)
-        return site
 
     normalz = {}
     if cals is None:
@@ -390,10 +380,6 @@ def normalize_ucals(files, cals):
 
         for f in files:
             ad = astrodata.open(f)
-            if _site(cad.tags) != _site(ad.tags):
-                emsg = "Calibration {} does not match site of observation {}"
-                raise TypeError(emsg.format(cad.filename, ad.filename))
-
             normalz.update({(ad.calibration_key(), ctype): cpath})
 
     return normalz

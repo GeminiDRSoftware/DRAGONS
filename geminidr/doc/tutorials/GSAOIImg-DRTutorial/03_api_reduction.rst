@@ -83,12 +83,12 @@ data reduction step. We can start by creating a :class:`list` will all the file 
     :linenos:
     :lineno-start: 12
 
-    all_files = glob.glob('./raw/*.fits')
+    all_files = glob.glob('../playdata/*.fits')
 
 Where the string between parenthesis means that we are selecting every file that
-ends with ``.fits`` and that lives withing the ``./raw`` directory. Before you
-carry on, we recommend that you use ``print(all_files)`` to check if they were
-properly read.
+ends with ``.fits`` and that lives withing the ``../playdata/`` directory. Before
+you carry on, we recommend that you use ``print(all_files)`` to check if they
+were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
 :func:`~gempy.adlibrary.dataselect.select_data`. Your will may have to add
@@ -271,15 +271,26 @@ data:
 Stack Science reduced images
 ----------------------------
 
+.. todo::
+
+  ?BQ? make .tar.gz file available for public access and change the url below.
+
+
 Now you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction
-and image stacking is called `disco-stu`. This package can be found in the
-link bellow:
+and image stacking is called ``disco-stu`` and the most recent version is the
+v1.3.4. This package can be found in the link bellow (only available within
+Gemini Internal Network for now and requires login):
 
-  |github|  `See disco-stu on GitHub <https://github.com/GeminiDRSoftware/disco-stu/releases/latest>`_
+*  `disco-stu v1.3.4 <https://gitlab.gemini.edu/DRSoftware/disco_stu/repository/v1.3.4/archive.tar.gz>`_
 
-Check this page for requirements and instruction on installing the package.
+.. Warning::
+
+  The functionality of ``disco-stu`` is being incorporated withing DRAGONS.
+  Because of that, you might find unexpected results. Specially in very
+  crowded fields where the sky cannot be properly measured. This section
+  will be changed in the future.
 
 This package was created to be accessed via command line. Because of that, we
 need a few more steps while running it. First, let's import some libraries:
@@ -294,7 +305,7 @@ need a few more steps while running it. First, let's import some libraries:
     from disco_stu.lookups import general_parameters as disco_pars
 
 
-Then we need to create a special object using :func:`~collections.namedtuple`.
+Then we need to create a special class using :func:`~collections.namedtuple`.
 This object will hold information about matching the objects between files:
 
 .. code-block:: python
@@ -309,7 +320,7 @@ This object will hold information about matching the objects between files:
             'degree'
             ])
 
-We now create instances of ``MatchInfo`` object:
+We now create objects of ``MatchInfo`` class:
 
 .. code-block:: python
     :linenos:
@@ -346,7 +357,7 @@ position arguments.
 
 This function has many other parameters that can be used to customize this step
 but further details are out of the scope of this tutorial. Please, refer to the
-`disco-stu GitHub Page <https://github.com/GeminiDRSoftware/disco-stu>`_ for the
-corresponding information.
+`disco-stu GitLab Internal Page <https://gitlab.gemini.edu/DRSoftware/disco_stu>`_
+for the corresponding information.
 
 

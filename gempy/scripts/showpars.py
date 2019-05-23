@@ -12,9 +12,11 @@ from argparse import ArgumentParser
 import astrodata
 import gemini_instruments
 
+from gempy import __version__
+
 from recipe_system.mappers import primitiveMapper
 # ------------------------------------------------------------------------------
-__version__ = '2.0.0 (beta)'
+
 # ------------------------------------------------------------------------------
 def buildArgs():
     parser = ArgumentParser(

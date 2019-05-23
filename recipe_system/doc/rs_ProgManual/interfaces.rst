@@ -16,7 +16,7 @@ The subclasses, |PrimitiveMapper| and |RecipeMapper|, do not override
 primitives and recipes that best match the input data.
 
 The mappers require a Data Reduction Package itself containing Instrument
-Packages.  We discuss those package and how to build the basic directory
+Packages.  We discuss these packages and how to build the basic directory
 structure for them in the :ref:`Appendix <drpkg>`.
 
 Below, we use the ``geminidr`` data reduction package when we need an
@@ -30,10 +30,9 @@ Primitive classes are defined in a Data Reduction (DR) Package.  For the Gemini
 instruments that is the ``geminidr`` package.  The DR Package to use by the
 mapper is set by the ``drpkg`` argument to mapper.
 
-
-These primitive classes define methods, referred as *primitives*, that provide
+These primitive classes define methods, referred to as *primitives*, that provide
 data processing functionality. Primitive classes in a DR Package are structured
-hierarchically and employ multiple inheritance.
+hierarchically and may employ multiple inheritance.
 
 In Figure 4.1 below, we show an example of primitive class inheritance as done
 in ``geminidr``, with ``GMOSImage`` the primitive class inheriting and
@@ -57,8 +56,8 @@ should have empty *tagsets*.
 
 .. note:: Hereafter, a Primitive class may be referred to as a "primitive set"
    or just "primitives".  Through inheritance, a primitive class collects many
-   primitives from higher in the hierarchy.  The primtive set implies the
-   whole collection in a more clearer way than just referring to the primitive
+   primitives from higher in the hierarchy.  The primitive set implies the
+   whole collection more clearly than just referring to the primitive
    class.
 
 
@@ -69,7 +68,7 @@ At a minimum, |PrimitiveMapper| requires as input a list of AstroData objects.
 Only the first object in the list will be used for mapping.  The whole list
 will be passed to the mapped primitive set once found and instantiated.
 
-The mapping is done by matching the primitive classes ``tagset`` attribute
+The mapping is done by matching the primitive set's ``tagset`` attribute
 to the AstroData tags of the first input element.
 
 The primitive set is obtained as follow, where ``ad`` is an AstroData object::
@@ -146,10 +145,10 @@ contest.  In our example, the class ``GMOSImage`` wins. Indeed::
 Selecting Recipes with RecipeMapper
 ===================================
 
-Recipes are functions that receive a single argument: an
-instance of a primitive class.  Recipe functions are not classes and do not
-(cannot) inherit. The recipe simply defines which and in which order the
-primitives are to be called on the data.
+Recipes are functions that receive a single argument: an instance of a primitive
+class.  Recipe functions are not classes and do not (cannot) inherit. The recipe
+simply defines the primitives to be used and the order in which the primitive calls
+are made on the data.
 
 Recipe functions are defined in python modules which we refer to as
 recipe libraries.  The location of those modules in a data reduction package
@@ -274,14 +273,12 @@ To summarize the mapper usage described in this chapter, to launch a reduction
 one does::
 
     >>> rmapper = RecipeMapper(adinputs, ...)
-    >>> pmappmer = PrimitiveMapper(adinputs, ...)
-    >>> recipe = rm.get_applicable_recipe()
-    >>> pset = pm.get_applicable_primitives()
+    >>> pmapper = PrimitiveMapper(adinputs, ...)
+    >>> recipe = rmapper.get_applicable_recipe()
+    >>> pset = pmapper.get_applicable_primitives()
     >>> recipe(pset)
 
 This is essentially what the |Reduce| class does.
-
-
 
 
 Using the Primitives Directly
@@ -321,9 +318,9 @@ data reduction package, the use of that base class, and the
 ``parameter_override`` decorator in ``recipe_system.utils.decorators``, is
 required to benefit from the *streams* system.
 
-It is also recommended, and indeed the primtives in ``geminidr`` do that, to
+It is also recommended, and indeed the primitives in ``geminidr`` do that, to
 have the primitives methods return the modified output AstroData objects.  When
-*streams* are use the return values are not necessary, but for debugging,
+*streams* are used, return values are not necessary, but for debugging,
 testing, or exploration purposes it can be handy.  For example, one can do
 this::
 
@@ -366,8 +363,8 @@ Here is what the stdout logging looks like when a primitive is run directly::
        [<gemini_instruments.gmos.adclass.AstroDataGmos object at 0x11a12d650>]
 
 
-Of interest when running the primitives in this way are the content of the
-``streams`` attribute and the ``params`` attributes of the primitive set.
+Of interest when running the primitives in this way are the contents of the
+``streams`` and ``params`` attributes of the primitive set.
 
 The *streams* and *params* are features of the ``geminidr`` ``PrimitiveBASE``
 class, the ``parameter_override`` decorator, and the ``pexconfig``-based

@@ -13,7 +13,7 @@ framework that supports configurable data processing pipelines
 and which can technically accommodate processing pipelines for arbitrary types
 of astronomical data.
 
-The Recipe System offers in infrastructure that will inspect DRAGONS-compatible
+The Recipe System provides infrastructure that will inspect DRAGONS-compatible
 configuration and data processing packages and map recipes and primitives to
 the input data.  The infrastructure will then link the appropriate primitives
 to the appropriate recipe and run it.  The Recipe System also includes tools
@@ -54,8 +54,7 @@ Definitions
 ===========
 
 The following section provides definitions, discussion, and some examples about
-certain terms and components that are key to a discussion and the functioning
-of the Recipe System.
+certain terms and components that are key to the functioning Recipe System.
 
 **Data Reduction Package (``drpkg``)**
 
@@ -146,15 +145,17 @@ passed to the selected recipe, completing the mapping.
 
 
 **Tagset**
+
 A Tagset is a Python set of Astrodata tags (see
 :ref:`Astrodata documentation <related>`).  A dataset opened with Astrodata
-will be recognized and assigned *tags*.  Those tags are used to map the data
-to the most appropriate recipe library and the most appropriate primitive set.
+will be recognized and assigned a set of *tags*. These tags are used by the
+Recipe System map the data to the most appropriate recipe library and the most
+appropriate primitive set.
 
 A recipe library announces the tags it applies to with a tagset stored in
 the module ``recipe_tags`` variable.  A primitive class uses the class
 attributr ``tagset`` to store the applicable tags.  The Recipe System
-maps all the tagsets together to find the best combination.
+maps all the tagsets together to find the best mapping solution.
 
 For example, a datasets is assigned the following tags::
 
@@ -183,8 +184,8 @@ ecosystem.
 Functional overview
 -------------------
 The complete reduction ecosystem is represented in
-:ref:`Figure 2.1 <schematic>` with emphasis on how the Recipe System automate
-and support the data reduction.  It illustrate the system's relationship to
+:ref:`Figure 2.1 <schematic>` with emphasis on how the Recipe System automates
+and supports the data reduction. It illustrates the system's relationship to
 instrument packages and the calibration manager.
 
 .. _schematic:
@@ -202,33 +203,33 @@ Let us go through that diagram.
 #. The |Reduce| class receives input datasets and parameters either
    from ``reduce`` or directly through the |Reduce| API
    (:ref:`Reduce and Recipe System User Manual.<refdocs>`). |Reduce| parses
-   the inputs arguments and open the input datasets.  When it is run, it will
-   send the first input to the Mappers.
+   the input arguments and opens the input datasets.  When run, it will send the
+   first input to the Mappers.
 #. The *Mappers*, both RecipeMapper and PrimitiveMapper, conduct
    best matching tests on recipe libraries and primitive classes and return
    the best matched objects.  The Astrodata tags and the recipe libraries and
    primitive classes tagsets are used to do the match.
-#. The instrument data reduction (DR) package is a collections of modules that provide data
-   reduction classes (primitives) and recipe libraries, and any supporting
-   software like lookup tables. The instrument DR packages are not part of the
-   Recipe System, they are add-ons specific to the instruments being supported.
-   The Recipe System probes and search those packages for matching primtive
-   sets and recipes.  In DRAGONS, the instrument DR packages, and some generic primitive
-   packages, are found under ``geminidr``.
+#. The instrument data reduction (DR) package is a collection of modules that
+   provide data reduction classes (primitives) and recipe libraries, and any
+   supporting software like lookup tables. The instrument DR packages are not
+   part of the Recipe System, they are add-ons specific to the instruments being
+   supported. The Recipe System probes and searches those packages for matching
+   primitive sets and recipes.  In DRAGONS, the instrument DR packages, and some
+   generic primitive packages, are found under ``geminidr``.
 #. The Calibration Request Service provides a functional interface between
    primitives requesting calibration files (biases, flats, etc.) and the
    designated calibration manager.
 #. The Calibration Manager is an independent component, not part of DRAGONS,
    that contains the calibration association rules and interacts with a
    database that stores the processed calibrations.  It accepts calibration
-   requests passed by the Calibration Request Servic at the behest of the
+   requests passed by the Calibration Request Service at the behest of the
    primitive calls.  The Calibration Manager can be *Local Calibration Manager*
    distributed as ``GeminiCalMgr`` for use by individuals, or the Gemini
    internal facility calibration manager.  The latter is for Gemini Operations
-   needs only (for refenrence, Fitsstore).  In either case, the data's metadata
+   needs only (for reference, Fitsstore).  In either case, the data's metadata
    are used, along with a set of rules, to determine a best available match
-   for the requested calibration type and return a full path name (local) or a URL
-   (internal Gemini manager) to the file.
+   for the requested calibration type and return a full path name (local) or a
+   URL (internal Gemini manager) to the file.
 
 It is worth noting that all components discussed here operate and communicate
 using the common grammar provided by the ``astrodata`` data abstraction.
@@ -242,14 +243,14 @@ turn, use arguments to locate and identify the best applicable primitive
 classes and recipes. For most users, ``reduce`` will be the common way to
 process datasets with the Recipe System.
 
-The |Reduce| class can be created directly for a programmatic invocation of
+The |Reduce| class can be used directly for a programmatic invocation of
 the reduction rather than using the terminal.
 
 Usage of both ``reduce`` and |Reduce| is documented in the
 :ref:`Reduce and Recipe System User Manual <refdocs>`.
 
 The ``reduce`` script itself is really light weight and mostly just a wrapper
-around |Reduce|.  It sets up a logger and then use the same parser that
+around |Reduce|.  It sets up a logger and then uses the same parser that
 |Reduce| also has access to, ``buildParser``.  Then it is off to |Reduce| to
 to run the show.
 
@@ -312,7 +313,7 @@ The primitive class signature must be able to accept this instantiation call::
     upload:   Python list of any combination of 'calibs', 'metrics', or
                  'science'.
 
-In ``geminidr``, the primtive classes use a decorator to process those inputs.
+In ``geminidr``, the primitive classes use a decorator to process those inputs.
 
 The recipes must be located in subdirectory named after the *mode*.  For
 example::
@@ -344,7 +345,7 @@ Calibration Request Service
 
 The Calibration Request Service provides a functional interface to a local
 calibration manager (GeminiCalMgr) or the Gemini Observatory facility
-calibration manager (fitsstore). The Calibration Request Service does **not**
+calibration manager (fitsstore) The Calibration Request Service does **not**
 communicate with the Gemini Observatory Archive.
 
 Primitives requiring **processed** calibration files (biases, flats, etc.)
@@ -354,36 +355,36 @@ time) service.  (See the :ref:`Appendix<jit>` for more information about why
 *JIT* calibration service is necessary.)
 
 Calibration requests are built from the Astrodata descriptors and tags, and
-the requested calibration type (flat, dark, etc).  The calibration request
+the requested calibration type (flat, dark, etc). The calibration request
 is processed by the calibration manager's association rules to find the best
 match.
 
 The details of the request depends on the calibration manager being used.
-That is set upon import of the ``calrequestlib`` package.  The
-``calibration_search`` module variable is set vi the `cal_search_factory()`
+That is set upon import of the ``calrequestlib`` package. The
+``calibration_search`` module variable is set via the `cal_search_factory()`
 function to either the ``calibration_search`` method in the ``LocalManager``
 class or the ``calibration_search`` function in the ``transport_request``
 module.  The former applies when the local calibration manager is used, the
 latter when the Gemini internal ``fitsstore`` server is used.
 
 In the case of the local calibration manager, the manager's ``get_cal_object``
-function is accessed directly.  In the case of the internal fitsstore
-server, the request is send to the web server with the POST protocole.
+function is accessed directly. In the case of the internal fitsstore
+server, an HTTP POST request is made on the server.
 
 In both cases, the return value is a tuple with the URLs to the processed
 calibrations and the correspond md5 sums.
 
 The Calibration Request Service is responsible for determining whether the
-matched calibration has already been downloaded from ``fitsstore`` by verifying
-the md5 sums.  If it has, the path to the local file is returned rather than
-fetching the file again. If it has not, then the request service downloads
-the file using the returned URL and stores it locally, then that newly
-downloaded file is passed to the calling primitive.  The storage directory
-is called ``calibrations`` in the root directory of the tool making the
-request.
+matched calibration has already been downloaded from ``fitsstore`` and cached
+by verifying the md5 sums.  If the file is in the cache, the path to the local
+file is returned rather than fetching the file again. If the file has not been
+cached, then the request service downloads the file using the returned URL and
+stores it locally, then that newly downloaded file is passed to the calling
+primitive. The storage directory is called ``calibrations`` in the root
+directory of the tool making the request.
 
-In the case of the local calibration manager, the data is already local.
-The calibration manager only stores filename and path, not the data.  The
+In the case of the local calibration manager, the data are already local.
+The calibration manager only stores filename and path, not the data. The
 path returned is the path to the local version that was added by the user
 to the database.
 
@@ -401,11 +402,11 @@ instead.
 
 The local calibration manager uses a sqlite database to store the
 location information of the calibrations processed by the user.  Since the
-data was processed locally, there is no need to store the data, just the
+data were processed locally, there is no need to store the data, just the
 name and the path to the data.
 
-What both calibration manager share are the calibration associations rules,
-the rules that will identify the best processed calibrations for a given
+What both calibration managers share are the calibration associations rules,
+rules that will identify the best processed calibrations for a given
 Gemini observation.  Those rules are the same as the rules used by the
 Gemini Observatory Archive.  The internal database is in fact using exactly
 the same software as the GOA.  The local calibration manager uses a subset

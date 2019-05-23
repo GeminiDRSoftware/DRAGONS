@@ -1,5 +1,10 @@
 .. 01_introduction.rst
 
+.. warning::
+
+  This tutorial is under development. The pipeline is not ready for a release
+  yet. Please, have that in mind while running it.
+
 
 .. _introduction:
 
@@ -37,7 +42,7 @@ machine. You can test that by typing the following commands:
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
 be installed. If you have an error message, make sure:
 
-    - Conda is properly installed;
+    - AnaConda or MiniConda is properly installed;
 
     - A Conda Virtual Environment is properly created and is active;
 
@@ -51,9 +56,13 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-For this tutorial we selected a very sparse field. This makes the sky
-subtraction less prone to errors. The selected data set was observed for the
-GS-2017A-Q-29 program on the night starting on May 04, 2017.
+.. todo::
+
+  ?BQ? - Upload a ``.tar.gz`` file with the full dataset and use the URL here.
+
+
+For this tutorial we selected data observed for for the GS-2017A-Q-29 program on
+the night starting on May 04, 2017.
 
 You can search and download the files on the
 `Gemini Archive <https://archive.gemini.edu/searchform>`_ using the
@@ -78,14 +87,14 @@ can be downloaded using `this link
 <https://archive.gemini.edu/download/exposure_time=150/notengineering/GSAOI/Pass/DARK/present/canonical>`_.
 or copying and pasting the following address to search form into your browser: ::
 
-..    https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
+    https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
 
 
 The FLAT files to build the BPM can be downloaded directly by `clicking here
 <https://archive.gemini.edu/download/20171201-20171231/object=Domeflat/filter=H/notengineering/GSAOI/Pass/present/canonical>`_
 or using the following address: ::
 
-..    https://archive.gemini.edu/searchform/object=Domeflat/cols=CTOWEQ/filter=H/notengineering/GSAOI/20171201-20171231/Pass
+    https://archive.gemini.edu/searchform/object=Domeflat/cols=CTOWEQ/filter=H/notengineering/GSAOI/20171201-20171231/Pass
 
 
 Copy all the files to the same place in your computer. Then use ``tar`` and
@@ -102,8 +111,39 @@ You can add ``-v`` after each command to make it verbose since they can take a
 while to be executed. The files names may change depending on the parameters you
 used when searching in the `Gemini Archive <https://archive.gemini.edu/searchform>`_.
 
-For this tutorial, we will store the raw data within the ``./raw/`` directory to
-keep things cleaner: ::
+For this tutorial, we will use a directory to separate the raw data from
+the processed data. This is how the data should be organized: ::
 
-   $ mkdir ./raw  # create directory
-   $ mv *.fits ./raw  # move all the FITS files to this directory
+  |-- ${path to my data}/
+  |   |-- playdata/  # directory for raw data
+  |   |-- playground/  # working directory
+
+Use the following commands to have a directory structure consistent the one
+used in this tutorial: ::
+
+  $ cd ${path_to_my_data}
+  $ mkdir playdata  # create directory for raw data
+  $ mkdir playground  #  create working directory
+  $ mv *.fits ./playdata/  # move all the FITS files to this directory
+
+
+.. _about_data_set:
+
+About the dataset
+=================
+
+The table below contains a summary of the dataset downloaded in the previous
+section:
+
++---------------+---------------------+--------------------------------+
+| Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
++---------------+---------------------+--------------------------------+
+| Darks         || S20150609S0022-031 || Only to create BPM, 150 s     |
++---------------+---------------------+--------------------------------+
+| Flats         || S20171208S0053-067 || Lamp on, H-band, for BPM      |
+|               || S20170505S0030-044 || Lamp on, Kshort, for science  |
+|               || S20170505S0060-074 || Lamp off, Kshort, for science |
++---------------+---------------------+--------------------------------+
+| Standard star || S20170504S0114-117 || Kshort, standart star, 30 s   |
++---------------+---------------------+--------------------------------+
+

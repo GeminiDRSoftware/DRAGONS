@@ -6,7 +6,8 @@ DRAGONS - Flamingos 2 Data Reduction Tutorial
 This is a brief tutorial on how to reduce Flamingos-2 images using DRAGONS (Data
 Reduction for Astronomy from Gemini Observatory North and South). It is based on
 information found in the `GEMINI Flamingos-2
-WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_.
+WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_ and in the
+`DRAGONS Documentation on Read The Docs <https://dragons.readthedocs.io/en/latest/>`_.
 
 ..  In order to carry on, you will need `Python <https://www.python.org/>`_ (which
     is probably installed on your machine) and a few libraries. We recommend Python 3

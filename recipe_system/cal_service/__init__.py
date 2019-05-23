@@ -203,7 +203,7 @@ class CalibrationService(object):
     def __init__(self):
         self._mgr = None
 
-    def config(self, db_dir=None, verbose=True,
+    def config(self, db_dir=None, verbose=False,
                config_file=STANDARD_REDUCTION_CONF):
         """
         Configure the Calibration Service and database.
@@ -312,16 +312,17 @@ class CalibrationService(object):
         path = self._mgr._db_path
 
         is_active = \
-            "The 'standalone' flag is active; local calibrations will be used."
+            "The 'standalone' flag is \033[1mactive\033[0m; local calibrations will be used."
 
         inactive = (
             "The 'standalone' flag is not active; remote calibrations will be"
             " downloaded.")
 
-        print("Using configuration file: {}".format(conf.config_file))
         print()
-        print("The active database directory is:  {}".format(conf.database_dir))
-        print("The database file to be used: {}".format(path))
+        print("Using configuration file: \033[1m{}\033[0m".format(conf.config_file))
+        print("Active database directory:  \033[1m{}\033[0m".format(conf.database_dir))
+        print("Database file: \033[1m{}\033[0m".format(path))
+        print()
         if conf.standalone:
             print(is_active)
         else:
