@@ -56,9 +56,8 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-.. todo::
-
-  ?BQ? - Upload a ``.tar.gz`` file with the full dataset and use the URL here.
+.. todo @bquint Upload a ``.tar.gz`` file with the full dataset and use the URL here.
+.. todo:: ?BQ? Upload a ``.tar.gz`` file with the full dataset and use the URL here.
 
 
 For this tutorial we selected data observed for for the GS-2017A-Q-29 program on

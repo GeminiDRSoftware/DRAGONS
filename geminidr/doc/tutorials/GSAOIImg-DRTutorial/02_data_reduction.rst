@@ -287,9 +287,8 @@ cancelling out).
 Stack Science reduced images
 ----------------------------
 
-.. todo::
-
-  ?BQ? make .tar.gz file available for public access and change the url below.
+.. todo: ?BQ? make .tar.gz file available for public access and change the url below.
+.. todo:: ?BQ? make .tar.gz file available for public access and change the url below.
 
 
 Finally, you will have to stack your images. For that, you must be aware that
