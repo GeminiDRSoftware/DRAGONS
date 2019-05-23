@@ -59,11 +59,11 @@ using a dither sequence; dayCal DARKS and GCAL flats were obtained as well.
 briefly describes the data reduction procedures they followed, which are
 similar to those described below.
 
-The first step is to retrieve the data from the Gemini Observatory Archive
-(GOA). For more details on using the Archive, check its
-`Help Page <https://archive.gemini.edu/help/index.html>`_. The link below takes
-you to the result obtained when searching for data that corresponds to the
-chosen program.
+The first step is to retrieve the data from the `Gemini Observatory Archive
+(GOA) <https://archive.gemini.edu/>`_. For more details on using the Archive,
+check its `Help Page <https://archive.gemini.edu/help/index.html>`_. The link
+below takes you to the result obtained when searching for data that corresponds
+to the chosen program.
 
 ::
 
@@ -89,24 +89,41 @@ or by copying the following URL to your browser:
 
     https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/RAW/NotFail/notengineering/canonical
 
-Unpack all of them in a subdirectory of your working directory (assumed to be
-named ``/raw`` in this tutorial). Be sure to uncompress the files.
+
+Copy all the files to the same place in your computer. Then use ``tar`` and
+``bunzip2`` to decompress them:
 
 .. code-block:: bash
 
-   $ cd <my_main_working_directory>
+    $ cd ${path_to_my_data}/
+    $ tar -xf gemini_calibs.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
+    $ tar -xf gemini_data.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
+    $ tar -xf gemini_data.GSAOI.tar
+    $ tar -xf gemini_data.GSAOI_20171201-20171231.tar
+    $ bunzip2 *.fits.bz2
 
-   $ tar -xvf *calib*.tar  # extract calibration files from .TAR file
+You can add ``-v`` after each command to make it verbose since they can take a
+while to be executed. The files names may change depending on the parameters you
+used when searching in the `Gemini Archive <https://archive.gemini.edu/searchform>`_.
 
-   $ tar -xvf *data*.tar  # extract science files from .TAR file
+For this tutorial, we will use a directory to separate the raw data from
+the processed data. This is how the data should be organized:
 
-   $ bunzip2 *.fits.bz2  # command that will decompress FITS files
+.. code-block::
 
-   $ rm *_dark.fits *_flat.fits  # remove pre-reduced data (recommended)
+  |-- ${path to my data}/
+  |   |-- playdata/  # directory for raw data
+  |   |-- playground/  # working directory
 
-   $ mkdir raw/ # create directory named "raw" (optional)
+Use the following commands to have a directory structure consistent the one
+used in this tutorial:
 
-   $ mv *.fits raw/  # move all the raw FITS files to raw (optional)
+.. code-block:: bash
+
+  $ cd ${path_to_my_data}
+  $ mkdir playdata  # create directory for raw data
+  $ mkdir playground  #  create working directory
+  $ mv *.fits ./playdata/  # move all the FITS files to this directory
 
 The full de-compressed data set will have 310 files and use 4.9 Gb of disk
 space.
