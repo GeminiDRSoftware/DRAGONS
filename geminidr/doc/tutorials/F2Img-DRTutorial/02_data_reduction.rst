@@ -54,7 +54,7 @@ time available. If you don't know what are the existing exposure times, you can
 
 .. code-block:: bash
 
-    $ dataselect --tags DARK raw/*.fits | showd -d exposure_time
+    $ dataselect --tags DARK ../playdata/*.fits | showd -d exposure_time
 
 The ``|`` is what we call "pipe" and it is used to pass output from dataselect_
 to showd_. The following line creates a list of DARK files that were not
@@ -62,7 +62,7 @@ processed and that have exposure time of 20 seconds:
 
 .. code-block:: bash
 
-   $ dataselect --tags DARK --expr "exposure_time==20" raw/*.fits > darks_020s.list
+   $ dataselect --tags DARK --expr "exposure_time==20" ../playdata/*.fits > darks_020s.list
 
 The ``--tags`` is a comma-separated argument that is used to select the files
 that matches the tag(s) listed there. ``--expr`` is used to filter the
@@ -89,7 +89,7 @@ same exposure times:
 
 .. code-block:: bash
 
-    $ dataselect --tags DARK --expr "exposure_time==120" raw/*.fits > darks_120s.list
+    $ dataselect --tags DARK --expr "exposure_time==120" ../playdata/*.fits > darks_120s.list
 
 And then pass this list to the `reduce`_ command.
 
@@ -147,7 +147,7 @@ not interfere in the results.
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --expr "filter_name=='Y'" raw/*.fits > flats_Y.list
+    $ dataselect --tags FLAT --expr "filter_name=='Y'" ../playdata/*.fits > flats_Y.list
 
     $ reduce @flats_Y.list @darks_003s.list -r makeProcessedBPM
 
@@ -165,7 +165,7 @@ corresponding files for each filter:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --expr "filter_name=='Y'" raw/*.fits > flats_Y.list
+    $ dataselect --tags FLAT --expr "filter_name=='Y'" ../playdata/*.fits > flats_Y.list
 
 
 .. note::
@@ -212,7 +212,7 @@ only on Y band images (``--expr 'filter_name=="Y"'``).
 
 .. code-block:: bash
 
-    $ dataselect --xtags CAL,BPM --expr 'filter_name=="Y"' raw/*.fits > sci_images_Y.list
+    $ dataselect --xtags CAL,BPM --expr 'filter_name=="Y"' ../playdata/*.fits > sci_images_Y.list
 
     $ reduce @sci_images_Y.list
 
