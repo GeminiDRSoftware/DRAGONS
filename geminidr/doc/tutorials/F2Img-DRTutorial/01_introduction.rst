@@ -110,7 +110,7 @@ tar file.
 - `Download Associated Calibrations <https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/filter=Y/RAW/F2/NotFail/notengineering/canonical>`_
 - `Download Short DARK data <https://archive.gemini.edu/download/exposure_time=3/GS-CAL20131126-1/RAW/F2/present/NotFail/DARK/notengineering/canonical>`_
 
-Now, copy all the tar files to the same place in your computer. Then use
+Now, copy all the ``.tar`` files to the same place in your computer. Then use
 ``tar`` and ``bunzip2`` commands to decompress them:
 
 .. code-block:: bash
