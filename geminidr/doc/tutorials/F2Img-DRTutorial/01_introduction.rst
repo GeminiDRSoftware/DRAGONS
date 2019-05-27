@@ -61,46 +61,66 @@ similar to those described below.
 
 The first step is to retrieve the data from the `Gemini Observatory Archive
 (GOA) <https://archive.gemini.edu/>`_. For more details on using the Archive,
-check its `Help Page <https://archive.gemini.edu/help/index.html>`_. The link
-below takes you to the result obtained when searching for data that corresponds
-to the chosen program.
+check its `Help Page <https://archive.gemini.edu/help/index.html>`_.
+
+Access the `GOA webpage <https://archive.gemini.edu/>`_, put the data label
+**GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
+button in the middle of the page. The page will refresh and display a table with
+all the data for this dataset. Since the amount of data is unnecessarily large
+for a tutorial (162 files, 0.95 Gb), we will narrow our search by setting the
+``Instrument`` drop-down menu to **F2** and the ``Filter`` drop-down menu to
+**Y**. Now we have only 9 files, 0.05 Gb.
+
+You can also copy the URL below and paste it on browser to see the search
+results:
 
 ::
 
-   https://archive.gemini.edu/searchform/GS-2013B-Q-15-39/RAW/cols=CTOWEQ/notengineering/NotFail
+  https://archive.gemini.edu/searchform/GS-2013B-Q-15-39/RAW/cols=CTOWEQ/filter=Y/notengineering/F2/NotFail
 
-The bottom of the page contains a button to download the data. You can click on
-that, or you can download the images by `clicking directly
-here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/RAW/present/NotFail/notengineering/canonical>`_.
-Alternatively, you can download the data by copy-and-pasting the address below
-in your browser:
+At the bottom of the page, you will find a button saying *Download all 9 files
+totalling 0.05 Gb*. Click on it to download a `.tar` file with all the data.
+
+The calibration files can be obtained by simply clicking on the *Load Associated
+Calibrations* tab, scrolling down to the page and clicking on the *Download all
+42 files totalling 0.15 Gb* button.
+
+Finally, you will need a set of short dark frames in order to create the Bad
+Pixel Masks (BPM). For that, we will have to perform a search ourselves in the
+archive. Fill the search parameters below with their associated values and
+click on the ``Search`` button:
+
+- Program ID: GS-CAL20131126-1
+- Instrument: F2
+- Obs. Type: Dark
+- Exposure Time: 3
+
+Here is the associated URL for the search above:
 
 ::
 
-   https://archive.gemini.edu/download/GS-2013B-Q-15-39/RAW/present/NotFail/notengineering/canonical
+  https://archive.gemini.edu/searchform/exposure_time=3/GS-CAL20131126-1/RAW/cols=CTOWEQ/notengineering/F2/NotFail/DARK
 
-After retrieving the science data, click the Load Associated Calibrations tab on
-the search results page and download the associated dark and flat-field
-exposures. Again, the calibration files can be downloaded by `clicking here
-<https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/RAW/NotFail/notengineering/canonical>`_
-or by copying the following URL to your browser:
+Scroll down the page and click on the *Download all 7 files totalling 0.02 Gb*
 
-::
+For convenience, you can also use the three hyperlinks below to download each
+tar file.
 
-    https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/RAW/NotFail/notengineering/canonical
+- `Download Science Data <https://archive.gemini.edu/download/GS-2013B-Q-15-39/filter=Y/RAW/F2/present/NotFail/notengineering/canonical>`_
+- `Download Associated Calibrations <https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/filter=Y/RAW/F2/NotFail/notengineering/canonical>`_
+- `Download Short DARK data <https://archive.gemini.edu/download/exposure_time=3/GS-CAL20131126-1/RAW/F2/present/NotFail/DARK/notengineering/canonical>`_
 
-
-Copy all the files to the same place in your computer. Then use ``tar`` and
-``bunzip2`` to decompress them:
+Now, copy all the ``.tar`` files to the same place in your computer. Then use
+``tar`` and ``bunzip2`` commands to decompress them:
 
 .. code-block:: bash
 
     $ cd ${path_to_my_data}/
-    $ tar -xf gemini_calibs.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
-    $ tar -xf gemini_data.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
-    $ tar -xf gemini_data.GSAOI.tar
-    $ tar -xf gemini_data.GSAOI_20171201-20171231.tar
+    $ tar -xf gemini_data.GS-2013B-Q-15-39_F2.tar
+    $ tar -xf gemini_calibs.GS-2013B-Q-15-39_F2.tar
+    $ tar -xf gemini_data.GS-CAL20131126-1_F2.tar
     $ bunzip2 *.fits.bz2
+    $ rm *_flat.fits *_dark.fits  # delete or move reduced data to avoid any confusion
 
 You can add ``-v`` after each command to make it verbose since they can take a
 while to be executed. The files names may change depending on the parameters you
@@ -109,7 +129,7 @@ used when searching in the `Gemini Archive <https://archive.gemini.edu/searchfor
 For this tutorial, we will use a directory to separate the raw data from
 the processed data. This is how the data should be organized:
 
-.. code-block::
+::
 
   |-- ${path to my data}/
   |   |-- playdata/  # directory for raw data
@@ -125,5 +145,33 @@ used in this tutorial:
   $ mkdir playground  #  create working directory
   $ mv *.fits ./playdata/  # move all the FITS files to this directory
 
-The full de-compressed data set will have 310 files and use 4.9 Gb of disk
+The full de-compressed data set will have 56 files and use about 0.9 Gb of disk
 space.
+
+.. _about_data_set:
+
+About the dataset
+=================
+
+The table below contains a summary of the dataset downloaded in the previous
+section:
+
++---------------+---------------------+--------------------------------+
+| Science       || S20131121S0075-083 | Y-band, 120 s                  |
++---------------+---------------------+--------------------------------+
+| Darks         || S20131127S0257-263 | 3 s, short darks for BPM       |
+|               +---------------------+--------------------------------+
+|               || S20130930S0242-246 | 20 s, for flat data            |
+|               || S20131023S0193-197 |                                |
+|               || S20140124S0033-038 |                                |
+|               || S20140209S0542-545 |                                |
+|               +---------------------+--------------------------------+
+|               || S20131120S0115-120 | 120 s, for science data        |
+|               || S20131121S0010     |                                |
+|               || S20131122S0012     |                                |
+|               || S20131122S0438-439 |                                |
++---------------+---------------------+--------------------------------+
+| Flats         || S20131129S0320-323 | 20 s, Lamp On, Y-band          |
+|               +---------------------+--------------------------------+
+|               || S20131126S1111-116 | 20 s, Lamp Off, Y-band         |
++---------------+---------------------+--------------------------------+
