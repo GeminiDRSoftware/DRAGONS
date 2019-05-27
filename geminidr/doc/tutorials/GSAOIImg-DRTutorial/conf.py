@@ -368,8 +368,8 @@ def run_api_doc(_):
 def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('todo-styles.css')
-    app.add_stylesheet('code.xref-styles.css')
+    app.add_css_file('code.xref-styles.css')
+    app.add_css_file('todo-styles.css')
 
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)
