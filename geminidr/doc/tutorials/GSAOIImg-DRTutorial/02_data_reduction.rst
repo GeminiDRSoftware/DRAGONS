@@ -42,13 +42,15 @@ Organize files
 --------------
 
 First of all, let us consider that we have put all the files in the same folder
-called ``raw`` and that we do not have any information anymore. From a bash
-terminal and from within the Conda Virtual Environment where DRAGONS was
-installed, we can call the command tool typewalk_: ::
+called ``../playdata/`` and that we do not have any information anymore. From a
+bash terminal and from within the Conda Virtual Environment where DRAGONS was
+installed, we can call the command tool typewalk_:
+
+.. code-block:: bash
 
     $ typewalk -d ../playdata/
 
-    directory:  /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata
+    directory:  /path_to_my_files/gsaoiimg_tutorial/playdata
          S20171208S0054.fits ............... (AZEL_TARGET) (CAL) (DOMEFLAT) (FLAT) (GEMINI) (GSAOI) (IMAGE) (LAMPON) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
          S20150609S0029.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (GEMINI) (GSAOI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
          ...
@@ -287,9 +289,8 @@ cancelling out).
 Stack Science reduced images
 ----------------------------
 
-.. todo::
-
-  ?BQ? make .tar.gz file available for public access and change the url below.
+.. todo: ?BQ? make .tar.gz file available for public access and change the url below.
+.. todo:: ?BQ? make .tar.gz file available for public access and change the url below.
 
 
 Finally, you will have to stack your images. For that, you must be aware that

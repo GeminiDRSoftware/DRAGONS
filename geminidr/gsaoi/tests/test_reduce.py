@@ -61,30 +61,39 @@ def test_reduce_image(test_path, caldb):
 
     all_files = glob.glob(
         os.path.join(test_path, 'GSAOI/test_reduce/', '*.fits'))
+
+    all_files.sort()
+
     assert len(all_files) > 1
 
     list_of_darks = dataselect.select_data(
         all_files, ['DARK'], [])
+    list_of_darks.sort()
 
     list_of_kshort_flats = dataselect.select_data(
         all_files, ['FLAT'], [],
         dataselect.expr_parser('filter_name=="Kshort"'))
+    list_of_kshort_flats.sort()
 
     list_of_h_flats = dataselect.select_data(
         all_files, ['FLAT'], [],
         dataselect.expr_parser('filter_name=="H"'))
+    list_of_h_flats.sort()
 
     list_of_std_LHS_2026 = dataselect.select_data(
         all_files, [], [],
         dataselect.expr_parser('object=="LHS 2026"'))
+    list_of_std_LHS_2026.sort()
 
     list_of_std_cskd8 = dataselect.select_data(
         all_files, [], [],
         dataselect.expr_parser('object=="cskd-8"'))
+    list_of_std_cskd8.sort()
 
     list_of_science_files = dataselect.select_data(
         all_files, [], [],
         dataselect.expr_parser('observation_class=="science" and exposure_time==60.'))
+    list_of_science_files.sort()
 
     for darks in [list_of_darks]:
 

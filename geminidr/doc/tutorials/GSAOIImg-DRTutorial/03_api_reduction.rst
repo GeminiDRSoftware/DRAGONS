@@ -38,8 +38,6 @@ The first two packages, :mod:`glob` and :mod:`os`, are Python built-in packages.
 Here, :mod:`os` will be used to perform operations with the files names and
 :mod:`glob` will be used to return a :class:`list` with the input file names.
 
-.. todo: check references
-
 Then, we are importing the :mod:`~gempy.adlibrary.dataselect` from the
 :mod:`gempy.adlibrary`. It will be used to select the data in the same way we
 did as in :ref:`create_file_lists` section. The
@@ -271,9 +269,8 @@ data:
 Stack Science reduced images
 ----------------------------
 
-.. todo::
-
-  ?BQ? make .tar.gz file available for public access and change the url below.
+.. todo: ?BQ? make .tar.gz file available for public access and change the url below.
+.. todo:: ?BQ? make .tar.gz file available for public access and change the url below.
 
 
 Now you will have to stack your images. For that, you must be aware that

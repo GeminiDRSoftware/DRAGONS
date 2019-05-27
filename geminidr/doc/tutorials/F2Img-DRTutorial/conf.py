@@ -34,8 +34,8 @@ release = 'v2.0.0-b1'
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+
+needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -211,6 +211,6 @@ todo_include_todos = True
 # -- Finishing with a setup that will run always -----------------------------
 def setup(app):
 
-    # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('todo-styles.css')
-    app.add_stylesheet('code.xref-styles.css')
+    # Adding custom styles
+    app.add_css_file('css/code.xref-styles.css')
+    app.add_css_file('css/todo-styles.css')

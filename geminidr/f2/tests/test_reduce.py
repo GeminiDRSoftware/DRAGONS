@@ -61,27 +61,35 @@ def test_reduce_image(test_path, caldb):
 
     all_files = glob.glob(
         os.path.join(test_path, 'F2/test_reduce/', '*.fits'))
+
+    all_files.sort()
+
     assert len(all_files) > 1
 
     darks_3s = dataselect.select_data(
         all_files, ['F2', 'DARK', 'RAW'], [],
         dataselect.expr_parser('exposure_time==3'))
+    darks_3s.sort()
 
     darks_20s = dataselect.select_data(
         all_files, ['F2', 'DARK', 'RAW'], [],
         dataselect.expr_parser('exposure_time==20'))
+    darks_20s.sort()
 
     darks_120s = dataselect.select_data(
         all_files, ['F2', 'DARK', 'RAW'], [],
         dataselect.expr_parser('exposure_time==120'))
+    darks_120s.sort()
 
     flats = dataselect.select_data(
         all_files, ['F2', 'FLAT', 'RAW'], [],
         dataselect.expr_parser('filter_name=="Y"'))
+    flats.sort()
 
     science = dataselect.select_data(
         all_files, ['F2', 'RAW'], ['CAL'],
         dataselect.expr_parser('filter_name=="Y"'))
+    science.sort()
 
     for darks in [darks_3s, darks_20s, darks_120s]:
 
