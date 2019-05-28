@@ -125,8 +125,6 @@ def test_reduce_image(test_path):
         'processed_flat:{}'.format(reduce_flats.output_filenames[0])
     )
 
-    print(calib_files)
-
     logutils.config(file_name='f2_test_reduce_science.log', mode='quiet')
     reduce_target = Reduce()
     reduce_target.files.extend(science)
