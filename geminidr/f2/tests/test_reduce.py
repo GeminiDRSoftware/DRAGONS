@@ -5,9 +5,10 @@ import pytest
 import os
 
 from gempy.adlibrary import dataselect
-from recipe_system.reduction.coreReduce import Reduce
-
 from gempy.utils import logutils
+from recipe_system import cal_service
+from recipe_system.reduction.coreReduce import Reduce
+from recipe_system.utils.reduce_utils import normalize_ucals
 
 
 @pytest.fixture
@@ -25,39 +26,38 @@ def test_path():
 
 
 @pytest.fixture(scope='module')
-def caldb(request):
+def caldb():
 
-    from recipe_system.cal_service import CalibrationService
+    class CalibrationConfig:
+        path = os.getcwd()
+        filename = os.path.join(path, 'rsys.cfg')
+        database = os.path.join(path, 'cal_manager.db')
 
-    caldb_folder = os.path.dirname(__file__)
-    caldb_conf_file = os.path.join(caldb_folder, 'rsys.cfg')
-    caldb_database_file = os.path.join(caldb_folder, 'cal_manager.db')
-
-    with open(caldb_conf_file, 'w') as buffer:
+    with open(CalibrationConfig.filename, 'w') as buffer:
 
         buffer.write(
             "[calibs]\n"
             "standalone = True\n"
-            "database_dir = {:s}".format(caldb_folder)
+            "database_dir = {:s}".format(CalibrationConfig.path)
         )
 
-    print(' Test file path: {}'.format(caldb_conf_file))
+    print(' Test file path: {}'.format(CalibrationConfig.filename))
 
-    calibration_service = CalibrationService()
-    calibration_service.config(config_file=caldb_conf_file)
+    calibration_service = cal_service.CalibrationService()
+    calibration_service.config(config_file=CalibrationConfig.filename)
     calibration_service.init(wipe=True)
+
+    cal_service.set_calservice()
 
     yield calibration_service
 
-    os.remove(caldb_conf_file)
-    os.remove(caldb_database_file)
+    os.remove(CalibrationConfig.filename)
+    os.remove(CalibrationConfig.database)
 
 
-def test_reduce_image(test_path, caldb):
+def test_reduce_image(test_path):
 
-    logutils.config(file_name='f2_test_reduce_image.log')
-
-    caldb.init(wipe=True)
+    calib_files = []
 
     all_files = glob.glob(
         os.path.join(test_path, 'F2/test_reduce/', '*.fits'))
@@ -99,10 +99,14 @@ def test_reduce_image(test_path, caldb):
         reduce_darks.files.extend(darks)
         assert len(reduce_darks.files) == len(darks)
 
+        logutils.config(file_name='f2_test_reduce_darks.log', mode='quiet')
         reduce_darks.runr()
 
-        caldb.add_cal(reduce_darks.output_filenames[0])
+        calib_files.append(
+            'processed_dark:{}'.format(reduce_darks.output_filenames[0])
+        )
 
+    logutils.config(file_name='f2_test_reduce_bpm.log', mode='quiet')
     reduce_bpm = Reduce()
     reduce_bpm.files.extend(flats)
     reduce_bpm.files.extend(darks_3s)
@@ -111,20 +115,24 @@ def test_reduce_image(test_path, caldb):
 
     bpm_filename = reduce_bpm.output_filenames[0]
 
+    logutils.config(file_name='f2_test_reduce_flats.log', mode='quiet')
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
+    calib_files.append(
+        'processed_flat:{}'.format(reduce_flats.output_filenames[0])
+    )
 
+    print(calib_files)
+
+    logutils.config(file_name='f2_test_reduce_science.log', mode='quiet')
     reduce_target = Reduce()
     reduce_target.files.extend(science)
     reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
+    reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
     reduce_target.runr()
-
-    for f in caldb.list_files():
-        print(f)
 
 
 if __name__ == '__main__':
