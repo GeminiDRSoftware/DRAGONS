@@ -18,20 +18,39 @@ F2/test_reduce/S20131127S0261.fits
 F2/test_reduce/S20131127S0262.fits
 F2/test_reduce/S20131127S0263.fits
 
-# Darks
+# Darks 20s
 F2/test_reduce/S20130930S0242.fits
 F2/test_reduce/S20130930S0243.fits
 F2/test_reduce/S20130930S0244.fits
 F2/test_reduce/S20130930S0245.fits
 F2/test_reduce/S20130930S0246.fits
+F2/test_reduce/S20131023S0193.fits
+F2/test_reduce/S20131023S0194.fits
+F2/test_reduce/S20131023S0195.fits
+F2/test_reduce/S20131023S0196.fits
+F2/test_reduce/S20131023S0197.fits
+F2/test_reduce/S20140124S0033.fits
+F2/test_reduce/S20140124S0034.fits
+F2/test_reduce/S20140124S0035.fits
+F2/test_reduce/S20140124S0036.fits
+F2/test_reduce/S20140124S0037.fits
+F2/test_reduce/S20140124S0038.fits
+F2/test_reduce/S20140209S0542.fits
+F2/test_reduce/S20140209S0543.fits
+F2/test_reduce/S20140209S0544.fits
+F2/test_reduce/S20140209S0545.fits
 
 # Darks 120s
-F2/test_reduce/S20131120S0115.fits
+F2/test_reduce/S20131121S0115.fits
 F2/test_reduce/S20131120S0116.fits
 F2/test_reduce/S20131120S0117.fits
 F2/test_reduce/S20131120S0118.fits
 F2/test_reduce/S20131120S0119.fits
 F2/test_reduce/S20131120S0120.fits
+F2/test_reduce/S20131121S0010.fits
+F2/test_reduce/S20131122S0012.fits
+F2/test_reduce/S20131122S0438.fits
+F2/test_reduce/S20131122S0439.fits
 
 # Flats Y
 F2/test_reduce/S20131126S1111.fits
