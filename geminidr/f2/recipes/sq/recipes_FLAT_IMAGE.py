@@ -4,6 +4,7 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = set(['F2', 'IMAGE', 'CAL', 'FLAT'])
 
+
 def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to convert
@@ -49,5 +50,6 @@ def makeProcessedBPM(p):
     p.makeBPM()
     #p.storeBPM()
     return
+
 
 default = makeProcessedFlat

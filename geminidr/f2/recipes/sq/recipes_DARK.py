@@ -5,6 +5,7 @@ Default is "makeProcessedDark".
 
 recipe_tags = set(['F2', 'CAL', 'DARK'])
 
+
 def makeProcessedDark(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -28,5 +29,6 @@ def makeProcessedDark(p):
     p.stackDarks()
     p.storeProcessedDark()
     return
+
 
 default = makeProcessedDark
