@@ -1,4 +1,15 @@
 #!/usr/bin/env groovy
+/*
+ * Jenkins Pipeline for DRAGONS
+ *
+ * by Bruno C. Quint
+ *
+ * Required Plug-ins:
+ * - CloudBees File Leak Detector
+ * - Cobertura Plug-in
+ * - Warnings NG
+ */
+
 pipeline {
 
     agent any
@@ -125,7 +136,7 @@ pipeline {
                 '''
             }
             post {
-                always {
+                success {
                     echo ' --- Report coverage usinig Cobertura --- '
                     step([$class: 'CoberturaPublisher',
                         autoUpdateHealth: false,
@@ -148,9 +159,6 @@ pipeline {
     post {
         always {
             sh 'conda remove --name ${BUILD_TAG} --all --quiet --yes'
-        }
-        failure {
-            echo "Send e-mail, when failed"
         }
     }
 }
