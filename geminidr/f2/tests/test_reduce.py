@@ -137,4 +137,3 @@ def test_reduce_image(test_path):
 
 if __name__ == '__main__':
     pytest.main()
-
