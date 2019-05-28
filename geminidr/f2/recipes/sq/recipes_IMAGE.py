@@ -4,6 +4,7 @@ Default is "reduce".
 """
 recipe_tags = set(['F2', 'IMAGE'])
 
+
 def reduce(p):
     """
     This recipe process NIRI data up to and including alignment and stacking.
@@ -42,6 +43,7 @@ def reduce(p):
     p.writeOutputs()
     return
 
+
 def makeSkyFlat(p):
     """
     This recipe makes a flatfield image from a series of dithered sky images.
@@ -75,5 +77,6 @@ def makeSkyFlat(p):
     p.thresholdFlatfield()
     p.storeProcessedFlat()
     return
+
 
 default = reduce
