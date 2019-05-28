@@ -38,11 +38,13 @@ pipeline {
                         chmod a+x anaconda.sh
                         ./anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
 
-                        conda config --add channels http://ssb.stsci.edu/astroconda
-                        conda update --quiet conda
                     else
                         echo "Anaconda is already installed --- Skipping step."
                     fi
+
+                    conda config --add channels http://ssb.stsci.edu/astroconda
+                    conda config --add channels http://astroconda.gemini.edu/public/noarch
+                    conda update --quiet conda
                     '''
             }
         }
