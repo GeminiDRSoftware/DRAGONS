@@ -996,16 +996,18 @@ class Preprocess(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+        apply_dq: bool
+            apply DQ mask to data before combining?
         statsec: str/None
             region of image to use for statistics
-        mask_objects: bool
-            mask objects using OBJMASK?
-        dilation: float
-            dilation radius if objects are being masked
         operation: str
             type of combining operation for stacking sky frames
         reject_method: str
             type of rejection method for stacking sky frames
+        mask_objects: bool
+            mask objects using OBJMASK?
+        dilation: float
+            dilation radius if objects are being masked
         hsigma: float
             high rejection threshold (standard deviations)
         lsigma: float
@@ -1016,6 +1018,17 @@ class Preprocess(PrimitivesBASE):
             number of low pixels to reject (for "minmax")
         nhigh: int
             number of high pixels to reject (for "minmax")
+        memory: float/None
+            available memory (in GB) for stacking calculations
+        reset_sky: bool
+            maintain the sky level by adding a constant to the science
+            frame after subtracting the sky?
+        scale_sky: bool
+            scale each extension of each sky frame to match the science frame?
+        offset_sky: bool
+            apply offset to each extension of each sky frame to match science?
+        sky: str/AD/list
+            sky frame(s) to subtract
         """
         #tpid = os.getpid()
         #proc = psutil.Process(tpid)
@@ -1166,12 +1179,12 @@ class Preprocess(PrimitivesBASE):
         reset_sky: bool
             maintain the sky level by adding a constant to the science
             frame after subtracting the sky?
-        scale: bool
+        scale_sky: bool
             scale each extension of each sky frame to match the science frame?
+        offset_sky: bool
+            apply offset to each extension of each sky frame to match science?
         sky: str/AD/list
             sky frame(s) to subtract
-        zero: bool
-            apply offset to each extension of each sky frame to match science?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
