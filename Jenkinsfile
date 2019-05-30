@@ -137,18 +137,18 @@ pipeline {
             }
             post {
                 success {
-                    echo ' --- Report coverage usinig Cobertura --- '
-                    step([$class: 'CoberturaPublisher',
-                        autoUpdateHealth: false,
-                        autoUpdateStability: false,
-                        coberturaReportFile: 'reports/coverage.xml',
-                        failNoReports: false,
-                        failUnhealthy: false,
-                        failUnstable: false,
-                        maxNumberOfBuilds: 10,
-                        onlyStable: false,
-                        sourceEncoding: 'ASCII',
-                        zoomCoverageChart: false])
+                    // echo ' --- Report coverage usinig Cobertura --- '
+                    //step([$class: 'CoberturaPublisher',
+                    //   autoUpdateHealth: false,
+                    //    autoUpdateStability: false,
+                    //    coberturaReportFile: 'reports/coverage.xml',
+                    //    failNoReports: false,
+                    //    failUnhealthy: false,
+                    //    failUnstable: false,
+                    //    maxNumberOfBuilds: 10,
+                    //    onlyStable: false,
+                    //    sourceEncoding: 'ASCII',
+                    //    zoomCoverageChart: false])
 
                     echo 'Report on code coverage using Code Coverage API plugin'
                     publishCoverage adapters: [coberturaAdapter('')]
