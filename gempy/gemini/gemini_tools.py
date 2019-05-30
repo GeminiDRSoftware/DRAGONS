@@ -1397,7 +1397,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
     -------
     list/value/tuple
         if ad is single extension, or separate_ext==False, returns a bg value
-        or (bg, std) tuple; otherwise returns a list of such things
+        or (bg, std, number of samples) tuple; otherwise returns a list of
+        such things
     """
     # Handle NDData objects (or anything with .data and .mask attributes
     try:
