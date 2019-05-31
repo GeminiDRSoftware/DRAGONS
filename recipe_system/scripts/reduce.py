@@ -94,7 +94,8 @@ def main(args):
         log.error("Caught KeyboardInterrupt (^C) signal")
         estat = signal.SIGINT
     except Exception as err:
-        log.error("reduce caught an unhandled exception.")
+        log.error("reduce caught an unhandled exception.\n")
+        log.error(err)
         log.error("\nReduce instance aborted.")
         estat = signal.SIGABRT
 
