@@ -16,19 +16,29 @@
 import os
 import sys
 
-# sys.path.insert(0, os.path.abspath('.'))
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+relative_path = './../../../../'
+dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
+sys.path.append(dragons_path)
+
+import astrodata
+
+print('\n Printing current working directory for debugging:')
+print(' Current working directory: {}'.format(os.getcwd()))
+print(' Dragons path: {}\n'.format(dragons_path))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
-copyright = '2018, Bruno Quint'
-author = 'Bruno Quint'
+copyright = 'Gemini Observatory (AURA), 2019'
+author = 'Bruno C. Quint'
 
 # The short X.Y version
-version = ''
+version = astrodata.version(short=True)
 # The full version, including alpha/beta/rc tags
-release = 'v2.0.0-b1'
+release = astrodata.version()
 
 
 # -- General configuration ---------------------------------------------------
