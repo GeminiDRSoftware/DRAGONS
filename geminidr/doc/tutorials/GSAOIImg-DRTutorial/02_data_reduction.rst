@@ -379,14 +379,15 @@ cancelling out).
 Stack Science reduced images
 ----------------------------
 
-.. todo: ?BQ? make .tar.gz file available for public access and change the url below.
-.. todo:: ?BQ? make .tar.gz file available for public access and change the url below.
+.. todo: @bquint make .tar.gz file available for public access and change the url below.
+..  todo:: @bquint make .tar.gz file available for public access and change the
+    url below.
 
 
 Finally, you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction
-and image stacking is called `disco-stu`. This package can be found in the
+and image stacking is called ``disco-stu``. This package can be found in the
 link bellow (only available within Gemini Internal Network for now and requires
 login):
 
@@ -401,7 +402,7 @@ login):
 
 
 De-compress the file, enter in the decompressed directory and use pip to install
-it: ``$ pip install . ``.
+it: ``pip install .`` .
 
 Once you are all set, you can simply run ``disco`` on the Sky Subtracted
 files:
@@ -426,6 +427,11 @@ The final image is shown below.
    :align: center
 
    Sky Subtracted and Stacked Final Image
+
+
+.. todo: @bquint why d4 looks darker? what can I do to fix this?
+.. todo:: @bquint why d4 looks darker? what can I do to fix this?
+
 
 This operation in known to have great impact on some science cases. For example,
 check the two images below. The first one is a single frame of the globular
