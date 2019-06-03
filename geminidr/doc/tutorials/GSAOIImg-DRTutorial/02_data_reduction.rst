@@ -36,6 +36,50 @@ like dataselect_, showd_, typewalk_, and caldb_.
     now, if that happens to you, you might need to run the pipeline on a
     smaller data set.
 
+
+.. _setup_caldb:
+
+Set up caldb_
+-------------
+
+DRAGONS comes with a local calibration manager and a local light weight database
+that uses the same calibration association rules as the Gemini Observatory
+Archive. This allows ``reduce`` to make requests for matching **processed**
+calibrations when needed to reduce a dataset.
+
+Let's set up the local calibration manager for this session.
+
+In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+follow:
+
+.. code-block:: none
+
+    [calibs]
+    standalone = True
+    database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
+
+This simply tells the system where to put the calibration database, the
+database that will keep track of the processed calibrations we are going to
+send to it.
+
+.. note:: The tilde (``~``) in the path above refers to your home directory.
+   Also, mind the dot in ``.geminidr``.
+
+Then initialize the calibration database:
+
+.. code-block:: bash
+
+    caldb init
+
+That's it! It is ready to use!
+
+You can add processed calibrations with ``caldb add <filename>`` (we will
+later), list the database content with ``caldb list``, and
+``caldb remove <filename>`` to remove a file **only** from the database
+(it will **not** remove the file on disk). For more the details, check the
+caldb_ documentation in the `Recipe System - User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/>`_.
+
+
 .. _organize_files:
 
 Organize files
@@ -46,7 +90,7 @@ called ``../playdata/`` and that we do not have any information anymore. From a
 bash terminal and from within the Conda Virtual Environment where DRAGONS was
 installed, we can call the command tool typewalk_:
 
-.. code-block:: bash
+..  code-block:: bash
 
     $ typewalk -d ../playdata/
 
@@ -78,21 +122,32 @@ reduction pipeline does not organize the data.
 That means that we first need to identify these files and create lists that will
 be used in the data-reduction process. For that, we will use the dataselect_
 command line. Please, refer to the dataselect_ page for details regarding its
-usage. Let us start with the DARK files: ::
+usage. Let us start with the DARK files:
 
-   $ dataselect --tags DARK ../playdata/*.fits > list_of_darks.txt
+..  code-block:: bash
+
+    $ dataselect --tags DARK ../playdata/*.fits > list_of_darks.txt
+
 
 Here, the ``>`` symbol gets the dataselect_ output and stores it within the
 ``list_of_darks.txt`` file. If you want to see the output, simply omit it and
 everything after it.
 
-Now we can do the same with the FLAT files, separating them by filter: ::
+Now we can do the same with the FLAT files, separating them by filter:
+
+..  code-block:: bash
 
     $ dataselect --tags FLAT --expr 'filter_name=="Kshort"' ../playdata/*.fits > list_of_Kshort_flats.txt
 
+
+..  code-block:: bash
+
     $ dataselect --tags FLAT --expr 'filter_name=="H"' ../playdata/*.fits > list_of_H_flats.txt
 
-You can select the standard start with the following command: ::
+
+You can select the standard start with the following command:
+
+..  code-block:: bash
 
     $ dataselect --expr 'observation_class=="partnerCal"' raw/*.fits
     raw/S20170504S0114.fits
@@ -102,7 +157,9 @@ You can select the standard start with the following command: ::
 
 Here we have only four files. But the problem is that you may have more than one
 standard star in your data set. We can verify that by passing the dataselect_
-output to the showd_ command line using "pipe" (``|``): ::
+output to the showd_ command line using "pipe" (``|``):
+
+..  code-block:: bash
 
     $ dataselect --expr 'observation_class=="partnerCal"' ../playdata/*.fits | showd -d object
     ----------------------------------------
@@ -113,16 +170,21 @@ output to the showd_ command line using "pipe" (``|``): ::
     ../playdata/S20170504S0116.fits     9132
     ../playdata/S20170504S0117.fits     9132
 
+
 The ``-d`` flag tells showd_ which descriptor will be printed for each input
 file. As you can see, it was not our case. If you see more than one object, you
 can create a list for each standard star using the ``object`` descriptor
-as an argument for dataselect_ (spaces are allowed if you use double quotes): ::
+as an argument for dataselect_ (spaces are allowed if you use double quotes):
+
+.. code-block:: bash
 
     $ dataselect --expr 'object=="9132"' ../playdata/*.fits > list_of_std_9132.txt
 
 
 The rest is the data with your science target. Before we create a new list, let
-us check if we have more than one target and more than one exposure time: ::
+us check if we have more than one target and more than one exposure time:
+
+.. code-block:: bash
 
     $ dataselect --expr 'observation_class=="science"' ../playdata/*.fits | showd -d object
     -----------------------------------------
@@ -134,7 +196,10 @@ us check if we have more than one target and more than one exposure time: ::
     ../playdata/S20170505S0109.fits   NGC5128
     ../playdata/S20170505S0110.fits   NGC5128
 
-We have only one target. Now let us check the exposure time: ::
+
+We have only one target. Now let us check the exposure time:
+
+..  code-block:: bash
 
     $ dataselect --expr 'observation_class=="science"' ../playdata/*.fits | showd -d exposure_time
     -----------------------------------------------
@@ -153,7 +218,9 @@ a comma-sepparated argument to the ``-d`` argument (e.g.,
 
 Just to show the example, let us consider that we want to filter all the files
 whose ``object`` is NGC5128 and that the ``exposure_time`` is 60 seconds. We
-also want to pass the output to a new list: ::
+also want to pass the output to a new list:
+
+.. code-block:: bash
 
    $ dataselect --expr '(observation_class=="science" and exposure_time==60.)' ../playdata/*.fits > list_of_science_files.txt
 
@@ -169,9 +236,12 @@ Accordingly to the `Calibration webpage for GSAOI
 files are only used to generate Bad Pixel Masks (BPM).
 
 If, for any reason, you believe that you really need to have a master DARK file,
-you can create it using the command below: ::
+you can create it using the command below:
+
+..  code-block:: bash
 
    $ reduce @list_of_darks.txt
+
 
 Note that ``reduce`` will no separate DARKS with different exposure times. You
 will have to create a new list for each exposure time, if that is the case.
@@ -179,9 +249,12 @@ will have to create a new list for each exposure time, if that is the case.
 Master DARK files can be added to the local database using the caldb_
 command. Before you run it, make sure you have `configured and initialized your
 caldb <caldb>`_. Once you are set, add the Master Dark to the local database using
-the following command: ::
+the following command:
+
+.. code-block:: bash
 
    $ caldb add ./calibrations/processed_dark/S20150609S0022_dark.fits
+
 
 Note that the prefix name of the master dark file can be different for you.
 
@@ -200,9 +273,12 @@ data set, use the `Gemini Archive Search Form <https://archive.gemini.edu/search
 to look for matching data.
 
 The BPM file can be created using the ``makeProcessedBPM`` recipe available
-via ``reduce`` command line: ::
+via ``reduce`` command line:
+
+..  code-block:: bash
 
    $ reduce -r makeProcessedBPM @list_of_H_flats.txt @list_of_darks.txt
+
 
 The ``-r`` argument tells ``reduce`` which recipe you want to use to replace
 the default recipe. This recipe will create a new file that contains the
@@ -217,20 +293,27 @@ the created file is called ``./S20171208S0053_bpm.fits``.
 Process FLAT files
 ------------------
 
-FLAT images can be easily reduced using the ``reduce`` command line: ::
+FLAT images can be easily reduced using the ``reduce`` command line:
+
+..  code-block:: bash
 
    $ reduce @list_of_Kshort_flats.txt
 
+
 If we want ``reduce`` to use the BPM file, we need to add ``-p
-addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line: ::
+addDQ:user_bpm="S20131129S0320_bpm.fits"`` to the command line:
+
+.. code-block::
 
    $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
+
 
 .. note::
 
    Here we used the "S20171208S0053_bpm.fits" as a BPM file. It is very unlikely
    that your BPM file has the same name. Make sure you use the correct file name.
    Processed BPM files will have the "_bpm.fits" sufix.
+
 
 Once you finish, you will have the master flat file copied in two places: inside
 the same folder where you ran ``reduce`` and inside the
@@ -241,13 +324,17 @@ the same folder where you ran ``reduce`` and inside the
 
    Master Flat - K-Short Band
 
+
 Note that this figure shows the masked pixels in white color but not all the
 detector features are masked. For example, the "Christmas Tree" on the detector
 2 can be easily noticed but was not masked.
 
-Once you are done, add the Master Flat to the local database using caldb_: ::
+Once you are done, add the Master Flat to the local database using caldb_:
+
+.. code-block:: bash
 
    $ caldb add ./calibrations/processed_flat/S20170505S0030_flat.fits
+
 
 If you do so, ``reduce`` will "see" this calibration file when performing
 the data reduction of our science files.
@@ -259,9 +346,12 @@ Process Science files
 ---------------------
 
 Once we have our calibration files processed and added to the database, we can
-run ``reduce`` on our science data: ::
+run ``reduce`` on our science data:
+
+.. code-block:: bash
 
    $ reduce @list_of_science_files.txt
+
 
 This command will generate flat corrected and sky subtracted files but will
 not stack them. You can find which file is which by its suffix
@@ -314,13 +404,19 @@ De-compress the file, enter in the decompressed directory and use pip to install
 it: ``$ pip install . ``.
 
 Once you are all set, you can simply run ``disco`` on the Sky Subtracted
-files: ::
+files:
+
+.. code-block:: bash
 
    $ disco *_skySubtracted.fits
 
+
 By default, ``disco`` will write the output file as ``disco_stack.fits``. If you
 want to change the name of the output file during execution, run the following
-command instead: ::
+command instead:
+
+
+.. code-block:: bash
 
    $ disco *_skySubtracted.fits -o my_final_image.fits
 
@@ -369,7 +465,9 @@ a list of parameters that can be modified.
 
 The showrecipes_ command line takes care of both steps. In order to list
 all the recipes available for a given file, we can pass the file as an input and
-the ``--all`` option. Here is an example::
+the ``--all`` option. Here is an example:
+
+.. code-block:: bash
 
   $ showrecipes ../playdata/S20170505S0073.fits --all
   Input file: /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata/S20170505S0073.fits
@@ -384,7 +482,9 @@ and one recipe for the QA (Quality Assesment) mode. By default, ``reduce`` uses
 the SQ mode for processing the data.
 
 The showrecipes_ command line can also display what are the Primitives that
-were used within a particular Recipe. Check the example below: ::
+were used within a particular Recipe. Check the example below:
+
+.. code-block::  bash
 
     $ showrecipes ../playdata/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
     Input file: /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata/S20170505S0073.fits
@@ -408,7 +508,9 @@ were used within a particular Recipe. Check the example below: ::
 
 
 Now you can get the list of parameters for a given Primitive using the
-showpars_ command line. Here is an example: ::
+showpars_ command line. Here is an example:
+
+.. code-block:: bash
 
     $ showpars ../playdata/S20170505S0073.fits makeLampFlat
 
@@ -416,13 +518,15 @@ showpars_ command line. Here is an example: ::
 Now that we know what are is the recipe being used, what are the Primitives
 it calls and what are the parameters that are set, we can finally change the
 default values using the ``-p`` flag. We actually did this earlier in this
-tutorial when we called::
+tutorial when we called:
+
+.. code-block:: bash
 
     $ reduce @list_of_Kshort_flats.txt -p addDQ:user_bpm="S20171208S0053_bpm.fits"
     Dataset tagged as {'RAW', 'DOMEFLAT', 'NON_SIDEREAL', 'SOUTH', 'AZEL_TARGET', 'CAL', 'GEMINI', 'FLAT', 'LAMPOFF', 'GSAOI', 'IMAGE', 'UNPREPARED'}
     Settable parameters on 'makeLampFlat':
     ========================================
-     Name                   Current setting
+    Name                   Current setting
 
     suffix               '_stack'             Filename suffix
     apply_dq             True                 Use DQ to mask bad pixels?

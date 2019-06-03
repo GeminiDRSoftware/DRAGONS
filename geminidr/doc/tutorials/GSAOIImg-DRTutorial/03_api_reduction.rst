@@ -50,10 +50,24 @@ used to actually run the data reduction pipeline.
 The Calibration Service
 -----------------------
 
-Before we start, let's be sure we have properly setup our database. First
-create the `rsys.cfg` file as described in
-`the caldb documentation in the Recipe System User's Manual <caldb>`_. Then,
-you can use the following commands to configure the local database and
+Before we start, let's be sure we have properly setup our database. First, check that you have already a ``rsys.cfg`` file inside the
+``~/.geminidr/``. It should contain:
+
+.. code-block:: none
+
+    [calibs]
+    standalone = True
+    database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
+
+
+This simply tells the system where to put the calibration database. This
+database will keep track of the processed calibrations as we add these files
+to it.
+
+..  note:: The tilde (``~``) in the path above refers to your home directory.
+    Also, mind the dot in ``.geminidr``.
+
+Then, you can use the following commands to configure the local database and
 initialize it:
 
 .. code-block:: python
@@ -62,13 +76,14 @@ initialize it:
 
     calibration_service = cal_service.CalibrationService()
     calibration_service.config()
-    calibration_service.init(wipe=True)
+    calibration_service.init()
 
     cal_service.set_calservice()
 
+The calibration service is now ready to use. If you need more details,
+check the
+`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
 
-The ``wipe=True`` can be omitted if you want to keep old calibration files that
-were added to the local database.
 
 
 Create :class:`list` of files

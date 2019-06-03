@@ -2,7 +2,6 @@
 
 .. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
 
-.. _caldb_api: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api
 
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
@@ -63,7 +62,7 @@ using the :mod:`gempy.utils.logutils` module and its
     :lineno-start: 7
 
     from gempy.utils import logutils
-    logutils.config(file_name='dummy.log')
+    logutils.config(file_name='f2_data_reduction.log')
 
 
 .. _set_caldb_api:
@@ -104,8 +103,8 @@ configured like this:
     cal_service.set_calservice()
 
 The calibration service is now ready to use. If you need more details,
-check the `Using the caldb API in the Recipe System User's Manual
-<caldb_api>`_.
+check the
+`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
 
 
 .. _create_file_lists:
