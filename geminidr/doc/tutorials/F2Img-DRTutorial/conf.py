@@ -211,6 +211,13 @@ todo_include_todos = True
 # -- Finishing with a setup that will run always -----------------------------
 def setup(app):
 
-    # Adding custom styles
+    # -- Adding custom styles ---
     app.add_css_file('css/code.xref-styles.css')
     app.add_css_file('css/todo-styles.css')
+    app.add_css_file('css/copy_code_block.css')
+
+    # -- Adding custom behavior ---
+    # -- Will leave this out for now until I manage to get the behavior I want
+    # app.add_js_file('js/copy_code_block.js')
+    # app.add_js_file('https://cdn.jsdelivr.net/npm/clipboard@1/dist/clipboard.min.js')
+

@@ -7,6 +7,6 @@ div.admonition-todo.admonition {
   background-color: lavender;
 }
 
-div.admonition-todo p.first.admonition-title {
-  background-color: mediumpurple;
+.admonition-todo.admonition > .admonition-title {
+  background: mediumpurple;
 }

@@ -39,12 +39,55 @@ like dataselect_, showd_, typewalk_, and caldb_.
     now, if that happens to you, you might need to run the pipeline on a
     smaller data set.
 
+.. _setup_caldb:
+
+Set up caldb_
+-------------
+
+DRAGONS comes with a local calibration manager and a local light weight database
+that uses the same calibration association rules as the Gemini Observatory
+Archive. This allows ``reduce`` to make requests for matching **processed**
+calibrations when needed to reduce a dataset.
+
+Let's set up the local calibration manager for this session.
+
+In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+follow:
+
+.. code-block:: none
+
+    [calibs]
+    standalone = True
+    database_dir = ${path_to_my_data}/f2img_tutorial/playground
+
+This simply tells the system where to put the calibration database, the
+database that will keep track of the processed calibrations we are going to
+send to it.
+
+.. note:: The tilde (``~``) in the path above refers to your home directory.
+   Also, mind the dot in ``.geminidr``.
+
+Then initialize the calibration database:
+
+.. code-block:: bash
+
+    caldb init
+
+That's it! It is ready to use!
+
+You can add processed calibrations with ``caldb add <filename>`` (we will
+later), list the database content with ``caldb list``, and
+``caldb remove <filename>`` to remove a file **only** from the database
+(it will **not** remove the file on disk). For more the details, check the
+`caldb documentation in the Recipe System - User's Manual <caldb>`_.
+
+
 .. _check_files:
 
 Check files
 -----------
 
-First of all, let us consider that we have put all the files in the same folder
+Now let us consider that we have put all the files in the same folder
 called ``../playdata/`` and that we do not have any information anymore. From a
 bash terminal and from within the Conda Virtual Environment where DRAGONS was
 installed, we can call the command tool typewalk_:

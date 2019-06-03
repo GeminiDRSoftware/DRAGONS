@@ -2,6 +2,8 @@
 
 .. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
 
+.. _caldb_api: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api
+
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
 
@@ -64,14 +66,32 @@ using the :mod:`gempy.utils.logutils` module and its
     logutils.config(file_name='dummy.log')
 
 
+.. _set_caldb_api:
+
 The Calibration Service
 -----------------------
 
-Before we start, let's be sure we have properly setup our database. First
-create the `rsys.cfg` file as described in
-`the caldb documentation in the Recipe System User's Manual <caldb>`_. Then,
-you can use the following commands to configure the local database and
-initialize it:
+Before we start, let's be sure we have properly setup our database.
+
+First, check that you have already a ``rsys.cfg`` file inside the
+``~/.geminidr/``. It should contain:
+
+.. code-block:: none
+
+    [calibs]
+    standalone = True
+    database_dir = ${path_to_my_data}/f2img_tutorial/playground
+
+
+This simply tells the system where to put the calibration database. This
+database will keep track of the processed calibrations as we add these files
+to it.
+
+..  note:: The tilde (``~``) in the path above refers to your home directory.
+    Also, mind the dot in ``.geminidr``.
+
+The calibration database is initialized and the calibration service is
+configured like this:
 
 .. code-block:: python
     :linenos:
@@ -83,10 +103,10 @@ initialize it:
 
     cal_service.set_calservice()
 
+The calibration service is now ready to use. If you need more details,
+check the `Using the caldb API in the Recipe System User's Manual
+<caldb_api>`_.
 
-If you want to reset the calibration manager database and start with a fresh
-database, you can pass ``wipe=True`` to the
-:meth:`~recipe_system.cal_service.CalibrationService.init` method.
 
 .. _create_file_lists:
 
