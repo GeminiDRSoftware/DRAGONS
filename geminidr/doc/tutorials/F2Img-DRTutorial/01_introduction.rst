@@ -28,10 +28,9 @@ Before you start, make sure you have `DRAGONS
 <https://dragons.readthedocs.io/>`_ properly installed and configured on your
 machine. You can test that by typing the following commands:
 
-::
+.. code-block:: bash
 
     $ conda activate geminiconda
-
     $ python -c "import astrodata"
 
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
