@@ -31,12 +31,13 @@ print(' Dragons path: {}\n'.format(dragons_path))
 
 # -- Project information -----------------------------------------------------
 
-project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
+project = 'DRAGONS Tutorial - GMOS Data Reduction'
 copyright = 'Gemini Observatory (AURA), 2019'
 author = 'Bruno C. Quint'
 
 # The short X.Y version
 version = astrodata.version(short=True)
+
 # The full version, including alpha/beta/rc tags
 release = astrodata.version()
 
@@ -44,7 +45,6 @@ release = astrodata.version()
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-
 needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -121,7 +121,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'DRAGONSTutorial-Flamingos2tut'
+htmlhelp_basename = 'DRAGONSTutorial-GMOStut'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -148,7 +148,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'DRAGONSTutorial-Flamingos2tut.tex', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
+    (master_doc, 'DRAGONSTutorial-GMOStut.tex', 'DRAGONS Tutorial - GMOS Data Reduction',
      'Bruno Quint', 'manual'),
 ]
 
@@ -158,7 +158,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dragonstutorial-flamingos2', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
+    (master_doc, 'dragonstutorial-gmos', 'DRAGONS Tutorial - GMOS Data Reduction',
      [author], 1)
 ]
 
@@ -170,11 +170,11 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [(
     master_doc,
-    'DRAGONSTutorial-Flamingos2DataReduction',
-    'DRAGONS Tutorial - Flamingos-2 Data Reduction',
+    'DRAGONSTutorial-GMOSDataReduction',
+    'DRAGONS Tutorial - GMOS Data Reduction',
     author,
-    'DRAGONSTutorial-Flamingos2',
-    'A quick tutorial on how to reduce F2 images with the DRAGONS command line tools',
+    'DRAGONSTutorial-GMOS',
+    'A quick tutorial on how to reduce GMOS images with the DRAGONS command line tools',
     'Miscellaneous'),
 ]
 
