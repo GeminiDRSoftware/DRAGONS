@@ -476,7 +476,7 @@ the ``--all`` option. Here is an example:
 .. code-block:: bash
 
   $ showrecipes ../playdata/S20170505S0073.fits --all
-  Input file: /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata/S20170505S0073.fits
+  Input file: ${path_to_my_data}/playdata/S20170505S0073.fits
   Input tags: {'GEMINI', 'LAMPOFF', 'UNPREPARED', 'GSAOI', 'NON_SIDEREAL', 'DOMEFLAT', 'CAL', 'RAW', 'IMAGE', 'SOUTH', 'FLAT', 'AZEL_TARGET'}
   Recipes available for the input file:
      geminidr.gsaoi.recipes.sq.recipes_FLAT_IMAGE::makeProcessedBPM
@@ -493,7 +493,7 @@ were used within a particular Recipe. Check the example below:
 .. code-block::  bash
 
     $ showrecipes ../playdata/S20170505S0073.fits --mode sq --recipe makeProcessedBPM
-    Input file: /data/bquint/tutorials/gsaoi/gsaoiimg_tutorial/playdata/S20170505S0073.fits
+    Input file: ${path_to_my_data}/playdata/S20170505S0073.fits
     Input tags: ['SOUTH', 'AZEL_TARGET', 'IMAGE', 'GEMINI', 'NON_SIDEREAL', 'LAMPOFF', 'FLAT', 'CAL', 'DOMEFLAT', 'UNPREPARED', 'RAW', 'GSAOI']
     Input mode: sq
     Input recipe: makeProcessedBPM
