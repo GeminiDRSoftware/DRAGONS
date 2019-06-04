@@ -1,15 +1,19 @@
 .. 01_introduction.rst
 
+.. _DRAGONS: https://dragons.readthedocs.io/
+
+.. _`Gemini Observatory Archive (GOA)`: https://archive.gemini.edu/
+
+.. _GMOS: https://www.gemini.edu/sciops/instruments/gmos/
 
 .. _introduction:
 
 Introduction
 ************
 
-This tutorial covers the basics on reducing
-`F2 <https://www.gemini.edu/sciops/instruments/flamingos2/>`_ (Gemini South
-Adaptive Optics Imager) data using `DRAGONS <https://dragons.readthedocs.io/>`_
-(Data Reduction for Astronomy from Gemini Observatory North and South).
+This tutorial covers the basics on reducing GMOS_ (Gemini Multi-Object
+Spectrographs) data using DRAGONS_ (Data Reduction for Astronomy from Gemini
+Observatory North and South).
 
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial. `Chapter 2: Data Reduction
@@ -24,13 +28,15 @@ from within Python.
 Software Requirements
 =====================
 
-Before you start, make sure you have `DRAGONS
-<https://dragons.readthedocs.io/>`_ properly installed and configured on your
-machine. You can test that by typing the following commands:
+Before you start, make sure you have DRAGONS_ properly installed and configured
+on your machine. You can test that by typing the following commands:
 
 .. code-block:: bash
 
     $ conda activate geminiconda
+
+.. code-block:: bash
+
     $ python -c "import astrodata"
 
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
@@ -50,64 +56,79 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-This tutorial will use observations from program GS-2013B-Q-15 (PI: Leggett),
-NIR photometry of the faint T-dwarf star WISE J041358.14-475039.3, obtained on
-2013-Nov-21. Images of this sparse field were obtained in the Y, J, H, Ks bands
-using a dither sequence; dayCal DARKS and GCAL flats were obtained as well.
-`Leggett, et al. (2015) <https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_
-briefly describes the data reduction procedures they followed, which are
-similar to those described below.
+..  todo @bquint
+..  todo:: @bquint Upload a ``.tar.gz`` file with the full dataset and use the
+    URL here.
 
-The first step is to retrieve the data from the `Gemini Observatory Archive
-(GOA) <https://archive.gemini.edu/>`_. For more details on using the Archive,
-check its `Help Page <https://archive.gemini.edu/help/index.html>`_.
+This tutorial will use observations from program GN-2017A-LP-1 (PI: Wesley
+Fraser), "COL-OSSOS: COLours for the Outer Solar System Object Survey", obtained
+on 2017-May-25.
 
-Access the `GOA webpage <https://archive.gemini.edu/>`_, put the data label
-**GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
-button in the middle of the page. The page will refresh and display a table with
-all the data for this dataset. Since the amount of data is unnecessarily large
-for a tutorial (162 files, 0.95 Gb), we will narrow our search by setting the
-``Instrument`` drop-down menu to **F2** and the ``Filter`` drop-down menu to
-**Y**. Now we have only 9 files, 0.05 Gb.
+Let's start by accessing the `Gemini Observatory Archive (GOA)`_ to download the
+data. Then, put the data label **GN-2017A-LP-1-74** in the ``PROGRAM_ID`` text
+field, and press the ``Search`` button in the middle of the page. The page will
+refresh and display a table with all the data for this dataset.
+
+The table will show you 6 files: five g-band images and one r-band image. We
+can exclude the r-band image by selecting **GMOS-N** in the ``Instrument``
+drop-down menu. When you do that, the page will display more options. Select
+**g'** in the ``Filter`` drop-down that just showed up and press the ``Search``
+button again. Now we have only 5 files, 0.10 Gb.
 
 You can also copy the URL below and paste it on browser to see the search
 results:
 
-::
+..  code-block:: none
 
-  https://archive.gemini.edu/searchform/GS-2013B-Q-15-39/RAW/cols=CTOWEQ/filter=Y/notengineering/F2/NotFail
+    https://archive.gemini.edu/searchform/GN-2017A-LP-1-74/cols=CTOWEQ/filter=g/notengineering/GMOS-N/NotFail
 
-At the bottom of the page, you will find a button saying *Download all 9 files
-totalling 0.05 Gb*. Click on it to download a `.tar` file with all the data.
+At the bottom of the page, you will find a button saying ``Download all 5 files
+totalling 0.10 Gb`` . Click on it to download a `` .tar `` file with all the
+data.
 
-The calibration files can be obtained by simply clicking on the *Load Associated
-Calibrations* tab, scrolling down to the page and clicking on the *Download all
-42 files totalling 0.15 Gb* button.
+The calibration files could be obtained by simply clicking on the
+**Load Associated Calibrations** tab. You will see that the Gemini Archive will
+load much more files than we need (239 files, totalling 2.09 Gb). That is too
+much for a tutorial so we will look for our calibration files manually.
 
-Finally, you will need a set of short dark frames in order to create the Bad
-Pixel Masks (BPM). For that, we will have to perform a search ourselves in the
-archive. Fill the search parameters below with their associated values and
-click on the ``Search`` button:
+For the Bias images, fill the search parameters below with their associated
+values and click on the ``Search`` button:
 
-- Program ID: GS-CAL20131126-1
-- Instrument: F2
-- Obs. Type: Dark
-- Exposure Time: 3
+- Program ID: GN-CAL20170527-11
+- Instrument: GMOS-N
+- Binning: 1x1
+- Raw / Reduced: Raw Only
+- ROI: Full Frame
 
-Here is the associated URL for the search above:
+Once the page reloads, you should see a table with five files. The ``Type``
+collumn will tell us that they are all BIAS. Go to the botton of the page and
+click on the ``Download all 5 files totalling 0.06 Gb`` .
 
-::
+For the Flat images, fill the search form using the following parameters:
 
-  https://archive.gemini.edu/searchform/exposure_time=3/GS-CAL20131126-1/RAW/cols=CTOWEQ/notengineering/F2/NotFail/DARK
+- Program ID: GN-CAL20170530-2
+- Instrument: GMOS-N
+- Binning: 1x1
+- Raw / Reduced: Raw Only
+- ROI: Full Frame
 
-Scroll down the page and click on the *Download all 7 files totalling 0.02 Gb*
+Now click on the little black arrow close to the ``Advanced Options`` and change
+the ``QA State`` drop-down menu to **Pass** to ensure we have good quality data.
+
+Press the ``Search`` button, the page will reload and show you six
+files. The ``Type`` column says **OBJECT** but the ``Object`` columnn says
+**Twilight**. This tells us that these are Twilight Flats. Go to the botton of
+the page and click on the ``Download alll 6 files totalling 0.20 Gb`` .
+
+For more details on using the Archive, check its
+`Help Page <https://archive.gemini.edu/help/index.html>`_.
 
 For convenience, you can also use the three hyperlinks below to download each
 tar file.
 
-- `Download Science Data <https://archive.gemini.edu/download/GS-2013B-Q-15-39/filter=Y/RAW/F2/present/NotFail/notengineering/canonical>`_
-- `Download Associated Calibrations <https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/filter=Y/RAW/F2/NotFail/notengineering/canonical>`_
-- `Download Short DARK data <https://archive.gemini.edu/download/exposure_time=3/GS-CAL20131126-1/RAW/F2/present/NotFail/DARK/notengineering/canonical>`_
+- `Download Science Data <https://archive.gemini.edu/download/GN-2017A-LP-1-74/filter=g/notengineering/GMOS-N/NotFail/present/canonical>`_
+- `Download Bias <https://archive.gemini.edu/download/GN-CAL20170527-11/notengineering/1x1/RAW/GMOS-N/fullframe/NotFail/present/canonical>`_
+- `Download Flats <https://archive.gemini.edu/download/GN-CAL20170530-2/notengineering/1x1/RAW/GMOS-N/fullframe/Pass/present/canonical>`_
 
 Now, copy all the ``.tar`` files to the same place in your computer. Then use
 ``tar`` and ``bunzip2`` commands to decompress them:
@@ -115,9 +136,9 @@ Now, copy all the ``.tar`` files to the same place in your computer. Then use
 .. code-block:: bash
 
     $ cd ${path_to_my_data}/
-    $ tar -xf gemini_data.GS-2013B-Q-15-39_F2.tar
-    $ tar -xf gemini_calibs.GS-2013B-Q-15-39_F2.tar
-    $ tar -xf gemini_data.GS-CAL20131126-1_F2.tar
+    $ tar -xf gemini_data.GN-2017A-LP-1-74_GMOS-N.tar
+    $ tar -xf gemini_data.GN-CAL20170527-11_GMOS-N.tar
+    $ tar -xf gemini_data.GN-CAL20170530-2_GMOS-N.tar
     $ bunzip2 *.fits.bz2
     $ rm *_flat.fits *_dark.fits  # delete or move reduced data to avoid any confusion
 
@@ -125,12 +146,12 @@ You can add ``-v`` after each command to make it verbose since they can take a
 while to be executed. The files names may change depending on the parameters you
 used when searching in the `Gemini Archive <https://archive.gemini.edu/searchform>`_.
 
-For this tutorial, we will use a directory to separate the raw data from
-the processed data. This is how the data should be organized:
+For this tutorial, we will use a directory to separate the raw data from the
+processed data. This is how the data should be organized:
 
-::
+.. code-block:: none
 
-  |-- ${path to my data}/
+  |-- ${path_to_my_data}/
   |   |-- playdata/  # directory for raw data
   |   |-- playground/  # working directory
 
@@ -144,7 +165,7 @@ used in this tutorial:
   $ mkdir playground  #  create working directory
   $ mv *.fits ./playdata/  # move all the FITS files to this directory
 
-The full de-compressed data set will have 56 files and use about 0.9 Gb of disk
+The full de-compressed data set will have 16 files and use about 0.7 Gb of disk
 space.
 
 .. _about_data_set:
@@ -156,21 +177,13 @@ The table below contains a summary of the dataset downloaded in the previous
 section:
 
 +---------------+---------------------+--------------------------------+
-| Science       || S20131121S0075-083 | Y-band, 120 s                  |
+| Science       || N20170525S0116-120 | 300 s, g-band                  |
 +---------------+---------------------+--------------------------------+
-| Darks         || S20131127S0257-263 | 3 s, short darks for BPM       |
-|               +---------------------+--------------------------------+
-|               || S20130930S0242-246 | 20 s, for flat data            |
-|               || S20131023S0193-197 |                                |
-|               || S20140124S0033-038 |                                |
-|               || S20140209S0542-545 |                                |
-|               +---------------------+--------------------------------+
-|               || S20131120S0115-120 | 120 s, for science data        |
-|               || S20131121S0010     |                                |
-|               || S20131122S0012     |                                |
-|               || S20131122S0438-439 |                                |
+| Bias          || N20170527S0528-532 |                                |
 +---------------+---------------------+--------------------------------+
-| Flats         || S20131129S0320-323 | 20 s, Lamp On, Y-band          |
-|               +---------------------+--------------------------------+
-|               || S20131126S1111-116 | 20 s, Lamp Off, Y-band         |
+| Twilight Flats|| N20170530S0360     | 256 s, g-band                  |
+|               || N20170530S0363     | 64 s, g-band                   |
+|               || N20170530S0364     | 32 s, g-band                   |
+|               || N20170530S0365     | 16 s, g-band                   |
+|               || N20170530S0371-372 | 1 s, g-band                    |
 +---------------+---------------------+--------------------------------+
