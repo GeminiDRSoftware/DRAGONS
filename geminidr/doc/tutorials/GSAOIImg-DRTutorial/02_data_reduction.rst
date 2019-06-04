@@ -243,7 +243,7 @@ you can create it using the command below:
    $ reduce @list_of_darks.txt
 
 
-Note that ``reduce`` will no separate DARKS with different exposure times. You
+Note that ``reduce`` will not separate DARKS with different exposure times. You
 will have to create a new list for each exposure time, if that is the case.
 
 Master DARK files can be added to the local database using the caldb_
