@@ -484,7 +484,7 @@ the ``--all`` option. Here is an example:
      geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat
 
 The output tells me that I have two recipes for the SQ (Science Quality) mode
-and one recipe for the QA (Quality Assesment) mode. By default, ``reduce`` uses
+and one recipe for the QA (Quality Assessment) mode. By default, ``reduce`` uses
 the SQ mode for processing the data.
 
 The showrecipes_ command line can also display what are the Primitives that
