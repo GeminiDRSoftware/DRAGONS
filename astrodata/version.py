@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+Holds the DRAGONS version to be propagated throught all the DRAGONS package
+and to be used in the documentation.
+"""
 
 # --- Setup Version Here ---
 api = 2
@@ -17,11 +21,12 @@ def version(short=False):
     -------
     str : formatted version
     """
+
     if short:
-        v = "{:d}.{:d}".format(api, feature)
+        _version = "{:d}.{:d}".format(api, feature)
 
     else:
-        t = '-{:s}'.format(tag) if len(tag) > 0 else ''
-        v = "{:d}.{:d}.{:d}".format(api, feature, bug) + t
+        _tag = '-{:s}'.format(tag) if len(tag) > 0 else ''
+        _version = "{:d}.{:d}.{:d}".format(api, feature, bug) + _tag
 
-    return v
+    return _version
