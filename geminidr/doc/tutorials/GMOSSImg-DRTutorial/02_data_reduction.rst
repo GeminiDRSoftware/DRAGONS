@@ -1,30 +1,29 @@
+.. 02_data_reduction.rst
 
 .. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
 
 .. _dataselect: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect
 
-.. _descriptors: https://astrodata-user-manual.readthedocs.io/en/latest/appendices/appendix_descriptors.html
+.. _descriptor: https://astrodata-user-manual.readthedocs.io/en/latest/headers.html#astrodata-descriptors
 
 .. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
 
 .. _showd: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showd
 
-.. _show_primitives: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-primitives
-
-.. _show_recipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes
+.. _showrecipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showrecipes
 
 .. _showpars: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars
 
 .. _typewalk: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
+
+.. |github| image:: /_static/img/GitHub-Mark-32px.png
+    :scale: 75%
 
 
 .. _command_line_data_reduction:
 
 Data Reduction
 **************
-
-This chapter will guide you on reducing **Flamingos-2 Images** using command
-line tools.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. One of the most important scripts is called
@@ -34,10 +33,15 @@ For this tutorial, we will be also using other `Supplemental tools
 <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html>`_,
 like dataselect_, showd_, typewalk_, and caldb_.
 
-.. warning:: Some primitives use a lot of RAM memory and they can make `reduce`
+.. warning:: Some primitives use a lot of RAM memory and they can make reduce_
     crash. Our team is aware of this problem and we are working on that. For
     now, if that happens to you, you might need to run the pipeline on a
     smaller data set.
+
+Please, remember that we will be working in the
+``${path_to_my_data}/playground`` folder and that all the commands used in this
+tutorial are related to this path.
+
 
 .. _setup_caldb:
 
@@ -58,7 +62,7 @@ follow:
 
     [calibs]
     standalone = True
-    database_dir = ${path_to_my_data}/f2img_tutorial/playground
+    database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
@@ -68,6 +72,10 @@ send to it.
    Also, mind the dot in ``.geminidr``.
 
 Then initialize the calibration database:
+
+..  todo:: @dragons_team The command below should give a feedback to the user.
+    How do I know that the command actually worked? How do I know that I
+    am using the correct database?
 
 .. code-block:: bash
 
@@ -79,38 +87,43 @@ You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and
 ``caldb remove <filename>`` to remove a file **only** from the database
 (it will **not** remove the file on disk). For more the details, check the
-`caldb documentation in the Recipe System - User's Manual <caldb>`_.
+caldb_ documentation in the
+`Recipe System: User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/>`_.
 
 
-.. _check_files:
+.. _organize_files:
 
-Check files
------------
+Organize files
+--------------
 
-Now let us consider that we have put all the files in the same folder
+First of all, let us consider that we have put all the files in the same folder
 called ``../playdata/`` and that we do not have any information anymore. From a
 bash terminal and from within the Conda Virtual Environment where DRAGONS was
 installed, we can call the command tool typewalk_:
 
-.. code-block:: bash
+..  code-block:: bash
 
-   $ typewalk -d ../playdata/
+    $ typewalk -d ../playdata/
 
-   directory:  /path_to_my_files/f2img_tutorial/playdata
-        S20131122S0439.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (F2) (GEMINI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-        S20131127S0259.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (F2) (GEMINI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-                     ...
-        S20131127S0260.fits ............... (AT_ZENITH) (AZEL_TARGET) (CAL) (DARK) (F2) (GEMINI) (NON_SIDEREAL) (RAW) (SOUTH) (UNPREPARED)
-        S20131121S0081.fits ............... (F2) (GEMINI) (IMAGE) (RAW) (SIDEREAL) (SOUTH) (UNPREPARED)
-   Done DataSpider.typewalk(..)
+    directory:  /data/bquint/tutorials/gmosimg_tutorial/playdata
+         N20170525S0116.fits ............... (GEMINI) (GMOS) (IMAGE) (NORTH) (RAW) (SIDEREAL) (UNPREPARED)
+         ...
+         N20170527S0528.fits ............... (AT_ZENITH) (AZEL_TARGET) (BIAS) (CAL) (GEMINI) (GMOS) (LS) (NON_SIDEREAL) (NORTH) (RAW) (UNPREPARED)
+         ...
+         N20170530S0360.fits ............... (CAL) (FLAT) (GEMINI) (GMOS) (IMAGE) (NORTH) (RAW) (SIDEREAL) (TWILIGHT) (UNPREPARED)
+         ...
+    Done DataSpider.typewalk(..)
+
 
 This command will open every FITS file within the folder passed after the ``-d``
 flag (recursively) and will print an unsorted table with the file names and the
 associated tags. For example, calibration files will always have the ``CAL``
-tag. Flat images will always have the ``FLAT`` tag. Dark files will have the
-``DARK`` tag. This means that we can start getting to know a bit more about our
-data set just by looking the tags. The output above was trimmed for simplicity.
+tag. Flat images will always have the ``FLAT`` tag. This means that we can start
+getting to know a bit more about our data set just by looking the tags. The
+output above was trimmed for simplicity.
 
+
+.. _create_file_lists:
 
 Create File lists
 -----------------
@@ -122,280 +135,305 @@ reduction pipeline does not organize the data.
 That means that we first need to identify these files and create lists that will
 be used in the data-reduction process. For that, we will use the dataselect_
 command line. Please, refer to the dataselect_ page for details regarding its
-usage. Let us start with the DARK files:
+usage. Let us start with the BIAS files:
+
+..  code-block:: bash
+
+    $ dataselect --tags BIAS ../playdata/*.fits > list_of_bias.txt
+
+
+Here, the ``>`` symbol gets the dataselect_ output and stores it within the
+``list_of_bias.txt`` file. If you want to see the output, simply omit it and
+everything after it.
+
+Now we can do the same with the FLAT files:
+
+..  code-block:: bash
+
+    $ dataselect --tags FLAT ../playdata/*.fits > list_of_flats.txt
+
+
+If your dataset has FLATs obtained with more than one filter, you can add the
+``--expr 'filter_name=="g"'`` expression to get on the FLATs obtained with in
+the g-band. For example:
 
 .. code-block:: bash
 
-   $ dataselect --tags DARK ../playdata/*.fits
-   ../playdata/S20130930S0242.fits
-   ../playdata/S20130930S0243.fits
-                  ...
-   ../playdata/S20140209S0544.fits
-   ../playdata/S20140209S0545.fits
+    $ dataselect --tags FLAT --expr 'filter_name=="g"' ../playdata/*.fits > list_of_g-band_flats.txt
 
-The ``--tags`` is a comma-separated argument that is used to select the files
-that matches the tag(s) listed there.
 
-Remember that our data set contains three sets of DARK files: one with 120 s
-matching the science data, one with 20 s matching the flat data, and one
-with 3 s to create BPMs. If you don't know what are the existing exposure times,
-you can "pipe" the dataselect_ results and use the showd_ command line tool:
+The rest is the data with your science target. The simplest way of creating a
+list of science frames is excluding everything that is a calibration:
 
 .. code-block:: bash
 
-   $ dataselect --tags DARK ../playdata/*.fits | showd -d exposure_time
-   -----------------------------------------------
-   filename                          exposure_time
-   -----------------------------------------------
-   ../playdata/S20130930S0242.fits            20.0
-   ../playdata/S20130930S0243.fits            20.0
-                  ...
-   ../playdata/S20131120S0115.fits           120.0
-   ../playdata/S20131120S0116.fits           120.0
-                  ...
-   ../playdata/S20131127S0257.fits             3.0
-   ../playdata/S20131127S0258.fits             3.0
-                  ...
-   ../playdata/S20140209S0544.fits            20.0
-   ../playdata/S20140209S0545.fits            20.0
+    $ dataselect --xtags CAL ../playdata/*.fits > list_of_science.txt
 
-The ``|`` is what we call "pipe" and it is used to pass output from dataselect_
-to showd_. The following line creates a list of DARK files that have exposure
-time of 20 seconds:
 
-.. code-block:: bash
+This will work for our dataset because we know that a single target was observed
+with a single filter and with the same exposure time. But what if we don't knwo
+that?
 
-   $ dataselect --tags DARK --expr "exposure_time==20" ../playdata/*.fits > darks_020s.list
+We can check it by passing the dataselect_ output to the showd_ command line
+using a "pipe" (``|``):
 
-``--expr`` is used to filter the files based on their descriptors_. Here we are
-selecting files with exposure time of 20 seconds. You can repeat the same
-command for the other existing exposure times (3 s and 120 s).
+..  code-block:: bash
 
-.. code-block:: bash
+    $ dataselect --expr 'observation_class=="science"' ../playdata/*.fits | showd -d object,exposure_time
+    --------------------------------------------------------
+    filename                          object   exposure_time
+    --------------------------------------------------------
+    ../playdata/N20170525S0116.fits    o3e43           300.0
+    ../playdata/N20170525S0117.fits    o3e43           300.0
+    ../playdata/N20170525S0118.fits    o3e43           300.0
+    ../playdata/N20170525S0119.fits    o3e43           300.0
+    ../playdata/N20170525S0120.fits    o3e43           300.0
 
-   $ dataselect --tags DARK --expr "exposure_time==3" ../playdata/*.fits > darks_003s.list
 
-   $ dataselect --tags DARK --expr "exposure_time==120" ../playdata/*.fits > darks_120s.list
+The ``-d`` flag tells showd_ which descriptor_ will be printed for each input
+file. As you can see, we have only observed target and only exposure time.
 
-Now let us create the list containing the flat files:
+If you see more than one object, you can create a list for each standard star
+using the ``object`` descriptor as an argument for dataselect_ (spaces are
+allowed if you use double quotes):
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT ../playdata/*.fits > flats.list
+    $ dataselect --expr 'object=="o3e43"' ../playdata/*.fits > list_of_sci_o3e43.txt
 
-We know that our dataset has only one filter (Y-band). If our dataset contains
-data with more filters, we can use the ``--expr`` to select the appropriate
-filter:
 
-For that, we start creating the lists containing the
-corresponding files for each filter:
+Now let us consider that we want to filter all the files whose ``object`` is
+**o3e43** and that the ``exposure_time`` is **300 seconds**. We also want to
+pass the output to a new list:
 
 .. code-block:: bash
 
-    $ dataselect --tags FLAT --expr "filter_name=='Y'" ../playdata/*.fits > flats_Y.list
-
-.. note::
-
-    Remember that the FLAT images for Y, J and H must be taken with the
-    instrument lamps on and off. This difference will be used during the
-    creation of a master flat for each of these filters. For the Ks filter, only
-    lamp off images are used.
+   $ dataselect --expr '(object=="o3e43" and exposure_time==300.)' ../playdata/*.fits > list_of_science_files.txt
 
 
-Finally, we want to create a list with science targets. We are looking for files
-whose are not calibration nor a bad-pixel-mask. To exclude them from our
-selection we can use the ``--xtags``, e.g., ``--xtags CAL,BPM``.
+.. _process_bias_files:
 
-.. code-block:: bash
-
-    $ dataselect --xtags CAL,BPM ../playdata/*.fits > sci_images.list
-
-Remember that you can use the ``--expr`` option to select targets with different
-names or exposure times, depending on their descriptors_.
-
-
-.. _process_dark_files:
-
-Process DARK files
+Process BIAS files
 ------------------
 
-We start the data reduction by creating a Master Dark file for each exposure
-time. We already created a list for each of them in the previous section and
-now we can simply use the reduce_ command line to process them. Here is how
-you can reduce the 20 s dark data and stack them into a Master Dark:
+The Master BIAS file can be created using the command below:
+
+..  code-block:: bash
+
+   $ reduce @list_of_bias.txt
+
+
+Master Bias files can be added to the local database using the caldb_
+command. Before you run it, make sure you have `configured and initialized your
+caldb <setup_caldb>`_. Once you are set, add the Master Bias to the local
+database using the following command:
+
+..  code-block:: bash
+
+    $ caldb add ./calibrations/processed_bias/N20170527S0528_bias.fits
+
+
+Note that the prefix name of the Master Bias file can be different for you.
+Before carrying on, check that the Master Bias was added to the database
+using the ``caldb list`` command:
 
 .. code-block:: bash
 
-    $ reduce @darks_020s.list
+    $ caldb list
+    N20170527S0528_bias.fits       /path_to_my_data/playground/calibrations/processed_bias
 
-Note the ``@`` character before the name of the file that contains the list of
-DARKS. This syntax was inherited from IRAF and also works with most of DRAGONS
-command line tools. More details can be found in the
-`DRAGONS - Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/howto.html#the-file-facility>`_.
 
-Repeat the same commands for each exposure time and you will have a set of
-MASTER Darks:
+.. _process_flat_files:
+
+Process FLAT files
+------------------
+
+FLAT images can be easily reduced using the ``reduce`` command line:
+
+..  code-block:: bash
+
+   $ reduce @list_of_flats.txt
+
+
+Now reduce_ will query the local calibration manager for the Master Bias frame
+and use it in the data reduction. Once it finished, you shall have the Master
+Flat inside the ``./calibrations/processed_flat`` directory. Add it to the
+local calibration database with the following command:
+
+..  code-block:: bash
+
+    $ caldb add ./calibrations/processed_flat/N20170530S0360_flat.fits
+
+
+If you do so, ``reduce`` will "see" this calibration file when performing
+the data reduction of our science files. Again, check that the Master Flat was
+added to your local database:
 
 .. code-block:: bash
 
-   $ reduce @darks_120s.list
-
-   $ reduce @darks_003s.list
-
-The Master DARK files will be saved in the same folder where reduce_ was
-called and inside the ``./calibration/processed_dark`` folder. The former is
-used to save cashed calibration files. If you have
-`your local database configured <caldb>`_, you can add the Master DARK files to
-it. This can be done using the following command:
-
-.. code-block:: bash
-
-    $ caldb add ./calibration/processed_dark/S20130930S0242_dark.fits
-
-Remember that the filename can change. caldb_ only accepts **one file per
-command**. If you want to add more files, you can repeat the command for each of
-them.
-
-.. code-block:: bash
-
-   $ caldb add ./calibration/processed_dark/S20130930S0242_dark.fits
-
-   $ caldb add ./calibration/processed_dark/S20131127S0257_dark.fits
-
-Now reduce_ will be able to find these files if needed while processing other
-data. If you have problems `setting up your local database <caldb>`_, you will
-still be able to pass the files to reduce_ manually. This will be shown ahead
-in this tutorial.
-
-.. note::
-
-    The DARK subtraction can be skipped sometimes. The two major situation that
-    this can happen is when you have much more dithering frames on sky and when
-    you have the same number of flats with LAMPON and LAMPOFF.
+  $ caldb list
+  N20170527S0528_bias.fits       /data/bquint/tutorials/gmosimg_tutorial/playground/calibrations/processed_bias
+  N20170530S0360_flat.fits       /data/bquint/tutorials/gmosimg_tutorial/playground/calibrations/processed_flat
 
 
-Create Bad-Pixel-Mask
+.. _processing_science_files:
+
+Process Science files
 ---------------------
 
-The Bad Pixel Mask (BPM) can be built using a set of flat images with the
-lamps on and off and a set of short exposure dark files. Here, our shortest dark
-files have 3 second exposure time. Again, we use the reduce_ command to
-produce the BPMs.
-
-It is important to note that **the recipe system only opens the first AD object
-in the input file list**. So you need to send it a list of flats and darks, but
-the _first_ file must be a flat. If the first file is a dark, then no, it won't
-match that recipe.
-
-Since Flamingos-2 filters are in the collimated space, the filter choice should
-not interfere in the results.
+Once we have our calibration files processed and added to the database, we can
+run ``reduce`` on our science data:
 
 .. code-block:: bash
 
-    $ reduce @flats_Y.list @darks_003s.list -r makeProcessedBPM
-
-Note that instead of creating a new list for the BP masks, we simply used a
-flat list followed by the dark list. This ensures that the first file read by
-reduce_ is a flat file. Also note the ``-r`` tells reduce_ to use a different
-recipe instead of the default. The output image will be saved in the current
-working directory and will have a ``_bpm`` suffix.
+   $ reduce @list_of_science.txt
 
 
-Process Flat-Field images
--------------------------
+This command will generate flat corrected and sky subtracted files and will
+stack them. You might see some warning messages but it should be safe to ignore
+them for now.
 
-Master Flats can also be created using the reduce_ command line with the
-default recipe.
+Here is one of the raw images:
 
-.. code-block:: bash
+.. todo:: @bquint Create plot with raw image
 
-    $ reduce @flats_Y.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
+And here is the final reduced stack image:
 
-.. todo @bquint Review BPM injection
-.. todo:: @bquint The command line above should pass the BPM to the ``p.addDQ``
-   but it seems it is not. I am receiving ``WARNING - No static BPMs defined``
-   messages while reducing the data. I checked with and without this option and
-   I get the same message but the two masks are not the same.
-
-Here, the ``-p`` argument tells reduce_ to modify the ``user_bpm`` in the
-``addDQ`` primitive.
-
-Then, if you have your `local database configured <caldb>`_, we add the master
-flat file to the database so reduce_ can find and use it when reducing the
-science files.
-
-.. code-block:: bash
-
-    $ caldb add ./calibrations/processed_flat/S20131129S0320_flat.fits
-
-.. warning::
-
-    The Ks-band thermal emission from the GCAL shutter depends upon the
-    temperature at the time of the exposure, and includes some spatial
-    structure. Therefore the distribution of emission is not necessarily
-    consistent, except for sequential exposures. So it is best to combine
-    lamps-off exposures from a single day.
+.. todo:: @bquint Create plot with final reduced stack image
 
 
-Reduce Science Images
----------------------
+Advanced Operations
+-------------------
 
-Now that we have the Master Dark and Master Flat images, we can tell reduce_
-to process our data. reduce_ will look at the remote or at the local database
-for calibration files. Make sure that you have
-`configured your database <caldb>`_ before running it. If you do not have a
-local database, you still can pass the calibration files to reduce. This will
-be shown later. For now, let us see the simplest case of reduce_:
+It is also important to remember that ``reduce`` is basically a recipe with
+a sequence of operations, called Primitives, and that each Primitive require
+a set of parameters. When we run ``reduce`` without any extra flag, it will
+run all the Primitives in our recipe using the default values. Depending on
+your data/science case, you may have to try to change the parameters of one or
+more Primitives.
 
-.. code-block:: bash
+First, you need to know what are the recipes available for a given files, then
+you need to get what are Primitives living within that recipe. Finally, you need
+a list of parameters that can be modified.
 
-    $ reduce @sci_images.list
+The showrecipes_ command line takes care of both steps. In order to list
+all the recipes available for a given file, we can pass the file as an input and
+the ``--all`` option. Here is an example:
+
+..  code-block:: bash
+
+    $ showrecipes ../playdata/N20170525S0116.fits --all
+
+    Input file: ${path_to_my_data}/playdata/N20170530S0360.fits
+    Input tags: {'UNPREPARED', 'GEMINI', 'GMOS', 'IMAGE', 'NORTH', 'RAW', 'SIDEREAL'}
+    Recipes available for the input file:
+       geminidr.gmos.recipes.sq.recipes_IMAGE::makeProcessedFringe
+       geminidr.gmos.recipes.sq.recipes_IMAGE::reduce
+       geminidr.gmos.recipes.qa.recipes_IMAGE::makeProcessedFringe
+       geminidr.gmos.recipes.qa.recipes_IMAGE::reduce
+       geminidr.gmos.recipes.qa.recipes_IMAGE::reduce_nostack
+       geminidr.gmos.recipes.qa.recipes_IMAGE::stack
 
 
-This command will subtract the master dark and apply flat correction. Then it
-will look for sky frames. If it does not find, it will use the science frames
-and try to calculate sky frames using the dithered data. These sky frames will
-be subtracted from the associated science data. Finally, the sky-subtracted
-files will be stacked together in a single file.
+The output tells me that I have two recipes for the SQ (Science Quality) mode
+and four recipe for the QA (Quality Assessment) mode. By default, ``reduce``
+uses the SQ mode for processing the data.
 
-.. warning::
+The showrecipes_ command line can also display what are the Primitives that
+were used within a particular Recipe. Check the example below:
 
-    The science exposures in all bands suffer from vignetting of the field in
-    the NW quadrant (upper left in the image above). This may have been caused
-    by the PWFS2 guide probe, which was used because of a hardware problem with
-    the OIWFS (see the `F2 instrument status note <https://www.gemini.edu/sciops/instruments/flamingos2/status-and-availability>`_
-    for 2013 Sep. 5). Therefore the photometry of this portion of the image will
-    be seriously compromised.
+.. code-block::  bash
 
-The final product file will have a ``_stack.fits`` sufix and it is shown below:
+    $ showrecipes ../playdata/N20170525S0116.fits --mode sq --recipe reduce
 
-.. the figure below can be created using the script inside the ``savefig``
-   folder.
+    Input file: ${path_to_my_data}/playdata/N20170530S0360.fits
+    Input tags: ['RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'GMOS', 'IMAGE', 'UNPREPARED']
+    Input mode: sq
+    Input recipe: reduce
+    Matched recipe: geminidr.gmos.recipes.sq.recipes_IMAGE::reduce
+    Recipe location: /data/bquint/Repos/DRAGONS/geminidr/gmos/recipes/sq/recipes_IMAGE.py
+    Recipe tags: {'IMAGE', 'GMOS'}
+    Primitives used:
+       p.prepare()
+       p.addDQ()
+       p.addVAR(read_noise=True)
+       p.overscanCorrect()
+       p.biasCorrect()
+       p.ADUToElectrons()
+       p.addVAR(poisson_noise=True)
+       p.flatCorrect()
+       p.makeFringe()
+       p.fringeCorrect()
+       p.mosaicDetectors()
+       p.adjustWCSToReference()
+       p.resampleToCommonFrame()
+       p.stackFrames()
+       p.writeOutputs()
 
-.. figure:: _static/S20131121S0075_stack.fits.png
-   :align: center
 
-.. todo @bquint Is this true?
-.. todo:: @bquint Is this true?
-
-If you passed the BPM when reducing the flats, it should be propagated to the
-science data. If, for whatever reason, you did not pass the BPM before, you can
-still do it now by using the ``-p`` as explained before:
+Now you can get the list of parameters for a given Primitive using the
+showpars_ command line. Here is an example:
 
 .. code-block:: bash
 
-   $ reduce @sci_images.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
+    $ showpars ../playdata/N20170525S0116.fits stackFrames
 
-Finally, you can pass the calibration files to reduce_ in the command line. This
-is particularly useful if you have problems setting up your local database. This
-can be done via ``--user_cal`` option:
+    Dataset tagged as {'UNPREPARED', 'SIDEREAL', 'NORTH', 'IMAGE', 'GEMINI', 'RAW', 'GMOS'}
+    Settable parameters on 'stackFrames':
+    ========================================
+     Name                   Current setting
+
+    suffix               '_stack'             Filename suffix
+    apply_dq             True                 Use DQ to mask bad pixels?
+    statsec              None                 Section for statistics
+    operation            'mean'               Averaging operation
+    Allowed values:
+            mean    arithmetic mean
+            wtmean  variance-weighted mean
+            median  median
+            lmedian low-median
+
+    reject_method        'sigclip'            Pixel rejection method
+    Allowed values:
+            none    no rejection
+            minmax  reject highest and lowest pixels
+            sigclip reject pixels based on scatter
+            varclip reject pixels based on variance array
+
+    hsigma               3.0                  High rejection threshold (sigma)
+            Valid Range = [0,inf)
+    lsigma               3.0                  Low rejection threshold (sigma)
+            Valid Range = [0,inf)
+    mclip                True                 Use median for sigma-clipping?
+    max_iters            None                 Maximum number of clipping iterations
+            Valid Range = [1,inf)
+    nlow                 0                    Number of low pixels to reject
+            Valid Range = [0,inf)
+    nhigh                0                    Number of high pixels to reject
+            Valid Range = [0,inf)
+    memory               None                 Memory available for stacking (GB)
+            Valid Range = [0.1,inf)
+    separate_ext         True                 Handle extensions separately?
+    scale                False                Scale images to the same intensity?
+    zero                 False                Apply additive offsets to images to match intensity?
+
+
+Now that we know what are is the recipe being used, what are the Primitives
+it calls and what are the parameters that are set, we can finally change the
+default values using the ``-p`` flag. As an example, we can change the
+``reject_method`` for the stackFrames to one of its allowed values, e.g.,
+``varclip``:
 
 .. code-block:: bash
 
-   $ reduce @sci_images.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
-
-.. todo @bquint How can I know that my calibration file is actually being used?
-.. todo:: @bquint How can I know that my calibration file is actually being
-   used?
+    $ reduce @list_of_science -p stackFrames:reject_method="varclip" --suffix "_stack_varclip"
 
 
+The command line above changes the rejection algorithing during the stack
+process. It helps with the cosmetics of the image but it might affect the
+photometry if the point-spread function (seeing) changes a lot on every images
+in the stack. The ``--suffix`` option is added so the final stack frame has a
+different name. Otherwise, reduce_ overwrites the output. Here is the product
+of the command line above:
+
+.. todo:: @bquint produce varclip stack no scale and display
