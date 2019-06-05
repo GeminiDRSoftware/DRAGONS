@@ -2,6 +2,8 @@
 
 .. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
 
+.. _primitive: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/definitions.html#primitive
+
 
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
@@ -16,6 +18,9 @@ There may be cases where you might be interested in accessing the DRAGONS'
 Application Program Interface (API) directly instead of using the command
 line wrappers to reduce your data. In this scenario, you will need to access
 DRAGONS' tools by importing the appropriate modules and packages.
+
+Again, remember that our working directory will be
+``${path_to_my_data}/playground/`` .
 
 
 Importing Libraries
@@ -39,9 +44,11 @@ The first two packages, :mod:`glob` and :mod:`os`, are Python built-in packages.
 Here, :mod:`os` will be used to perform operations with the files names and
 :mod:`glob` will be used to return a :class:`list` with the input file names.
 
+
 .. todo @bquint: the gempy auto-api is not being generated anywhere.
 .. todo:: @bquint the gempy auto-api is not being generated anywhere. Find a
     place for it.
+
 
 Then, we are importing the :mod:`~gempy.adlibrary.dataselect` from the
 :mod:`gempy.adlibrary`. It will be used to select the data in the same way we
@@ -62,7 +69,7 @@ using the :mod:`gempy.utils.logutils` module and its
     :lineno-start: 7
 
     from gempy.utils import logutils
-    logutils.config(file_name='f2_data_reduction.log')
+    logutils.config(file_name='gmos_data_reduction.log')
 
 
 .. _set_caldb_api:
@@ -79,7 +86,7 @@ First, check that you have already a ``rsys.cfg`` file inside the
 
     [calibs]
     standalone = True
-    database_dir = ${path_to_my_data}/f2img_tutorial/playground
+    database_dir = ${path_to_my_data}/gmosimg_tutorial_api/playground
 
 
 This simply tells the system where to put the calibration database. This
@@ -130,63 +137,39 @@ and is an optional step. Before you carry on, we recommend that you use
 ``print(all_files)`` to check if they were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
-:func:`~gempy.adlibrary.dataselect.select_data`. Your will may have to add
-a :class:`list` of matching Tags, a :class:`list` of excluding Tags and an expression that has
-to be parsed by :func:`~gempy.adlibrary.dataselect.expr_parser`. These three
-arguments are positional arguments (position matters) and they are separated
-by comma.
+:func:`~gempy.adlibrary.dataselect.select_data`. Your will have to add a
+:class:`list` of matching Tags and a :class:`list` of excluding Tags. These
+three arguments are positional arguments (position matters) and they are
+separated by comma.
 
 As an example, let us can select the files that will be used to create a master
-DARK frame for the files that have 20s exposure time:
+Bias frame:
 
 .. code-block:: python
     :linenos:
     :lineno-start: 16
 
-    dark_files_20s = dataselect.select_data(
+    list_of_biases = dataselect.select_data(
         all_files,
-        ['F2', 'DARK', 'RAW'],
-        [],
-        dataselect.expr_parser('exposure_time==20')
+        ['BIAS'],
+        []
     )
 
-Note the empty list ``[]`` in the fourth line of each command. This
-position argument receives a list of tags that will be used to exclude
-any files with the matching tag from our selection (i.e., equivalent to the
-``--xtags`` option).
+Note the empty list ``[]`` in line ??. This positional argument receives a list
+of tags that will be used to exclude any files with the matching tag from our
+selection (i.e., equivalent to the ``--xtags`` option).
 
-We can now repeat the same syntax for the darks with 3 and 120 seconds:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 22
-
-    dark_files_3s = dataselect.select_data(
-        all_files,
-        ['F2', 'DARK', 'RAW'],
-        [],
-        dataselect.expr_parser('exposure_time==3')
-    )
-
-    dark_files_120s = dataselect.select_data(
-        all_files,
-        ['F2', 'DARK', 'RAW'],
-        [],
-        dataselect.expr_parser('exposure_time==120')
-    )
-
-Now you must create a list of FLAT images for each filter. You can do that by
-using the following commands:
+Now you must create a list of FLAT images. You can do that by using the
+following commands:
 
 .. code-block:: python
     :linenos:
     :lineno-start: 35
 
-    list_of_flats_Y = dataselect.select_data(
+    list_of_flats = dataselect.select_data(
          all_files,
-         ['F2', 'FLAT', 'RAW'],
-         [],
-         dataselect.expr_parser('filter_name=="Y"')
+         ['FLAT'],
+         []
     )
 
 Finally, the science data can be selected using:
@@ -195,30 +178,38 @@ Finally, the science data can be selected using:
     :linenos:
     :lineno-start: 41
 
-    list_of_science_images = dataselect.select_data(
+    list_of_science = dataselect.select_data(
         all_files,
-        ['F2'],
         [],
-        dataselect.expr_parser('(observation_class=="science" and filter_name=="Y")')
+        ['CAL'],
+        dataselect.expr_parser('(observation_class=="science" and filter_name=="g")')
     )
 
+Here we left the ``TAGS`` argument as an empty list and passed the ``'CAL'`` as
+an ``XTAGS`` argument.
 
-.. _api_process_dark_files:
+We also added a fourth argument which is not necessary for our current dataset
+but that can be useful for others. It contains an expression that has to be
+parsed by :func:`~gempy.adlibrary.dataselect.expr_parser`, and which ensures
+that we are getting science frames obtained with the g-band filter.
 
-Process DARK files
+
+.. _api_process_bias_files:
+
+Process Bias files
 ------------------
 
-For each exposure time, we will have to run the command lines below:
+The Bias data reduction can be performed using the following commands:
 
 .. code-block:: python
    :linenos:
    :lineno-start: 47
 
-    reduce_darks = Reduce()
-    reduce_darks.files.extend(dark_files_3s)
-    reduce_darks.runr()
+    reduce_bias = Reduce()
+    reduce_bias.files.extend(list_of_biases)
+    reduce_bias.runr()
 
-    calibration_service.add_cal(reduce_darks.output_filenames[0])
+    calibration_service.add_cal(reduce_bias.output_filenames[0])
 
 The first line creates an instance of the
 :class:`~recipe_system.reduction.coreReduce.Reduce` class. It is responsible to
@@ -228,41 +219,6 @@ dark frames to the :class:`~recipe_system.reduction.coreReduce.Reduce`
 ``files`` attribute. The
 :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` triggers the start of
 the data reduction.
-
-Instead of repeating the code block above, you can simply use a ``for`` loop:
-
-.. code-block:: python
-   :linenos:
-   :lineno-start: 52
-
-    for dark_list in [dark_files_3s, dark_files_20s, dark_files_120s]:
-
-        reduce_darks = Reduce()
-        reduce_darks.files.extend(dark_list)
-        reduce_darks.runr()
-
-        calibration_service.add_cal(reduce_darks.output_filenames[0])
-
-
-.. _api_create_bpm_files:
-
-Create BPM files
-----------------
-
-The Bad Pixel Mask files can be easily created using the follow commands:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 59
-
-    reduce_bpm = Reduce()
-    reduce_bpm.files.extend(list_of_flats_Y)
-    reduce_bpm.files.extend(dark_files_3s)
-    reduce_bpm.recipename = 'makeProcessedBPM'
-    reduce_bpm.runr()
-
-Note that, here, we are setting the recipe name to 'makeProcessedBPM' on
-line 62.
 
 
 .. _api_process_flat_files:
@@ -276,14 +232,12 @@ We can now reduce our FLAT files by using the following commands:
     :linenos:
     :lineno-start: 64
 
-    bpm_filename = reduce_bpm.output_filenames[0]
-
     reduce_flats = Reduce()
-    reduce_flats.files.extend(list_of_flats_Y)
-    reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
+    reduce_flats.files.extend(list_of_flats)
     reduce_flats.runr()
 
     calibration_service.add_cal(reduce_flats.output_filenames[0])
+
 
 On Line 64, we get the first (only) output file from the ``reduce_bpm`` pipeline
 and store it in the ``bpm_filename`` variable. Then, we pass it to the
@@ -306,9 +260,35 @@ science data:
     :linenos:
     :lineno-start: 72
 
-    reduce_target = Reduce()
-    reduce_target.files.extend(list_of_science_images)
-    reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
-    reduce_target.runr()
+    reduce_science = Reduce()
+    reduce_science.files.extend(list_of_science)
+    reduce_science.runr()
 
+..  warning:: This is a heavy process computational speaking given the stack
+    primitive_. Our team is working on this for better performance.
+
+Again, if you need to change the parameters used in a given primitive_,
+you can change its parameters. This can be done by appending parameters to
+the :meth:`~recipe_system.reduction.coreReduce.Reduce.uparms` using the command
+below:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 1
+
+    reduce_science.uparms.append(("stackFrames:scale", True))
+
+Before you run the pipeline again, you might want to change the suffix of the
+output file. You can do that with:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 1
+
+    reduce_science.suffix = "_scale_stack"
+    reduce_science.runr()
+
+..  warning:: Some primitives use a lot of computer memory and might freeze your
+    computer. Make sure you save all your work before running
+    :meth:`~recipe_system.reduction.coreReduce.Reduce.runr`.
 
