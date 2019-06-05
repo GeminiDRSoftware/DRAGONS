@@ -5,10 +5,10 @@ and to be used in the documentation.
 """
 
 # --- Setup Version Here ---
-api = 2
-feature = 1
-bug = 1
-tag = ''
+API = 2
+FEATURE = 1
+BUG = 1
+TAG = ''
 # --------------------------
 
 
@@ -23,10 +23,10 @@ def version(short=False):
     """
 
     if short:
-        _version = "{:d}.{:d}".format(api, feature)
+        _version = "{:d}.{:d}".format(API, FEATURE)
 
     else:
-        _tag = '-{:s}'.format(tag) if len(tag) > 0 else ''
-        _version = "{:d}.{:d}.{:d}".format(api, feature, bug) + _tag
+        _tag = '-{:s}'.format(TAG) if len(TAG) > 0 else ''
+        _version = "{:d}.{:d}.{:d}".format(API, FEATURE, BUG) + _tag
 
     return _version
