@@ -18,8 +18,9 @@ import subprocess
 import sys
 
 
-FILE_WITH_TEST_FILES = '.jenkins/test_files.txt'
+FILE_WITH_TEST_FILES = 'test_files.txt'
 URL = u'https://archive.gemini.edu/file/'
+
 
 try:
     TEST_PATH = os.environ['TEST_PATH']
@@ -35,7 +36,7 @@ except KeyError as err:
     sys.exit(1)
 
 
-def download_test_data():
+def main():
 
     create_test_folder_if_does_not_exist()
     download_non_existing_test_files()
@@ -53,7 +54,13 @@ def create_test_folder_if_does_not_exist():
 
 def download_non_existing_test_files():
 
-    with open(FILE_WITH_TEST_FILES, 'r') as list_of_files:
+    full_path_filename = os.path.join(
+        os.path.dirname(__file__),
+        '../',
+        FILE_WITH_TEST_FILES
+    )
+
+    with open(full_path_filename, 'r') as list_of_files:
 
         print('')
 
@@ -89,4 +96,4 @@ def download_non_existing_test_files():
 
 
 if __name__ == "__main__":
-    download_test_data()
+    main()
