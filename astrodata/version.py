@@ -26,7 +26,7 @@ def version(short=False):
         _version = "{:d}.{:d}".format(API, FEATURE)
 
     else:
-        _tag = '-{:s}'.format(TAG) if len(TAG) > 0 else ''
+        _tag = '-{:s}'.format(TAG) if len(TAG) else ''
         _version = "{:d}.{:d}.{:d}".format(API, FEATURE, BUG) + _tag
 
     return _version
