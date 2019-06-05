@@ -4,14 +4,15 @@ Script created to generate a PNG file of the final stack produced during the
 Flamingos-2 Tutorial
 """
 
-import astrodata
-import gemini_instruments
-import numpy as np
 import os
-
-from astropy import visualization, wcs
 from copy import copy
+
+import numpy as np
+from astropy import visualization, wcs
+from astropy import units as u
 from matplotlib import pyplot as plt
+
+import astrodata
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
     masked_data = np.ma.masked_where(mask, data, copy=True)
 
     palette = copy(plt.cm.viridis)
-    palette.set_bad('gray')
+    palette.set_bad('Gainsboro')
 
     norm_factor = visualization.ImageNormalize(
         masked_data,
@@ -35,23 +36,29 @@ def main():
         interval=visualization.ZScaleInterval(),
     )
 
-    fig, ax = plt.subplots(subplot_kw={'projection': wcs.WCS(header)})
+    fig = plt.figure(num=filename)
+    ax = fig.subplots(subplot_kw={"projection": wcs.WCS(header)})
 
     ax.imshow(masked_data,
               cmap=palette,
               vmin=norm_factor.vmin,
-              vmax=norm_factor.vmax)
+              vmax=norm_factor.vmax,
+              origin='lower')
 
     ax.set_title(os.path.basename(filename))
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
 
-    fig.savefig(filename.replace('.fits', '.png'))
+    ax.coords[0].set_axislabel('Right Ascension')
+    ax.coords[0].set_ticklabel(fontsize='small')
+
+    ax.coords[1].set_axislabel('Declination')
+    ax.coords[1].set_ticklabel(rotation='vertical', fontsize='small')
+
+    fig.tight_layout(rect=[0.05, 0, 1, 1])
+    fig.savefig(os.path.basename(filename.replace('.fits', '.png')))
     plt.show()
 
 
 def get_stack_filename():
-
     import argparse
 
     parser = argparse.ArgumentParser()
