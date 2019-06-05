@@ -31,7 +31,7 @@ pipeline {
 
     stages {
 
-        stage ("Code pull"){
+        stage ("Checkout"){
             steps{
                 checkout scm
             }
@@ -123,39 +123,6 @@ pipeline {
                         allowEmptyResults: true,
                         testResults: 'reports/test_results.xml'
                         )
-                }
-            }
-        }
-
-        stage('Code coverage') {
-            steps {
-                sh  '''
-                source activate ${BUILD_TAG}
-                coverage report
-                coverage xml -o ./reports/coverage.xml
-                '''
-            }
-            post {
-                success {
-                    echo ' --- Report coverage usinig Cobertura --- '
-                    step(
-                      [
-                        $class: 'CoberturaPublisher',
-                        autoUpdateHealth: false,
-                        autoUpdateStability: false,
-                        coberturaReportFile: 'reports/coverage.xml',
-                        failNoReports: false,
-                        failUnhealthy: false,
-                        failUnstable: false,
-                        maxNumberOfBuilds: 10,
-                        onlyStable: false,
-                        sourceEncoding: 'ASCII',
-                        zoomCoverageChart: false
-                      ]
-                    )
-
-                    // echo 'Report on code coverage using Code Coverage API plugin'
-                    // publishCoverage adapters: [coberturaAdapter('')]
                 }
             }
         }
