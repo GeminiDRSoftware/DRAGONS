@@ -4,6 +4,8 @@
 
 .. _dataselect: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect
 
+.. _`data quality plane`: https://astrodata-user-manual.readthedocs.io/en/latest/data.html#data-quality-plane
+
 .. _descriptor: https://astrodata-user-manual.readthedocs.io/en/latest/headers.html#astrodata-descriptors
 
 .. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk
@@ -295,12 +297,27 @@ them for now.
 
 Here is one of the raw images:
 
-.. todo:: @bquint Create plot with raw image
+.. figure:: _static/img/N20170525S0116.png
+   :align: center
 
-And here is the final reduced stack image:
+   One of the multi-extensions files.
 
-.. todo:: @bquint Create plot with final reduced stack image
 
+Note that the raw images do not have a mask yet. Because of that, the whole
+detector area is considered with data. Now, once reduce_ runs, it adds a
+`data quality plane`_ with information about why the data is being rejected.
+
+Now, here is the final reduced stack image:
+
+.. figure:: _static/img/N20170525S0116_stack.png
+   :align: center
+
+   Sky Subtracted and Stacked Final Image. The light-gray area represents the
+   masked pixels.
+
+
+.. todo @bquint The image above have some problems in the gaps. How do I fix them?
+.. todo:: The image above have some problems in the gaps. How do I fix them?
 
 Advanced Operations
 -------------------
@@ -374,7 +391,7 @@ were used within a particular Recipe. Check the example below:
 Now you can get the list of parameters for a given Primitive using the
 showpars_ command line. Here is an example:
 
-.. code-block:: bash
+.. code-block:: none
 
     $ showpars ../playdata/N20170525S0116.fits stackFrames
 
@@ -428,7 +445,6 @@ default values using the ``-p`` flag. As an example, we can change the
 
     $ reduce @list_of_science -p stackFrames:reject_method="varclip" --suffix "_stack_varclip"
 
-
 The command line above changes the rejection algorithing during the stack
 process. It helps with the cosmetics of the image but it might affect the
 photometry if the point-spread function (seeing) changes a lot on every images
@@ -436,4 +452,12 @@ in the stack. The ``--suffix`` option is added so the final stack frame has a
 different name. Otherwise, reduce_ overwrites the output. Here is the product
 of the command line above:
 
-.. todo:: @bquint produce varclip stack no scale and display
+.. figure:: _static/img/N20170525S0116_stack_varclip.png
+   :align: center
+
+   Sky Subtracted and Stacked Final Image. The light-gray area represents the
+   masked pixels.
+
+..  todo: @bquint the columns in the image above don't seem right.
+..  todo:: @bquint the columns in the image above don't seem right. What can I do
+    to fix that?

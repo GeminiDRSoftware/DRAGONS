@@ -114,7 +114,7 @@ check the
 `Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
 
 
-.. _create_file_lists:
+.. _api_create_file_lists:
 
 Create :class:`list` of files
 -----------------------------

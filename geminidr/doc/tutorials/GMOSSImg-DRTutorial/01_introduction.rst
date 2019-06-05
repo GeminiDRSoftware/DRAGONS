@@ -56,7 +56,7 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-..  todo @bquint
+..  todo @bquint Upload a ``.tar.gz`` file with the full dataset and use the URL here.
 ..  todo:: @bquint Upload a ``.tar.gz`` file with the full dataset and use the
     URL here.
 
