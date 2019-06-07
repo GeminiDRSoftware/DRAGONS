@@ -1,7 +1,6 @@
 
 import pytest
 import os
-import glob
 
 
 @pytest.fixture(scope="module")

@@ -6,8 +6,6 @@ import tempfile
 import glob
 
 import astrodata
-import gemini_instruments
-from .conftest import test_path
 
 from astropy.io import fits
 from astropy.table import Table
@@ -368,4 +366,5 @@ def test_read_a_keyword_from_hdr_deprecated():
         assert ad.hdr.CCDNAME == [
             'EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03'
         ]
+
 
