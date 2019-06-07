@@ -19,7 +19,6 @@ def gemini_files():
         return glob.glob(os.path.join(path, instrument, "*fits"))
 
     gemini_files = []
-    gemini_files.extend(get_files("GMOS"))
-    gemini_files.extend(get_files("F2"))
+    gemini_files.extend(get_files("Archive"))
 
     yield gemini_files
