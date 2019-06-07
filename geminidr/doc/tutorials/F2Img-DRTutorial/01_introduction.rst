@@ -28,10 +28,9 @@ Before you start, make sure you have `DRAGONS
 <https://dragons.readthedocs.io/>`_ properly installed and configured on your
 machine. You can test that by typing the following commands:
 
-::
+.. code-block:: bash
 
     $ conda activate geminiconda
-
     $ python -c "import astrodata"
 
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
@@ -51,61 +50,127 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-This tutorial will use observations from program GS-2013B-Q-15 (PI:Leggett),
+This tutorial will use observations from program GS-2013B-Q-15 (PI: Leggett),
 NIR photometry of the faint T-dwarf star WISE J041358.14-475039.3, obtained on
 2013-Nov-21. Images of this sparse field were obtained in the Y, J, H, Ks bands
 using a dither sequence; dayCal DARKS and GCAL flats were obtained as well.
-Leggett, et al. (2015; `[L15]
-<https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_)
+`Leggett, et al. (2015) <https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_
 briefly describes the data reduction procedures they followed, which are
 similar to those described below.
 
-The first step is to retrieve the data from the Gemini Observatory Archive
-(GOA). For more details on using the Archive, check its
-`Help Page <https://archive.gemini.edu/help/index.html>`_. The link below takes
-you to the result obtained when searching for data that corresponds to the
-chosen program.
+The first step is to retrieve the data from the `Gemini Observatory Archive
+(GOA) <https://archive.gemini.edu/>`_. For more details on using the Archive,
+check its `Help Page <https://archive.gemini.edu/help/index.html>`_.
+
+Access the `GOA webpage <https://archive.gemini.edu/>`_, put the data label
+**GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
+button in the middle of the page. The page will refresh and display a table with
+all the data for this dataset. Since the amount of data is unnecessarily large
+for a tutorial (162 files, 0.95 Gb), we will narrow our search by setting the
+``Instrument`` drop-down menu to **F2** and the ``Filter`` drop-down menu to
+**Y**. Now we have only 9 files, 0.05 Gb.
+
+You can also copy the URL below and paste it on browser to see the search
+results:
 
 ::
 
-   https://archive.gemini.edu/searchform/GS-2013B-Q-15-39
+  https://archive.gemini.edu/searchform/GS-2013B-Q-15-39/RAW/cols=CTOWEQ/filter=Y/notengineering/F2/NotFail
 
-The bottom of the page contains a button to download the data. You can click on
-that, or you can download the images by `clicking directly
-here <https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical>`_.
-Alternatively, you can download the data by copy-and-pasting the address below
-in your browser:
+At the bottom of the page, you will find a button saying *Download all 9 files
+totalling 0.05 Gb*. Click on it to download a `.tar` file with all the data.
+
+The calibration files can be obtained by simply clicking on the *Load Associated
+Calibrations* tab, scrolling down to the page and clicking on the *Download all
+42 files totalling 0.15 Gb* button.
+
+Finally, you will need a set of short dark frames in order to create the Bad
+Pixel Masks (BPM). For that, we will have to perform a search ourselves in the
+archive. Fill the search parameters below with their associated values and
+click on the ``Search`` button:
+
+- Program ID: GS-CAL20131126-1
+- Instrument: F2
+- Obs. Type: Dark
+- Exposure Time: 3
+
+Here is the associated URL for the search above:
 
 ::
 
-   https://archive.gemini.edu/download/GS-2013B-Q-15-39/present/canonical
+  https://archive.gemini.edu/searchform/exposure_time=3/GS-CAL20131126-1/RAW/cols=CTOWEQ/notengineering/F2/NotFail/DARK
 
-After retrieving the science data, click the Load Associated Calibrations tab on
-the search results page and download the associated dark and flat-field
-exposures. Again, the calibration files can be downloaded by `clicking here
-<https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/canonical>`_
-or by copying the following URL to your browser:
+Scroll down the page and click on the *Download all 7 files totalling 0.02 Gb*
 
-::
+For convenience, you can also use the three hyperlinks below to download each
+tar file.
 
-    https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/canonical
+- `Download Science Data <https://archive.gemini.edu/download/GS-2013B-Q-15-39/filter=Y/RAW/F2/present/NotFail/notengineering/canonical>`_
+- `Download Associated Calibrations <https://archive.gemini.edu/download/associated_calibrations/GS-2013B-Q-15-39/filter=Y/RAW/F2/NotFail/notengineering/canonical>`_
+- `Download Short DARK data <https://archive.gemini.edu/download/exposure_time=3/GS-CAL20131126-1/RAW/F2/present/NotFail/DARK/notengineering/canonical>`_
 
-Unpack all of them in a subdirectory of your working directory (assumed to be
-named /raw in this tutorial). Be sure to uncompress the files.
+Now, copy all the ``.tar`` files to the same place in your computer. Then use
+``tar`` and ``bunzip2`` commands to decompress them:
 
 .. code-block:: bash
 
-   $ cd <my_main_working_directory>
+    $ cd ${path_to_my_data}/
+    $ tar -xf gemini_data.GS-2013B-Q-15-39_F2.tar
+    $ tar -xf gemini_calibs.GS-2013B-Q-15-39_F2.tar
+    $ tar -xf gemini_data.GS-CAL20131126-1_F2.tar
+    $ bunzip2 *.fits.bz2
+    $ rm *_flat.fits *_dark.fits  # delete or move reduced data to avoid any confusion
 
-   $ tar -xvf *calib*.tar # extract calibration files from .TAR file
+You can add ``-v`` after each command to make it verbose since they can take a
+while to be executed. The files names may change depending on the parameters you
+used when searching in the `Gemini Archive <https://archive.gemini.edu/searchform>`_.
 
-   $ tar -xvf *data*.tar # extract science files from .TAR file
+For this tutorial, we will use a directory to separate the raw data from
+the processed data. This is how the data should be organized:
 
-   $ bunzip2 *.fits.bz2 # command that will decompress FITS files
+::
 
-   $ mkdir raw/ # create directory named "raw" (optional)
+  |-- ${path to my data}/
+  |   |-- playdata/  # directory for raw data
+  |   |-- playground/  # working directory
 
-   $ mv *.fits raw/ # move all the raw FITS files to raw (optional)
+Use the following commands to have a directory structure consistent the one
+used in this tutorial:
 
-The full de-compressed data set will have 310 files and use 4.9 Gb of disk
+.. code-block:: bash
+
+  $ cd ${path_to_my_data}
+  $ mkdir playdata  # create directory for raw data
+  $ mkdir playground  #  create working directory
+  $ mv *.fits ./playdata/  # move all the FITS files to this directory
+
+The full de-compressed data set will have 56 files and use about 0.9 Gb of disk
 space.
+
+.. _about_data_set:
+
+About the dataset
+=================
+
+The table below contains a summary of the dataset downloaded in the previous
+section:
+
++---------------+---------------------+--------------------------------+
+| Science       || S20131121S0075-083 | Y-band, 120 s                  |
++---------------+---------------------+--------------------------------+
+| Darks         || S20131127S0257-263 | 3 s, short darks for BPM       |
+|               +---------------------+--------------------------------+
+|               || S20130930S0242-246 | 20 s, for flat data            |
+|               || S20131023S0193-197 |                                |
+|               || S20140124S0033-038 |                                |
+|               || S20140209S0542-545 |                                |
+|               +---------------------+--------------------------------+
+|               || S20131120S0115-120 | 120 s, for science data        |
+|               || S20131121S0010     |                                |
+|               || S20131122S0012     |                                |
+|               || S20131122S0438-439 |                                |
++---------------+---------------------+--------------------------------+
+| Flats         || S20131129S0320-323 | 20 s, Lamp On, Y-band          |
+|               +---------------------+--------------------------------+
+|               || S20131126S1111-116 | 20 s, Lamp Off, Y-band         |
++---------------+---------------------+--------------------------------+

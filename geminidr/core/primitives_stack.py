@@ -59,6 +59,8 @@ class Stack(PrimitivesBASE):
             type of pixel rejection (passed to gemcombine)
         zero: bool
             apply zero-level offset to match background levels?
+        memory: float/None
+            available memory (in GB) for stacking calculations
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -301,6 +303,8 @@ class Stack(PrimitivesBASE):
             combine method
         reject_method: str
             type of pixel rejection (passed to gemcombine)
+        memory: float/None
+            available memory (in GB) for stacking calculations
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))

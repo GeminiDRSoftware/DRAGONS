@@ -21,7 +21,6 @@ from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_C
 from recipe_system.cal_service.localmanager import ERROR_CANT_READ, ERROR_DIDNT_FIND
 # ------------------------------------------------------------------------------
 
-
 def buildArgumentParser():
 
     parser = ArgumentParser(description="Calibration Database Management Tool")
@@ -100,17 +99,18 @@ class Dispatcher(object):
         usage(self._parser, message)
 
     def _action_config(self, args):
-        isactive = "The 'standalone' flag is active, meaning that local "
+        isactive = "The 'standalone' flag is \033[1mactive\033[0m, meaning that local "
         isactive += "calibrations will be used"
         inactive = "The 'standalone' flag is not active, meaning that remote "
-        inactive += "calibrations will be downloaded"
+        inactive += "calibrations will be downloaded."
 
         conf = get_calconf()
-        print("Using configuration file: {}".format(STANDARD_REDUCTION_CONF))
-        print()
-        print("The active database directory is:  {}".format(conf.database_dir))
+        print('')
+        print("Using configuration file: \033[1m{}\033[0m".format(STANDARD_REDUCTION_CONF))
+        #print()
+        print("Active database directory: \033[1m{}\033[0m".format(conf.database_dir))
         path = self._mgr._db_path
-        print("Thus the database file to be used: {}".format(path))
+        print("Database file: \033[1m{}\033[0m".format(path))
         if not exists(path):
             print("   NB: The database does not exist. Please initialize it.")
             print("       (Read the help message about 'init' command)")
@@ -119,6 +119,7 @@ class Dispatcher(object):
             print(isactive)
         else:
             print(inactive)
+        print('')
 
     def _action_add(self, args):
         for path in args.files:
@@ -211,7 +212,6 @@ if __name__ == '__main__':
             usage(argp, message="The database is not configured as standalone.")
         else:
             act = args.action
-            print(conf.database_dir)
             lm = LocalManager(expanduser(conf.database_dir))
             logstream = sys.stderr if args.verbose else None
             disp = Dispatcher(subp.choices[act], lm,

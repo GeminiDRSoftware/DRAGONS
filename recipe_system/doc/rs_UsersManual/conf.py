@@ -49,8 +49,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'DRAGONS - Reduce and Recipe System User Manual'
-copyright = u'Gemini Observatory (AURA), 2018'
+project = u'DRAGONS - Recipe System User Manual'
+copyright = u'2019, Association of University for Research in Astronomy'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -67,7 +67,7 @@ release = '2.0.8'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-#today = ''
+today = 'May 2019'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -173,7 +173,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'RecipeSystemUsersManual'
+htmlhelp_basename = 'RecipeSystemUserManual'
 
 # -- Options for LaTeX output --------------------------------------------------
 
@@ -196,9 +196,9 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index-latex', 'RecipeSystemUsersManual.tex',
-   u'DRAGONS - Reduce and Recipe System User Manual',
-   u'Kenneth Anderson', 'manual'),
+  ('index-latex', 'RecipeSystemUserManual.tex',
+   u'DRAGONS - Recipe System User Manual',
+   u'Kenneth Anderson, Kathleen Labrie, Bruno Quinn', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -229,9 +229,9 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'recipesystemusersmanual',
+    ('index', 'recipesystemusermanual',
      u'DRAGONS - Reduce and Recipe System User Manual',
-     [u'Kenneth Anderson'], 1)
+     [u'Kenneth Anderson, Kathleen Labie'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -244,10 +244,10 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'RecipeSystemUsersManual',
-   u'DRAGONS - Reduce and Recipe System User Manual',
-   u'Kenneth Anderson', 'RecipeSystemUsersManual',
-   'Recipe System and reduce "how to"', 'Miscellaneous'),
+  ('index', 'RecipeSystemUserManual',
+   u'DRAGONS - Recipe System User Manual',
+   u'Kenneth Anderson, Kathleen Labrie', 'RecipeSystemUserManual',
+   'How to use the Recipe System', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -269,3 +269,7 @@ todo_include_todos=True
 # Adding style in order to have the todos show up in a red box.
 def setup(app):
    app.add_stylesheet('todo-styles.css')
+   app.add_stylesheet('rtd_theme_overrides.css')
+   app.add_stylesheet('css/rtd_theme_overrides_references.css')
+   app.add_stylesheet('fonts.css')
+

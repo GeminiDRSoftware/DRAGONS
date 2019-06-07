@@ -1,0 +1,12 @@
+
+div.admonition-todo.admonition {
+  border-top: 0px solid red;
+  border-bottom: 0px solid red;
+  border-left: 0px solid red;
+  border-right: 0px solid red;
+  background-color: lavender;
+}
+
+.admonition-todo.admonition > .admonition-title {
+  background: mediumpurple;
+}

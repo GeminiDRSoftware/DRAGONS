@@ -38,8 +38,6 @@ The first two packages, :mod:`glob` and :mod:`os`, are Python built-in packages.
 Here, :mod:`os` will be used to perform operations with the files names and
 :mod:`glob` will be used to return a :class:`list` with the input file names.
 
-.. todo: check references
-
 Then, we are importing the :mod:`~gempy.adlibrary.dataselect` from the
 :mod:`gempy.adlibrary`. It will be used to select the data in the same way we
 did as in :ref:`create_file_lists` section. The
@@ -52,10 +50,24 @@ used to actually run the data reduction pipeline.
 The Calibration Service
 -----------------------
 
-Before we start, let's be sure we have properly setup our database. First
-create the `rsys.cfg` file as described in
-`the caldb documentation in the Recipe System User's Manual <caldb>`_. Then,
-you can use the following commands to configure the local database and
+Before we start, let's be sure we have properly setup our database. First, check that you have already a ``rsys.cfg`` file inside the
+``~/.geminidr/``. It should contain:
+
+.. code-block:: none
+
+    [calibs]
+    standalone = True
+    database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
+
+
+This simply tells the system where to put the calibration database. This
+database will keep track of the processed calibrations as we add these files
+to it.
+
+..  note:: The tilde (``~``) in the path above refers to your home directory.
+    Also, mind the dot in ``.geminidr``.
+
+Then, you can use the following commands to configure the local database and
 initialize it:
 
 .. code-block:: python
@@ -64,13 +76,14 @@ initialize it:
 
     calibration_service = cal_service.CalibrationService()
     calibration_service.config()
-    calibration_service.init(wipe=True)
+    calibration_service.init()
 
     cal_service.set_calservice()
 
+The calibration service is now ready to use. If you need more details,
+check the
+`Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
 
-The ``wipe=True`` can be omitted if you want to keep old calibration files that
-were added to the local database.
 
 
 Create :class:`list` of files
@@ -83,12 +96,12 @@ data reduction step. We can start by creating a :class:`list` will all the file 
     :linenos:
     :lineno-start: 12
 
-    all_files = glob.glob('./raw/*.fits')
+    all_files = glob.glob('../playdata/*.fits')
 
 Where the string between parenthesis means that we are selecting every file that
-ends with ``.fits`` and that lives withing the ``./raw`` directory. Before you
-carry on, we recommend that you use ``print(all_files)`` to check if they were
-properly read.
+ends with ``.fits`` and that lives withing the ``../playdata/`` directory. Before
+you carry on, we recommend that you use ``print(all_files)`` to check if they
+were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
 :func:`~gempy.adlibrary.dataselect.select_data`. Your will may have to add
@@ -271,15 +284,25 @@ data:
 Stack Science reduced images
 ----------------------------
 
+.. todo: @bquint make .tar.gz file available for public access and change the url below.
+.. todo:: @bquint make .tar.gz file available for public access and change the url below.
+
+
 Now you will have to stack your images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. At this moment, the standard tool for distortion correction
-and image stacking is called `disco-stu`. This package can be found in the
-link bellow:
+and image stacking is called ``disco-stu`` and the most recent version is the
+v1.3.4. This package can be found in the link bellow (only available within
+Gemini Internal Network for now and requires login):
 
-  |github|  `See disco-stu on GitHub <https://github.com/GeminiDRSoftware/disco-stu/releases/latest>`_
+*  `disco-stu v1.3.4 <https://gitlab.gemini.edu/DRSoftware/disco_stu/repository/v1.3.4/archive.tar.gz>`_
 
-Check this page for requirements and instruction on installing the package.
+.. Warning::
+
+  The functionality of ``disco-stu`` is being incorporated withing DRAGONS.
+  Because of that, you might find unexpected results. Specially in very
+  crowded fields where the sky cannot be properly measured. This section
+  will be changed in the future.
 
 This package was created to be accessed via command line. Because of that, we
 need a few more steps while running it. First, let's import some libraries:
@@ -294,7 +317,7 @@ need a few more steps while running it. First, let's import some libraries:
     from disco_stu.lookups import general_parameters as disco_pars
 
 
-Then we need to create a special object using :func:`~collections.namedtuple`.
+Then we need to create a special class using :func:`~collections.namedtuple`.
 This object will hold information about matching the objects between files:
 
 .. code-block:: python
@@ -309,7 +332,7 @@ This object will hold information about matching the objects between files:
             'degree'
             ])
 
-We now create instances of ``MatchInfo`` object:
+We now create objects of ``MatchInfo`` class:
 
 .. code-block:: python
     :linenos:
@@ -346,7 +369,7 @@ position arguments.
 
 This function has many other parameters that can be used to customize this step
 but further details are out of the scope of this tutorial. Please, refer to the
-`disco-stu GitHub Page <https://github.com/GeminiDRSoftware/disco-stu>`_ for the
-corresponding information.
+`disco-stu GitLab Internal Page <https://gitlab.gemini.edu/DRSoftware/disco_stu>`_
+for the corresponding information.
 
 

@@ -192,15 +192,13 @@ GEMPY_SCRIPTS = [
                   os.path.join('gempy', 'scripts', 'pipeline2iraf'),
                   os.path.join('gempy', 'scripts', 'profile_all_obj'),
                   os.path.join('gempy', 'scripts', 'psf_plot'),
-                  os.path.join('gempy', 'scripts', 'show_primitives'),
-                  os.path.join('gempy', 'scripts', 'show_recipes'),
+                  os.path.join('gempy', 'scripts', 'showrecipes'),
                   os.path.join('gempy', 'scripts', 'showd'),
                   os.path.join('gempy', 'scripts', 'showpars'),
                   os.path.join('gempy', 'scripts', 'swapper'),
                   os.path.join('gempy', 'scripts', 'typewalk'),
                   os.path.join('gempy', 'scripts', 'zp_histogram'),
                 ]
-
 SCRIPTS = []
 SCRIPTS.extend(RS_SCRIPTS)
 SCRIPTS.extend(GEMPY_SCRIPTS)

@@ -6,7 +6,7 @@ import sys
 from contextlib import contextmanager
 from io import StringIO
 
-from recipe_system import cal_service
+from recipe_system.cal_service import CalibrationService, get_calconf
 
 
 on_travis = pytest.mark.skipif(
@@ -15,9 +15,11 @@ on_travis = pytest.mark.skipif(
 print('TRAVIS' in os.environ)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session', autouse=True)
 def caldb():
-    return cal_service.CalibrationService()
+    print(' Creating cal_service object.')
+    yield CalibrationService()
+    print(' Tearing down cal_service')
 
 
 @contextmanager
@@ -31,17 +33,19 @@ def captured_output():
     finally:
         sys.stdout, sys.stderr = old_out, old_err
 
+@on_travis
+def test_caldb_has_no_manager_on_creation(caldb):
+    assert caldb._mgr is None
+
 
 @on_travis
-def test_can_call_caldb_config(caldb):
-
+def test_caldb_config_adds_manager(caldb):
     caldb.config()
+    assert caldb._mgr is not None
 
 
 @on_travis
 def test_can_call_caldb_init(caldb):
-
-    caldb.config()
     caldb.init()
 
 
@@ -51,13 +55,10 @@ def test_can_change_caldb_config_file_path(caldb):
     test_directory = os.path.dirname(__file__)
     config_file = os.path.join(test_directory, 'my_caldb.cfg')
 
-    with captured_output() as (out, err):
-        caldb.config(config_file=config_file)
+    caldb.config(config_file=config_file)
+    config = get_calconf()
 
-    output_lines = [s.strip() for s in out.getvalue().split('\n')]
-
-    expected_string = "Using configuration file: {}".format(config_file)
-    assert expected_string in output_lines[0]
+    assert config_file in config.config_file
 
 
 @pytest.mark.skip('This method should fail when calling init twice but it is '

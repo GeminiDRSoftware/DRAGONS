@@ -16,26 +16,36 @@
 import os
 import sys
 
-# sys.path.insert(0, os.path.abspath('.'))
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+relative_path = './../../../../'
+dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
+sys.path.append(dragons_path)
+
+import astrodata
+
+print('\n Printing current working directory for debugging:')
+print(' Current working directory: {}'.format(os.getcwd()))
+print(' Dragons path: {}\n'.format(dragons_path))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
-copyright = '2018, Bruno Quint'
-author = 'Bruno Quint'
+copyright = 'Gemini Observatory (AURA), 2019'
+author = 'Bruno C. Quint'
 
 # The short X.Y version
-version = ''
+version = astrodata.version(short=True)
 # The full version, including alpha/beta/rc tags
-release = 'v2.0.0-b1'
+release = astrodata.version()
 
 
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+
+needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -211,6 +221,13 @@ todo_include_todos = True
 # -- Finishing with a setup that will run always -----------------------------
 def setup(app):
 
-    # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('todo-styles.css')
-    app.add_stylesheet('code.xref-styles.css')
+    # -- Adding custom styles ---
+    app.add_css_file('css/code.xref-styles.css')
+    app.add_css_file('css/todo-styles.css')
+    app.add_css_file('css/copy_code_block.css')
+
+    # -- Adding custom behavior ---
+    # -- Will leave this out for now until I manage to get the behavior I want
+    # app.add_js_file('js/copy_code_block.js')
+    # app.add_js_file('https://cdn.jsdelivr.net/npm/clipboard@1/dist/clipboard.min.js')
+

@@ -8,6 +8,8 @@ from __future__ import print_function
 # ---------------------------- Package Import ----------------------------------
 import os
 import sys
+import signal
+import traceback
 
 from gempy.utils import logutils
 
@@ -22,7 +24,6 @@ from recipe_system.utils.reduce_utils import show_parser_options
 from recipe_system.cal_service import set_calservice
 from recipe_system.cal_service import localmanager_available
 # ------------------------------------------------------------------------------
-
 def main(args):
     """
     'main' is called with a Namespace 'args' parameter, or an object that
@@ -84,11 +85,20 @@ def main(args):
     if localmanager_available:
         set_calservice(local_db_dir=args.local_db_dir)
 
-
     log.stdinfo("\n\t\t\t--- reduce v{} ---".format(rs_version))
     log.stdinfo("\nRunning on Python {}".format(sys.version.split()[0]))
     r_reduce = Reduce(args)
-    estat = r_reduce.runr()
+    try:
+        r_reduce.runr()
+    except KeyboardInterrupt:
+        log.error("Caught KeyboardInterrupt (^C) signal")
+        estat = signal.SIGINT
+    except Exception as err:
+        log.error("reduce caught an unhandled exception.\n")
+        log.error(err)
+        log.error("\nReduce instance aborted.")
+        estat = signal.SIGABRT
+
     if estat != 0:
         log.stdinfo("\n\nreduce exit status: %d\n" % estat)
     else:
