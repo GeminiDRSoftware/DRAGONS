@@ -5,7 +5,7 @@ import os
 
 
 @pytest.fixture(scope="module")
-def test_path():
+def gemini_files():
 
     try:
         path = os.environ['TEST_PATH']
@@ -15,10 +15,11 @@ def test_path():
     if not os.path.exists(path):
         pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
-    return path
+    def get_files(instrument):
+        return glob.glob(os.path.join(path, instrument, "*fits"))
 
+    gemini_files = []
+    gemini_files.extend(get_files("GMOS"))
+    gemini_files.extend(get_files("F2"))
 
-@pytest.fixture(scope="module")
-def archive_files(test_path):
-
-    yield glob.glob(os.path.join(test_path, "Archive/", "*fits"))
+    yield gemini_files

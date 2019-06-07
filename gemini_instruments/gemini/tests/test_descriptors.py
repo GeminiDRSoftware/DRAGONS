@@ -90,9 +90,9 @@ DESCRIPTORS_TYPES = [
 
 
 @pytest.mark.parametrize("descriptor,expected_type", DESCRIPTORS_TYPES)
-def test_descriptor_matches_type(descriptor, expected_type, archive_files):
+def test_descriptor_matches_type(descriptor, expected_type, gemini_files):
 
-    for _file in archive_files:
+    for _file in gemini_files:
 
         ad = astrodata.open(_file)
 
