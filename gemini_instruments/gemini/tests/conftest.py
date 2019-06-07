@@ -1,9 +1,10 @@
 
+import glob
 import pytest
 import os
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def test_path():
 
     try:
@@ -16,3 +17,8 @@ def test_path():
 
     return path
 
+
+@pytest.fixture(scope="module")
+def archive_files(test_path):
+
+    yield glob.glob(os.path.join(test_path, "Archive/", "*fits"))

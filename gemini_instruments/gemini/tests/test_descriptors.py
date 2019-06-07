@@ -1,12 +1,9 @@
+#!/usr/bin/env python
 
 import datetime
-import glob
-import os
-
 import pytest
-
 import astrodata
-from .conftest import test_path
+import gemini_instruments
 
 
 DESCRIPTORS_TYPES = [
@@ -30,9 +27,7 @@ DESCRIPTORS_TYPES = [
     ('detector_rois_requested', list),
     ('detector_section', list),
     ('detector_x_bin', int),
-    ('detector_x_offset', float),
     ('detector_y_bin', int),
-    ('detector_y_offset', float),
     ('disperser', str),
     ('dispersion', list),
     ('dispersion_axis', list),
@@ -52,19 +47,15 @@ DESCRIPTORS_TYPES = [
     ('local_time', datetime.time),
     ('lyot_stop', str),
     ('mdf_row_id', list),  # TODO: mdf_row_id returns list, but string expected??
-    ('nod_count', tuple),
-    ('nod_offsets', tuple),
     ('nominal_atmospheric_extinction', float),
     ('nominal_photometric_zeropoint', list),
     ('non_linear_level', list),
-    ('nonlinearity_coeffs', list),
     ('object', str),
     ('observation_class', str),
     ('observation_epoch', float),
     ('observation_id', str),
     ('observation_type', str),
     ('overscan_section', list),
-    ('pixel_scale', float),
     ('program_id', str),
     ('pupil_mask', str),
     ('qa_state', str),
@@ -81,7 +72,6 @@ DESCRIPTORS_TYPES = [
     ('requested_iq', int),
     ('requested_wv', int),
     ('saturation_level', list),
-    ('shuffle_pixels', int),
     ('slit', str),
     ('target_dec', float),
     ('target_ra', float),
@@ -99,12 +89,6 @@ DESCRIPTORS_TYPES = [
 ]
 
 
-@pytest.fixture(scope="module")
-def archive_files(test_path):
-
-    yield glob.glob(os.path.join(test_path, "Archive/", "*fits"))
-
-
 @pytest.mark.parametrize("descriptor,expected_type", DESCRIPTORS_TYPES)
 def test_descriptor_matches_type(descriptor, expected_type, archive_files):
 
@@ -112,48 +96,12 @@ def test_descriptor_matches_type(descriptor, expected_type, archive_files):
 
         ad = astrodata.open(_file)
 
-        try:
-            value = getattr(ad, descriptor)()
-        except AttributeError as e:
-            raise Exception('Error triggered in file: {}'.format(_file)).with_traceback(e.__traceback__)
+        value = getattr(ad, descriptor)()
 
         assert isinstance(value, expected_type) or value is None, \
             "Assertion failed for file: {}".format(_file)
 
 
-# def test_nonlinearity_coeffs_descriptor_is_none_or_list(archive_files):
-#
-#     for _file in archive_files:
-#         ad = astrodata.open(_file)
-#
-#         try:
-#             assert ((type(ad.nonlinearity_coeffs()) == list)
-#                     or (ad.nonlinearity_coeffs() is None))
-#
-#         except AttributeError:
-#             # nonlinearity_coeffs doesn't exist for some instruments
-#             if ad.instrument() in ['GMOS-N', 'GMOS-S', 'GNIRS']:
-#                 pass
-#
-#         except Exception as err:
-#             print("{} failed on call: {}".format(ad.nonlinearity_coeffs, str(err)))
-#             # warnings.warn("{} failed on call: {}".format(ad.nonlinearity_coeffs, str(err)))
-#
-#
-# def test_shuffle_pixels_descriptor_is_none_or_int(archive_files):
-#
-#     for _file in archive_files:
-#         ad = astrodata.open(_file)
-#
-#         try:
-#             assert ((type(ad.shuffle_pixels()) == int)
-#                     or (ad.shuffle_pixels() is None))
-#
-#         except AttributeError:
-#             # shuffle_pixels doesn't exist for some instruments
-#             if ad.instrument() in ['F2', 'GNIRS']:
-#                 pass
-#
-#         except Exception as err:
-#             print("{} failed on call: {}".format(ad.shuffle_pixels, str(err)))
-#             # warnings.warn("{} failed on call: {}".format(ad.shuffle_pixels, str(err)))
+if __name__ == "__main__":
+
+    pytest.main()
