@@ -1,16 +1,12 @@
-import sys
-import pytest
-import tempfile
 import os
-import warnings
 
 import numpy as np
+import pytest
+from astropy.io.fits import ImageHDU
+from astropy.nddata import NDData
+from astropy.table import Table
 
 import astrodata
-import gemini_instruments
-from astropy.nddata import NDData
-from astropy.io.fits import ImageHDU
-from astropy.table import Table
 
 try:
     path = os.environ['TEST_PATH']
@@ -21,18 +17,13 @@ if not os.path.exists(path):
     path = ''
 
 
-
-@pytest.mark.ad_local_data
 def test_can_read_data(test_path):
-
     test_filename = "GMOS/N20110826S0336.fits"
     ad = astrodata.open(os.path.join(test_path, test_filename))
     assert len(ad) == 3
 
 
-@pytest.mark.ad_local_data
 def test_append_array_to_root_no_name(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -45,9 +36,7 @@ def test_append_array_to_root_no_name(test_path):
     assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
-@pytest.mark.ad_local_data
 def test_append_array_to_root_with_name_sci(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -60,9 +49,7 @@ def test_append_array_to_root_with_name_sci(test_path):
     assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
-@pytest.mark.ad_local_data
 def test_append_array_to_root_with_arbitrary_name(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -72,9 +59,7 @@ def test_append_array_to_root_with_arbitrary_name(test_path):
         ad.append(ones, name='ARBITRARY')
 
 
-@pytest.mark.ad_local_data
 def test_append_array_to_extension_with_name_sci(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -84,9 +69,7 @@ def test_append_array_to_extension_with_name_sci(test_path):
         ad[0].append(ones, name='SCI')
 
 
-@pytest.mark.ad_local_data
 def test_append_array_to_extension_with_arbitrary_name(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -98,9 +81,7 @@ def test_append_array_to_extension_with_arbitrary_name(test_path):
     assert ad[0].ARBITRARY is ones
 
 
-@pytest.mark.ad_local_data
 def test_append_nddata_to_root_no_name(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -113,9 +94,7 @@ def test_append_nddata_to_root_no_name(test_path):
     assert len(ad) == (lbefore + 1)
 
 
-@pytest.mark.ad_local_data
 def test_append_nddata_to_root_with_arbitrary_name(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -129,9 +108,7 @@ def test_append_nddata_to_root_with_arbitrary_name(test_path):
         ad.append(nd)
 
 
-@pytest.mark.ad_local_data
 def test_append_table_to_root(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -144,7 +121,6 @@ def test_append_table_to_root(test_path):
 
 @pytest.mark.skip("unknown expected behaviour")
 def test_append_table_to_root_without_name(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -156,9 +132,7 @@ def test_append_table_to_root_without_name(test_path):
         ad.append(table)
 
 
-@pytest.mark.ad_local_data
 def test_append_table_to_extension(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -170,9 +144,8 @@ def test_append_table_to_extension(test_path):
 
 
 # Append / assign Gemini specific
-@pytest.mark.ad_local_data
-def test_append_dq_to_root(test_path):
 
+def test_append_dq_to_root(test_path):
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -181,9 +154,7 @@ def test_append_dq_to_root(test_path):
         ad.append(dq, 'DQ')
 
 
-@pytest.mark.ad_local_data
 def test_append_dq_to_ext(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -192,9 +163,7 @@ def test_append_dq_to_ext(test_path):
     assert dq is ad[0].mask
 
 
-@pytest.mark.ad_local_data
 def test_append_var_to_root(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -203,9 +172,7 @@ def test_append_var_to_root(test_path):
         ad.append(var, 'VAR')
 
 
-@pytest.mark.ad_local_data
 def test_append_var_to_ext(test_path):
-
     test_filename = 'GMOS/N20160524S0119.fits'
     ad = astrodata.open(os.path.join(test_path, test_filename))
 
@@ -215,9 +182,8 @@ def test_append_var_to_ext(test_path):
 
 
 # Append AstroData slices
-@pytest.mark.ad_local_data
-def test_append_single_slice(test_path):
 
+def test_append_single_slice(test_path):
     ad = astrodata.open(os.path.join(test_path, 'GMOS/N20160524S0119.fits'))
     ad2 = astrodata.open(os.path.join(test_path, 'GMOS/N20110826S0336.fits'))
 
@@ -230,9 +196,7 @@ def test_append_single_slice(test_path):
     assert last_ever < ad2[-1].nddata.meta['header'].get('EXTVER', -1)
 
 
-@pytest.mark.ad_local_data
 def test_append_non_single_slice(test_path):
-
     ad = astrodata.open(os.path.join(test_path, 'GMOS/N20160524S0119.fits'))
     ad2 = astrodata.open(os.path.join(test_path, 'GMOS/N20110826S0336.fits'))
 
@@ -240,9 +204,7 @@ def test_append_non_single_slice(test_path):
         ad2.append(ad[1:])
 
 
-@pytest.mark.ad_local_data
 def test_append_whole_instance(test_path):
-
     ad = astrodata.open(os.path.join(test_path, 'GMOS/N20160524S0119.fits'))
     ad2 = astrodata.open(os.path.join(test_path, 'GMOS/N20110826S0336.fits'))
 
@@ -250,9 +212,7 @@ def test_append_whole_instance(test_path):
         ad2.append(ad)
 
 
-@pytest.mark.ad_local_data
 def test_append_slice_to_extension(test_path):
-
     ad = astrodata.open(os.path.join(test_path, 'GMOS/N20160524S0119.fits'))
     ad2 = astrodata.open(os.path.join(test_path, 'GMOS/N20110826S0336.fits'))
 
@@ -269,7 +229,6 @@ def test_delete_named_attribute_at_top_level(test_path):
     assert 'REFCAT' not in ad.tables
 
 
-@pytest.mark.ad_local_data
 def test_delete_named_associated_extension(test_path):
     ad = astrodata.open(os.path.join(test_path, 'GMOS/N20160524S0119.fits'))
     table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
@@ -280,7 +239,6 @@ def test_delete_named_associated_extension(test_path):
     assert 'MYTABLE' not in ad[0]
 
 
-@pytest.mark.ad_local_data
 def test_delete_arbitrary_attribute_from_ad(test_path):
     ad = astrodata.open(os.path.join(test_path, 'GMOS/N20160524S0119.fits'))
 

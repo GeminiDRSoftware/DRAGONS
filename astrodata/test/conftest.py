@@ -4,7 +4,7 @@ import os
 import glob
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def test_path():
 
     try:
