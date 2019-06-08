@@ -35,3 +35,8 @@ class scaleByIntensityConfig(config.Config):
                                             "median": "Scale by median"},
                                  default = "mean")
     separate_ext = config.Field("Scale extensions separately?", bool, False)
+
+class flagCosmicRaysByStackingConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_CRMasked", optional=True)
+    hsigma = config.RangeField("High rejection threshold (sigma)", float, 7., min=0)
+    dilation = config.RangeField("CR dilation radius (pixels)", float, 1., min=0)

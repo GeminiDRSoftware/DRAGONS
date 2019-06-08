@@ -5,10 +5,13 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
+from scipy.ndimage import binary_dilation
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
+from geminidr.gemini.lookups import DQ_definitions as DQ
 
+from .primitives_preprocess import Preprocess
 from .primitives_register import Register
 from .primitives_resample import Resample
 from . import parameters_image
@@ -16,7 +19,7 @@ from . import parameters_image
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class Image(Register, Resample):
+class Image(Preprocess, Register, Resample):
     """
     This is the class containing the generic imaging primitives.
     """
@@ -380,3 +383,96 @@ class Image(Register, Resample):
 
         scaling = (npix * sum_cross - sum_sci * sum_fringe) / (npix * sum_fringesq - sum_fringe**2)
         return scaling
+
+    def flagCosmicRaysByStacking(self, adinputs=None, **params):
+        """
+        This primitive flags sky pixels that deviate from the median image of
+        the input AD frames by some positive multiple of a random background
+        noise estimate. Since a random noise model is liable to underestimate
+        the variance between images in the presence of seeing variations, any
+        pixels containing significant object flux are excluded from this
+        masking, by running detectSources on the median image and applying the
+        resulting OBJMASK array. Any strongly-outlying values in those pixels
+        will have to be dealt with when stacking, where less aggressive
+        rejection based on the empirical variance between images can be used.
+
+        This is loosely based on the algorithm used by imcoadd in the Gemini
+        IRAF package.
+
+        Parameters
+        ----------
+        suffix: str
+            Suffix to be added to output files.
+        hsigma: float
+            Difference from the median image, in units of the background noise
+            estimate, above which pixels should be flagged as contaminated.
+        dilation: int
+            Dilation radius for expanding cosmic ray mask, in pixels.
+
+        Returns
+        -------
+        list of AstroData
+            The input AstroData instances with flagged pixels added to the
+            `mask` array for each extension using the `DQ.cosmic_ray` bit.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        # timestamp_key = self.timestamp_keys[self.myself()]
+
+        hsigma = params['hsigma']
+        dilation = params['dilation']
+
+        # This code is taken from dilateObjectMask; factor it out later.
+        xgrid, ygrid = np.mgrid[-int(dilation):int(dilation+1),
+                       -int(dilation):int(dilation+1)]
+        structure = np.where(xgrid*xgrid+ygrid*ygrid <= dilation*dilation,
+                             True, False)
+
+        median_image = self.stackFrames(adinputs, operation='median',
+                                        reject_method='none', zero=True)[0]
+
+        median_image = self.detectSources(
+            [median_image], **self._inherit_params(params, "detectSources")
+        )[0]
+        #median_image.write('med.fits', overwrite=True)
+
+        differences = self.subtractSky([deepcopy(ad) for ad in adinputs],
+                                       sky=median_image,
+                                       offset_sky=True, scale_sky=False)
+        differences[0].write('diff.fits', overwrite=True)
+
+        for ad, diff in zip(adinputs, differences):
+
+            # Should we use a noise map like imcoadd, rather than a single
+            # background noise estimate per image? We could use VAR (where
+            # present) once the std error on median stacking is fixed.
+
+            bkg, noise, npix = gt.measure_bg_from_image(diff,
+                                                        separate_ext=False)
+
+            # Don't flag pixels that are already bad (and may not be CRs;
+            # except those that are just near saturation, unilluminated etc.):
+            bitmask = DQ.bad_pixel
+
+            # Limiting level for good pixels in the median-subtracted data
+            # (bkg should be ~0 after subtracting median image with an offset):
+            threshold = bkg + hsigma * noise
+
+            # Accumulate CR detections into the DQ mask(s) of the input/output:
+            # If there's no OBJMASK (etc.), just let the error fall through,
+            # since it should be fairly self-explanatory?
+            for ad_ext, diff_ext in zip(ad, diff):
+
+                crmask = (diff_ext.data > threshold) & \
+                         (diff_ext.OBJMASK == 0) & \
+                         (diff_ext.mask & bitmask == 0)
+
+                crmask = binary_dilation(crmask, structure)
+
+                ad_ext.mask |= np.where(crmask, DQ.cosmic_ray, DQ.good)
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
