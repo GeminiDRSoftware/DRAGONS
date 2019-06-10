@@ -73,6 +73,13 @@ send to it.
 .. note:: The tilde (``~``) in the path above refers to your home directory.
    Also, mind the dot in ``.geminidr``.
 
+.. todo: calmanager
+.. warning:: The Gemini Local Calibration Manager is not available yet in the
+   Gemini Conda Channel for installation and you might not have it installed.
+   On a terminal, type `caldb config`. If you get an error message, you can
+   skip this section and you will still be able to bypass the Calibration
+   Manager as we will show later here.
+
 Then initialize the calibration database:
 
 ..  todo:: @dragons_team The command below should give a feedback to the user.
@@ -258,9 +265,21 @@ FLAT images can be easily reduced using the ``reduce`` command line:
 
 
 Now reduce_ will query the local calibration manager for the Master Bias frame
-and use it in the data reduction. Once it finished, you shall have the Master
-Flat inside the ``./calibrations/processed_flat`` directory. Add it to the
-local calibration database with the following command:
+and use it in the data reduction.
+
+.. todo: calmanager
+
+If you don't have the calibration manager or want to bypass it for some reason,
+use the following command to override the input calibrations:
+
+.. code-block:: bash
+
+   $ reduce @list_of_flats.txt --user_cal processed_bias:N20170527S0528_bias.fits
+
+
+Once it finished, you shall have the Master Flat inside the
+``./calibrations/processed_flat`` directory. Add it to the local calibration
+database with the following command:
 
 ..  code-block:: bash
 
@@ -290,10 +309,18 @@ run ``reduce`` on our science data:
 
    $ reduce @list_of_science.txt
 
-
 This command will generate flat corrected and sky subtracted files and will
 stack them. You might see some warning messages but it should be safe to ignore
 them for now.
+
+.. todo: calmanager
+
+If you don't have the calibration manager or want to bypass it for some reason,
+use the following command to override the input calibrations:
+
+..  code-block:: bash
+
+    $ reduce @list_of_science.txt --user_cal processed_bias:N20170527S0528_bias.fits processed_flat:N20170530S0360_flat.fits
 
 Here is one of the raw images:
 
