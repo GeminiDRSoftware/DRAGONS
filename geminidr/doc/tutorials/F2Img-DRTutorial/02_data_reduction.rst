@@ -51,9 +51,10 @@ calibrations when needed to reduce a dataset.
 
 .. todo: calmanager
 .. warning:: The Gemini Local Calibration Manager is not available yet in the
-   Gemini Conda Channel. On a terminal, type `caldb config`. An error message
-   tells you don't help the Gemini Local Calibration Manager installed and you
-   can skip this step.
+   Gemini Conda Channel for installation and you might not have it installed.
+   On a terminal, type `caldb config`. If you get an error message, you can
+   skip this section and you will still be able to bypass the Calibration
+   Manager as we will show later here.
 
 
 Let's set up the local calibration manager for this session.
