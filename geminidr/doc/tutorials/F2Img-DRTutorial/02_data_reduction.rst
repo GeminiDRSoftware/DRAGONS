@@ -49,6 +49,13 @@ that uses the same calibration association rules as the Gemini Observatory
 Archive. This allows ``reduce`` to make requests for matching **processed**
 calibrations when needed to reduce a dataset.
 
+.. todo: calmanager
+.. warning:: The Gemini Local Calibration Manager is not available yet in the
+   Gemini Conda Channel. On a terminal, type `caldb config`. An error message
+   tells you don't help the Gemini Local Calibration Manager installed and you
+   can skip this step.
+
+
 Let's set up the local calibration manager for this session.
 
 In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
@@ -320,6 +327,16 @@ default recipe.
 Here, the ``-p`` argument tells reduce_ to modify the ``user_bpm`` in the
 ``addDQ`` primitive.
 
+.. todo: calmanager
+
+The following command can be used to bypass the calibration manager for the
+case you don't have it or simply want to override the input calibrations:
+
+.. code-block:: bash
+
+   $ reduce @flats_Y.list -p addDQ:user_bpm=S20131129S0320_bpm.fits --user_cal processed_dark:S20130930S0242_dark.fits
+
+
 Then, if you have your `local database configured <caldb>`_, we add the master
 flat file to the database so reduce_ can find and use it when reducing the
 science files.
@@ -357,6 +374,15 @@ will look for sky frames. If it does not find, it will use the science frames
 and try to calculate sky frames using the dithered data. These sky frames will
 be subtracted from the associated science data. Finally, the sky-subtracted
 files will be stacked together in a single file.
+
+.. todo: calmanager
+
+The following command can be used to bypass the calibration manager for the
+case you don't have it or simply want to override the input calibrations:
+
+.. code-block::
+
+   $ reduce @sci_images.list --user_cal processed_dark:S20131120S0116_dark.fits processed_flat:S20131129S0320_flat.fits
 
 .. warning::
 
