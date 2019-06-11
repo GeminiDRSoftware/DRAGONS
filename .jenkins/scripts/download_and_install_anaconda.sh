@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Remove anaconda for re-installation
-conda install anaconda-clean
+conda install anaconda-clean --yes
 anaconda-clean --yes
 
 
