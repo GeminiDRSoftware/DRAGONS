@@ -50,59 +50,59 @@ pipeline {
 
         }
 
-        stage('Code Metrics') {
-
-            steps {
-                sh '.jenkins/code_metrics/pylint.sh'
-                sh '.jenkins/code_metrics/pydocstring.sh'
-            }
-            post {
-                success {
-                    recordIssues(
-                        enabledForFailure: true,
-                        tools: [
-                            pyLint(pattern: '**/reports/pylint.log'),
-                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
-                        ]
-                    )
-                }
-            }
-
-        }
-
-        stage('Unit tests') {
-            steps {
-                sh  '''
-                    source activate ${BUILD_TAG}
-                    coverage run -m pytest --junit-xml ./reports/test_results.xml
-                    '''
-                sh  '''
-                    source activate ${BUILD_TAG}
-                    python -m coverage xml -o ./reports/coverage.xml
-                    '''
-            }
-            post {
-                always {
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/test_results.xml'
-                        )
-                }
-            }
-        }
-
-        stage('Integration tests') {
-            steps {
-                echo 'No integration tests defined yet'
-            }
-        }
-
-        stage('Pack and deliver') {
-            steps {
-                echo 'Add a step here for packing DRAGONS into a tarball'
-                echo 'Make tarball available'
-            }
-        }
+//        stage('Code Metrics') {
+//
+//            steps {
+//                sh '.jenkins/code_metrics/pylint.sh'
+//                sh '.jenkins/code_metrics/pydocstring.sh'
+//            }
+//            post {
+//                success {
+//                    recordIssues(
+//                        enabledForFailure: true,
+//                        tools: [
+//                            pyLint(pattern: '**/reports/pylint.log'),
+//                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
+//                        ]
+//                    )
+//                }
+//            }
+//
+//        }
+//
+//        stage('Unit tests') {
+//            steps {
+//                sh  '''
+//                    source activate ${BUILD_TAG}
+//                    coverage run -m pytest --junit-xml ./reports/test_results.xml
+//                    '''
+//                sh  '''
+//                    source activate ${BUILD_TAG}
+//                    python -m coverage xml -o ./reports/coverage.xml
+//                    '''
+//            }
+//            post {
+//                always {
+//                    junit (
+//                        allowEmptyResults: true,
+//                        testResults: 'reports/test_results.xml'
+//                        )
+//                }
+//            }
+//        }
+//
+//        stage('Integration tests') {
+//            steps {
+//                echo 'No integration tests defined yet'
+//            }
+//        }
+//
+//        stage('Pack and deliver') {
+//            steps {
+//                echo 'Add a step here for packing DRAGONS into a tarball'
+//                echo 'Make tarball available'
+//            }
+//        }
 
     }
     post {
