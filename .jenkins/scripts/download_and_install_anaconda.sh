@@ -3,7 +3,7 @@
 # Remove anaconda for re-installation
 conda install anaconda-clean --yes
 anaconda-clean --yes
-
+rm -Rf $JENKINS_HOME/anaconda3/
 
 LINUX_URL="https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh"
 MACOS_URL="https://repo.anaconda.com/archive/Anaconda3-2019.03-MacOSX-x86_64.sh"
@@ -18,7 +18,7 @@ fi
 
 if ! [[ "$(command -v conda)" ]]; then
 
-    echo "Conda is not installed - Downloading and installing"
+    echo "\n\n   Conda is not installed - Downloading and installing\n\n"
     curl "${ANACONDA_URL}" --output anaconda.sh --silent
 
     chmod a+x anaconda.sh
@@ -26,7 +26,7 @@ if ! [[ "$(command -v conda)" ]]; then
 
 else
 
-  echo "Anaconda is already installed --- Skipping step."
+  echo "\n\n   Anaconda is already installed --- Skipping step.\n\n"
 
 fi
 
