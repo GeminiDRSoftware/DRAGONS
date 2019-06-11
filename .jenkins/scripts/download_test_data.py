@@ -23,13 +23,13 @@ URL = u'https://archive.gemini.edu/file/'
 
 
 try:
-    TEST_PATH = os.environ['TEST_PATH']
+    TEST_IN_PATH = os.environ['DRAGONS_TEST_IN_PATH']
 
 except KeyError as err:
 
     print('\n This script needs the environment variable TEST_PATH'
-          '\n Please, add is using the following command: ' \
-          '\n     $ export TEST_PATH="/my/test/path/"'
+          '\n Please, add is using the following command: '
+          '\n     $ export DRAGONS_TEST_IN_PATH="/my/test/path/"'
           '\n and run again. Leaving now.'
           '\n ')
 
@@ -45,11 +45,11 @@ def main():
 def create_test_folder_if_does_not_exist():
 
     print('')
-    if os.path.exists(TEST_PATH):
-        print(' Skip creation of existing folder: {}'.format(TEST_PATH))
+    if os.path.exists(TEST_IN_PATH):
+        print(' Skip creation of existing folder: {}'.format(TEST_IN_PATH))
     else:
-        print(' Create non-existing test folder: {}'.format(TEST_PATH))
-        os.makedirs(TEST_PATH)
+        print(' Create non-existing test folder: {}'.format(TEST_IN_PATH))
+        os.makedirs(TEST_IN_PATH)
 
 
 def download_non_existing_test_files():
@@ -66,7 +66,7 @@ def download_non_existing_test_files():
 
         for _filename in list_of_files.readlines():
 
-            current_file = os.path.join(TEST_PATH, _filename).strip()
+            current_file = os.path.join(TEST_IN_PATH, _filename).strip()
 
             if len(_filename.strip()) == 0:
                 print('')
