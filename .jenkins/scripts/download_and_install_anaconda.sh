@@ -16,6 +16,7 @@ else
 
 fi
 
+conda update --quiet conda
 conda config --add channels http://ssb.stsci.edu/astroconda
 conda config --add channels http://astroconda.gemini.edu/public/noarch
-conda update --quiet conda
+conda env list
