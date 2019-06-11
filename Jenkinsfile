@@ -26,7 +26,8 @@ pipeline {
 
     environment {
         PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
-        TEST_PATH = "$WORKSPACE/test_path/"
+        DRAGONS_TEST_IN_PATH = "$JENKINS_HOME/dragons_tests/input/"
+        DRAGONS_TEST_OUT_PATH = "$WORKSPACE/dragons_tests/output/"
     }
 
     stages {
