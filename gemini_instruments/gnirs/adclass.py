@@ -374,37 +374,40 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_descriptor
     def pixel_scale(self):
         """
-        Returns the pixel scale in arc seconds.
+        Returns the pixel scale in arc seconds. GNIRS pixel scale is determined
+        soley by the camera used, long or short, regardless of color band
+        (red|blue).
+
+        GNIRS instrument page,
+
+            https://www.gemini.edu/sciops/instruments/gnirs/spectroscopy
+
+        Short camera (0.15"/pix)
+        Long  camera (0.05"/pix)
+
 
         Returns
         -------
-        float
-            Pixel scale in arcsec.
-        """
-        camera = self.camera()
+        <float>, 
+            Pixel scale in arcsec
 
-        if self.tags & set(['IMAGE', 'DARK']):
-            # Imaging or darks
-            try:
-                match = re.match(r"^(Short|Long)(Red|Blue)_G\d+$", camera)
-                cameratype = match.group(1)
-                if cameratype == 'Short':
-                    return 0.15
-                elif cameratype == 'Long':
-                    return 0.05
-            except (TypeError, AttributeError):
-                pass
+        Raises
+        ------
+        ValueError
+            If 'camera' is neither short nor long, it is unrecognized.
+
+        """
+        try:
+            camera = self.camera().lower()
+        except AttributeError:
             return None
+
+        if 'short' in camera:
+            return 0.15
+        elif 'long' in camera:
+            return 0.05
         else:
-            # Spectroscopy mode
-            prism = self.phu.get('PRISM')
-            decker = self.phu.get('DECKER')
-            disperser = self.phu.get('GRATING')
-            ps_key = (prism, decker, disperser, camera)
-            try:
-                return config_dict.get(ps_key).pixscale
-            except TypeError:
-                return None
+            raise ValueError("Unrecognized GNIRS camera, {}".format(camera))
 
 
     @astro_data_descriptor
