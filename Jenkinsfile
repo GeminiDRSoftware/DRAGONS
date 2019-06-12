@@ -52,25 +52,25 @@ pipeline {
 
         }
 
-//        stage('Code Metrics') {
-//
-//            steps {
-//                sh '.jenkins/code_metrics/pylint.sh'
-//                sh '.jenkins/code_metrics/pydocstring.sh'
-//            }
-//            post {
-//                success {
-//                    recordIssues(
-//                        enabledForFailure: true,
-//                        tools: [
-//                            pyLint(pattern: '**/reports/pylint.log'),
-//                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
-//                        ]
-//                    )
-//                }
-//            }
-//
-//        }
+        stage('Code Metrics') {
+
+            steps {
+                sh '.jenkins/code_metrics/pylint.sh'
+                sh '.jenkins/code_metrics/pydocstring.sh'
+            }
+            post {
+                success {
+                    recordIssues(
+                        enabledForFailure: true,
+                        tools: [
+                            pyLint(pattern: '**/reports/pylint.log'),
+                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
+                        ]
+                    )
+                }
+            }
+
+        }
 //
 //        stage('Unit tests') {
 //            steps {
