@@ -28,6 +28,7 @@ pipeline {
         PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
         DRAGONS_TEST_IN_PATH = "$JENKINS_HOME/dragons_tests/input/"
         DRAGONS_TEST_OUT_PATH = "$WORKSPACE/dragons_tests/output/"
+        CONDA_ENV_NAME = "main_jenkins_pipeline_for_dragons"
     }
 
     stages {
@@ -107,7 +108,7 @@ pipeline {
     }
     post {
         always {
-            sh 'conda remove --name ${BUILD_TAG} --all --quiet --yes'
+            sh 'conda remove --name ${CONDA_ENV_NAME} --all --quiet --yes'
         }
     }
 }
