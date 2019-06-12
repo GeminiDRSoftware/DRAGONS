@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source activate ${BUILD_TAG}
+source activate ${CONDA_ENV_NAME}
 
 python setup.py build
 
