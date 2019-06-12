@@ -106,9 +106,9 @@ pipeline {
 //        }
 
     }
-//    post {
-//        always {
-//            sh 'conda remove --name ${CONDA_ENV_NAME} --all --quiet --yes'
-//        }
-//    }
+    post {
+        always {
+            sh 'conda remove --name ${CONDA_ENV_NAME} --all --quiet --yes'
+        }
+    }
 }

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-# Remove anaconda for re-installation
-conda install anaconda-clean --yes
-anaconda-clean --yes
-rm -Rf $JENKINS_HOME/anaconda3/
+## Remove anaconda for re-installation
+#conda install anaconda-clean --yes
+#anaconda-clean --yes
+#rm -Rf $JENKINS_HOME/anaconda3/
 
 LINUX_URL="https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh"
 MACOS_URL="https://repo.anaconda.com/archive/Anaconda3-2019.03-MacOSX-x86_64.sh"
