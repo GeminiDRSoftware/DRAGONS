@@ -45,7 +45,7 @@ pipeline {
                 sh '''source activate ${CONDA_ENV_NAME}
                       python .jenkins/scripts/download_test_data.py
                       '''
-                // sh '.jenkins/scripts/test_environment.sh'
+                sh '.jenkins/scripts/test_environment.sh'
                 sh 'rm -rf ./reports'
                 sh 'mkdir -p ./reports'
             }
