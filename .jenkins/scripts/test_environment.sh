@@ -4,7 +4,7 @@ source activate ${CONDA_ENV_NAME}
 
 python -c "import astropy"
 
-python -c "import numdisplay"
+python -c "import stsci.numdisplay"
 
 python -c "import astrodata"
 
