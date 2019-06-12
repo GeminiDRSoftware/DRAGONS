@@ -41,7 +41,7 @@ pipeline {
                 sh '.jenkins/scripts/create_conda_environment.sh'
                 sh '.jenkins/scripts/install_missing_packages.sh'
                 sh '.jenkins/scripts/install_dragons.sh'
-                sh '''source activate ${BUILD_TAG}
+                sh '''source activate ${CONDA_ENV_NAME}
                       python .jenkins/scripts/download_test_data.py
                       '''
                 sh '.jenkins/scripts/test_environment.sh'
@@ -74,11 +74,11 @@ pipeline {
 //        stage('Unit tests') {
 //            steps {
 //                sh  '''
-//                    source activate ${BUILD_TAG}
+//                    source activate ${CONDA_ENV_NAME}
 //                    coverage run -m pytest --junit-xml ./reports/test_results.xml
 //                    '''
 //                sh  '''
-//                    source activate ${BUILD_TAG}
+//                    source activate ${CONDA_ENV_NAME}
 //                    python -m coverage xml -o ./reports/coverage.xml
 //                    '''
 //            }
