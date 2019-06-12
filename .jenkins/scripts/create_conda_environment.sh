@@ -10,7 +10,6 @@ if conda info --envs | grep -q $CONDA_ENV_NAME; then
     echo " Skipping cretiong of existing conda environment: ${CONDA_ENV_NAME}";
 
 else
-    conda env create --quiet --file .jenkins/conda_test_environment.yml \
-      -n "${CONDA_ENV_NAME}";
+    conda env create --quiet --file ${CONDA_ENV_FILE} -n "${CONDA_ENV_NAME}";
 
 fi
