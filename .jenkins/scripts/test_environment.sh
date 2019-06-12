@@ -4,7 +4,7 @@ source activate ${BUILD_TAG}
 
 python -c "import astropy"
 
-python -c "import numdisplay"
+python -c "import stsci.numdisplay"
 
 python -c "import astrodata"
 
