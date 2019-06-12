@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source activate ${CONDA_ENV_NAME}
+conda activate ${CONDA_ENV_NAME}
 
 python setup.py build
 

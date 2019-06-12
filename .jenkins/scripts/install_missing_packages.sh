@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source activate ${CONDA_ENV_NAME}
+conda activate ${CONDA_ENV_NAME}
 
 cd .jenkins/local_calibration_manager/
 
