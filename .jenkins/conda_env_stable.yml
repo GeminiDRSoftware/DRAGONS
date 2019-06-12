@@ -18,9 +18,10 @@ dependencies:
   - sextractor >=2.8.6
   - sphinx_rtd_theme
   - sqlalchemy >=1.0
-  - stsci.numdisplay >=1.6
   - astropy::astroquery >=0.3.5
   - chroxvi::radon
   - conda-forge::python-dateutil >=2.5.3
   - conda-forge::twine
   - omnia::behave
+  - pip:
+      - stsci.numdisplay
