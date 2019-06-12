@@ -11,8 +11,6 @@ if conda info --envs | grep -q $CONDA_ENV_NAME; then
 
 else
     conda env create --quiet --file .jenkins/conda_test_environment.yml \
-        -n "${CONDA_ENV_NAME}";
+      -n "${CONDA_ENV_NAME}";
 
 fi
-
-
