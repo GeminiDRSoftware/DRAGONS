@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-conda activate ${CONDA_ENV_NAME}
+source activate ${CONDA_ENV_NAME}
 
 python -c "import astropy"
 
