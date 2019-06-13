@@ -2,7 +2,10 @@ import glob
 import os
 
 import pytest
-from astrodata.test.conftest import input_test_path
+
+from astrodata.test import conftest
+
+input_test_path = conftest.input_test_path
 
 
 @pytest.fixture
