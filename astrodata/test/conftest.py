@@ -3,7 +3,7 @@ import pytest
 import os
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def input_test_path():
 
     try:
