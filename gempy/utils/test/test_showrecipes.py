@@ -1,25 +1,22 @@
 #!/usr/bin/env python
 
 import os
-import glob
-import pytest
 import warnings
 
 import geminidr
-import astrodata
-import gemini_instruments
+from gempy.utils.showrecipes import showprims
 from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
-from gempy.utils.showrecipes import showprims
 
 try:
     path = os.environ['TEST_PATH']
 except KeyError:
-    warnings.warn("Could not find environment variable: $TEST_PATH")
+    warnings.warn("Could not find environment variable: $DRAGONS_TEST_IN_PATH")
     path = ''
 
 if not os.path.exists(path):
-    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
+    warnings.warn(
+        "Could not find path stored in $DRAGONS_TEST_IN_PATH: {}".format(path))
     path = ''
 
 path = os.path.join(path, "Gempy")
@@ -55,17 +52,17 @@ gnirs_answer = [
     "Primitives used: "]
 
 
-def test_showprims_on_gnirs(test_path):
-    file_location = os.path.join(test_path, 'Gempy/', GNIRS)
+def test_showprims_on_gnirs(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy/', GNIRS)
     answer = showprims(file_location)
 
     for i in range(len(gnirs_answer)):
         assert gnirs_answer[i] in answer
 
 
-def test_showprims_on_gnirs_spect(test_path):
+def test_showprims_on_gnirs_spect(input_test_path):
     try:
-        file_location = os.path.join(test_path, 'Gempy', GNIRS_SPECT)
+        file_location = os.path.join(input_test_path, 'Gempy', GNIRS_SPECT)
         answer = showprims(file_location, 'qa')
         assert "RecipeNotFound Error" in answer
 
@@ -89,17 +86,17 @@ gmos_answer = [
     "Primitives used: "]
 
 
-def test_showprims_on_gmos(test_path):
-    file_location = os.path.join(test_path, 'Gempy', GMOS)
+def test_showprims_on_gmos(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', GMOS)
     answer = showprims(file_location)
 
     for i in range(len(gmos_answer)):
         assert gmos_answer[i] in answer
 
 
-def test_showprims_on_gmos_spect(test_path):
+def test_showprims_on_gmos_spect(input_test_path):
     try:
-        file_location = os.path.join(test_path, 'Gempy', GMOS_SPECT)
+        file_location = os.path.join(input_test_path, 'Gempy', GMOS_SPECT)
         answer = showprims(file_location)
         assert "RecipeNotFound Error" in answer
 
@@ -120,17 +117,17 @@ gmos_ns_answer = [
     "Primitives used: "]
 
 
-def test_showprims_on_gmos_ns(test_path):
-    file_location = os.path.join(test_path, 'Gempy', GMOS_NS)
+def test_showprims_on_gmos_ns(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', GMOS_NS)
     answer = showprims(file_location, 'qa')
 
     for i in range(len(gmos_ns_answer)):
         assert gmos_ns_answer[i] in answer
 
 
-def test_showprims_on_gmos_spect_default_mode(test_path):
+def test_showprims_on_gmos_spect_default_mode(input_test_path):
     try:
-        file_location = os.path.join(test_path, 'Gempy', GMOS_NS)
+        file_location = os.path.join(input_test_path, 'Gempy', GMOS_NS)
         answer = showprims(file_location)
         assert "RecipeNotFound Error" in answer
     except RecipeNotFound:
@@ -155,17 +152,17 @@ gsaoi_dark_answer = [
     "Primitives used: "]
 
 
-def test_showprims_on_gsaoi_dark(test_path):
-    file_location = os.path.join(test_path, 'Gempy', GSAOI_DARK)
+def test_showprims_on_gsaoi_dark(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_DARK)
     answer = showprims(file_location, 'sq', 'default')
 
     for i in range(len(gsaoi_dark_answer)):
         assert gsaoi_dark_answer[i] in answer
 
 
-def test_showprims_on_gsaoi_dark_qa_mode(test_path):
+def test_showprims_on_gsaoi_dark_qa_mode(input_test_path):
     try:
-        file_location = os.path.join(test_path, 'Gempy', GSAOI_DARK)
+        file_location = os.path.join(input_test_path, 'Gempy', GSAOI_DARK)
         answer = showprims(file_location, 'qa')
         assert "RecipeNotFound Error" in answer
     except RecipeNotFound:
@@ -186,8 +183,8 @@ gsaoi_image_answer_sq = [
     "Primitives used: "]
 
 
-def test_showprims_on_gsaoi_image_sq_mode(test_path):
-    file_location = os.path.join(test_path, 'Gempy', GSAOI_IMAGE)
+def test_showprims_on_gsaoi_image_sq_mode(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_IMAGE)
     answer = showprims(file_location)
     for i in range(len(gsaoi_image_answer_sq)):
         assert gsaoi_image_answer_sq[i] in answer
@@ -206,8 +203,8 @@ gsaoi_image_answer_qa = [
     "Primitives used: "]
 
 
-def test_showprims_on_gsaoi_image_qa_mode(test_path):
-    file_location = os.path.join(test_path, 'Gempy', GSAOI_IMAGE)
+def test_showprims_on_gsaoi_image_qa_mode(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_IMAGE)
     answer = showprims(file_location, 'qa', 'reduce_nostack')
     for i in range(len(gsaoi_image_answer_qa)):
         assert gsaoi_image_answer_qa[i] in answer
@@ -228,16 +225,16 @@ gsaoi_flat_answer = [
     "Primitives used: "]
 
 
-def test_showprims_on_gsaoi_flat(test_path):
-    file_location = os.path.join(test_path, 'Gempy', GSAOI_FLAT)
+def test_showprims_on_gsaoi_flat(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_FLAT)
     answer = showprims(file_location)
     for i in range(len(gsaoi_flat_answer)):
         assert gsaoi_flat_answer[i] in answer
 
 
-def test_showprims_on_gsaoi_flat_ql_mode(test_path):
+def test_showprims_on_gsaoi_flat_ql_mode(input_test_path):
     try:
-        file_location = os.path.join(test_path, 'Gempy', GSAOI_FLAT)
+        file_location = os.path.join(input_test_path, 'Gempy', GSAOI_FLAT)
         answer = showprims(file_location, 'ql')
         assert "ModuleNotFoundError" in answer
     except ModeError:
@@ -260,8 +257,8 @@ niri_answer = [
     "Primitives used:"]
 
 
-def test_showprims_on_niri(test_path):
-    file_location = os.path.join(test_path, 'Gempy', NIRI)
+def test_showprims_on_niri(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', NIRI)
     answer = showprims(file_location)
     for i in range(len(niri_answer)):
         assert niri_answer[i] in answer
@@ -283,8 +280,8 @@ f2_answer = [
     "Primitives used: "]
 
 
-def test_showprims_on_f2(test_path):
-    file_location = os.path.join(test_path, 'Gempy', F2)
+def test_showprims_on_f2(input_test_path):
+    file_location = os.path.join(input_test_path, 'Gempy', F2)
     answer = showprims(file_location)
     for i in range(len(f2_answer)):
         assert f2_answer[i] in answer

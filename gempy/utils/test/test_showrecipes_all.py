@@ -41,9 +41,9 @@ gnirs_answer = [
     "   geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat"]
 
 
-def test_showrecipes_on_gnirs(test_path):
+def test_showrecipes_on_gnirs(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy/', GNIRS)
+    file_location = os.path.join(input_test_path, 'Gempy/', GNIRS)
     answer = showrecipes(file_location)
 
     for i in range(len(gnirs_answer)):
@@ -57,9 +57,9 @@ gnirs_spect_answer = [
     "!!! No recipes were found for this file !!!"]
 
 
-def test_showrecipes_on_gnirs_spect(test_path):
+def test_showrecipes_on_gnirs_spect(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy', GNIRS_SPECT)
+    file_location = os.path.join(input_test_path, 'Gempy', GNIRS_SPECT)
     answer = showrecipes(file_location)
 
     for i in range(len(gnirs_spect_answer)):
@@ -78,9 +78,9 @@ gmos_answer = [
     "   geminidr.gmos.recipes.qa.recipes_IMAGE::stack"]
 
 
-def test_showrecipes_on_gmos(test_path):
+def test_showrecipes_on_gmos(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy', GMOS)
+    file_location = os.path.join(input_test_path, 'Gempy', GMOS)
     answer = showrecipes(file_location)
 
     for i in range(len(gmos_answer)):
@@ -94,9 +94,9 @@ gmos_ns_answer = [
     "   geminidr.gmos.recipes.qa.recipes_NS::reduce"]
 
 
-def test_showrecipes_on_gmos_ns(test_path):
+def test_showrecipes_on_gmos_ns(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy', GMOS_NS)
+    file_location = os.path.join(input_test_path, 'Gempy', GMOS_NS)
     answer = showrecipes(file_location)
 
     for i in range(len(gmos_ns_answer)):
@@ -110,9 +110,9 @@ gmos_spect_answer = [
     "!!! No recipes were found for this file !!!"]
 
 
-def test_showrecipes_on_gmos_spect(test_path):
+def test_showrecipes_on_gmos_spect(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy', GMOS_SPECT)
+    file_location = os.path.join(input_test_path, 'Gempy', GMOS_SPECT)
     answer = showrecipes(file_location)
 
     for i in range(len(gmos_spect_answer)):
@@ -127,9 +127,9 @@ gsaoi_dark_answer = [
     "   geminidr.gsaoi.recipes.sq.recipes_DARK::makeProcessedDark"]
 
 
-def test_showrecipes_on_gsaoi_dark(test_path):
+def test_showrecipes_on_gsaoi_dark(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy', GSAOI_DARK)
+    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_DARK)
     answer = showrecipes(file_location)
 
     for i in range(len(gsaoi_dark_answer)):
@@ -145,9 +145,9 @@ gsaoi_image_answer = [
     "   geminidr.gsaoi.recipes.qa.recipes_IMAGE::reduce_nostack"]
 
 
-def test_showrecipes_on_gsaoi_image(test_path):
+def test_showrecipes_on_gsaoi_image(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy', GSAOI_IMAGE)
+    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_IMAGE)
     answer = showrecipes(file_location)
 
     for i in range(len(gsaoi_image_answer)):
@@ -164,9 +164,9 @@ gsaoi_flat_answer = [
     "   geminidr.gsaoi.recipes.qa.recipes_FLAT_IMAGE::makeProcessedFlat"]
 
 
-def test_showrecipes_on_gsaoi_flat(test_path):
+def test_showrecipes_on_gsaoi_flat(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy/', GSAOI_FLAT)
+    file_location = os.path.join(input_test_path, 'Gempy/', GSAOI_FLAT)
     answer = showrecipes(file_location)
 
     for i in range(len(gsaoi_flat_answer)):
@@ -183,9 +183,9 @@ niri_answer = [
     "   geminidr.niri.recipes.qa.recipes_IMAGE::reduce"]
 
 
-def test_showrecipes_on_niri(test_path):
+def test_showrecipes_on_niri(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy/', NIRI)
+    file_location = os.path.join(input_test_path, 'Gempy/', NIRI)
     answer = showrecipes(file_location)
 
     for i in range(len(niri_answer)):
@@ -202,9 +202,9 @@ f2_answer = [
     "   geminidr.f2.recipes.qa.recipes_IMAGE::reduce_nostack"]
 
 
-def test_showrecipes_on_f2(test_path):
+def test_showrecipes_on_f2(input_test_path):
 
-    file_location = os.path.join(test_path, 'Gempy', F2)
+    file_location = os.path.join(input_test_path, 'Gempy', F2)
     answer = showrecipes(file_location)
 
     for i in range(len(f2_answer)):
@@ -221,11 +221,11 @@ def test_showrecipes_on_f2(test_path):
 #            "ImportError", "ImportError"]
 #
 #
-# def test_showrecipes_with_all_instruments(test_path):
+# def test_showrecipes_with_all_instruments(input_test_path):
 #     for i in range(len(files)):
 #         try:
 #             for t in range(len(answers[i])):
-#                 file_location = test_path + 'Gempy/' + files[i]
+#                 file_location = input_test_path + 'Gempy/' + files[i]
 #                 answer = showrecipes(file_location)
 #                 assert answers[i] == answer
 #         except ImportError:
