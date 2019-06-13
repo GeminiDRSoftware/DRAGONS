@@ -71,40 +71,40 @@ pipeline {
             }
 
         }
-//
-//        stage('Unit tests') {
-//            steps {
-//                sh  '''
-//                    source activate ${CONDA_ENV_NAME}
-//                    coverage run -m pytest --junit-xml ./reports/test_results.xml
-//                    '''
-//                sh  '''
-//                    source activate ${CONDA_ENV_NAME}
-//                    python -m coverage xml -o ./reports/coverage.xml
-//                    '''
-//            }
-//            post {
-//                always {
-//                    junit (
-//                        allowEmptyResults: true,
-//                        testResults: 'reports/test_results.xml'
-//                        )
-//                }
-//            }
-//        }
-//
-//        stage('Integration tests') {
-//            steps {
-//                echo 'No integration tests defined yet'
-//            }
-//        }
-//
-//        stage('Pack and deliver') {
-//            steps {
-//                echo 'Add a step here for packing DRAGONS into a tarball'
-//                echo 'Make tarball available'
-//            }
-//        }
+
+        stage('Unit tests') {
+            steps {
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest --junit-xml ./reports/test_results.xml
+                    '''
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    python -m coverage xml -o ./reports/coverage.xml
+                    '''
+            }
+            post {
+                always {
+                    junit (
+                        allowEmptyResults: true,
+                        testResults: 'reports/test_results.xml'
+                        )
+                }
+            }
+        }
+
+        stage('Integration tests') {
+            steps {
+                echo 'No integration tests defined yet'
+            }
+        }
+
+        stage('Pack and deliver') {
+            steps {
+                echo 'Add a step here for packing DRAGONS into a tarball'
+                echo 'Make tarball available'
+            }
+        }
 
     }
     post {
