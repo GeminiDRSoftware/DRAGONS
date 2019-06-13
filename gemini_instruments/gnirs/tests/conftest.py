@@ -6,7 +6,7 @@ import pytest
 from astrodata.test.conftest import input_test_path
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def gemini_files(input_test_path):
 
     def get_files(instrument):
