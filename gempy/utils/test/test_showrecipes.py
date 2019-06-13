@@ -9,9 +9,10 @@ from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 
 try:
-    path = os.environ['TEST_PATH']
+    path = os.environ['DRAGONS_TEST_IN_PATH']
 except KeyError:
-    warnings.warn("Could not find environment variable: $DRAGONS_TEST_IN_PATH")
+    warnings.warn(
+        "Could not find environment variable: $DRAGONS_TEST_IN_PATH")
     path = ''
 
 if not os.path.exists(path):
