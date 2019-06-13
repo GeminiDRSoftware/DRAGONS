@@ -1,0 +1,26 @@
+dependencies:
+  - python=3.6
+  - astropy >=1.2.1
+  - coverage
+  - coveralls
+  - cython
+  - future >=0.16.0
+  - ipython
+  - numpy >=1.9.1
+  - matplotlib >=1.4.2
+  - pip
+  - pydocstyle
+  - pytest >=2.9.2
+  - pylint
+  - requests >=2.11.1
+  - scipy >=0.15.1
+  - scikit-image >=0.10.1
+  - sextractor >=2.8.6
+  - sphinx_rtd_theme
+  - sqlalchemy >=1.0
+  - stsci.numdisplay >=1.6
+  - astropy::astroquery >=0.3.5
+  - chroxvi::radon
+  - conda-forge::python-dateutil >=2.5.3
+  - conda-forge::twine
+  - omnia::behave
