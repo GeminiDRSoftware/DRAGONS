@@ -10,26 +10,12 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
 
-@pytest.fixture
-def test_path():
-
-    try:
-        path = os.environ['TEST_PATH']
-    except KeyError:
-        pytest.skip("Could not find environment variable: $TEST_PATH")
-
-    if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
-
-    return path
-
-
-def test_reduce_image(test_path):
+def test_reduce_image(input_test_path):
 
     calib_files = []
 
     all_files = glob.glob(
-        os.path.join(test_path, 'GSAOI/test_reduce/', '*.fits'))
+        os.path.join(input_test_path, 'GSAOI/test_reduce/', '*.fits'))
 
     all_files.sort()
 
