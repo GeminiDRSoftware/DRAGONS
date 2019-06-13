@@ -3,15 +3,19 @@ import pytest
 import os
 
 
-@pytest.fixture(scope="module")
-def test_path():
+@pytest.fixture(scope="session")
+def input_test_path():
 
     try:
-        path = os.environ['TEST_PATH']
+        path = os.environ['DRAGONS_TEST_IN_PATH']
     except KeyError:
-        pytest.skip("Could not find environment variable: $TEST_PATH")
+        pytest.skip(
+            "Could not find environment variable: $DRAGONS_TEST_IN_PATH")
 
     if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
+        pytest.skip(
+            "Could not access path stored in $DRAGONS_TEST_IN_PATH: "
+            "{}".format(path)
+        )
 
     return path
