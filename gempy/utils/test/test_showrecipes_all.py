@@ -1,20 +1,17 @@
 import os
-import glob
-import pytest
 import warnings
-import astrodata
-import gemini_instruments
 
 from gempy.utils.showrecipes import showrecipes
 
 try:
-    path = os.environ['TEST_PATH']
+    path = os.environ['DRAGON_TEST_IN_PATH']
 except KeyError:
-    warnings.warn("Could not find environment variable: $TEST_PATH")
+    warnings.warn("Could not find environment variable: $DRAGON_TEST_IN_PATH")
     path = ''
 
 if not os.path.exists(path):
-    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
+    warnings.warn(
+        "Could not find path stored in $DRAGON_TEST_IN_PATH: {}".format(path))
     path = ''
 
 path = os.path.join(path, "Gempy")
@@ -42,7 +39,6 @@ gnirs_answer = [
 
 
 def test_showrecipes_on_gnirs(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy/', GNIRS)
     answer = showrecipes(file_location)
 
@@ -58,7 +54,6 @@ gnirs_spect_answer = [
 
 
 def test_showrecipes_on_gnirs_spect(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy', GNIRS_SPECT)
     answer = showrecipes(file_location)
 
@@ -79,7 +74,6 @@ gmos_answer = [
 
 
 def test_showrecipes_on_gmos(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy', GMOS)
     answer = showrecipes(file_location)
 
@@ -95,7 +89,6 @@ gmos_ns_answer = [
 
 
 def test_showrecipes_on_gmos_ns(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy', GMOS_NS)
     answer = showrecipes(file_location)
 
@@ -111,7 +104,6 @@ gmos_spect_answer = [
 
 
 def test_showrecipes_on_gmos_spect(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy', GMOS_SPECT)
     answer = showrecipes(file_location)
 
@@ -128,7 +120,6 @@ gsaoi_dark_answer = [
 
 
 def test_showrecipes_on_gsaoi_dark(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy', GSAOI_DARK)
     answer = showrecipes(file_location)
 
@@ -146,7 +137,6 @@ gsaoi_image_answer = [
 
 
 def test_showrecipes_on_gsaoi_image(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy', GSAOI_IMAGE)
     answer = showrecipes(file_location)
 
@@ -165,7 +155,6 @@ gsaoi_flat_answer = [
 
 
 def test_showrecipes_on_gsaoi_flat(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy/', GSAOI_FLAT)
     answer = showrecipes(file_location)
 
@@ -184,7 +173,6 @@ niri_answer = [
 
 
 def test_showrecipes_on_niri(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy/', NIRI)
     answer = showrecipes(file_location)
 
@@ -203,7 +191,6 @@ f2_answer = [
 
 
 def test_showrecipes_on_f2(input_test_path):
-
     file_location = os.path.join(input_test_path, 'Gempy', F2)
     answer = showrecipes(file_location)
 
