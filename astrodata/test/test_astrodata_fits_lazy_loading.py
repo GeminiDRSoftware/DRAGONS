@@ -6,21 +6,10 @@ import numpy as np
 
 import astrodata
 import gemini_instruments
-from .conftest import test_path
 
 
 THIS_DIR = os.path.dirname(__file__)
 CHARA = '/net/chara/data2/pub'
-
-try:
-    path = os.environ['TEST_PATH']
-except KeyError:
-    path = ''
-
-if not os.path.exists(path):
-    path = ''
-
-
 
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
@@ -36,10 +25,10 @@ if not os.path.exists(path):
 
 # Load data when accessing it
 @pytest.mark.ad_local_data
-def test_for_length(test_path):
+def test_for_length(input_test_path):
 
     test_filename = 'GMOS/N20110826S0336.fits'
-    ad = astrodata.open(os.path.join(test_path, test_filename))
+    ad = astrodata.open(os.path.join(input_test_path, test_filename))
 
     # This should force the data to be loaded
     # Otherwise, we'll get different results - or an exception
@@ -48,9 +37,9 @@ def test_for_length(test_path):
 
 # TODO: This one fails as it is written. Decide later if it's relevant or not
 @pytest.mark.skip(reason="Test fails for unknown reason. Should I keep it?")
-def test_keyword_changes_preserved_on_lazy_loading(test_path):
+def test_keyword_changes_preserved_on_lazy_loading(input_test_path):
 
-    input_file = os.path.join(test_path, 'GMOS/N20110826S0336.fits')
+    input_file = os.path.join(input_test_path, 'GMOS/N20110826S0336.fits')
     ad = astrodata.open(input_file)
 
     ad.phu['RAWIQ'] = 'Any'

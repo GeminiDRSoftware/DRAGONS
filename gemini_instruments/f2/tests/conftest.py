@@ -1,18 +1,19 @@
-
 import glob
-import pytest
 import os
 
+import pytest
 
-@pytest.fixture(scope="module")
-def f2_files():
+from astrodata.test import conftest
 
-    try:
-        path = os.environ['TEST_PATH']
-    except KeyError:
-        pytest.skip("Could not find environment variable: $TEST_PATH")
+input_test_path = conftest.input_test_path
 
-    if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
-    yield glob.glob(os.path.join(path, "F2/", "*fits"))
+@pytest.fixture
+def f2_files(input_test_path):
+    def get_files(instrument):
+        return glob.glob(os.path.join(input_test_path, instrument, "*fits"))
+
+    gemini_files = []
+    gemini_files.extend(get_files("F2"))
+
+    yield gemini_files

@@ -1,22 +1,16 @@
-
 import glob
-import pytest
 import os
 
+import pytest
 
-@pytest.fixture(scope="module")
-def gemini_files():
+from astrodata.test.conftest import input_test_path
 
-    try:
-        path = os.environ['TEST_PATH']
-    except KeyError:
-        pytest.skip("Could not find environment variable: $TEST_PATH")
 
-    if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
+@pytest.fixture
+def gemini_files(input_test_path):
 
     def get_files(instrument):
-        return glob.glob(os.path.join(path, instrument, "*fits"))
+        return glob.glob(os.path.join(input_test_path, instrument, "*fits"))
 
     gemini_files = []
     gemini_files.extend(get_files("Archive"))
