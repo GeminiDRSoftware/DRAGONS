@@ -231,7 +231,7 @@ class Photometry(PrimitivesBASE):
                 # We're deleting the OBJCAT first simply to suppress the
                 # "replacing" message in gt.add_objcat, which would otherwise
                 # be a bit confusing
-                _cull_objcat(ext)
+                clean_objcat(ext)
                 objcat = ext.OBJCAT
                 del ext.OBJCAT
                 ad = gt.add_objcat(ad, extver=ext.hdr['EXTVER'], replace=False,
@@ -347,10 +347,10 @@ def _calculate_magnitudes(refcat, formulae):
     return refcat
 
 
-def _cull_objcat(ext):
+def clean_objcat(ext):
     """
     Takes an extension of an AD object with attached OBJCAT (and possibly
-    OBJMASK) and culls the OBJCAT of crap. If the OBJMASK exists, it also
+    OBJMASK) and cleans the OBJCAT of crap. If the OBJMASK exists, it also
     edits that to remove pixels associated with these sources. Finally, it
     renumbers the 'NUMBER' column into a contiguous sequence.
 
@@ -370,6 +370,9 @@ def _cull_objcat(ext):
 
     # Remove implausibly narrow sources
     objcat.remove_rows(objcat['B_IMAGE'] < 1.1)
+
+    # Remove implausibly elongated sources
+    objcat.remove_rows(objcat['A_IMAGE'] / objcat['B_IMAGE'] > 50)
 
     # Remove *really* bad sources. "Bad" pixels might be saturated, but the
     # source is still real, so be very conservative
