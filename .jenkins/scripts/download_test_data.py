@@ -17,19 +17,18 @@ import os
 import subprocess
 import sys
 
+FILES_TO_BE_CACHED = 'test_files.txt'
 
-FILE_WITH_TEST_FILES = 'test_files.txt'
 URL = u'https://archive.gemini.edu/file/'
 
-
 try:
-    TEST_PATH = os.environ['TEST_PATH']
+    DRAGONS_INPUT_TEST_PATH = os.environ['DRAGONS_TEST_IN_PATH']
 
 except KeyError as err:
 
     print('\n This script needs the environment variable TEST_PATH'
-          '\n Please, add is using the following command: ' \
-          '\n     $ export TEST_PATH="/my/test/path/"'
+          '\n Please, add is using the following command: '
+          '\n     $ export DRAGONS_TEST_IN_PATH="/my/test/path/"'
           '\n and run again. Leaving now.'
           '\n ')
 
@@ -37,28 +36,33 @@ except KeyError as err:
 
 
 def main():
-
     create_test_folder_if_does_not_exist()
     download_non_existing_test_files()
 
 
 def create_test_folder_if_does_not_exist():
-
+    """
+    Checks if DRAGONS_INPUT_TEST_PATH exists. If not, creates it.
+    """
     print('')
-    if os.path.exists(TEST_PATH):
-        print(' Skip creation of existing folder: {}'.format(TEST_PATH))
+    if os.path.exists(DRAGONS_INPUT_TEST_PATH):
+        print(' Skip creation of existing folder: {}'.format(
+            DRAGONS_INPUT_TEST_PATH))
     else:
-        print(' Create non-existing test folder: {}'.format(TEST_PATH))
-        os.makedirs(TEST_PATH)
+        print(' Create non-existing test folder: {}'.format(
+            DRAGONS_INPUT_TEST_PATH))
+        os.makedirs(DRAGONS_INPUT_TEST_PATH)
 
 
 def download_non_existing_test_files():
+    """
+    Uses curl to download the FITS files listed inside `.jenkins/test_files.txt`
+    from the Gemini Archive to be used in local tests or with Jenkins.
+    """
+    here = os.path.dirname(__file__)
+    relative_path = "../"
 
-    full_path_filename = os.path.join(
-        os.path.dirname(__file__),
-        '../',
-        FILE_WITH_TEST_FILES
-    )
+    full_path_filename = os.path.join(here, relative_path, FILES_TO_BE_CACHED)
 
     with open(full_path_filename, 'r') as list_of_files:
 
@@ -66,7 +70,8 @@ def download_non_existing_test_files():
 
         for _filename in list_of_files.readlines():
 
-            current_file = os.path.join(TEST_PATH, _filename).strip()
+            current_file = os.path.join(
+                DRAGONS_INPUT_TEST_PATH, _filename).strip()
 
             if len(_filename.strip()) == 0:
                 print('')
@@ -88,7 +93,8 @@ def download_non_existing_test_files():
 
                 try:
                     subprocess.run(['curl', '--silent', URL + _file, '--output',
-                         current_file], check=True)
+                                    current_file], check=True)
+
                 except subprocess.CalledProcessError:
                     print(' Failed to download file: {}'.format(current_file))
 

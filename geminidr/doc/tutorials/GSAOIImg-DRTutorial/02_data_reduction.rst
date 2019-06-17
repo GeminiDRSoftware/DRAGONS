@@ -65,6 +65,13 @@ send to it.
 .. note:: The tilde (``~``) in the path above refers to your home directory.
    Also, mind the dot in ``.geminidr``.
 
+.. todo: calmanager
+.. warning:: The Gemini Local Calibration Manager is not available yet in the
+   Gemini Conda Channel for installation and you might not have it installed.
+   On a terminal, type `caldb config`. If you get an error message, you can
+   skip this section and you will still be able to bypass the Calibration
+   Manager as we will show later here.
+
 Then initialize the calibration database:
 
 .. code-block:: bash
@@ -232,8 +239,8 @@ Process DARK files
 
 Accordingly to the `Calibration webpage for GSAOI
 <https://www.gemini.edu/sciops/instruments/gsaoi/calibrations>`_,
-**DARK subtraction is not necessary** since the dark noise level is too low. DARK
-files are only used to generate Bad Pixel Masks (BPM).
+**DARK subtraction is not necessary** since the dark noise level is too low.
+DARK files are only used to generate Bad Pixel Masks (BPM).
 
 If, for any reason, you believe that you really need to have a master DARK file,
 you can create it using the command below:
@@ -248,8 +255,8 @@ will have to create a new list for each exposure time, if that is the case.
 
 Master DARK files can be added to the local database using the caldb_
 command. Before you run it, make sure you have `configured and initialized your
-caldb <caldb>`_. Once you are set, add the Master Dark to the local database using
-the following command:
+caldb <setup_caldb>`_. Once you are set, add the Master Dark to the local
+database using the following command:
 
 .. code-block:: bash
 
@@ -352,10 +359,19 @@ run ``reduce`` on our science data:
 
    $ reduce @list_of_science_files.txt
 
-
 This command will generate flat corrected and sky subtracted files but will
 not stack them. You can find which file is which by its suffix
 (``_flatCorrected`` or ``_skySubtracted``).
+
+.. todo: calmanager
+
+If you don't have the calibration manager or want to bypass it for some reason,
+use the following command to override the input calibrations:
+
+..  code-block:: bash
+
+    $ reduce @list_of_science.txt --user_cal processed_flat:S20170505S0030_flat.fits
+
 
 .. figure:: _static/img/S20170505S0095_skySubtracted.png
    :align: center
