@@ -336,7 +336,7 @@ class NDStacker(object):
                 # According to Laplace, the uncertainty on the median is
                 # sqrt(2/pi) times greater than that on the mean
                 out_var = (None if variance is None else
-                           2. / np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
+                           0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
             out_mask = None
         else:
             mask, out_mask = NDStacker._process_mask(mask)
@@ -349,9 +349,9 @@ class NDStacker(object):
             out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
             #out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
             out_var = (None if variance is None else
-                       2. / np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
+                       0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
-            out_var = 2. / np.pi * NDStacker.calculate_variance(data, mask, out_data)
+            out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -374,9 +374,9 @@ class NDStacker(object):
             index = take_along_axis(arg, med_index, axis=0)
         out_data = take_along_axis(data, index, axis=0)
         if variance is None:  # IRAF gemcombine calculation, plus Laplace
-            out_var = 2. / np.pi * NDStacker.calculate_variance(data, mask, out_data)
+            out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = 2. / np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img
+            out_var = 0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img
         return out_data, out_mask, out_var
 
     #------------------------ REJECTOR METHODS ----------------------------
