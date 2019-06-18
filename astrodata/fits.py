@@ -1322,7 +1322,9 @@ def fits_ext_comp_key(ext):
 
     return ret
 
+
 class FitsLazyLoadable(object):
+
     def __init__(self, obj):
         self._obj = obj
         self.lazy = True
@@ -1357,8 +1359,10 @@ class FitsLazyLoadable(object):
 
     @property
     def dtype(self):
-        """Need to to some overriding of astropy.io.fits since it doesn't
-           know about BITPIX=8"""
+        """
+        Need to to some overriding of astropy.io.fits since it doesn't
+        know about BITPIX=8
+        """
         dtype = self._obj._dtype_for_bitpix()
         bitpix = self._obj._orig_bitpix
         if dtype is None:
@@ -1369,7 +1373,9 @@ class FitsLazyLoadable(object):
             dtype = np.uint16
         return dtype
 
+
 class FitsLoader(object):
+
     def __init__(self, cls = FitsProvider):
         self._cls = cls
 

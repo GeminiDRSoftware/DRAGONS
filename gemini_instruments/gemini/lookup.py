@@ -1,6 +1,6 @@
 # Gives the effective wavelength in microns for the standard wavelength regimes
 wavelength_band = {
-    "None" : 0.000,
+    "None": 0.000,
     "u": 0.350,
     "g": 0.475,
     "r": 0.630,
@@ -46,14 +46,14 @@ nominal_extinction = {
 # Instrument, filter effective wavlengths
 # '*' can be overriden by a specific instrument
 filter_wavelengths = {
-    ('*',     'u')            : 0.3500,
-    ('*',     'g')            : 0.4750,
-    ('*',     'r')            : 0.6300,
-    ('*',     'i')            : 0.7800,
-    ('*',     'z')            : 0.9250,
-    ('*',     'Y')            : 1.0200,
-    ('*',     'J')            : 1.2500,
-    ('*',     'H')            : 1.6350,
-    ('*',     'K')            : 2.2000,
-    ('*',     'FeII')         : 1.6440,
+    ('*', 'u'): 0.3500,
+    ('*', 'g'): 0.4750,
+    ('*', 'r'): 0.6300,
+    ('*', 'i'): 0.7800,
+    ('*', 'z'): 0.9250,
+    ('*', 'Y'): 1.0200,
+    ('*', 'J'): 1.2500,
+    ('*', 'H'): 1.6350,
+    ('*', 'K'): 2.2000,
+    ('*', 'FeII'): 1.6440,
 }

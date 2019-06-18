@@ -113,6 +113,13 @@ The calibration service is now ready to use. If you need more details,
 check the
 `Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
 
+..  todo: calmanager
+..  warning:: The Gemini Local Calibration Manager is not available yet in the
+    Gemini Conda Channel for installation and you might not have it installed.
+    If you get a `NameError: name 'localmanager' when running line 10, you don't
+    the Local Calibration Manager installed. For now, please, contact someone in
+    the Gemini Science User Support Department for more details.
+
 
 .. _api_create_file_lists:
 

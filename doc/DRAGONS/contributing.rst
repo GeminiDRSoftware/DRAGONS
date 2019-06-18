@@ -65,28 +65,57 @@ Tests using real data
 
 - All the data must be stored within a directory (sub-directories allowed).
 
-- Every test file that uses real data should have the following fixture
+- Every test file that uses real data should have the following fixtures
 
 ::
 
     @pytest.fixture
-    def test_path():
+    def input_test_path():
+
+        try:
+            path = os.environ['DRAGONS_TEST_IN_PATH']
+        except KeyError:
+            pytest.skip(
+                "Could not find environment variable: $DRAGONS_TEST_IN_PATH")
+
+        if not os.path.exists(path):
+            pytest.skip(
+                "Could not access path stored in $DRAGONS_TEST_IN_PATH: "
+                "{}".format(path)
+            )
+
+        return path
+
+    @pytest.fixture
+    def output_test_path():
 
     try:
-        path = os.environ['TEST_PATH']
+        path = os.environ['DRAGONS_TEST_OUT_PATH']
     except KeyError:
-        pytest.skip("Could not find environment variable: $TEST_PATH")
+        warning.warn(
+            "Could not find environment variable: $DRAGONS_TEST_OUT_PATH\n"
+            "Using $DRAGONS_TEST_OUT_PATH="$(cwd)"
+        )
+        path = "."
 
     if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
+        pytest.skip(
+            "Could not access path stored in $DRAGONS_TEST_OUT_PATH: "
+            "{}".format(path)
+        )
 
     return path
 
-- The fixture above can be added to the ``conftest.py`` instead if there
+- The fixtures above can be added to the ``conftest.py`` instead if there
   are many test files.
 
-- The fixture above looks for the files that are cached inside a directory
-  stored in the ``TEST_PATH`` (case sensitive).
+- The first fixture above looks for the files that are cached inside a directory
+  stored in the ``DRAGONS_TEST_IN_PATH`` environment variable (case sensitive).
+
+- The second fixture above checks if the ``DRAGONS_TEST_OUT_PATH`` environment
+  variable exists. If so, this path will be used to store data produced during
+  the tests. If not, it will print a warning message and the output path is the
+  current working directory.
 
 - Every file that will be cached for tests on Jenkins must be added to the
   ``.jenkins/test_files.txt``.
@@ -102,6 +131,6 @@ Tests using real data
 
 - The ``.jenkins/download_test_data.py`` script can be used to download
   the data listed in the ``.jenkins/test_files.txt`` file and stored inside
-  the ``$TEST_PATH``. This script must be called from the DRAGONS root folder
-  to work properly. The data is downloaded directly from the archive using
-  ``curl``.
+  the ``$DRAGONS_TEST_IN_PATH``. This script must be called from the DRAGONS
+  root folder to work properly. The data is downloaded directly from the archive
+  using ``curl``.

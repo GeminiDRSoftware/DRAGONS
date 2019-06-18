@@ -10,20 +10,6 @@ from recipe_system.reduction.coreReduce import Reduce
 from gempy.utils import logutils
 
 
-@pytest.fixture
-def test_path():
-
-    try:
-        path = os.environ['TEST_PATH']
-    except KeyError:
-        pytest.skip("Could not find environment variable: $TEST_PATH")
-
-    if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
-
-    return path
-
-
 @pytest.fixture(scope='module')
 def caldb():
 
@@ -53,14 +39,16 @@ def caldb():
     os.remove(caldb_database_file)
 
 
-def test_reduce_image(test_path, caldb):
+def test_reduce_image_GN_HAM_2x2_z(path_to_raw_files, caldb):
 
-    logutils.config(file_name='gsmos_test_reduce_image.log')
+    logutils.config(file_name='gmos_test_reduce_image_GN_HAM_2x2_z.log')
 
     caldb.init(wipe=True)
 
+    raw_subdir = 'GMOS/GN-2017B-LP-15'
+
     all_files = glob.glob(
-        os.path.join(test_path, 'GMOS/test_reduce/', '*.fits'))
+        os.path.join(path_to_raw_files, raw_subdir, '*.fits'))
     assert len(all_files) > 1
 
     list_of_bias = dataselect.select_data(

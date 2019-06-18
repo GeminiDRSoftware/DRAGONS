@@ -8,15 +8,19 @@ from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
 
 from .core import AstroDataError
 
+
 def fits_opener(source):
     if isinstance(source, HDUList):
         return source
     return fits.open(source, memmap=True)
 
+
 class AstroDataFactory(object):
+
     _file_openers = (
-            fits_opener,
-            )
+        fits_opener,
+    )
+
     def __init__(self):
         self._registry = set()
 
