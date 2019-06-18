@@ -206,6 +206,12 @@ class Image(Preprocess, Register, Resample):
             if len(median_image) > 1:
                 raise ValueError("Problem with creating median image")
             median_image = median_image[0]
+
+            # Set the median_image VAR planes to None, or else the adinputs'
+            # VAR will increase when subtracting, then adding, the median
+            for ext in median_image:
+                ext.variance = None
+
             for ad in adinputs:
                 ad.subtract(median_image)
             adinputs = self.detectSources(adinputs,
@@ -429,48 +435,47 @@ class Image(Preprocess, Register, Resample):
         structure = np.where(xgrid*xgrid+ygrid*ygrid <= dilation*dilation,
                              True, False)
 
+        # All inputs should have an OBJMASK, to avoid flagging pixels within
+        # objects. If not, we present a warning but continue anyway.
+        if not all(hasattr(ext, 'OBJMASK') for ad in adinputs for ext in ad):
+            log.warning("Not all input extensions have an OBJMASK. Results "
+                        "may be dubious.")
+
         median_image = self.stackFrames(adinputs, operation='median',
                                         reject_method='none', zero=True)[0]
 
-        median_image = self.detectSources(
-            [median_image], **self._inherit_params(params, "detectSources")
-        )[0]
+        median_image = self.detectSources([median_image],
+                    **self._inherit_params(params, "detectSources"))[0]
         #median_image.write('med.fits', overwrite=True)
 
         differences = self.subtractSky([deepcopy(ad) for ad in adinputs],
-                                       sky=median_image,
-                                       offset_sky=True, scale_sky=False)
+                        sky=median_image, offset_sky=True, scale_sky=False)
         differences[0].write('diff.fits', overwrite=True)
 
         for ad, diff in zip(adinputs, differences):
-
-            # Should we use a noise map like imcoadd, rather than a single
-            # background noise estimate per image? We could use VAR (where
-            # present) once the std error on median stacking is fixed.
-
-            bkg, noise, npix = gt.measure_bg_from_image(diff,
-                                                        separate_ext=False)
+            # Background will be close to zero, so we only really need this
+            # if there's no VAR; however, the overhead is low and it saves
+            # us from repeatedly checking if there is a VAR on each extension
+            bg_list = gt.measure_bg_from_image(diff, separate_ext=True)
 
             # Don't flag pixels that are already bad (and may not be CRs;
             # except those that are just near saturation, unilluminated etc.):
             bitmask = DQ.bad_pixel
 
-            # Limiting level for good pixels in the median-subtracted data
-            # (bkg should be ~0 after subtracting median image with an offset):
-            threshold = bkg + hsigma * noise
+            for ext, diff_ext, (bg, noise, npix) in zip(ad, diff, bg_list):
+                # Limiting level for good pixels in the median-subtracted data
+                # (bkg should be ~0 after subtracting median image with an offset)
+                if ext.variance is not None:
+                    noise = np.sqrt(ext.variance)
+                threshold = bg + hsigma * noise
 
-            # Accumulate CR detections into the DQ mask(s) of the input/output:
-            # If there's no OBJMASK (etc.), just let the error fall through,
-            # since it should be fairly self-explanatory?
-            for ad_ext, diff_ext in zip(ad, diff):
-
-                crmask = (diff_ext.data > threshold) & \
-                         (diff_ext.OBJMASK == 0) & \
-                         (diff_ext.mask & bitmask == 0)
-
+                # Accumulate CR detections into the DQ mask(s) of the input/output
+                crmask = ((diff_ext.data > threshold) &
+                          (diff_ext.mask & bitmask == 0))
+                if hasattr(diff_ext, 'OBJMASK'):
+                    crmask &= (diff_ext.OBJMASK == 0)
                 crmask = binary_dilation(crmask, structure)
-
-                ad_ext.mask |= np.where(crmask, DQ.cosmic_ray, DQ.good)
+                ext.mask |= np.where(crmask, DQ.cosmic_ray, DQ.good)
 
             ad.update_filename(suffix=params["suffix"], strip=True)
 
