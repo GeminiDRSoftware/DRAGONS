@@ -333,11 +333,10 @@ class NDStacker(object):
                 indices = np.argpartition(data, [med_index, med_index+1],
                                           axis=0)[med_index:med_index+2]
                 out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-                # Not strictly correct when taking the mean of the middle two
-                # but it seems more appropriate, otherwise output variance
-                # will be lower when there's an even number of input pixels
+                # According to Laplace, the uncertainty on the median is
+                # sqrt(2/pi) times greater than that on the mean
                 out_var = (None if variance is None else
-                           take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
+                           2. / np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
             out_mask = None
         else:
             mask, out_mask = NDStacker._process_mask(mask)
@@ -350,9 +349,9 @@ class NDStacker(object):
             out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
             #out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
             out_var = (None if variance is None else
-                       take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
-        if variance is None:  # IRAF gemcombine calculation
-            out_var = NDStacker.calculate_variance(data, mask, out_data)
+                       2. / np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
+        if variance is None:  # IRAF gemcombine calculation, plus Laplace
+            out_var = 2. / np.pi * NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -370,13 +369,14 @@ class NDStacker(object):
             # np.choose() can't handle more than 32 input images
             # Partitioning the bottom half is slower than a full sort
             arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
-            med_index = (NDStacker._num_good(mask>0) - 1) // 2
+            num_img = NDStacker._num_good(mask>0)
+            med_index = (num_img - 1) // 2
             index = take_along_axis(arg, med_index, axis=0)
         out_data = take_along_axis(data, index, axis=0)
-        if variance is None:  # IRAF gemcombine calculation
-            out_var = NDStacker.calculate_variance(data, mask, out_data)
+        if variance is None:  # IRAF gemcombine calculation, plus Laplace
+            out_var = 2. / np.pi * NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = take_along_axis(variance, index, axis=0)
+            out_var = 2. / np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img
         return out_data, out_mask, out_var
 
     #------------------------ REJECTOR METHODS ----------------------------
