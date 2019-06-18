@@ -15,10 +15,13 @@ The software has not yet had its first public release.  The software is undergoi
 reduce Gemini science data, please continue to use, for the time being, the
 [Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
 
-The first public release is currently expected to happen in October 2019 and
-will be able to reduce imaging data from Gemini's current instruments.  There
+The first public release is currently expected to happen in **October 2019** and
+will be able to reduce **imaging data** from Gemini's current instruments.  There
 will no spectroscopy support in the first release, though we are working on
 that.
+
+For now, please feel free to look around in the code and the documentation
+to see what's coming up.
 
 ---
 
