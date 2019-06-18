@@ -45,10 +45,10 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_raw_files, caldb):
 
     caldb.init(wipe=True)
 
-    subdir = 'GMOS/test_reduce'
+    raw_subdir = 'GMOS/GN-2017B-LP-15'
 
     all_files = glob.glob(
-        os.path.join(path_to_raw_files, subdir, '*.fits'))
+        os.path.join(path_to_raw_files, raw_subdir, '*.fits'))
     assert len(all_files) > 1
 
     list_of_bias = dataselect.select_data(
