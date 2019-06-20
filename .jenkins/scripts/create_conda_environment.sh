@@ -5,6 +5,7 @@
 # that the `$CONDA_ENV_NAME` virtual environment exists and its creating step
 # can be skipped
 #
+conda env remove -n "${CONDA_ENV_NAME}" || echo 0
 
 if conda info --envs | grep -q $CONDA_ENV_NAME; then
     echo " Skipping cretiong of existing conda environment: ${CONDA_ENV_NAME}";
