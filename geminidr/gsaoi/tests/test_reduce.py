@@ -10,12 +10,12 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
 
-def test_reduce_image(input_test_path):
+def test_reduce_image(path_to_inputs):
 
     calib_files = []
 
     all_files = glob.glob(
-        os.path.join(input_test_path, 'GSAOI/test_reduce/', '*.fits'))
+        os.path.join(path_to_inputs, 'GSAOI/test_reduce/', '*.fits'))
 
     all_files.sort()
 

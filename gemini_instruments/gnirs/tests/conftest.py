@@ -3,7 +3,9 @@ import os
 
 import pytest
 
-from astrodata.testing import path_to_inputs
+from astrodata import testing
+
+path_to_inputs = testing.path_to_inputs
 
 
 @pytest.fixture

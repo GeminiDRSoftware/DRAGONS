@@ -70,7 +70,7 @@ Tests using real data
 ::
 
     @pytest.fixture
-    def input_test_path():
+    def path_to_inputs():
 
         try:
             path = os.environ['DRAGONS_TEST_INPUTS']
