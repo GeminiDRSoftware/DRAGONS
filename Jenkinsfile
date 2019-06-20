@@ -28,8 +28,9 @@ pipeline {
         PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
         CONDA_ENV_FILE = ".jenkins/conda_py3env_stable.yml"
         CONDA_ENV_NAME = "py3_stable"
-        DRAGONS_TEST_IN_PATH = "$JENKINS_HOME/dragons_tests/input/"
-        DRAGONS_TEST_OUT_PATH = "$WORKSPACE/dragons_tests/output/"
+        DRAGONS_TEST_INPUTS = "$JENKINS_HOME/dragons_tests/inputs/"
+        DRAGONS_TEST_OUTPUTS = "$WORKSPACE/dragons_tests/outputs/"
+        DRAGONS_TEST_REFERENCES = "$WORKSPACE/dragons_tests/refs/"
     }
 
     stages {
