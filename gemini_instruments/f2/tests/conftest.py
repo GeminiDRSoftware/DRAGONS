@@ -3,17 +3,16 @@ import os
 
 import pytest
 
-from astrodata.test import conftest
-
-input_test_path = conftest.input_test_path
+from astrodata.testing import path_to_inputs
 
 
 @pytest.fixture
-def f2_files(input_test_path):
+def f2_files(path_to_inputs):
     def get_files(instrument):
-        return glob.glob(os.path.join(input_test_path, instrument, "*fits"))
+        return glob.glob(os.path.join(path_to_inputs, instrument, "*fits"))
 
     gemini_files = []
     gemini_files.extend(get_files("F2"))
+    gemini_files.sort()
 
     yield gemini_files
