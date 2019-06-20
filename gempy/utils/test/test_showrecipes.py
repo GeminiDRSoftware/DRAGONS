@@ -9,15 +9,15 @@ from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 
 try:
-    path = os.environ['DRAGONS_TEST_IN_PATH']
+    path = os.environ['DRAGONS_TEST_INPUTS']
 except KeyError:
     warnings.warn(
-        "Could not find environment variable: $DRAGONS_TEST_IN_PATH")
+        "Could not find environment variable: $DRAGONS_TEST_INPUTS")
     path = ''
 
 if not os.path.exists(path):
     warnings.warn(
-        "Could not find path stored in $DRAGONS_TEST_IN_PATH: {}".format(path))
+        "Could not find path stored in $DRAGONS_TEST_INPUTS: {}".format(path))
     path = ''
 
 path = os.path.join(path, "Gempy")

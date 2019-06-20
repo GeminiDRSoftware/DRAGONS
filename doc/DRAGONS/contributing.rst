@@ -73,14 +73,14 @@ Tests using real data
     def input_test_path():
 
         try:
-            path = os.environ['DRAGONS_TEST_IN_PATH']
+            path = os.environ['DRAGONS_TEST_INPUTS']
         except KeyError:
             pytest.skip(
-                "Could not find environment variable: $DRAGONS_TEST_IN_PATH")
+                "Could not find environment variable: $DRAGONS_TEST_INPUTS")
 
         if not os.path.exists(path):
             pytest.skip(
-                "Could not access path stored in $DRAGONS_TEST_IN_PATH: "
+                "Could not access path stored in $DRAGONS_TEST_INPUTS: "
                 "{}".format(path)
             )
 
@@ -110,7 +110,7 @@ Tests using real data
   are many test files.
 
 - The first fixture above looks for the files that are cached inside a directory
-  stored in the ``DRAGONS_TEST_IN_PATH`` environment variable (case sensitive).
+  stored in the ``DRAGONS_TEST_INPUTS`` environment variable (case sensitive).
 
 - The second fixture above checks if the ``DRAGONS_TEST_OUT_PATH`` environment
   variable exists. If so, this path will be used to store data produced during
@@ -131,6 +131,6 @@ Tests using real data
 
 - The ``.jenkins/download_test_data.py`` script can be used to download
   the data listed in the ``.jenkins/test_files.txt`` file and stored inside
-  the ``$DRAGONS_TEST_IN_PATH``. This script must be called from the DRAGONS
+  the ``$DRAGONS_TEST_INPUTS``. This script must be called from the DRAGONS
   root folder to work properly. The data is downloaded directly from the archive
   using ``curl``.

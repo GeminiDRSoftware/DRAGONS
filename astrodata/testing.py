@@ -1,10 +1,14 @@
+#!/usr/bin/env python
+"""
+Fixtures to be used in tests in DRAGONS
+"""
 
-import pytest
 import os
+import pytest
 
 
 @pytest.fixture
-def input_test_path():
+def path_to_inputs():
 
     try:
         path = os.environ['DRAGONS_TEST_INPUTS']
