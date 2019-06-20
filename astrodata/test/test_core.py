@@ -1,8 +1,8 @@
-
+#!/usr/bin/env python
 import copy
+
 import numpy as np
 import pytest
-
 from astropy.io import fits
 
 import astrodata
@@ -10,7 +10,6 @@ import astrodata
 
 @pytest.fixture
 def sample_astrodata_with_ones():
-
     data_array = np.ones((100, 100))
 
     phu = fits.PrimaryHDU()
@@ -162,3 +161,7 @@ def test_can_find_mean_average_and_median(sample_astrodata_with_ones):
     assert data.mean() == 1
     assert np.average(data) == 1
     assert np.median(data) == 1
+
+
+if __name__ == '__main__':
+    pytest.main()

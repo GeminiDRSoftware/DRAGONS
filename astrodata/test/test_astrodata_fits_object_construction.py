@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 
 import numpy as np
@@ -213,7 +214,7 @@ def test_append_slice_to_extension(path_to_inputs):
 
 
 # Deletion
-@pytest.mark.skip(reason="file not available")
+@pytest.mark.xfail(reason="file not available")
 def test_delete_named_attribute_at_top_level(path_to_inputs):
     ad = from_test_data('NIRI/N20131215S0202_refcatAdded.fits')
     assert 'REFCAT' in ad.tables

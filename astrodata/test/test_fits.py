@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import glob
 import os
 import tempfile
@@ -295,7 +296,7 @@ def test_do_arith_and_retain_features(path_to_inputs):
 # ============================================================================
 # Deprecated tests
 
-@pytest.mark.skip(reason="Deprecated methods")
+@pytest.mark.xfail(reason="Deprecated methods")
 def test_remove_a_keyword_from_phu_deprecated(self):
     ad = astrodata.open('N20110826S0336.fits')
     with pytest.raises(AttributeError):
@@ -311,7 +312,7 @@ def test_remove_a_keyword_from_phu_deprecated(self):
     test_data_name = "N20110826S0336.fits"
 
 
-@pytest.mark.skip(reason="uses chara")
+@pytest.mark.xfail(reason="uses chara")
 def test_raise_attribute_error_when_accessing_missing_extenions(self):
     ad = from_chara('N20131215S0202_refcatAdded.fits')
     with pytest.raises(AttributeError) as excinfo:
@@ -320,7 +321,7 @@ def test_raise_attribute_error_when_accessing_missing_extenions(self):
 
 # Some times, internal changes break the writing capability. Make sure that
 # this is the case, always
-@pytest.mark.skip(reason="uses chara")
+@pytest.mark.xfail(reason="uses chara")
 def test_write_without_exceptions():
     # Use an image that we know contains complex structure
     ad = from_chara('N20131215S0202_refcatAdded.fits')
@@ -330,7 +331,7 @@ def test_write_without_exceptions():
 
 # Access to headers: DEPRECATED METHODS
 # These should fail at some point
-@pytest.mark.skip(reason="Deprecated methods")
+@pytest.mark.xfail(reason="Deprecated methods")
 def test_read_a_keyword_from_phu_deprecated():
     ad = astrodata.open('N20110826S0336.fits')
 
@@ -338,7 +339,7 @@ def test_read_a_keyword_from_phu_deprecated():
         assert ad.phu.DETECTOR == 'GMOS + Red1'
 
 
-@pytest.mark.skip(reason="Deprecated methods")
+@pytest.mark.xfail(reason="Deprecated methods")
 def test_read_a_keyword_from_hdr_deprecated():
     ad = astrodata.open('N20110826S0336.fits')
 
@@ -346,3 +347,7 @@ def test_read_a_keyword_from_hdr_deprecated():
         assert ad.hdr.CCDNAME == [
             'EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03'
         ]
+
+
+if __name__ == '__main__':
+    pytest.main()

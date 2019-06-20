@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import pytest
 import warnings
 import os
@@ -36,7 +37,7 @@ def test_for_length(path_to_inputs):
 
 
 # TODO: This one fails as it is written. Decide later if it's relevant or not
-@pytest.mark.skip(reason="Test fails for unknown reason. Should I keep it?")
+@pytest.mark.xfail(reason="Test fails for unknown reason. Should I keep it?")
 def test_keyword_changes_preserved_on_lazy_loading(path_to_inputs):
 
     input_file = os.path.join(path_to_inputs, 'GMOS/N20110826S0336.fits')
@@ -51,3 +52,7 @@ def test_keyword_changes_preserved_on_lazy_loading(path_to_inputs):
     # assert ad.phu['RAWIQ'] == 'Any'
     # assert 'RAWCC' not in ad.phu
     # assert 'DATATYPE' not in ad[0].hdr
+
+
+if __name__ == '__main__':
+    pytest.main()
