@@ -12,5 +12,4 @@ python -c "import gemini_instruments"
 
 python -c "import gemini_calmgr"
 
-# TODO: This is not actually working
-# python -c "from gempy.library import cyclip"
+python -c "from gempy.library import cyclip"
