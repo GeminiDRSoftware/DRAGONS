@@ -25,10 +25,10 @@ CHARA = '/net/chara/data2/pub'
 
 # Load data when accessing it
 @pytest.mark.ad_local_data
-def test_for_length(input_test_path):
+def test_for_length(path_to_inputs):
 
     test_filename = 'GMOS/N20110826S0336.fits'
-    ad = astrodata.open(os.path.join(input_test_path, test_filename))
+    ad = astrodata.open(os.path.join(path_to_inputs, test_filename))
 
     # This should force the data to be loaded
     # Otherwise, we'll get different results - or an exception
@@ -37,9 +37,9 @@ def test_for_length(input_test_path):
 
 # TODO: This one fails as it is written. Decide later if it's relevant or not
 @pytest.mark.skip(reason="Test fails for unknown reason. Should I keep it?")
-def test_keyword_changes_preserved_on_lazy_loading(input_test_path):
+def test_keyword_changes_preserved_on_lazy_loading(path_to_inputs):
 
-    input_file = os.path.join(input_test_path, 'GMOS/N20110826S0336.fits')
+    input_file = os.path.join(path_to_inputs, 'GMOS/N20110826S0336.fits')
     ad = astrodata.open(input_file)
 
     ad.phu['RAWIQ'] = 'Any'
