@@ -109,7 +109,7 @@ class CCD(PrimitivesBASE):
 
         "poly":   a polynomial of degree *order* (1=linear, etc)
         "spline": using *order* equally-sized cubic spline pieces or, if
-                  order=None, a spline that provides a reduced chi^2=1
+                  order=None or 0, a spline that provides a reduced chi^2=1
         "none":   no function is fit, and the value for each row is determined
                   by the overscan pixels in that row
 
@@ -123,16 +123,16 @@ class CCD(PrimitivesBASE):
             suffix to be added to output files
         niterate: int
             number of rejection iterations
-        high_reject: float
+        high_reject: float/None
             number of standard deviations above which to reject high pixels
-        low_reject: float
+        low_reject: float/None
             number of standard deviations above which to reject low pixels
         nbiascontam: int/None
             number of columns adjacent to the illuminated region to reject
         function: str/None
             function to fit ("poly" | "spline" | "none")
-        order: int
-            order of fit or spline/None
+        order: int/None
+            order of polynomial fit or number of spline pieces
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -142,7 +142,7 @@ class CCD(PrimitivesBASE):
         niterate = params["niterate"]
         lo_rej = params["low_reject"]
         hi_rej = params["high_reject"]
-        order = params["order"]
+        order = params["order"] or 0  # None is the same as 0
         func = (params["function"] or 'none').lower()
         nbiascontam = params["nbiascontam"]
 

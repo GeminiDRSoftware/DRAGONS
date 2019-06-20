@@ -134,9 +134,26 @@ class GMOS(Gemini, CCD):
 
     def subtractOverscan(self, adinputs=None, **params):
         """
-        Subtract the overscan level from the image by fitting a polynomial
-        to the overscan region. This sets the appropriate parameters for GMOS
-        (the gireduce defaults) and calls the CCD-level method.
+        This primitive subtracts the overscan level from the image. The
+        level for each row (currently the primitive requires that the overscan
+        region be a vertical strip) is determined in one of the following
+        ways, according to the *function* and *order* parameters:
+
+        "poly":   a polynomial of degree *order* (1=linear, etc)
+        "spline": using *order* equally-sized cubic spline pieces or, if
+                  order=None or 0, a spline that provides a reduced chi^2=1
+        "none":   no function is fit, and the value for each row is determined
+                  by the overscan pixels in that row
+
+        The fitting is done iteratively but, in the first instance, a running
+        median of the rows is calculated and rows that deviate from this median
+        are rejected (and used in place of the actual value if function="none")
+
+        The GMOS-specific version of this primitive sets the "nbiascontam" and
+        "order" parameters to their Gemini-IRAF defaults if they are None. It
+        also removes the bottom 48 (ubinned) rows of the Hamamatsu CCDs from
+        consideration in a polynomial fit. It then calls the generic version
+        of the primitive.
 
         Parameters
         ----------
@@ -164,8 +181,8 @@ class GMOS(Gemini, CCD):
         if params["nbiascontam"] is None:
             params["nbiascontam"] = 5 if detname == 'e2vDD' else 4
 
-        # Set the overscan_section and data_section keywords to chop off the
-        # bottom 48 (unbinned) rows, as Gemini-IRAF does
+        # Set the overscan_section to ignore the bottom 48 (unbinned) rows
+        # if a polynomial fit is being used
         if detname.startswith('Hamamatsu') and func.startswith('poly'):
             for ad in adinputs:
                 y1 = 48 // ad.detector_y_bin()
@@ -174,8 +191,8 @@ class GMOS(Gemini, CCD):
                 for ext, dsec, osec in zip(ad, dsec_list, osec_list):
                     ext.hdr['BIASSEC'] = '[{}:{},{}:{}]'.format(osec.x1+1,
                                                     osec.x2, y1+1, osec.y2)
-                    ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
-                                                    dsec.x2, y1+1, dsec.y2)
+                    #ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
+                    #                                dsec.x2, y1+1, dsec.y2)
 
         adinputs = super(GMOS, self).subtractOverscan(adinputs, **params)
         return adinputs

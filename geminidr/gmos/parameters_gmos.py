@@ -14,5 +14,7 @@ class measureIQConfig(parameters_qa.measureIQConfig):
     remove_bias = config.Field("Remove estimated bias level before displaying?", bool, True)
 
 class subtractOverscanConfig(parameters_ccd.subtractOverscanConfig):
+    nbiascontam = config.RangeField("Number of columns to exclude from averaging",
+                               int, None, min=0, optional=True)
     def setDefaults(self):
         self.function = None
