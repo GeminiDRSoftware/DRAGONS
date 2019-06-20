@@ -44,7 +44,7 @@ pipeline {
                 sh '.jenkins/scripts/install_missing_packages.sh'
                 sh '.jenkins/scripts/install_dragons.sh'
                 sh '''source activate ${CONDA_ENV_NAME}
-                      python .jenkins/scripts/download_test_data.py
+                      python .jenkins/scripts/download_test_inputs.py
                       '''
                 sh '.jenkins/scripts/test_environment.sh'
                 sh 'rm -rf ./reports'
