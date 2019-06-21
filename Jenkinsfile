@@ -10,6 +10,8 @@
  * - Warnings NG
  */
 
+@Library('bquint-shared') _
+
 pipeline {
 
     agent any
