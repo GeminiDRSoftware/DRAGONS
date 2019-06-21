@@ -10,7 +10,7 @@
  * - Warnings NG
  */
 
-@Library('bquint-shared') _
+@Library('bquint-shared-libs') _
 
 pipeline {
 
