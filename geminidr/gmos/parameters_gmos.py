@@ -18,3 +18,14 @@ class subtractOverscanConfig(parameters_ccd.subtractOverscanConfig):
                                int, None, min=0, optional=True)
     def setDefaults(self):
         self.function = None
+
+    def validate(self):
+        config.Config.validate(self)
+        if self.function == "spline" and self.order == 0:
+            raise ValueError("Must specify a positive spline order, or None")
+
+# We need to redefine this to ensure it inherits this version of
+# subtractOverscanConfig.validate()
+class overscanCorrectConfig(subtractOverscanConfig, parameters_ccd.trimOverscanConfig):
+    def setDefaults(self):
+        self.suffix = "_overscanCorrected"
