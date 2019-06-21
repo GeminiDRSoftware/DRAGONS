@@ -47,6 +47,7 @@ pipeline {
                       python .jenkins/scripts/download_test_inputs.py
                       '''
                 sh '.jenkins/scripts/test_environment.sh'
+                sh 'conda list -n ${CONDA_ENV_NAME}'
                 sh 'rm -rf ./reports'
                 sh 'mkdir -p ./reports'
             }
@@ -94,23 +95,15 @@ pipeline {
             }
         }
 
-        stage('Integration tests') {
-            steps {
-                echo 'No integration tests defined yet'
-            }
-        }
-
-        stage('Pack and deliver') {
-            steps {
-                echo 'Add a step here for packing DRAGONS into a tarball'
-                echo 'Make tarball available'
-            }
-        }
-
     }
-    //post {
-    //    always {
-    //        sh 'conda remove --name ${CONDA_ENV_NAME} --all --quiet --yes'
-    //    }
-    //}
+    post {
+        success {
+            slackSend (color: '#00FF00', message: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+            sh  '.jenkins/scripts/build_sdist_file.sh'
+            echo 'Make tarball available'
+        }
+        failure {
+            slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+        }
+    }
 }
