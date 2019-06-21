@@ -40,6 +40,7 @@ pipeline {
         stage ("Prepare"){
 
             steps{
+                sendNotifications 'STARTED'
                 checkout scm
                 sh '.jenkins/scripts/download_and_install_anaconda.sh'
                 sh '.jenkins/scripts/create_conda_environment.sh'
