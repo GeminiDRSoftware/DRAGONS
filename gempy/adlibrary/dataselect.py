@@ -7,6 +7,23 @@ import gemini_instruments
 
 
 def isclose(a, b, rel_tol=1e-02, abs_tol=0.0):
+    """
+
+    Parameters
+    ----------
+    a : int/float
+        first value
+    b : int/float
+        second value
+    rel_tol : float, (optional)
+        relative tolerance
+    abs_tol : float, (optional)
+        the absolute tolerance
+
+    Returns
+    -------
+
+    """
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 def expr_parser(expression, strict=False):
@@ -16,7 +33,10 @@ def expr_parser(expression, strict=False):
 
     Parameters
     ----------
-    expression
+    expression : str
+        the string that is parsed by the function
+    strict : Bool
+        Defines if expr_parser is "strict" or not
 
     Returns
     -------
@@ -58,13 +78,49 @@ def expr_parser(expression, strict=False):
 
     return codified_expression
 
+
 def evalexpression(ad, expression):
+    """
+    Tests to make sure that the expression passed from the user is a Bool
+    Parameters
+    ----------
+    ad : astrodata.object
+        Unused, remove if necessary
+    expression : str
+        expression from user
+
+    Returns
+    -------
+    expression - bool
+        evaluated expression, True or False
+    """
     if type(eval(expression)) is not type(True):
         raise(IOError, 'Expression does not return a boolean value.')
     return eval(expression)
 
-def select_data(inputs, tags=[], xtags=[], expression='True'):
 
+def select_data(inputs, tags=[], xtags=[], expression='True'):
+    """
+    Given a list of fits files, function will return a list of astrodata objects
+    that satisfy all the parameters
+
+    Parameters
+    ----------
+    inputs - list of strings
+        list of paths with full directory to a fits file
+    tags - list of strings
+        list with all the tags you want to make sure are in the inputs fits files
+    xtags - list of strings
+        list with all the tags you DO NOT want in the astrodata objects
+    expression - usually dataselect.expr_parser object
+        filters for any specific constraining like data,
+        datetime, filter name, exposure time
+
+    Returns
+    list of astrodata objects
+        returns all objects that satisfy all the above requirements
+    -------
+    """
     selected_data = []
     for input in inputs:
         ad = astrodata.open(input)
@@ -77,6 +133,26 @@ def select_data(inputs, tags=[], xtags=[], expression='True'):
     return selected_data
 
 def writeheader(fh, tags, xtags, expression):
+    """
+    Given a list of fits files, function will return a list of astrodata objects
+    that satisfy all the parameters
+
+    Parameters
+    ----------
+    fh -
+        opened file
+    tags - list of strings
+        list with all the tags you want to make sure are in the inputs fits files
+    xtags - list of strings
+        list with all the tags you DO NOT want in the astrodata objects
+    expression - usually dataselect.expr_parser object
+        filters for any specific constraining like data,
+        datetime, filter name, exposure time
+
+    Returns
+    N/a
+    -------
+    """
     if tags is None:
         tags = 'None'
     if xtags is None:

@@ -12,18 +12,35 @@ from gempy.utils import logutils
 logutils.config(file_name='dummy.log')
 
 
-@pytest.fixture
-def test_path():
+try:
+    path = os.environ['TEST_PATH']
+except KeyError:
+    pytest.skip("Could not find environment variable: $TEST_PATH")
 
-    try:
-        path = os.environ['TEST_PATH']
-    except KeyError:
-        pytest.skip("Could not find environment variable: $TEST_PATH")
+if not os.path.exists(path):
+    pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
-    if not os.path.exists(path):
-        pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
 
-    return path
+# Returns list of all files in the TEST_PATH directory
+F2_reduce = glob.glob(os.path.join(path, "F2/test_reduce/", "*fits"))
+
+# Separates the directory from the list, helps cleanup code
+fits_files = [_file.split('/')[-1] for _file in F2_reduce]
+assert len(fits_files) > 1
+
+
+def test_isclose_returns_proper_values_with_edgecases():
+    """
+    Two lists, one list that calls 'isclose()', other has list of bools
+    which correspond to the expected answer. This just means we can shorten
+    the amount of lines in this test and use one assert instead of multiple
+    """
+    answer_values = [dataselect.isclose(1.0, 2.0, 2.0), dataselect.isclose(1.0, 2.1),
+                     dataselect.isclose(0.1, 0.1, 0.0), dataselect.isclose(0.1, 0.11),
+                     dataselect.isclose(1.5, 3.0, 1.4), dataselect.isclose(4, 8, 0.1, 9)]
+    excpected_values = [True, False, True, False, True, True]
+    for i in range(len(answer_values)):
+        assert answer_values[i] == excpected_values[i]
 
 
 def test_expr_parser_can_parse_for_filter_name():
@@ -225,3 +242,41 @@ def test_expr_parser_can_parse_for_ut_time_or_local_time():
         answer = dataselect.expr_parser(value)
 
         assert answer == expected
+
+
+def test_evalexpression():
+    """
+    Tests  bunch of examples that could be used with evalexpression
+    making sure they all assert to the proper bool
+    """
+
+    answer0 = dataselect.evalexpression("ad", "True")
+    answer1 = dataselect.evalexpression("ad", "1 > 0")
+    answer2 = dataselect.evalexpression("ad", "0 == 0")
+    answer3 = dataselect.evalexpression("ad", "not(0 != 0)")
+    assert answer0 is answer1 is answer2 is answer3 is True
+
+    answer0 = dataselect.evalexpression("ad", "1 < 0")
+    answer1 = dataselect.evalexpression("ad", "False")
+    answer2 = dataselect.evalexpression("ad", "0 != 0")
+    answer3 = dataselect.evalexpression("ad", "not(0 == 0)")
+    assert answer0 is answer1 is answer2 is answer3 is False
+
+
+def test_select_data():
+    answer = dataselect.select_data(F2_reduce, ["F2", "FLAT"], [],
+                                    dataselect.expr_parser('filter_name=="Y"'))
+
+    # For legibility, the list of answers just has the files, we append this to
+    # the full path in the for loop
+    correct_files = ['S20131126S1113.fits', 'S20131129S0322.fits',
+                     'S20131126S1111.fits', 'S20131129S0321.fits',
+                     'S20131126S1115.fits', 'S20131126S1116.fits',
+                     'S20131129S0323.fits', 'S20131126S1112.fits',
+                     'S20131129S0320.fits', 'S20131126S1114.fits']
+
+    for i in range(len(correct_files)):
+        # adds the full path to the files above and makes sure each value
+        # in the select_data instance is the correct string.
+        expected = os.path.join(path, "F2/test_reduce/", correct_files[i])
+        assert answer[i] == expected
