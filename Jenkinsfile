@@ -101,7 +101,6 @@ pipeline {
     }
     post {
         success {
-            slackSend (color: '#00FF00', message: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
             sh  '.jenkins/scripts/build_sdist_file.sh'
             echo 'Make tarball available'
         }
