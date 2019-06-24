@@ -6,8 +6,9 @@ this command again under the new environment.::
 
 """
 
-# Specify that this source is nominally based on Python 3 syntax (though the code
-# below is actually 2-vs-3 agnostic), to avoid a warning with v0.29+:
+# Specify that this source is nominally based on Python 3 syntax
+# (though the code below is actually 2-vs-3 agnostic), to avoid a warning with
+# v0.29+:
 #
 # cython: language_level=3
 #
