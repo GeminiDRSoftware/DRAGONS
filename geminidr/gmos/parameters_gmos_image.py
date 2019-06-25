@@ -4,7 +4,10 @@ from gempy.library import config
 from geminidr.core import parameters_image
 
 class addOIWFSToDQConfig(config.Config):
-    pass
+    suffix = config.Field("Filename suffix", str, "_oiwfsDqAdded", optional=True)
+    contrast = config.RangeField("Fractional decrease in sky level", float, 0.2, min=0.001, max=1.)
+    convergence = config.RangeField("Convergence required in sky level to stop dilation",
+                                    float, 2.0, min=0.001)
 
 class makeFringeConfig(parameters_image.makeFringeConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, None, optional=True)

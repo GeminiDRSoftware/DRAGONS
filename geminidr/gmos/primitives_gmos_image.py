@@ -8,10 +8,12 @@ from __future__ import print_function
 from builtins import zip
 import numpy as np
 from copy import deepcopy
-import scipy.ndimage as ndimage
+from scipy import ndimage, optimize
+from scipy.interpolate import UnivariateSpline
 from astropy.wcs import WCS
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library.nddops import NDStacker
 from gemini_instruments.gmu import detsec_to_pixels
 
 from geminidr.core import Image, Photometry
@@ -47,12 +49,14 @@ class GMOSImage(GMOS, Image, Photometry):
         extension, level with the location at which the probe met the right-
         hand edge of the previous extension.
         
-        This code assumes that data_section extends over all rows.
+        This code assumes that data_section extends over all rows. It is, of
+        course, very GMOS-specific.
         
         Parameters
         ----------
-        border: int
-            distance from edge to start flood fill
+        contrast: float (range 0-1)
+            initial fractional decrease from sky level to minimum brightness
+            where the OIWFS "edge" is defined
         convergence: float
             amount within which successive sky level measurements have to
             agree during dilation phase for this phase to finish
@@ -60,7 +64,9 @@ class GMOSImage(GMOS, Image, Photometry):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         border = 5  # Pixels in from edge where sky level is reliable
-        convergence = 2.0
+        boxsize = 5
+        contrast = params["contrast"]
+        convergence = params["convergence"]
 
         for ad in adinputs:
             wfs = ad.wavefront_sensor()
@@ -78,6 +84,7 @@ class GMOSImage(GMOS, Image, Photometry):
             # DQ planes must exist so the unilluminated region is flagged
             if np.any([ext.mask is None for ext in ad]):
                 log.warning('No DQ plane for {}. Continuing.'.format(ad.filename))
+                continue
 
             # OIWFS comes in from the right, so we need to have the extensions
             # sorted in order from left to right
@@ -119,10 +126,21 @@ class GMOSImage(GMOS, Image, Photometry):
                 # just deal with the data sections
                 data_region = ad[index].data[:, datasec.x1:datasec.x2]
                 mask_region = ad[index].mask[:, datasec.x1:datasec.x2]
-                x1 = max(int(x-border), border)
-                x2 = max(min(int(x+border), datasec.x2-datasec.x1), x1+border)
-                y1 = max(int(y-border), 0)
-                y2 = max(min(int(y+border), datasec.y2-datasec.y1), y1+border)
+                x1 = max(int(x-boxsize), border)
+                x2 = max(min(int(x+boxsize), datasec.x2-datasec.x1), x1+border)
+
+                # Try to find the minimum closest to our estimate of the
+                # probe location, by downhill method on a spline fit (to
+                # smooth out the noise)
+                data, mask, var = NDStacker.mean(ad[index].data[:,x1:x2].T,
+                                                 mask=ad[index].mask[:,x1:x2].T)
+                good_rows = np.logical_and(mask == DQ.good, var > 0)
+                rows = np.arange(datasec.y2 - datasec.y1)
+                spline = UnivariateSpline(rows[good_rows], data[good_rows],
+                                          w=1./np.sqrt(var[good_rows]))
+                newy = int(optimize.minimize(spline, y, method='CG').x[0] + 0.5)
+                y1 = max(int(newy-boxsize), 0)
+                y2 = max(min(int(newy+boxsize), len(rows)), y1+border)
                 wfs_sky = np.median(data_region[y1:y2, x1:x2])
                 if wfs_sky > sky-convergence:
                     log.warning('Cannot distinguish probe region from sky for '
@@ -131,10 +149,10 @@ class GMOSImage(GMOS, Image, Photometry):
 
                 # Flood-fill region around guide-star with all pixels fainter
                 # than this boundary value
-                boundary = sky - 0.2 * (sky-wfs_sky)
+                boundary = sky - contrast * (sky-wfs_sky)
                 regions, nregions = ndimage.measurements.label(
                     np.logical_and(data_region < boundary, mask_region==0))
-                wfs_region = regions[int(y+0.5), int(x+0.5)]
+                wfs_region = regions[newy, int(x+0.5)]
                 blocked = ndimage.morphology.binary_fill_holes(np.where(regions==wfs_region,
                                                                         True, False))
                 this_mean_sky = wfs_sky
@@ -143,9 +161,11 @@ class GMOSImage(GMOS, Image, Photometry):
                     last_mean_sky = this_mean_sky
                     new_blocked = ndimage.morphology.binary_dilation(blocked,
                                                                      structure=dilator)
-                    this_mean_sky = np.median(ad[index].data[new_blocked ^ blocked])
+                    this_mean_sky = np.median(data_region[new_blocked ^ blocked])
                     blocked = new_blocked
-                    if index <= gs_index:
+                    if index <= gs_index or ad[index].array_section().x1 == 0:
+                        # Stop when convergence is reached on either the first
+                        # extension looked at, or the leftmost CCD3 extension
                         condition_met = (this_mean_sky - last_mean_sky < convergence)
                     else:
                         # Dilate until WFS width at left of image equals width at
@@ -156,8 +176,8 @@ class GMOSImage(GMOS, Image, Photometry):
                 # Flag DQ pixels as unilluminated only if not flagged
                 # (to avoid problems with the edge extensions and/or saturation)
                 datasec_mask = ad[index].mask[:, datasec.x1:datasec.x2]
-                datasec_mask |= np.where(blocked, np.where(datasec_mask>0, 0,
-                                                        DQ.unilluminated), 0)
+                datasec_mask |= np.where(blocked, np.where(datasec_mask>0, DQ.good,
+                                                        DQ.unilluminated), DQ.good)
 
                 # Set up for next extension. If flood-fill hasn't reached
                 # right-hand edge of detector, stop.
@@ -167,6 +187,8 @@ class GMOSImage(GMOS, Image, Photometry):
                     break
                 y = np.mean(np.arange(datasec.y1, datasec.y2)[column])
                 x = border
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
 
