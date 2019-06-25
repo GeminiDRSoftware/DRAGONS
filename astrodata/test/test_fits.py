@@ -286,11 +286,11 @@ def test_do_arith_and_retain_features(path_to_inputs):
     for _file in list_of_files:
         ad = astrodata.open(_file)
 
-        ad[0].NEW_FEATURE = np.array([1, 2, 3, 4, 5])
+        ad[0].new_feature = np.array([1, 2, 3, 4, 5])
         ad2 = ad * 5
 
         np.testing.assert_array_almost_equal(
-            ad[0].NEW_FEATURE, ad2[0].NEW_FEATURE)
+            ad[0].new_feature, ad2[0].new_feature)
 
 
 # ============================================================================
