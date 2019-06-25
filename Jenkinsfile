@@ -107,5 +107,6 @@ pipeline {
         }
         failure {
             sendNotifications 'FAILED'
+        }
     }
 }
