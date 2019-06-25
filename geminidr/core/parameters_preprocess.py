@@ -16,7 +16,7 @@ class ADUToElectronsConfig(config.Config):
 
 class applyDQPlaneConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dqPlaneApplied", optional=True)
-    replace_flags = config.RangeField("DQ bitmask for pixels to replace", int, 65535, min=0)
+    replace_flags = config.RangeField("DQ bitmask for pixels to replace", int, 65529, min=0)
     replace_value = config.Field("Replacement value [mean|median|<value>]",
                                  (str, float), "median", check=replace_valueCheck)
     inner = config.RangeField("Inner filter radius (pixels)", float, None, min=1, optional=True)
