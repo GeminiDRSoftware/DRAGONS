@@ -9,11 +9,11 @@ import astrodata, gemini_instruments
 from geminidr.f2.primitives_f2_image import F2Image
 
 
-def test_select_from_inputs_primitive(input_test_path):
+def test_select_from_inputs_primitive(path_to_inputs):
 
     with open("recursion.log", 'w') as _log:
 
-        for f in glob.glob(os.path.join(input_test_path, 'F2', '*.fits')):
+        for f in glob.glob(os.path.join(path_to_inputs, 'F2', '*.fits')):
 
             ad = astrodata.open(f)
 
