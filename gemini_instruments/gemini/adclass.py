@@ -1747,7 +1747,7 @@ class AstroDataGemini(AstroDataFits):
 
         # This is non-compliant data, maybe engineering or something
         # Try MJD_OBS
-        mjd = self.phu.get('MJD_OBS', 0)
+        mjd = self.phu.get('MJD-OBS', 0)
         if mjd > 1:
             mjdzero = datetime.datetime(1858, 11, 17, 0, 0, 0, 0, None)
             ut_datetime = mjdzero + datetime.timedelta(mjd)
