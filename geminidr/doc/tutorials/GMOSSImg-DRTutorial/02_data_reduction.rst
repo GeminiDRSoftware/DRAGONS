@@ -475,9 +475,9 @@ default values using the ``-p`` flag. As an example, we can change the
 The command line above changes the rejection algorithing during the stack
 process. It helps with the cosmetics of the image but it might affect the
 photometry if the point-spread function (seeing) changes a lot on every images
-in the stack. The ``--suffix`` option is added so the final stack frame has a
-different name. Otherwise, reduce_ overwrites the output. Here is the product
-of the command line above:
+in the stack or if the images are poorly aligned. The ``--suffix`` option is
+added so the final stack frame has a different name. Otherwise, reduce_
+overwrites the output. Here is the product of the command line above:
 
 .. figure:: _static/img/N20170525S0116_stack_varclip.png
    :align: center
