@@ -334,8 +334,7 @@ detector area is considered with data. Now, once reduce_ runs, it adds a
 `data quality plane`_ with information about why the data is being rejected.
 
 The figure below shows the reduced staked data and the bad pixel mask (in light
-gray). This bad pixel mask hides regions of the image that were not completely
-reduced.
+gray):
 
 .. figure:: _static/img/N20170525S0116_stack.png
    :align: center
