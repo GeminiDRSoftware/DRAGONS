@@ -329,12 +329,13 @@ Here is one of the raw images:
 
    One of the multi-extensions files.
 
-
 Note that the raw images do not have a mask yet. Because of that, the whole
 detector area is considered with data. Now, once reduce_ runs, it adds a
 `data quality plane`_ with information about why the data is being rejected.
 
-Now, here is the final reduced stack image:
+The figure below shows the reduced staked data and the bad pixel mask (in light
+gray). This bad pixel mask hides regions of the image that were not completely
+reduced.
 
 .. figure:: _static/img/N20170525S0116_stack.png
    :align: center
@@ -342,6 +343,17 @@ Now, here is the final reduced stack image:
    Sky Subtracted and Stacked Final Image. The light-gray area represents the
    masked pixels.
 
+The mask is updated on every data reduction step and most of the calculations
+are done on the good data. Because of this, you might expect to see some
+leftover features if you hide the mask. Here is an example:
+
+.. figure:: _static/img/N20170525S0116_nomask.png
+   :align: center
+
+   Sky Subtracted and Stacked Final Image.
+
+Note that the exposed image is clear but that the non illuminated region has
+some cosmic rays lefovers that persisted even after the stack process.
 
 .. todo @bquint The image above have some problems in the gaps. How do I fix them?
 .. todo:: The image above have some problems in the gaps. How do I fix them?
