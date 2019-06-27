@@ -4,6 +4,8 @@
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
 import numpy as np
+import warnings
+
 from astropy.stats import sigma_clip
 from astropy.table import Column
 
@@ -441,7 +443,9 @@ def _estimate_seeing(objcat):
     good_fwhm = objcat['FWHM_WORLD'][good] * 3600  # degrees -> arcseconds
 
     if len(good_fwhm) > 3:
-        seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
     elif len(good_fwhm) > 0:
         seeing_estimate = np.mean(good_fwhm)
     else:
