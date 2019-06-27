@@ -37,7 +37,7 @@ class core_stacking_config(config.Config):
                                                 "minmax": "reject highest and lowest pixels",
                                                 "sigclip": "reject pixels based on scatter",
                                                 "varclip": "reject pixels based on variance array"},
-                                       default="sigclip", optional=False)
+                                       default="varclip", optional=False)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     mclip = config.Field("Use median for sigma-clipping?", bool, True)
