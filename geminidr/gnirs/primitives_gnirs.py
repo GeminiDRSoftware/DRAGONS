@@ -84,7 +84,7 @@ class GNIRS(Gemini, NearIR):
             # Adding the WCS information to the pixel data header, since for
             # GNIRS images at least, it may be only in the PHU
             for kw in ('CRPIX1', 'CRPIX2', 'CRVAL1', 'CRVAL2', 'CD1_1',
-                      'CD2_1', 'CD1_2', 'CD2_2', 'MJD_OBS', 'CTYPE1', 'CTYPE2'):
+                      'CD2_1', 'CD1_2', 'CD2_2', 'MJD-OBS', 'CTYPE1', 'CTYPE2'):
                 value = ad.phu.get(kw)
                 if value is not None:
                     if ad[0].hdr.get(kw) is None:
