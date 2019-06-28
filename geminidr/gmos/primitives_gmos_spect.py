@@ -18,7 +18,7 @@ from . import parameters_gmos_spect
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class GMOSSpect(GMOS, Spect):
+class GMOSSpect(Spect, GMOS):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSSpect level of the type hierarchy tree. It inherits all
