@@ -193,6 +193,38 @@ class Block(object):
             output[slice_] = arr
         return output
 
+    def pixel(self, *coords, attribute="data"):
+        """
+        Returns the value of a pixel in a Block.
+
+        Parameters
+        ----------
+        coords: tuple
+            the coordinates in the Block whose pixel value we want
+        attribute: str
+            name of attribute to extract
+
+        Returns
+        -------
+            float: the pixel value at this coordinate
+        """
+        if len(coords) != len(self.shape):
+            raise ValueError("Incorrect number of coordinates")
+
+        for corner, arr in zip(self.corners, self._elements):
+            offset_coords = tuple(coord - corner_coord
+                             for coord, corner_coord in zip(coords, corner))
+            if all(c >=0 and c < s for c, s in zip(offset_coords, arr.shape)):
+                if attribute == "data" and isinstance(arr, np.ndarray):
+                    return arr[offset_coords]
+                else:
+                    attr = getattr(arr, attribute)
+                    if attr is None:
+                        return None
+                    else:
+                        return attr[offset_coords]
+        raise IndexError("Coordinates not in block")
+
     def _return_table(self, name):
         """
         Returns a single Table, obtained by concatenating all the Tables of
