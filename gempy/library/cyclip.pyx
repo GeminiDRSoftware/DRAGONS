@@ -121,7 +121,7 @@ cdef void mask_stats(float data[], unsigned short mask[], int has_mask,
     for i in range(data_size):
         sumall += data[i]
         sumsqall += data[i] * data[i]
-        if has_mask and mask[i] == 0:
+        if has_mask and mask[i] < 65535:
             sum += data[i]
             sumsq += data[i] * data[i]
             nused += 1
@@ -156,7 +156,7 @@ cdef long num_good(unsigned short mask[], long data_size):
     cdef long i, ngood = 0
 
     for i in range(data_size):
-        if mask[i] == 0:
+        if mask[i] < 65535:
             ngood += 1
 
     return ngood
@@ -234,12 +234,12 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
                 high_limit = avg + hsigma * std
                 for n in range(num_img):
                     if tmpdata[n] < low_limit or tmpdata[n] > high_limit:
-                        tmpmask[n] |= 1
+                        tmpmask[n] = 65535
             else:
                 for n in range(num_img):
                     std = sqrt(variance[n*data_size+i])
                     if tmpdata[n] < avg-lsigma*std or tmpdata[n] > avg+hsigma*std:
-                        tmpmask[n] |= 1
+                        tmpmask[n] = 65535
 
             new_ngood = num_good(tmpmask, num_img)
             if new_ngood == ngood:
