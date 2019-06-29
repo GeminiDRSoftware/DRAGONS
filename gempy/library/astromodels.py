@@ -160,6 +160,45 @@ class UnivariateSplineWithOutlierRemoval(object):
     def __new__(self, x, y, t=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=False, outlier_func=sigma_clip,
                 niter=3, **outlier_kwargs):
+        """
+        Instantiating this class creates a new spline that fits to the
+        1D data, iteratively removing outliers using a specified function.
+        A LSQUnivariateSpline() object will be created if the locations of
+        the spline knots are specified, otherwise a UnivariateSpline() object
+        will be created with the specified smoothing factor.
+
+        Parameters
+        ----------
+        x: array
+            x-coordinates of datapoints to fit
+        y: array/maskedarray
+            y-coordinates of datapoints to fit (mask is used)
+        t: array-like/None
+            locations of knots (if fixed knots are desired)
+        s: float/None
+            smoothing factor (see UnivariateSpline description)
+        w: array
+            weighting for each point
+        bbox: (2,), array-like, optional
+            x-coordinate region over which interpolation is valid
+        k: int
+            order of spline interpolation
+        ext: int/str
+            type of extrapolation outside bounding box
+        check_finite: bool
+            check whether input contains only finite numbers
+        outlier_func: callable
+            function to call for defining outliers
+        niter: int
+            maximum number of clipping iterations to perform
+        outlier_kwargs: dict-like
+            parameter dict to pass to outlier_func()
+
+        Returns
+        -------
+        UnivariateSpline() or LSQUnivariateSpline() instance
+            a callable to return the value of the interpolated spline
+        """
 
         # Decide what sort of spline object we're making
         spline_kwargs = {'bbox': bbox, 'k': k, 'ext': ext,
