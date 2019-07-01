@@ -450,7 +450,6 @@ class Image(Preprocess, Register, Resample):
 
         differences = self.subtractSky([deepcopy(ad) for ad in adinputs],
                         sky=median_image, offset_sky=True, scale_sky=False)
-        differences[0].write('diff.fits', overwrite=True)
 
         for ad, diff in zip(adinputs, differences):
             # Background will be close to zero, so we only really need this
