@@ -446,12 +446,12 @@ class Image(Preprocess, Register, Resample):
 
         median_image = self.detectSources([median_image],
                     **self._inherit_params(params, "detectSources"))[0]
-        #median_image.write('med.fits', overwrite=True)
 
-        differences = self.subtractSky([deepcopy(ad) for ad in adinputs],
-                        sky=median_image, offset_sky=True, scale_sky=False)
+        for ad in adinputs:
 
-        for ad, diff in zip(adinputs, differences):
+            diff = self.subtractSky([deepcopy(ad)], sky=median_image,
+                                    offset_sky=True, scale_sky=False)[0]
+
             # Background will be close to zero, so we only really need this
             # if there's no VAR; however, the overhead is low and it saves
             # us from repeatedly checking if there is a VAR on each extension
