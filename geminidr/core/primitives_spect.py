@@ -8,7 +8,7 @@ from . import parameters_spect
 import os
 
 import numpy as np
-from scipy import spatial
+from scipy import spatial, optimize, interpolate
 from importlib import import_module
 
 from astropy.modeling import models, fitting
@@ -1042,6 +1042,57 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+    def normalizeFlat(self, adinputs=None, **params):
+        """
+        This primitive takes a spectroscopic flatfield and fits a 2D surface
+        to the image.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        sampling: int
+            pixel sampling
+        spatial_order: int
+            order of fit in spatial direction
+        spectral_order: int
+            order of fit in spectral direction
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+
+        # Do a bit of sanity checking first
+        if len(set(len(ad) for ad in adinputs)) > 1:
+            raise ValueError("Not all inputs have the same number of extensions")
+
+        geotable = import_module('.geometry_conf', self.inst_lookups)
+
+        for ad in adinputs:
+            print(ad.filename)
+
+            # Determine the Transform for pixel coordinates in each extension
+            # to a uniform plane
+            if len(ad) > 1:
+                extver_map = ad.extver_map()
+                transforms = [None] * len(ad)
+                adg = transform.create_mosaic_transform(ad, geotable)
+                adg.calculate_output_shape()
+                for i, (block, block_transform) in enumerate(adg):
+                    for ext, corner in zip(block, block.corners):
+                        t = transform.Transform(astromodels.Shift2D(*reversed(corner)))
+                        t.append(block_transform)
+                        transforms[extver_map[ext.hdr['EXTVER']]] = t
+            else:
+                transforms = [transform.Transform(models.Identity(2))]
+
+
+
+
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
 
     def skyCorrectFromSlit(self, adinputs=None, **params):
         """

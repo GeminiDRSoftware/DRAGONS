@@ -58,20 +58,6 @@ class findSourceAperturesConfig(config.Config):
     threshold = config.RangeField("Threshold relative to peak for automatic width determination", float, 0.01, min=0, max=1)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
 
-class traceAperturesConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)
-    trace_order = config.RangeField("Fitting order in spectral direction", int, 2, min=1)
-    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
-    max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1)
-    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
-
-class skyCorrectFromSlitConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
-    order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
-    width = config.RangeField("Default width for apertures (pixels)", float, 10, min=0, optional=True)
-    grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
 
 class linearizeSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_linearized", optional=True)
@@ -87,3 +73,22 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Exactly 0 or 3 of w1, w2, dw, npix must be specified")
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
+
+class normalizeFlatConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 10, min=1)
+
+class traceAperturesConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)
+    trace_order = config.RangeField("Fitting order in spectral direction", int, 2, min=1)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.05, min=0.001, max=0.1)
+    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
+
+class skyCorrectFromSlitConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
+    width = config.RangeField("Default width for apertures (pixels)", float, 10, min=0, optional=True)
+    grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
