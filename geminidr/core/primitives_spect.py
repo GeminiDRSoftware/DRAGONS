@@ -514,7 +514,6 @@ class Spect(PrimitivesBASE):
                     plot_arc_fit(data, peaks, arc_lines, arc_weights, m_final, "Initial model")
                 log.stdinfo('Initial model: {}'.format(repr(m_final)))
 
-                fit_it = matching.KDTreeFitter()
                 kdsigma = fwidth*abs(dw)
                 #kdsigma = 0.003 * cenwave
                 peaks_to_fit = peak_snrs > min_snr
@@ -560,10 +559,10 @@ class Spect(PrimitivesBASE):
                         for fx in fixems:
                             getattr(m_init, fx).fixed = True
 
-                    m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines, maxsig=10, k=2,
+                    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=2)
+                    m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines,
                                      in_weights=in_weights[peaks_to_fit],
                                      ref_weights=None if weight_type is 'none' else arc_weights,
-                                     sigma=kdsigma,
                                      method=method)
                     #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
                     #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})

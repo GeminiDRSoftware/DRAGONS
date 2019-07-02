@@ -8,6 +8,7 @@ from astropy.wcs import WCS
 
 from scipy import optimize, spatial
 from datetime import datetime
+from functools import partial
 
 from matplotlib import pyplot as plt
 
@@ -488,41 +489,6 @@ class BruteLandscapeFitter(Fitter):
         _fitter_to_model_params(model_copy, fitted_params)
         return model_copy
 
-def _kdstat(tree, updated_model, in_coords, in_weights, ref_weights, sigma, maxsig, k):
-    """
-    Compute the statistic for transforming coordinates onto a set of reference
-    coordinates. This uses mathematical calulations and is not pixellated like
-    the landscape-array methods.
-
-    Parameters
-    ----------
-    tree: KDTree
-        a KDTree made from the reference coordinates
-    updated_model: Model
-        transformation (input -> reference) being investigated
-    x, y: float arrays
-        input x, y coordinates
-    sigma: float
-        standard deviation of Gaussian (in pixels) used to represent each source
-    maxsig: float
-        maximum number of standard deviations of Gaussian extent
-
-    Returns
-    -------
-    float:
-        statistic representing quality of fit to be minimized
-    """
-    f = 0.5/(sigma*sigma)
-    maxsep = maxsig*sigma
-    out_coords = updated_model(*in_coords)
-    if len(in_coords) == 1:
-        out_coords = (out_coords,)
-    dist, idx = tree.query(list(zip(*out_coords)), k=k, distance_upper_bound=maxsep)
-    if k > 1:
-        sum = np.sum(in_wt*ref_weights[i]*np.exp(-f*d*d) for in_wt, dd, ii in zip(in_weights, dist, idx) for d, i in zip(dd, ii))
-    else:
-        sum = np.sum(in_wt*ref_weights[i]*np.exp(-f*d*d) for in_wt, d, i in zip(in_weights, dist, idx))
-    return -sum  # to minimize
 
 class KDTreeFitter(Fitter):
     """
@@ -530,14 +496,73 @@ class KDTreeFitter(Fitter):
     parameter to the instance) to determine the transformation to map a set
     of input coordinates to a set of reference coordinates.
     """
-    def __init__(self):
+    @staticmethod
+    def gaussian(distance, sigma):
+        return np.exp(-0.5 * distance * distance / (sigma * sigma))
+
+    @staticmethod
+    def lorentzian(distance, sigma):
+        return 1./(distance * distance + sigma * sigma)
+
+    def __init__(self, proximity_function=None, sigma=5.0, maxsig=5.0, k=5):
+        """
+
+        Parameters
+        ----------
+        proximity_function: callable/None
+            function to call to determine score for proximity of reference
+            and transformed input coordinates. Must take two arguments: the
+            distance and a "sigma" factor, indicating the matching scale
+            (in the reference frame). If None, use the default.
+        sigma: float
+            matching scale (in the reference frame)
+        maxsig: float
+            maximum number of scale lengths for a match to be counted
+        k: int
+            maximum number of matches to be considered
+        """
         self.statistic = None
         self.niter = None
+        if proximity_function is None:
+            proximity_function = KDTreeFitter.gaussian
+        self.sigma = sigma
+        self.maxsep = self.sigma * maxsig
+        self.k = k
+        self.proximity_function = partial(proximity_function, sigma=self.sigma)
         super(KDTreeFitter, self).__init__(optimize.minimize,
-                                           statistic=_kdstat)
+                                           statistic=self._kdstat)
 
     def __call__(self, model, in_coords, ref_coords, in_weights=None,
-                 ref_weights=None, sigma=5.0, maxsig=5.0, k=5, **kwargs):
+                 ref_weights=None, **kwargs):
+        """
+        Perform a minimization using the KDTreeFitter
+
+        Parameters
+        ----------
+        model: FittableModel
+            initial guess at model defining transformation
+        in_coords: array-like (n x N)
+            array of input coordinates
+        ref_coords: array-like (n x M)
+            array of reference coordinates
+        in_weights: array-like (N,)
+            weights for input coordinates
+        ref_weights: array-like (M,)
+            weights for reference coordinates
+        kwargs: dict
+            additional arguments to control fit
+
+        Returns
+        -------
+        Model: best-fitting model
+        also assigns attributes:
+        x: array-like
+            best-fitting parameters
+        fun: float
+            final value of fitting function
+        nit: int
+            number of iterations performed
+        """
         model_copy = _validate_model(model, ['bounds', 'fixed'])
 
         # Turn 1D arrays into tuples to allow iteration over axes
@@ -574,7 +599,7 @@ class KDTreeFitter(Fitter):
 
         tree = spatial.cKDTree(list(zip(*ref_coords)))
         # avoid _convert_input since tree can't be coerced to a float
-        farg = (model_copy, in_coords, in_weights, ref_weights, sigma, maxsig, k, tree)
+        farg = (model_copy, in_coords, in_weights, ref_weights, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
         if kwargs.get('method') == 'basinhopping':
@@ -591,6 +616,44 @@ class KDTreeFitter(Fitter):
         self.statistic = result['fun']
         self.niter = result['nit']
         return model_copy
+
+    def _kdstat(self, tree, updated_model, in_coords, in_weights, ref_weights):
+        """
+        Compute the statistic for transforming coordinates onto a set of reference
+        coordinates. This uses mathematical calulations and is not pixellated like
+        the landscape-array methods.
+
+        Parameters
+        ----------
+        tree: KDTree
+            a KDTree made from the reference coordinates
+        updated_model: Model
+            transformation (input -> reference) being investigated
+        x, y: float arrays
+            input x, y coordinates
+        sigma: float
+            standard deviation of Gaussian (in pixels) used to represent each source
+        maxsig: float
+            maximum number of standard deviations of Gaussian extent
+
+        Returns
+        -------
+        float:
+            statistic representing quality of fit to be minimized
+        """
+        out_coords = updated_model(*in_coords)
+        if len(in_coords) == 1:
+            out_coords = (out_coords,)
+        dist, idx = tree.query(list(zip(*out_coords)), k=self.k,
+                               distance_upper_bound=self.maxsep)
+        if self.k > 1:
+            sum = np.sum(in_wt*ref_weights[i]*self.proximity_function(d)
+                         for in_wt, dd, ii in zip(in_weights, dist, idx)
+                         for d, i in zip(dd, ii))
+        else:
+            sum = np.sum(in_wt*ref_weights[i]*self.proximity_function(d)
+                         for in_wt, d, i in zip(in_weights, dist, idx))
+        return -sum  # to minimize
 
 
 def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
@@ -658,7 +721,7 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
         m = model.copy()
 
     # More precise minimization using pairwise calculations
-    fit_it = KDTreeFitter()
+    fit_it = KDTreeFitter()  # TODO: set parameters?
     # We don't care about how much the function value changes (ftol), only
     # that the position is robust (xtol)
     final_model = fit_it(m, xin, xout, method='Nelder-Mead',
