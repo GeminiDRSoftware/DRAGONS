@@ -523,12 +523,8 @@ class Spect(PrimitivesBASE):
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    sequence = ((1, 'none', 'basinhopping'),
-                                (2, 'none', 'Nelder-Mead'),
-                                (2, 'relative', 'Nelder-Mead'),
-                                (3, 'relative', 'Nelder-Mead'),
-                                (4, 'relative', 'Nelder-Mead'),
-                                )
+                    sequence = (((1, 'none', 'basinhopping'), (2, 'none', 'Nelder-Mead')) +
+                                tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order+1)))
 
                 # Now make repeated fits, increasing the polynomial order
                 for item in sequence:
@@ -538,6 +534,10 @@ class Spect(PrimitivesBASE):
                     else:
                         ord, weight_type, method, fixems = item
                     in_weights = weights[weight_type]
+
+                    # TODO: Can probably remove when this is optimized
+                    if ord > order:
+                        continue
 
                     # Create new initial model based on latest model
                     m_init = models.Chebyshev1D(degree=ord, domain=m_final.domain)
