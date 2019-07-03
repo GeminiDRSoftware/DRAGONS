@@ -852,7 +852,7 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        max_sources = params["max_sources"]
+        max_apertures = params["max_apertures"]
         threshold = params["threshold"]
         min_sky_pix = params["min_sky_region"]
 
@@ -909,7 +909,7 @@ class Spect(PrimitivesBASE):
                                                     min_snr=3, min_frac=0.2)
                 # Reverse-sort by SNR and return only the locations
                 locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
-                                            reverse=True)[:max_sources]).T[0]
+                                            reverse=True)[:max_apertures]).T[0]
                 log.stdinfo("Found sources at {}s: {}".format(direction,
                             ' '.join(['{:.1f}'.format(loc) for loc in locations])))
 

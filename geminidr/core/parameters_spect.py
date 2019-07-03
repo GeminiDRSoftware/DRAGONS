@@ -54,7 +54,7 @@ class extract1DSpectraConfig(config.Config):
 
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
-    max_sources = config.RangeField("Maximum number of sources to find", int, None, min=1, optional=True)
+    max_apertures = config.RangeField("Maximum number of sources to find", int, None, min=1, optional=True)
     threshold = config.RangeField("Threshold relative to peak for automatic width determination", float, 0.01, min=0, max=1)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
 
