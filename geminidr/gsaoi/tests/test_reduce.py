@@ -52,6 +52,8 @@ def test_reduce_image(path_to_inputs):
         logutils.config(file_name='gsaoi_test_reduce_dark.log', mode='quiet')
         reduce_darks.runr()
 
+        del reduce_darks
+
     logutils.config(file_name='gsaoi_test_reduce_bpm.log', mode='quiet')
     reduce_bpm = Reduce()
     reduce_bpm.files.extend(list_of_h_flats)
@@ -60,6 +62,8 @@ def test_reduce_image(path_to_inputs):
     reduce_bpm.runr()
 
     bpm_filename = reduce_bpm.output_filenames[0]
+
+    del reduce_bpm
 
     logutils.config(file_name='gsaoi_test_reduce_flats.log', mode='quiet')
     reduce_flats = Reduce()
@@ -71,12 +75,16 @@ def test_reduce_image(path_to_inputs):
         'processed_flat:{}'.format(reduce_flats.output_filenames[0])
     )
 
+    del reduce_flats
+
     logutils.config(file_name='gsaoi_test_reduce_science.log', mode='quiet')
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_files)
     reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
     reduce_target.runr()
+
+    del reduce_target
 
 
 if __name__ == '__main__':
