@@ -95,6 +95,15 @@ pipeline {
             }
         }
 
+        stage('Integration tests') {
+            steps {
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m "not integtest" --junit-xml ./reports/inttest_results.xml
+                    '''
+            }
+        }
+
     }
     post {
         success {
