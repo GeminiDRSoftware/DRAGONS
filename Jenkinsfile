@@ -78,20 +78,12 @@ pipeline {
             steps {
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m "not integtest" --junit-xml ./reports/test_results.xml
+                    coverage run -m pytest -m "not integtest" --junit-xml ./reports/unittests_results.xml
                     '''
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
                     python -m coverage xml -o ./reports/coverage.xml
                     '''
-            }
-            post {
-                always {
-                    junit (
-                        allowEmptyResults: true,
-                        testResults: 'reports/test_results.xml'
-                        )
-                }
             }
         }
 
@@ -99,13 +91,19 @@ pipeline {
             steps {
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m integtest --junit-xml ./reports/inttest_results.xml
+                    coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
                     '''
             }
         }
 
     }
     post {
+        always {
+          junit (
+            allowEmptyResults: true,
+            testResults: 'reports/*_results.xml'
+          )
+        }
         success {
             sendNotifications 'SUCCESSFUL'
             sh  '.jenkins/scripts/build_sdist_file.sh'
