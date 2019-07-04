@@ -11,7 +11,7 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
 
-@pytest.mark.integration_test
+@pytest.mark.integration
 def test_reduce_image(path_to_inputs):
     calib_files = []
 
