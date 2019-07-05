@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-DRAGONS_DIST="${DRAGONS_TEST_OUTPUTS}/dist"
 DRAGONS_VERSION=$(python setup.py --version)
 GIT_SHA=$(git log --pretty=format:'%h' -n 1)
 
