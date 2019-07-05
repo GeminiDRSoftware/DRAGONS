@@ -5,7 +5,7 @@ from astrodata import AstroData
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
-    spatial_order = config.RangeField("Fitting order in spatial direction", int, 2, min=1)
+    spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
     spectral_order = config.RangeField("Fitting order in spectral direction", int, 4, min=1)
     id_only = config.Field("Use only lines identified for wavelength calibration?", bool, True)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 5., min=3.)
@@ -39,7 +39,7 @@ class distortionCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
                            optional=True, single=True)
-    order = config.RangeField("Interpolation order", int, 1, min=0, max=5)
+    order = config.RangeField("Interpolation order", int, 3, min=0, max=5)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
 class extract1DSpectraConfig(config.Config):
