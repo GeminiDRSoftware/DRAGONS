@@ -107,6 +107,7 @@ pipeline {
         success {
             sendNotifications 'SUCCESSFUL'
             sh  '.jenkins/scripts/build_sdist_file.sh'
+            pwd
             echo 'Make tarball available'
         }
         failure {
