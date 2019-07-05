@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-source activate ${CONDA_ENV_NAME}
-
-python setup.py sdist --formats=gztar
-
+DRAGONS_DIST="${DRAGONS_TEST_OUTPUTS}/dist"
 DRAGONS_VERSION=$(python setup.py --version)
 GIT_SHA=$(git log --pretty=format:'%h' -n 1)
 
-mv dist/dragons-${DRAGONS_VERSION}.tar.gz \
-    dist/dragons-${DRAGONS_VERSION}_${BUILD_NUMBER}_${GIT_SHA}.tar.gz
+source activate ${CONDA_ENV_NAME}
+
+python setup.py sdist --formats=gztar --dist-dir ${DRAGONS_DIST}
+
+mv ${DRAGONS_DIST}/dragons-${DRAGONS_VERSION}.tar.gz \
+    ${DRAGONS_DIST}/dragons-${DRAGONS_VERSION}_${BUILD_NUMBER}_${GIT_SHA}.tar.gz
