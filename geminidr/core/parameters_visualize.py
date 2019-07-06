@@ -16,7 +16,7 @@ class displayConfig(config.Config):
     zscale = config.Field("Use zscale algorithm?", bool, True)
 
 class inspectConfig(config.Config):
-    pause = config.Field("Pause between the display, in seconds", int, 2, min=0)
+    pause = config.RangeField("Pause between the display, in seconds", int, 2, min=0)
 
 #class mosaicDetectorsConfig(config.Config):
 #    pass
