@@ -458,8 +458,10 @@ class Image(Preprocess, Register, Resample):
             bg_list = gt.measure_bg_from_image(diff, separate_ext=True)
 
             # Don't flag pixels that are already bad (and may not be CRs;
-            # except those that are just near saturation, unilluminated etc.):
-            bitmask = DQ.bad_pixel
+            # except those that are just near saturation, unilluminated etc.).
+            # Also exclude regions with no data, where the variance is 0. so
+            # values are always around the threshold.
+            bitmask = DQ.bad_pixel | DQ.no_data
 
             for ext, diff_ext, (bg, noise, npix) in zip(ad, diff, bg_list):
                 # Limiting level for good pixels in the median-subtracted data
