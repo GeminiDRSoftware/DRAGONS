@@ -446,21 +446,22 @@ class Image(Preprocess, Register, Resample):
 
         median_image = self.detectSources([median_image],
                     **self._inherit_params(params, "detectSources"))[0]
-        #median_image.write('med.fits', overwrite=True)
 
-        differences = self.subtractSky([deepcopy(ad) for ad in adinputs],
-                        sky=median_image, offset_sky=True, scale_sky=False)
-        differences[0].write('diff.fits', overwrite=True)
+        for ad in adinputs:
 
-        for ad, diff in zip(adinputs, differences):
+            diff = self.subtractSky([deepcopy(ad)], sky=median_image,
+                                    offset_sky=True, scale_sky=False)[0]
+
             # Background will be close to zero, so we only really need this
             # if there's no VAR; however, the overhead is low and it saves
             # us from repeatedly checking if there is a VAR on each extension
             bg_list = gt.measure_bg_from_image(diff, separate_ext=True)
 
             # Don't flag pixels that are already bad (and may not be CRs;
-            # except those that are just near saturation, unilluminated etc.):
-            bitmask = DQ.bad_pixel
+            # except those that are just near saturation, unilluminated etc.).
+            # Also exclude regions with no data, where the variance is 0. so
+            # values are always around the threshold.
+            bitmask = DQ.bad_pixel | DQ.no_data
 
             for ext, diff_ext, (bg, noise, npix) in zip(ad, diff, bg_list):
                 # Limiting level for good pixels in the median-subtracted data

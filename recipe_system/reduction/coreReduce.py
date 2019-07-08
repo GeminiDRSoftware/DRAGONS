@@ -126,7 +126,6 @@ class Reduce(object):
         if args.adpkg:
             import_module(args.adpkg)
 
-        self.adinputs = None
         self.mode = args.mode
         self.drpkg = args.drpkg
         self.files = args.files
@@ -177,15 +176,15 @@ class Reduce(object):
             raise
 
         try:
-            self.adinputs = self._convert_inputs(ffiles)
+            adinputs = self._convert_inputs(ffiles)
         except IOError as err:
             log.error(str(err))
             raise
 
-        rm = RecipeMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
+        rm = RecipeMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.recipename)
 
-        pm = PrimitiveMapper(self.adinputs, mode=self.mode, drpkg=self.drpkg,
+        pm = PrimitiveMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
                              usercals=self.ucals, uparms=self.uparms,
                              upload=self.upload)
 
