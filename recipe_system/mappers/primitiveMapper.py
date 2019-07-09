@@ -69,7 +69,10 @@ class PrimitiveMapper(Mapper):
         return matched_set
 
     def _get_tagged_primitives(self):
-        loaded_pkg = import_module(self.dotpackage)
+        try:
+            loaded_pkg = import_module(self.dotpackage)
+        except:
+            return []
         for pkgpath, pkg in self._generate_primitive_modules(loaded_pkg):
             lmod = import_module(dotpath(self.dotpackage, pkg))
             for atrname in dir(lmod):
