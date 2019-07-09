@@ -45,6 +45,7 @@ class core_stacking_config(config.Config):
     nlow = config.RangeField("Number of low pixels to reject", int, 0, min=0)
     nhigh = config.RangeField("Number of high pixels to reject", int, 0, min=0)
     memory = config.RangeField("Memory available for stacking (GB)", float, None, min=0.1, optional=True)
+    debug_pixel = config.RangeField("Debugging pixel location", int, None, min=0, optional=True)
 
 class stackFramesConfig(core_stacking_config):
     separate_ext = config.Field("Handle extensions separately?", bool, True)

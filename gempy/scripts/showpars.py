@@ -45,8 +45,9 @@ def showpars(pobj, primname, tags):
     print("="*40)
     print(" Name\t\t\tCurrent setting")
     print()
-    for k,v in pars.items():
-        print("{:20s} {:20s} {}".format(k, repr(v), pars.doc(k)))
+    for k, v in pars.items():
+        if not k.startswith("debug"):
+            print("{:20s} {:20s} {}".format(k, repr(v), pars.doc(k)))
     print()
     return
 

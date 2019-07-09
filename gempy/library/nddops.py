@@ -174,6 +174,9 @@ class NDStacker(object):
         self._rejector = rejector
         self._dict.update({k: v for k, v in kwargs.items() if k in req_args})
 
+        # Pixel to trace for debugging purposes
+        self._debug_pixel = kwargs.get('debug_pixel')
+
     def _logmsg(self, msg, level='stdinfo'):
         """
         Logging function. Prints to screen if no logger is available.
@@ -269,9 +272,24 @@ class NDStacker(object):
         allows a series of NDData object to be sent, and split into data, mask,
         and variance.
         """
+        # Convert the debugging pixel to (x,y) coords and bounds check
+        if self._debug_pixel:
+            pixel_coords = []
+            for length in reversed(data.shape[1:-1]):
+                pixel_coords.append(self._debug_pixel % length)
+                self._debug_pixel //= length
+            self._debug_pixel = tuple(reversed(pixel_coords + [self._debug_pixel]))
+            if self._debug_pixel[0] > data.shape[1]:
+                self._logmsg("Debug pixel out of range")
+                self._debug_pixel = None
+            else:
+                self._logmsg("Debug pixel coords {}".format(self._debug_pixel))
+
         rej_args = {arg: self._dict[arg] for arg in self._rejector.required_args
                     if arg in self._dict}
+        self._pixel_debugger(data, mask, variance, stage='at input')
         data, mask, variance = self._rejector(data, mask, variance, **rej_args)
+        self._pixel_debugger(data, mask, variance, stage='after rejection')
         #try:
         #    data, mask, variance = self._rejector(data, mask, variance, **rej_args)
         #except Exception as e:
@@ -281,7 +299,25 @@ class NDStacker(object):
         comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
                      if arg in self._dict}
         out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
+        #self._pixel_debugger(data, mask, variance, stage='combined')
+        if self._debug_pixel:
+            info = [out_data[self._debug_pixel]]
+            info.append(None if out_mask is None else out_mask[self._debug_pixel])
+            info.append(None if out_var is None else out_var[self._debug_pixel])
+            self._logmsg("out {:15.4f} {:5d} {:15.4f}".format(*info))
         return out_data, out_mask, out_var
+
+
+    def _pixel_debugger(self, data, mask, variance, stage=''):
+        if self._debug_pixel:
+            self._logmsg("img     data        mask    variance       "+stage)
+            for i in range(data.shape[0]):
+                coords = (i,) + self._debug_pixel
+                info = [data[coords]]
+                info.append(None if mask is None else mask[coords])
+                info.append(None if variance is None else variance[coords])
+                self._logmsg("{:3d} {:15.4f} {:5d} {:15.4f}".format(i, *info))
+            self._logmsg("-" * 41)
 
     #------------------------ COMBINER METHODS ----------------------------
     # These methods must all return data, mask, and varianace arrays of one
