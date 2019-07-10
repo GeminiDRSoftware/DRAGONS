@@ -8,16 +8,16 @@ import os
 from copy import copy
 
 import numpy as np
+
 from astropy import visualization, wcs
-from astropy import units as u
 from matplotlib import pyplot as plt
 
 import astrodata
 
 
 def main():
-
-    filename = get_stack_filename()
+    args = _parse_args()
+    filename = args.filename
 
     ad = astrodata.open(filename)
 
@@ -25,7 +25,10 @@ def main():
     mask = ad[0].mask
     header = ad[0].hdr
 
-    masked_data = np.ma.masked_where(mask, data, copy=True)
+    if args.mask:
+        masked_data = np.ma.masked_where(mask, data, copy=True)
+    else:
+        masked_data = data
 
     palette = copy(plt.cm.viridis)
     palette.set_bad('Gainsboro')
@@ -58,17 +61,19 @@ def main():
     plt.show()
 
 
-def get_stack_filename():
+def _parse_args():
     import argparse
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('filename', type=str,
                         help='Path to the stack fits file')
+    parser.add_argument('--mask', action='store_true',
+                        help='Apply masked color')
 
     args = parser.parse_args()
 
-    return args.filename
+    return args
 
 
 if __name__ == main():

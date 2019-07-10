@@ -77,7 +77,10 @@ class RecipeMapper(Mapper):
         return isection, recipe_actual
 
     def _get_tagged_recipes(self):
-        loaded_pkg = import_module(self.dotpackage)
+        try:
+            loaded_pkg = import_module(self.dotpackage)
+        except:
+            return []
         for rmod, ispkg in self._generate_recipe_modules(loaded_pkg):
             if not ispkg:
                 importmod = dotpath(self.dotpackage, rmod)

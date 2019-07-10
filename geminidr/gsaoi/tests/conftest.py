@@ -1,4 +1,2 @@
 
-from astrodata.test import conftest
-
-input_test_path = conftest.input_test_path
+from astrodata.testing import path_to_inputs

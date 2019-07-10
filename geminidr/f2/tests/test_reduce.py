@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import glob
-import pytest
 import os
+
+import pytest
 
 from gempy.adlibrary import dataselect
 from gempy.utils import logutils
@@ -10,12 +11,12 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
 
-def test_reduce_image(input_test_path):
-
+@pytest.mark.integtest
+def test_reduce_image(path_to_inputs):
     calib_files = []
 
     all_files = glob.glob(
-        os.path.join(input_test_path, 'F2/test_reduce/', '*.fits'))
+        os.path.join(path_to_inputs, 'F2/test_reduce/', '*.fits'))
 
     all_files.sort()
 
@@ -47,7 +48,6 @@ def test_reduce_image(input_test_path):
     science.sort()
 
     for darks in [darks_3s, darks_20s, darks_120s]:
-
         reduce_darks = Reduce()
         assert len(reduce_darks.files) == 0
 

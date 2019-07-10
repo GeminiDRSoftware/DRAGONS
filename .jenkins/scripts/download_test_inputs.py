@@ -22,13 +22,13 @@ FILES_TO_BE_CACHED = 'test_files.txt'
 URL = u'https://archive.gemini.edu/file/'
 
 try:
-    DRAGONS_INPUT_TEST_PATH = os.environ['DRAGONS_TEST_IN_PATH']
+    DRAGONS_INPUT_TEST_PATH = os.environ['DRAGONS_TEST_INPUTS']
 
 except KeyError as err:
 
     print('\n This script needs the environment variable TEST_PATH'
           '\n Please, add is using the following command: '
-          '\n     $ export DRAGONS_TEST_IN_PATH="/my/test/path/"'
+          '\n     $ export DRAGONS_TEST_INPUTS="/my/test/path/"'
           '\n and run again. Leaving now.'
           '\n ')
 

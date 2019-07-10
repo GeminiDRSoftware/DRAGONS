@@ -7,7 +7,7 @@
 
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
-           'open', 'create', '__version__']
+           'open', 'create', '__version__', 'version']
 
 
 from .core import *
@@ -19,7 +19,7 @@ from .factory import AstroDataFactory
 
 from .nddata import NDAstroData
 
-from .version import version
+from ._version import version
 
 __version__ = version()
 
