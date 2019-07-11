@@ -34,4 +34,4 @@ def reduce_nostack(p):
     return
 
 # The nostack version is used because stacking of GSAOI is time consuming.
-default = reduce_nostack
+_default = reduce_nostack

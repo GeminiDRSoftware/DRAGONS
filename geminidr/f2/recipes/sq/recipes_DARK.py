@@ -31,4 +31,4 @@ def makeProcessedDark(p):
     return
 
 
-default = makeProcessedDark
+_default = makeProcessedDark

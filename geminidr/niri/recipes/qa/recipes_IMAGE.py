@@ -84,4 +84,4 @@ def makeSkyFlat(p):
     p.storeProcessedFlat()
     return
 
-default = reduce
+_default = reduce

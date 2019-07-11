@@ -55,7 +55,7 @@ class Mapper(object):
 
 
     """
-    def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='default',
+    def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='_default',
                  usercals=None, uparms=None, upload=None):
 
         self.adinputs = adinputs

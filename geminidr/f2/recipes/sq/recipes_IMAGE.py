@@ -79,4 +79,4 @@ def makeSkyFlat(p):
     return
 
 
-default = reduce
+_default = reduce
