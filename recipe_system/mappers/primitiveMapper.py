@@ -55,6 +55,8 @@ class PrimitiveMapper(Mapper):
         """
         matched_set = (set([]), None)
         for pclass in self._get_tagged_primitives():
+            if pclass is None:
+                break
             if pclass.tagset is None:
                 continue
 
@@ -72,7 +74,8 @@ class PrimitiveMapper(Mapper):
         try:
             loaded_pkg = import_module(self.dotpackage)
         except:
-            return []
+            yield None
+            return
         for pkgpath, pkg in self._generate_primitive_modules(loaded_pkg):
             lmod = import_module(dotpath(self.dotpackage, pkg))
             for atrname in dir(lmod):
