@@ -11,7 +11,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -43,7 +43,7 @@ def makeProcessedFringe(p):
 
     Parameters
     ----------
-    p : PrimitivesBASEE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
     p.prepare()
