@@ -35,4 +35,4 @@ def reduce(p):
     p.writeOutputs()
     return
 
-default = reduce
+_default =reduce

@@ -22,7 +22,7 @@ class Mapper(object):
     module and class attributes that match on a dataset's tags attribute.
 
     """
-    def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='default',
+    def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='_default',
                  usercals=None, uparms=None, upload=None):
         """
         Parameters

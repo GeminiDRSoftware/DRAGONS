@@ -23,4 +23,4 @@ def reduce(p):
     p.linearizeSpectra()
     p.writeOutputs()
 
-default = reduce
+_default =reduce

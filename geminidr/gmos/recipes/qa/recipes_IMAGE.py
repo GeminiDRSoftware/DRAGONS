@@ -94,7 +94,7 @@ def reduce_nostack(p):
 # we have to use the nostack version for qap because stacking is too slow.
 # KL: is this still true with gemini_python 2.0?
 # KRA: unknown yet.
-default = reduce_nostack
+_default =reduce_nostack
 
 def stack(p):
     """

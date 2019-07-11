@@ -58,4 +58,4 @@ def makeProcessedFlat(p):
     #     p.storeBPM()
     #     return
 
-default = makeProcessedFlat
+_default =makeProcessedFlat

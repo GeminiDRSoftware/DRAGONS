@@ -19,4 +19,4 @@ def reduce(p):
     #p.storeProcessedFlat()
     p.writeOutputs()
 
-default = reduce
+_default =reduce
