@@ -49,7 +49,7 @@ input datasets is used to set the tags and the import path of the instrument
 package.  It is assumed that all the datasets in the list are of the same type
 and will be reduced with the same recipes and primitives.
 
-**Class Mapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default',
+**Class Mapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='_default',
                    usercals=None, uparms=None, upload=None)*
 
    Arguments to __init__
@@ -66,8 +66,8 @@ and will be reduced with the same recipes and primitives.
         :ref:`appendix <drpkg>`.
     recipename
         A ``str`` indicating the recipe to use for processing. This will
-        override the mapping in part or in whole.  The default is "default".
-        A recipe library should have a module attribute ``default`` that
+        override the mapping in part or in whole.  The default is "_default".
+        A recipe library should have a module attribute ``_default`` that
         is assigned the name of the default function (recipe) to run if that
         library is selected. This guarantees that if a library is selected there
         will always be a recipe matching ``recipename`` to run.
@@ -148,7 +148,7 @@ PrimitiveMapper
 ``__init__()``.  |PrimitiveMapper| implements the primitive search algorithm
 and provides one public method on the class: ``get_applicable_primitives()``.
 
-**Class PrimitiveMapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='default',
+**Class PrimitiveMapper** *(adinputs, mode='sq', drpkg='geminidr', recipename='_default',
                             usercals=None, uparms=None, upload=None)*
 
    Arguments to __init__
@@ -209,7 +209,7 @@ RecipeMapper
 |RecipeMapper| implements the recipe search algorithm and provides one
 public method on the class: ``get_applicable_recipe()``.
 
-**Class RecipeMapper** *(adinputs,mode='sq',drpkg='geminidr',recipename='default',
+**Class RecipeMapper** *(adinputs,mode='sq',drpkg='geminidr',recipename='_default',
                          usercals=None, uparms=None, upload=None)*
 
     Arguments to __init__

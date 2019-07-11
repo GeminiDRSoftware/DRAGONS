@@ -75,7 +75,7 @@ and contains the instruction set::
 
      Parameters
      ----------
-     p : PrimitivesCORE object
+     p : PrimitivesBASE object
          A primitive set matching the recipe_tags.
 
      """
@@ -103,7 +103,7 @@ and contains the instruction set::
 
      Parameters
      ----------
-     p : PrimitivesCORE object
+     p : PrimitivesBASE object
          A primitive set matching the recipe_tags.
 
      """

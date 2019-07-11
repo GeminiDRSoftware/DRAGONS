@@ -110,7 +110,7 @@ Public Attribute    Python type                Default
 files               <type 'list' of 'str'>     []
 output_filenames    <type 'list' of 'str'>     None
 mode                <type 'str'>               'sq'
-recipename          <type 'str'>               'default'
+recipename          <type 'str'>               '_default'
 drpkg               <type 'str'>               'geminidr'
 suffix              <type 'str'>               None
 ucals               <type 'dict'>              None
@@ -139,7 +139,7 @@ upload              <type 'list' of 'str'>     None
     ``myreduce.mode = 'qa'``
 
 **recipename**
-    The name of the recipe to use.  If left to "default", the Recipe System
+    The name of the recipe to use.  If left to "_default", the Recipe System
     will invoke the mappers and select the best matching recipe library and
     use its default recipe.
 
