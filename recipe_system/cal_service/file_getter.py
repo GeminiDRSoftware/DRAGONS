@@ -26,7 +26,7 @@ def requests_getter(url):
 def plain_file_getter(url):
     path = url.split('://', 1)[1]
     try:
-        with open(path) as source:
+        with open(path, "rb") as source:
             while True:
                 data = source.read(128)
                 if not data:
