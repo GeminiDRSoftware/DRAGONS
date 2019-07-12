@@ -7,6 +7,7 @@ from abc import abstractmethod
 from copy import deepcopy
 from collections import namedtuple, OrderedDict
 import os
+import re
 from functools import partial, wraps
 import logging
 import warnings
@@ -1633,26 +1634,59 @@ class AstroDataFits(AstroData):
         except TypeError:
             hdulist.writeto(filename, clobber=overwrite)
 
-    def update_filename(self, prefix='', suffix='', strip=False):
-        if strip:
-            try:
-                filename = self.phu['ORIGNAME']
-            except KeyError:
-                # If it's not there, grab the AD attr instead and add the keyword
-                filename = self.orig_filename
-                self.phu.set('ORIGNAME', filename,
-                                'Original filename prior to processing')
-        else:
-            filename = self.filename or self.phu.get('ORIGNAME')
+    def update_filename(self, prefix=None, suffix=None, strip=False):
+        """
+        This method updates the "filename" attribute of the AstroData object.
+        A prefix and/or suffix can be specified. If strip=True, these will
+        replace the existing prefix/suffix; if strip=False, they will simply
+        be prepended/appended.
 
-        # Possibly, filename could be None
-        try:
-            name, filetype = os.path.splitext(filename)
-        except AttributeError:
-            name, filetype = '', '.fits'
+        The current filename is broken down into its existing prefix, root,
+        and suffix using the ORIGNAME phu keyword, if it exists and is
+        contained within the current filename. Otherwise, the filename is
+        split at the last underscore and the part before is assigned as the
+        root and the underscore and part after the suffix. No prefix is
+        assigned.
+
+        Note that, if strip=True, a prefix or suffix will only be stripped
+        if '' is specified.
+
+        Parameters
+        ----------
+        prefix: str/None
+            new prefix (None => leave alone)
+        suffix: str/None
+            new suffix (None => leave alone)
+        strip: bool
+            Strip existing prefixes and suffixes if new ones are given?
+        """
+        # Set the ORIGNAME keyword if it's not there
+        if 'ORIGNAME' not in self.phu:
+            self.phu.set('ORIGNAME', self.orig_filename,
+                         'Original filename prior to processing')
+        if strip:
+            root, filetype = os.path.splitext(self.phu['ORIGNAME'])
+            filename, filetype = os.path.splitext(self.filename)
+            m = re.match('(.*){}(.*)'.format(re.escape(root)), filename)
+            # Do not strip a prefix/suffix unless a new one is provided
+            if m:
+                if prefix is None:
+                    prefix = m.groups()[0]
+                existing_suffix = m.groups()[1]
+            else:
+                try:
+                    root, existing_suffix = filename.rsplit("_", 1)
+                    existing_suffix = "_" + existing_suffix
+                except ValueError:
+                    root, existing_suffix = filename, ''
+            if suffix is None:
+                suffix = existing_suffix
+        else:
+            filename = self.filename or self.phu.get('ORIGNAME', '.fits')
+            root, filetype = os.path.splitext(filename)
 
         # Cope with prefix or suffix as None
-        self.filename = (prefix or '') + name + (suffix or '') + filetype
+        self.filename = (prefix or '') + root + (suffix or '') + filetype
         return
 
 
