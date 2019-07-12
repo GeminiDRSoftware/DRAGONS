@@ -26,4 +26,4 @@ def makeProcessedBias(p):
     p.storeProcessedBias()
     return
 
-_default =makeProcessedBias
+_default = makeProcessedBias

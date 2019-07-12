@@ -21,4 +21,4 @@ def reduce(p):
     p.storeProcessedArc()
     p.writeOutputs()
 
-_default =reduce
+_default = reduce

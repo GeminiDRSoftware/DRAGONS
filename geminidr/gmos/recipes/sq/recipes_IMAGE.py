@@ -32,7 +32,7 @@ def reduce(p):
     p.writeOutputs()
     return
 
-_default =reduce
+_default = reduce
 
 
 def makeProcessedFringe(p):

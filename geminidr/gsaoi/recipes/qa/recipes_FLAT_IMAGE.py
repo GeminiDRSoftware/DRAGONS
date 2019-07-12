@@ -31,4 +31,4 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
-_default =makeProcessedFlat
+_default = makeProcessedFlat

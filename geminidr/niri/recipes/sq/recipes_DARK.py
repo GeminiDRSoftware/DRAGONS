@@ -29,4 +29,4 @@ def makeProcessedDark(p):
     p.storeProcessedDark()
     return
 
-_default =makeProcessedDark
+_default = makeProcessedDark
