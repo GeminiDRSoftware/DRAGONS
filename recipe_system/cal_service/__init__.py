@@ -34,12 +34,19 @@ globalConf.update_exports({
 })
 # END Setting up the calibs section for config files
 # ------------------------------------------------------------------------------
-
-
 def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
     """
     Load the configuration from the specified path to file (or files), and
     initialize it with some defaults.
+
+    Parameters
+    ----------
+    conf_path: <str>, Path of configuration file. Default is
+                      STANDARD_REDUCTION_CONF -> '~/.geminidr/rsys.cfg'
+
+    Return
+    ------
+    <ConfigObject>
 
     """
     globalConf.load(conf_path,
@@ -68,7 +75,6 @@ def get_calconf():
 
 
 def is_local():
-
     try:
         if get_calconf().standalone:
             if not localmanager_available:
@@ -101,6 +107,13 @@ def cal_search_factory():
 
     Defaults to `prsproxyutil.calibration_search` if there is missing calibs
     setup, or if the `[calibs]`.`standalone` option is turned off.
+
+    Returns
+    -------
+    calibration_search: <func>
+        The appropriate (local or fitsstore) search function indicated by
+        a given configuration.
+
     """
 
     return (
@@ -118,22 +131,21 @@ def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
 
     Parameters
     ----------
-    local_db_dir: str
+    local_db_dir: <str>
         Name of the directory where the database will be stored.
 
-    config_file: str
+    config_file: <str>
         Name of the configuration file that will be loaded.
+
     """
     globalConf.load(expanduser(config_file))
 
     if localmanager_available:
-
         if local_db_dir is None:
             local_db_dir = globalConf['calibs'].database_dir
 
         globalConf.update(
             CONFIG_SECTION, dict(
-                standalone=True,
                 database_dir=expanduser(local_db_dir),
                 config_file=expanduser(config_file)
             )
@@ -152,7 +164,7 @@ class CalibrationService(object):
     Methods
     -------
 
-    config(db_dir=None, verbose=True)
+    config(db_dir=None, verbose=True, config_file=STANDARD_REDUCTION_CONF)
         configure a session with the database via the rsys.conf file.
 
     init(wipe=True)
@@ -201,6 +213,7 @@ class CalibrationService(object):
 
     """
     def __init__(self):
+        self.conf = None
         self._mgr = None
 
     def config(self, db_dir=None, verbose=False,
@@ -227,9 +240,11 @@ class CalibrationService(object):
         conf = get_calconf()
 
         if not conf.standalone:
-            print("The database is not configured as standalone.")
+            print("CalibrationService is not configured as standalone.")
 
         else:
+            print("CalibrationService is configured as standalone.")
+            print("The configured local database will be used.")
             self._mgr = localmanager.LocalManager(expanduser(conf.database_dir))
 
         if verbose:
@@ -267,7 +282,7 @@ class CalibrationService(object):
 
         Parameters
         ----------
-        path: str
+        path: <str>
             Path to the file. It can be either absolute or relative.
 
         """
@@ -280,7 +295,7 @@ class CalibrationService(object):
 
         Parameters
         ----------
-        path: str
+        path: <str>
             Path to the file. It can be either absolute or relative
 
         """
@@ -308,21 +323,25 @@ class CalibrationService(object):
         return self._mgr.list_files()
 
     def _config_info(self, conf):
-
         path = self._mgr._db_path
 
-        is_active = \
-            "The 'standalone' flag is \033[1mactive\033[0m; local calibrations will be used."
+        is_active = (
+            "The 'standalone' flag is \033[1mactive\033[0m; local calibrations"
+            "will be used."
+        )
 
         inactive = (
             "The 'standalone' flag is not active; remote calibrations will be"
-            " downloaded.")
+            " downloaded."
+        )
 
         print()
         print("Using configuration file: \033[1m{}\033[0m".format(conf.config_file))
         print("Active database directory:  \033[1m{}\033[0m".format(conf.database_dir))
         print("Database file: \033[1m{}\033[0m".format(path))
         print()
+        print("configuration standalone: {}".format(conf.standalone))
+
         if conf.standalone:
             print(is_active)
         else:
