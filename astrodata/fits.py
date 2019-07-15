@@ -1460,6 +1460,9 @@ class FitsLoader(object):
             hdulist._file = _file
 
         # Initialize the object containers to a bare minimum
+        if 'ORIGNAME' not in hdulist[0].header and provider.orig_filename is not None:
+            hdulist[0].header.set('ORIGNAME', provider.orig_filename,
+                                  'Original filename prior to processing')
         provider.set_phu(hdulist[0].header)
 
         seen = set([hdulist[0]])
@@ -1663,10 +1666,18 @@ class AstroDataFits(AstroData):
         strip: bool
             Strip existing prefixes and suffixes if new ones are given?
         """
+        if self.filename is None:
+            if 'ORIGNAME' in self.phu:
+                self.filename = self.phu['ORIGNAME']
+            else:
+                raise ValueError("A filename needs to be set before it "
+                                 "can be updated")
+
         # Set the ORIGNAME keyword if it's not there
         if 'ORIGNAME' not in self.phu:
             self.phu.set('ORIGNAME', self.orig_filename,
                          'Original filename prior to processing')
+
         if strip:
             root, filetype = os.path.splitext(self.phu['ORIGNAME'])
             filename, filetype = os.path.splitext(self.filename)
@@ -1685,8 +1696,7 @@ class AstroDataFits(AstroData):
             if suffix is None:
                 suffix = existing_suffix
         else:
-            filename = self.filename or self.phu.get('ORIGNAME', '.fits')
-            root, filetype = os.path.splitext(filename)
+            root, filetype = os.path.splitext(self.filename)
 
         # Cope with prefix or suffix as None
         self.filename = (prefix or '') + root + (suffix or '') + filetype
