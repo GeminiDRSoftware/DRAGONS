@@ -1447,7 +1447,10 @@ class FitsLoader(object):
             provider.path = source
         else:
             hdulist = source
-            provider.path = None
+            try:
+                provider.path = source[0].header.get('ORIGNAME')
+            except AttributeError:
+                provider.path = None
 
         def_ext = self._cls.default_extension
         _file = hdulist._file
