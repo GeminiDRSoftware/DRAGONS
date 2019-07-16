@@ -13,7 +13,7 @@ def makeProcessedBias(p):
 
      Parameters
      ----------
-     p : PrimitivesCORE object
+     p : PrimitivesBASE object
          A primitive set matching the recipe_tags.
      """
 
@@ -26,4 +26,4 @@ def makeProcessedBias(p):
     p.storeProcessedBias()
     return
 
-default = makeProcessedBias
+_default = makeProcessedBias

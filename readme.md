@@ -24,7 +24,15 @@ For now, please feel free to look around in the code and the documentation
 to see what's coming up.
 
 ---
+# What is DRAGONS
+DRAGONS is a platform for the reduction and processing of astronomical data.
+The DRAGONS meta-package includes an infrastructure for automation of the
+processes and algorithms for processing of astromical data, with focus on the 
+reduction of Gemini data.
 
+
+
+---
 
 # Documentation
 Documentation on DRAGONS is available on "readthedocs" at:

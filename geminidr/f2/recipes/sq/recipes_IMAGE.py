@@ -15,7 +15,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -50,7 +50,7 @@ def makeSkyFlat(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
     p.prepare()
@@ -79,4 +79,4 @@ def makeSkyFlat(p):
     return
 
 
-default = reduce
+_default = reduce

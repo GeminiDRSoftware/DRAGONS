@@ -58,6 +58,8 @@ class RecipeMapper(Mapper):
         """
         matched_set = (set([]), None)
         for rlib in self._get_tagged_recipes():
+            if rlib is None:
+                break
             if hasattr(rlib, 'recipe_tags'):
                 if self.tags.issuperset(rlib.recipe_tags):
                     isect = rlib.recipe_tags
@@ -77,7 +79,11 @@ class RecipeMapper(Mapper):
         return isection, recipe_actual
 
     def _get_tagged_recipes(self):
-        loaded_pkg = import_module(self.dotpackage)
+        try:
+            loaded_pkg = import_module(self.dotpackage)
+        except:
+            yield None
+            return
         for rmod, ispkg in self._generate_recipe_modules(loaded_pkg):
             if not ispkg:
                 importmod = dotpath(self.dotpackage, rmod)

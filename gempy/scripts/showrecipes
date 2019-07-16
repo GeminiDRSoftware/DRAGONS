@@ -34,7 +34,7 @@ def showprims_argparser():
                         help="determines if the mode of the recipe "
                              "is either 'qa' or 'sq'.")
 
-    parser.add_argument("-r", "--recipe", dest="recipe", default='default',
+    parser.add_argument("-r", "--recipe", dest="recipe", default='_default',
                         help="Determines the recipe that the user wants "
                              "to see the primitives for. If no recipe is "
                              " provided, the default is used.")

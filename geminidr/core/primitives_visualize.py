@@ -6,6 +6,7 @@
 import numpy as np
 from copy import deepcopy
 from importlib import import_module
+import time
 
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
@@ -225,6 +226,26 @@ class Visualize(PrimitivesBASE):
                     log.stdinfo("Twilight flat counts for {}:".format(ext.filename))
                     log.stdinfo("    Mean value:   {:.0f}".format(mean))
                     log.stdinfo("    Median value: {:.0f}".format(median))
+
+        return adinputs
+
+    def inspect(self, adinputs=None, **params):
+        """
+        Loop through the data, with a pause between the display.
+
+        Parameters
+        ----------
+        pause: int
+            Pause in seconds to add between the display.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        pause = params['pause']
+
+        for ad in adinputs:
+            self.display([ad], frame=1)
+            time.sleep(pause)
 
         return adinputs
 

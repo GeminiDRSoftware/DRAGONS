@@ -15,7 +15,7 @@ def makeProcessedDark(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -31,4 +31,4 @@ def makeProcessedDark(p):
     p.storeProcessedDark()
     return
 
-default = makeProcessedDark
+_default = makeProcessedDark
