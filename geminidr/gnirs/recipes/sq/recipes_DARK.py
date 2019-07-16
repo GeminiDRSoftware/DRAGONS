@@ -25,7 +25,7 @@ def makeProcessedDark(p):
     #p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
-    p.stackFrames()
+    p.stackDarks()
     p.storeProcessedDark()
     return
 
