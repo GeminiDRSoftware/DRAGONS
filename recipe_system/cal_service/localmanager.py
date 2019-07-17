@@ -25,11 +25,14 @@ from gemini_calmgr.utils import dbtools
 
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
+
+from gempy.utils import logutils
 # ------------------------------------------------------------------------------
 from recipe_system import __version__
 # ------------------------------------------------------------------------------
 __all__ = ['LocalManager', 'LocalManagerError']
-
+# ------------------------------------------------------------------------------
+log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 # SQLAlchemy complains about SQLite details. We can't do anything about the
 # data types involved, because the ORM files are meant for PostgreSQL.
@@ -235,6 +238,7 @@ class LocalManager(object):
         caltype = rq.caltype
         descripts = rq.descriptors
         types = rq.tags
+        log.stdinfo("LOCAL CALIBRATION SEARCH:")
 
         if "ut_datetime" in descripts:
             utc = descripts["ut_datetime"]
