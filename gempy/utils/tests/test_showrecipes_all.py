@@ -16,8 +16,8 @@ GSAOI_IMAGE = 'S20170505S0095.fits'
 GSAOI_FLAT = 'S20170505S0031.fits'
 
 
-def test_showrecipes_on_gnirs(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy/', GNIRS)
+def test_showrecipes_on_gnirs(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy/', GNIRS)
 
     expected_answers = [
         "Input file: {}".format(file_location),
@@ -34,8 +34,8 @@ def test_showrecipes_on_gnirs(input_test_path):
         assert expected_answers[i] in answer
 
 
-def test_showrecipes_on_gnirs_spect(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy', GNIRS_SPECT)
+def test_showrecipes_on_gnirs_spect(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy', GNIRS_SPECT)
 
     gnirs_spect_answer = [
         "Input file: {}".format(file_location),
@@ -49,8 +49,8 @@ def test_showrecipes_on_gnirs_spect(input_test_path):
         assert gnirs_spect_answer[i] in answer
 
 
-def test_showrecipes_on_gmos(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy', GMOS)
+def test_showrecipes_on_gmos(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy', GMOS)
 
     gmos_answer = [
         "Input file: {}".format(file_location),
@@ -70,8 +70,8 @@ def test_showrecipes_on_gmos(input_test_path):
         assert gmos_answer[i] in answer
 
 
-def test_showrecipes_on_gmos_ns(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy', GMOS_NS)
+def test_showrecipes_on_gmos_ns(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy', GMOS_NS)
 
     gmos_ns_answer = [
         "Input file: {}".format(file_location),
@@ -86,8 +86,8 @@ def test_showrecipes_on_gmos_ns(input_test_path):
         assert gmos_ns_answer[i] in answer
 
 
-def test_showrecipes_on_gmos_spect(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy', GMOS_SPECT)
+def test_showrecipes_on_gmos_spect(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy', GMOS_SPECT)
 
     gmos_spect_answer = [
         "Input file: {}".format(file_location),
@@ -101,8 +101,8 @@ def test_showrecipes_on_gmos_spect(input_test_path):
         assert gmos_spect_answer[i] in answer
 
 
-def test_showrecipes_on_gsaoi_dark(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_DARK)
+def test_showrecipes_on_gsaoi_dark(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy', GSAOI_DARK)
 
     gsaoi_dark_answer = [
         "Input file: {}".format(file_location),
@@ -117,8 +117,8 @@ def test_showrecipes_on_gsaoi_dark(input_test_path):
         assert gsaoi_dark_answer[i] in answer
 
 
-def test_showrecipes_on_gsaoi_image(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy', GSAOI_IMAGE)
+def test_showrecipes_on_gsaoi_image(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy', GSAOI_IMAGE)
 
     gsaoi_image_answer = [
         "Input file: {}".format(file_location),
@@ -133,8 +133,8 @@ def test_showrecipes_on_gsaoi_image(input_test_path):
         assert gsaoi_image_answer[i] in answer
 
 
-def test_showrecipes_on_gsaoi_flat(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy/', GSAOI_FLAT)
+def test_showrecipes_on_gsaoi_flat(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy/', GSAOI_FLAT)
 
     gsaoi_flat_answer = [
         "Input file: {}".format(file_location),
@@ -150,8 +150,8 @@ def test_showrecipes_on_gsaoi_flat(input_test_path):
         assert gsaoi_flat_answer[i] in answer
 
 
-def test_showrecipes_on_niri(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy/', NIRI)
+def test_showrecipes_on_niri(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy/', NIRI)
 
     niri_answer = [
         "Input file: {}".format(file_location),
@@ -169,8 +169,8 @@ def test_showrecipes_on_niri(input_test_path):
         assert niri_answer[i] in answer
 
 
-def test_showrecipes_on_f2(input_test_path):
-    file_location = os.path.join(input_test_path, 'Gempy', F2)
+def test_showrecipes_on_f2(path_to_inputs):
+    file_location = os.path.join(path_to_inputs, 'Gempy', F2)
 
     f2_answer = [
         "Input file: {}".format(file_location),
@@ -198,11 +198,11 @@ def test_showrecipes_on_f2(input_test_path):
 #            "ImportError", "ImportError"]
 #
 #
-# def test_showrecipes_with_all_instruments(input_test_path):
+# def test_showrecipes_with_all_instruments(path_to_inputs):
 #     for i in range(len(files)):
 #         try:
 #             for t in range(len(answers[i])):
-#                 file_location = input_test_path + 'Gempy/' + files[i]
+#                 file_location = path_to_inputs + 'Gempy/' + files[i]
 #                 answer = showrecipes(file_location)
 #                 assert answers[i] == answer
 #         except ImportError:

@@ -329,12 +329,12 @@ Here is one of the raw images:
 
    One of the multi-extensions files.
 
-
 Note that the raw images do not have a mask yet. Because of that, the whole
 detector area is considered with data. Now, once reduce_ runs, it adds a
 `data quality plane`_ with information about why the data is being rejected.
 
-Now, here is the final reduced stack image:
+The figure below shows the reduced staked data and the bad pixel mask (in light
+gray):
 
 .. figure:: _static/img/N20170525S0116_stack.png
    :align: center
@@ -342,6 +342,17 @@ Now, here is the final reduced stack image:
    Sky Subtracted and Stacked Final Image. The light-gray area represents the
    masked pixels.
 
+The mask is updated on every data reduction step and most of the calculations
+are done on the good data. Because of this, you might expect to see some
+leftover features if you hide the mask. Here is an example:
+
+.. figure:: _static/img/N20170525S0116_nomask.png
+   :align: center
+
+   Sky Subtracted and Stacked Final Image.
+
+Note that the exposed image is clear but that the non illuminated region has
+some cosmic rays lefovers that persisted even after the stack process.
 
 .. todo @bquint The image above have some problems in the gaps. How do I fix them?
 .. todo:: The image above have some problems in the gaps. How do I fix them?
@@ -475,9 +486,9 @@ default values using the ``-p`` flag. As an example, we can change the
 The command line above changes the rejection algorithing during the stack
 process. It helps with the cosmetics of the image but it might affect the
 photometry if the point-spread function (seeing) changes a lot on every images
-in the stack. The ``--suffix`` option is added so the final stack frame has a
-different name. Otherwise, reduce_ overwrites the output. Here is the product
-of the command line above:
+in the stack or if the images are poorly aligned. The ``--suffix`` option is
+added so the final stack frame has a different name. Otherwise, reduce_
+overwrites the output. Here is the product of the command line above:
 
 .. figure:: _static/img/N20170525S0116_stack_varclip.png
    :align: center

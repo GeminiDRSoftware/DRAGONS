@@ -14,7 +14,7 @@ def makeProcessedFlat(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -33,4 +33,4 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
-default = makeProcessedFlat
+_default = makeProcessedFlat

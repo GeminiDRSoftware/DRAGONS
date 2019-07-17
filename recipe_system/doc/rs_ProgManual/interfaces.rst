@@ -414,7 +414,7 @@ inspect the recipes returned by the |RecipeMapper|.
 
         Parameters
         ----------
-        p : PrimitivesCORE object
+        p : PrimitivesBASE object
             A primitive set matching the recipe_tags.
         """
 

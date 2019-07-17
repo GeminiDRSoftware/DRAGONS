@@ -33,6 +33,7 @@ def captured_output():
     finally:
         sys.stdout, sys.stderr = old_out, old_err
 
+
 @on_travis
 def test_caldb_has_no_manager_on_creation(caldb):
     assert caldb._mgr is None

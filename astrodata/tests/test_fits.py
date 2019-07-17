@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import glob
 import os
 import tempfile
@@ -10,24 +11,24 @@ from astropy.table import Table
 import astrodata
 
 
-def test_file_exists(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_file_exists(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     for _file in list_of_files:
-        assert os.path.exists(os.path.join(input_test_path, _file)), \
+        assert os.path.exists(os.path.join(path_to_inputs, _file)), \
             "File does not exists: {:s}".format(_file)
 
 
-def test_can_open_fits_file(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_can_open_fits_file(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
 
     for _file in list_of_files:
-        ad = astrodata.open(os.path.join(input_test_path, _file))
+        ad = astrodata.open(os.path.join(path_to_inputs, _file))
         assert isinstance(ad, astrodata.fits.AstroDataFits), \
             "Could not open file: {:s}".format(_file)
 
 
-def test_basename_is_properly_set(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_basename_is_properly_set(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
 
     for _file in list_of_files:
         ad = astrodata.open(_file)
@@ -37,8 +38,8 @@ def test_basename_is_properly_set(input_test_path):
             "{:s}".format(basename)
 
 
-def test_can_add_and_del_extension(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_can_add_and_del_extension(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
 
     for _file in list_of_files:
         ad = astrodata.open(_file)
@@ -56,8 +57,8 @@ def test_can_add_and_del_extension(input_test_path):
             "Could not remove extension from ad: {:s}".format(_file)
 
 
-def test_extension_data_is_an_array(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_extension_data_is_an_array(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
 
     for _file in list_of_files:
         ad = astrodata.open(_file)
@@ -66,8 +67,8 @@ def test_extension_data_is_an_array(input_test_path):
                 np.ndarray, _file, type(ad[0].data))
 
 
-def test_iterate_over_extensions(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_iterate_over_extensions(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     metadata = (('SCI', 1), ('SCI', 2), ('SCI', 3))
 
     for _file in list_of_files:
@@ -80,8 +81,8 @@ def test_iterate_over_extensions(input_test_path):
                 "Mismatching EXTVER for file {:s}".format(_file)
 
 
-def test_slice_multiple(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_slice_multiple(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     metadata = ('SCI', 2), ('SCI', 3)
 
     for _file in list_of_files:
@@ -100,8 +101,8 @@ def test_slice_multiple(input_test_path):
                     "Test failed for file: {:s}".format(_file)
 
 
-def test_slice_single(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_slice_single(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     for _file in list_of_files:
 
         ad = astrodata.open(_file)
@@ -127,8 +128,8 @@ def test_slice_single(input_test_path):
                 "Mismatching EXTVER for file {:s}".format(_file)
 
 
-def test_iterate_over_single_slice(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_iterate_over_single_slice(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     for _file in list_of_files:
 
         ad = astrodata.open(_file)
@@ -140,16 +141,16 @@ def test_iterate_over_single_slice(input_test_path):
                 "Assertion failed for file: {}".format(_file)
 
 
-def test_slice_negative(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_slice_negative(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     for _file in list_of_files:
         ad = astrodata.open(_file)
         assert ad.data[-1] is ad[-1].data, \
             "Assertion failed for file: {}".format(_file)
 
 
-def test_set_a_keyword_on_phu(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_set_a_keyword_on_phu(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     for _file in list_of_files:
         ad = astrodata.open(_file)
         ad.phu['DETECTOR'] = 'FooBar'
@@ -162,8 +163,8 @@ def test_set_a_keyword_on_phu(input_test_path):
             "Assertion failed for file: {}".format(_file)
 
 
-def test_remove_a_keyword_from_phu(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_remove_a_keyword_from_phu(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     for _file in list_of_files:
         ad = astrodata.open(_file)
 
@@ -175,9 +176,9 @@ def test_remove_a_keyword_from_phu(input_test_path):
             "Assertion failed for file: {}".format(_file)
 
 
-def test_writes_to_new_fits(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
-    test_file_location = os.path.join(input_test_path, 'temp.fits')
+def test_writes_to_new_fits(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
+    test_file_location = os.path.join(path_to_inputs, 'temp.fits')
 
     for _file in list_of_files:
         ad = astrodata.open(_file)
@@ -192,9 +193,9 @@ def test_writes_to_new_fits(input_test_path):
     os.remove(test_file_location)
 
 
-def test_can_overwrite_existing_file(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
-    test_file_location = os.path.join(input_test_path, 'temp_overwrite.fits')
+def test_can_overwrite_existing_file(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
+    test_file_location = os.path.join(path_to_inputs, 'temp_overwrite.fits')
 
     for _file in list_of_files:
         ad = astrodata.open(_file)
@@ -213,7 +214,7 @@ def test_can_overwrite_existing_file(input_test_path):
         os.remove(test_file_location)
 
 
-def test_can_make_and_write_ad_object(input_test_path):
+def test_can_make_and_write_ad_object(path_to_inputs):
     # Creates data and ad object
     phu = fits.PrimaryHDU()
     pixel_data = np.random.rand(100, 100)
@@ -226,7 +227,7 @@ def test_can_make_and_write_ad_object(input_test_path):
 
     # Write file and test it exists properly
     test_file_location = os.path.join(
-        input_test_path, 'created_fits_file.fits')
+        path_to_inputs, 'created_fits_file.fits')
 
     if os.path.exists(test_file_location):
         os.remove(test_file_location)
@@ -253,8 +254,8 @@ def test_can_append_table_and_access_data():
     print(ad.info())
 
 
-def test_set_a_keyword_on_phu_deprecated(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_set_a_keyword_on_phu_deprecated(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
     for _file in list_of_files:
         ad = astrodata.open(_file)
 
@@ -279,8 +280,8 @@ def test_set_a_keyword_on_phu_deprecated(input_test_path):
 # Regression:
 # Make sure that references to associated
 # extension objects are copied across
-def test_do_arith_and_retain_features(input_test_path):
-    list_of_files = glob.glob(os.path.join(input_test_path, "*fits"))
+def test_do_arith_and_retain_features(path_to_inputs):
+    list_of_files = glob.glob(os.path.join(path_to_inputs, "*fits"))
 
     for _file in list_of_files:
         ad = astrodata.open(_file)
@@ -292,10 +293,46 @@ def test_do_arith_and_retain_features(input_test_path):
             ad[0].NEW_FEATURE, ad2[0].NEW_FEATURE)
 
 
+def test_update_filename():
+    phu = fits.PrimaryHDU()
+    ad = astrodata.create(phu)
+    ad.filename = 'myfile.fits'
+
+    # This will also set ORIGNAME='myfile.fits'
+    ad.update_filename(suffix='_suffix1')
+    assert ad.filename == 'myfile_suffix1.fits'
+
+    ad.update_filename(suffix='_suffix2', strip=True)
+    assert ad.filename == 'myfile_suffix2.fits'
+
+    ad.update_filename(suffix='_suffix1', strip=False)
+    assert ad.filename == 'myfile_suffix2_suffix1.fits'
+
+    ad.filename = 'myfile.fits'
+    ad.update_filename(prefix='prefix_', strip=True)
+    assert ad.filename == 'prefix_myfile.fits'
+
+    ad.update_filename(suffix='_suffix', strip=True)
+    assert ad.filename == 'prefix_myfile_suffix.fits'
+
+    ad.update_filename(prefix='', suffix='_suffix2', strip=True)
+    assert ad.filename == 'myfile_suffix2.fits'
+
+    # Now check that updates are based on existing filename
+    # (so "myfile" shouldn't appear)
+    ad.filename = 'file_suffix1.fits'
+    ad.update_filename(suffix='_suffix2')
+    assert ad.filename == 'file_suffix1_suffix2.fits'
+
+    # A suffix shouldn't have an underscore, so should assume that
+    # "file_suffix1" is the root
+    ad.update_filename(suffix='_suffix3', strip=True)
+    assert ad.filename == 'file_suffix1_suffix3.fits'
+
 # ============================================================================
 # Deprecated tests
 
-@pytest.mark.skip(reason="Deprecated methods")
+@pytest.mark.xfail(reason="Deprecated methods")
 def test_remove_a_keyword_from_phu_deprecated(self):
     ad = astrodata.open('N20110826S0336.fits')
     with pytest.raises(AttributeError):
@@ -311,7 +348,7 @@ def test_remove_a_keyword_from_phu_deprecated(self):
     test_data_name = "N20110826S0336.fits"
 
 
-@pytest.mark.skip(reason="uses chara")
+@pytest.mark.xfail(reason="uses chara")
 def test_raise_attribute_error_when_accessing_missing_extenions(self):
     ad = from_chara('N20131215S0202_refcatAdded.fits')
     with pytest.raises(AttributeError) as excinfo:
@@ -320,7 +357,7 @@ def test_raise_attribute_error_when_accessing_missing_extenions(self):
 
 # Some times, internal changes break the writing capability. Make sure that
 # this is the case, always
-@pytest.mark.skip(reason="uses chara")
+@pytest.mark.xfail(reason="uses chara")
 def test_write_without_exceptions():
     # Use an image that we know contains complex structure
     ad = from_chara('N20131215S0202_refcatAdded.fits')
@@ -330,7 +367,7 @@ def test_write_without_exceptions():
 
 # Access to headers: DEPRECATED METHODS
 # These should fail at some point
-@pytest.mark.skip(reason="Deprecated methods")
+@pytest.mark.xfail(reason="Deprecated methods")
 def test_read_a_keyword_from_phu_deprecated():
     ad = astrodata.open('N20110826S0336.fits')
 
@@ -338,7 +375,7 @@ def test_read_a_keyword_from_phu_deprecated():
         assert ad.phu.DETECTOR == 'GMOS + Red1'
 
 
-@pytest.mark.skip(reason="Deprecated methods")
+@pytest.mark.xfail(reason="Deprecated methods")
 def test_read_a_keyword_from_hdr_deprecated():
     ad = astrodata.open('N20110826S0336.fits')
 
@@ -346,3 +383,7 @@ def test_read_a_keyword_from_hdr_deprecated():
         assert ad.hdr.CCDNAME == [
             'EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03'
         ]
+
+
+if __name__ == '__main__':
+    pytest.main()

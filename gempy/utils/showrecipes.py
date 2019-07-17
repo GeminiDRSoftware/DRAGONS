@@ -78,7 +78,7 @@ def showrecipes(_file):
 
             # finds all functions(recipies) in the module except for 'default'
             functions_list = [i[0] for i in inspect.getmembers(mod) if
-                              inspect.isfunction(i[1]) and (i[0] != 'default')]
+                              inspect.isfunction(i[1]) and (i[0] != '_default')]
 
             # Appends said recipes to an external list so it can be called later
             for i in range(len(functions_list)):
@@ -102,7 +102,7 @@ def showrecipes(_file):
     return result
 
 
-def showprims(_file, mode='sq', recipe='default'):
+def showprims(_file, mode='sq', recipe='_default'):
     """
     showprims takes in a file, observing mode, and the data reduction
     recipe name, and will return the source code pertaining to that recipe,
@@ -149,7 +149,7 @@ def showprims(_file, mode='sq', recipe='default'):
         mapper_recipe = rm.get_applicable_recipe()
 
     except RecipeNotFound:
-        if recipe == 'default':
+        if recipe == '_default':
 
             error_message = \
                 "Recipe was not provided, and the module that corresponded " \
@@ -178,7 +178,7 @@ def showprims(_file, mode='sq', recipe='default'):
         source_code = inspect.getsource(mapper_recipe)
 
         # Just helps the user understand that the default recipe was used
-        if recipe == 'default':
+        if recipe == '_default':
             result += ("Recipe not provided, default recipe ({}) will "
                        "be used.\n".format(mapper_recipe.__name__))
 

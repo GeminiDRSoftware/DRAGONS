@@ -134,7 +134,7 @@ class Reduce(object):
         self.uparms = set_btypes(args.userparam)
         self._upload = args.upload
         self._output_filenames = None
-        self.recipename = args.recipename if args.recipename else 'default'
+        self.recipename = args.recipename if args.recipename else '_default'
 
     @property
     def upload(self):

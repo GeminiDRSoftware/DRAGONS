@@ -12,7 +12,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -60,7 +60,7 @@ def reduce_nostack(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -94,7 +94,7 @@ def reduce_nostack(p):
 # we have to use the nostack version for qap because stacking is too slow.
 # KL: is this still true with gemini_python 2.0?
 # KRA: unknown yet.
-default = reduce_nostack
+_default = reduce_nostack
 
 def stack(p):
     """
@@ -105,7 +105,7 @@ def stack(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
     p.getList(purpose='forStack')
@@ -135,7 +135,7 @@ def makeProcessedFringe(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
     p.prepare()

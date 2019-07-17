@@ -3,15 +3,13 @@ import os
 
 import pytest
 
-from astrodata.test.conftest import input_test_path
+from astrodata.testing import path_to_inputs
 
 
-@pytest.fixture(scope="module")
-def gemini_files():
-    path = input_test_path()
-
+@pytest.fixture
+def gemini_files(path_to_inputs):
     def get_files(instrument):
-        return glob.glob(os.path.join(path, instrument, "*fits"))
+        return glob.glob(os.path.join(path_to_inputs, instrument, "*fits"))
 
     gemini_files = []
     gemini_files.extend(get_files("Archive"))

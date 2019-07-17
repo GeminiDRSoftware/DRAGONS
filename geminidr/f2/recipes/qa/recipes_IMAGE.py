@@ -14,7 +14,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -60,7 +60,7 @@ def reduce_nostack(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -91,4 +91,4 @@ def reduce_nostack(p):
 
 # The nostack version is used because stacking was too slow for QAP.
 # KL: Is this still true with gemini_python 2.0?
-default = reduce_nostack
+_default = reduce_nostack

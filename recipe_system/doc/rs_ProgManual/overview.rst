@@ -136,7 +136,7 @@ recipes in a Recipe Library must therefore apply to the same Astrodata tags.
 The Astrodata tagset is stored in the module variable ``recipe_tags``.
 
 Each library must have a recipe assigned as "default".  The module variable
-``default`` is set to the name of the default recipe.
+``_default`` is set to the name of the default recipe.
 
 The Recipe System finds the Recipe Library that best matches the data based on
 tagset and mode.  Then it picks from it the default recipe, or the

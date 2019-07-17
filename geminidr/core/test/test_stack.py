@@ -4,52 +4,37 @@ Tests for primitives_stack.
 
 This is a suite of tests to be run with pytest.
 
-To run:
-    1) Set the environment variable GEMPYTHON_TESTDATA to the path that
-       contains the directories with the test data.
-       Eg. /net/chara/data2/pub/gempython_testdata/
-    2) From the ??? (location): pytest -v --capture=no
 """
-import os
-import astrodata
-import gemini_instruments
-from gempy.utils import logutils
+import astrodata, gemini_instruments
 
-from . import ad_compare
+from astropy.io import fits
+from astropy.table import Table
+import numpy as np
+
 from geminidr.niri.primitives_niri_image import NIRIImage
 
-TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
-logfilename = 'test_stack.log'
+def test_stackframes_refcat_propagation():
+    phu = fits.PrimaryHDU()
+    phu.header.update(OBSERVAT='Gemini-North', INSTRUME='NIRI',
+                      ORIGNAME='N20010101S0001.fits')
+    data = np.zeros((2,2))
 
-class TestStack:
-    """
-    Suite of tests for the functions in the primitives_standardize module.
-    """
-    @classmethod
-    def setup_class(cls):
-        """Run once at the beginning."""
-        if os.path.exists(logfilename):
-            os.remove(logfilename)
-        log = logutils.get_logger(__name__)
-        log.root.handlers = []
-        logutils.config(mode='standard', console_lvl='stdinfo',
-                        file_name=logfilename)
+    ad1 = astrodata.create(phu)
+    ad1.append(data)
+    ad2 = astrodata.create(phu)
+    ad2.append(data)
 
-    @classmethod
-    def teardown_class(cls):
-        """Run once at the end."""
-        os.remove(logfilename)
+    p = NIRIImage([ad1, ad2])
+    p.prepare()
 
-    def setup_method(self, method):
-        """Run once before every test."""
-        pass
+    refcat = Table([[1,2], ['a','b']], names=('Id', 'Cat_Id'))
+    ad1.REFCAT = refcat
+    refcat['Cat_Id'] = ['b','c']
+    ad2.REFCAT = refcat
 
-    def teardown_method(self, method):
-        """Run once after every test."""
-        pass
+    adout = p.stackFrames()[0]
 
-    def test_stackFrames(self):
-        pass
-
-    def test_stackSkyFrames(self):
-        pass
+    # The merged REFCAT should contain 'a', 'b', 'c'
+    assert len(adout.REFCAT) == 3
+    np.testing.assert_equal(adout.REFCAT['Id'], np.arange(1,4))
+    assert all(adout.REFCAT['Cat_Id'] == ['a','b','c'])
