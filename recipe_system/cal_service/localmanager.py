@@ -182,21 +182,21 @@ class LocalManager(object):
 
         Parameters
         ----------
-        path: string, optional
+        path: <str>, optional
             Path to the root directory. It can be either absolute or
-            relative
-        walk: bool, optional
-            If `False` (default), only the files in the top level of the
-            directory will be considered.
+            relative.
 
-            If `True`, all the subdirectories under the path will be
-            explored in search of FITS files.
-        log: function, optional
+        walk: <bool>, optional
+            If `False` (default), only the files in the top level of the
+            directory will be considered. If `True`, all the subdirectories
+            under the path will be explored in search of FITS files.
+
+        log: <function>, optional
             If provided, it must be a function that accepts a single argument,
             a message string. This function can then process the message
             and log it into the proper place.
-        """
 
+        """
         for root, dirs, files in os.walk(path):
             for fname in [l for l in files if l.endswith('.fits')]:
                 self.ingest_file(os.path.join(root, fname))
@@ -204,23 +204,25 @@ class LocalManager(object):
                     log("Ingested {}/{}".format(root, fname))
 
     def calibration_search(self, rq, howmany=1, fullResult=False):
-        """Performs a search in the database using the requested criteria.
+        """
+        Performs a search in the database using the requested criteria.
 
         Parameters
         ----------
-        rq : CalibrationRequest
-            Contains the search criteria, including instrument, descriptors,
-            etc.
-        howmany: int
+        rq: <instance>, CalibrationRequest
+            Contains search criteria, including instrument, descriptors, etc.
+
+        howmany: <int>
             Maximum number of calibrations to return
-        fullResult : bool
+
+        fullResult: <bool>
             This is here just for API compatibility. It's not used anywhere
             in the code, anyway, and should probably be removed altogether.
 
+
         Returns
         -------
-
-        result: tuple
+        result: <tuple>
             A tuple of exactly two elements.
 
             In the case of success, the tuple contains two lists, the first
@@ -249,11 +251,13 @@ class LocalManager(object):
                                  descriptors=descripts, types=types)
 
         caltypes = gmu.cal_types if caltype == '' else [caltype]
+
         # The function that downloads an XML returns only the first result,
         # so we won't bother iterating over the whole thing in case that
         # caltype was empty.
         ct = caltypes[0]
         method, args = args_for_cals.get(ct, (ct, {}))
+
         # Obtain a list of calibrations for the specified cal type
         cals = getattr(cal_obj, method)(**args)
 
@@ -267,7 +271,9 @@ class LocalManager(object):
         if ret_value:
             # Turn from list of tuples into two lists
             return tuple(map(list, list(zip(*ret_value))))
+
         return (None, "Could not find a proper calibration in the local database")
+
 
     def list_files(self):
         File, DiskFile = file.File, diskfile.DiskFile
