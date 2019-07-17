@@ -101,7 +101,7 @@ class AstroDataFactory(object):
         lst = HDUList()
         if phu is not None:
             if isinstance(phu, PrimaryHDU):
-                lst.append(phu)
+                lst.append(deepcopy(phu))
             elif isinstance(phu, Header):
                 lst.append(PrimaryHDU(header=deepcopy(phu), data=DELAYED))
             elif isinstance(phu, (dict, list, tuple)):
