@@ -25,7 +25,6 @@ def reduce_nostack(p):
     p.flatCorrect()
     p.detectSources(detect_thresh=5., analysis_thresh=5., back_size=128)
     p.measureIQ(display=True)
-    p.writeOutputs()
     p.measureBG()
     p.addReferenceCatalog()
     p.determineAstrometricSolution()
