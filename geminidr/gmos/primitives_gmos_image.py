@@ -403,10 +403,13 @@ class GMOSImage(GMOS, Image, Photometry):
         <bool>: does this image need a correction?
         """
         log = self.log
+        inst = ad.instrument()
+        det = ad.detector_name(pretty=True)
         filter = ad.filter_name(pretty=True)
         exposure = ad.exposure_time()
 
-        if filter not in ["z", "Z", "Y"]:
+        if filter not in ["z", "Z", "Y"] and \
+           not (filter == "i" and inst == "GMOS-S" and det == "EEV"):
             log.stdinfo("No fringe correction necessary for {} with filter {}".
                         format(ad.filename, filter))
             return False
