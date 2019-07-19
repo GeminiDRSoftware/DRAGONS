@@ -243,8 +243,9 @@ class Visualize(PrimitivesBASE):
 
         pause = params['pause']
 
+        display_params = self._inherit_params(params, 'display')
         for ad in adinputs:
-            self.display([ad], frame=1)
+            self.display([ad], **display_params)
             time.sleep(pause)
 
         return adinputs

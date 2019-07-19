@@ -293,6 +293,42 @@ def test_do_arith_and_retain_features(path_to_inputs):
             ad[0].NEW_FEATURE, ad2[0].NEW_FEATURE)
 
 
+def test_update_filename():
+    phu = fits.PrimaryHDU()
+    ad = astrodata.create(phu)
+    ad.filename = 'myfile.fits'
+
+    # This will also set ORIGNAME='myfile.fits'
+    ad.update_filename(suffix='_suffix1')
+    assert ad.filename == 'myfile_suffix1.fits'
+
+    ad.update_filename(suffix='_suffix2', strip=True)
+    assert ad.filename == 'myfile_suffix2.fits'
+
+    ad.update_filename(suffix='_suffix1', strip=False)
+    assert ad.filename == 'myfile_suffix2_suffix1.fits'
+
+    ad.filename = 'myfile.fits'
+    ad.update_filename(prefix='prefix_', strip=True)
+    assert ad.filename == 'prefix_myfile.fits'
+
+    ad.update_filename(suffix='_suffix', strip=True)
+    assert ad.filename == 'prefix_myfile_suffix.fits'
+
+    ad.update_filename(prefix='', suffix='_suffix2', strip=True)
+    assert ad.filename == 'myfile_suffix2.fits'
+
+    # Now check that updates are based on existing filename
+    # (so "myfile" shouldn't appear)
+    ad.filename = 'file_suffix1.fits'
+    ad.update_filename(suffix='_suffix2')
+    assert ad.filename == 'file_suffix1_suffix2.fits'
+
+    # A suffix shouldn't have an underscore, so should assume that
+    # "file_suffix1" is the root
+    ad.update_filename(suffix='_suffix3', strip=True)
+    assert ad.filename == 'file_suffix1_suffix3.fits'
+
 # ============================================================================
 # Deprecated tests
 

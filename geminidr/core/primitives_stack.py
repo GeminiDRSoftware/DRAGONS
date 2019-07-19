@@ -244,7 +244,7 @@ class Stack(PrimitivesBASE):
         if refcats:
             out_refcat = table.unique(table.vstack(refcats,
                                 metadata_conflicts='silent'), keys='Cat_Id')
-            out_refcat['Cat_Id'] = list(range(1, len(out_refcat)+1))
+            out_refcat['Id'] = list(range(1, len(out_refcat)+1))
             ad_out.REFCAT = out_refcat
 
         # Set AIRMASS to be the mean of the input values

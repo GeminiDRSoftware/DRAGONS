@@ -15,7 +15,7 @@ class displayConfig(config.Config):
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)
     zscale = config.Field("Use zscale algorithm?", bool, True)
 
-class inspectConfig(config.Config):
+class inspectConfig(displayConfig):
     pause = config.RangeField("Pause between the display, in seconds", int, 2, min=0)
 
 #class mosaicDetectorsConfig(config.Config):
