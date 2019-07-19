@@ -16,6 +16,9 @@ bpm_dict = {
     "GMOS-S_Ham_11_12amp_v1": "gmos-s_bpm_HAM_11_12amp_v1.fits",
     "GMOS-S_Ham_22_12amp_v1": "gmos-s_bpm_HAM_22_12amp_v1.fits",
     "GMOS-S_Ham_44_12amp_v1": "gmos-s_bpm_HAM_44_12amp_v1.fits",
+    "GMOS-S_Ham_11_12amp_v2": "gmos-s_bpm_HAM_11_12amp_v2.fits",
+    "GMOS-S_Ham_22_12amp_v2": "gmos-s_bpm_HAM_22_12amp_v2.fits",
+    "GMOS-S_Ham_44_12amp_v2": "gmos-s_bpm_HAM_44_12amp_v2.fits",
 }
 
 mdf_dict = {

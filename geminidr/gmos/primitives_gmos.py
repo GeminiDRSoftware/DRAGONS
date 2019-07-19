@@ -220,11 +220,15 @@ class GMOS(Gemini, CCD):
         amps = '{}amp'.format(3 * ad.phu['NAMPS'])
         mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
             or ad.phu.get(self.timestamp_keys['tileArrays'])) else ''
-        key = '{}_{}_{}{}_{}_{}{}'.format(inst, det, xbin, ybin, amps,
-                                          'v1', mos)
-        try:
-            bpm = maskdb.bpm_dict[key]
-        except:
+        mode_key = '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
+
+        db_matches = sorted((k, v) for k, v in maskdb.bpm_dict.items() \
+                            if k.startswith(mode_key) and k.endswith(mos))
+
+        # If BPM(s) matched, use the one with the latest version number suffix:
+        if db_matches:
+            bpm = db_matches[-1][1]
+        else:
             log.warning('No BPM found for {}'.format(ad.filename))
             return None
 
