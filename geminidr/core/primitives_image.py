@@ -42,6 +42,13 @@ class Image(Preprocess, Register, Resample):
             suffix to be added to output files
         fringe: list/str/AstroData/None
             fringe frame(s) to subtract
+        do_fringe: bool/None
+            apply fringe correction? (None => use pipeline default for data)
+        scale: bool/None
+            scale fringe frame? (None => False if fringe frame has same
+            group_id() as data
+        scale_factor: float/sequence/None
+            factor(s) to scale fringe
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -119,7 +126,9 @@ class Image(Preprocess, Register, Resample):
                                                 aux_type="cal")
                 gt.check_inputs_match(ad, fringe)
 
-            if scale:
+            #
+            matched_groups = (ad.group_id() == fringe.group_id())
+            if scale or (scale is None and not matched_groups):
                 factor = next(factors)
                 if factor is None:
                     factor = self._calculate_fringe_scaling(ad, fringe)
@@ -131,6 +140,9 @@ class Image(Preprocess, Register, Resample):
                 fringe_copy.multiply(factor)
                 ad.subtract(fringe_copy)
             else:
+                if scale is None:
+                    log.stdinfo("Not scaling fringe frame with same group ID "
+                                "as {}".format(ad.filename))
                 ad.subtract(fringe)
 
             # Timestamp and update header and filename

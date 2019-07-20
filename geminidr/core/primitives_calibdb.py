@@ -269,8 +269,13 @@ class CalibDB(PrimitivesBASE):
     def storeProcessedFringe(self, adinputs=None, suffix=None):
         caltype = 'processed_fringe'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="fringe",
-                                          keyword_comments=self.keyword_comments)
+
+        # We only need to do this if we're uploading to the archive so the OBSTYPE
+        # is set to FRINGE and OBSID, etc., are obscured. The frame will be tagged
+        # as FRINGE and available locally.
+        if self.upload and 'calibs' in self.upload:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="fringe",
+                                              keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                 primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
         self.storeCalibration(adinputs, caltype=caltype)
