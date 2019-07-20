@@ -23,7 +23,6 @@ def reduce(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
-    p.makeFringe()
     p.fringeCorrect()
     p.mosaicDetectors()
     p.detectSources()

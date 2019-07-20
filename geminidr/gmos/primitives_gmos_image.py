@@ -413,7 +413,8 @@ class GMOSImage(GMOS, Image, Photometry):
             log.stdinfo("No fringe correction necessary for {} with filter {}".
                         format(ad.filename, filter))
             return False
-        if exposure < 60.0:
+        # Short QA exposures don't get corrected due to time pressure
+        if 'qa' in self.mode and exposure < 60.0:
             log.stdinfo("No fringe correction necessary for {} with "
                         "exposure time {:.1f}s".format(ad.filename, exposure))
             return False

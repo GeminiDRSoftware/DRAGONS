@@ -46,18 +46,31 @@ class Image(Preprocess, Register, Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        fringe = params["fringe"]
+        scale = params["scale"]
+        do_fringe = params["do_fringe"]
 
         # Exit now if nothing needs a correction, to avoid an error when the
         # calibration search fails. If images with different exposure times
         # are used, some frames may not require a correction (but the calibration
         # search will succeed), so still need to check individual inputs later.
-        if not any(self._needs_fringe_correction(ad) for ad in adinputs):
-            log.stdinfo("No input images require a fringe correction.")
-            return adinputs
+        needs_correction = [self._needs_fringe_correction(ad) for ad in adinputs]
+        if any(needs_correction):
+            if do_fringe == False:
+                log.warning("Fringe correction has been turned off but is "
+                            "recommended.")
+                return adinputs
+        else:
+            if not do_fringe:  # False or None
+                if do_fringe is None:
+                    log.stdinfo("No input images require a fringe correction.")
+                return adinputs
+            else:
+                log.warning("Fringe correction has been turned on but may not "
+                            "be required.")
 
-        fringe = params["fringe"]
-        scale = params["scale"]
         if fringe is None:
+            # This logic is for QAP
             try:
                 fringe_list = self.streams['fringe']
                 assert len(fringe_list) == 1
@@ -83,11 +96,19 @@ class Image(Preprocess, Register, Resample):
                 factors = iter(scale_factor * len(adinputs))
 
         # Get a fringe AD object for every science frame
-        for ad, fringe in zip(*gt.make_lists(adinputs, fringe_list, force_ad=True)):
+        for ad, fringe, correct in zip(*(gt.make_lists(adinputs, fringe_list, force_ad=True)
+                                      + [needs_correction])):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractFringe".
                             format(ad.filename))
+                continue
+
+            # Logic to deal with different exposure times
+            if do_fringe is None and not correct:
+                log.stdinfo("{} does not require a fringe correction".
+                            format(ad.filename))
+                ad.update_filename(suffix=params["suffix"], strip=True)
                 continue
 
             # Check the inputs have matching filters, binning, and shapes

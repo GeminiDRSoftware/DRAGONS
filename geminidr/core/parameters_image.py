@@ -8,6 +8,7 @@ class fringeCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_fringeCorrected", optional=True)
     fringe = config.ListField("Fringe frame to subtract", (str, AstroData),
                           None, optional=True, single=True)
+    do_fringe = config.Field("Perform fringe correction?", bool, None, optional=True)
     scale = config.Field("Scale fringe frame?", bool, True)
     scale_factor = config.ListField("Scale factor for fringe frame", float, None,
                                     optional=True, single=True)
