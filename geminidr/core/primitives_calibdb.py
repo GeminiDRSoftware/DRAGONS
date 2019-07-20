@@ -130,14 +130,7 @@ class CalibDB(PrimitivesBASE):
         caltype = "processed_fringe"
         log = self.log
         self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        # Fringe correction is always optional; do not raise errors if fringe
-        # not found
-        try:
-            self._assert_calibrations(adinputs, caltype)
-        except IOError:
-            wstr = "Warning: one or more processed fringe frames could not"
-            wstr += " be found. "
-            log.warning(wstr)
+        self._assert_calibrations(adinputs, caltype)
         return adinputs
 
     def getMDF(self, adinputs=None):
