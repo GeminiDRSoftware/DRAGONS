@@ -9,7 +9,7 @@ class addOIWFSToDQConfig(config.Config):
     convergence = config.RangeField("Convergence required in sky level to stop dilation",
                                     float, 2.0, min=0.001)
 
-class makeFringeConfig(parameters_image.makeFringeConfig):
+class makeFringeFrameConfig(parameters_image.makeFringeFrameConfig):
     subtract_median_image = config.Field("Subtract median image?", bool, None, optional=True)
 
 class stackFlatsConfig(config.Config):
