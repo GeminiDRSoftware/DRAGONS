@@ -151,15 +151,18 @@ class Image(Preprocess, Register, Resample):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def makeFringe(self, adinputs=None, **params):
+    def makeFringeForQA(self, adinputs=None, **params):
         """
         This primitive performs the bookkeeping related to the construction of
-        a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame
+        a GMOS fringe frame in QA mode. The pixel manipulation is left to
+        makeFringeFrame(). The resulting frame is placed in the "fringe" stream,
+        ready to be retrieved by subsequent primitives.
 
         Parameters
         ----------
         subtract_median_image: bool
             subtract a median image before finding fringes?
+        - also inherits parameters for detectSources() and stackSkyFrames()
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -175,18 +178,18 @@ class Image(Preprocess, Register, Resample):
         # A SExtractor mask alone is usually sufficient for GN data, but GS
         # data need to be median-subtracted to distinguish fringes from objects
         fringe_params = self._inherit_params(params, "makeFringeFrame", pass_suffix=True)
-
-        # Detect sources in order to get an OBJMASK. Doing it now will aid
-        # efficiency by putting the OBJMASK-added images in the list.
-        # NB. If we're subtracting the median image, detectSources() has to
-        # be run again anyway, so don't do it here.
-        # NB2. We don't want to edit adinputs at this stage
-        fringe_adinputs = adinputs if fringe_params["subtract_median_image"] else [ad if
-                        any(hasattr(ext, 'OBJMASK') for ext in ad)
-                        else self.detectSources([ad])[0] for ad in adinputs]
+        fringe_adinputs = adinputs
 
         # Add this frame to the list and get the full list (QA only)
         if "qa" in self.mode:
+            # Detect sources in order to get an OBJMASK. Doing it now will aid
+            # efficiency by putting the OBJMASK-added images in the list.
+            # NB. If we're subtracting the median image, detectSources() has to
+            # be run again anyway, so don't do it here.
+            # NB2. We don't want to edit adinputs at this stage
+            if not fringe_params["subtract_median_image"]:
+                fringe_adinputs = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
+                                   else self.detectSources([ad])[0] for ad in adinputs]
             self.addToList(fringe_adinputs, purpose='forFringe')
             fringe_adinputs = self.getList(purpose='forFringe')
 
@@ -207,7 +210,12 @@ class Image(Preprocess, Register, Resample):
 
     def makeFringeFrame(self, adinputs=None, **params):
         """
-        Make a fringe frame from a list of images.
+        Make a fringe frame from a list of images. This will construct and
+        subtract a median image if the fringes are too strong for detectSources()
+        to work on the inputs as passed. Since a generic recipe cannot know
+        whether this parameter is set, including detectSources() in the recipe
+        prior to making the fringe frame may be a waste of time. Therefore this
+        primitive will call detectSources() if no OBJCATs are found on the inputs.
 
         Parameters
         ----------
@@ -251,6 +259,12 @@ class Image(Preprocess, Register, Resample):
                         **self._inherit_params(params, "detectSources"))
             for ad in adinputs:
                 ad.add(median_image)
+        elif not any(hasattr(ext, 'OBJCAT') for ad in adinputs for ext in ad):
+            adinputs = self.detectSources(adinputs,
+                                              **self._inherit_params(params, "detectSources"))
+        else:
+            log.stdinfo("OBJCAT found on at least one input extension. "
+                        "Not running detectSources.")
 
         # Add object mask to DQ plane and stack with masking
         # separate_ext is irrelevant unless (scale or zero) but let's be explicit

@@ -192,7 +192,7 @@ class GMOSImage(GMOS, Image, Photometry):
 
         return adinputs
 
-    def makeFringe(self, adinputs=None, **params):
+    def makeFringeForQA(self, adinputs=None, **params):
         """
         This primitive performs the bookkeeping related to the construction of
         a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame.
@@ -205,11 +205,23 @@ class GMOSImage(GMOS, Image, Photometry):
             subtract a median image before finding fringes?
             None => yes if any images are from Gemini-South
         """
-        if params["subtract_median_image"] is None:
-            params["subtract_median_image"] = any(ad.telescope() == "Gemini-South"
-                                                         for ad in adinputs)
-        adinputs = super(GMOSImage, self).makeFringe(adinputs, **params)
-        return adinputs
+        params = _modify_fringe_params(adinputs, params)
+        return super(GMOSImage, self).makeFringeForQA(adinputs, **params)
+
+    def makeFringeFrame(self, adinputs=None, **params):
+        """
+        Make a fringe frame from a list of images.
+        The GMOS version simply handles subtract_median_image=None and then
+        calls the Image() version.
+
+        Parameters
+        ----------
+        subtract_median_image: bool/None
+            subtract a median image before finding fringes?
+            None => yes if any images are from Gemini-South
+        """
+        params = _modify_fringe_params(adinputs, params)
+        return super(GMOSImage, self).makeFringeFrame(adinputs, **params)
 
     def normalizeFlat(self, adinputs=None, **params):
         """
@@ -485,3 +497,26 @@ class GMOSImage(GMOS, Image, Photometry):
                              format(ad.filename))
             scaling = 1.
         return scaling
+
+#-----------------------------------------------------------------------------
+def _modify_fringe_params(adinputs, params):
+    """
+    This function modifies the param dictionary for the makeFringeForQA() and
+    makeFringeFrame() primitives, to allow subtract_median_image=None to be
+    passed.
+
+    Parameters
+    ----------
+    adinputs: list
+        AD instances being processed
+    params: dict
+        parameters passed to the calling primitive
+
+    Returns
+    -------
+    dict: a (possibly modified) version of params
+    """
+    if params["subtract_median_image"] is None:
+        params["subtract_median_image"] = any(ad.telescope() == "Gemini-South"
+                                              for ad in adinputs)
+    return params

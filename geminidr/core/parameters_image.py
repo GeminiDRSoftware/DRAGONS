@@ -19,7 +19,7 @@ class makeFringeFrameConfig(parameters_stack.core_stacking_config, parameters_ph
     def setDefaults(self):
         self.suffix = "_fringe"
 
-class makeFringeConfig(makeFringeFrameConfig):
+class makeFringeForQAConfig(makeFringeFrameConfig):
     pass
 
 class scaleByIntensityConfig(config.Config):
