@@ -266,6 +266,8 @@ class Image(Preprocess, Register, Resample):
             log.stdinfo("OBJCAT found on at least one input extension. "
                         "Not running detectSources.")
 
+        group_ids = set([ad.group_id() for ad in adinputs])
+
         # Add object mask to DQ plane and stack with masking
         # separate_ext is irrelevant unless (scale or zero) but let's be explicit
         adinputs = self.stackSkyFrames(adinputs, mask_objects=True, separate_ext=False,
@@ -273,6 +275,11 @@ class Image(Preprocess, Register, Resample):
                     **self._inherit_params(params, "stackSkyFrames", pass_suffix=True))
         if len(adinputs) > 1:
             raise ValueError("Problem with stacking fringe frames")
+
+        if len(group_ids) > 1:
+            log.stdinfo("Input frames come from more than one group_id. "
+                        "Editing fringe frame to avoid matching to science frames.")
+            adinputs[0].phu['OBSID'] = '+'.join(group_ids)
 
         return adinputs
 
