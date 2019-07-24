@@ -200,8 +200,6 @@ class Image(Preprocess, Register, Resample):
 
         # We have the required inputs to make a fringe frame
         fringe = self.makeFringeFrame(fringe_adinputs, **fringe_params)
-        # Store the result and put the output in the "fringe" stream
-        self.storeProcessedFringe(fringe)
         self.streams.update({'fringe': fringe})
 
         # We now return *all* the input images that required fringe correction
