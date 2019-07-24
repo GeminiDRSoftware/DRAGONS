@@ -76,12 +76,17 @@ log = logutils.get_logger(__name__)
 
 # -----------------------------------------------------------------------------
 def upload_calibration(filename):
-    """Uploads a calibration file to the FITS Store.
+    """
+    Uploads a calibration file to the FITS Store.
 
-    :parameter filename: file to be uploaded.
-    :type filename: <str>
+    Parameters
+    ----------
+    filename: <str>, File to be uploaded
 
-    :return:     <void>
+    Returns
+    -------
+    <void>
+
     """
     fn = basename(filename)
     url = join(UPLOADPROCCAL, fn)
@@ -103,18 +108,21 @@ def calibration_search(rq, howmany=1, return_xml=False):
     Receives a CalibrationRequest object, encodes the data and make the request
     on the appropriate server. Returns a URL, if any, and the MD5 hash checksum.
 
-    :parameter rq: CalibrationRequest obj
-    :type rq: <CalibrationRequest object>
+    Parameters
+    ----------
+    rq: <instance>, CalibrationRequest obj
 
-    :parameter howmany: maxinum number of calibrations to return
-    :type howmany: <int>
+    howmany: <int>
+        Maxinum number of calibrations to return
 
-    :parameter return_xml: return the xml message to the caller when no URL
-                           is returned from the cal server.
-    :type return_xml: <bool>
+    return_xml: <bool>
+        Return the xml message to the caller when no URL is returned from the
+        calibration server.
 
-    :return: A tuple of the matching URLs and md5 hash checksums
-    :rtype: (<list>, <list>)
+    Returns
+    -------
+    calurlel, calurlmd5: <list>, <list>
+        A tuple of the matching URLs and md5 hash checksums
 
     """
     rqurl = None
@@ -166,6 +174,7 @@ def calibration_search(rq, howmany=1, return_xml=False):
 
     for url in calurlel:
         log.stdinfo(repr(url))
+
     return (calurlel, calurlmd5)
 
 def handle_returns(dv):
