@@ -420,8 +420,8 @@ class GMOSImage(GMOS, Image, Photometry):
         filter = ad.filter_name(pretty=True)
         exposure = ad.exposure_time()
 
-        if filter not in ["z", "Z", "Y"] and \
-           not (filter == "i" and inst == "GMOS-S" and det == "EEV"):
+        if filter not in ["z", "Y"] and \
+           not (filter in ["i", "CaT", "Z"] and det in ["EEV", "e2vDD"]):
             log.stdinfo("No fringe correction necessary for {} with filter {}".
                         format(ad.filename, filter))
             return False
