@@ -74,8 +74,8 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_ifu(self):
-        if not self._tag_is_spect():
-            return
+        #if not self._tag_is_spect():
+        #    return
 
         mapping = {
             'IFU-B': 'ONESLIT_BLUE',
@@ -96,7 +96,7 @@ class AstroDataGmos(AstroDataGemini):
             if mskn not in names:
                 mskn = re.match('g.ifu_slit(.)_mdf', mskn).groups()[0]
 
-            return TagSet(['SPECT', 'IFU', mapping[mskn]])
+            return TagSet(['IFU', mapping[mskn]])
 
     @astro_data_tag
     def _tag_mask(self):
@@ -105,27 +105,29 @@ class AstroDataGmos(AstroDataGemini):
             return TagSet(['MASK'])
 
     @astro_data_tag
-    def _tag_image(self):
+    def _tag_image_or_spect(self):
         if self.phu.get('GRATING') == 'MIRROR':
             return TagSet(['IMAGE'])
+        else:
+            return TagSet(['SPECT'])
 
     @astro_data_tag
     def _tag_ls(self):
-        if not self._tag_is_spect():
-            return
+        #if not self._tag_is_spect():
+        #    return
 
         if self.phu.get('MASKTYP') == 1 and self.phu.get('MASKNAME', '').endswith('arcsec'):
-            return TagSet(['SPECT', 'LS'])
+            return TagSet(['LS'])
 
     @astro_data_tag
     def _tag_mos(self):
-        if not self._tag_is_spect():
-            return
+        #if not self._tag_is_spect():
+        #    return
 
         mskt = self.phu.get('MASKTYP')
         mskn = self.phu.get('MASKNAME', '')
         if mskt == 1 and not (mskn.startswith('IFU') or mskn.startswith('focus') or mskn.endswith('arcsec')):
-            return TagSet(['SPECT', 'MOS'])
+            return TagSet(['MOS'])
 
     @astro_data_tag
     def _tag_nodandshuffle(self):

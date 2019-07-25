@@ -8,15 +8,19 @@ from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
 
 from .core import AstroDataError
 
+
 def fits_opener(source):
     if isinstance(source, HDUList):
         return source
     return fits.open(source, memmap=True)
 
+
 class AstroDataFactory(object):
+
     _file_openers = (
-            fits_opener,
-            )
+        fits_opener,
+    )
+
     def __init__(self):
         self._registry = set()
 
@@ -40,7 +44,7 @@ class AstroDataFactory(object):
                     # Just ignore the error. Assume that it is a not supported format
                     # and go for the next opener
                     pass
-            raise AstroDataError("Not access, or not supported format for: {}".format(source))
+            raise AstroDataError("No access, or not supported format for: {}".format(source))
         else:
             return source
 
@@ -97,7 +101,7 @@ class AstroDataFactory(object):
         lst = HDUList()
         if phu is not None:
             if isinstance(phu, PrimaryHDU):
-                lst.append(phu)
+                lst.append(deepcopy(phu))
             elif isinstance(phu, Header):
                 lst.append(PrimaryHDU(header=deepcopy(phu), data=DELAYED))
             elif isinstance(phu, (dict, list, tuple)):

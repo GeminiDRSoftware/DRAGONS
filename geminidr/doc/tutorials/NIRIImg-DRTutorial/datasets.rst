@@ -36,9 +36,10 @@ Datasets descriptions
 Dataset for example 1: Extended source with offset to sky
 ---------------------------------------------------------
 
-This is a NIRI imaging observation of the an extended source, a galaxy showing
-as a dense field of stars.  The observation sequence uses offset to sky to
-monitor it.
+This is a NIRI imaging observation of an extended source, a galaxy showing
+as a dense field of stars.  The observation sequence uses an offset to a nearby
+blank portion of the sky to monitor the sky levels since there are no area in
+the science observation that is not "contaminated" by the galaxy.
 
 The calibrations we use for this example include:
 
@@ -47,7 +48,7 @@ The calibrations we use for this example include:
 * Short darks to use with the flats to create a bad pixel mask.
 * A set of standard star observations.
 
-Here is the files breakdown.  They are included in the tutorial dataset.
+Here is the files breakdown.  They are included in the tutorial data package.
 They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 +---------------+--------------------------------------------+
@@ -71,5 +72,5 @@ explicitly. If you need to find short darks for your program, do as follow:
 
 * Set a date range around the dates of your science observations.
 * Set **Instrument** to NIRI.
-* Set the **Obs.Type** to DARK.
+* Set **Obs.Type** to DARK.
 * Set the exposure time to 1 second.

@@ -1,12 +1,18 @@
+.. showd.rst
+
+.. _showd:
 
 showd
------
+=====
+The ``showd`` command line tool helps the user gather information about files
+on disk.  The "d" in ``showd`` stands for "descriptor".  ``showd`` is used to
+show the value of specific AstroData descriptors for the files requested.
 
-This command list the values stored in a given descriptor for the input data.
-Its basic usage can be printed using the following command:::
+Its basic usage can be printed using the following command::
 
     $ showd --help
-    usage: showd [-h] --descriptors DESCRIPTORS [--debug] [inputs [inputs ...]]
+    usage: showd [-h] --descriptors DESCRIPTORS [--csv] [--debug]
+                 [inputs [inputs ...]]
 
     For each input file, show the value of the specified descriptors.
 
@@ -17,40 +23,56 @@ Its basic usage can be printed using the following command:::
       -h, --help            show this help message and exit
       --descriptors DESCRIPTORS, -d DESCRIPTORS
                             comma-separated list of descriptor values to return
+      --csv                 Format as CSV list.
       --debug               Toggle debug mode
+
 
 One or more descriptors can be printed together. Here is an example:::
 
     $ showd -d object,exposure_time *.fits
-    filename:   object   exposure_time
-    ------------------------------
-    S20150609S0022.fits: Dark 150.0
-    S20150609S0023.fits: Dark 150.0
-    ...
-    S20170504S0031.fits: Domeflat 7.0
-    S20170504S0032.fits: Domeflat 7.0
-    S20170504S0033.fits: Domeflat 7.0
-    ...
-    S20170503S0115.fits: HP 1 - control field 30.0
-    S20170503S0116.fits: HP 1 - control field 30.0
-    ...
+    ----------------------------------------------
+    filename                object   exposure_time
+    ----------------------------------------------
+    N20160102S0275.fits    SN2014J          20.002
+    N20160102S0276.fits    SN2014J          20.002
+    N20160102S0277.fits    SN2014J          20.002
+    N20160102S0278.fits    SN2014J          20.002
+    N20160102S0279.fits    SN2014J          20.002
+    N20160102S0295.fits      FS 17          10.005
+    N20160102S0296.fits      FS 17          10.005
+    N20160102S0297.fits      FS 17          10.005
+    N20160102S0298.fits      FS 17          10.005
+    N20160102S0299.fits      FS 17          10.005
 
-You can use dataselect_ together with showd_ if you want to print
-the descriptors values in a data subset:::
+Above is a human-readable table.  It is possible to return a comma-separated
+list, CSV list, with the ``--csv`` tag::
+
+    $ showd -d object,exposure_time *.fits --csv
+    filename,object,exposure_time
+    N20160102S0275.fits,SN2014J,20.002
+    N20160102S0276.fits,SN2014J,20.002
+    N20160102S0277.fits,SN2014J,20.002
+    N20160102S0278.fits,SN2014J,20.002
+    N20160102S0279.fits,SN2014J,20.002
+    N20160102S0295.fits,FS 17,10.005
+    N20160102S0296.fits,FS 17,10.005
+    N20160102S0297.fits,FS 17,10.005
+    N20160102S0298.fits,FS 17,10.005
+    N20160102S0299.fits,FS 17,10.005
+
+The ``showd`` command also integrates well with ``dataselect``. You can use
+:ref:`dataselect` together with ``showd`` if you want to print
+the descriptors values in a data subset::
 
     $ dataselect raw/*.fits --tag FLAT | showd -d object,exposure_time
-    filename:   object   exposure_time
-    ------------------------------
-    S20170504S0027.fits: Domeflat 7.0
-    S20170504S0028.fits: Domeflat 7.0
-    ...
-    S20171208S0066.fits: Domeflat 7.0
-    S20171208S0067.fits: Domeflat 7.0
+    ----------------------------------------------
+    filename                object   exposure_time
+    ----------------------------------------------
+    N20160102S0363.fits   GCALflat          42.001
+    N20160102S0364.fits   GCALflat          42.001
+    N20160102S0365.fits   GCALflat          42.001
+    N20160102S0366.fits   GCALflat          42.001
+    N20160102S0367.fits   GCALflat          42.001
 
-The Pipe `` | `` gets the ``dataselect`` output and passes it to ``showd``.
+The "pipe" `` | `` gets the ``dataselect`` output and passes it to ``showd``.
 
-.. todo::
-    The ``showd`` now uses space to separate columns. This may be a problem
-    to the user if they want to use a table and any value also contains spaces
-    within itself. A possible solution would be replacing the space to separate
-    columns by comma.

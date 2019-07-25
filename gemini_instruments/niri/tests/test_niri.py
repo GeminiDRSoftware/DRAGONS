@@ -1,96 +1,65 @@
 import os
-import pytest
-import warnings
 
 import astrodata
 import gemini_instruments
-from astrodata.test.conftest import test_path
-
-
-try:
-    path = os.environ['TEST_PATH']
-except KeyError:
-    warnings.warn("Could not find environment variable: $TEST_PATH")
-    path = ''
-
-if not os.path.exists(path):
-    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
-    path = ''
-
 
 filename = 'N20190120S0287.fits'
 
 
-@pytest.fixture(scope='class')
-def setup_niri(request):
-    print('setup Test_GRACES')
-
-    def fin():
-        print('\nteardown Test_GRACES')
-    request.addfinalizer(fin)
-    return
+def test_is_right_type(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    assert type(ad) == gemini_instruments.niri.adclass.AstroDataNiri
 
 
-@pytest.mark.usefixtures('setup_niri')
-class Test_GRACES:
+def test_is_right_instance(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    # YES, this *can* be different from test_is_right_type. Metaclasses!
+    assert isinstance(ad, gemini_instruments.niri.adclass.AstroDataNiri)
 
-    def test_is_right_type(self):
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        assert type(ad) ==  gemini_instruments.niri.adclass.AstroDataNiri
+def test_extension_data_shape(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    data = ad[0].data
 
-    def test_is_right_instance(self):
+    assert data.shape == (1024, 1024)
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        # YES, this *can* be different from test_is_right_type. Metaclasses!
-        assert isinstance(ad, gemini_instruments.niri.adclass.AstroDataNiri)
 
-    def test_extension_data_shape(self):
+def test_tags(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    tags = ad.tags
+    expected = {'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED',
+                'IMAGE', 'NIRI'}
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        data = ad[0].data
+    assert expected.issubset(tags)
 
-        assert data.shape == (1024, 1024)
 
-    def test_tags(self):
+def test_can_return_instrument(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    assert ad.phu['INSTRUME'] == 'NIRI'
+    assert ad.instrument() == ad.phu['INSTRUME']
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        tags = ad.tags
-        expected = {'RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED',
-                 'IMAGE', 'NIRI'}
 
-        assert expected.issubset(tags)
+def test_can_return_ad_length(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    assert len(ad) == 1
 
-    def test_can_return_instrument(self):
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        assert ad.phu['INSTRUME'] == 'NIRI'
-        assert ad.instrument() == ad.phu['INSTRUME']
+def test_slice_range(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    metadata = ('SCI', 2), ('SCI', 3)
+    slc = ad[1:]
 
-    def test_can_return_ad_length(self):
+    assert len(slc) == 0
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
+    for ext, md in zip(slc, metadata):
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
+
+
+def test_read_a_keyword_from_hdr(path_to_inputs):
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
+
+    try:
+        assert ad.hdr['CCDNAME'] == 'NIRI'
+    except KeyError:
+        # KeyError only accepted if it's because headers out of range
         assert len(ad) == 1
-
-
-    def test_slice_range(self):
-
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        metadata = ('SCI', 2), ('SCI', 3)
-        slc = ad[1:]
-
-        assert len(slc) == 0
-
-        for ext, md in zip(slc, metadata):
-            assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
-
-
-    def test_read_a_keyword_from_hdr(self):
-
-        ad = astrodata.open(os.path.join(test_path(), filename))
-
-        try:
-            assert ad.hdr['CCDNAME'] == 'NIRI'
-        except KeyError:
-            # KeyError only accepted if it's because headers out of range
-            assert len(ad) == 1

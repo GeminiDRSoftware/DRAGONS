@@ -8,12 +8,15 @@ To run:
     1) py.test -v --capture=no
 """
 from datetime import datetime
+
 from gemini_instruments import gmu
+
 
 class TestGMU:
     """
     Suite of tests for the functions in the coordinate utils module.
         """
+
     @classmethod
     def setup_class(cls):
         """Run once at the beginning."""

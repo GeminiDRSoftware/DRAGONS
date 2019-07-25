@@ -7,6 +7,7 @@ from abc import abstractmethod
 from copy import deepcopy
 from collections import namedtuple, OrderedDict
 import os
+import re
 from functools import partial, wraps
 import logging
 import warnings
@@ -464,7 +465,8 @@ class FitsProviderProxy(DataProvider):
         return self
 
     @property
-    @deprecated("Access to headers through this property is deprecated and will be removed in the future")
+    @deprecated("Access to headers through this property is deprecated and will be removed in the future. "
+                "Use '.hdr' instead.")
     def header(self):
         return self._provider._get_raw_headers(with_phu=True, indices=self._mapping)
 
@@ -1321,7 +1323,9 @@ def fits_ext_comp_key(ext):
 
     return ret
 
+
 class FitsLazyLoadable(object):
+
     def __init__(self, obj):
         self._obj = obj
         self.lazy = True
@@ -1356,8 +1360,10 @@ class FitsLazyLoadable(object):
 
     @property
     def dtype(self):
-        """Need to to some overriding of astropy.io.fits since it doesn't
-           know about BITPIX=8"""
+        """
+        Need to to some overriding of astropy.io.fits since it doesn't
+        know about BITPIX=8
+        """
         dtype = self._obj._dtype_for_bitpix()
         bitpix = self._obj._orig_bitpix
         if dtype is None:
@@ -1368,7 +1374,9 @@ class FitsLazyLoadable(object):
             dtype = np.uint16
         return dtype
 
+
 class FitsLoader(object):
+
     def __init__(self, cls = FitsProvider):
         self._cls = cls
 
@@ -1439,7 +1447,10 @@ class FitsLoader(object):
             provider.path = source
         else:
             hdulist = source
-            provider.path = None
+            try:
+                provider.path = source[0].header.get('ORIGNAME')
+            except AttributeError:
+                provider.path = None
 
         def_ext = self._cls.default_extension
         _file = hdulist._file
@@ -1449,6 +1460,9 @@ class FitsLoader(object):
             hdulist._file = _file
 
         # Initialize the object containers to a bare minimum
+        if 'ORIGNAME' not in hdulist[0].header and provider.orig_filename is not None:
+            hdulist[0].header.set('ORIGNAME', provider.orig_filename,
+                                  'Original filename prior to processing')
         provider.set_phu(hdulist[0].header)
 
         seen = set([hdulist[0]])
@@ -1626,26 +1640,66 @@ class AstroDataFits(AstroData):
         except TypeError:
             hdulist.writeto(filename, clobber=overwrite)
 
-    def update_filename(self, prefix='', suffix='', strip=False):
-        if strip:
-            try:
-                filename = self.phu['ORIGNAME']
-            except KeyError:
-                # If it's not there, grab the AD attr instead and add the keyword
-                filename = self.orig_filename
-                self.phu.set('ORIGNAME', filename,
-                                'Original filename prior to processing')
-        else:
-            filename = self.filename or self.phu.get('ORIGNAME')
+    def update_filename(self, prefix=None, suffix=None, strip=False):
+        """
+        This method updates the "filename" attribute of the AstroData object.
+        A prefix and/or suffix can be specified. If strip=True, these will
+        replace the existing prefix/suffix; if strip=False, they will simply
+        be prepended/appended.
 
-        # Possibly, filename could be None
-        try:
-            name, filetype = os.path.splitext(filename)
-        except AttributeError:
-            name, filetype = '', '.fits'
+        The current filename is broken down into its existing prefix, root,
+        and suffix using the ORIGNAME phu keyword, if it exists and is
+        contained within the current filename. Otherwise, the filename is
+        split at the last underscore and the part before is assigned as the
+        root and the underscore and part after the suffix. No prefix is
+        assigned.
+
+        Note that, if strip=True, a prefix or suffix will only be stripped
+        if '' is specified.
+
+        Parameters
+        ----------
+        prefix: str/None
+            new prefix (None => leave alone)
+        suffix: str/None
+            new suffix (None => leave alone)
+        strip: bool
+            Strip existing prefixes and suffixes if new ones are given?
+        """
+        if self.filename is None:
+            if 'ORIGNAME' in self.phu:
+                self.filename = self.phu['ORIGNAME']
+            else:
+                raise ValueError("A filename needs to be set before it "
+                                 "can be updated")
+
+        # Set the ORIGNAME keyword if it's not there
+        if 'ORIGNAME' not in self.phu:
+            self.phu.set('ORIGNAME', self.orig_filename,
+                         'Original filename prior to processing')
+
+        if strip:
+            root, filetype = os.path.splitext(self.phu['ORIGNAME'])
+            filename, filetype = os.path.splitext(self.filename)
+            m = re.match('(.*){}(.*)'.format(re.escape(root)), filename)
+            # Do not strip a prefix/suffix unless a new one is provided
+            if m:
+                if prefix is None:
+                    prefix = m.groups()[0]
+                existing_suffix = m.groups()[1]
+            else:
+                try:
+                    root, existing_suffix = filename.rsplit("_", 1)
+                    existing_suffix = "_" + existing_suffix
+                except ValueError:
+                    root, existing_suffix = filename, ''
+            if suffix is None:
+                suffix = existing_suffix
+        else:
+            root, filetype = os.path.splitext(self.filename)
 
         # Cope with prefix or suffix as None
-        self.filename = (prefix or '') + name + (suffix or '') + filetype
+        self.filename = (prefix or '') + root + (suffix or '') + filetype
         return
 
 

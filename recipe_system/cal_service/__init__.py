@@ -39,6 +39,15 @@ def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
     Load the configuration from the specified path to file (or files), and
     initialize it with some defaults.
 
+    Parameters
+    ----------
+    conf_path: <str>, Path of configuration file. Default is
+                      STANDARD_REDUCTION_CONF -> '~/.geminidr/rsys.cfg'
+
+    Return
+    ------
+    <ConfigObject>
+
     """
     globalConf.load(conf_path,
             defaults = {
@@ -50,8 +59,10 @@ def load_calconf(conf_path=STANDARD_REDUCTION_CONF):
 
     return get_calconf()
 
+
 def update_calconf(items):
     globalConf.update(CONFIG_SECTION, items)
+
 
 def get_calconf():
     try:
@@ -62,20 +73,24 @@ def get_calconf():
         # the user has called 'load_calconf' before.
         pass
 
+
 def is_local():
     try:
         if get_calconf().standalone:
-           if not localmanager_available:
+            if not localmanager_available:
                 raise RuntimeError(
-                        "Local calibs manager has been chosen, but there "
-                        "are missing dependencies: {}".format(import_error))
-           return True
+                    "Local calibs manager has been chosen, but there "
+                    "are missing dependencies: {}".format(import_error))
+            return True
+
     except AttributeError:
         # This may happen if there's no calibration config section or, in
         # case there is one, if either calconf.standalone or calconf.database_dir
         # are not defined
         pass
+
     return False
+
 
 def handle_returns_factory():
     return (
@@ -84,6 +99,7 @@ def handle_returns_factory():
         transport_request.handle_returns
     )
 
+
 def cal_search_factory():
     """
     This function returns the proper calibration search function, depending on
@@ -91,6 +107,13 @@ def cal_search_factory():
 
     Defaults to `prsproxyutil.calibration_search` if there is missing calibs
     setup, or if the `[calibs]`.`standalone` option is turned off.
+
+    Returns
+    -------
+    calibration_search: <func>
+        The appropriate (local or fitsstore) search function indicated by
+        a given configuration.
+
     """
 
     return (
@@ -100,15 +123,35 @@ def cal_search_factory():
     )
 
 
-def set_calservice(local_db_dir=None):
-    globalConf.load(expanduser(STANDARD_REDUCTION_CONF))
+def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
+    """
+    Update the calibration service global configuration stored in
+    :data:`recipe_system.config.globalConf` by changing the path to the
+    configuration file and to the data base directory.
+
+    Parameters
+    ----------
+    local_db_dir: <str>
+        Name of the directory where the database will be stored.
+
+    config_file: <str>
+        Name of the configuration file that will be loaded.
+
+    """
+    globalConf.load(expanduser(config_file))
+
     if localmanager_available:
-        if local_db_dir is not None:
-            globalConf.update(CONFIG_SECTION, dict(standalone=True,
-                            database_dir=expanduser(local_db_dir)))
+        if local_db_dir is None:
+            local_db_dir = globalConf['calibs'].database_dir
+
+        globalConf.update(
+            CONFIG_SECTION, dict(
+                database_dir=expanduser(local_db_dir),
+                config_file=expanduser(config_file)
+            )
+        )
 
     globalConf.export_section(CONFIG_SECTION)
-    return
 
 
 class CalibrationService(object):
@@ -118,13 +161,23 @@ class CalibrationService(object):
     lower level LocalManager class, and provides limited access to let
     users/callers easy configuration and use of the local calibration database.
 
-    Public Methods
-    --------------
-    config     -- configure a session with the database via the rsys.conf file.
-    init       -- initialize a calibration database.
-    add_cal    -- Add a calibration file to the database.
-    remove_cal -- Delete a calibration from the database.
-    list_files -- List files in the database. Returns a generator object.
+    Methods
+    -------
+
+    config(db_dir=None, verbose=True, config_file=STANDARD_REDUCTION_CONF)
+        configure a session with the database via the rsys.conf file.
+
+    init(wipe=True)
+        initialize a calibration database.
+
+    add_cal(path)
+        Add a calibration file to the database.
+
+    remove_cal(path)
+        Delete a calibration from the database.
+
+    list_files()
+        List files in the database. Returns a generator object.
 
     E.g.,
 
@@ -160,9 +213,11 @@ class CalibrationService(object):
 
     """
     def __init__(self):
+        self.conf = None
         self._mgr = None
 
-    def config(self, db_dir=None, verbose=True):
+    def config(self, db_dir=None, verbose=False,
+               config_file=STANDARD_REDUCTION_CONF):
         """
         Configure the Calibration Service and database.
 
@@ -177,12 +232,19 @@ class CalibrationService(object):
             Configuration information will be displayed to stdout.
             Default is True.
 
+        config_file: str
+            Path to the configuration file.
+
         """
-        set_calservice(local_db_dir=db_dir)
+        set_calservice(local_db_dir=db_dir, config_file=config_file)
         conf = get_calconf()
+
         if not conf.standalone:
-            print("The database is not configured as standalone.")
+            print("CalibrationService is not configured as standalone.")
+
         else:
+            print("CalibrationService is configured as standalone.")
+            print("The configured local database will be used.")
             self._mgr = localmanager.LocalManager(expanduser(conf.database_dir))
 
         if verbose:
@@ -214,7 +276,7 @@ class CalibrationService(object):
         """
         return self._mgr.init_database(wipe=wipe)
 
-    def add_cal(self, apath):
+    def add_cal(self, path):
         """
         Registers a calibration file specified by 'apath' into the database
 
@@ -224,9 +286,9 @@ class CalibrationService(object):
             Path to the file. It can be either absolute or relative.
 
         """
-        return self._mgr.ingest_file(apath)
+        return self._mgr.ingest_file(path)
 
-    def remove_cal(self, rpath):
+    def remove_cal(self, path):
         """
         Removes a calibration file from the database. Note that only the filename
         is relevant. All duplicate copies in the database will be removed.
@@ -237,7 +299,7 @@ class CalibrationService(object):
             Path to the file. It can be either absolute or relative
 
         """
-        return self._mgr.remove_file(basename(rpath))
+        return self._mgr.remove_file(basename(path))
 
     def list_files(self):
         """
@@ -262,16 +324,26 @@ class CalibrationService(object):
 
     def _config_info(self, conf):
         path = self._mgr._db_path
-        isactive = "The 'standalone' flag is active; local calibrations will be used."
-        inactive = "The 'standalone' flag is not active; remote calibrations will be"
-        inactive += " downloaded."
 
-        print("Using configuration file: {}".format(STANDARD_REDUCTION_CONF))
+        is_active = (
+            "The 'standalone' flag is \033[1mactive\033[0m; local calibrations"
+            "will be used."
+        )
+
+        inactive = (
+            "The 'standalone' flag is not active; remote calibrations will be"
+            " downloaded."
+        )
+
         print()
-        print("The active database directory is:  {}".format(conf.database_dir))
-        print("The database file to be used: {}".format(path))
+        print("Using configuration file: \033[1m{}\033[0m".format(conf.config_file))
+        print("Active database directory:  \033[1m{}\033[0m".format(conf.database_dir))
+        print("Database file: \033[1m{}\033[0m".format(path))
+        print()
+        print("configuration standalone: {}".format(conf.standalone))
+
         if conf.standalone:
-            print(isactive)
+            print(is_active)
         else:
             print(inactive)
 

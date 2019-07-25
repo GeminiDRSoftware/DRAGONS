@@ -12,9 +12,17 @@ from geminidr.core import Bookkeeping, CalibDB, Preprocess
 from geminidr.gemini import primitives_gemini as gemini
 
 
-TESTDATAPATH = os.getenv('PRIMITIVE_TESTDATA', '.')
+try:
+    path = os.environ['TEST_PATH']
+except KeyError:
+    warnings.warn("Could not find environment variable: $TEST_PATH")
+    path = ''
 
-ad = astrodata.open(os.path.join(TESTDATAPATH, 'N20020829S0026.fits'))
+if not os.path.exists(path):
+    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
+    path = ''
+
+ad = astrodata.open(os.path.join(path, 'N20020829S0026.fits'))
     # acqimage = GmosAcquisition(ad, 'GN2018AQ903-01.fits', TESTDATAPATH)
     # box = acqimage.get_mos_boxes()[0]
 #   export PRIMITIVE_TESTDATA=/net/hbf-nfs/sci/rtfperm/dragons/testdata/GMOS

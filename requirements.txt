@@ -1,8 +1,9 @@
 astropy
+astroquery
 cython
 future
-ipython
-matplotlib
 numpy
 python-dateutil
 scipy
+sqlalchemy
+stsci.numdisplay

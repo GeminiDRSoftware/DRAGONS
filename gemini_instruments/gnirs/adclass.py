@@ -4,8 +4,10 @@ import re
 from astrodata import astro_data_tag, astro_data_descriptor, TagSet, returns_list
 
 from ..gemini import AstroDataGemini
-from ..common import build_ir_section, build_group_id, section_to_tuple
-from .lookup import detector_properties, nominal_zeropoints, config_dict, read_modes
+from ..common import build_group_id
+
+from .lookup import detector_properties, nominal_zeropoints, read_modes
+from .lookup import pixel_scale_shrt, pixel_scale_long
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -13,8 +15,7 @@ from .. import gmu
 
 class AstroDataGnirs(AstroDataGemini):
 
-    __keyword_dict = dict(central_wavelength = 'GRATWAVE',
-                          )
+    __keyword_dict = dict(central_wavelength='GRATWAVE',)
 
     @staticmethod
     def _matches_data(source):
@@ -65,8 +66,8 @@ class AstroDataGnirs(AstroDataGemini):
         if self.phu.get('OBSTYPE') == 'FLAT':
             if 'Pinholes' in self.phu.get('SLIT', ''):
                 return TagSet(['PINHOLE', 'CAL'], remove=['GCALFLAT'])
-            else:
-                return TagSet(['FLAT', 'CAL'])
+
+            return TagSet(['FLAT', 'CAL'])
 
     @astro_data_descriptor
     def array_section(self, pretty=False):
@@ -171,7 +172,7 @@ class AstroDataGnirs(AstroDataGemini):
         except TypeError:  # either is None
             return None
         # Flipped if on bottom port unless AO is operating
-        return -offset if (self.phu.get('INPORT')==1 and
+        return -offset if (self.phu.get('INPORT') == 1 and
                            not self.is_ao()) else offset
     @astro_data_descriptor
     def detector_y_offset(self):
@@ -218,8 +219,8 @@ class AstroDataGnirs(AstroDataGemini):
         prism = self._prism(stripID=stripID, pretty=pretty)
         if prism.startswith('MIR'):
             return grating
-        else:
-            return "{}&{}".format(grating, prism)
+
+        return "{}&{}".format(grating, prism)
 
     @astro_data_descriptor
     def focal_plane_mask(self, stripID=False, pretty=False):
@@ -374,37 +375,40 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_descriptor
     def pixel_scale(self):
         """
-        Returns the pixel scale in arc seconds.
+        Returns the pixel scale in arc seconds. GNIRS pixel scale is determined
+        soley by the camera used, long or short, regardless of color band
+        (red|blue).
+
+        GNIRS instrument page,
+
+            https://www.gemini.edu/sciops/instruments/gnirs/spectroscopy
+
+        Short camera (0.15"/pix) -- lookup.pixel_scale_shrt
+        Long  camera (0.05"/pix) -- lookup.pixel_scale_long
+
 
         Returns
         -------
-        float
-            Pixel scale in arcsec.
-        """
-        camera = self.camera()
+        <float>, 
+            Pixel scale in arcsec
 
-        if self.tags & set(['IMAGE', 'DARK']):
-            # Imaging or darks
-            try:
-                match = re.match(r"^(Short|Long)(Red|Blue)_G\d+$", camera)
-                cameratype = match.group(1)
-                if cameratype == 'Short':
-                    return 0.15
-                elif cameratype == 'Long':
-                    return 0.05
-            except (TypeError, AttributeError):
-                pass
+        Raises
+        ------
+        ValueError
+            If 'camera' is neither short nor long, it is unrecognized.
+
+        """
+        try:
+            camera = self.camera().lower()
+        except AttributeError:
             return None
+
+        if 'short' in camera:
+            return pixel_scale_shrt
+        elif 'long' in camera:
+            return pixel_scale_long
         else:
-            # Spectroscopy mode
-            prism = self.phu.get('PRISM')
-            decker = self.phu.get('DECKER')
-            disperser = self.phu.get('GRATING')
-            ps_key = (prism, decker, disperser, camera)
-            try:
-                return config_dict.get(ps_key).pixscale
-            except TypeError:
-                return None
+            raise ValueError("Unrecognized GNIRS camera, {}".format(camera))
 
 
     @astro_data_descriptor

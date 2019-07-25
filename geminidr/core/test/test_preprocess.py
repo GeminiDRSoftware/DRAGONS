@@ -20,77 +20,125 @@ To run:
 
 import os
 import pytest
-import numpy as np
+
 from copy import deepcopy
-import AstroFaker
+
+import numpy as np
+
 import astrodata
 import gemini_instruments
-from gempy.utils import logutils
 
 from . import ad_compare
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.gmos.primitives_gmos_image import GMOSImage
+from gempy.utils import logutils
+
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_preprocess.log'
 
-@pytest.fixture()
-def niriImages():
+
+@pytest.fixture
+def niri_images():
     """Create two NIRI images, one all 1s, the other all 2s"""
+    try:
+        import AstroFaker
+    except ImportError:
+        pytest.skip("AstroFaker not installed")
+
     adinputs = []
     for i in (1, 2):
         ad = AstroFaker.create('NIRI', 'IMAGE')
         ad.init_default_extensions()
         ad[0].data += i
+
     adinputs.append(ad)
+
     return NIRIImage(adinputs)
 
-def test_scaleByExposureTime(niriImages):
-    ad1, ad2 = niriImages.streams['main']
+@pytest.fixture
+def astrofaker():
+
+    try:
+        import AstroFaker
+    except ImportError:
+        pytest.skip("AstroFaker not installed")
+
+    return AstroFaker
+
+
+def test_scale_by_exposure_time(niri_images):
+
+    ad1, ad2 = niri_images.streams['main']
+
     ad2.phu[ad2._keyword_for('exposure_time')] *= 0.5
     ad2_orig_value = ad2[0].data.mean()
-    ad1, ad2 = niriImages.scaleByExposureTime(time=None)
+
+    ad1, ad2 = niri_images.scaleByExposureTime(time=None)
+
     # Check that ad2 had its data doubled
     assert abs(ad2[0].data.mean() - ad2_orig_value * 2) < 0.001
-    ad1, ad2 = niriImages.scaleByExposureTime(time=1)
+
+    ad1, ad2 = niri_images.scaleByExposureTime(time=1)
+
     # Check that ad2 has been rescaled to 1-second
     print(ad2[0].data.mean(), ad2_orig_value, ad2.phu["ORIGTEXP"])
     assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
 
-def test_addObjectMaskToDQ():
+
+def test_add_object_mask_to_dq():
+
+    try:
+        import AstroFaker
+    except ImportError:
+        pytest.skip("AstroFaker not installed")
+
     ad_orig = AstroFaker.create('F2','IMAGE')
-        #astrodata.open(os.path.join(TESTDATAPATH, 'GMOS', 'N20150624S0106_refcatAdded.fits'))
+
+    #astrodata.open(os.path.join(TESTDATAPATH, 'GMOS', 'N20150624S0106_refcatAdded.fits'))
     p = GMOSImage([deepcopy(ad_orig)])
     ad = p.addObjectMaskToDQ()[0]
+
     for ext, ext_orig in zip(ad, ad_orig):
         assert all(ext.mask[ext.OBJMASK==0] == ext_orig.mask[ext.OBJMASK==0])
         assert all(ext.mask[ext.OBJMASK==1] == ext_orig.mask[ext.OBJMASK==1] | 1)
 
-def test_ADUTOElectrons():
-    ad = AstroFaker.create("NIRI", "IMAGE")
+
+def test_adu_to_electrons(astrofaker):
+    ad = astrofaker.create("NIRI", "IMAGE")
         #astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
     p = NIRIImage([ad])
     ad = p.ADUToElectrons()[0]
     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                             'N20070819S0104_ADUToElectrons.fits'))
 
-def test_applyDQPlane():
-    ad = AstroFaker.create("NIRI","IMAGE")
-        #astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_nonlinearityCorrected.fits'))
+
+def test_apply_dq_plane(astrofaker):
+
+    ad = astrofaker.create("NIRI","IMAGE")
+
+    #astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_nonlinearityCorrected.fits'))
+
     p = NIRIImage([ad])
     ad = p.applyDQPlane()[0]
+
     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                             'N20070819S0104_dqPlaneApplied.fits'))
 
+
 def test_associateSky():
+
     filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                  for i in range(104, 109)]
+
     adinputs = [astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', f))
                 for f in filenames]
+
     p = NIRIImage(adinputs)
     p.separateSky()  # Difficult to construct this by hand
     p.associateSky()
     filename_set = set([ad.phu['ORIGNAME'] for ad in adinputs])
+
     # Test here is that each science frame has all other frames as skies
     for k, v in p.sky_dict.items():
         v = [ad.phu['ORIGNAME'] for ad in v]

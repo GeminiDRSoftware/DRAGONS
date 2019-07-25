@@ -4,6 +4,7 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = set(['GSAOI', 'IMAGE', 'CAL', 'FLAT'])
 
+
 def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to convert
@@ -30,5 +31,6 @@ def makeProcessedFlat(p):
     p.thresholdFlatfield()
     p.storeProcessedFlat()
     return
+
 
 _default = makeProcessedFlat

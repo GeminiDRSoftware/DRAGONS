@@ -7,9 +7,8 @@
 
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
-           'open', 'create', '__version__']
+           'open', 'create', '__version__', 'version']
 
-__version__ = '9999'
 
 from .core import *
 # TODO: Remove 'write' when there's nothing else using it
@@ -19,6 +18,10 @@ from .fits import add_header_to_table
 from .factory import AstroDataFactory
 
 from .nddata import NDAstroData
+
+from ._version import version
+
+__version__ = version()
 
 keyword = KeywordCallableWrapper
 

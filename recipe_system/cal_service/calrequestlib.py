@@ -100,14 +100,15 @@ def get_cal_requests(inputs, caltype):
 
     Parameters
     ----------
-    inputs : list
+    inputs: <list>
         A list of input AstroData instances.
-    caltype : str
+
+    caltype: <str>
         Calibration type, eg., 'processed_bias', 'flat', etc.
 
     Returns
     -------
-    rq_events : list
+    rq_events: <list>
         A list of CalibrationRequest instances, one for each passed
        'ad' instance in 'inputs'.
 
@@ -118,7 +119,7 @@ def get_cal_requests(inputs, caltype):
 
     rq_events = []
     for ad in inputs:
-        log.stdinfo("Recieved calibration request for {}".format(ad.filename))
+        log.stdinfo("Received calibration request for {}".format(ad.filename))
         rq = CalibrationRequest(ad, caltype)
         # Check that each descriptor works and returns a sensible value.
         desc_dict = {}
@@ -160,21 +161,20 @@ def process_cal_requests(cal_requests, howmany=None):
 
     Parameters
     ----------
-    cal_requests : list
+    cal_requests : <list>
         A list of CalibrationRequest objects
 
-    howmany : int, optional
+    howmany : <int>, optional
         Maximum number of calibrations to return per request
         (not passed to the server-side request but trims the returned list)
 
     Returns
     -------
-    calibration_records : dict
+    calibration_records : <dict>
         A set of science frames and matching calibrations.
 
     Example
     -------
-
     The returned dictionary has the form::
 
         {(ad): <filename_of_calibration_including_path>,
@@ -183,6 +183,8 @@ def process_cal_requests(cal_requests, howmany=None):
 
     """
     calibration_records = {}
+    warn = "\tNo {} calibration file found for {}\n"
+    md5msg = "\tNo {} calibration found for {}\n"
 
     def _add_cal_record(rq, calfile):
         calibration_records.update({rq.ad: calfile})
@@ -194,13 +196,15 @@ def process_cal_requests(cal_requests, howmany=None):
         calmd5 = None
         calurl = None
         calurl, calmd5 = calibration_search(rq, howmany=(howmany if howmany else 1))
-        if calurl is None:
-            log.error("START CALIBRATION SERVICE REPORT\n")
-            log.error(calmd5)
-            log.error("END CALIBRATION SERVICE REPORT\n")
-            warn = "No {} calibration file found for {}"
-            log.warning(warn.format(rq.caltype, rq.filename))
-            #_add_cal_record(rq, calname)
+        if not calurl:
+            log.warning("START CALIBRATION SERVICE REPORT\n")
+            if not calmd5:
+                log.warning(md5msg.format(rq.caltype, rq.filename))
+            else:
+                log.warning("\t{}".format(calmd5))
+                log.warning(warn.format(rq.caltype, rq.filename))
+
+            log.warning("END CALIBRATION SERVICE REPORT\n")
             continue
 
         calibs = []

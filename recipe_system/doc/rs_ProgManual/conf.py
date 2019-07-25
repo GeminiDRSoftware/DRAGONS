@@ -39,14 +39,14 @@ else:
 project = u"DRAGONS - Recipe System Programmer's Manual"
 copyright = u'Gemini Observatory (AURA), 2018'
 
-author = 'Kenneth Anderson'
+author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-version = '2.0'  # The short X.Y version.
-release = '2.0.8'  # The full version, including alpha/beta/rc tags.
+version = '2.2'  # The short X.Y version.
+release = '2.2.0'  # The full version, including alpha/beta/rc tags.
 
 
 # -- General configuration -----------------------------------------------------
@@ -65,6 +65,7 @@ extensions = [
    'sphinx.ext.ifconfig',
    'sphinx.ext.viewcode',
    'sphinx.ext.napoleon',
+   'sphinx.ext.graphviz',
 ]
 
 
@@ -341,11 +342,10 @@ def run_api_doc(_):
         build helper.
     """
     build_packages = [
-        'gempy',
-        'geminidr',
+        #'gempy',
+        #'geminidr',
         'recipe_system',
     ]
-
 
     is_running_in_pycharm = "PYCHARM_HOSTED" in os.environ
 
@@ -356,13 +356,16 @@ def run_api_doc(_):
 
     relative_path = "../../../"
 
-    print("Am I running on PyCharm? {}", is_running_in_pycharm)
-    print("Current Path: {}", current_path)
+    print("\n Am I running on PyCharm? {}".format(is_running_in_pycharm))
+    print(" Current Path: {}\n".format(current_path))
 
     for p in build_packages:
 
-        build_path = os.path.join(current_path, relative_path, p)
-        print('\n Building API using the following build_path: \n'.format(
+        build_path = os.path.normpath(
+            os.path.join(current_path, relative_path, p)
+        )
+
+        print('\n Building API using the following build_path: {}\n'.format(
             build_path))
 
         ignore_paths = [
@@ -371,13 +374,13 @@ def run_api_doc(_):
         ]
 
         ignore_paths = [os.path.join(build_path, i) for i in ignore_paths]
+        api_path = os.path.normpath(os.path.join(current_path, 'api'))
 
         argv = [
                    "--force",
                    "--no-toc",
-                   # "--separate",
                    "--module",
-                   "--output-dir", "api/",
+                   "--output-dir", api_path,
                    build_path
                ] + ignore_paths
 
@@ -400,7 +403,9 @@ def setup(app):
 
     # Adding style in order to have the todos show up in a red box.
     app.add_stylesheet('todo-styles.css')
+    app.add_stylesheet('rtd_theme_overrides.css')
     app.add_stylesheet('css/custom_code.css')
+    app.add_stylesheet('fonts.css')
 
     # Automatic API generation
     app.connect('builder-inited', run_api_doc)

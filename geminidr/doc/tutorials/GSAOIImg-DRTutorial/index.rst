@@ -3,28 +3,21 @@
    contain the root `toctree` directive.
    Manually edited by BQ <Feb 5 2019>
 
-Tutorial Series - GSAOI Imaging Data Reduction with DRAGONS
-===========================================================
+DRAGONS - GSAOI Imaging Data Reduction
+======================================
 
 .. admonition:: Document ID
 
    PIPE-USER-000_GSAOIImg-DRTutorial
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
-   
-   intro
-   yourcontent
-   
-Appendix
---------
+   :caption: Table of Contents
 
-.. toctree::
-   :numbered:
-   :maxdepth: 1
-   
-   appendices/appendix_yourcontent
+   01_introduction
+   02_data_reduction
+   03_api_reduction
+
 
 Indices and tables
 ==================

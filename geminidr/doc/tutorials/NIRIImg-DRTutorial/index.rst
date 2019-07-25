@@ -20,7 +20,6 @@ Tutorial Series - NIRI Imaging Data Reduction with DRAGONS
    extended_api
    
 
-
 Indices and tables
 ==================
 

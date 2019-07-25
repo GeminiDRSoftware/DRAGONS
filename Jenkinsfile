@@ -1,132 +1,117 @@
 #!/usr/bin/env groovy
+/*
+ * Jenkins Pipeline for DRAGONS
+ *
+ * by Bruno C. Quint
+ *
+ * Required Plug-ins:
+ * - CloudBees File Leak Detector
+ * - Cobertura Plug-in
+ * - Warnings NG
+ */
+
+@Library('bquint-shared-libs@master') _
+
 pipeline {
 
-  agent any
+    agent any
 
-  triggers {
-    pollSCM('H/20 * * * 1-5')
-  }
-
-  options {
-    skipDefaultCheckout(true)
-    // Keep the 20 most recent builds
-    buildDiscarder(logRotator(numToKeepStr: '20'))
-    timestamps()
-  }
-
-  environment {
-    PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
-    TEST_PATH = "$WORKSPACE/test_path/"
-  }
-
-  stages {
-    stage ("Code pull"){
-      steps{
-        checkout scm
-      }
+    triggers {
+        pollSCM('H * * * *')  // Polls Source Code Manager every hour
     }
 
-    stage ("Download and Install Anaconda") {
-      steps {
-        sh '''if ! [ "$(command -v conda)" ]; then
-                echo "Conda is not installed - Downloading and installing"
+    options {
+        skipDefaultCheckout(true)
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
 
-                curl https://repo.anaconda.com/archive/Anaconda3-5.3.1-Linux-x86_64.sh \\
-                  --output anaconda.sh --silent
+    environment {
+        PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
+        CONDA_ENV_FILE = ".jenkins/conda_py3env_stable.yml"
+        CONDA_ENV_NAME = "py3_stable"
+    }
 
-                chmod a+x anaconda.sh
-                ./anaconda.sh -u -b -p $JENKINS_HOME/anaconda3/
+    stages {
 
-                conda config --add channels http://ssb.stsci.edu/astroconda
-                conda update --quiet conda
-              fi
-              '''
-      }
-    } // stage: download and install anaconda
+        stage ("Prepare"){
 
-    stage ("Build and Test Environment") {
-      steps {
-        sh '''conda env create --quiet --file .jenkins/conda_venv.yml -n ${BUILD_TAG}
-              
-              source activate ${BUILD_TAG}
-              
-              .jenkins/test_env_and_install_missing_libs.sh
-              python .jenkins/download_test_data.py
-              '''
-      }
-    } // stage: build environment
+            steps{
+                sendNotifications 'STARTED'
+                checkout scm
+                sh '.jenkins/scripts/download_and_install_anaconda.sh'
+                sh '.jenkins/scripts/create_conda_environment.sh'
+                sh '.jenkins/scripts/install_missing_packages.sh'
+                sh '.jenkins/scripts/install_dragons.sh'
+                sh '''source activate ${CONDA_ENV_NAME}
+                      python .jenkins/scripts/download_test_inputs.py
+                      '''
+                sh '.jenkins/scripts/test_environment.sh'
+                sh 'conda list -n ${CONDA_ENV_NAME}'
+                sh 'rm -rf ./reports'
+                sh 'mkdir -p ./reports'
+            }
 
-  //  stage('Static code metrics') {
-  //    steps {
-  //      echo "Code Coverage"
-  //      sh  ''' source activate ${BUILD_TAG}
-  //              coverage run setup.py build
-  //              python -m coverage xml -o ./reports/coverage.xml
-  //              '''
-  //      echo "PEP8 style check"
-  //      sh  ''' source activate ${BUILD_TAG}
-  //              pylint --disable=C astrodata || true
-  //              '''
-  //    }
+        }
 
+        stage('Code Metrics') {
 
-    stage('Unit tests and Code Coverage') {
-      steps {
-        sh  ''' source activate ${BUILD_TAG}
-                coverage run -m pytest --junit-xml ./reports/test_results.xml
-                coverage xml -o ./reports/coverage.xml
-                '''
-      }
-      post {
+            steps {
+                sh '.jenkins/code_metrics/pylint.sh'
+                sh '.jenkins/code_metrics/pydocstring.sh'
+            }
+            post {
+                success {
+                    recordIssues(
+                        enabledForFailure: true,
+                        tools: [
+                            pyLint(pattern: '**/reports/pylint.log'),
+                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
+                        ]
+                    )
+                }
+            }
+
+        }
+
+        stage('Unit tests') {
+            steps {
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m "not integtest" --junit-xml ./reports/unittests_results.xml
+                    '''
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    python -m coverage xml -o ./reports/coverage.xml
+                    '''
+            }
+        }
+
+        stage('Integration tests') {
+            steps {
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
+                    '''
+            }
+        }
+
+    }
+    post {
         always {
           junit (
             allowEmptyResults: true,
-            testResults: 'reports/test_results.xml'
-            )
-          step([$class: 'CoberturaPublisher',
-            autoUpdateHealth: false,
-            autoUpdateStability: false,
-            coberturaReportFile: 'reports/coverage.xml',
-            failNoReports: false,
-            failUnhealthy: false,
-            failUnstable: false,
-            maxNumberOfBuilds: 10,
-            onlyStable: false,
-            sourceEncoding: 'ASCII',
-            zoomCoverageChart: false])
+            testResults: 'reports/*_results.xml'
+          )
         }
-      }
-    } // stage: unit tests
-
-    stage('Build package') {
-      when {
-        expression {
-          currentBuild.result == null || currentBuild.result == 'SUCCESS'
+        success {
+            sendNotifications 'SUCCESSFUL'
+            sh  '.jenkins/scripts/build_sdist_file.sh'
+            sh  'pwd'
+            echo 'Make tarball available'
         }
-      }
-      steps {
-        sh  ''' source activate ${BUILD_TAG}
-                python setup.py sdist bdist_egg
-            '''
-      }
-      post {
-        always {
-        // Archive unit tests for the future
-        archiveArtifacts (allowEmptyArchive: true,
-                            artifacts: 'dist/*whl',
-                            fingerprint: true)
+        failure {
+            sendNotifications 'FAILED'
         }
-      } // post
-    } // stage: build package
-  } // stages
-
-  post {
-    always {
-      sh 'conda remove --yes --all --quiet -n ${BUILD_TAG}'
     }
-    failure {
-      echo "Send e-mail, when failed"
-    }
-  } // post
-
-} // pipeline
+}

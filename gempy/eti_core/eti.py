@@ -1,23 +1,37 @@
-from ..utils import logutils
+
 from multiprocessing import Process, Queue
 from subprocess import check_output, STDOUT, CalledProcessError
 
+from ..utils import logutils
+
+
 log = logutils.get_logger(__name__)
 
-# Code to spawn a subprocess for running external tasks
-def loop_process(inQueue, outQueue):
+
+def loop_process(in_queue, out_queue):
+    """
+    Code to spawn a subprocess for running external tasks
+
+    Parameters
+    ----------
+    in_queue : multiprocessing.Queue
+        (add docstring)
+    out_queue : multiprocessing.Queue
+        (add docstring)
+    """
     while True:
-        cmd = inQueue.get()
+        cmd = in_queue.get()
         try:
             result = check_output(cmd, stderr=STDOUT)
         except CalledProcessError as e:
             result = e
-        outQueue.put(result)
+        out_queue.put(result)
+
 
 class ETISubprocess(object):
     """
     A singleton class that creates an instance of __ETISubprocess, which
-    any future instances of ETISubprocess will point to
+    any future instances of ETISubprocess will point to.
     """
     class __ETISubprocess(object):
         def __init__(self):
@@ -39,8 +53,10 @@ class ETISubprocess(object):
 
     def __getattr__(self, name):
         return getattr(self.instance, name)
+
     def __setattr__(self, name, value):
         return setattr(self.instance, name, value)
+
 
 class ExternalTaskInterface(object):
     """
@@ -48,11 +64,21 @@ class ExternalTaskInterface(object):
     System to interact with ouside software. It prepares, executes, recovers,
     and cleans all files and parameters pertaining to any external task
     that interfaces with the recipe system.
+
+    Parameters
+    ----------
+    primitives_class : (add input type)
+        (add docstring)
+    inputs : (add input type)
+        (add docstring)
+    params : (add input type)
+        (add docstring)
     """
     param_objs = None
     file_objs = None
     inputs = None
     params = None
+
     def __init__(self, primitives_class=None, inputs=None, params=None):
         """
         :param rc: Used to store reduction information

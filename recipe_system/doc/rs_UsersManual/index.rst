@@ -3,8 +3,9 @@
    contain the root `toctree` directive.
    Manually edited by KRA, 23-01-2017.
 
-Recipe System Users Manual
-==========================
+*************************
+Recipe System User Manual
+*************************
 
 .. admonition:: Document ID
 
@@ -12,24 +13,25 @@ Recipe System Users Manual
 
 .. toctree::
    :maxdepth: 2
+   :caption: Table of Contents
 
    intro
    install
-   howto
+   definitions
+   reduce
+   reduceapi
+   caldb
    supptools
-   discuss
    ack
-
-Appendix
---------
 
 .. toctree::
    :numbered:
    :maxdepth: 1
+   :caption: Appendices
 
+   appendices/full_commandline_example
+   appendices/full_api_example
    appendices/glossary
-   appendices/appendix_demo
-   appendices/reduce_properties
 
 Indices and tables
 ==================

@@ -59,6 +59,8 @@ class Stack(PrimitivesBASE):
             type of pixel rejection (passed to gemcombine)
         zero: bool
             apply zero-level offset to match background levels?
+        memory: float/None
+            available memory (in GB) for stacking calculations
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -242,7 +244,7 @@ class Stack(PrimitivesBASE):
         if refcats:
             out_refcat = table.unique(table.vstack(refcats,
                                 metadata_conflicts='silent'), keys='Cat_Id')
-            out_refcat['Cat_Id'] = list(range(1, len(out_refcat)+1))
+            out_refcat['Id'] = list(range(1, len(out_refcat)+1))
             ad_out.REFCAT = out_refcat
 
         # Set AIRMASS to be the mean of the input values
@@ -301,6 +303,8 @@ class Stack(PrimitivesBASE):
             combine method
         reject_method: str
             type of pixel rejection (passed to gemcombine)
+        memory: float/None
+            available memory (in GB) for stacking calculations
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))

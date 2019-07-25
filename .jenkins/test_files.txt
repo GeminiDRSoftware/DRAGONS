@@ -24,14 +24,33 @@ F2/test_reduce/S20130930S0243.fits
 F2/test_reduce/S20130930S0244.fits
 F2/test_reduce/S20130930S0245.fits
 F2/test_reduce/S20130930S0246.fits
+F2/test_reduce/S20131023S0193.fits
+F2/test_reduce/S20131023S0194.fits
+F2/test_reduce/S20131023S0195.fits
+F2/test_reduce/S20131023S0196.fits
+F2/test_reduce/S20131023S0197.fits
+F2/test_reduce/S20140124S0033.fits
+F2/test_reduce/S20140124S0034.fits
+F2/test_reduce/S20140124S0035.fits
+F2/test_reduce/S20140124S0036.fits
+F2/test_reduce/S20140124S0037.fits
+F2/test_reduce/S20140124S0038.fits
+F2/test_reduce/S20140209S0542.fits
+F2/test_reduce/S20140209S0543.fits
+F2/test_reduce/S20140209S0544.fits
+F2/test_reduce/S20140209S0545.fits
 
 # Darks 120s
-F2/test_reduce/S20131120S0115.fits
+F2/test_reduce/S20131121S0115.fits
 F2/test_reduce/S20131120S0116.fits
 F2/test_reduce/S20131120S0117.fits
 F2/test_reduce/S20131120S0118.fits
 F2/test_reduce/S20131120S0119.fits
 F2/test_reduce/S20131120S0120.fits
+F2/test_reduce/S20131121S0010.fits
+F2/test_reduce/S20131122S0012.fits
+F2/test_reduce/S20131122S0438.fits
+F2/test_reduce/S20131122S0439.fits
 
 # Flats Y
 F2/test_reduce/S20131126S1111.fits
@@ -56,6 +75,7 @@ F2/test_reduce/S20131121S0081.fits
 F2/test_reduce/S20131121S0082.fits
 F2/test_reduce/S20131121S0083.fits
 
+# Astrodata test files
 S20170103S0032.fits
 N20190116G0054i.fits
 N20190206S0279.fits
@@ -64,6 +84,24 @@ S20180223S0229.fits
 N20160727S0077.fits
 N20190120S0287.fits
 S20190213S0084.fits
+S20170111S0166.fits
+S20150609S0023.fits
+S20170505S0095.fits
+S20170505S0031.fits
+
+
+# GSAOI Image Reduction
+GSAOI/test_reduce/S20170505S0095.fits
+GSAOI/test_reduce/S20170505S0096.fits
+GSAOI/test_reduce/S20170505S0030.fits
+GSAOI/test_reduce/S20170505S0031.fits
+GSAOI/test_reduce/S20170505S0073.fits
+GSAOI/test_reduce/S20170505S0074.fits
+GSAOI/test_reduce/S20171208S0053.fits
+GSAOI/test_reduce/S20171208S0054.fits
+GSAOI/test_reduce/S20171208S0055.fits
+GSAOI/test_reduce/S20150609S0022.fits
+GSAOI/test_reduce/S20150609S0023.fits
 
 # Archive Discriptor Tests
 Archive/gS20190219S0207_bias.fits
@@ -81,3 +119,18 @@ Archive/S20190217S0211.fits
 Archive/N20190216S0060.fits
 Archive/S20160905S0003.fits
 Archive/S20190221S0251.fits
+
+
+# Gempy Tests
+Gempy/S20171208S0054.fits
+Gempy/N20190206S0279.fits
+Gempy/S20180223S0229.fits
+Gempy/S20170111S0166.fits
+Gempy/N20110826S0336.fits
+Gempy/N20190120S0287.fits
+Gempy/S20190213S0084.fits
+Gempy/N20160727S0077.fits
+Gempy/N20190116G0054i.fits
+Gempy/S20150609S0023.fits
+Gempy/S20170505S0095.fits
+Gempy/S20170505S0031.fits

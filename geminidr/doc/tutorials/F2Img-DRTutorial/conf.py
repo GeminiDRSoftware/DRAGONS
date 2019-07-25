@@ -12,28 +12,40 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+
 import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import sys
+
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+relative_path = './../../../../'
+dragons_path = os.path.normpath(os.path.join(os.getcwd(), relative_path))
+sys.path.append(dragons_path)
+
+import astrodata
+
+print('\n Printing current working directory for debugging:')
+print(' Current working directory: {}'.format(os.getcwd()))
+print(' Dragons path: {}\n'.format(dragons_path))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'DRAGONS - Flamingos 2 Data Reduction Tutorial'
-copyright = '2018, Bruno Quint'
-author = 'Bruno Quint'
+project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
+copyright = 'Gemini Observatory (AURA), 2019'
+author = 'Bruno C. Quint'
 
 # The short X.Y version
-version = ''
+version = astrodata.version(short=True)
 # The full version, including alpha/beta/rc tags
-release = 'v2.0.0-b1'
+release = astrodata.version()
 
 
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+
+needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -47,8 +59,6 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'IPython.sphinxext.ipython_console_highlighting',
-    'IPython.sphinxext.ipython_directive',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -85,7 +95,7 @@ pygments_style = None
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-
+# hello world
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -111,7 +121,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'DRAGONSTutorial-Flamingos2doc'
+htmlhelp_basename = 'DRAGONSTutorial-Flamingos2tut'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -138,7 +148,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'DRAGONSTutorial-Flamingos2.tex', 'DRAGONS Tutorial - Flamingos 2 Documentation',
+    (master_doc, 'DRAGONSTutorial-Flamingos2tut.tex', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
      'Bruno Quint', 'manual'),
 ]
 
@@ -148,7 +158,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dragonstutorial-flamingos2', 'DRAGONS Tutorial - Flamingos 2 Documentation',
+    (master_doc, 'dragonstutorial-flamingos2', 'DRAGONS Tutorial - Flamingos-2 Data Reduction',
      [author], 1)
 ]
 
@@ -158,10 +168,14 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'DRAGONSTutorial-Flamingos2', 'DRAGONS Tutorial - Flamingos 2 Documentation',
-     author, 'DRAGONSTutorial-Flamingos2', 'One line description of project.',
-     'Miscellaneous'),
+texinfo_documents = [(
+    master_doc,
+    'DRAGONSTutorial-Flamingos2DataReduction',
+    'DRAGONS Tutorial - Flamingos-2 Data Reduction',
+    author,
+    'DRAGONSTutorial-Flamingos2',
+    'A quick tutorial on how to reduce F2 images with the DRAGONS command line tools',
+    'Miscellaneous'),
 ]
 
 
@@ -193,8 +207,8 @@ intersphinx_mapping = {
     'astropy': ('http://docs.astropy.org/en/stable/', None),
     'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
     'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('http://matplotlib.sourceforge.net/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'python': ('https://docs.python.org/3', None),
 }
 
@@ -204,32 +218,16 @@ intersphinx_mapping = {
 todo_include_todos = True
 
 
-# -- Enable autoapi ----------------------------------------------------------
-def download_tutorial_data(_):
-    """
-    Method created to download data that will be used in the tutorial.
-    """
-    import requests
-
-    base_url = 'https://archive.gemini.edu/file/'
-    filename = 'S20130622S0040.fits'
-
-    if os.path.exists(filename):
-        return
-
-    else:
-        r = requests.get(base_url + filename)
-
-        with open(os.path.join(filename), 'wb') as f:
-            f.write(r.content)
-
-
 # -- Finishing with a setup that will run always -----------------------------
 def setup(app):
 
-    # Adding style in order to have the todos show up in a red box.
-    app.add_stylesheet('todo-styles.css')
-    app.add_stylesheet('code.xref-styles.css')
+    # -- Adding custom styles ---
+    app.add_css_file('css/code.xref-styles.css')
+    app.add_css_file('css/todo-styles.css')
+    app.add_css_file('css/copy_code_block.css')
 
-    # Automatic API generation
-    app.connect('builder-inited', download_tutorial_data)
+    # -- Adding custom behavior ---
+    # -- Will leave this out for now until I manage to get the behavior I want
+    # app.add_js_file('js/copy_code_block.js')
+    # app.add_js_file('https://cdn.jsdelivr.net/npm/clipboard@1/dist/clipboard.min.js')
+

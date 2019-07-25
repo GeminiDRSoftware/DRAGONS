@@ -1,109 +1,90 @@
-import os
+#!/usr/bin/env python
+
 import pytest
-import warnings
 
 import astrodata
 import gemini_instruments
-from astrodata.test.conftest import test_path
 
 
-try:
-    path = os.environ['TEST_PATH']
-except KeyError:
-    warnings.warn("Could not find environment variable: $TEST_PATH")
-    path = ''
-
-if not os.path.exists(path):
-    warnings.warn("Could not find path stored in $TEST_PATH: {}".format(path))
-    path = ''
+def test_is_right_type(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        assert type(ad) == gemini_instruments.f2.adclass.AstroDataF2
 
 
-filename = 'S20190213S0084.fits'
-
-
-@pytest.fixture(scope='class')
-def setup_f2(request):
-    print('setup TestF2')
-
-    def fin():
-        print('\nteardown TestF2')
-    request.addfinalizer(fin)
-    return
-
-
-@pytest.mark.usefixtures('setup_f2')
-class TestF2:
-
-    def test_is_right_type(self):
-
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        assert type(ad) ==  gemini_instruments.f2.adclass.AstroDataF2
-
-    def test_is_right_instance(self):
-
-        ad = astrodata.open(os.path.join(test_path(), filename))
-        # YES, this *can* be different from test_is_right_type. Metaclasses!
+def test_is_right_instance(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
         assert isinstance(ad, gemini_instruments.f2.adclass.AstroDataF2)
 
-    def test_extension_data_shape(self):
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
+def test_extension_data_shape(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
         data = ad[0].data
-
         assert data.shape == (1, 2048, 2048)
 
-    def test_tags(self):
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
+def test_tags(f2_files):
+
+    for _file in f2_files:
+        ad = astrodata.open(_file)
         tags = ad.tags
-        expected = {'IMAGE', 'F2', 'RAW', 'SOUTH',
-                    'SIDEREAL', 'UNPREPARED',
-                    'GEMINI', 'ACQUISITION'}
 
-        assert expected.issubset(tags)
+        expected_tags = {
+            'F2',
+            'SOUTH',
+            'GEMINI',
+        }
 
-    def test_can_return_instrument(self):
+        assert expected_tags.issubset(tags)
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
+
+def test_can_return_instrument(f2_files):
+
+    for _file in f2_files:
+        ad = astrodata.open(_file)
         assert ad.phu['INSTRUME'] == 'F2'
         assert ad.instrument() == ad.phu['INSTRUME']
 
-    def test_can_return_ad_length(self):
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
+def test_can_return_ad_length(f2_files):
+
+    for _file in f2_files:
+        ad = astrodata.open(_file)
         assert len(ad) == 1
 
 
-    def test_slice_range(self):
+def test_slice_range(f2_files):
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
+    for _file in f2_files:
+        ad = astrodata.open(_file)
         metadata = ('SCI', 2), ('SCI', 3)
         slc = ad[1:]
 
         assert len(slc) == 0
 
-        for ext, md in zip(slc, metadata):
-            assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
+    for ext, md in zip(slc, metadata):
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
 
-    # def test_read_a_keyword_from_phu(self):
-    #
-    #     ad = astrodata.open(os.path.join(test_path(), filename))
-    #     assert ad.phu['DETECTOR'] == 'F2'
+def test_read_a_keyword_from_phu(f2_files):
 
-    def test_read_a_keyword_from_hdr(self):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        assert ad.phu['INSTRUME'].strip() == 'F2'
 
-        ad = astrodata.open(os.path.join(test_path(), filename))
 
+def test_read_a_keyword_from_hdr(f2_files):
+
+    for _file in f2_files:
+        ad = astrodata.open(_file)
         try:
             assert ad.hdr['CCDNAME'] == 'F2'
         except KeyError:
             # KeyError only accepted if it's because headers out of range
             assert len(ad) == 1
 
-        # with pytest.raises(AssertionError):
-        #     ad.phu.DETECTOR = 'FooBar'
-        #     ad.phu.ARBTRARY = 'BarBaz'
-        #     assert ad.phu.DETECTOR == 'FooBar'
-        #     assert ad.phu.ARBTRARY == 'BarBaz'
-        #     assert ad.phu['DETECTOR'] == 'FooBar'
+
+if __name__ == "__main__":
+    pytest.main()
