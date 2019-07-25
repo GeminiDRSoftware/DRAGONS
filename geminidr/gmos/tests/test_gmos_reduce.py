@@ -93,7 +93,7 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
     reduce_flats.runr()
 
     calib_files.append(
-        'processed_flats:{}'.format(reduce_flats.output_filenames[0])
+        'processed_flat:{}'.format(reduce_flats.output_filenames[0])
     )
 
     # If makeFringe is included in the science recipe, this can be omitted:
@@ -104,7 +104,7 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
     reduce_fringe.runr()
 
     calib_files.append(
-        'processed_fringes:{}'.format(reduce_fringe.output_filenames[0])
+        'processed_fringe:{}'.format(reduce_fringe.output_filenames[0])
     )
 
     reduce_target = Reduce()
