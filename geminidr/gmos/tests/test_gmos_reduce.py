@@ -6,6 +6,7 @@ import os
 
 from gempy.adlibrary import dataselect
 from recipe_system.reduction.coreReduce import Reduce
+from recipe_system.utils.reduce_utils import normalize_ucals
 
 from gempy.utils import logutils
 
@@ -88,6 +89,7 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_z_flats)
+    reduce_flats.ucals = normalize_ucals(reduce_flats.files, calib_files)
     reduce_flats.runr()
 
     calib_files.append(
@@ -97,6 +99,7 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
     # If makeFringe is included in the science recipe, this can be omitted:
     reduce_fringe = Reduce()
     reduce_fringe.files.extend(list_of_science_files)
+    reduce_fringe.ucals = normalize_ucals(reduce_fringe.files, calib_files)
     reduce_fringe.recipename = 'makeProcessedFringe'
     reduce_fringe.runr()
 
@@ -106,6 +109,7 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_files)
+    reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
     reduce_target.runr()
 
 
