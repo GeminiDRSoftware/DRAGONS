@@ -41,9 +41,11 @@ def caldb():
 
 # These tests need refactoring to reduce the replication of API boilerplate
 
-def test_reduce_image_GN_HAM_2x2_z(path_to_inputs, caldb):
+def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
 
     logutils.config(file_name='gmos_test_reduce_image_GN_HAM_2x2_z.log')
+
+    calib_files = []
 
     caldb.init(wipe=True)
 
@@ -82,13 +84,17 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs, caldb):
 
     reduce_bias.runr()
 
-    caldb.add_cal(reduce_bias.output_filenames[0])
+    calib_files.append(
+        'processed_bias:{}'.format(reduce_bias.output_filenames[0])
+    )
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_z_flats)
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
+    calib_files.append(
+        'processed_flats:{}'.format(reduce_flats.output_filenames[0])
+    )
 
     # If makeFringe is included in the science recipe, this can be omitted:
     reduce_fringe = Reduce()
@@ -96,14 +102,13 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs, caldb):
     reduce_fringe.recipename = 'makeProcessedFringe'
     reduce_fringe.runr()
 
-    caldb.add_cal(reduce_fringe.output_filenames[0])
+    calib_files.append(
+        'processed_fringes:{}'.format(reduce_fringe.output_filenames[0])
+    )
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_files)
     reduce_target.runr()
-
-    for f in caldb.list_files():
-        print(f)
 
 
 def test_reduce_image_GN_EEV_2x2_g(path_to_inputs, caldb):
