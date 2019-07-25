@@ -13,7 +13,7 @@ def reduce_nostack(p):
 
     Parameters
     ----------
-    p : PrimitivesCORE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
 
@@ -43,4 +43,4 @@ def reduce_nostack(p):
     return
 
 # The nostack version is used because stacking of GSAOI is time consuming.
-default = reduce_nostack
+_default = reduce_nostack
