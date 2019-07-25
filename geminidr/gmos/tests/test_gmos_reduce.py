@@ -47,8 +47,6 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
 
     calib_files = []
 
-    caldb.init(wipe=True)
-
     raw_subdir = 'GMOS/GN-2017B-LP-15'
 
     all_files = sorted(glob.glob(
