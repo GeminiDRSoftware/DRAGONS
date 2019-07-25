@@ -76,10 +76,17 @@ pipeline {
 
         stage('Unit tests') {
             steps {
+
+                echo "ensure cleaning __pycache__"
+                sh  'find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf'
+
+                echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
                     coverage run -m pytest -m "not integtest" --junit-xml ./reports/unittests_results.xml
                     '''
+
+                echo "Reporting coverage"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
                     python -m coverage xml -o ./reports/coverage.xml
