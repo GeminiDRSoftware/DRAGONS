@@ -78,7 +78,9 @@ pipeline {
             steps {
 
                 echo "ensure cleaning __pycache__"
-                sh  'find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf'
+                sh  '''
+                    find . | grep -E "(__pycache__|\\.pyc|\\.pyo$)" | xargs rm -rf
+                    '''
 
                 echo "Running tests"
                 sh  '''
