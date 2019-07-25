@@ -180,7 +180,7 @@ class Spect(PrimitivesBASE):
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
                 self.viewer.color = "blue"
-                spatial_coords = np.arange(0, ext.shape[1-dispaxis], step)
+                spatial_coords = np.arange(0, ext.shape[1-dispaxis], step*10)
                 spectral_coords = np.unique(ref_coords[1-dispaxis])
                 for coord in spectral_coords:
                     if dispaxis == 1:
@@ -695,7 +695,7 @@ class Spect(PrimitivesBASE):
             skysub_needed = self.timestamp_keys['skyCorrectFromSlit'] not in ad.phu
             if skysub_needed:
                 log.stdinfo("Sky subtraction has not been performed on {} "
-                            "- extracting sky from separate aperture".
+                            "- extracting sky from separate apertures".
                             format(ad.filename))
 
             for ext in ad:
@@ -1126,7 +1126,6 @@ class Spect(PrimitivesBASE):
         order = params["order"]
         default_width = params["width"]
         grow = params["grow"]
-        knots = None  # will be recalculated if order is not None
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -1168,22 +1167,15 @@ class Spect(PrimitivesBASE):
                 for i, (data_row, mask_row, weight_row) in enumerate(zip(data, mask,
                                                                          sky_weights)):
                     sky = np.ma.masked_array(data_row, mask=mask_row)
-
                     # Need at least 4 good pixels for a spline.
                     good_pixels = np.nonzero(mask_row == 0)[0]
                     if len(good_pixels) < 4:
                         sky.mask = np.ma.nomask
-                        good_pixels = pixels
-                    if order is not None:
-                        # Scale order based on number of good pixels and
-                        # create equally-spaced knots
-                        this_order = order * (len(good_pixels) - 1) / slitlen + 1
-                        knots = np.linspace(good_pixels[0], good_pixels[-1],
-                                            this_order + 1)[1:-1]
                     if weight_row.sum() == 0:
                         weight_row = None
 
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, sky, t=knots, w=weight_row)
+                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, sky, order=order,
+                                                                            w=weight_row, grow=2)
                     # Spline fit has been returned so no need to recompute
                     sky_model[i] = spline.data
 

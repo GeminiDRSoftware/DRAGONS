@@ -157,9 +157,9 @@ class Rotate2D(FittableModel):
         return x, y
 
 class UnivariateSplineWithOutlierRemoval(object):
-    def __new__(self, x, y, t=None, s=None, w=None, bbox=[None]*2, k=3,
+    def __new__(self, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=False, outlier_func=sigma_clip,
-                niter=3, **outlier_kwargs):
+                niter=3, grow=0, **outlier_kwargs):
         """
         Instantiating this class creates a new spline that fits to the
         1D data, iteratively removing outliers using a specified function.
@@ -173,8 +173,8 @@ class UnivariateSplineWithOutlierRemoval(object):
             x-coordinates of datapoints to fit
         y: array/maskedarray
             y-coordinates of datapoints to fit (mask is used)
-        t: array-like/None
-            locations of knots (if fixed knots are desired)
+        order: int/None
+            order of spline fit (if not using smoothing factor)
         s: float/None
             smoothing factor (see UnivariateSpline description)
         w: array
@@ -191,6 +191,8 @@ class UnivariateSplineWithOutlierRemoval(object):
             function to call for defining outliers
         niter: int
             maximum number of clipping iterations to perform
+        grow: int
+            radius to reject pixels adjacent to masked pixels
         outlier_kwargs: dict-like
             parameter dict to pass to outlier_func()
 
@@ -203,13 +205,12 @@ class UnivariateSplineWithOutlierRemoval(object):
         # Decide what sort of spline object we're making
         spline_kwargs = {'bbox': bbox, 'k': k, 'ext': ext,
                          'check_finite': check_finite}
-        if t is None:
+        if order is None:
             cls = UnivariateSpline
             spline_args = ()
             spline_kwargs['s'] = s
         elif s is None:
             cls = LSQUnivariateSpline
-            spline_args = (t,)
         else:
             raise ValueError("Both t and s have been specified")
 
@@ -220,13 +221,28 @@ class UnivariateSplineWithOutlierRemoval(object):
             mask = np.zeros_like(x, dtype=bool)
 
         iter = 0
+        full_mask = mask  # Will include pixels masked because of "grow"
         start = datetime.now()
         while iter < niter+1:
-            last_mask = mask
+            last_mask = full_mask
+
+            if order is not None:
+                # Determine actual order to apply based on fraction of unmasked
+                # pixels, and place the knots equally between the first and last
+                # good pixels
+                this_order = int(order * (1 - np.sum(mask) / len(mask)) + 0.5)
+                knots = np.linspace(x[np.argmin(full_mask)],
+                                    x[::-1][np.argmin(full_mask[::-1])],
+                                    this_order + 1)[1:-1]
+                spline_args = (knots,)
+
             # Create appropriate spline object using current mask
             instance = object.__new__(cls)
-            instance.__init__(x[~mask], y[~mask],
-                              *spline_args, w=None if w is None else w[~mask], **spline_kwargs)
+            try:
+                instance.__init__(x[~full_mask], y[~full_mask],
+                                  *spline_args, w=None if w is None else w[~full_mask], **spline_kwargs)
+            except ValueError as e:
+                raise e
             #print(iter, datetime.now()-start)
             spline_y = instance(x)
             #print(iter, datetime.now()-start)
@@ -234,15 +250,25 @@ class UnivariateSplineWithOutlierRemoval(object):
             #mask = masked_residuals.mask
             d, mask, v = NDStacker.sigclip(spline_y-y, mask=mask, variance=None, **outlier_kwargs)
             mask = mask.astype(bool)
+            if grow > 0:
+                maskarray = np.zeros((grow * 2 + 1, len(y)), dtype=bool)
+                for i in range(-grow, grow + 1):
+                    mx1 = max(i, 0)
+                    mx2 = min(len(y), len(y) + i)
+                    maskarray[grow + i, mx1:mx2] = mask[:mx2 - mx1]
+                grow_mask = np.logical_or.reduce(maskarray, axis=0)
+                full_mask = mask | grow_mask
+            else:
+                full_mask = mask
             #print(iter, datetime.now()-start)
 
             # Check if the mask is unchanged
-            if not np.logical_or.reduce(last_mask ^ mask):
+            if not np.logical_or.reduce(last_mask ^ full_mask):
                 break
             iter += 1
 
         # Attach the mask and model (may be useful)
-        instance.mask = mask
+        instance.mask = full_mask
         instance.data = spline_y
         return instance
 
