@@ -11,36 +11,8 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 from gempy.utils import logutils
 
 
-@pytest.fixture(scope='module')
-def caldb():
-
-    from recipe_system.cal_service import CalibrationService
-
-    caldb_folder = os.path.dirname(__file__)
-    caldb_conf_file = os.path.join(caldb_folder, 'rsys.cfg')
-    caldb_database_file = os.path.join(caldb_folder, 'cal_manager.db')
-
-    with open(caldb_conf_file, 'w') as buffer:
-
-        buffer.write(
-            "[calibs]\n"
-            "standalone = True\n"
-            "database_dir = {:s}".format(caldb_folder)
-        )
-
-    print(' Test file path: {}'.format(caldb_conf_file))
-
-    calibration_service = CalibrationService()
-    calibration_service.config(config_file=caldb_conf_file)
-    calibration_service.init(wipe=True)
-
-    yield calibration_service
-
-    os.remove(caldb_conf_file)
-    os.remove(caldb_database_file)
-
-
 # These tests need refactoring to reduce the replication of API boilerplate
+
 
 def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
 
@@ -113,13 +85,13 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
     reduce_target.runr()
 
 
-def test_reduce_image_GN_EEV_2x2_g(path_to_inputs, caldb):
+def test_reduce_image_GN_EEV_2x2_g(path_to_inputs):
 
     logutils.config(file_name='gmos_test_reduce_image_GN_EEV_2x2_g.log')
 
-    raw_subdir = 'GMOS/GN-2002A-Q-89'
+    calib_files = []
 
-    caldb.init(wipe=True)
+    raw_subdir = 'GMOS/GN-2002A-Q-89'
 
     all_files = sorted(glob.glob(
         os.path.join(path_to_inputs, raw_subdir, '*.fits')))
@@ -155,27 +127,30 @@ def test_reduce_image_GN_EEV_2x2_g(path_to_inputs, caldb):
 
     reduce_bias.runr()
 
-    caldb.add_cal(reduce_bias.output_filenames[0])
+    calib_files.append(
+        'processed_bias:{}'.format(reduce_bias.output_filenames[0])
+    )
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats)
+    reduce_flats.ucals = normalize_ucals(reduce_flats.files, calib_files)
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
+    calib_files.append(
+        'processed_flat:{}'.format(reduce_flats.output_filenames[0])
+    )
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_files)
+    reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
     reduce_target.runr()
 
-    for f in caldb.list_files():
-        print(f)
 
-
-def test_reduce_image_GS_HAM_1x1_i(path_to_inputs, caldb):
+def test_reduce_image_GS_HAM_1x1_i(path_to_inputs):
 
     logutils.config(file_name='gmos_test_reduce_image_GS_HAM_1x1_i.log')
 
-    caldb.init(wipe=True)
+    calib_files = []
 
     raw_subdir = 'GMOS/GS-2017B-Q-6'
 
@@ -215,17 +190,23 @@ def test_reduce_image_GS_HAM_1x1_i(path_to_inputs, caldb):
 
     reduce_bias.runr()
 
-    caldb.add_cal(reduce_bias.output_filenames[0])
+    calib_files.append(
+        'processed_bias:{}'.format(reduce_bias.output_filenames[0])
+    )
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_sci_flats)
     # reduce_flats.uparms = [('addDQ:user_bpm', 'fixed_bpm_1x1_FullFrame.fits')]
+    reduce_flats.ucals = normalize_ucals(reduce_flats.files, calib_files)
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
+    calib_files.append(
+        'processed_flat:{}'.format(reduce_flats.output_filenames[0])
+    )
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_files)
+    reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
     reduce_target.uparms = [
         ('stackFrames:memory', 1),
         # ('addDQ:user_bpm', 'fixed_bpm_1x1_FullFrame.fits'),
@@ -235,15 +216,12 @@ def test_reduce_image_GS_HAM_1x1_i(path_to_inputs, caldb):
     ]
     reduce_target.runr()
 
-    for f in caldb.list_files():
-        print(f)
 
-
-def test_reduce_image_GS_HAM_2x2_i_std(path_to_inputs, caldb):
+def test_reduce_image_GS_HAM_2x2_i_std(path_to_inputs):
 
     logutils.config(file_name='gmos_test_reduce_image_GS_HAM_1x1_i.log')
 
-    caldb.init(wipe=True)
+    calib_files = []
 
     raw_subdir = 'GMOS/GS-2017B-Q-6'
 
@@ -283,26 +261,29 @@ def test_reduce_image_GS_HAM_2x2_i_std(path_to_inputs, caldb):
 
     reduce_bias.runr()
 
-    caldb.add_cal(reduce_bias.output_filenames[0])
+    calib_files.append(
+        'processed_bias:{}'.format(reduce_bias.output_filenames[0])
+    )
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_sci_flats)
     # reduce_flats.uparms = [('addDQ:user_bpm', 'fixed_bpm_2x2_FullFrame.fits')]
+    reduce_flats.ucals = normalize_ucals(reduce_flats.files, calib_files)
     reduce_flats.runr()
 
-    caldb.add_cal(reduce_flats.output_filenames[0])
+    calib_files.append(
+        'processed_flat:{}'.format(reduce_flats.output_filenames[0])
+    )
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_files)
+    reduce_target.ucals = normalize_ucals(reduce_target.files, calib_files)
     reduce_target.uparms = [
         ('stackFrames:memory', 1),
         # ('addDQ:user_bpm', 'fixed_bpm_2x2_FullFrame.fits'),
         ('resampleToCommonFrame:interpolator', 'spline3')
     ]
     reduce_target.runr()
-
-    for f in caldb.list_files():
-        print(f)
 
 
 if __name__ == '__main__':
