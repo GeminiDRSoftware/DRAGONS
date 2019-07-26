@@ -45,8 +45,7 @@ Here, :mod:`os` will be used to perform operations with the files names and
 :mod:`glob` will be used to return a :class:`list` with the input file names.
 
 
-.. todo @bquint: the gempy auto-api is not being generated anywhere.
-.. todo:: @bquint the gempy auto-api is not being generated anywhere. Find a
+.. todo @bquint: the gempy auto-api is not being generated anywhere. Find a
     place for it.
 
 

@@ -56,9 +56,8 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-..  todo @bquint Upload a ``.tar.gz`` file with the full dataset and use the URL here.
-..  todo:: @bquint Upload a ``.tar.gz`` file with the full dataset and use the
-    URL here.
+..  todo @bquint Upload a ``.tar.gz`` file with the full dataset and use the URL
+    here.
 
 This tutorial will use observations from program GN-2017A-LP-1 (PI: Wesley
 Fraser), "COL-OSSOS: COLours for the Outer Solar System Object Survey", obtained

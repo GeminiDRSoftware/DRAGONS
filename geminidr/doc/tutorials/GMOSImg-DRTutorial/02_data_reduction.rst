@@ -393,8 +393,9 @@ leftover features if you hide the mask. Here is an example:
 Note that the exposed image is clear but that the non illuminated region has
 some cosmic rays lefovers that persisted even after the stack process.
 
-.. todo @bquint The image above have some problems in the gaps. How do I fix them?
-.. todo:: The image above have some problems in the gaps. How do I fix them?
+.. todo @bquint The image above have some problems in the gaps. How do I fix
+    them?
+
 
 Advanced Operations
 -------------------
