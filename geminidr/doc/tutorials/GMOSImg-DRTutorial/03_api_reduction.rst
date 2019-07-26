@@ -20,7 +20,7 @@ line wrappers to reduce your data. In this scenario, you will need to access
 DRAGONS' tools by importing the appropriate modules and packages.
 
 Again, remember that our working directory will be
-``${path_to_my_data}/playground/`` .
+``/path_to_my_data//playground/`` .
 
 
 Importing Libraries
@@ -86,7 +86,7 @@ First, check that you have already a ``rsys.cfg`` file inside the
 
     [calibs]
     standalone = True
-    database_dir = ${path_to_my_data}/gmosimg_tutorial_api/playground
+    database_dir = /path_to_my_data//gmosimg_tutorial_api/playground
 
 
 This simply tells the system where to put the calibration database. This

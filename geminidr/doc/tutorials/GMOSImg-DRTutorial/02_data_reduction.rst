@@ -41,7 +41,7 @@ like dataselect_, showd_, typewalk_, and caldb_.
     smaller data set.
 
 Please, remember that we will be working in the
-``${path_to_my_data}/playground`` folder and that all the commands used in this
+``/path_to_my_data//playground`` folder and that all the commands used in this
 tutorial are related to this path.
 
 
@@ -64,7 +64,7 @@ follow:
 
     [calibs]
     standalone = True
-    database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
+    database_dir = /path_to_my_data//gsaoiimg_tutorial/playground
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
@@ -407,7 +407,7 @@ the ``--all`` option. Here is an example:
 
     $ showrecipes ../playdata/N20170525S0116.fits --all
 
-    Input file: ${path_to_my_data}/playdata/N20170530S0360.fits
+    Input file: /path_to_my_data//playdata/N20170530S0360.fits
     Input tags: {'UNPREPARED', 'GEMINI', 'GMOS', 'IMAGE', 'NORTH', 'RAW', 'SIDEREAL'}
     Recipes available for the input file:
        geminidr.gmos.recipes.sq.recipes_IMAGE::makeProcessedFringe
@@ -429,7 +429,7 @@ were used within a particular Recipe. Check the example below:
 
     $ showrecipes ../playdata/N20170525S0116.fits --mode sq --recipe reduce
 
-    Input file: ${path_to_my_data}/playdata/N20170530S0360.fits
+    Input file: /path_to_my_data//playdata/N20170530S0360.fits
     Input tags: ['RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'GMOS', 'IMAGE', 'UNPREPARED']
     Input mode: sq
     Input recipe: reduce
