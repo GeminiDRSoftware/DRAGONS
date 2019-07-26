@@ -116,9 +116,10 @@ check the
 ..  todo: calmanager
 ..  warning:: The Gemini Local Calibration Manager is not available yet in the
     Gemini Conda Channel for installation and you might not have it installed.
-    If you get a `NameError: name 'localmanager' when running line 10, you don't
-    the Local Calibration Manager installed. For now, please, contact someone in
-    the Gemini Science User Support Department for more details.
+    If you get an error with the message
+    `NameError: name 'localmanager' is not defined` when running line 10, you
+    don't the Local Calibration Manager installed. For now, please, contact
+    someone in the Gemini Science User Support Department for more details.
 
 
 .. _api_create_file_lists:
