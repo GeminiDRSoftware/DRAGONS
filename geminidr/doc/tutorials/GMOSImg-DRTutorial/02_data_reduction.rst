@@ -241,9 +241,10 @@ database using the following command:
 
     $ caldb add ./calibrations/processed_bias/N20170527S0528_bias.fits
 
-``reduce`` uses the first filename in the input list as basename. So if your
-first filename is, for example, ``N20001231S001.fits``, the output will be
-``N20001231S001_fringe.fits``. Because of that, the base name of the Master Bias
+``reduce`` uses the first filename in the input list as basename and adds
+``_bias`` as a suffix to it. So if your first filename is, for example,
+``N20001231S001.fits``, the output will be
+``N20001231S001_bias.fits``. Because of that, the base name of the Master Bias
 file can be different for you.
 
 Before carrying on, check that the Master Bias was added to the database
@@ -281,8 +282,8 @@ use the following command to override the input calibrations:
 
 
 Once it finished, you shall have the Master Flat inside the
-``./calibrations/processed_flat`` directory. Add it to the local calibration
-database with the following command:
+``./calibrations/processed_flat`` directory with a ``_flat`` suffix. Add it to
+the local calibration database with the following command:
 
 ..  code-block:: bash
 
@@ -320,7 +321,8 @@ command below to create the Processed Fringe Frame:
 
     $ reduce @list_of_science.txt -r makeProcessedFringe
 
-This command line will produce an image with the ``_fringe`` suffix.
+This command line will produce an image with the ``_fringe`` suffix in the
+current working directory.
 
 Once you have the, you still need to add it to the local calibration manager
 database:
@@ -347,8 +349,8 @@ run ``reduce`` on our science data:
    $ reduce @list_of_science.txt
 
 This command will generate flat corrected and sky subtracted files and will
-stack them. You might see some warning messages but it should be safe to ignore
-them for now.
+stack them. This stacked image will have the ``_stack`` suffix. You might see
+some warning messages but it should be safe to ignore them for now.
 
 .. todo: calmanager
 
@@ -532,7 +534,3 @@ overwrites the output. Here is the product of the command line above:
 
    Sky Subtracted and Stacked Final Image. The light-gray area represents the
    masked pixels.
-
-..  todo: @bquint the columns in the image above don't seem right.
-..  todo:: @bquint the columns in the image above don't seem right. What can I do
-    to fix that?
