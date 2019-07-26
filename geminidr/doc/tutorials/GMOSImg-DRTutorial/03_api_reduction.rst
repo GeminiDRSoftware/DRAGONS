@@ -303,7 +303,7 @@ science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 72
+    :lineno-start: 47
 
     reduce_science = Reduce()
     reduce_science.files.extend(list_of_science)
@@ -319,7 +319,7 @@ below:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 1
+    :lineno-start: 50
 
     reduce_science.uparms.append(("stackFrames:scale", True))
 
@@ -328,7 +328,7 @@ output file. You can do that with:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 1
+    :lineno-start: 51
 
     reduce_science.suffix = "_scale_stack"
     reduce_science.runr()
