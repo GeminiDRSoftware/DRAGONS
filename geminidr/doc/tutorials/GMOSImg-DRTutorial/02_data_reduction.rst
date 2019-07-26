@@ -41,7 +41,7 @@ like dataselect_, showd_, typewalk_, and caldb_.
     smaller data set.
 
 Please, remember that we will be working in the
-``${path_to_my_data}/playground`` folder and that all the commands used in this
+``/path_to_my_data/playground`` folder and that all the commands used in this
 tutorial are related to this path.
 
 
@@ -64,7 +64,7 @@ follow:
 
     [calibs]
     standalone = True
-    database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
+    database_dir = /path_to_my_data/gsaoiimg_tutorial/playground
 
 This simply tells the system where to put the calibration database, the
 database that will keep track of the processed calibrations we are going to
@@ -241,8 +241,12 @@ database using the following command:
 
     $ caldb add ./calibrations/processed_bias/N20170527S0528_bias.fits
 
+``reduce`` uses the first filename in the input list as basename and adds
+``_bias`` as a suffix to it. So if your first filename is, for example,
+``N20001231S001.fits``, the output will be
+``N20001231S001_bias.fits``. Because of that, the base name of the Master Bias
+file can be different for you.
 
-Note that the prefix name of the Master Bias file can be different for you.
 Before carrying on, check that the Master Bias was added to the database
 using the ``caldb list`` command:
 
@@ -278,8 +282,8 @@ use the following command to override the input calibrations:
 
 
 Once it finished, you shall have the Master Flat inside the
-``./calibrations/processed_flat`` directory. Add it to the local calibration
-database with the following command:
+``./calibrations/processed_flat`` directory with a ``_flat`` suffix. Add it to
+the local calibration database with the following command:
 
 ..  code-block:: bash
 
@@ -297,6 +301,41 @@ added to your local database:
   N20170530S0360_flat.fits       /data/bquint/tutorials/gmosimg_tutorial/playground/calibrations/processed_flat
 
 
+.. _process_fringe_frame:
+
+Process Fringe Frame
+--------------------
+
+.. note:: The dataset used in this tutorial does not require Fringe Correction
+    so you can skip this section if you are following it. Find more information
+    below.
+
+The reduction of some datasets requires a Processed Fringe Frame. The datasets
+that need a Fringe Frame are shown in the appendix
+`Fringe Correction Tables <fringe_correction_tables>`_.
+
+If you find out that your dataset needs Fringe Correction, you can use the
+command below to create the Processed Fringe Frame:
+
+.. code-block:: bash
+
+    $ reduce @list_of_science.txt -r makeProcessedFringe
+
+This command line will produce an image with the ``_fringe`` suffix in the
+current working directory.
+
+Once you have the, you still need to add it to the local calibration manager
+database:
+
+.. code-block:: bash
+
+    $ caldb add N20170525S0116_fringe.fits
+
+Again, note that this step is only needed for images obtained with some
+detector and filter combinations. Make sure you checked the
+`Fringe Correction Tables <fringe_correction_tables>`_.
+
+
 .. _processing_science_files:
 
 Process Science files
@@ -310,8 +349,8 @@ run ``reduce`` on our science data:
    $ reduce @list_of_science.txt
 
 This command will generate flat corrected and sky subtracted files and will
-stack them. You might see some warning messages but it should be safe to ignore
-them for now.
+stack them. This stacked image will have the ``_stack`` suffix. You might see
+some warning messages but it should be safe to ignore them for now.
 
 .. todo: calmanager
 
@@ -346,7 +385,7 @@ The mask is updated on every data reduction step and most of the calculations
 are done on the good data. Because of this, you might expect to see some
 leftover features if you hide the mask. Here is an example:
 
-.. figure:: _static/img/N20170525S0116_nomask.png
+.. figure:: _static/img/N20170525S0116_stack_nomask.png
    :align: center
 
    Sky Subtracted and Stacked Final Image.
@@ -354,8 +393,9 @@ leftover features if you hide the mask. Here is an example:
 Note that the exposed image is clear but that the non illuminated region has
 some cosmic rays lefovers that persisted even after the stack process.
 
-.. todo @bquint The image above have some problems in the gaps. How do I fix them?
-.. todo:: The image above have some problems in the gaps. How do I fix them?
+.. todo @bquint The image above have some problems in the gaps. How do I fix
+    them?
+
 
 Advanced Operations
 -------------------
@@ -379,7 +419,7 @@ the ``--all`` option. Here is an example:
 
     $ showrecipes ../playdata/N20170525S0116.fits --all
 
-    Input file: ${path_to_my_data}/playdata/N20170530S0360.fits
+    Input file: /path_to_my_data/playdata/N20170530S0360.fits
     Input tags: {'UNPREPARED', 'GEMINI', 'GMOS', 'IMAGE', 'NORTH', 'RAW', 'SIDEREAL'}
     Recipes available for the input file:
        geminidr.gmos.recipes.sq.recipes_IMAGE::makeProcessedFringe
@@ -401,7 +441,7 @@ were used within a particular Recipe. Check the example below:
 
     $ showrecipes ../playdata/N20170525S0116.fits --mode sq --recipe reduce
 
-    Input file: ${path_to_my_data}/playdata/N20170530S0360.fits
+    Input file: /path_to_my_data/playdata/N20170530S0360.fits
     Input tags: ['RAW', 'GEMINI', 'NORTH', 'SIDEREAL', 'GMOS', 'IMAGE', 'UNPREPARED']
     Input mode: sq
     Input recipe: reduce
@@ -495,7 +535,3 @@ overwrites the output. Here is the product of the command line above:
 
    Sky Subtracted and Stacked Final Image. The light-gray area represents the
    masked pixels.
-
-..  todo: @bquint the columns in the image above don't seem right.
-..  todo:: @bquint the columns in the image above don't seem right. What can I do
-    to fix that?

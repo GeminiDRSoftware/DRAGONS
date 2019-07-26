@@ -56,9 +56,8 @@ be installed. If you have an error message, make sure:
 Download Sample Files
 =====================
 
-..  todo @bquint Upload a ``.tar.gz`` file with the full dataset and use the URL here.
-..  todo:: @bquint Upload a ``.tar.gz`` file with the full dataset and use the
-    URL here.
+..  todo @bquint Upload a ``.tar.gz`` file with the full dataset and use the URL
+    here.
 
 This tutorial will use observations from program GN-2017A-LP-1 (PI: Wesley
 Fraser), "COL-OSSOS: COLours for the Outer Solar System Object Survey", obtained
@@ -135,7 +134,7 @@ Now, copy all the ``.tar`` files to the same place in your computer. Then use
 
 .. code-block:: bash
 
-    $ cd ${path_to_my_data}/
+    $ cd /path_to_my_data/
     $ tar -xf gemini_data.GN-2017A-LP-1-74_GMOS-N.tar
     $ tar -xf gemini_data.GN-CAL20170527-11_GMOS-N.tar
     $ tar -xf gemini_data.GN-CAL20170530-2_GMOS-N.tar
@@ -151,7 +150,7 @@ processed data. This is how the data should be organized:
 
 .. code-block:: none
 
-  |-- ${path_to_my_data}/
+  |-- /path_to_my_data/
   |   |-- playdata/  # directory for raw data
   |   |-- playground/  # working directory
 
@@ -160,7 +159,7 @@ used in this tutorial:
 
 .. code-block:: bash
 
-  $ cd ${path_to_my_data}
+  $ cd /path_to_my_data/
   $ mkdir playdata  # create directory for raw data
   $ mkdir playground  #  create working directory
   $ mv *.fits ./playdata/  # move all the FITS files to this directory

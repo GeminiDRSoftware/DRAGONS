@@ -28,6 +28,12 @@ WebPage <https://www.gemini.edu/sciops/instruments/gmos/>`_ and in the
    02_data_reduction
    03_api_reduction
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Appendix
+
+   appendix
+
 Indices and tables
 ==================
 
