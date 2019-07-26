@@ -1,7 +1,9 @@
 .. appendix.rst
 
-Fringe Correction Table
------------------------
+.. _fringe_correction_tables:
+
+Fringe Correction Tables
+------------------------
 
 
 +----------------+-------------------------+-----+-----+-----+-----+-----+

@@ -297,6 +297,34 @@ added to your local database:
   N20170530S0360_flat.fits       /data/bquint/tutorials/gmosimg_tutorial/playground/calibrations/processed_flat
 
 
+.. _process_fringe_frame:
+
+Process Fringe Frame
+--------------------
+
+.. note:: The dataset used in this tutorial does not require Fringe Correction
+    so you can skip this section if you are following it. Find more information
+    below.
+
+The reduction of some datasets requires a Processed Fringe Frame. The datasets
+that need a Fringe Frame are shown in the appendix
+`Fringe Correction Tables <fringe_correction_tables>`_.
+
+If you find out that your dataset needs Fringe Correction, you can use the
+command below to create the Processed Fringe Frame:
+
+.. code-block:: bash
+
+    $ reduce @list_of_science.txt -r makeProcessedFringe
+
+Once this is done, you still need to add it to the local calibration manager
+database:
+
+.. code-block:: bash
+
+    $ caldb add N20001231S001_fringe.fits
+
+
 .. _processing_science_files:
 
 Process Science files
