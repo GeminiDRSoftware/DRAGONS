@@ -241,8 +241,11 @@ database using the following command:
 
     $ caldb add ./calibrations/processed_bias/N20170527S0528_bias.fits
 
+``reduce`` uses the first filename in the input list as basename. So if your
+first filename is, for example, ``N20001231S001.fits``, the output will be
+``N20001231S001_fringe.fits``. Because of that, the base name of the Master Bias
+file can be different for you.
 
-Note that the prefix name of the Master Bias file can be different for you.
 Before carrying on, check that the Master Bias was added to the database
 using the ``caldb list`` command:
 
@@ -317,18 +320,18 @@ command below to create the Processed Fringe Frame:
 
     $ reduce @list_of_science.txt -r makeProcessedFringe
 
-This command line will produce an image with the ``_fringe`` suffix. ``reduce``
-uses the first filename in the input list as basename. So if your first filename
-is, for example, ``N20001231S001.fits``, the output will be
-``N20001231S001_fringe.fits``.
+This command line will produce an image with the ``_fringe`` suffix.
 
-Once you have th, you still need to add it to the local calibration manager
+Once you have the, you still need to add it to the local calibration manager
 database:
 
 .. code-block:: bash
 
-    $ caldb add N20001231S001_fringe.fits
+    $ caldb add N20170525S0116_fringe.fits
 
+Again, note that this step is only needed for images obtained with some
+detector and filter combinations. Make sure you checked the
+`Fringe Correction Tables <fringe_correction_tables>`_.
 
 
 .. _processing_science_files:
