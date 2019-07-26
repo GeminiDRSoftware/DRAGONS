@@ -255,6 +255,23 @@ Once :meth:`runr()` is finished, we add master flat file to the calibration mana
 using the line 71.
 
 
+.. _api_process_fring_frame:
+
+Process Fringe Frame
+--------------------
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 64
+
+    reduce_fringe = Reduce()
+
+    reduce_fringe.files.extend(list_of_flats)
+    reduce_fringe.runr()
+
+    calibration_service.add_cal(reduce_fringe.output_filenames[0])
+
+
 .. _api_process_science_files:
 
 Process Science files
