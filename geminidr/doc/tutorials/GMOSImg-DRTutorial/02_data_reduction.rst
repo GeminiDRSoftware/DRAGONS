@@ -317,12 +317,18 @@ command below to create the Processed Fringe Frame:
 
     $ reduce @list_of_science.txt -r makeProcessedFringe
 
-Once this is done, you still need to add it to the local calibration manager
+This command line will produce an image with the ``_fringe`` suffix. ``reduce``
+uses the first filename in the input list as basename. So if your first filename
+is, for example, ``N20001231S001.fits``, the output will be
+``N20001231S001_fringe.fits``.
+
+Once you have th, you still need to add it to the local calibration manager
 database:
 
 .. code-block:: bash
 
     $ caldb add N20001231S001_fringe.fits
+
 
 
 .. _processing_science_files:
