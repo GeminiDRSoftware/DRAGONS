@@ -383,7 +383,7 @@ The mask is updated on every data reduction step and most of the calculations
 are done on the good data. Because of this, you might expect to see some
 leftover features if you hide the mask. Here is an example:
 
-.. figure:: _static/img/N20170525S0116_nomask.png
+.. figure:: _static/img/N20170525S0116_stack_nomask.png
    :align: center
 
    Sky Subtracted and Stacked Final Image.
