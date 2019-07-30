@@ -22,7 +22,7 @@ class subtractOverscanConfig(config.Config):
                                              "none":   "Row-by-row"},
                                   default="spline", optional=True)
     nbiascontam = config.RangeField("Number of columns to exclude from averaging",
-                               int, None, min=0, optional=True)
+                               int, 0, min=0)
     order = config.RangeField("Order of fitting function", int, None, min=0,
                               optional=True)
 
@@ -30,7 +30,8 @@ class subtractOverscanConfig(config.Config):
         config.Config.validate(self)
         if self.function == "poly" and self.order is None:
             raise ValueError("Polynomial order must be specified")
-
+        if self.function == "spline" and self.order == 0:
+            raise ValueError("Must specify a positive spline order, or None")
 
 class trimOverscanConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_overscanTrimmed", optional=True)

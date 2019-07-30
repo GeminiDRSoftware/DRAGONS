@@ -159,6 +159,7 @@ class NDStacker(object):
             self._logmsg("No such combiner as {}. Using mean instead.".format(combine),
                          level='warning')
             combiner = self.mean
+        # No combine functions require arguments (yet) but futureproofing
         req_args = getattr(combiner, 'required_args', [])
         self._combiner = combiner
         self._dict = {k: v for k, v in kwargs.items() if k in req_args}
@@ -173,6 +174,9 @@ class NDStacker(object):
         req_args = getattr(rejector, 'required_args', [])
         self._rejector = rejector
         self._dict.update({k: v for k, v in kwargs.items() if k in req_args})
+
+        # Pixel to trace for debugging purposes
+        self._debug_pixel = kwargs.get('debug_pixel')
 
     def _logmsg(self, msg, level='stdinfo'):
         """
@@ -271,6 +275,22 @@ class NDStacker(object):
         """
         rej_args = {arg: self._dict[arg] for arg in self._rejector.required_args
                     if arg in self._dict}
+
+        # Convert the debugging pixel to (x,y) coords and bounds check
+        if self._debug_pixel is not None:
+            pixel_coords = []
+            for length in reversed(data.shape[1:-1]):
+                pixel_coords.append(self._debug_pixel % length)
+                self._debug_pixel //= length
+            self._debug_pixel = tuple(reversed(pixel_coords + [self._debug_pixel]))
+            if self._debug_pixel[0] > data.shape[1]:
+                self._logmsg("Debug pixel out of range")
+                self._debug_pixel = None
+            else:
+                self._logmsg("Debug pixel coords {}".format(self._debug_pixel))
+                self._pixel_debugger(data, mask, variance, stage='at input')
+                self._logmsg("Rejection: {} {}".format(self._rejector.__name__, rej_args))
+
         data, mask, variance = self._rejector(data, mask, variance, **rej_args)
         #try:
         #    data, mask, variance = self._rejector(data, mask, variance, **rej_args)
@@ -280,8 +300,29 @@ class NDStacker(object):
         #    self._rejector = self.none
         comb_args = {arg: self._dict[arg] for arg in self._combiner.required_args
                      if arg in self._dict}
+
+        if self._debug_pixel is not None:
+            self._pixel_debugger(data, mask, variance, stage='after rejection')
+            self._logmsg("Combining: {} {}".format(self._combiner.__name__, comb_args))
         out_data, out_mask, out_var = self._combiner(data, mask, variance, **comb_args)
+        #self._pixel_debugger(data, mask, variance, stage='combined')
+        if self._debug_pixel is not None:
+            info = [out_data[self._debug_pixel]]
+            info.append(None if out_mask is None else out_mask[self._debug_pixel])
+            info.append(None if out_var is None else out_var[self._debug_pixel])
+            self._logmsg("out {:15.4f} {:5d} {:15.4f}".format(*info))
         return out_data, out_mask, out_var
+
+
+    def _pixel_debugger(self, data, mask, variance, stage=''):
+        self._logmsg("img     data        mask    variance       "+stage)
+        for i in range(data.shape[0]):
+            coords = (i,) + self._debug_pixel
+            info = [data[coords]]
+            info.append(None if mask is None else mask[coords])
+            info.append(None if variance is None else variance[coords])
+            self._logmsg("{:3d} {:15.4f} {:5d} {:15.4f}".format(i, *info))
+        self._logmsg("-" * 41)
 
     #------------------------ COMBINER METHODS ----------------------------
     # These methods must all return data, mask, and varianace arrays of one
@@ -333,11 +374,10 @@ class NDStacker(object):
                 indices = np.argpartition(data, [med_index, med_index+1],
                                           axis=0)[med_index:med_index+2]
                 out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
-                # Not strictly correct when taking the mean of the middle two
-                # but it seems more appropriate, otherwise output variance
-                # will be lower when there's an even number of input pixels
+                # According to Laplace, the uncertainty on the median is
+                # sqrt(2/pi) times greater than that on the mean
                 out_var = (None if variance is None else
-                           take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
+                           0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
             out_mask = None
         else:
             mask, out_mask = NDStacker._process_mask(mask)
@@ -350,9 +390,9 @@ class NDStacker(object):
             out_data = take_along_axis(data, indices, axis=0).mean(axis=0).astype(data.dtype)
             #out_mask = np.bitwise_or(*take_along_axis(mask, indices, axis=0))
             out_var = (None if variance is None else
-                       take_along_axis(variance, indices, axis=0).mean(axis=0).astype(data.dtype))
-        if variance is None:  # IRAF gemcombine calculation
-            out_var = NDStacker.calculate_variance(data, mask, out_data)
+                       0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img)
+        if variance is None:  # IRAF gemcombine calculation, plus Laplace
+            out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         return out_data, out_mask, out_var
 
     @staticmethod
@@ -370,13 +410,14 @@ class NDStacker(object):
             # np.choose() can't handle more than 32 input images
             # Partitioning the bottom half is slower than a full sort
             arg = np.argsort(np.where(mask>0, np.inf, data), axis=0)
-            med_index = (NDStacker._num_good(mask>0) - 1) // 2
+            num_img = NDStacker._num_good(mask>0)
+            med_index = (num_img - 1) // 2
             index = take_along_axis(arg, med_index, axis=0)
         out_data = take_along_axis(data, index, axis=0)
-        if variance is None:  # IRAF gemcombine calculation
-            out_var = NDStacker.calculate_variance(data, mask, out_data)
+        if variance is None:  # IRAF gemcombine calculation, plus Laplace
+            out_var = 0.5 * np.pi * NDStacker.calculate_variance(data, mask, out_data)
         else:
-            out_var = take_along_axis(variance, index, axis=0)
+            out_var = 0.5 * np.pi * np.ma.masked_array(variance, mask=mask).mean(axis=0).data.astype(data.dtype) / num_img
         return out_data, out_mask, out_var
 
     #------------------------ REJECTOR METHODS ----------------------------
