@@ -20,7 +20,7 @@ line wrappers to reduce your data. In this scenario, you will need to access
 DRAGONS' tools by importing the appropriate modules and packages.
 
 Again, remember that our working directory will be
-``${path_to_my_data}/playground/`` .
+``/path_to_my_data/playground/`` .
 
 
 Importing Libraries
@@ -45,8 +45,7 @@ Here, :mod:`os` will be used to perform operations with the files names and
 :mod:`glob` will be used to return a :class:`list` with the input file names.
 
 
-.. todo @bquint: the gempy auto-api is not being generated anywhere.
-.. todo:: @bquint the gempy auto-api is not being generated anywhere. Find a
+.. todo @bquint: the gempy auto-api is not being generated anywhere. Find a
     place for it.
 
 
@@ -86,7 +85,7 @@ First, check that you have already a ``rsys.cfg`` file inside the
 
     [calibs]
     standalone = True
-    database_dir = ${path_to_my_data}/gmosimg_tutorial_api/playground
+    database_dir = /path_to_my_data/gmosimg_tutorial_api/playground
 
 
 This simply tells the system where to put the calibration database. This
@@ -116,9 +115,10 @@ check the
 ..  todo: calmanager
 ..  warning:: The Gemini Local Calibration Manager is not available yet in the
     Gemini Conda Channel for installation and you might not have it installed.
-    If you get a `NameError: name 'localmanager' when running line 10, you don't
-    the Local Calibration Manager installed. For now, please, contact someone in
-    the Gemini Science User Support Department for more details.
+    If you get an error with the message
+    `NameError: name 'localmanager' is not defined` when running line 10, you
+    don't the Local Calibration Manager installed. For now, please, contact
+    someone in the Gemini Science User Support Department for more details.
 
 
 .. _api_create_file_lists:
@@ -162,7 +162,7 @@ Bias frame:
         []
     )
 
-Note the empty list ``[]`` in line ??. This positional argument receives a list
+Note the empty list ``[]`` in line 19. This positional argument receives a list
 of tags that will be used to exclude any files with the matching tag from our
 selection (i.e., equivalent to the ``--xtags`` option).
 
@@ -171,7 +171,7 @@ following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 35
+    :lineno-start: 21
 
     list_of_flats = dataselect.select_data(
          all_files,
@@ -183,7 +183,7 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 41
+    :lineno-start: 26
 
     list_of_science = dataselect.select_data(
         all_files,
@@ -210,7 +210,7 @@ The Bias data reduction can be performed using the following commands:
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 47
+   :lineno-start: 32
 
     reduce_bias = Reduce()
     reduce_bias.files.extend(list_of_biases)
@@ -224,9 +224,13 @@ check on the first image in the input :class:`list` and find what is the
 appropriate Recipe it should apply. The second line passes the :class:`list` of
 dark frames to the :class:`~recipe_system.reduction.coreReduce.Reduce`
 ``files`` attribute. The
-:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` triggers the start of
-the data reduction.
+:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method triggers the
+start of the data reduction.
 
+:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` uses the first filename
+in the input list as basename. So if your first filename is, for example,
+``N20001231S001.fits``, the output will be ``N20001231S001_bias.fits``. Because
+of that, the base name of the Master Bias file can be different for you.
 
 .. _api_process_flat_files:
 
@@ -237,7 +241,7 @@ We can now reduce our FLAT files by using the following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 64
+    :lineno-start: 37
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats)
@@ -246,13 +250,46 @@ We can now reduce our FLAT files by using the following commands:
     calibration_service.add_cal(reduce_flats.output_filenames[0])
 
 
-On Line 64, we get the first (only) output file from the ``reduce_bpm`` pipeline
-and store it in the ``bpm_filename`` variable. Then, we pass it to the
-``reduce_flats`` pipeline by updating the ``.uparms`` attribute. Remember
-that ``.uparms`` must be a :class:`list` of :class:`Tuples`.
+The code above is equivalent to what we did in the `api_process_bias_files`_: line
+37 creates an instance of the :class:`~recipe_system.reduction.coreReduce.Reduce`
+class, line 38 passes the lists with the flat files to the `reduce_flats.files`
+attribute using the :meth:`~recipe_system.reduction.coreReduce.Reduce.files.extend`
+method and line 39 starts the data reduction.
 
-Once :meth:`runr()` is finished, we add master flat file to the calibration manager
-using the line 71.
+Once :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` is finished, we add
+master flat file to the calibration manager using the line 41. Here,
+:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` will create a file with
+the ``_flat`` suffix.
+
+
+.. _api_process_fring_frame:
+
+Process Fringe Frame
+--------------------
+
+.. note:: The dataset used in this tutorial does not require Fringe Correction
+    so you can skip this section if you are following it. Find more information
+    below.
+
+The reduction of some datasets requires a Processed Fringe Frame. The datasets
+that need a Fringe Frame are shown in the appendix
+`Fringe Correction Tables <fringe_correction_tables>`_.
+
+If you find out that your dataset needs Fringe Correction, you can use the
+code block below to create the Processed Fringe Frame:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 42
+
+    reduce_fringe = Reduce()
+    reduce_fringe.files.extend(list_of_science)
+    reduce_fringe.runr()
+
+    calibration_service.add_cal(reduce_fringe.output_filenames[0])
+
+The code above is very similar to the code used for Bias and Flats. The output
+file will have the ``_fringe`` suffix.
 
 
 .. _api_process_science_files:
@@ -265,7 +302,7 @@ science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 72
+    :lineno-start: 47
 
     reduce_science = Reduce()
     reduce_science.files.extend(list_of_science)
@@ -281,7 +318,7 @@ below:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 1
+    :lineno-start: 50
 
     reduce_science.uparms.append(("stackFrames:scale", True))
 
@@ -290,7 +327,7 @@ output file. You can do that with:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 1
+    :lineno-start: 51
 
     reduce_science.suffix = "_scale_stack"
     reduce_science.runr()
