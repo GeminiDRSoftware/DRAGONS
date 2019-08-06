@@ -12,12 +12,14 @@ Tutorial Series - NIRI Imaging Data Reduction with DRAGONS
 
 .. toctree::
    :maxdepth: 1
+   :numbered:
    :caption: Contents:
 
-   overview
-   datasets
-   extended_cmdline
-   extended_api
+   01_overview
+   02_datasets
+   03_extended_cmdline
+   04_extended_api
+   05_beyond
    
 
 Indices and tables
@@ -26,3 +28,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. todolist::

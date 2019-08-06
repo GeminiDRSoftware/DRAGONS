@@ -358,16 +358,6 @@ follow:
     $ reduce @flats_Y.list -p addDQ:user_bpm="S20131129S0320_bpm.fits"
     $ caldb add S20131129S0320_flat.fits
 
-.. todo @bquint Review BPM injection
-.. todo: @bquint The command line above should pass the BPM to the ``p.addDQ``
-   but it seems it is not. I am receiving ``WARNING - No static BPMs defined``
-   messages while reducing the data. I checked with and without this option and
-   I get the same message but the two masks are not the same.
-.. todo: KL -> @bquint.  This is just because there are no static BPMs for
-         F2, so it can't find one, it doesn't exist.  If you look at the DQ
-         plane, you will see that the illumination mask is added and the
-         user BPM.
-
 Here, the ``-p`` flag tells reduce_ to set the input parameter ``user_bpm``
 of the ``addDQ`` primitive to the filename of the BPM we have just created.
 There will be a message "WARNING - No static BPMs defined".  This is

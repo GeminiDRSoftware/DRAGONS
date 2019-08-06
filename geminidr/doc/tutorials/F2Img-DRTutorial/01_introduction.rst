@@ -53,6 +53,8 @@ All the data needed to run this tutorial are found in the tutorial's data
 package (KL??? name of the package, with URL).  Download it and unpack it
 somewhere convenient.
 
+.. todo:: add name of and URL to the data package
+
 .. highlight:: bash
 
 ::
