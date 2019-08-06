@@ -59,7 +59,6 @@ We first import the necessary modules and classes:
     from __future__ import print_function
 
     import glob
-    import os
 
     from gempy.adlibrary import dataselect
     from recipe_system import cal_service
@@ -69,9 +68,8 @@ Importing ``print_function`` is for compatibility with the Python 2.7 print
 statement. If you are working with Python 3, it is not needed, but importing
 it will not break anything.
 
-The following two packages, :mod:`glob` and :mod:`os`, are Python built-in packages.
-Here, :mod:`os` will be used to perform operations with the files names and
-:mod:`glob` will be used to return a :class:`list` with the input file names.
+:mod:`glob` is Python built-in packages. It will be used to return a
+:class:`list` with the input file names.
 
 
 .. todo @bquint: the gempy auto-api is not being generated anywhere.
@@ -91,7 +89,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 9
+    :lineno-start: 8
 
     from gempy.utils import logutils
     logutils.config(file_name='f2_data_reduction.log')
@@ -127,7 +125,7 @@ configured as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 11
+    :lineno-start: 10
 
     caldb = cal_service.CalibrationService()
     caldb.config()
@@ -151,7 +149,7 @@ FITS files in the directory ``../playdata/``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 15
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
@@ -173,7 +171,7 @@ the science observations, those with an exposure time of 120 seconds.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 18
+    :lineno-start: 17
 
     dark_files_120s = dataselect.select_data(
         all_files,
@@ -193,7 +191,7 @@ We repeat the same syntax for the 2-second darks:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 24
+    :lineno-start: 23
 
     dark_files_2s = dataselect.select_data(
         all_files,
@@ -210,7 +208,7 @@ filters.  It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 30
+    :lineno-start: 29
 
     list_of_flats_Y = dataselect.select_data(
          all_files,
@@ -225,7 +223,7 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 36
+    :lineno-start: 35
 
     list_of_science_images = dataselect.select_data(
         all_files,
@@ -251,7 +249,7 @@ file on disk.
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 42
+   :lineno-start: 41
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(dark_files_120s)
@@ -286,7 +284,7 @@ The Bad Pixel Mask is created using as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 46
 
     reduce_bpm = Reduce()
     reduce_bpm.files.extend(list_of_flats_Y)
@@ -321,7 +319,7 @@ We create the master flat field and add it to the calibration manager as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 54
+    :lineno-start: 53
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Y)
@@ -355,7 +353,7 @@ science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 60
+    :lineno-start: 59
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
