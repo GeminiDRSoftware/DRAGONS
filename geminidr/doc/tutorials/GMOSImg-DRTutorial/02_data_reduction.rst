@@ -24,6 +24,7 @@
 
 .. _command_line_data_reduction:
 
+**************
 Data Reduction
 **************
 
@@ -48,7 +49,7 @@ tutorial are related to this path.
 .. _setup_caldb:
 
 Set up caldb_
--------------
+=============
 
 DRAGONS comes with a local calibration manager and a local light weight database
 that uses the same calibration association rules as the Gemini Observatory
@@ -103,7 +104,7 @@ caldb_ documentation in the
 .. _organize_files:
 
 Organize files
---------------
+==============
 
 First of all, let us consider that we have put all the files in the same folder
 called ``../playdata/`` and that we do not have any information anymore. From a
@@ -135,7 +136,7 @@ output above was trimmed for simplicity.
 .. _create_file_lists:
 
 Create File lists
------------------
+=================
 
 This data set now contains science and calibration frames. It could have
 different observed targets and different exposure times. The current data
@@ -223,7 +224,7 @@ pass the output to a new list:
 .. _process_bias_files:
 
 Process BIAS files
-------------------
+==================
 
 The Master BIAS file can be created using the command below:
 
@@ -259,7 +260,7 @@ using the ``caldb list`` command:
 .. _process_flat_files:
 
 Process FLAT files
-------------------
+==================
 
 FLAT images can be easily reduced using the ``reduce`` command line:
 
@@ -304,7 +305,7 @@ added to your local database:
 .. _process_fringe_frame:
 
 Process Fringe Frame
---------------------
+====================
 
 .. note:: The dataset used in this tutorial does not require Fringe Correction
     so you can skip this section if you are following it. Find more information
@@ -339,7 +340,7 @@ detector and filter combinations. Make sure you checked the
 .. _processing_science_files:
 
 Process Science files
----------------------
+=====================
 
 Once we have our calibration files processed and added to the database, we can
 run ``reduce`` on our science data:
@@ -398,7 +399,7 @@ some cosmic rays lefovers that persisted even after the stack process.
 
 
 Advanced Operations
--------------------
+===================
 
 It is also important to remember that ``reduce`` is basically a recipe with
 a sequence of operations, called Primitives, and that each Primitive require

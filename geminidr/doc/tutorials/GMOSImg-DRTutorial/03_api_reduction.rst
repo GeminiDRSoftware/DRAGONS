@@ -11,6 +11,7 @@
 
 .. _api_data_reduction:
 
+*******************
 Reduction using API
 *******************
 
@@ -24,7 +25,7 @@ Again, remember that our working directory will be
 
 
 Importing Libraries
--------------------
+===================
 
 Here are all the packages and modules that you will have to import for running
 this tutorial:
@@ -74,7 +75,7 @@ using the :mod:`gempy.utils.logutils` module and its
 .. _set_caldb_api:
 
 The Calibration Service
------------------------
+=======================
 
 Before we start, let's be sure we have properly setup our database.
 
@@ -124,7 +125,7 @@ check the
 .. _api_create_file_lists:
 
 Create :class:`list` of files
------------------------------
+=============================
 
 Here, again, we have to create lists of files that will be used on each of the
 data reduction step. We can start by creating a :class:`list` will all the file
@@ -204,7 +205,7 @@ that we are getting science frames obtained with the g-band filter.
 .. _api_process_bias_files:
 
 Process Bias files
-------------------
+==================
 
 The Bias data reduction can be performed using the following commands:
 
@@ -232,10 +233,11 @@ in the input list as basename. So if your first filename is, for example,
 ``N20001231S001.fits``, the output will be ``N20001231S001_bias.fits``. Because
 of that, the base name of the Master Bias file can be different for you.
 
+
 .. _api_process_flat_files:
 
 Process FLAT files
-------------------
+==================
 
 We can now reduce our FLAT files by using the following commands:
 
@@ -265,7 +267,7 @@ the ``_flat`` suffix.
 .. _api_process_fring_frame:
 
 Process Fringe Frame
---------------------
+====================
 
 .. note:: The dataset used in this tutorial does not require Fringe Correction
     so you can skip this section if you are following it. Find more information
@@ -295,7 +297,7 @@ file will have the ``_fringe`` suffix.
 .. _api_process_science_files:
 
 Process Science files
----------------------
+=====================
 
 Finally, we can use similar commands to create a new pipeline and reduce the
 science data:
