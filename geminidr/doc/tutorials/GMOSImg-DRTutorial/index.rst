@@ -18,13 +18,14 @@ WebPage <https://www.gemini.edu/sciops/instruments/gmos/>`_ and in the
    01_introduction
    02_data_reduction
    03_api_reduction
+   04_beyond
 
 .. toctree::
    :maxdepth: 2
    :caption: Appendix
 
-   appendices/02_goa_download
-   appendices/01_fringe_correction_tables
+   appendices/01_goa_download
+   appendices/02_fringe_correction_tables
 
 
 Indices and tables
