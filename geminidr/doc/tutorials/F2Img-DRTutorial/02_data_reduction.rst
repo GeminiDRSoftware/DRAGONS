@@ -262,14 +262,15 @@ names (``object``) or exposure times (``exposure_time``), or use it with any
 of the datasets descriptors_.
 
 
-.. _process_dark_files:
-
 Reduce the data
 ===============
-We have our input lists and we have initialzed the calibration database, we
+We have our input lists and we have initialized the calibration database, we
 are ready to reduce the data.
 
 Please make sure that you are still in the ``playground`` directory.
+
+
+.. _process_dark_files:
 
 Create a Master Dark
 --------------------
@@ -292,7 +293,7 @@ following command:
 
     $ caldb add S20131120S0115_dark.fits
 
-Now reduce_ will be able to find this processed dark when nedded to process
+Now reduce_ will be able to find this processed dark when needed to process
 other observations.
 
 .. note::
@@ -301,7 +302,7 @@ other observations.
     location is to cache a copy of the file. This applies to all the processed
     calibration, eg. master flat.
 
-    Some people might prefer adding the copy in  the `calibration` directory
+    Some people might prefer adding the copy in the `calibration` directory
     as it is safe from a `rm *`, for example.
 
     .. code-block:: bash
