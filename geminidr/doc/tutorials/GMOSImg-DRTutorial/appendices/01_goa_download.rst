@@ -15,8 +15,8 @@ recommended that you download the pre-made package (:ref:`datasetup`) instead
 of getting everything manually.
 
 
-Step by step instructions
-=========================
+Query and Download
+==================
 
 This tutorial will use observations from program GN-2017A-LP-1 (PI: Wesley
 Fraser), "COL-OSSOS: COLours for the Outer Solar System Object Survey", obtained
@@ -93,7 +93,7 @@ the page and click on the ``Download alll 6 files totalling 0.20 Gb`` .
 
 
 Organize the data
------------------
+=================
 
 Now, copy all the ``.tar`` files to the same place in your computer. Then use
 ``tar`` and ``bunzip2`` commands to decompress them. For example:
