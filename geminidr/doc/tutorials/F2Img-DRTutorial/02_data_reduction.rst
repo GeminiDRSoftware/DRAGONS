@@ -51,8 +51,6 @@ like:
 * caldb_
 
 
-.. _setup_caldb:
-
 The dataset
 ===========
 
@@ -81,6 +79,7 @@ Here is a copy of the table for quick reference.
 +---------------+---------------------+--------------------------------+
 
 
+.. _setup_caldb:
 
 Set up the Local Calibration Manager
 ====================================
