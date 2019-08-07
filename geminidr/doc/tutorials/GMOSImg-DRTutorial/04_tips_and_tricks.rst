@@ -7,22 +7,20 @@
 .. _show_recipes: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes
 
 
-.. _beyond:
+.. _tips_and_tricks:
 
-*************************
-Going beyond the examples
-*************************
-
+***************
 Tips and Tricks
-===============
+***************
+
 This is a collection of tips and tricks that can be useful for reducing
 different data, or to do it slightly differently from what is presented
 in the example.
 
 .. _bypassing_caldb:
 
-Bypassing automatic calibration association
---------------------------------------------
+Bypass automatic calibration association
+========================================
 We can think of two reasons why a user might want to bypass the calibration
 manager and the automatic processed calibration association. The first is
 to override the automatic selection, to force the use of a different processed
@@ -45,8 +43,9 @@ The list of recognized processed calibration is:
 * processed_fringe
 
 
-Browsing Recipes and Primitives
--------------------------------
+Browse Recipes and Primitives
+=============================
+
 It is also important to remember that ``reduce`` is basically a recipe with
 a sequence of operations, called Primitives, and that each Primitive require
 a set of parameters. When we run ``reduce`` without any extra flag, it will
@@ -182,39 +181,3 @@ overwrites the output. Here is the product of the command line above:
 
    Sky Subtracted and Stacked Final Image. The light-gray area represents the
    masked pixels.
-
-
-Issues and Limitations
-======================
-
-Memory Issues
--------------
-Some primitives use a lot of RAM memory and they can cause a crash. Memory
-management in Python is notoriously difficult. The DRAGONS's team is constantly
-trying to improve memory management within ``astrodata`` and the DRAGONS recipes
-and primitives. If an "Out of memory" crash happens to you, if possible for your
-observation sequence, try to run the pipeline on fewer images at the time,
-like for each dither pattern sequence separately.
-
-.. todo::  We need to show the user how to bring them all back
-     together in a final stack at the end. This means showing
-     what custom recipe to use and how to invoke it.
-
-
-.. _double_messaging:
-
-Double messaging issue
-----------------------
-If you run ``Reduce`` without setting up a logger, you will notice that the
-output messages appear twice. To prevent this behaviour set up a logger.
-This will send one of the output stream to a file, keeping the other on the
-screen. We recommend using the DRAGONS logger located in the
-:mod:`gempy.utils.logutils` module and its
-:func:`~gempy.utils.logutils.config()` function:
-
-
-.. code-block:: python
-    :linenos:
-
-    from gempy.utils import logutils
-    logutils.config(file_name='f2_data_reduction.log')
