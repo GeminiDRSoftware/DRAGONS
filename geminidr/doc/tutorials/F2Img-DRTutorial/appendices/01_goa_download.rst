@@ -14,6 +14,7 @@ If you are just interested in trying out the tutorial, we still
 recommended that you download the pre-made package (:ref:`datasetup`) instead
 of getting everything manually.
 
+
 Step by step instructions
 =========================
 
@@ -30,8 +31,10 @@ The first step of any reduction is to retrieve the data from the
 details on using the Archive, check its
 `Help Page <https://archive.gemini.edu/help/index.html>`_.
 
+
 Science data
 ------------
+
 Access the `GOA webpage <https://archive.gemini.edu/>`_, put the data label
 **GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
 button in the middle of the page. The page will refresh and display a table with
