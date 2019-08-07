@@ -1,5 +1,7 @@
 .. keyhole_api.rst
 
+.. include:: DRAGONSlinks.txt
+
 .. _keyhole_api:
 
 ********************************************************************
@@ -41,97 +43,47 @@ Setting up
 ==========
 First, navigate to the ``playground`` directory in the unpacked data package.
 
-Then, we start Python and import the necessary modules, classes, and functions.
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
 
-::
+Importing Libraries
+-------------------
 
-    % cd <path>/playground
-    % python
+.. code-block:: python
+    :linenos:
 
-::
+    from __future__ import print_function
 
-    >>> from __future__ import print_function
-
-    >>> import glob
+    import glob
 
     # DRAGONS imports
-    >>> from recipe_system.reduction.coreReduce import Reduce
-    >>> from recipe_system import cal_service
-    >>> from gempy.utils import logutils
-    >>> from gempy.adlibrary import dataselect
+    from recipe_system.reduction.coreReduce import Reduce
+    from recipe_system import cal_service
+    from gempy.adlibrary import dataselect
 
 Importing ``print_function`` is for compatibility with the Python 2.7 print
 statement.  If you are working with Python 3, it is not needed, but importing
 it will not break anything.
 
-Create file lists
-=================
-.. |astrouser_link| raw:: html
+The ``dataselect`` module will be used to create file lists for the
+darks, the flats and the science observations. The ``cal_service`` package
+is our interface to the local calibration database. Finally, the
+``Reduce`` class is used to set up and run the data reduction.
 
-   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
+Setting up the logger
+---------------------
+We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
-The first step is to create input file lists.  The tool ``dataselect`` helps
-with that.  It uses Astrodata tags and descriptors to select the files and
-store the filenames to a Python list that can then be fed to the ``Reduce``
-class.  (See the |astrouser_link| for information about Astrodata.)
+.. code-block:: python
+    :linenos:
+    :lineno-start: 9
 
-A list for the darks
---------------------
-There is only one set of 60-second darks in the data package.  To create the
-list, one simply need to select on the ``DARK`` tag::
+    from gempy.utils import logutils
+    logutils.config(file_name='gnirs_tutorial.log')
 
-    >>> all_files = glob.glob('../playdata/*.fits')
-    >>> darks60 = dataselect.select_data(all_files, ['DARK'])
-
-If there was a need to select specifically on the 60-second darks, the
-command would use the ``exposure_time`` descriptor::
-
-    >>> expression = 'exposure_time==60'
-    >>> parsed_expr = dataselect.expr_parser(expression)
-    >>> darks60 = dataselect.select_data(all_files, ['DARK'], [], parsed_expr)
-
-
-A list for the flats
---------------------
-The flats are a sequence of lamp-on and lamp-off exposures.  We just send all
-of them to one list.
-
-::
-
-    >>> all_files = glob.glob('../playdata/*.fits')
-    >>> flats = dataselect.select_data(all_files, ['FLAT'])
-
-A list for the science observations
------------------------------------
-The science frames are all the ``IMAGE`` non-``FLAT`` frames in the data
-package.  They are also the ``J`` filter images that are non-``FLAT``. And
-they are the ones with an object name ``GRB120116A``.  Those are all valid
-ways to select the science observations.  Here we show all three ways as
-examples; of course, just one is required.
-
-::
-
-    >>> all_files = glob.glob('../playdata/*.fits')
-
-    >>> has_tags = ['IMAGE']
-    >>> has_not_tags = ['FLAT']
-    >>> target = dataselect.select_data(all_files, has_tags, has_not_tags)
-
-    >>> has_tags = []
-    >>> has_not_tags = ['FLAT']
-    >>> expression = 'filter_name=="J"'
-    >>> parsed_expr = dataselect.expr_parser(expression)
-    >>> target = dataselect.select_data(all_files, has_tags, has_not_tags,
-    ...                                 expression=parsed_expr)
-
-    >>> expression = 'object=="GRB120116A"'
-    >>> parsed_expr = dataselect.expr_parser(expression)
-    >>> target = dataselect.select_data(all_files, [], [], expression=parsed_expr)
-
-Pick the one you prefer, they all yield the same list.
 
 Set up the Local Calibration Manager
-====================================
+------------------------------------
 DRAGONS comes with a local calibration manager and a local light weight database
 that uses the same calibration association rules as the Gemini Observatory
 Archive.  This allows the ``Reduce`` instance to make requests for matching
@@ -145,23 +97,130 @@ In ``~/.geminidr/``, edit the configuration file ``rsys.cfg`` as follow::
     standalone = True
     database_dir = <where_the_data_package_is>/gnirsimg_tutorial/playground
 
-This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibrations we are going to
+This tells the system where to put the calibration database, the
+database that will keep track of the processed calibration we are going to
 send to it.
 
-.. note:: ``~`` in the path above refers to your home directory.  Also, don't miss the dot in ``.geminidr``.
+.. note:: The tilde (``~``) in the path above refers to your home directory.
+    Also, mind the dot in ``.geminidr``.
 
 The calibration database is initialized and the calibration service is
-configured like this::
+configured like this:
 
-    >>> caldb = cal_service.CalibrationService()
-    >>> caldb.config()
+.. code-block:: python
+    :linenos:
+    :lineno-start: 11
 
-    >>> caldb.init()
+    caldb = cal_service.CalibrationService()
+    caldb.config()
+    caldb.init()
 
-    >>> cal_service.set_calservice()
+    cal_service.set_calservice()
 
-The calibration service is now ready to use.
+The calibration service is now ready to use.  If you need more details,
+check the "|caldb|" documentation in the Recipe System User Manual.
+
+
+Create file lists
+=================
+.. |astrouser_link| raw:: html
+
+   <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
+
+The next step is to create input file lists.  The tool ``dataselect`` helps
+with that.  It uses Astrodata tags and descriptors to select the files and
+store the filenames to a Python list that can then be fed to the ``Reduce``
+class.  (See the |astrouser_link| for information about Astrodata and for a list
+of |descriptors|.)
+
+The first list we create is a list of all the files in the ``playdata``
+directory.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 16
+
+    all_files = glob.glob('../playdata/*.fits')
+
+We will search that list for files with specific characteristics.  We use
+the ``all_files`` :class:`list` as an input to the function
+``dataselect.select_data()`` .  The function's signature is::
+
+    select_data(inputs, tags=[], xtags=[], expression='True')
+
+We show several usage examples below.
+
+
+A list for the darks
+--------------------
+There is only one set of 60-second darks in the data package.  To create the
+list, one simply need to select on the ``DARK`` tag:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 17
+
+    darks60 = dataselect.select_data(all_files, ['DARK'])
+
+If there was a need to select specifically on the 60-second darks, the
+command would use the ``exposure_time`` descriptor:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 18
+
+    darks60 = dataselect.select_data(
+        all_files,
+        ['DARK'],
+        [],
+        dataselect.expr_parser('exposure_time==60')
+    )
+
+.. note::  All expression need to be processed with ``dataselect.expr_parser``.
+
+
+A list for the flats
+--------------------
+The flats are a sequence of lamp-on and lamp-off exposures.  We just send all
+of them to one list.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 24
+
+    flats = dataselect.select_data(all_files, ['FLAT'])
+
+A list for the science observations
+-----------------------------------
+The science frames are all the ``IMAGE`` non-``FLAT`` frames in the data
+package.  They are also the ``J`` filter images that are non-``FLAT``. And
+they are the ones with an object name ``GRB120116A``.  Those are all valid
+ways to select the science observations.  Here we show all three ways as
+examples; of course, just one is required.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 25
+
+    dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
+
+    # Or...
+    dataselect.select_data(
+        all_files,
+        [],
+        ['FLAT'],
+        dataselect.expr_parser('filter_name=="J"')
+    )
+
+    # Or...
+    dataselect.select_data(
+        all_files,
+        [],
+        [],
+        dataselect.expr_parser('object=="GRB120116A"')
+    )
+
+Pick the one you prefer, in this case, they all yield the same list.
 
 
 Reduce the data
@@ -170,12 +229,6 @@ We have our input filename lists, we have identified and initialized the
 calibration database, we are ready to reduce the data.
 
 Please make sure that you are still in the ``playground`` directory.
-
-Set up the logging
-------------------
-First we quickly set up the logging::
-
-    >>> logutils.config(file_name='gnirs_tutorial.log')
 
 
 Master Dark
@@ -186,15 +239,24 @@ calibration database.  The name of the output master dark is
 stored in the ``Reduce`` instance.  The calibration service expects the
 name of a file on disk.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 42
 
-    >>> reduce_darks = Reduce()
-    >>> reduce_darks.files.extend(darks60)
-    >>> reduce_darks.runr()
+    reduce_darks = Reduce()
+    reduce_darks.files.extend(darks60)
+    reduce_darks.runr()
 
-    >>> caldb.add_cal(reduce_darks.output_filenames[0])
+    caldb.add_cal(reduce_darks.output_filenames[0])
+
+The ``Reduce`` class is our reduction "controller".  This is were we collect
+all the information necessary for the reduction.  In this case, the only
+information necessary is the list of input files which we add to the
+``files`` attribute.  The ``Reduce.runr{}`` method is where the
+recipe search is triggered and where it is executed.
 
 .. note:: The file name of the output processed dark is the file name of the first file in the list with `_dark` appended as a suffix.  This the general naming scheme used by the ``Recipe System``.
+
 
 Master Flat Field
 -----------------
@@ -203,13 +265,17 @@ Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
 
 We create the master flat field and add it to the calibration database as
-follow::
+follow:
 
-    >>> reduce_flats = Reduce()
-    >>> reduce_flats.files.extend(flats)
-    >>> reduce_flats.runr()
+.. code-block:: python
+    :linenos:
+    :lineno-start: 47
 
-    >>> caldb.add_cal(reduce_flats.output_filenames[0])
+    reduce_flats = Reduce()
+    reduce_flats.files.extend(flats)
+    reduce_flats.runr()
+
+    caldb.add_cal(reduce_flats.output_filenames[0])
 
 
 Science Observations
@@ -218,7 +284,7 @@ The science target is a point source.  The sequence dithers on-target, moving
 the source across the thin keyhole aperture.  The sky frames for each
 science image will be the adjacent dithered frames obtained within a certain
 time limit.  The default for GNIRS keyhole images is "within 600 seconds".
-This can be seen by using the ``showpars`` command-line tool::
+This can be seen by using the "|showpars|" command-line tool::
 
     showpars ../playdata/N20120117S0014.fits associateSky
 
@@ -235,16 +301,18 @@ and darks.  This is a recently discovered limitation that we plan to fix in
 a future release.  In the meantime, we are not stuck, we can simply specify
 the dark on the command line.  The flat will be retrieved automatically.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 52
 
-    >>> from recipe_system.utils.reduce_utils import normalize_ucals
-    >>> mycalibrations = ['processed_dark:N20120102S0538_dark.fits']
+    from recipe_system.utils.reduce_utils import normalize_ucals
+    mycalibrations = ['processed_dark:N20120102S0538_dark.fits']
 
-    >>> reduce_target = Reduce()
-    >>> reduce_target.files.extend(target)
-    >>> ucals_dict = normalize_ucals(reduce_target.files, mycalibrations)
-    >>> reduce_target.ucals = ucals_dict
-    >>> reduce_target.runr()
+    reduce_target = Reduce()
+    reduce_target.files.extend(target)
+    ucals_dict = normalize_ucals(reduce_target.files, mycalibrations)
+    reduce_target.ucals = ucals_dict
+    reduce_target.runr()
 
 Below are a raw image (top) and the final stacked image (bottom).  The stack
 keeps all the pixels and is never cropped to only the common area. Of course

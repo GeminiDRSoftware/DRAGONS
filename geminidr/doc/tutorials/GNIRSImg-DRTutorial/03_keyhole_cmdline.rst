@@ -1,5 +1,7 @@
 .. keyhole_cmdline.rst
 
+.. include:: DRAGONSlinks.txt
+
 .. _keyhole_cmdline:
 
 **********************************************************************
@@ -7,7 +9,7 @@ Example 1-A: Point source through keyhole - Using the "reduce" command
 **********************************************************************
 
 In this example we will reduce a GNIRS keyhole imaging observation of a point
-source using the ``reduce`` command that is operated directly from the unix
+source using the "|reduce|" command that is operated directly from the unix
 shell.  Just open a terminal to get started.
 
 This observation is a simple dither on target.
@@ -32,6 +34,40 @@ Here is a copy of the table for quick reference.
 |               || N20120117S0042-49 (lamps-off)             |
 +---------------+--------------------------------------------+
 
+Set up the Local Calibration Manager
+====================================
+DRAGONS comes with a local calibration manager and a local light weight database
+that uses the same calibration association rules as the Gemini Observatory
+Archive.  This allows "|reduce|" to make requests for matching **processed**
+calibrations when needed to reduce a dataset.
+
+Let's set up the local calibration manager for this session.
+
+In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
+follow::
+
+    [calibs]
+    standalone = True
+    database_dir = <where_the_data_package_is>/gnirsimg_tutorial/playground
+
+This simply tells the system where to put the calibration database, the
+database that will keep track of the processed calibrations we are going to
+send to it.
+
+.. note:: ``~`` in the path above refers to your home directory.  Also, don't
+    miss the dot in ``.geminidr``.
+
+Then initialize the calibration database::
+
+    caldb init
+
+That's it.  It is ready to use.
+
+You can add processed calibrations with ``caldb add <filename>`` (we will
+later), list the database content with ``caldb list``, and
+``caldb remove <filename>`` to remove a file from the database (it will **not**
+remove the file on disk.)  (See the "|caldb|" documentation for more details.)
+
 
 Create file lists
 =================
@@ -39,9 +75,9 @@ Create file lists
 
    <a href="https://astrodata-user-manual.readthedocs.io/" target="_blank">Astrodata User Manual</a>
 
-The first step is to create input file lists.  The tool ``dataselect`` helps
-with that.  It uses Astrodata tags and descriptors to select the files and
-send the filenames to a text file that can then be fed to ``reduce``.  (See the
+The first step is to create input file lists.  The tool "|dataselect|" helps
+with that.  It uses Astrodata tags and "|descriptors|" to select the files and
+send the filenames to a text file that can then be fed to "|reduce|".  (See the
 |astrouser_link| for information about Astrodata.)
 
 First, navigate to the ``playground`` directory in the unpacked data package.
@@ -86,41 +122,6 @@ examples; of course, just one is required.
 Pick the one you prefer, they all yield the same list.
 
 
-Set up the Local Calibration Manager
-====================================
-DRAGONS comes with a local calibration manager and a local light weight database
-that uses the same calibration association rules as the Gemini Observatory
-Archive.  This allows ``reduce`` to make requests for matching **processed**
-calibrations when needed to reduce a dataset.
-
-Let's set up the local calibration manager for this session.
-
-In ``~/.geminidr/``, create or edit the configuration file ``rsys.cfg`` as
-follow::
-
-    [calibs]
-    standalone = True
-    database_dir = <where_the_data_package_is>/gnirsimg_tutorial/playground
-
-This simply tells the system where to put the calibration database, the
-database that will keep track of the processed calibrations we are going to
-send to it.
-
-.. note:: ``~`` in the path above refers to your home directory.  Also, don't miss the dot in ``.geminidr``.
-
-
-Then initialize the calibration database::
-
-    caldb init
-
-That's it.  It is ready to use.
-
-You can add processed calibrations with ``caldb add <filename>`` (we will
-later), list the database content with ``caldb list``, and
-``caldb remove <filename>`` to remove a file from the database (it will **not**
-remove the file on disk.)
-
-
 Reduce the data
 ===============
 We have our input filename lists, we have identified and initialzed the
@@ -141,9 +142,12 @@ process.
     reduce @darks60.lis
     caldb add N20120102S0538_dark.fits
 
+The ``@`` character before the name of the input file is the "at-file" syntax.
+More details can be found in the |atfile| documentation.
+
 .. note:: The file name of the output processed dark is the file name of the
           first file in the list with `_dark` appended as a suffix.  This the
-          general naming scheme used by `reduce`.
+          general naming scheme used by "|reduce|".
 
 
 Master Flat Field
@@ -165,7 +169,7 @@ The science target is a point source.  The sequence dithers on-target, moving
 the source across the thin keyhole aperture.  The sky frames for each
 science image will be the adjacent dithered frames obtained within a certain
 time limit.  The default for GNIRS keyhole images is "within 600 seconds".
-This can be seen by using ``showpars``::
+This can be seen by using "|showpars|"::
 
     showpars ../playdata/N20120117S0014.fits associateSky
 

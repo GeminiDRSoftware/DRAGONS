@@ -140,7 +140,7 @@ The next step is to create input file lists.  The module ``dataselect`` helps
 with that.  It uses Astrodata tags and |descriptors| to select the files and
 store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrouser_link| for information about Astrodata and for a list
-of |descriptors|)
+of |descriptors|.)
 
 The first list we create is a list of all the files in the ``playdata``
 directory.

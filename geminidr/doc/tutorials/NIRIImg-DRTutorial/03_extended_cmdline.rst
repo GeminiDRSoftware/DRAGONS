@@ -89,7 +89,7 @@ have to do it.  DRAGONS provides tools to help you with that.
 
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
-send the filenames to a text file that can then be fed to ``reduce``.  (See the
+send the filenames to a text file that can then be fed to "|reduce|".  (See the
 |astrouser_link| for information about Astrodata.)
 
 First, navigate to the ``playground`` directory in the unpacked data package.
