@@ -2,8 +2,9 @@
 
 .. _fringe_correction_tables:
 
+************************
 Fringe Correction Tables
-------------------------
+************************
 
 Here you will find what are the detector-filter combinations that requires or 
 not a Processed Fringe Frame for the data reduction. Find bellow one table for 
