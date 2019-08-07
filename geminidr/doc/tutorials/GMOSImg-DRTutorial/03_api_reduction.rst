@@ -20,12 +20,36 @@ Application Program Interface (API) directly instead of using the command
 line wrappers to reduce your data. In this scenario, you will need to access
 DRAGONS' tools by importing the appropriate modules and packages.
 
-Again, remember that our working directory will be
-``/path_to_my_data/playground/`` .
 
+The dataset
+===========
 
-Importing Libraries
-===================
+If you have not already, download and unpack the tutorial's data package.
+Refer to :ref:`datasetup` for the links and simple instructions.
+
+The dataset specific to this example is described in:
+
+    :ref:`about_data_set`.
+
+Here is a copy of the table for quick reference.
+
++---------------+---------------------+--------------------------------+
+| Science       || N20170525S0116-120 | 300 s, g-band                  |
++---------------+---------------------+--------------------------------+
+| Bias          || N20170527S0528-532 |                                |
++---------------+---------------------+--------------------------------+
+| Twilight Flats|| N20170530S0360     | 256 s, g-band                  |
+|               || N20170530S0363     | 64 s, g-band                   |
+|               || N20170530S0364     | 32 s, g-band                   |
+|               || N20170530S0365     | 16 s, g-band                   |
+|               || N20170530S0371-372 | 1 s, g-band                    |
++---------------+---------------------+--------------------------------+
+
+Set Up
+======
+
+Import Libraries
+----------------
 
 Here are all the packages and modules that you will have to import for running
 this tutorial:
@@ -72,10 +96,23 @@ using the :mod:`gempy.utils.logutils` module and its
     logutils.config(file_name='gmos_data_reduction.log')
 
 
+Dragons Logger
+--------------
+
+We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 9
+
+    from gempy.utils import logutils
+    logutils.config(file_name='gmos_data_reduction.log')
+
+
 .. _set_caldb_api:
 
-The Calibration Service
-=======================
+Calibration Service
+-------------------
 
 Before we start, let's be sure we have properly setup our database.
 
@@ -101,7 +138,7 @@ configured like this:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 9
+    :lineno-start: 11
 
     calibration_service = cal_service.CalibrationService()
     calibration_service.config()
@@ -113,19 +150,11 @@ The calibration service is now ready to use. If you need more details,
 check the
 `Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
 
-..  todo: calmanager
-..  warning:: The Gemini Local Calibration Manager is not available yet in the
-    Gemini Conda Channel for installation and you might not have it installed.
-    If you get an error with the message
-    `NameError: name 'localmanager' is not defined` when running line 10, you
-    don't the Local Calibration Manager installed. For now, please, contact
-    someone in the Gemini Science User Support Department for more details.
-
 
 .. _api_create_file_lists:
 
-Create :class:`list` of files
-=============================
+Create list of files
+====================
 
 Here, again, we have to create lists of files that will be used on each of the
 data reduction step. We can start by creating a :class:`list` will all the file
@@ -133,7 +162,7 @@ names:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 14
+    :lineno-start: 16
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
@@ -150,12 +179,14 @@ Now we can use the ``all_files`` :class:`list` as an input to
 three arguments are positional arguments (position matters) and they are
 separated by comma.
 
-As an example, let us can select the files that will be used to create a master
-Bias frame:
+List of Biases
+--------------
+
+Let us, now, select the files that will be used to create a Master Bias frame:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 18
 
     list_of_biases = dataselect.select_data(
         all_files,
@@ -167,12 +198,16 @@ Note the empty list ``[]`` in line 19. This positional argument receives a list
 of tags that will be used to exclude any files with the matching tag from our
 selection (i.e., equivalent to the ``--xtags`` option).
 
+
+List of Flats
+-------------
+
 Now you must create a list of FLAT images. You can do that by using the
 following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 21
+    :lineno-start: 23
 
     list_of_flats = dataselect.select_data(
          all_files,
@@ -180,11 +215,14 @@ following commands:
          []
     )
 
+List of Science Data
+--------------------
+
 Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 26
+    :lineno-start: 28
 
     list_of_science = dataselect.select_data(
         all_files,
@@ -204,14 +242,14 @@ that we are getting science frames obtained with the g-band filter.
 
 .. _api_process_bias_files:
 
-Process Bias files
-==================
+Make Master Bias
+================
 
 The Bias data reduction can be performed using the following commands:
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 32
+   :lineno-start: 34
 
     reduce_bias = Reduce()
     reduce_bias.files.extend(list_of_biases)
@@ -236,14 +274,14 @@ of that, the base name of the Master Bias file can be different for you.
 
 .. _api_process_flat_files:
 
-Process FLAT files
-==================
+Make Master FLAT
+================
 
 We can now reduce our FLAT files by using the following commands:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 37
+    :lineno-start: 39
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats)
@@ -266,8 +304,8 @@ the ``_flat`` suffix.
 
 .. _api_process_fring_frame:
 
-Process Fringe Frame
-====================
+Make Master Fringe Frame
+========================
 
 .. note:: The dataset used in this tutorial does not require Fringe Correction
     so you can skip this section if you are following it. Find more information
@@ -282,7 +320,7 @@ code block below to create the Processed Fringe Frame:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 42
+    :lineno-start: 44
 
     reduce_fringe = Reduce()
     reduce_fringe.files.extend(list_of_science)
@@ -296,15 +334,15 @@ file will have the ``_fringe`` suffix.
 
 .. _api_process_science_files:
 
-Process Science files
-=====================
+Reduce Science files
+====================
 
 Finally, we can use similar commands to create a new pipeline and reduce the
 science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 49
 
     reduce_science = Reduce()
     reduce_science.files.extend(list_of_science)
@@ -320,7 +358,7 @@ below:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 50
+    :lineno-start: 52
 
     reduce_science.uparms.append(("stackFrames:scale", True))
 
@@ -329,7 +367,7 @@ output file. You can do that with:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 51
+    :lineno-start: 53
 
     reduce_science.suffix = "_scale_stack"
     reduce_science.runr()

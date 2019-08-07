@@ -32,7 +32,8 @@ sequence. Just open a terminal to get started.
 
 While the example cannot possibly cover all situations, it will help you get
 acquainted with the reduction of GMOS data with DRAGONS. We encourage you to
-look at the :ref:`beyond` chapter to learn more about GMOS data reduction.
+look at the :ref:`tips_and_tricks` and :ref:`issues_and_limitations` chapters to
+learn more about GMOS data reduction.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. The most important script is called
@@ -259,9 +260,6 @@ pass the output to a new list:
    $ dataselect --expr '(object=="o3e43" and exposure_time==300.)' ../playdata/*.fits > list_of_science_files.txt
 
 
-Reduce the data
-===============
-
 We have our input lists and we have initialized the calibration database, we
 are ready to reduce the data.
 
@@ -271,7 +269,7 @@ Please make sure that you are still in the ``playground`` directory.
 .. _make_master_bias:
 
 Make Master Bias
-----------------
+================
 
 We start the data reduction by creating a master bias for the science data.
 It can be created using the command below:
@@ -325,7 +323,7 @@ using the ``caldb list`` command:
 .. _process_flat_files:
 
 Make Master Flat
-----------------
+================
 
 FLAT images can be easily reduced using the ``reduce`` command line:
 
@@ -359,7 +357,7 @@ Again, check that the Master Flat was added to your local database:
 .. _process_fringe_frame:
 
 Make Master Fringe Frame
-------------------------
+========================
 
 .. note:: The dataset used in this tutorial does not require Fringe Correction
     so you can skip this section if you are following it. Find more information
@@ -394,7 +392,7 @@ detector and filter combinations. Make sure you checked the
 .. _processing_science_files:
 
 Reduce Science files
---------------------
+====================
 
 Once we have our calibration files processed and added to the database, we can
 run ``reduce`` on our science data:
