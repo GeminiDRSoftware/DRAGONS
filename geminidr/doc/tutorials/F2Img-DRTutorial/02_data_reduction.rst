@@ -26,12 +26,12 @@ Data Reduction with "reduce"
 ****************************
 
 This chapter will guide you on reducing **Flamingos-2 imaging data** using
-command line tools.  In this example we reduce a Flamingos-2 observation of
-a star and distant galaxy field.  The observation is a simple dither-on-target
-sequence.  Just open a terminal to get started.
+command line tools. In this example we reduce a Flamingos-2 observation of
+a star and distant galaxy field. The observation is a simple dither-on-target
+sequence. Just open a terminal to get started.
 
 While the example cannot possibly cover all situations, it will help you get
-acquainted with the reduction of Flamingos-2 data with DRAGONS.  We
+acquainted with the reduction of Flamingos-2 data with DRAGONS. We
 encourage you to look at the :ref:`beyond` chapter to learn more about F2
 data reduction.
 
@@ -168,8 +168,8 @@ This data set contains science and calibration frames. For some programs, it
 could have different observed targets and different exposure times depending
 on how you like to organize your raw data.
 
-The DRAGONS data reduction pipeline does not organize the data for you.  You
-have to do it.  DRAGONS provides tools to help you with that.
+The DRAGONS data reduction pipeline does not organize the data for you. You
+have to do it. DRAGONS provides tools to help you with that.
 
 The first step is to create lists that will be used in the data reduction
 process. For that, we use dataselect_. Please, refer to the dataselect_
@@ -208,7 +208,7 @@ to get the information:
 The ``|`` is the Unix "pipe" operator and it is used to pass output from
 dataselect_ to showd_.
 
-Let us go ahead and create our two list of darks.  The following line creates
+Let us go ahead and create our two list of darks. The following line creates
 a list of dark files that have exposure time of 120 seconds:
 
 .. code-block:: bash
@@ -242,7 +242,7 @@ option to select the appropriate filter as follow:
 
 .. note::
     Flamingos-2 Y, J and H flat fields are created from lamps-on and lamps-off
-    flats.  The software will sort them out, so put all lamps-on, lamp-off
+    flats. The software will sort them out, so put all lamps-on, lamp-off
     flats, in the list and let the software use them appropriately.
 
 
@@ -281,8 +281,8 @@ Here is how you can reduce the 120 s dark data into a master dark:
 
     $ reduce @darks_120s.list
 
-Note the ``@`` character before the name of the input file.  This is the
-"at-file" syntax.  More details can be found in the
+Note the ``@`` character before the name of the input file. This is the
+"at-file" syntax. More details can be found in the
 `DRAGONS - Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/howto.html#the-file-facility>`_.
 
 The master dark is added to the local calibration manager using the
@@ -297,8 +297,8 @@ other observations.
 
 .. note::
     The master dark will be saved in the same folder where reduce_ was
-    called *and* inside the ``./calibration/processed_dark`` folder.  The latter
-    location is to cache a copy of the file.  This applies to all the processed
+    called *and* inside the ``./calibration/processed_dark`` folder. The latter
+    location is to cache a copy of the file. This applies to all the processed
     calibration, eg. master flat.
 
     Some people might prefer adding the copy in  the `calibration` directory
@@ -318,7 +318,7 @@ files have 2 second exposure time. Again, we use the reduce_ command to
 produce the BPMs.
 
 It is important to note that the recipe library association is done based on
-the nature of the **first file in the input list**.  Since the recipe to
+the nature of the **first file in the input list**. Since the recipe to
 make the BPM is located in the recipe library for flats, the first item in
 the list must be a flat.
 
@@ -333,7 +333,7 @@ use Y-band flats.
 
 The ``-r`` tells reduce_ which recipe from the recipe library for F2-FLAT
 to use. If not specified the system will use the default recipe which is the
-one that produces a master flat, this is not what we want here.  The output
+one that produces a master flat, this is not what we want here. The output
 image will be saved in the current working directory with a ``_bpm`` suffix.
 
 The local calibration manager does not yet support BPMs so we cannot add it
@@ -345,7 +345,7 @@ Create a Master Flat Field
 --------------------------
 
 The F2 Y-band master flat is created from a series of lamp-on and lamp-off
-exposures.  They should all have the same exposure time.  Each flavor is
+exposures. They should all have the same exposure time. Each flavor is
 stacked (averaged), then the lamp-off stack is subtracted from the lamp-on
 stack and the result normalized.
 
@@ -359,9 +359,9 @@ follow:
 
 Here, the ``-p`` flag tells reduce_ to set the input parameter ``user_bpm``
 of the ``addDQ`` primitive to the filename of the BPM we have just created.
-There will be a message "WARNING - No static BPMs defined".  This is
-normal.  This is because F2 does not have a static BPM that is distributed
-with the package.  Your user BPM is the only one that is available.
+There will be a message "WARNING - No static BPMs defined". This is
+normal. This is because F2 does not have a static BPM that is distributed
+with the package. Your user BPM is the only one that is available.
 
 
 Reduce the Science Images
@@ -378,14 +378,14 @@ This command retrieves the master dark and the master flat, and applies them
 to the science data. For sky subtraction, the software analyses the sequence
 to establish whether this is a dither-on-target or an offset-to-sky sequence
 and then proceeds accordingly. Finally, the sky-subtracted frames are aligned
-and stacked together.  Sources in the frames are used for the alignment.
+and stacked together. Sources in the frames are used for the alignment.
 
 The final product file will have a ``_stack.fits`` suffix and it is shown below.
 
 .. warning::
 
     The upper-left quadrant of this science sequence is rather messy. This
-    is caused by the PWFS2 guide probe (see :ref:`issue_p2`).  Photometry
+    is caused by the PWFS2 guide probe (see :ref:`issue_p2`). Photometry
     in this portion of the image is likely to be seriously compromised.
 
 .. the figure below can be created using the script inside the ``savefig``
