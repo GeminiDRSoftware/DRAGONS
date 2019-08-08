@@ -21,6 +21,9 @@ Query and Download
 This tutorial will use observations from program GN-2017A-LP-1 (PI: Wesley
 Fraser), "COL-OSSOS: COLours for the Outer Solar System Object Survey", obtained
 on 2017-May-25.
+`Bannister, et al. (2017) <https://iopscience.iop.org/article/10.3847/2041-8213/aaa07c>`_
+describes in more detail the science motivation and the observation steps and
+the data reduction steps, which are similir to those described in this tutorial.
 
 The first step of any reduction is to retrieve the data from the
 `Gemini Observatory Archive (GOA) <https://archive.gemini.edu/>`_. For more

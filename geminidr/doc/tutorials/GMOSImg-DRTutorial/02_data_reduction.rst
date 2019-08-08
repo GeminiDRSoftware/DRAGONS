@@ -27,8 +27,8 @@ Data Reduction
 
 This chapter will guide you on reducing **GMOS imaging data** using
 command line tools. In this example we reduce a GMOS observation of
-a star and distant galaxy field. The observation is a simple dither-on-target
-sequence. Just open a terminal to get started.
+a Trans-Neptunian Object. The observation is a simple dither-on-target sequence.
+Just open a terminal to get started.
 
 While the example cannot possibly cover all situations, it will help you get
 acquainted with the reduction of GMOS data with DRAGONS. We encourage you to
