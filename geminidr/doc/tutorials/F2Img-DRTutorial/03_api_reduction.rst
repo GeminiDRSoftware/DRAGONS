@@ -233,13 +233,10 @@ Finally, the science data can be selected using:
     )
 
 
-Reduce the data
-===============
-
 .. _api_process_dark_files:
 
 Create a Master Dark
---------------------
+====================
 
 We first create the master dark for the science target, then add it to the
 calibration database. The name of the output master dark is
@@ -272,7 +269,7 @@ recipe search is triggered and where it is executed.
 .. _api_create_bpm_files:
 
 Create a Bad Pixel Mask
------------------------
+=======================
 
 By default, for F2 imaging data, an illumination mask will be added to the
 data quality plane to identify the pixels beyond the circular aperture as
@@ -310,7 +307,7 @@ manually to the ``Reduce`` instance to use it, as we will show below.
 .. _api_process_flat_files:
 
 Create a Master Flat Field
---------------------------
+==========================
 A F2 master flat is created from a series of lamp-on and lamp-off exposures.
 Each flavor is stacked, then the lamp-off stack is subtracted from the
 lamp-on stack and the result normalized.
@@ -340,7 +337,7 @@ manager (line 59).
 .. _api_process_science_files:
 
 Reduce the Science Images
--------------------------
+=========================
 The science observation uses a dither-on-target pattern. The sky frames will
 be derived automatically for each science frame from the dithered frames.
 

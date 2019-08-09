@@ -291,16 +291,8 @@ above shows how to *exclude* a tag if needed and was considered more
 educational.
 
 
-Reduce the data
-===============
-We have our input filename lists, we have identified and initialized the
-calibration database, we are ready to reduce the data.
-
-Please make sure that you are still in the ``playground`` directory.
-
-
 Master Dark
------------
+===========
 We first create the master dark for the science target, then add it to the
 calibration database.  The name of the output master dark is
 ``N20160102S0423_dark.fits``.  The output is written to disk and its name is
@@ -327,7 +319,7 @@ recipe search is triggered and where it is executed.
 
 
 Bad Pixel Mask
---------------
+==============
 The DRAGONS Gemini data reduction package, ``geminidr``, comes with a static
 NIRI bad pixel mask (BPM) that gets automatically added to all the NIRI data
 as they get processed.  The user can also create a *supplemental*, fresher BPM
@@ -363,7 +355,7 @@ manually to the ``Reduce`` instance to use it, as we will show below.
 
 
 Master Flat Field
------------------
+=================
 A NIRI master flat is created from a series of lamp-on and lamp-off exposures.
 Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
@@ -402,7 +394,7 @@ the input data.
 
 
 Standard Star
--------------
+=============
 The standard star is reduced more or less the same way as the science
 target (next section) except that darks frames are not obtained for standard
 star observations.  Therefore the dark correction needs to be turned off.
@@ -423,7 +415,7 @@ recommended) needs to be specified by the user.
 
 
 Science Observations
---------------------
+====================
 The science target is an extended source.  We need to turn off
 the scaling of the sky because the target fills the field of view and does
 not represent a reasonable sky background.  If scaling is not turned off in

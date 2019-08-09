@@ -223,16 +223,8 @@ examples; of course, just one is required.
 Pick the one you prefer, in this case, they all yield the same list.
 
 
-Reduce the data
-===============
-We have our input filename lists, we have identified and initialized the
-calibration database, we are ready to reduce the data.
-
-Please make sure that you are still in the ``playground`` directory.
-
-
 Master Dark
------------
+===========
 We first create the master dark for the science target, then add it to the
 calibration database.  The name of the output master dark is
 ``N20120102S0538_dark.fits``.  The output is written to disk and its name is
@@ -259,7 +251,7 @@ recipe search is triggered and where it is executed.
 
 
 Master Flat Field
------------------
+=================
 A GNIRS master flat is created from a series of lamp-on and lamp-off exposures.
 Each flavor is stacked, then the lamp-off stack is subtracted from the lamp-on
 stack.
@@ -279,7 +271,7 @@ follow:
 
 
 Science Observations
---------------------
+====================
 The science target is a point source.  The sequence dithers on-target, moving
 the source across the thin keyhole aperture.  The sky frames for each
 science image will be the adjacent dithered frames obtained within a certain

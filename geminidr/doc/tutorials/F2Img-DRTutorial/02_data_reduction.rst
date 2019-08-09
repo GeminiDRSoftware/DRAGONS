@@ -262,18 +262,10 @@ names (``object``) or exposure times (``exposure_time``), or use it with any
 of the datasets descriptors_.
 
 
-Reduce the data
-===============
-We have our input lists and we have initialized the calibration database, we
-are ready to reduce the data.
-
-Please make sure that you are still in the ``playground`` directory.
-
-
 .. _process_dark_files:
 
 Create a Master Dark
---------------------
+====================
 
 We start the data reduction by creating a master dark for the science data.
 Here is how you can reduce the 120 s dark data into a master dark:
@@ -311,7 +303,7 @@ other observations.
 
 
 Create a Bad Pixel Mask
------------------------
+=======================
 
 The Bad Pixel Mask (BPM) can be built using a set of flat images with the
 lamps on and off and a set of short exposure dark files. Here, our shortest dark
@@ -343,7 +335,7 @@ manually to ``reduce`` to use it, as we will show below.
 
 
 Create a Master Flat Field
---------------------------
+==========================
 
 The F2 Y-band master flat is created from a series of lamp-on and lamp-off
 exposures. They should all have the same exposure time. Each flavor is
@@ -366,7 +358,7 @@ with the package. Your user BPM is the only one that is available.
 
 
 Reduce the Science Images
--------------------------
+=========================
 Now that we have the master dark and the master flat, we can tell reduce_
 to process our science data. reduce_ will look at the local database
 for calibration files.
