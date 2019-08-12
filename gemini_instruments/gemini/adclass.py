@@ -149,7 +149,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_tag
     def _type_fringe(self):
         if set (self.phu.keys()) & {'GIFRINGE', 'PROCFRNG'}:
-            return TagSet(['FRINGE'])
+            return TagSet(['FRINGE', 'CAL'])
 
     # GCALFLAT and the LAMPON/LAMPOFF are kept separated because the
     # PROCESSED status will cancel the tags for lamp status, but the

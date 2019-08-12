@@ -5,10 +5,13 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from copy import deepcopy
+from scipy.ndimage import binary_dilation
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
+from geminidr.gemini.lookups import DQ_definitions as DQ
 
+from .primitives_preprocess import Preprocess
 from .primitives_register import Register
 from .primitives_resample import Resample
 from . import parameters_image
@@ -16,7 +19,7 @@ from . import parameters_image
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class Image(Register, Resample):
+class Image(Preprocess, Register, Resample):
     """
     This is the class containing the generic imaging primitives.
     """
@@ -39,22 +42,42 @@ class Image(Register, Resample):
             suffix to be added to output files
         fringe: list/str/AstroData/None
             fringe frame(s) to subtract
+        do_fringe: bool/None
+            apply fringe correction? (None => use pipeline default for data)
+        scale: bool/None
+            scale fringe frame? (None => False if fringe frame has same
+            group_id() as data
+        scale_factor: float/sequence/None
+            factor(s) to scale fringe
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        fringe = params["fringe"]
+        scale = params["scale"]
+        do_fringe = params["do_fringe"]
 
         # Exit now if nothing needs a correction, to avoid an error when the
         # calibration search fails. If images with different exposure times
         # are used, some frames may not require a correction (but the calibration
         # search will succeed), so still need to check individual inputs later.
-        if not any(self._needs_fringe_correction(ad) for ad in adinputs):
-            log.stdinfo("No input images require a fringe correction.")
-            return adinputs
+        needs_correction = [self._needs_fringe_correction(ad) for ad in adinputs]
+        if any(needs_correction):
+            if do_fringe == False:
+                log.warning("Fringe correction has been turned off but is "
+                            "recommended.")
+                return adinputs
+        else:
+            if not do_fringe:  # False or None
+                if do_fringe is None:
+                    log.stdinfo("No input images require a fringe correction.")
+                return adinputs
+            else:
+                log.warning("Fringe correction has been turned on but may not "
+                            "be required.")
 
-        fringe = params["fringe"]
-        scale = params["scale"]
         if fringe is None:
+            # This logic is for QAP
             try:
                 fringe_list = self.streams['fringe']
                 assert len(fringe_list) == 1
@@ -80,11 +103,19 @@ class Image(Register, Resample):
                 factors = iter(scale_factor * len(adinputs))
 
         # Get a fringe AD object for every science frame
-        for ad, fringe in zip(*gt.make_lists(adinputs, fringe_list, force_ad=True)):
+        for ad, fringe, correct in zip(*(gt.make_lists(adinputs, fringe_list, force_ad=True)
+                                      + [needs_correction])):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractFringe".
                             format(ad.filename))
+                continue
+
+            # Logic to deal with different exposure times
+            if do_fringe is None and not correct:
+                log.stdinfo("{} does not require a fringe correction".
+                            format(ad.filename))
+                ad.update_filename(suffix=params["suffix"], strip=True)
                 continue
 
             # Check the inputs have matching filters, binning, and shapes
@@ -95,7 +126,9 @@ class Image(Register, Resample):
                                                 aux_type="cal")
                 gt.check_inputs_match(ad, fringe)
 
-            if scale:
+            #
+            matched_groups = (ad.group_id() == fringe.group_id())
+            if scale or (scale is None and not matched_groups):
                 factor = next(factors)
                 if factor is None:
                     factor = self._calculate_fringe_scaling(ad, fringe)
@@ -107,6 +140,9 @@ class Image(Register, Resample):
                 fringe_copy.multiply(factor)
                 ad.subtract(fringe_copy)
             else:
+                if scale is None:
+                    log.stdinfo("Not scaling fringe frame with same group ID "
+                                "as {}".format(ad.filename))
                 ad.subtract(fringe)
 
             # Timestamp and update header and filename
@@ -115,15 +151,18 @@ class Image(Register, Resample):
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
 
-    def makeFringe(self, adinputs=None, **params):
+    def makeFringeForQA(self, adinputs=None, **params):
         """
         This primitive performs the bookkeeping related to the construction of
-        a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame
+        a GMOS fringe frame in QA mode. The pixel manipulation is left to
+        makeFringeFrame(). The resulting frame is placed in the "fringe" stream,
+        ready to be retrieved by subsequent primitives.
 
         Parameters
         ----------
         subtract_median_image: bool
             subtract a median image before finding fringes?
+        - also inherits parameters for detectSources() and stackSkyFrames()
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -139,18 +178,18 @@ class Image(Register, Resample):
         # A SExtractor mask alone is usually sufficient for GN data, but GS
         # data need to be median-subtracted to distinguish fringes from objects
         fringe_params = self._inherit_params(params, "makeFringeFrame", pass_suffix=True)
-
-        # Detect sources in order to get an OBJMASK. Doing it now will aid
-        # efficiency by putting the OBJMASK-added images in the list.
-        # NB. If we're subtracting the median image, detectSources() has to
-        # be run again anyway, so don't do it here.
-        # NB2. We don't want to edit adinputs at this stage
-        fringe_adinputs = adinputs if fringe_params["subtract_median_image"] else [ad if
-                        any(hasattr(ext, 'OBJMASK') for ext in ad)
-                        else self.detectSources([ad])[0] for ad in adinputs]
+        fringe_adinputs = adinputs
 
         # Add this frame to the list and get the full list (QA only)
         if "qa" in self.mode:
+            # Detect sources in order to get an OBJMASK. Doing it now will aid
+            # efficiency by putting the OBJMASK-added images in the list.
+            # NB. If we're subtracting the median image, detectSources() has to
+            # be run again anyway, so don't do it here.
+            # NB2. We don't want to edit adinputs at this stage
+            if not fringe_params["subtract_median_image"]:
+                fringe_adinputs = [ad if any(hasattr(ext, 'OBJMASK') for ext in ad)
+                                   else self.detectSources([ad])[0] for ad in adinputs]
             self.addToList(fringe_adinputs, purpose='forFringe')
             fringe_adinputs = self.getList(purpose='forFringe')
 
@@ -161,8 +200,6 @@ class Image(Register, Resample):
 
         # We have the required inputs to make a fringe frame
         fringe = self.makeFringeFrame(fringe_adinputs, **fringe_params)
-        # Store the result and put the output in the "fringe" stream
-        self.storeProcessedFringe(fringe)
         self.streams.update({'fringe': fringe})
 
         # We now return *all* the input images that required fringe correction
@@ -171,7 +208,12 @@ class Image(Register, Resample):
 
     def makeFringeFrame(self, adinputs=None, **params):
         """
-        Make a fringe frame from a list of images.
+        Make a fringe frame from a list of images. This will construct and
+        subtract a median image if the fringes are too strong for detectSources()
+        to work on the inputs as passed. Since a generic recipe cannot know
+        whether this parameter is set, including detectSources() in the recipe
+        prior to making the fringe frame may be a waste of time. Therefore this
+        primitive will call detectSources() if no OBJCATs are found on the inputs.
 
         Parameters
         ----------
@@ -203,12 +245,26 @@ class Image(Register, Resample):
             if len(median_image) > 1:
                 raise ValueError("Problem with creating median image")
             median_image = median_image[0]
+
+            # Set the median_image VAR planes to None, or else the adinputs'
+            # VAR will increase when subtracting, then adding, the median
+            for ext in median_image:
+                ext.variance = None
+
             for ad in adinputs:
                 ad.subtract(median_image)
             adinputs = self.detectSources(adinputs,
                         **self._inherit_params(params, "detectSources"))
             for ad in adinputs:
                 ad.add(median_image)
+        elif not any(hasattr(ext, 'OBJCAT') for ad in adinputs for ext in ad):
+            adinputs = self.detectSources(adinputs,
+                                              **self._inherit_params(params, "detectSources"))
+        else:
+            log.stdinfo("OBJCAT found on at least one input extension. "
+                        "Not running detectSources.")
+
+        group_ids = set([ad.group_id() for ad in adinputs])
 
         # Add object mask to DQ plane and stack with masking
         # separate_ext is irrelevant unless (scale or zero) but let's be explicit
@@ -217,6 +273,11 @@ class Image(Register, Resample):
                     **self._inherit_params(params, "stackSkyFrames", pass_suffix=True))
         if len(adinputs) > 1:
             raise ValueError("Problem with stacking fringe frames")
+
+        if len(group_ids) > 1:
+            log.stdinfo("Input frames come from more than one group_id. "
+                        "Editing fringe frame to avoid matching to science frames.")
+            adinputs[0].phu['OBSID'] = '+'.join(group_ids)
 
         return adinputs
 
@@ -380,3 +441,96 @@ class Image(Register, Resample):
 
         scaling = (npix * sum_cross - sum_sci * sum_fringe) / (npix * sum_fringesq - sum_fringe**2)
         return scaling
+
+    def flagCosmicRaysByStacking(self, adinputs=None, **params):
+        """
+        This primitive flags sky pixels that deviate from the median image of
+        the input AD frames by some positive multiple of a random background
+        noise estimate. Since a random noise model is liable to underestimate
+        the variance between images in the presence of seeing variations, any
+        pixels containing significant object flux are excluded from this
+        masking, by running detectSources on the median image and applying the
+        resulting OBJMASK array. Any strongly-outlying values in those pixels
+        will have to be dealt with when stacking, where less aggressive
+        rejection based on the empirical variance between images can be used.
+
+        This is loosely based on the algorithm used by imcoadd in the Gemini
+        IRAF package.
+
+        Parameters
+        ----------
+        suffix: str
+            Suffix to be added to output files.
+        hsigma: float
+            Difference from the median image, in units of the background noise
+            estimate, above which pixels should be flagged as contaminated.
+        dilation: int
+            Dilation radius for expanding cosmic ray mask, in pixels.
+
+        Returns
+        -------
+        list of AstroData
+            The input AstroData instances with flagged pixels added to the
+            `mask` array for each extension using the `DQ.cosmic_ray` bit.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        # timestamp_key = self.timestamp_keys[self.myself()]
+
+        hsigma = params['hsigma']
+        dilation = params['dilation']
+
+        # This code is taken from dilateObjectMask; factor it out later.
+        xgrid, ygrid = np.mgrid[-int(dilation):int(dilation+1),
+                       -int(dilation):int(dilation+1)]
+        structure = np.where(xgrid*xgrid+ygrid*ygrid <= dilation*dilation,
+                             True, False)
+
+        # All inputs should have an OBJMASK, to avoid flagging pixels within
+        # objects. If not, we present a warning but continue anyway.
+        if not all(hasattr(ext, 'OBJMASK') for ad in adinputs for ext in ad):
+            log.warning("Not all input extensions have an OBJMASK. Results "
+                        "may be dubious.")
+
+        median_image = self.stackFrames(adinputs, operation='median',
+                                        reject_method='none', zero=True)[0]
+
+        median_image = self.detectSources([median_image],
+                    **self._inherit_params(params, "detectSources"))[0]
+
+        for ad in adinputs:
+
+            diff = self.subtractSky([deepcopy(ad)], sky=median_image,
+                                    offset_sky=True, scale_sky=False)[0]
+
+            # Background will be close to zero, so we only really need this
+            # if there's no VAR; however, the overhead is low and it saves
+            # us from repeatedly checking if there is a VAR on each extension
+            bg_list = gt.measure_bg_from_image(diff, separate_ext=True)
+
+            # Don't flag pixels that are already bad (and may not be CRs;
+            # except those that are just near saturation, unilluminated etc.).
+            # Also exclude regions with no data, where the variance is 0. so
+            # values are always around the threshold.
+            bitmask = DQ.bad_pixel | DQ.no_data
+
+            for ext, diff_ext, (bg, noise, npix) in zip(ad, diff, bg_list):
+                # Limiting level for good pixels in the median-subtracted data
+                # (bkg should be ~0 after subtracting median image with an offset)
+                if ext.variance is not None:
+                    noise = np.sqrt(ext.variance)
+                threshold = bg + hsigma * noise
+
+                # Accumulate CR detections into the DQ mask(s) of the input/output
+                crmask = ((diff_ext.data > threshold) &
+                          (diff_ext.mask & bitmask == 0))
+                if hasattr(diff_ext, 'OBJMASK'):
+                    crmask &= (diff_ext.OBJMASK == 0)
+                crmask = binary_dilation(crmask, structure)
+                ext.mask |= np.where(crmask, DQ.cosmic_ray, DQ.good)
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+

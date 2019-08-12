@@ -74,7 +74,7 @@ def _autocast(x, dtype):
                                                  and int in dtype)):
         return int(x)
     if isinstance(x, str) or isinstance(x, oldStringType):
-        for type in (oldStringType, int, float, bool):
+        for type in (int, float, bool, oldStringType):
             if dtype == type or (isinstance(dtype, tuple) and type in dtype):
                 try:
                     return type(x)

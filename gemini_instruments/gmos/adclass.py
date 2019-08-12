@@ -50,7 +50,6 @@ class AstroDataGmos(AstroDataGemini):
                 # This kind of filter prevents imaging to be classified as FLAT
                 if any(('Hartmann' in f) for f in (f1, f2)):
                     return
-
             return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
@@ -59,6 +58,11 @@ class AstroDataGmos(AstroDataGemini):
             # Twilight flats are of OBSTYPE == OBJECT, meaning that the generic
             # FLAT tag won't be triggered. Add it explicitly
             return TagSet(['TWILIGHT', 'CAL', 'FLAT'])
+
+    @astro_data_tag
+    def _tag_domeflat(self):
+        if self.phu.get('OBJECT', '').upper() == 'DOMEFLAT':
+            return TagSet(['DOMEFLAT', 'CAL', 'FLAT'])
 
     def _tag_is_spect(self):
         pairs = (

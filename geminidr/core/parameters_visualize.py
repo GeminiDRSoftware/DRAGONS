@@ -1,9 +1,11 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_visualize.py file, in alphabetical order.
+import numbers
+
 from gempy.library import config
 
 def threshold_check(value):
-    return (isinstance(value, (float, int)) or value == 'auto')
+   return (isinstance(value, float) or value == 'auto')
 
 class displayConfig(config.Config):
     extname = config.Field("EXTNAME to display", str, "SCI")

@@ -1,12 +1,15 @@
 import numpy as np
-datatype = np.uint16
 
-bad_pixel = 1
-non_linear = 2
-saturated = 4
-cosmic_ray = 8
-no_data = 16
-overlap = 32
-unilluminated = 64
+datatype = np.uint16
+max = np.iinfo(datatype).max
+
+good = datatype(0)
+bad_pixel = datatype(1)
+non_linear = datatype(2)
+saturated = datatype(4)
+cosmic_ray = datatype(8)
+no_data = datatype(16)
+overlap = datatype(32)
+unilluminated = datatype(64)
 
 fail = bad_pixel | saturated | cosmic_ray | no_data
