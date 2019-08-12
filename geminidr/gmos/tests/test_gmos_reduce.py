@@ -13,9 +13,8 @@ from gempy.utils import logutils
 
 # These tests need refactoring to reduce the replication of API boilerplate
 
-
+@pytest.mark.integtest
 def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
-
     logutils.config(file_name='gmos_test_reduce_image_GN_HAM_2x2_z.log')
 
     calib_files = []
@@ -85,8 +84,8 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
     reduce_target.runr()
 
 
+@pytest.mark.integtest
 def test_reduce_image_GN_EEV_2x2_g(path_to_inputs):
-
     logutils.config(file_name='gmos_test_reduce_image_GN_EEV_2x2_g.log')
 
     calib_files = []
@@ -146,8 +145,8 @@ def test_reduce_image_GN_EEV_2x2_g(path_to_inputs):
     reduce_target.runr()
 
 
+@pytest.mark.integtest
 def test_reduce_image_GS_HAM_1x1_i(path_to_inputs):
-
     logutils.config(file_name='gmos_test_reduce_image_GS_HAM_1x1_i.log')
 
     calib_files = []
@@ -217,8 +216,8 @@ def test_reduce_image_GS_HAM_1x1_i(path_to_inputs):
     reduce_target.runr()
 
 
+@pytest.mark.integtest
 def test_reduce_image_GS_HAM_2x2_i_std(path_to_inputs):
-
     logutils.config(file_name='gmos_test_reduce_image_GS_HAM_1x1_i.log')
 
     calib_files = []
