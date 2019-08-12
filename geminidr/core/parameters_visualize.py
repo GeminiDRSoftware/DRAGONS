@@ -4,15 +4,8 @@ import numbers
 
 from gempy.library import config
 
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
 def threshold_check(value):
-    return (is_number(value) or value == 'auto')
+   return (isinstance(value, (float, int)) or value == 'auto')
 
 class displayConfig(config.Config):
     extname = config.Field("EXTNAME to display", str, "SCI")
