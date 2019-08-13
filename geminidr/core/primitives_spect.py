@@ -126,7 +126,6 @@ class Spect(PrimitivesBASE):
                                         format(extname, direction))
 
                 # This is identical to the code in determineWavelengthSolution()
-                # but I'm not sure it's worth abstracting to a separate function
                 if initial_peaks is None:
                     extract_slice = slice(max(0, int(start - 0.5*nsum)),
                                           min(ext.data.shape[1-dispaxis],
@@ -134,12 +133,8 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
-                    if dispaxis == 0:
-                        data = ext.data.T[extract_slice]
-                        mask = None if ext.mask is None else ext.mask.T[extract_slice]
-                    else:
-                        data = ext.data[extract_slice]
-                        mask = None if ext.mask is None else ext.mask[extract_slice]
+                    data, mask = _transpose_if_needed(ext.data, ext.mask,
+                                    transpose=(dispaxis==0), section=extract_slice)
                     data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
                     if fwidth is None:
@@ -270,8 +265,7 @@ class Spect(PrimitivesBASE):
                 m_inverse = astromodels.dict_to_chebyshev(model_dict)
                 if not isinstance(m_inverse, models.Chebyshev2D):
                     log.warning("Could not read distortion model from arc {}:{}"
-                                " - continuing".format(arc.filename,
-                                                       ext.hdr['EXTVER']))
+                                " - continuing".format(arc.filename, ext.hdr['EXTVER']))
                     adoutputs.append(ad)
                     continue
 
@@ -404,20 +398,13 @@ class Spect(PrimitivesBASE):
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
                     slitaxis = ext.dispersion_axis() - 1
+                    direction = "row" if slitaxis == 0 else "column"
                     extraction = center or (0.5 * ext.data.shape[slitaxis])
                     extract_slice = slice(max(0, int(extraction - 0.5*nsum)),
                                           min(ext.data.shape[slitaxis],
                                               int(extraction + 0.5*nsum)))
-                    if slitaxis == 1:
-                        data = ext.data.T[extract_slice]
-                        mask = None if ext.mask is None else ext.mask.T[extract_slice]
-                        variance = None if ext.variance is None else ext.variance.T[extract_slice]
-                        direction = "column"
-                    else:
-                        data = ext.data[extract_slice]
-                        mask = None if ext.mask is None else ext.mask[extract_slice]
-                        variance = None if ext.variance is None else ext.variance[extract_slice]
-                        direction = "row"
+                    data, mask, variance = _transpose_if_needed(ext.data, ext.mask, ext.variance,
+                                            transpose=(slitaxis==1), section=extract_slice)
                     log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                                 format(direction, extract_slice.start+1, extract_slice.stop))
                 else:
@@ -485,18 +472,6 @@ class Spect(PrimitivesBASE):
                 else:
                     sequence += [(1, weighting)]
 
-                # Construct a new array of data to plot
-                #x = np.arange(len(data))
-                #y = data.copy()
-                #x[mask>0] = -1
-                #for peak in peaks:
-                #    x[int(peak-fwidth):int(peak+fwidth+1)] = -1
-                #for i in (0,1):
-                #    y = y[x>-1]
-                #   x = x[x>-1]
-                #    continuum = interpolate.LSQUnivariateSpline(x, y, np.linspace(0, len(data), 10)[1:-1])
-                #    x[y-continuum(x)>0.1*max(data)] = -1
-                #plot_data = data - continuum(np.arange(len(data)))
                 plot_data = data
 
                 # Some diagnostic plotting
@@ -515,7 +490,6 @@ class Spect(PrimitivesBASE):
                 log.stdinfo('Initial model: {}'.format(repr(m_final)))
 
                 kdsigma = fwidth*abs(dw)
-                #kdsigma = 0.003 * cenwave
                 peaks_to_fit = peak_snrs > min_snr
                 peaks_to_fit[np.argsort(peak_snrs)[len(peaks)-nbright:]] = False
 
@@ -626,7 +600,8 @@ class Spect(PrimitivesBASE):
                 model_dict = astromodels.chebyshev_to_dict(m_final)
                 model_dict['rms'] = rms
                 # Add information about where the extraction took place
-                model_dict['row' if slitaxis == 0 else 'column'] = extraction
+                if ext.data.ndim > 1:
+                    model_dict[direction] = extraction
 
                 # Ensure all columns have the same length
                 pad_rows = nmatched - len(model_dict)
@@ -1320,24 +1295,26 @@ class Spect(PrimitivesBASE):
             weights = None
         return arc_lines, weights
 #-----------------------------------------------------------------------------
-def _transpose_if_needed(*args, transpose=False):
+def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
-    This function takes a list of arrays and returns them, either untouched,
-    or transposed, according to the parameter.
+    This function takes a list of arrays and returns them (or a section of them),
+    either untouched, or transposed, according to the parameter.
 
     Parameters
     ----------
     args: sequence of arrays
         the input arrays
-    rotate: bool
+    transpose: bool
         if True, return transposed versions
+    section: slice object
+        section of output data to return
 
     Returns
     -------
     list of arrays: the input arrays, or transposed versions
     """
     return list(None if arg is None
-                else arg.T if transpose else arg for arg in args)
+                else arg.T[section] if transpose else arg[section] for arg in args)
 
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
