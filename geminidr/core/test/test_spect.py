@@ -68,8 +68,8 @@ def fake_spectrum():
     spec += snr * obj_max_weight * np.random.random(spec.shape)
 
     ad = astrofaker.create('GMOS-N')
+    ad.add_extension(data=spec, pixel_scale=0.1)
     ad.dispersion_axis = [1]
-    ad.add_extension(data=spec, pixel_scale=0.08)
 
     return ad
 
@@ -77,13 +77,15 @@ def fake_spectrum():
 def test_determine_distortion(fake_spectrum):
 
     assert isinstance(fake_spectrum, astrodata.AstroData)
+    assert len(fake_spectrum) > 0
+    assert fake_spectrum.dispersion_axis() == [1]
 
-    # p = Spect(fake_spectrum)
-    #
-    # # ToDo - Remove hard dependency on displays unless strictly necessary
-    # p.viewer = dormantViewer(p, None)
-    #
-    # ad = p.determineDistortion()
+    p = Spect(fake_spectrum)
+
+    # ToDo - Remove hard dependency on displays unless strictly necessary
+    p.viewer = dormantViewer(p, None)
+
+    ad = p.determineDistortion()
 
 
 if __name__ == '__main__':
