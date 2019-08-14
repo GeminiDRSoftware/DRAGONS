@@ -90,6 +90,7 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             for ext in ad:
+
                 self.viewer.display_image(ext, wcs=False)
                 self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense

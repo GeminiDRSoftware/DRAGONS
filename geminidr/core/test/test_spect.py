@@ -7,7 +7,10 @@ import numpy as np
 from astropy.io import fits
 from scipy import ndimage
 
+from geminidr import dormantViewer
 from geminidr.core.primitives_spect import Spect
+
+import astrofaker
 
 
 def create_1d_spectrum(width, n_lines, max_weight):
@@ -64,17 +67,23 @@ def fake_spectrum():
 
     spec += snr * obj_max_weight * np.random.random(spec.shape)
 
-    phu = fits.PrimaryHDU(data=spec)
-    ad = astrodata.create(phu)
+    ad = astrofaker.create('GMOS-N')
+    ad.dispersion_axis = [1]
+    ad.add_extension(data=spec, pixel_scale=0.08)
 
     return ad
 
 
 def test_determine_distortion(fake_spectrum):
+
     assert isinstance(fake_spectrum, astrodata.AstroData)
 
-    p = Spect(fake_spectrum)
-    ad = p.determineDistortion()
+    # p = Spect(fake_spectrum)
+    #
+    # # ToDo - Remove hard dependency on displays unless strictly necessary
+    # p.viewer = dormantViewer(p, None)
+    #
+    # ad = p.determineDistortion()
 
 
 if __name__ == '__main__':
