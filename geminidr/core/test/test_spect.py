@@ -73,6 +73,9 @@ def fake_spectrum():
 def test_determine_distortion(fake_spectrum):
     assert isinstance(fake_spectrum, astrodata.AstroData)
 
+    p = Spect(fake_spectrum)
+    ad = p.determineDistortion()
+
 
 if __name__ == '__main__':
     pytest.main()

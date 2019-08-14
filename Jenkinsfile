@@ -109,8 +109,8 @@ pipeline {
           junit (
             allowEmptyResults: true,
             testResults: 'reports/*_results.xml'
-            sh 'chmod 777 ./reports/'
-          )
+            )
+          sh 'chmod 777 ./reports/'
         }
         success {
             sendNotifications 'SUCCESSFUL'
