@@ -901,6 +901,23 @@ class DataGroup(object):
         self.output_shape = tuple(max_ - min_ for min_, max_ in limits)
         self.origin = tuple(min_ for min_, max_ in limits)
 
+    def shift_origin(self, *args):
+        """
+        This method shifts the origin of the output frame. Positive values
+        will result in the bottom and/or left of the mosaic being eliminated
+        from the output image.
+
+        Parameters
+        ----------
+        args: numbers
+            shifts to apply to the origin (standard python order)
+        """
+        if self.origin is None:
+            raise ValueError("Origin has not been set")
+        if len(args) != len(self.origin):
+            raise ValueError("Number of shifts has wrong dimensionality")
+        self.origin = tuple(orig + shift for orig, shift in zip(self.origin, args))
+
     def transform(self, attributes=['data'], order=1, subsample=1,
                   threshold=0.01, conserve=False, parallel=False):
         """
@@ -956,6 +973,11 @@ class DataGroup(object):
             output_corners = self._prepare_for_output(input_array,
                                                       transform, subsample)
             output_array_shape = tuple(max_ - min_ for min_, max_ in output_corners)
+
+            # This can happen if the origin and/or output_shape are modified
+            if not all(length > 0 for length in output_array_shape):
+                self.log.stdinfo("Array falls outside output region")
+                continue
 
             # Create a mapping from output pixel to input pixels
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
@@ -1020,12 +1042,18 @@ class DataGroup(object):
                 # Integer shifts mean the output will be unchanged by the
                 # transform, so we can put it straight in the output, since
                 # only this array will map into the region.
+                #
+                # The origin and output_shape may have been set in order to
+                # only transform some of the input image into the final output
+                # array, so we need to account for that (with slice_2)
                 if integer_shift:
                     self.log.debug("Placing {} array in [".format(attr) +
                                    ",".join(["{}:{}".format(limits[0] + 1, limits[1])
                                              for limits in output_corners[::-1]]) + "]")
                     slice_ = tuple(slice(min_, max_) for min_, max_ in output_corners)
-                    self.output_dict[attr][slice_] = arr
+                    slice_2 = tuple(slice(int(offset), int(offset) + max_ - min_)
+                                    for offset, (min_, max_) in zip(mapping.offset, output_corners))
+                    self.output_dict[attr][slice_] = arr[slice_2]
                     continue
 
                 # Set up the functions to call to transform this attribute
