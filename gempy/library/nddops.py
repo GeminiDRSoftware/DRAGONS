@@ -41,7 +41,8 @@ import inspect
 def take_along_axis(arr, ind, axis):
     """
     Returns a view of an array (arr), re-ordered along an axis according to
-    the indices (ind). Shamelessly stolen from StackOverflow.
+    the indices (ind). Taken from numpy issue 8708 under BSD licence,
+    pending inclusion into numpy.
     """
     if arr is None:
         return None
