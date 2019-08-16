@@ -127,15 +127,9 @@ class Spect(PrimitivesBASE):
 
                 # This is identical to the code in determineWavelengthSolution()
                 if initial_peaks is None:
-                    extract_slice = slice(max(0, int(start - 0.5*nsum)),
-                                          min(ext.data.shape[1-dispaxis],
-                                              int(start + 0.5*nsum)))
+                    data, mask, variance, extract_slice = _average_along_slit(ext, center=None, nsum=nsum)
                     log.stdinfo("Finding peaks by extracting {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
-
-                    data, mask = _transpose_if_needed(ext.data, ext.mask,
-                                    transpose=(dispaxis==0), section=extract_slice)
-                    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
                     if fwidth is None:
                         fwidth = tracing.estimate_peak_width(data)
@@ -397,24 +391,14 @@ class Spect(PrimitivesBASE):
                 log.info("Determining wavelength solution for {}".format(ad.filename))
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
-                    slitaxis = ext.dispersion_axis() - 1
-                    direction = "row" if slitaxis == 0 else "column"
-                    extraction = center or (0.5 * ext.data.shape[slitaxis])
-                    extract_slice = slice(max(0, int(extraction - 0.5*nsum)),
-                                          min(ext.data.shape[slitaxis],
-                                              int(extraction + 0.5*nsum)))
-                    data, mask, variance = _transpose_if_needed(ext.data, ext.mask, ext.variance,
-                                            transpose=(slitaxis==1), section=extract_slice)
+                    direction = "row" if ext.dispersion_axis() == 1 else "column"
+                    data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
                     log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                                format(direction, extract_slice.start+1, extract_slice.stop))
-                else:
+                                format(direction, extract_slice.start + 1, extract_slice.stop))
+               else:
                     data = ext.data
                     mask = ext.mask
                     variance = ext.variance
-
-                # Create 1D spectrum; pixel-to-pixel variation is a better indicator
-                # of S/N than the VAR plane
-                data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
                 # Mask bad columns but not saturated/non-linear data points
                 mask &= 65535 ^ (DQ.saturated | DQ.non_linear)
@@ -601,7 +585,7 @@ class Spect(PrimitivesBASE):
                 model_dict['rms'] = rms
                 # Add information about where the extraction took place
                 if ext.data.ndim > 1:
-                    model_dict[direction] = extraction
+                    model_dict[direction] = 0.5 * (extract_slice.start + extract_slice.stop)
 
                 # Ensure all columns have the same length
                 pad_rows = nmatched - len(model_dict)
@@ -1295,6 +1279,38 @@ class Spect(PrimitivesBASE):
             weights = None
         return arc_lines, weights
 #-----------------------------------------------------------------------------
+
+def _average_along_slit(ext, center=None, nsum=None):
+    """
+
+    Parameters
+    ----------
+    ext: AstroData slice
+        2D spectral image from which trace is to be extracted
+    center: float/None
+        center of averaging region (None => center of axis)
+    nsum: int
+        number of rows/columns to combine
+
+    Returns
+    -------
+    4-tuple: data, mask, variance: of the extracted trace
+             extract_slice: slice object for extraction region
+    """
+    slitaxis = ext.dispersion_axis() - 1
+    extraction = center or (0.5 * ext.data.shape[slitaxis])
+    extract_slice = slice(max(0, int(extraction - 0.5 * nsum)),
+                          min(ext.data.shape[slitaxis],
+                              int(extraction + 0.5 * nsum)))
+    data, mask, variance = _transpose_if_needed(ext.data, ext.mask, ext.variance,
+                                                transpose=(slitaxis == 1), section=extract_slice)
+
+    # Create 1D spectrum; pixel-to-pixel variation is a better indicator
+    # of S/N than the VAR plane
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+
+    return data, mask, variance, extract_slice
+
 def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     This function takes a list of arrays and returns them (or a section of them),
