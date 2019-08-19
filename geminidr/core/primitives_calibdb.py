@@ -82,16 +82,20 @@ class CalibDB(PrimitivesBASE):
         
         Parameters
         ----------
-        adinputs: list of ADs
-            files for which calibrations are needed
-        caltype: str
+        adinputs: <list>
+            List of ADs of files for which calibrations are needed
+
+        caltype: <str>
             type of calibration required (e.g., "processed_bias")
-        refresh: bool
+
+        refresh: <bool>
             if False, only seek calibrations for ADs without them; otherwise
-            request calibrations for all ADs
-        howmany: None/int
-            maximum number of calibrations to return per AD (None means return
+            request calibrations for all ADs. Default is True.
+
+        howmany: <int> or <None>
+            Maximum number of calibrations to return per AD (None means return
             the filename of one, rather than a list of filenames)
+
         """
         log = self.log
         ad_rq = adinputs if refresh else [ad for ad in adinputs
