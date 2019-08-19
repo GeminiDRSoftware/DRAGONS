@@ -7,6 +7,8 @@ import glob
 import pytest
 import os
 
+import astrodata
+
 from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
@@ -79,31 +81,68 @@ def test_can_run_reduce_flat(path_to_inputs, calibrations):
     )
 
 
-def test_can_run_reduce_science(path_to_inputs, calibrations):
+@pytest.mark.xfail(reason="gain_setting can't not found when running runr()")
+def test_can_run_reduce_arc(path_to_inputs, calibrations):
     """
-    Make sure that the recipes_ARC_LS_SPECT works for spectroscopic data.
+    Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
+    data.
     """
 
     raw_subdir = 'GMOS/GS-2016B-Q-88-139'
 
-    logutils.config(file_name='reduce_GMOS_LS_arc.log')
+    logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
     assert len(calibrations) == 2
 
     all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
     assert len(all_files) > 1
 
-    list_of_science = dataselect.select_data(all_files, [], ['CAL'])
+    list_of_arcs = dataselect.select_data(all_files, ['ARC'], [])
 
-    reduce_science = Reduce()
-    assert len(reduce_science.files) == 0
+    for f in list_of_arcs:
+        ad = astrodata.open(f)
+        _ = ad.gain_setting()
 
-    reduce_science.files.extend(list_of_science)
-    assert len(reduce_science.files) == len(list_of_science)
+    for c in calibrations:
+        f = c.split(':')[-1]
+        ad = astrodata.open(f)
+        _ = ad.gain_setting()
 
-    reduce_science.ucals = normalize_ucals(reduce_science.files, calibrations)
+    reduce_arc = Reduce()
+    assert len(reduce_arc.files) == 0
 
-    reduce_science.runr()
+    reduce_arc.files.extend(list_of_arcs)
+    assert len(reduce_arc.files) == len(list_of_arcs)
+
+    reduce_arc.runr()
+
+
+# ToDo WIP - Define first how flats are processed
+# def test_can_run_reduce_science(path_to_inputs, calibrations):
+#     """
+#     Make sure that the recipes_ARC_LS_SPECT works for spectroscopic data.
+#     """
+
+    # raw_subdir = 'GMOS/GS-2016B-Q-88-139'
+    #
+    # logutils.config(file_name='reduce_GMOS_LS_arc.log')
+    #
+    # assert len(calibrations) == 2
+    #
+    # all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+    # assert len(all_files) > 1
+    #
+    # list_of_science = dataselect.select_data(all_files, [], ['CAL'])
+    #
+    # reduce_science = Reduce()
+    # assert len(reduce_science.files) == 0
+    #
+    # reduce_science.files.extend(list_of_science)
+    # assert len(reduce_science.files) == len(list_of_science)
+    #
+    # reduce_science.ucals = normalize_ucals(reduce_science.files, calibrations)
+    #
+    # reduce_science.runr()
 
 
 if __name__ == '__main__':

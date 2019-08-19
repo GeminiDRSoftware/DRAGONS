@@ -13,6 +13,7 @@ def path_to_inputs():
 
     try:
         path = os.environ['DRAGONS_TEST_INPUTS']
+        path = path.strip()
     except KeyError:
         pytest.skip(
             "Could not find environment variable: $DRAGONS_TEST_INPUTS")
