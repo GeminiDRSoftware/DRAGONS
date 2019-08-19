@@ -37,14 +37,15 @@ class core_stacking_config(config.Config):
                                                 "minmax": "reject highest and lowest pixels",
                                                 "sigclip": "reject pixels based on scatter",
                                                 "varclip": "reject pixels based on variance array"},
-                                       default="sigclip", optional=False)
+                                       default="varclip", optional=False)
     hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
     lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
     mclip = config.Field("Use median for sigma-clipping?", bool, True)
     max_iters = config.RangeField("Maximum number of clipping iterations", int, None, min=1, optional=True)
     nlow = config.RangeField("Number of low pixels to reject", int, 0, min=0)
     nhigh = config.RangeField("Number of high pixels to reject", int, 0, min=0)
-    memory = config.RangeField("Memory available for stacking (GB)", float, None, min=0.1, optional=True)
+    memory = config.RangeField("Memory available for stacking (GB)", float, 1, min=0.1, optional=True)
+    debug_pixel = config.RangeField("Debugging pixel location", int, None, min=0, optional=True)
 
 class stackFramesConfig(core_stacking_config):
     separate_ext = config.Field("Handle extensions separately?", bool, True)

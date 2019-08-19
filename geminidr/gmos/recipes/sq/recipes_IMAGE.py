@@ -23,12 +23,13 @@ def reduce(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
-    p.makeFringe()
     p.fringeCorrect()
     p.mosaicDetectors()
+    p.detectSources()
     p.adjustWCSToReference()
     p.resampleToCommonFrame()
-    p.stackFrames()
+    p.flagCosmicRaysByStacking()
+    p.stackFrames(zero=True)
     p.writeOutputs()
     return
 

@@ -155,7 +155,7 @@ gsaoi_dark_answer = [
 
 def test_showprims_on_gsaoi_dark(path_to_inputs):
     file_location = os.path.join(path_to_inputs, 'Gempy', GSAOI_DARK)
-    answer = showprims(file_location, 'sq', 'default')
+    answer = showprims(file_location, 'sq', '_default')
 
     for i in range(len(gsaoi_dark_answer)):
         assert gsaoi_dark_answer[i] in answer

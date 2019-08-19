@@ -22,11 +22,21 @@ WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_ and in the
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
    :caption: Table of Contents
 
    01_introduction
    02_data_reduction
    03_api_reduction
+   04_beyond
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Appendices
+
+   appendices/01_goa_download.rst
+
 
 Indices and tables
 ==================

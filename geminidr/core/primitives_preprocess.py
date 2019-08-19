@@ -1169,8 +1169,9 @@ class Preprocess(PrimitivesBASE):
     def subtractSky(self, adinputs=None, **params):
         """
         This function will subtract the science extension of the input sky
-        frames from the science extension of the input science frames. The
-        variance and data quality extension will be updated, if they exist.
+        (or other) frames from the science extension of the input science
+        frames. The variance and data quality extension will be updated, if
+        they exist.
 
         Parameters
         ----------
@@ -1210,7 +1211,7 @@ class Preprocess(PrimitivesBASE):
                 # Only call measure_bg_from_image if we need it
                 if reset_sky or scale or zero:
                     old_bg = gt.measure_bg_from_image(ad, value_only=True)
-                log.stdinfo("Subtracting the sky ({}) from the science "
+                log.stdinfo("Subtracting the image ({}) from the science "
                             "AstroData object {}".
                             format(ad_sky.filename, ad.filename))
                 if scale or zero:

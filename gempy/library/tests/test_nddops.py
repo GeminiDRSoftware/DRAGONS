@@ -1,6 +1,7 @@
 import numpy as np
 from gempy.library.nddops import NDStacker
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from astrodata import NDAstroData
 
 def test_process_mask():
     # List of input DQ pixels, with correct output DQ
@@ -27,3 +28,15 @@ def test_process_mask():
         mask, out_mask = NDStacker._process_mask(in_mask)
         assert out_mask[0] == correct_output
         assert np.array_equal(mask.T[0], pixel_usage)
+
+def test_varclip():
+    # Confirm rejection of high pixel and correct output DQ
+    data = np.array([1.,1.,2.,2.,2.,100.]).reshape(6,1)
+    ndd = NDAstroData(data)
+    ndd.mask = np.zeros_like(data, dtype=DQ.datatype)
+    ndd.mask[5,0] = DQ.saturated
+    ndd.variance = np.ones_like(data)
+    stackit = NDStacker(combine="mean", reject="varclip")
+    result = stackit(ndd)
+    assert result == [1.6]
+    assert result.mask == [0]

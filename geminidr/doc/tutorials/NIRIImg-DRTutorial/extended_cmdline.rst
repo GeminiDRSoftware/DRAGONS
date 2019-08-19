@@ -120,15 +120,43 @@ of them to one list.
 
 A list for the standard star
 ----------------------------
-The standard star sequence is a series of datasets identified as "FS 17".  There
-are no keywords in the NIRI header identifying this target as a special
-standard star target.  We need to use the target name to select only
-observations from that star and not our science target.
+The standard stars at Gemini are normally taken as partner calibration.
+
+You can see the ``observation_class`` of all the data using ``showd``. Here
+we will print the object name too.
+
+::
+
+    showd ../playdata/*.fits -d observation_class,object
+
+    --------------------------------------------------------------
+    filename                          observation_class     object
+    --------------------------------------------------------------
+    ../playdata/N20160102S0270.fits             science    SN2014J
+    ...
+    ../playdata/N20160102S0295.fits          partnerCal      FS 17
+    ../playdata/N20160102S0296.fits          partnerCal      FS 17
+    ../playdata/N20160102S0297.fits          partnerCal      FS 17
+    ../playdata/N20160102S0298.fits          partnerCal      FS 17
+    ../playdata/N20160102S0299.fits          partnerCal      FS 17
+    ../playdata/N20160102S0363.fits              dayCal   GCALflat
+    ...
+    ../playdata/N20160103S0472.fits              dayCal       Dark
+
+The list is abridged for presentation.
+
+Our standard star is a "partnerCal" named "FS 17".  Since it is unique, we
+can use either criterion to get our list.
+
+::
+
+    dataselect ../playdata/*.fits --expr='observation_class=="partnerCal"' -o stdstar.lis
+
+Or
 
 ::
 
     dataselect ../playdata/*.fits --expr='object=="FS 17"' -o stdstar.lis
-
 
 
 A list for the science observations

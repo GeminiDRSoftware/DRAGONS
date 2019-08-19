@@ -1,9 +1,11 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_visualize.py file, in alphabetical order.
+import numbers
+
 from gempy.library import config
 
 def threshold_check(value):
-    return (isinstance(value, (float, int)) or value == 'auto')
+   return (isinstance(value, (float, int)) or value == 'auto')
 
 class displayConfig(config.Config):
     extname = config.Field("EXTNAME to display", str, "SCI")
@@ -15,7 +17,7 @@ class displayConfig(config.Config):
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)
     zscale = config.Field("Use zscale algorithm?", bool, True)
 
-class inspectConfig(config.Config):
+class inspectConfig(displayConfig):
     pause = config.RangeField("Pause between the display, in seconds", int, 2, min=0)
 
 #class mosaicDetectorsConfig(config.Config):

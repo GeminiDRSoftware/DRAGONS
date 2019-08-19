@@ -1,0 +1,151 @@
+#!/usr/bin/env groovy
+/*
+ * Jenkins Pipeline for DRAGONS
+ *
+ * by Bruno C. Quint
+ *
+ * Required Plug-ins:
+ * - Cobertura Plug-in
+ */
+
+pipeline {
+
+    agent any
+
+    triggers {
+        pollSCM('H/20 * * * 1-5')
+    }
+
+    options {
+        skipDefaultCheckout(true)
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        timestamps()
+    }
+
+    environment {
+        PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
+        TEST_PATH = "$JENKINS_HOME/DRAGONS/test_path/"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checkout code"
+            }
+        }
+        stage("Build") {
+            parallel {
+                stage("CentOS 6") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("CentOS 7") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("MacOs 10.10") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("MacOs 10.11") {
+                    agent {
+                        label "macos10.11"
+                    }
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("MacOs 10.12") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("MacOs 10.13") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("MacOs 10.14") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+            }
+        }
+        stage('Pack') {
+            parallel {
+                stage("linux-64") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+                stage("osx-64") {
+                    steps {
+                        echo "build on ${env.NODE_NAME}"
+                    }
+                }
+            }
+        }
+        stage('Test') {
+            parallel {
+                stage("linux-64") {
+                    steps {
+                        echo "pull build"
+                        echo "install build"
+                        echo "run tests"
+                    }
+                }
+                stage("osx-64") {
+                    steps {
+                        echo "pull build"
+                        echo "install build"
+                        echo "run tests"
+                    }
+                }
+                stage('static metrics') {
+                    steps {
+                        echo "run PyLint and PyDocStyle"
+                    }
+                }
+            }
+        }
+        stage('Deliver') {
+            parallel {
+                stage('linux-32') {
+                    steps {
+                        echo "deploy linux-32"
+                    }
+                }
+                stage('linux-64') {
+                    steps {
+                        echo "deploy linux-64"
+                    }
+                }
+                stage('noarch') {
+                    steps {
+                        echo "deploy noarch"
+                    }
+                }
+                stage('osx-64') {
+                    steps {
+                        echo "deploy osx-64"
+                    }
+                }
+            }
+        }
+        stage('Report') {
+            steps {
+                echo "Report on something"
+            }
+        }
+    }
+    post {
+        failure {
+            echo "Send e-mail, when failed"
+        }
+    }
+}
+

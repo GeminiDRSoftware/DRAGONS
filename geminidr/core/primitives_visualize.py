@@ -173,7 +173,7 @@ class Visualize(PrimitivesBASE):
                 mask_colors = []
                 if threshold is not None:
                     if threshold != 'auto':
-                        satmask = data > float(threshold)
+                        satmask = data > threshold
                     else:
                         if dqdata is None:
                             log.warning("No DQ plane found; cannot make "
@@ -243,8 +243,9 @@ class Visualize(PrimitivesBASE):
 
         pause = params['pause']
 
+        display_params = self._inherit_params(params, 'display')
         for ad in adinputs:
-            self.display([ad], frame=1)
+            self.display([ad], **display_params)
             time.sleep(pause)
 
         return adinputs
