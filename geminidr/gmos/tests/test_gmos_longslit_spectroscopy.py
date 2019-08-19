@@ -76,9 +76,9 @@ def test_can_run_reduce_flat(path_to_inputs, calibrations):
 
     reduce_flat.runr()
 
-    calibrations.append(
-        'processed_flat:{}'.format(reduce_flat.output_filenames[0])
-    )
+    # calibrations.append(
+    #     'processed_flat:{}'.format(reduce_flat.output_filenames[0])
+    # )
 
 
 @pytest.mark.xfail(reason="gain_setting can't not found when running runr()")
@@ -91,8 +91,6 @@ def test_can_run_reduce_arc(path_to_inputs, calibrations):
     raw_subdir = 'GMOS/GS-2016B-Q-88-139'
 
     logutils.config(file_name='reduce_GMOS_LS_flat.log')
-
-    assert len(calibrations) == 2
 
     all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
     assert len(all_files) > 1
@@ -113,6 +111,8 @@ def test_can_run_reduce_arc(path_to_inputs, calibrations):
 
     reduce_arc.files.extend(list_of_arcs)
     assert len(reduce_arc.files) == len(list_of_arcs)
+
+    reduce_arc.ucals = normalize_ucals(reduce_arc.files, calibrations)
 
     reduce_arc.runr()
 
