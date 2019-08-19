@@ -187,6 +187,7 @@ dragons_set = {"apaths":
                  'gempy/mosaic/tests/mosaic',
                  'gempy/scripts',
                  'gempy/utils',
+                 'gempy/utils/tests'
                ],
 }
 
