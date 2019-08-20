@@ -66,31 +66,27 @@ def fake_spectrum():
 
     spec += snr * obj_max_weight * np.random.random(spec.shape)
 
-    ad = astrofaker.create('GMOS-S')
-    ad.add_extension(data=spec, pixel_scale=0.1)
-    ad.hdr['DISPAXIS'] = 1
-    ad[0].hdr['DISPAXIS'] = 1
+    ad = astrofaker.create('GMOS-S', 'SPECT')
+    ad.init_default_extensions()
 
     return ad
 
 
+@pytest.mark.xfail(reason="Primtive requires WAVECAL table")
 def test_determine_distortion(fake_spectrum):
 
     assert isinstance(fake_spectrum, astrodata.AstroData)
     assert len(fake_spectrum) > 0
-    assert fake_spectrum.dispersion_axis() == 1
 
-    # ToDo - The following lines should pass
-    # for ext in fake_spectrum:
-    #     assert ext.dispersion_axis() == [1]
+    for ext in fake_spectrum:
+        assert ext.dispersion_axis() == 1
 
-    # ToDO - Tests above should pass before uncommenting the code below
-    # p = geminidr.core.primitives_spect.Spect(fake_spectrum)
+    p = geminidr.core.primitives_spect.Spect(fake_spectrum)
 
     # ToDo - Remove hard dependency on displays unless strictly necessary
-    # p.viewer = geminidr.dormantViewer(p, None)
+    p.viewer = geminidr.dormantViewer(p, None)
 
-    # ad = p.determineDistortion()
+    ad = p.determineDistortion()
 
 
 if __name__ == '__main__':

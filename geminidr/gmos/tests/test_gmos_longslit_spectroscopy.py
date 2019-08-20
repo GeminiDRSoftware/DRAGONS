@@ -8,7 +8,10 @@ import pytest
 import os
 
 import astrodata
+import gemini_instruments
+import geminidr
 
+from geminidr.gmos import primitives_gmos_spect
 from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
@@ -106,15 +109,29 @@ def test_can_run_reduce_arc(path_to_inputs, calibrations):
         ad = astrodata.open(f)
         _ = ad.gain_setting()
 
-    reduce_arc = Reduce()
-    assert len(reduce_arc.files) == 0
+    temp = [c for c in calibrations if 'bias' in c]
+    processed_bias = temp[0].split(':')[-1]
 
-    reduce_arc.files.extend(list_of_arcs)
-    assert len(reduce_arc.files) == len(list_of_arcs)
+    adinputs = [astrodata.open(f) for f in list_of_arcs]
 
-    reduce_arc.ucals = normalize_ucals(reduce_arc.files, calibrations)
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
 
-    reduce_arc.runr()
+    p.viewer = geminidr.dormantViewer(p, None)
+
+    p.prepare()
+    p.addDQ(static_bpm=None)
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect(bias=processed_bias)
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.mosaicDetectors()
+    p.makeIRAFCompatible()
+    p.writeOutputs()  # for now, to speed up diagnostics of the next step
+    p.determineWavelengthSolution()
+    p.determineDistortion()
+    p.storeProcessedArc()
+    p.writeOutputs()
 
 
 # ToDo WIP - Define first how flats are processed
