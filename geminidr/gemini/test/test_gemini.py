@@ -7,7 +7,7 @@ import pytest
 import os
 import copy
 import astrodata
-import AstroFaker
+import astrofaker
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
 from geminidr.gemini import primitives_gemini as gemini
 
@@ -57,7 +57,7 @@ def setup_testgemini(request):
 
 @pytest.fixture()
 def geminiimage():
-    af = AstroFaker.create('NIRI', 'IMAGE')
+    af = astrofaker.create('NIRI', 'IMAGE')
     af.init_default_extensions()
     # SExtractor struggles if the background is noiseless
     af.add_read_noise()
