@@ -21,6 +21,7 @@ dependencies:
   - stsci.numdisplay >=1.6
   - astropy::astroquery >=0.3.5
   - astropy::imexam <=0.8.1
+  - astropy::photutils
   - chroxvi::radon
   - conda-forge::python-dateutil >=2.5.3
   - conda-forge::twine
