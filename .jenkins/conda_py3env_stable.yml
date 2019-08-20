@@ -5,6 +5,7 @@ dependencies:
   - coveralls
   - cython
   - future >=0.16.0
+  - imexam
   - ipython
   - numpy >=1.9.1
   - matplotlib >=1.4.2
