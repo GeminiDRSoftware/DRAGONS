@@ -8,6 +8,8 @@
 #echo " Removing ${CONDA_ENV_NAME} ---"
 #conda env remove -n "${CONDA_ENV_NAME}" || echo 0
 
+conda env remove ${CONDA_ENV_NAME} --quiet --yes
+
 
 echo " Installing ${CONDA_ENV_NAME} ---"
 if conda info --envs | grep -q $CONDA_ENV_NAME; then
