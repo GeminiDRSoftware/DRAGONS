@@ -28,7 +28,7 @@ def test_can_run_reduce_bias(path_to_inputs, calibrations):
     Make sure that the reduce_BIAS works for spectroscopic data.
     """
 
-    raw_subdir = 'GMOS/GS-2016B-Q-88-139'
+    raw_subdir = 'GMOS/GN-2017A-FT-19'
 
     logutils.config(file_name='reduce_GMOS_LS_bias.log')
 
@@ -55,7 +55,7 @@ def test_can_run_reduce_flat(path_to_inputs, calibrations):
     Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
     """
 
-    raw_subdir = 'GMOS/GS-2016B-Q-88-139'
+    raw_subdir = 'GMOS/GN-2017A-FT-19'
 
     logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
@@ -81,14 +81,14 @@ def test_can_run_reduce_flat(path_to_inputs, calibrations):
     # )
 
 
-@pytest.mark.xfail(reason="gain_setting can't not found when running runr()")
+# @pytest.mark.xfail(reason="gain_setting can't not found when running runr()")
 def test_can_run_reduce_arc(path_to_inputs, calibrations):
     """
     Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
     data.
     """
 
-    raw_subdir = 'GMOS/GS-2016B-Q-88-139'
+    raw_subdir = 'GMOS/GN-2017A-FT-19'
 
     logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
@@ -123,7 +123,7 @@ def test_can_run_reduce_arc(path_to_inputs, calibrations):
 #     Make sure that the recipes_ARC_LS_SPECT works for spectroscopic data.
 #     """
 
-    # raw_subdir = 'GMOS/GS-2016B-Q-88-139'
+    # raw_subdir = 'GMOS/GN-2017A-FT-19'
     #
     # logutils.config(file_name='reduce_GMOS_LS_arc.log')
     #
