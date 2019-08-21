@@ -758,10 +758,7 @@ class AstroDataGemini(AstroDataFits):
         list/float
             The dispersion(s)
         """
-        if self.disperser().lower() == 'mirror':
-            dispersion = None
-
-        elif self._keyword_for('dispersion') in self.hdr:
+        if self._keyword_for('dispersion') in self.hdr:
             dispersion = self.hdr[self._keyword_for('dispersion')]
 
         elif self._keyword_for('dispersion') in self.phu:
@@ -786,10 +783,12 @@ class AstroDataGemini(AstroDataFits):
             # return the central wavelength in the default units of meters.
             output_units = "meters"
 
-        dispersion = gmu.convert_units('meters', dispersion, output_units)
+        if dispersion is not None:
 
-        if not self.is_single and dispersion is not None:
-            dispersion = [dispersion] * len(self)
+            dispersion = gmu.convert_units('meters', dispersion, output_units)
+
+            if not self.is_single:
+                dispersion = [dispersion] * len(self)
 
         return dispersion
 

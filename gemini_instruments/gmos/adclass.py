@@ -436,53 +436,59 @@ class AstroDataGmos(AstroDataGemini):
         list/float
             The dispersion(s)
         """
-        if self.disperser().lower() == 'mirror':
-            return None
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+        else:
+            # Either none of the unit arguments were set to True or more than
+            # one of the unit arguments was set to True. In either case,
+            # return the central wavelength in the default units of meters.
+            output_units = "meters"
+
+        # This was breaking before
+        try:
+            grule = float(self.disperser(pretty=True)[1:])
+        except ValueError:
+            grule = None
+
+        # Temporary setup. Assume wavelength calibration creates a
+        # WDELTA keyword
+        if self._keyword_for('dispersion') in self.hdr:
+            dispersion = self.hdr[self._keyword_for('dispersion')]
+
+        # Straight from gsappwave; linear interpolation does OK
+        elif grule is not None:
+            cenwave = self.central_wavelength()  # meters
+            greq = 1000 * cenwave * grule
+
+            gtilt = np.deg2rad(
+                np.interp(
+                    greq,
+                    lookup.gratingeq[::-1],
+                    np.arange(len(lookup.gratingeq), 0, -1)
+                )
+            )
+
+            dispersion = - (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() * cenwave) / (206265. * greq)
 
         else:
+            dispersion = None
 
-            unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-
-            if unit_arg_list.count(True) == 1:
-                # Just one of the unit arguments was set to True. Return the
-                # central wavelength in these units
-                if asMicrometers:
-                    output_units = "micrometers"
-                if asNanometers:
-                    output_units = "nanometers"
-                if asAngstroms:
-                    output_units = "angstroms"
-            else:
-                # Either none of the unit arguments were set to True or more than
-                # one of the unit arguments was set to True. In either case,
-                # return the central wavelength in the default units of meters.
-                output_units = "meters"
-
-            # Temporary setup. Assume wavelength calibration creates a WDELTA
-            # keyword
-            try:
-                disp = self.hdr[self._keyword_for('dispersion')]
-            except KeyError:
-                # Straight from gsappwave; linear interpolation does OK
-                cenwave = self.central_wavelength()  # meters
-                grule = float(self.disperser(pretty=True)[1:])
-                greq = 1000 * cenwave * grule
-                gtilt = np.pi / 180. * np.interp(greq, lookup.gratingeq[::-1],
-                                                 np.arange(len(lookup.gratingeq), 0, -1))
-                disp = -(81 * math.sin(gtilt + 0.87266) * self.pixel_scale() *
-                         cenwave) / (206265. * greq)
-
-                if not self.is_single:
-                    disp = [disp] * len(self)
-
+        if dispersion is not None:
             grating_order = self.phu.get('GRORDER', 1)
+            dispersion = gmu.convert_units('meters', dispersion / grating_order,
+                                           output_units)
 
-            if self.is_single:
-                dispersion = gmu.convert_units(
-                    'meters', disp / grating_order, output_units)
-            else:
-                dispersion = [gmu.convert_units(
-                    'meters', d / grating_order, output_units) for d in disp]
+            if not self.is_single:
+                dispersion = [dispersion] * len(self)
 
         return dispersion
 
