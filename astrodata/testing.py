@@ -12,7 +12,7 @@ import warnings
 def path_to_inputs():
 
     try:
-        path = os.environ['DRAGONS_TEST_INPUTS']
+        path = os.path.expanduser(os.environ['DRAGONS_TEST_INPUTS'])
         path = path.strip()
     except KeyError:
         pytest.skip(
@@ -31,7 +31,7 @@ def path_to_inputs():
 def path_to_refs():
 
     try:
-        path = os.environ['DRAGONS_TEST_REFS']
+        path = os.path.expanduser(os.environ['DRAGONS_TEST_REFS'])
     except KeyError:
         pytest.skip(
             "Could not find environment variable: $DRAGONS_TEST_REFS")
@@ -49,7 +49,7 @@ def path_to_refs():
 def path_to_outputs():
 
     try:
-        path = os.environ['DRAGONS_TEST_OUTPUTS']
+        path = os.path.expanduser(os.environ['DRAGONS_TEST_OUTPUTS'])
     except KeyError:
         warnings.warn("Could not find environment variable: $DRAGONS_TEST_REFS"
                       "\n Using current working directory")
