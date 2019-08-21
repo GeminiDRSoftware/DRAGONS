@@ -9,7 +9,7 @@ from recipe_system.utils.errors import ModeError
 from recipe_system.utils.errors import RecipeNotFound
 
 try:
-    path = os.environ['DRAGONS_TEST_INPUTS']
+    path = os.path.expanduser(os.environ['DRAGONS_TEST_INPUTS'])
 except KeyError:
     warnings.warn(
         "Could not find environment variable: $DRAGONS_TEST_INPUTS")
@@ -127,12 +127,10 @@ def test_showprims_on_gmos_ns(path_to_inputs):
 
 
 def test_showprims_on_gmos_spect_default_mode(path_to_inputs):
-    try:
-        file_location = os.path.join(path_to_inputs, 'Gempy', GMOS_NS)
-        answer = showprims(file_location)
-        assert "RecipeNotFound Error" in answer
-    except RecipeNotFound:
-        pass
+    _file = os.path.join(path_to_inputs, 'Gempy', GMOS_SPECT)
+    answer = showprims(_file)
+
+    assert "geminidr.gmos.recipes.sq.recipes_LS_SPECT::reduce" in answer
 
 
 # # # # # #  GSAOI  # # # # # #
