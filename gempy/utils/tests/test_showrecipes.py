@@ -96,13 +96,10 @@ def test_showprims_on_gmos(path_to_inputs):
 
 
 def test_showprims_on_gmos_spect(path_to_inputs):
-    try:
-        file_location = os.path.join(path_to_inputs, 'Gempy', GMOS_SPECT)
-        answer = showprims(file_location)
-        assert "RecipeNotFound Error" in answer
+    _file = os.path.join(path_to_inputs, 'Gempy', GMOS_SPECT)
+    answer = showprims(_file)
 
-    except RecipeNotFound:
-        pass
+    assert "geminidr.gmos.recipes.sq.recipes_LS_SPECT::reduce" in answer
 
 
 gmos_ns_answer = [
