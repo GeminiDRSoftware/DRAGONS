@@ -374,6 +374,7 @@ def estimate_peak_width(data, min=2, max=8):
         all_widths.append(sigma_clip(widths).mean())
     return sigma_clip(all_widths).mean()
 
+
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
                reject_bad=True):
     """
@@ -389,41 +390,47 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
         The pixel values of the 1D spectrum
     widths: array-like
         Sigma values of line-like features to look for
-    mask: 1D array
-        Mask (peaks with bad pixels are rejected)
-    variance: 1D array
-        Variance (to estimate SNR of peaks)
-    min_snr: float
+    mask: 1D array (optional)
+        Mask (peaks with bad pixels are rejected) - optional
+    variance: 1D array (optional)
+        Variance (to estimate SNR of peaks) - optional
+    min_snr: float (optional, default=1)
         Minimum SNR required of peak pixel
-    min_frac: float
+    min_frac: float (optional, default=0.25)
         minimum fraction of *widths* values at which a peak must be found
-    reject_bad: bool
+    reject_bad: bool (optional, default=True)
         clip lines using the reject_bad() function?
 
     Returns
     -------
     2D array: peak wavelengths and SNRs
     """
-    maxwidth = max(widths)
-    window_size = 4*maxwidth+1
-    cwt_dat = signal.cwt(data, signal.ricker, widths)
-    eps = np.finfo(np.float32).eps
-    cwt_dat[cwt_dat<eps] = eps
-    ridge_lines = signal._peak_finding._identify_ridge_lines(cwt_dat, 0.03*widths, 2)
-    filtered = signal._peak_finding._filter_ridge_lines(cwt_dat, ridge_lines,
-                                                        window_size=window_size,
-                                                        min_length=int(min_frac*len(widths)),
-                                                        min_snr=min_snr)
+
+    max_width = max(widths)
+    window_size = 4*max_width+1
+
+    wavelet_transformed_data = signal.cwt(data, signal.ricker, widths)
+
+    eps = np.finfo(np.float32).eps  # Minimum representative data
+    wavelet_transformed_data[wavelet_transformed_data<eps] = eps
+
+    ridge_lines = signal._peak_finding._identify_ridge_lines(
+        wavelet_transformed_data, 0.03*widths, 2)
+
+    filtered = signal._peak_finding._filter_ridge_lines(
+        wavelet_transformed_data, ridge_lines, window_size=window_size,
+        min_length=int(min_frac*len(widths)), min_snr=min_snr)
+
     peaks = sorted([x[1][0] for x in filtered])
 
     # If no variance is supplied we take the "snr" to be the data.
     # We do this on the filtered data because the continuum level gets
     # subtracted by the Ricker filter
     if variance is not None:
-        snr = np.divide(cwt_dat[0], np.sqrt(variance), np.zeros_like(data),
+        snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance), np.zeros_like(data),
                         where=variance>0)
     else:
-        snr = cwt_dat[0]
+        snr = wavelet_transformed_data[0]
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -441,7 +448,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
-    edge = 2.35482 * maxwidth
+    edge = 2.35482 * max_width
     peaks = peaks[np.logical_and(peaks>edge, peaks<len(data)-1-edge)]
 
     # Remove peaks very close to unilluminated/no-data pixels
@@ -462,7 +469,9 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
         good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
     else:
         good_peaks = list(zip(final_peaks, peak_snrs))
+
     return np.array(sorted(good_peaks)).T
+
 
 def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     """
@@ -495,8 +504,10 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     int_limits = np.array([-1, -0.5, 0.5, 1])
     npts = len(data)
     final_peaks = []
+
     masked_data = np.where(np.logical_or(mask > 0, data < threshold), 0,
                            data - threshold)
+
     for peak in peaks:
         xc = int(peak + 0.5)
         xc = np.argmax(masked_data[max(xc-1,0):min(xc+2,npts)]) + xc - 1
