@@ -502,7 +502,8 @@ class NDStacker(object):
         # will be the (0,0) pixels from each image, and so on...
         shape = data.shape
         num_img = shape[0]
-        data_size = np.multiply.reduce(data.shape[1:])
+        # Force int in case arrays are 1D
+        data_size = int(np.multiply.reduce(data.shape[1:]))
         data, mask, variance = cyclip.iterclip(data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
                                                variance.ravel().astype(np.float32),
                                                has_var=has_var, num_img=num_img, data_size=data_size,
