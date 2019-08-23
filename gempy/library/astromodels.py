@@ -215,14 +215,13 @@ class UnivariateSplineWithOutlierRemoval(object):
             raise ValueError("Both t and s have been specified")
 
         if isinstance(y, np.ma.masked_array):
-            mask = np.zeros_like(x, dtype=bool) if y.mask is np.ma.nomask else y.mask
+            orig_mask = np.zeros_like(x, dtype=bool) if y.mask is np.ma.nomask else y.mask
             y = y.data
         else:
-            mask = np.zeros_like(x, dtype=bool)
+            orig_mask = np.zeros_like(x, dtype=bool)
 
         iter = 0
-        full_mask = mask  # Will include pixels masked because of "grow"
-        start = datetime.now()
+        full_mask = orig_mask  # Will include pixels masked because of "grow"
         while iter < niter+1:
             last_mask = full_mask
 
@@ -243,13 +242,14 @@ class UnivariateSplineWithOutlierRemoval(object):
                                   *spline_args, w=None if w is None else w[~full_mask], **spline_kwargs)
             except ValueError as e:
                 raise e
-            #print(iter, datetime.now()-start)
             spline_y = instance(x)
-            #print(iter, datetime.now()-start)
             #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
             #mask = masked_residuals.mask
-            d, mask, v = NDStacker.sigclip(spline_y-y, mask=mask, variance=None, **outlier_kwargs)
-            mask = mask.astype(bool)
+
+            # When sigma-clipping, only remove the originally-masked points.
+            # Note that this differs from the astropy.modeling code because
+            # the sigma-clipping and spline-fitting are done independently here.
+            d, mask, v = NDStacker.sigclip(spline_y-y, mask=orig_mask, variance=None, **outlier_kwargs)
             if grow > 0:
                 maskarray = np.zeros((grow * 2 + 1, len(y)), dtype=bool)
                 for i in range(-grow, grow + 1):
@@ -260,7 +260,6 @@ class UnivariateSplineWithOutlierRemoval(object):
                 full_mask = mask | grow_mask
             else:
                 full_mask = mask
-            #print(iter, datetime.now()-start)
 
             # Check if the mask is unchanged
             if not np.logical_or.reduce(last_mask ^ full_mask):
