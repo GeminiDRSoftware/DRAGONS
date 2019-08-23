@@ -495,32 +495,28 @@ class KDTreeFitter(Fitter):
     Fitter class that uses minimization (the method can be passed as a
     parameter to the instance) to determine the transformation to map a set
     of input coordinates to a set of reference coordinates.
+
+    Parameters
+    ----------
+    proximity_function : callable/None
+        function to call to determine score for proximity of reference
+        and transformed input coordinates. Must take two arguments: the
+        distance and a "sigma" factor, indicating the matching scale
+        (in the reference frame). If None, use the default
+        `KDTreeFitter.gaussian`.
+
+    sigma : float
+        matching scale (in the reference frame)
+
+    maxsig : float
+        maximum number of scale lengths for a match to be counted
+
+    k : int
+        maximum number of matches to be considered
+
     """
-    @staticmethod
-    def gaussian(distance, sigma):
-        return np.exp(-0.5 * distance * distance / (sigma * sigma))
-
-    @staticmethod
-    def lorentzian(distance, sigma):
-        return 1./(distance * distance + sigma * sigma)
-
     def __init__(self, proximity_function=None, sigma=5.0, maxsig=5.0, k=5):
-        """
 
-        Parameters
-        ----------
-        proximity_function: callable/None
-            function to call to determine score for proximity of reference
-            and transformed input coordinates. Must take two arguments: the
-            distance and a "sigma" factor, indicating the matching scale
-            (in the reference frame). If None, use the default.
-        sigma: float
-            matching scale (in the reference frame)
-        maxsig: float
-            maximum number of scale lengths for a match to be counted
-        k: int
-            maximum number of matches to be considered
-        """
         self.statistic = None
         self.niter = None
         if proximity_function is None:
@@ -616,6 +612,14 @@ class KDTreeFitter(Fitter):
         self.statistic = result['fun']
         self.niter = result['nit']
         return model_copy
+
+    @staticmethod
+    def gaussian(distance, sigma):
+        return np.exp(-0.5 * distance * distance / (sigma * sigma))
+
+    @staticmethod
+    def lorentzian(distance, sigma):
+        return 1./(distance * distance + sigma * sigma)
 
     def _kdstat(self, tree, updated_model, in_coords, in_weights, ref_weights):
         """
