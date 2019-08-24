@@ -259,7 +259,7 @@ class UnivariateSplineWithOutlierRemoval(object):
                 grow_mask = np.logical_or.reduce(maskarray, axis=0)
                 full_mask = mask | grow_mask
             else:
-                full_mask = mask
+                full_mask = mask.astype(bool)
 
             # Check if the mask is unchanged
             if not np.logical_or.reduce(last_mask ^ full_mask):
