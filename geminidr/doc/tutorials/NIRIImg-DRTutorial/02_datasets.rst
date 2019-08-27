@@ -15,6 +15,8 @@ All the data needed to run this tutorial are found in the tutorial's data
 package (KL??? name of the package, with URL).  Download it and unpack it
 somewhere convenient.
 
+.. todo:: add name of and URL to the data package
+
 .. highlight:: bash
 
 ::
@@ -22,10 +24,11 @@ somewhere convenient.
     cd <somewhere convenient>
     tar xvzf KL???
 
-The datasets are found in the subdirectory ``niriimg_tutorial/playdata``, and we
-will work in the subdirectory named ``niriimg_tutorial/playground``.
+The datasets are found in the subdirectory ``niriimg_tutorial/playdata``, and
+we will work in the subdirectory named ``niriimg_tutorial/playground``.
 
-.. note:: All the raw data can also be downloaded from the Gemini Observatory Archive.  Using the tutorial data package is probably more convenient.
+.. note:: All the raw data can also be downloaded from the Gemini Observatory
+     Archive.  Using the tutorial data package is probably more convenient.
 
 
 Datasets descriptions
@@ -33,7 +36,7 @@ Datasets descriptions
 
 .. _dataextended:
 
-Dataset for example 1: Extended source with offset to sky
+Dataset for Example 1: Extended source with offset to sky
 ---------------------------------------------------------
 
 This is a NIRI imaging observation of an extended source, a galaxy showing
@@ -67,7 +70,7 @@ They can also be downloaded from the Gemini Observatory Archive (GOA).
 
 A note about finding the short darks in the GOA.  Those darks are used solely
 to create a fresh bad pixel mask (BPM).  In the archive, the calibration
-association will not find those darks, they need to be search for
+association will not find those darks, they need to be searched for
 explicitly. If you need to find short darks for your program, do as follow:
 
 * Set a date range around the dates of your science observations.

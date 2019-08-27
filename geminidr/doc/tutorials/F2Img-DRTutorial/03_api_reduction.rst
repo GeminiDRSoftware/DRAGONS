@@ -15,7 +15,7 @@ Reduction using API
 
 There may be cases where you might be interested in accessing the DRAGONS
 Application Program Interface (API) directly instead of using the command
-line wrappers to reduce your data.  Here we show you how to do the same
+line wrappers to reduce your data. Here we show you how to do the same
 reduction we did in the previous chapter but using the API.
 
 The dataset
@@ -59,7 +59,6 @@ We first import the necessary modules and classes:
     from __future__ import print_function
 
     import glob
-    import os
 
     from gempy.adlibrary import dataselect
     from recipe_system import cal_service
@@ -69,9 +68,8 @@ Importing ``print_function`` is for compatibility with the Python 2.7 print
 statement. If you are working with Python 3, it is not needed, but importing
 it will not break anything.
 
-The following two packages, :mod:`glob` and :mod:`os`, are Python built-in packages.
-Here, :mod:`os` will be used to perform operations with the files names and
-:mod:`glob` will be used to return a :class:`list` with the input file names.
+:mod:`glob` is Python built-in packages. It will be used to return a
+:class:`list` with the input file names.
 
 
 .. todo @bquint: the gempy auto-api is not being generated anywhere.
@@ -87,11 +85,11 @@ and run the data reduction.
 
 Setting up the logger
 ---------------------
-We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
+We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 9
+    :lineno-start: 8
 
     from gempy.utils import logutils
     logutils.config(file_name='f2_data_reduction.log')
@@ -119,7 +117,7 @@ This tells the system where to put the calibration database. This
 database will keep track of the processed calibrations as we add them
 to it.
 
-..  note:: The tilde (``~``) in the path above refers to your home directory.
+.. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.geminidr``.
 
 The calibration database is initialized and the calibration service is
@@ -127,7 +125,7 @@ configured as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 11
+    :lineno-start: 10
 
     caldb = cal_service.CalibrationService()
     caldb.config()
@@ -151,7 +149,7 @@ FITS files in the directory ``../playdata/``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 15
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
@@ -161,7 +159,7 @@ and is an optional step. Before you carry on, you might want want to do
 ``print(all_files)`` to check if they were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
-:func:`~gempy.adlibrary.dataselect.select_data`.   The
+:func:`~gempy.adlibrary.dataselect.select_data`.  The
 ``dataselect.select_data()`` function signature is::
 
     select_data(inputs, tags=[], xtags=[], expression='True')
@@ -173,7 +171,7 @@ the science observations, those with an exposure time of 120 seconds.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 18
+    :lineno-start: 17
 
     dark_files_120s = dataselect.select_data(
         all_files,
@@ -184,8 +182,8 @@ the science observations, those with an exposure time of 120 seconds.
 
 Above we are requesting data with tags ``F2``, ``DARK``, and ``RAW``, though
 since we only have F2 raw data in the directory, ``DARK`` would be sufficient
-in this case.  We are not excluding any tags, as represented by the empty
-list ``[]``.  The expression setting the exposure time criterion needs to
+in this case. We are not excluding any tags, as represented by the empty
+list ``[]``. The expression setting the exposure time criterion needs to
 be processed through the ``dataselect`` expression parser,
 :func:`~gempy.adlibrary.dataselect.expr_parser`.
 
@@ -193,7 +191,7 @@ We repeat the same syntax for the 2-second darks:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 24
+    :lineno-start: 23
 
     dark_files_2s = dataselect.select_data(
         all_files,
@@ -206,11 +204,11 @@ A list for the flats
 --------------------
 Now you must create a list of FLAT images for each filter. The expression
 specifying the filter name is needed only if you have data from multiple
-filters.  It is not really needed in this case.
+filters. It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 30
+    :lineno-start: 29
 
     list_of_flats_Y = dataselect.select_data(
          all_files,
@@ -225,7 +223,7 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 36
+    :lineno-start: 35
 
     list_of_science_images = dataselect.select_data(
         all_files,
@@ -235,13 +233,10 @@ Finally, the science data can be selected using:
     )
 
 
-Reduce the data
-===============
-
 .. _api_process_dark_files:
 
 Create a Master Dark
---------------------
+====================
 
 We first create the master dark for the science target, then add it to the
 calibration database. The name of the output master dark is
@@ -251,7 +246,7 @@ file on disk.
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 42
+   :lineno-start: 41
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(dark_files_120s)
@@ -260,9 +255,9 @@ file on disk.
     caldb.add_cal(reduce_darks.output_filenames[0])
 
 The :class:`~recipe_system.reduction.coreReduce.Reduce` class is our reduction
-"controller".  This is were we collect all the information necessary for
-the reduction.  In this case, the only information necessary is the list of
-input files which we add to the ``files`` attribute.  The
+"controller". This is were we collect all the information necessary for
+the reduction. In this case, the only information necessary is the list of
+input files which we add to the ``files`` attribute. The
 :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method is where the
 recipe search is triggered and where it is executed.
 
@@ -274,11 +269,11 @@ recipe search is triggered and where it is executed.
 .. _api_create_bpm_files:
 
 Create a Bad Pixel Mask
------------------------
+=======================
 
 By default, for F2 imaging data, an illumination mask will be added to the
 data quality plane to identify the pixels beyond the circular aperture as
-"non-illuminated".  The package does not have a default bad pixel mask for
+"non-illuminated". The package does not have a default bad pixel mask for
 F2 but the user can easily create a fresh bad pixel mask from the flats and
 recent short darks.
 
@@ -286,7 +281,7 @@ The Bad Pixel Mask is created using as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 46
 
     reduce_bpm = Reduce()
     reduce_bpm.files.extend(list_of_flats_Y)
@@ -298,7 +293,7 @@ The Bad Pixel Mask is created using as follow:
 
 
 The flats must be passed first to the input list to ensure that the recipe
-library associated with F2 flats is selected.  We are setting the recipe
+library associated with F2 flats is selected. We are setting the recipe
 name to ``makeProcessedBPM`` to select that recipe from the recipe library
 instead of the using the default (which would create a master flat).
 
@@ -312,7 +307,7 @@ manually to the ``Reduce`` instance to use it, as we will show below.
 .. _api_process_flat_files:
 
 Create a Master Flat Field
---------------------------
+==========================
 A F2 master flat is created from a series of lamp-on and lamp-off exposures.
 Each flavor is stacked, then the lamp-off stack is subtracted from the
 lamp-on stack and the result normalized.
@@ -321,7 +316,7 @@ We create the master flat field and add it to the calibration manager as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 54
+    :lineno-start: 53
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Y)
@@ -332,7 +327,7 @@ We create the master flat field and add it to the calibration manager as follow:
 
 Note how we pass in the BPM we created in the previous step. The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
-``user_bpm``. We assign our BPM to that input parameter.  The value of
+``user_bpm``. We assign our BPM to that input parameter. The value of
 ``uparms`` needs to be a :class:`list` of :class:`Tuples`.
 
 Once :meth:`runr()` is finished, we add the master flat to the calibration
@@ -342,8 +337,8 @@ manager (line 59).
 .. _api_process_science_files:
 
 Reduce the Science Images
--------------------------
-The science observation uses a dither-on-target pattern.  The sky frames will
+=========================
+The science observation uses a dither-on-target pattern. The sky frames will
 be derived automatically for each science frame from the dithered frames.
 
 The master dark and the master flat will be retrieved automatically from the
@@ -355,7 +350,7 @@ science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 60
+    :lineno-start: 59
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)

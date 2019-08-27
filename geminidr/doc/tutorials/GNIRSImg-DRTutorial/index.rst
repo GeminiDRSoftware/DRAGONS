@@ -14,10 +14,11 @@ Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS
    :maxdepth: 2
    :caption: Contents:
 
-   overview
-   datasets
-   keyhole_cmdline
-   keyhole_api
+   01_overview
+   02_datasets
+   03_keyhole_cmdline
+   04_keyhole_api
+   05_beyond
 
 
 Indices and tables
@@ -26,3 +27,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. todolist::

@@ -31,7 +31,7 @@ print(' Dragons path: {}\n'.format(dragons_path))
 
 # -- Project information -----------------------------------------------------
 
-project = 'DRAGONS Tutorial - GMOS Data Reduction'
+project = 'DRAGONS Tutorial<br> GMOS Imaging Data Reduction'
 copyright = 'Gemini Observatory (AURA), 2019'
 author = 'Bruno C. Quint'
 

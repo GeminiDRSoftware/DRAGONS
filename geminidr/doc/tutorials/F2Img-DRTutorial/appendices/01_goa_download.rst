@@ -14,6 +14,7 @@ If you are just interested in trying out the tutorial, we still
 recommended that you download the pre-made package (:ref:`datasetup`) instead
 of getting everything manually.
 
+
 Step by step instructions
 =========================
 
@@ -30,8 +31,10 @@ The first step of any reduction is to retrieve the data from the
 details on using the Archive, check its
 `Help Page <https://archive.gemini.edu/help/index.html>`_.
 
+
 Science data
 ------------
+
 Access the `GOA webpage <https://archive.gemini.edu/>`_, put the data label
 **GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
 button in the middle of the page. The page will refresh and display a table with
@@ -52,22 +55,22 @@ totalling 0.05 Gb*. Click on it to download a `.tar` file with all the data.
 
 Calibrations
 ------------
-Matching calibration files can be obtained by  clicking on the *Load Associated
-Calibrations* tab.  For this data, we need the 120-second darks (for 120-second
-science data).   We also need the Y-band flats; the series there is collection
+Matching calibration files can be obtained by clicking on the *Load Associated
+Calibrations* tab. For this data, we need the 120-second darks (for 120-second
+science data). We also need the Y-band flats; the series there is collection
 of lamp-on and lamp-off flats.
 
 Select the darks and the Y-band flats at the top of the returned list by
-checking the little boxes on the left.  Scroll down and click "Download
+checking the little boxes on the left. Scroll down and click "Download
 Marked Files"
 
 Finally, you will need a set of short dark frames in order to create the Bad
 Pixel Masks (BPM). For that, we will have to perform a search ourselves in the
 archive.
 
-First remove the Program ID.  The science data was obtained on November 21,
-2013.  So, we set the "UTC Date" to a range of a few days around the
-observations date.  This and other settings are:
+First remove the Program ID. The science data was obtained on November 21,
+2013. So, we set the "UTC Date" to a range of a few days around the
+observations date. This and other settings are:
 
 - Program ID: <empty>
 - UTC Date: 20131120-20131122
@@ -75,9 +78,9 @@ observations date.  This and other settings are:
 - Obs. Type: Dark
 - Filter: Any
 
-Hit the "Search" button.  You can sort the list by exposure time by clicking
-on header of the "ExpT" column.  Several 2-second darks show up.  Some were
-even taken on the same date as the science data (20131121).  Select those,
+Hit the "Search" button. You can sort the list by exposure time by clicking
+on header of the "ExpT" column. Several 2-second darks show up. Some were
+even taken on the same date as the science data (20131121). Select those,
 and download them as we did before for the other calibrations.
 
 
@@ -96,5 +99,5 @@ downloaded the data from the `Gemini Archive <https://archive.gemini.edu/searchf
 .. note:: If you are using the manually selected data to run the tutorial,
      please remember to put all the data in a directory called ``playdata``,
      and create a parallel directory of running the tutorial called
-     ``playground``.  The tutorial makes assumption as to where everything
+     ``playground``. The tutorial makes assumption as to where everything
      is located.

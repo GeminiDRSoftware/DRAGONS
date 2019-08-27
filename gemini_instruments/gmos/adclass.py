@@ -590,11 +590,12 @@ class AstroDataGmos(AstroDataGemini):
             else:
                 gain_settings = [_get_setting(g) for g in gain]
 
-        # Check that all gain settings are the same if multiple extensions
+        # If multiple extensions, only allow one gain setting to be discrepant
         if isinstance(gain_settings, list):
-            if gain_settings != gain_settings[::-1]:
-                return None
-            return gain_settings[0]
+            for item in gain_settings:
+                if gain_settings.count(item) >= len(self) - 1:
+                    return item
+            return None
         else:
             return gain_settings
 

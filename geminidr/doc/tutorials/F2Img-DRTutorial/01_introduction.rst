@@ -50,8 +50,10 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package (KL??? name of the package, with URL).  Download it and unpack it
+package (KL??? name of the package, with URL). Download it and unpack it
 somewhere convenient.
+
+.. todo:: add name of and URL to the data package
 
 .. highlight:: bash
 
@@ -64,7 +66,7 @@ The datasets are found in the subdirectory ``f2img_tutorial/playdata``, and we
 will work in the subdirectory named ``f2img_tutorial/playground``.
 
 .. note:: All the raw data can also be downloaded from the Gemini Observatory
-          Archive.  Using the tutorial data package is probably more convenient
+          Archive. Using the tutorial data package is probably more convenient
           but if you really want to learn how to search for and retrieve the
           data yourself, see the step-by-step instructions in the appendix,
           :ref:`goadownload`.
@@ -80,7 +82,7 @@ Dither-on-target
 This is a Flamingos-2 imaging observation of a star and distant galaxy field
 with dither on target for sky subtraction.
 
-the calibrations we use in this example include:
+The calibrations we use in this example include:
 
 * Darks for the science frames.
 * Flats, as a sequence of lamps-on and lamps-off exposures.
