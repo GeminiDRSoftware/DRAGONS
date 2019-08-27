@@ -66,31 +66,9 @@ def take_along_axis(arr, ind, axis):
             inds.append(np.arange(n).reshape(ind_shape_dim))
     return arr[tuple(inds)]
 
-# This code was shamelessly stolen from StackOverflow (user Ants Aasma)
-# It allows a decorator to be used on a function *or* a method, hiding
-# the class instance from the decorator, which can simply assume it's been
-# given a function. This is important for us because we plan to have our
-# averaging functions as __call__ methods of classes.
-class _MethodDecoratorAdaptor(object):
-    def __init__(self, decorator, func):
-        self.decorator = decorator
-        self.func = func
-    def __call__(self, *args, **kwargs):
-        return self.decorator(self.func)(*args, **kwargs)
-    def __get__(self, instance, owner):
-        return self.decorator(self.func.__get__(instance, owner))
-
-def auto_adapt_to_methods(decorator):
-    """Allows you to use the same decorator on methods and functions,
-    hiding the self argument from the decorator."""
-    def adapt(func):
-        return _MethodDecoratorAdaptor(decorator, func)
-    return adapt
-
-@auto_adapt_to_methods
 def unpack_nddata(fn):
     """
-    This decorator wraps a function that takes a sequence of NDAstroData
+    This decorator wraps a method that takes a sequence of NDAstroData
     objects and stacks them into data, mask, and variance arrays of one
     higher dimension, which get passed to the wrapped function.
     It also applies a set of scale factors and/or offsets, if supplied,
@@ -98,7 +76,7 @@ def unpack_nddata(fn):
     The returned arrays are then stuffed back into an NDAstroData object.
     """
     @wraps(fn)
-    def wrapper(sequence, scale=None, zero=None, *args, **kwargs):
+    def wrapper(instance, sequence, scale=None, zero=None, *args, **kwargs):
         nddata_list = list(sequence)
         if scale is None:
             scale = [1.0] * len(nddata_list)
@@ -123,7 +101,7 @@ def unpack_nddata(fn):
             variance = np.empty_like(data)
             for i, (ndd, s, z) in enumerate(zip(nddata_list, scale, zero)):
                 variance[i] = ndd.variance * s*s
-        out_data, out_mask, out_var = fn(data=data, mask=mask,
+        out_data, out_mask, out_var = fn(instance, data=data, mask=mask,
                                     variance=variance, *args, **kwargs)
 
         # Can't instantiate NDAstroData with variance
