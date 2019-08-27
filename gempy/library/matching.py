@@ -623,41 +623,50 @@ class KDTreeFitter(Fitter):
 
     def _kdstat(self, tree, updated_model, in_coords, in_weights, ref_weights):
         """
-        Compute the statistic for transforming coordinates onto a set of reference
-        coordinates. This uses mathematical calulations and is not pixellated like
-        the landscape-array methods.
+        Compute the statistic for transforming coordinates onto a set of
+        reference coordinates. This uses mathematical calculations and is not
+        pixellated like the landscape-array methods.
 
         Parameters
         ----------
-        tree: KDTree
+        tree: :class:`~scipy.spatial.KDTree`
             a KDTree made from the reference coordinates
-        updated_model: Model
+
+        updated_model: :class:`~astropy.modeling.FittableModel`
             transformation (input -> reference) being investigated
-        x, y: float arrays
-            input x, y coordinates
-        sigma: float
-            standard deviation of Gaussian (in pixels) used to represent each source
-        maxsig: float
-            maximum number of standard deviations of Gaussian extent
+
+        in_coords: list or :class:`~numpy.ndarray`
+            List or array with the input coordinates in 1D or 2D.
+
+        in_weights : list or :class:`~numpy.ndarray`
+            List or array with the input weights (or fluxes/intensities) in
+            1D or 2D. The size and dimension should match `in_coords`.
+
+        ref_weights : list or :class:`~numpy.ndarray`
+            List or array with the reference weights (or fluxes/intensities) in
+            1D or 2D. Only the dimension should match `in_coords`.
 
         Returns
         -------
-        float:
-            statistic representing quality of fit to be minimized
+        float : Statistic representing quality of fit to be minimized
         """
         out_coords = updated_model(*in_coords)
+
         if len(in_coords) == 1:
             out_coords = (out_coords,)
+
         dist, idx = tree.query(list(zip(*out_coords)), k=self.k,
                                distance_upper_bound=self.maxsep)
+
         if self.k > 1:
-            sum = np.sum(in_wt*ref_weights[i]*self.proximity_function(d)
-                         for in_wt, dd, ii in zip(in_weights, dist, idx)
-                         for d, i in zip(dd, ii))
+            sum_ = np.sum([in_wt * ref_weights[i] * self.proximity_function(d)
+                          for in_wt, dd, ii in zip(in_weights, dist, idx)
+                          for d, i in zip(dd, ii)])
         else:
-            sum = np.sum(in_wt*ref_weights[i]*self.proximity_function(d)
-                         for in_wt, d, i in zip(in_weights, dist, idx))
-        return -sum  # to minimize
+            sum_ = np.sum([in_wt * ref_weights[i] * self.proximity_function(d)
+                          for in_wt, d, i in zip(in_weights, dist, idx)])
+
+        return -sum_  # to minimize
 
 
 def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
