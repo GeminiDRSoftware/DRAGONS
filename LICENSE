@@ -1,12 +1,12 @@
 The following copyright license applies to the original work of AURA and
-its contributors in the Gemini Python package. Some third-party components are
-included under their own licenses (see the directory extern_licenses). The
-disclaimer in the final paragraph below extends to all the software
-provided with Gemini Python, whether written by AURA or third parties.
+its contributors in DRAGONS. Some third-party components are included under
+their own licenses (see the directory extern_licenses). The disclaimer in
+the final paragraph below extends to all the software provided with DRAGONS,
+whether written by AURA or third parties.
 
 -----
 
-Copyright (C) 2014-2018 Association of Universities for Research in Astronomy, Inc. (AURA)
+Copyright (C) 2014-2019 Association of Universities for Research in Astronomy, Inc. (AURA)
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
