@@ -331,7 +331,7 @@ the command line.
 
 ::
 
-    reduce @target.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits skyCorrect:scale=False
+    reduce @target.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits skyCorrect:scale_sky=False
 
 .. image:: _graphics/extended_before.png
    :scale: 60%

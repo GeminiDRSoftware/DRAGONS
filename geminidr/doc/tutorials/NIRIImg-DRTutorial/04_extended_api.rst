@@ -437,7 +437,7 @@ local calibration database. Again, the user BPM needs to be specified as the
     reduce_target = Reduce()
     reduce_target.files.extend(target)
     reduce_target.uparms = [('addDQ:user_bpm', bpm)]
-    reduce_target.uparms.append(('skyCorrect:scale', False))
+    reduce_target.uparms.append(('skyCorrect:scale_sky', False))
     reduce_target.runr()
 
 .. image:: _graphics/extended_before.png
