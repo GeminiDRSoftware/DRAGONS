@@ -25,7 +25,9 @@ from astropy.stats import sigma_clip
 
 from datetime import datetime
 from .nddops import NDStacker
-#-----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
 # NEW MODEL CLASSES
 
 class Pix2Sky(FittableModel):
@@ -48,6 +50,7 @@ class Pix2Sky(FittableModel):
     origin: int (0 or 1)
         value for WCS origin parameter
     """
+
     def __init__(self, wcs, x_offset=0.0, y_offset=0.0, factor=1.0,
                  angle=0.0, origin=1, **kwargs):
         self._wcs = wcs.deepcopy()
@@ -56,8 +59,8 @@ class Pix2Sky(FittableModel):
         super(Pix2Sky, self).__init__(x_offset, y_offset, factor, angle,
                                       **kwargs)
 
-    inputs = ('x','y')
-    outputs = ('x','y')
+    inputs = ('x', 'y')
+    outputs = ('x', 'y')
     x_offset = Parameter()
     y_offset = Parameter()
     factor = Parameter()
@@ -65,9 +68,9 @@ class Pix2Sky(FittableModel):
 
     def evaluate(self, x, y, x_offset, y_offset, factor, angle):
         # x_offset and y_offset are actually arrays in the Model
-        #temp_wcs = self.wcs(x_offset[0], y_offset[0], factor, angle)
+        # temp_wcs = self.wcs(x_offset[0], y_offset[0], factor, angle)
         temp_wcs = self.wcs
-        return temp_wcs.all_pix2world(x, y, self._origin) if self._direction>0 \
+        return temp_wcs.all_pix2world(x, y, self._origin) if self._direction > 0 \
             else temp_wcs.all_world2pix(x, y, self._origin)
 
     @property
@@ -109,10 +112,12 @@ class Shift2D(FittableModel):
 
     @staticmethod
     def evaluate(x, y, x_offset, y_offset):
-        return x+x_offset, y+y_offset
+        return x + x_offset, y + y_offset
+
 
 class Scale2D(FittableModel):
     """2D scaling"""
+
     def __init__(self, factor=1.0, **kwargs):
         super(Scale2D, self).__init__(factor, **kwargs)
 
@@ -123,15 +128,17 @@ class Scale2D(FittableModel):
     @property
     def inverse(self):
         inv = self.copy()
-        inv.factor = 1.0/self.factor
+        inv.factor = 1.0 / self.factor
         return inv
 
     @staticmethod
     def evaluate(x, y, factor):
-        return x*factor, y*factor
+        return x * factor, y * factor
+
 
 class Rotate2D(FittableModel):
     """Rotation; Rotation2D isn't fittable"""
+
     def __init__(self, angle=0.0, **kwargs):
         super(Rotate2D, self).__init__(angle, **kwargs)
 
@@ -156,8 +163,9 @@ class Rotate2D(FittableModel):
         x.shape = y.shape = orig_shape
         return x, y
 
+
 class UnivariateSplineWithOutlierRemoval(object):
-    def __new__(self, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
+    def __new__(self, x, y, order=None, s=None, w=None, bbox=[None] * 2, k=3,
                 ext=0, check_finite=False, outlier_func=sigma_clip,
                 niter=3, grow=0, **outlier_kwargs):
         """
@@ -223,7 +231,7 @@ class UnivariateSplineWithOutlierRemoval(object):
         iter = 0
         full_mask = mask  # Will include pixels masked because of "grow"
         start = datetime.now()
-        while iter < niter+1:
+        while iter < niter + 1:
             last_mask = full_mask
 
             if order is not None:
@@ -243,12 +251,12 @@ class UnivariateSplineWithOutlierRemoval(object):
                                   *spline_args, w=None if w is None else w[~full_mask], **spline_kwargs)
             except ValueError as e:
                 raise e
-            #print(iter, datetime.now()-start)
+            # print(iter, datetime.now()-start)
             spline_y = instance(x)
-            #print(iter, datetime.now()-start)
-            #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
-            #mask = masked_residuals.mask
-            d, mask, v = NDStacker.sigclip(spline_y-y, mask=mask, variance=None, **outlier_kwargs)
+            # print(iter, datetime.now()-start)
+            # masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
+            # mask = masked_residuals.mask
+            d, mask, v = NDStacker.sigclip(spline_y - y, mask=mask, variance=None, **outlier_kwargs)
             mask = mask.astype(bool)
             if grow > 0:
                 maskarray = np.zeros((grow * 2 + 1, len(y)), dtype=bool)
@@ -260,7 +268,7 @@ class UnivariateSplineWithOutlierRemoval(object):
                 full_mask = mask | grow_mask
             else:
                 full_mask = mask
-            #print(iter, datetime.now()-start)
+            # print(iter, datetime.now()-start)
 
             # Check if the mask is unchanged
             if not np.logical_or.reduce(last_mask ^ full_mask):
@@ -272,7 +280,8 @@ class UnivariateSplineWithOutlierRemoval(object):
         instance.data = spline_y
         return instance
 
-#-----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 # MODEL -> DICT FUNCTIONS
 #
 def chebyshev_to_dict(model):
@@ -313,6 +322,7 @@ def chebyshev_to_dict(model):
         model_dict[name] = getattr(model, name).value
 
     return model_dict
+
 
 def dict_to_chebyshev(model_dict):
     """
@@ -364,7 +374,7 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None):
         required maximum rms in input space (i.e., pixels)
     """
     order = model.degree
-    max_order = order if rms is None else order+2
+    max_order = order if rms is None else order + 2
     incoords = np.arange(*model.domain, sampling)
     outcoords = model(incoords)
     while order <= max_order:
