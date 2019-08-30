@@ -36,9 +36,15 @@ class AstroDataGmos(AstroDataGemini):
         if self.phu.get('OBSTYPE') == 'ARC':
             return TagSet(['ARC', 'CAL'])
 
+    def _tag_is_bias(self):
+        if self.phu.get('OBSTYPE') == 'BIAS':
+            return True
+        else:
+            return False
+
     @astro_data_tag
     def _tag_bias(self):
-        if self.phu.get('OBSTYPE') == 'BIAS':
+        if self._tag_is_bias():
             return TagSet(['BIAS', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
@@ -80,6 +86,9 @@ class AstroDataGmos(AstroDataGemini):
         #if not self._tag_is_spect():
         #    return
 
+        if self._tag_is_bias():
+            return
+
         mapping = {
             'IFU-B': 'ONESLIT_BLUE',
             'IFU-B-NS': 'ONESLIT_BLUE',
@@ -119,6 +128,9 @@ class AstroDataGmos(AstroDataGemini):
         #if not self._tag_is_spect():
         #    return
 
+        if self._tag_is_bias():
+            return
+
         if self.phu.get('MASKTYP') == 1 and self.phu.get('MASKNAME', '').endswith('arcsec'):
             return TagSet(['LS'])
 
@@ -126,6 +138,9 @@ class AstroDataGmos(AstroDataGemini):
     def _tag_mos(self):
         #if not self._tag_is_spect():
         #    return
+
+        if self._tag_is_bias():
+            return
 
         mskt = self.phu.get('MASKTYP')
         mskn = self.phu.get('MASKNAME', '')
