@@ -928,6 +928,8 @@ class FitsProvider(DataProvider):
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
         else:
+            if custom_header is not None:
+                pixim.meta['header'] = custom_header
             header = pixim.meta['header']
             nd = pixim
             currname = header.get('EXTNAME')
