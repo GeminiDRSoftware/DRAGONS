@@ -460,6 +460,8 @@ class FitsProviderProxy(DataProvider):
         self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
         return self
 
+    __itruediv__ = __idiv__
+
     def __rdiv__(self, operand):
         self._provider._oper(self._provider._rdiv, operand, self._mapping)
         return self
