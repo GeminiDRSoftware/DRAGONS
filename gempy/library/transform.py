@@ -1331,6 +1331,31 @@ class AstroDataGroup(DataGroup):
 
     def transform(self, attributes=None, order=1, subsample=1, threshold=0.01,
                   conserve=False, parallel=False, process_objcat=False):
+        """
+        This method
+
+        Parameters
+        ----------
+        attributes: list-like
+            attributes to be transformed (None => all)
+        order: int
+            order of interpolation
+        subsample: int
+            if >1, will transform onto finer pixel grid and block-average down
+        threshold: float
+            for transforming the DQ plane, output pixels larger than this value
+            will be flagged as "bad"
+        conserve: bool
+            conserve flux rather than interpolate?
+        parallel: bool
+            use parallel processing to speed up operation?
+        process_objcat: bool
+            merge input OBJCATs into output AD instance?
+
+        Returns
+        -------
+
+        """
         if attributes is None:
             attributes = [attr for attr in self.array_attributes
                           if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
@@ -1461,6 +1486,57 @@ class AstroDataGroup(DataGroup):
                 objcat = table.vstack(tables, metadata_conflicts='silent')
                 objcat['NUMBER'] = np.arange(len(objcat)) + 1
                 ad[0].OBJCAT = objcat
+
+
+    def inverse_transform(self, admos, attributes=None):
+        """
+        The method performs the inverse transformation, which includes breaking
+        the input file into multiple extensions.
+
+        Parameters
+        ----------
+        admos: AstroData
+            an AD object compatible with the output of self.transform()
+        attributes: list
+
+        Returns
+        -------
+        AstroData: a multi-extension AD instance from unmosaicking the input
+        """
+        if len(admos) != 1:
+            raise ValueError("AstroData instance must have only one extension")
+        if admos[0].shape != self.output_shape:
+            raise ValueError("AstroData shape incompatible with transform")
+
+        adout = astrodata.create(admos.phu)
+        adout.orig_filename = admos.orig_filename
+
+        for arr, t in self:
+            # Since the origin shift is the last thing applied before
+            # transforming, it must be the first thing in the inverse
+            t_inverse = t.inverse
+            t_inverse.prepend(reduce(Model.__and__,
+                                     [models.Shift(o) for o in self.origin[::-1]]))
+            adg = self.__class__(admos, [t_inverse])
+            # Transformations are interpolations on the input pixel grid. So
+            # pixels are typically lost around the edges and the footprint is
+            # smaller than the input image's footprint. So we force the shape
+            # of the inverse-transformed image to be that of the input array
+            # and only take the region starting from (0,0) in the output frame
+            adg.origin = (0, 0)
+            adg.output_shape = arr.shape
+            block = adg.transform(attributes=attributes)
+
+            # Now we split the block into its constituent extensions
+            for ext, corner in zip(arr, arr.corners):
+                slice_ = tuple(slice(start, start+length)
+                               for start, length in zip(corner, ext.shape))
+                # We need to deepcopy here to protect the header, because of
+                # the way _append_nddata behaves
+                ndd = copy.deepcopy(block[0].nddata[slice_])
+                adout.append(ndd, header=ext.hdr, reset_ver=False)
+
+        return adout
 
 #-----------------------------------------------------------------------------
 def create_mosaic_transform(ad, geotable):
