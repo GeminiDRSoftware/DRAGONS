@@ -4,13 +4,25 @@
  *
  * by Bruno C. Quint
  *
- * Required Plug-ins:
+ *
+ * Required Plug-ins
+ * -----------------
+ *
  * - CloudBees File Leak Detector
  * - Cobertura Plug-in
  * - Warnings NG
+ *
+ *
+ * Shared Libraries
+ * ----------------
+ *
+ * This Jenkins Pipeline uses Shared Libraries that live inside the
+ * `bquint/dragons_ci` repository. Make sure you set up it first before running
+ * it.
+ *
  */
 
-@Library('bquint-shared-libs@master') _
+@Library('dragons_ci@master') _
 
 pipeline {
 
