@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source activate ${BUILD_TAG}
+source activate ${CONDA_ENV_NAME}
 
 pydocstyle --add-ignore D400,D401,D205,D105,D105 \
     astrodata \
