@@ -324,10 +324,42 @@ class Spect(PrimitivesBASE):
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         This primitive determines the wavelength solution for an ARC and
-        stores it as an attached WAVECAL table. 2D input images are converted
-        to 1D by collapsing a slice of the image along the dispersion
-        direction, and peaks are identified. These are then matched to an
-        arc line list, using the KDTreeFitter.
+        stores it as an attached WAVECAL table.
+
+        2D input images are converted to 1D by collapsing a slice of the image
+        along the dispersion direction, and peaks are identified. These are then
+        matched to an arc line list, using the KDTreeFitter.
+
+        For each :class:`~astrodata.AstroData` object and for each extension
+        within it, this primitive contains the following bigger steps:
+
+        - Read Arc Lines;
+
+        - Extract 1D spectrum;
+
+        - Mask data skipping non-linear or saturated lines;
+
+        - Use known central wavelength to calculate wavelength range and dispersion;
+
+        - Estimate line widths to be used on peak detection;
+
+        - Detect peaks using Continuous Wavelet Transform;
+
+        - Create weight dictionary with different types of weights (intensity/flux);
+
+        - Create iteration sequence with different weights methods;
+
+        - Create 0th iteration :class:`~astropy.modeling.models.Chebyshev1D`
+          model;
+
+        - Fit iteration using :class:`~gempy.library.matching.KDTreeFitter`;
+
+        - Matching using :class:`~gempy.library.matching.Chebyshev1DMatchBox`;`
+
+        - Convert model into dictionary and, then, into a Table;
+
+        - Store solution as a Table.
+
 
         Parameters
         ----------
@@ -349,6 +381,12 @@ class Spect(PrimitivesBASE):
             how to weight the detected peaks
         nbright: int
             number of brightest lines to cull before fitting
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            List with updated :class:`~astrodata.AstroData` objects with the
+            `.WAVECAL` attribute on each appropriated extension.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
