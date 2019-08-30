@@ -10,21 +10,28 @@ To run:
        Eg. /net/chara/data2/pub/gempython_testdata/
     2) From the ??? (location): pytest -v --capture=no
 """
+
+# TODO @bquint: clean up these tests
+
 import os
+import pytest
+
 import astrodata
 import gemini_instruments
-from gempy.utils import logutils
 
-from . import ad_compare
+# from . import ad_compare
 from geminidr.niri.primitives_niri_image import NIRIImage
+from gempy.utils import logutils
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_bookkeeping.log'
+
 
 class TestBookkeeping:
     """
     Suite of tests for the functions in the primitives_standardize module.
     """
+
     @classmethod
     def setup_class(cls):
         """Run once at the beginning."""
@@ -48,6 +55,7 @@ class TestBookkeeping:
         """Run once after every test."""
         pass
 
+    @pytest.mark.skip("Review me")
     def test_addToList(self):
         filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                      for i in range(104, 109)]
@@ -66,15 +74,19 @@ class TestBookkeeping:
         assert len(p.stacks) == 1
         assert len(p.stacks[p.stacks.keys()[0]]) == 5
 
+    @pytest.mark.skip("Review me")
     def test_getList(self):
         pass
 
+    @pytest.mark.skip("Review me")
     def test_showInputs(self):
         pass
 
+    @pytest.mark.skip("Review me")
     def test_showList(self):
         pass
 
+    @pytest.mark.skip("Review me")
     def test_writeOutputs(self):
         filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)
                      for i in range(104, 106)]
@@ -85,7 +97,7 @@ class TestBookkeeping:
         # Check renamed files are on disk and the filenames have been
         # changed for the adinputs
         for f, ad in zip(filenames, p.streams['main']):
-            newfilename = 'test'+f.replace('flatCorrected', 'blah')
+            newfilename = 'test' + f.replace('flatCorrected', 'blah')
             assert os.path.exists(newfilename)
             os.remove(newfilename)
             assert newfilename == ad.filename

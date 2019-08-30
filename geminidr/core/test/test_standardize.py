@@ -10,8 +10,12 @@ To run:
        Eg. /net/chara/data2/pub/gempython_testdata/
     2) From the ??? (location): pytest -v --capture=no
 """
-import os
+# TODO @bquint: clean up these tests
+
 import numpy as np
+import os
+import pytest
+
 import astrodata
 import gemini_instruments
 from gempy.utils import logutils
@@ -22,10 +26,12 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_standardize.log'
 
+
 class TestStandardize:
     """
     Suite of tests for the functions in the primitives_standardize module.
     """
+
     @classmethod
     def setup_class(cls):
         """Run once at the beginning."""
@@ -49,36 +55,42 @@ class TestStandardize:
         """Run once after every test."""
         pass
 
+    @pytest.mark.skip("Review me")
     def test_addDQ(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_prepared.fits'))
+                                         'N20070819S0104_prepared.fits'))
         p = NIRIImage([ad])
         ad = p.addDQ()[0]
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_dqAdded.fits'))
+                                           'N20070819S0104_dqAdded.fits'))
 
+    @pytest.mark.skip("Review me")
     def test_addIllumMaskToDQ(self):
         pass
 
+    @pytest.mark.skip("Review me")
     def test_addMDF(self):
         pass
 
+    @pytest.mark.skip("Review me")
     def test_validateData(self):
         # This is taken care of by prepare
         pass
 
+    @pytest.mark.skip("Review me")
     def test_addVAR(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_ADUToElectrons.fits'))
+                                         'N20070819S0104_ADUToElectrons.fits'))
         p = NIRIImage([ad])
         ad = p.addVAR(read_noise=True, poisson_noise=True)[0]
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_varAdded.fits'))
+                                           'N20070819S0104_varAdded.fits'))
 
+    @pytest.mark.skip("Review me")
     def test_prepare(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104.fits'))
+                                         'N20070819S0104.fits'))
         p = NIRIImage([ad])
         ad = p.prepare()[0]
         assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
-                                'N20070819S0104_prepared.fits'))
+                                           'N20070819S0104_prepared.fits'))
