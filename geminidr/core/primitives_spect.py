@@ -76,6 +76,7 @@ class Spect(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         spatial_order = params["spatial_order"]
