@@ -64,6 +64,7 @@ We first import the necessary modules and classes:
     from recipe_system import cal_service
     from recipe_system.reduction.coreReduce import Reduce
 
+
 Importing ``print_function`` is for compatibility with the Python 2.7 print
 statement. If you are working with Python 3, it is not needed, but importing
 it will not break anything.
@@ -155,7 +156,7 @@ FITS files in the directory ``../playdata/``.
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names
-and is an optional step. Before you carry on, you might want want to do
+and is an optional step. Before you carry on, you might want to do
 ``print(all_files)`` to check if they were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
@@ -231,6 +232,10 @@ Finally, the science data can be selected using:
         [],
         dataselect.expr_parser('(observation_class=="science" and filter_name=="Y")')
     )
+
+The filter name is not really needed in this case since there are only Y-band
+frames, but it shows how you could have two selection criteria in
+the expression.
 
 
 .. _api_process_dark_files:

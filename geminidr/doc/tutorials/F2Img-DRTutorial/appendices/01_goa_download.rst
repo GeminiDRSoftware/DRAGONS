@@ -1,4 +1,4 @@
-.. goadownload.rst
+.. 01_goa_download.rst
 
 .. _goadownload:
 

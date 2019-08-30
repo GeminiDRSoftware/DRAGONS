@@ -12,8 +12,8 @@ using `DRAGONS <https://dragons.readthedocs.io/>`_.
 
 The next two sections explain what are the required software and the data set
 that we use throughout the tutorial.
-:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a q
-uick example on how to reduce data using the DRAGONS command line tools.
+:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a
+quick example on how to reduce data using the DRAGONS command line tools.
 :ref:`Chapter 3: Reduction with API <api_data_reduction>` shows how we can
 reduce the data using DRAGONS packages from within Python.
 
