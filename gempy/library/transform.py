@@ -1488,7 +1488,8 @@ class AstroDataGroup(DataGroup):
                 ad[0].OBJCAT = objcat
 
 
-    def inverse_transform(self, admos, attributes=None):
+    def inverse_transform(self, admos, attributes=None, order=1, subsample=1,
+                          threshold=0.01, conserve=False):
         """
         The method performs the inverse transformation, which includes breaking
         the input file into multiple extensions.
@@ -1497,7 +1498,17 @@ class AstroDataGroup(DataGroup):
         ----------
         admos: AstroData
             an AD object compatible with the output of self.transform()
-        attributes: list
+        attributes: list-like
+            attributes to be transformed (None => all)
+        order: int
+            order of interpolation
+        subsample: int
+            if >1, will transform onto finer pixel grid and block-average down
+        threshold: float
+            for transforming the DQ plane, output pixels larger than this value
+            will be flagged as "bad"
+        conserve: bool
+            conserve flux rather than interpolate?
 
         Returns
         -------
@@ -1525,7 +1536,9 @@ class AstroDataGroup(DataGroup):
             # and only take the region starting from (0,0) in the output frame
             adg.origin = (0, 0)
             adg.output_shape = arr.shape
-            block = adg.transform(attributes=attributes)
+            block = adg.transform(attributes=attributes, order=order,
+                                  subsample=subsample, threshold=threshold,
+                                  conserve=conserve)
 
             # Now we split the block into its constituent extensions
             for ext, corner in zip(arr, arr.corners):
