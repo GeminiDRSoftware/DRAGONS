@@ -46,8 +46,12 @@ def prepare_for_wavelength_calibration(p):
 @pytest.mark.parametrize("input_file", ["GMOS/GN-2017A-FT-19/N20170530S0006.fits"])
 def test_determine_wavelength_solution(input_file, path_to_inputs, path_to_outputs, path_to_refs):
     """
-    Regression test for determine wavelength solution. It all assert tests pass,
-    the outputs overwrite the reference.
+    Regression test for determine wavelength solution. It checks if the
+    :class:`~astrodata.AstroData` object contains extension(s) with the "WAVECAL"
+    attribute and compare them.
+
+    It processes an input raw file, writes the processed data to an output file
+    and compare the file with a reference file.
 
     Parameters
     ----------
@@ -95,26 +99,20 @@ def test_determine_wavelength_solution(input_file, path_to_inputs, path_to_outpu
     p.determineWavelengthSolution()
     p.writeOutputs(outfilename=_output, overwrite=True)
 
-    print(_output)
     output_ad = astrodata.open(_output)
-
-    for ext in output_ad:
-        assert hasattr(ext, 'WAVECAL')
-
-    reference_ad = astrodata.open(_reference) \
+    reference_ad = astrodata.open(_reference)
 
     ad_test.assert_same_class(output_ad, reference_ad)
     ad_test.assert_wavelength_solutions_are_close(output_ad, reference_ad)
 
-    output_ad.write(filename=_reference, overwrite=True)
 
-
-# --- wip @bquint
 @pytest.mark.parametrize("input_file", ["GMOS/GN-2017A-FT-19/N20170530S0006.fits"])
 def test_determine_distortion(input_file, path_to_inputs, path_to_outputs, path_to_refs):
     """
-    Regression test for determine wavelength solution. It all assert tests pass,
-    the outputs overwrite the reference.
+    Regression test for determine distortion.
+
+    It processes an input raw file, writes the processed data to an output file
+    and compare the file with a reference file.
 
     Parameters
     ----------
@@ -165,19 +163,35 @@ def test_determine_distortion(input_file, path_to_inputs, path_to_outputs, path_
     p.determineDistortion()
     p.writeOutputs(outfilename=_output, overwrite=True)
 
-    print(_output)
     output_ad = astrodata.open(_output)
-
-    for ext in output_ad:
-        assert hasattr(ext, 'WAVECAL')
-
     reference_ad = astrodata.open(_reference)
 
     ad_test.assert_same_class(output_ad, reference_ad)
-    ad_test.assert_wavelength_solutions_are_close(output_ad, reference_ad)
     ad_test.assert_have_same_distortion(output_ad, reference_ad)
 
-    output_ad.write(filename=_reference, overwrite=True)
+
+@pytest.mark.parametrize("input_file", ["GMOS/GN-2017A-FT-19/N20170530S0006.fits"])
+def test_store_processed_arc(input_file, path_to_inputs, path_to_outputs, path_to_refs):
+    """
+    Regression test for store processed arcs.
+
+    If all assert tests pass, the outputs overwrite the reference.
+
+    Parameters
+    ----------
+    input_file : str
+        Sub-directory and file name of the input file provided by `parametrize`.
+
+    path_to_inputs : str
+        Path to input data provided by fixtures and defined in `conftest.py`.
+
+    path_to_outputs : str
+        Path to output data provided by fixtures and defined in `conftest.py`.
+
+    path_to_refs : str
+        Path to reference data provided by fixtures and defined in `conftest.py`.
+    """
+    assert True
 
 
 if __name__ == '__main__':
