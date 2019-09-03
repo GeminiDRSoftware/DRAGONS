@@ -405,6 +405,11 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     -------
     2D array: peak wavelengths and SNRs
     """
+    mask = mask if mask is not None else np.zeros_like(data, dtype=np.uint16)
+
+    if not np.issubdtype(mask.dtype, np.unsignedinteger):
+        raise TypeError("Expected input parameter 'mask' to be an array with unsigned integer. "
+                        "Found: {}".format(mask.dtype))
 
     max_width = max(widths)
     window_size = 4 * max_width + 1
@@ -431,6 +436,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
                         where=variance > 0)
     else:
         snr = wavelet_transformed_data[0]
+
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -453,9 +459,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     # Remove peaks very close to unilluminated/no-data pixels
     # (e.g., chip gaps in GMOS)
-    if mask is not None:
-        peaks = [x for x in peaks if np.sum(mask[int(x - edge):int(x + edge + 1)]
-                                            & (DQ.no_data | DQ.unilluminated)) == 0]
+    peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)] & (DQ.no_data | DQ.unilluminated)) == 0]
 
     # Clip the really noisy parts of the data before getting more accurate
     # peak positions and clip SNR again with new positions

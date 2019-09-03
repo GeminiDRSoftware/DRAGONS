@@ -21,5 +21,37 @@ def test_estimate_peak_width_with_one_line(x0, stddev):
     measured_width = tracing.estimate_peak_width(y)
     measured_stddev = measured_width / stddev_to_fwhm
 
-    assert np.testing.assert_approx_equal(measured_stddev, stddev)
+    np.testing.assert_allclose(measured_stddev, stddev, rtol=0.10)
+
+
+def test_find_peaks():
+    x = np.arange(0, 3200)
+    y = np.zeros_like(x, dtype=float)
+    n_peaks = 20
+
+    stddev = 8.
+    peaks = np.linspace(
+        x.min() + 0.05 * x.ptp(), x.max() - 0.05 * x.ptp(), n_peaks)
+
+    for x0 in peaks:
+        g = models.Gaussian1D(mean=x0, stddev=stddev)
+        y += g(x)
+
+    peaks_detected, _ = tracing.find_peaks(y, np.ones_like(y) * stddev)
+
+    np.testing.assert_allclose(peaks_detected, peaks, atol=0.5)
+
+
+def test_find_peaks_raises_typeerror_if_mask_is_wrong_type():
+    x = np.arange(0, 3200)
+
+    stddev = 8
+    x0 = x.min() + 0.5 * x.ptp()
+    g = models.Gaussian1D(mean=x0, stddev=stddev)
+    y = g(x)
+
+    mask = np.zeros_like(y)
+
+    with pytest.raises(TypeError):
+        peaks_detected, _ = tracing.find_peaks(y, np.ones_like(y) * stddev, mask=mask)
 
