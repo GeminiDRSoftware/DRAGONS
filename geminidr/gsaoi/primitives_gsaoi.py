@@ -90,7 +90,6 @@ class GSAOI(Gemini, NearIR):
                         log.stdinfo("Updating the CCDSEC for central ROI data")
 
                         for sec_name in ('array_section', 'detector_section'):
-
                             kw = ad._keyword_for(sec_name)
                             sec = getattr(ext, sec_name)()
 
@@ -100,7 +99,7 @@ class GSAOI(Gemini, NearIR):
                             y2o = y1o + 1024
 
                             secstr = "[{0}:{1},{2}:{3}]".format(
-                                sec.x1+1, sec.x2, y1o+1, y2o)
+                                sec.x1 + 1, sec.x2, y1o + 1, y2o)
 
                             ext.hdr.set(kw, secstr, self.keyword_comments[kw])
 
@@ -200,7 +199,7 @@ class GSAOI(Gemini, NearIR):
             else:
                 # Use the "standard" calculation for GSAOI:
                 dark_lim = 0.75 * (np.mean(dark_ext.data) \
-                                      + 3 * np.std(dark_ext.data))
+                                   + 3 * np.std(dark_ext.data))
 
             log.stdinfo(msg.format(dark_lim / conv, dark_lim))
 
