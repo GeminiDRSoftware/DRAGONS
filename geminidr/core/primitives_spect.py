@@ -392,6 +392,7 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
         sfx = params["suffix"]
         center = params["center"]
         nsum = params["nsum"]
@@ -436,18 +437,24 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             for ext in ad:
                 log.info("Determining wavelength solution for {}".format(ad.filename))
+
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
                     slitaxis = ext.dispersion_axis() - 1
                     direction = "row" if slitaxis == 0 else "column"
                     extraction = center or (0.5 * ext.data.shape[slitaxis])
+
                     extract_slice = slice(max(0, int(extraction - 0.5 * nsum)),
                                           min(ext.data.shape[slitaxis],
                                               int(extraction + 0.5 * nsum)))
-                    data, mask, variance = _transpose_if_needed(ext.data, ext.mask, ext.variance,
-                                                                transpose=(slitaxis == 1), section=extract_slice)
+
+                    data, mask, variance = _transpose_if_needed(
+                        ext.data, ext.mask, ext.variance,
+                        transpose=(slitaxis == 1), section=extract_slice)
+
                     log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
+
                 else:
                     data = ext.data
                     mask = ext.mask
