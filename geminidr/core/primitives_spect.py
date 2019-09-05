@@ -35,9 +35,9 @@ from recipe_system.utils.decorators import parameter_override
 @parameter_override
 class Spect(PrimitivesBASE):
     """
-    This is the class containing all of the preprocessing primitives
-    for the Spect level of the type hierarchy tree. It inherits all
-    the primitives from the level above
+    This is the class containing all of the pre-processing primitives
+    for the :class:`Spect` level of the type hierarchy tree. It inherits all
+    the primitives from :class:`geminidr.PrimitivesBASE`.
     """
     tagset = set(["GEMINI", "SPECT"])
 
@@ -47,14 +47,15 @@ class Spect(PrimitivesBASE):
 
     def determineDistortion(self, adinputs=None, **params):
         """
-        This primitives maps the distortion on a detector by tracing lines
-        perpendicular to the dispersion direction, and then fitting a
-        2D Chebyshev polynomial to the fitted coordinates in the dispersion
-        direction. The distortion map does not change the coordinates in the
-        spatial direction.
+        Maps the distortion on a detector by tracing lines perpendicular to the
+        dispersion direction. Then it fits a 2D Chebyshev polynomial to the
+        fitted coordinates in the dispersion direction. The distortion map does
+        not change the coordinates in the spatial direction.
 
         Parameters
         ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+
         suffix: str
             suffix to be added to output files
         spatial_order: int
@@ -78,6 +79,7 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         timestamp_key = self.timestamp_keys[self.myself()]
+
         sfx = params["suffix"]
         spatial_order = params["spatial_order"]
         spectral_order = params["spectral_order"]
@@ -96,6 +98,7 @@ class Spect(PrimitivesBASE):
 
                 self.viewer.display_image(ext, wcs=False)
                 self.viewer.width = 2
+
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
 
@@ -138,7 +141,9 @@ class Spect(PrimitivesBASE):
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
 
                     data, mask = _transpose_if_needed(ext.data, ext.mask,
-                                                      transpose=(dispaxis == 0), section=extract_slice)
+                                                      transpose=(dispaxis == 0),
+                                                      section=extract_slice)
+
                     data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
                     if fwidth is None:
@@ -152,10 +157,10 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("Found {} peaks".format(len(initial_peaks)))
 
                 # The coordinates are always returned as (x-coords, y-coords)
-                ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
-                                                            start=start, initial=initial_peaks, width=5, step=step,
-                                                            nsum=nsum, max_missed=max_missed,
-                                                            max_shift=max_shift, viewer=self.viewer)
+                ref_coords, in_coords = tracing.trace_lines(
+                    ext, axis=1 - dispaxis, start=start, initial=initial_peaks,
+                    width=5, step=step, nsum=nsum, max_missed=max_missed,
+                    max_shift=max_shift, viewer=self.viewer)
 
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
@@ -165,6 +170,7 @@ class Spect(PrimitivesBASE):
                 # value of the reference pixel along the dispersion axis
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                            sigma_clip, sigma=3)
+
                 m_final, _ = fit_it(m_init, *in_coords, ref_coords[1 - dispaxis])
                 m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1 - dispaxis])
 
