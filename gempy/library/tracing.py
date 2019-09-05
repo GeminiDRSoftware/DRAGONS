@@ -342,7 +342,7 @@ def estimate_peak_width(data, min=2, max=8):
     min: int
         minimum plausible peak width
     max: int
-        maximum plausible peak width
+        maximum plausible peak width (not inclusive)
 
     Returns
     -------

@@ -10,18 +10,19 @@ from astropy.modeling import models
 from gempy.library import tracing
 
 
-@pytest.mark.xfail(reason='Check if test is correct')
-@pytest.mark.parametrize("x0, stddev", [(1600, 8)])
-def test_estimate_peak_width_with_one_line(x0, stddev):
+@pytest.mark.parametrize("x0, fwhm", [(1600, 2), (1600, 4), (1600, 8)])
+def test_estimate_peak_width_with_one_line(x0, fwhm):
+
+    stddev_to_fwhm = 2 * np.sqrt(2 * np.log(2))
+    stddev = fwhm / stddev_to_fwhm
+
     x = np.arange(0, 3200)
     g = models.Gaussian1D(mean=x0, stddev=stddev)
     y = g(x)
 
-    stddev_to_fwhm = 2 * np.sqrt(2 * np.log(2))
-    measured_width = tracing.estimate_peak_width(y)
-    measured_stddev = measured_width / stddev_to_fwhm
+    measured_fwhm = tracing.estimate_peak_width(y)
 
-    np.testing.assert_allclose(measured_stddev, stddev, rtol=0.10)
+    np.testing.assert_allclose(fwhm, measured_fwhm, rtol=0.10)
 
 
 def test_find_peaks():
