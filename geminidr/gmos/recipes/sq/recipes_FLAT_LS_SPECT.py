@@ -10,13 +10,13 @@ def reduce(p):
     p.addDQ(static_bpm=None)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    #p.biasCorrect()
+    p.biasCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
-    #p.stackFlats()
+    p.stackFrames()
     p.normalizeFlat()
-    #p.makeIRAFCompatible()
-    #p.storeProcessedFlat()
-    p.writeOutputs()
+    p.thresholdFlatfield()
+    p.makeIRAFCompatible()
+    p.storeProcessedFlat()
 
 _default = reduce

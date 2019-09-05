@@ -76,7 +76,9 @@ class linearizeSpectraConfig(config.Config):
 
 class normalizeFlatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 10, min=1)
+    center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 20, min=1)
 
 class traceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)

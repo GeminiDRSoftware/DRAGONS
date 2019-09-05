@@ -8,7 +8,8 @@ from . import parameters_spect
 import os
 
 import numpy as np
-from scipy import spatial, optimize, interpolate
+from numpy.ma.extras import _ezclump
+from scipy import spatial, optimize
 from importlib import import_module
 
 from astropy.modeling import models, fitting
@@ -27,6 +28,7 @@ import astrodata
 from astrodata import NDAstroData
 
 from datetime import datetime
+from copy import deepcopy
 
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
@@ -250,7 +252,7 @@ class Spect(PrimitivesBASE):
                 continue
 
             # Read all the arc's distortion maps. Do this now so we only have
-            # one block of reading anc verifying them
+            # one block of reading and verifying them
             distortion_models = []
             for ext in arc:
                 fitcoord = ext.FITCOORD
@@ -283,8 +285,10 @@ class Spect(PrimitivesBASE):
                 else:
                     # Single-extension AD, with single Transform
                     adg = transform.AstroDataGroup(ad, [transform.Transform(m_ident)])
+                    print(ad[0].data.mean())
 
                 ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
+                print(ad_out[0].data.mean())
                 try:
                     ad_out[0].WAVECAL = arc[0].WAVECAL
                 except AttributeError:
@@ -395,7 +399,7 @@ class Spect(PrimitivesBASE):
                     data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
                     log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                                 format(direction, extract_slice.start + 1, extract_slice.stop))
-               else:
+                else:
                     data = ext.data
                     mask = ext.mask
                     variance = ext.variance
@@ -1002,17 +1006,29 @@ class Spect(PrimitivesBASE):
 
     def normalizeFlat(self, adinputs=None, **params):
         """
-        This primitive takes a spectroscopic flatfield and fits a 2D surface
-        to the image.
+        This primitive normalizes a spectroscopic flatfield, by fitting
+        a cubic spline along the dispersion direction of an averaged
+        combination of rows/columns (by default, in the center of the
+        spatial direction). Each row/column is then divided by this spline.
+
+        For multi-extension AstroData objects of MOS or XD, each extension
+        is treated separately. For other multi-extension data,
+        mosaicDetectors() is called to produce a single extension, and the
+        spline fitting is performed with variable scaling parameters for
+        each detector (identified within the mosaic from groups of DQ.no_data
+        pixels). The spline fit is calculated in the mosaicked frame but it
+        is evaluated for each pixel in each unmosaicked detector, so that
+        the resultant flatfield always has the same format (i.e., number of
+        extensions and their shape) as the input frame.
 
         Parameters
         ----------
         suffix: str
             suffix to be added to output files
-        sampling: int
-            pixel sampling
-        spatial_order: int
-            order of fit in spatial direction
+        center: int/None
+            central row/column for 1D extraction (None => use middle)
+        nsum: int
+            number of rows/columns around center to combine
         spectral_order: int
             order of fit in spectral direction
         """
@@ -1020,33 +1036,77 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-
-        # Do a bit of sanity checking first
-        if len(set(len(ad) for ad in adinputs)) > 1:
-            raise ValueError("Not all inputs have the same number of extensions")
-
-        geotable = import_module('.geometry_conf', self.inst_lookups)
+        spectral_order = params["spectral_order"]
+        center = params["center"]
+        nsum = params["nsum"]
 
         for ad in adinputs:
-            print(ad.filename)
-
-            # Determine the Transform for pixel coordinates in each extension
-            # to a uniform plane
-            if len(ad) > 1:
-                extver_map = ad.extver_map()
-                transforms = [None] * len(ad)
+            # Don't mosaic if the multiple extensions are because the
+            # data are MOS or cross-dispersed
+            if len(ad) > 1 and not({'MOS', 'XD'} & ad.tags):
+                geotable = import_module('.geometry_conf', self.inst_lookups)
                 adg = transform.create_mosaic_transform(ad, geotable)
-                adg.calculate_output_shape()
-                for i, (block, block_transform) in enumerate(adg):
-                    for ext, corner in zip(block, block.corners):
-                        t = transform.Transform(astromodels.Shift2D(*reversed(corner)))
-                        t.append(block_transform)
-                        transforms[extver_map[ext.hdr['EXTVER']]] = t
+                admos = adg.transform(attributes=None, order=1)
+                mosaicked = True
             else:
-                transforms = [transform.Transform(models.Identity(2))]
+                admos = ad
+                mosaicked = False
 
+            # This will loop over MOS slits or XD orders
+            for ext in admos:
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                direction = "row" if dispaxis == 1 else "column"
 
+                data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
+                log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
+                            format(direction, extract_slice.start + 1, extract_slice.stop))
+                mask |= (DQ.no_data * (variance==0))  # Ignore var=0 points
+                slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
+                masked_data = np.ma.masked_array(data, mask=mask)
+                weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
+                pixels = np.arange(len(masked_data))
+
+                # We're only going to do CCD-to-CCD normalization if we've
+                # done the mosaicking in this primitive; if not, we assume
+                # the user has already taken care of it (if it's required).
+                nslices = len(slices)
+                if nslices > 1 and mosaicked:
+                    coeffs = np.ones((nslices - 1,))
+                    boundaries = list(slice_.stop for slice_ in slices[:-1])
+                    result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
+                            weights, boundaries, spectral_order), tol=1e-7, method='Nelder-Mead')
+                    if not result.success:
+                        log.warning("Problem with spline fitting: {}".format(result.message))
+
+                    # Rescale coefficients so centre-left CCD is unscaled
+                    coeffs = np.insert(result.x, 0, [1])
+                    coeffs /= coeffs[len(coeffs) // 2]
+                    for coeff, slice_ in zip(coeffs, slices):
+                        masked_data[slice_] *= coeff
+                        weights[slice_] /= coeff
+
+                spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
+                                                    order=spectral_order, w=weights)
+
+                if not mosaicked:
+                    flat_data = np.tile(spline.data, (ext.shape[dispaxis-1], 1))
+                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis==2))[0])
+
+            # If we've mosaicked, there's only one extension
+            # We forward transform the input pixels, take the transformed
+            # coordinate along the dispersion direction, and evaluate the
+            # spline there.
+            if mosaicked:
+                for block, trans in adg:
+                    trans.append(models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0]))
+                    for ext, corner in zip(block, block.corners):
+                        t = deepcopy(trans)
+                        # Shift so coordinates are correct in this Block
+                        t.prepend(models.Shift(corner[1]) & models.Shift(corner[0]))
+                        geomap = transform.GeoMap(t, ext.shape, inverse=True)
+                        flat_data = spline(geomap.coords[dispaxis])
+                        ext.divide(flat_data)
 
             ad.update_filename(suffix=sfx, strip=True)
 
@@ -1332,6 +1392,42 @@ def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     return list(None if arg is None
                 else arg.T[section] if transpose else arg[section] for arg in args)
 
+
+def QESpline(coeffs, xpix, data, weights, boundaries, order):
+    """
+    Fits a cubic spline to data, allowing scaling renormalizations of
+    contiguous subsets of the data.
+
+    Parameters
+    ----------
+    coeffs: array
+        scaling factors for CCDs 2+
+    xpix: array
+        pixel numbers (0..N)
+    data: masked_array
+        data to be fit
+    weights: array
+        fitting weights (inverse standard deviations)
+    boundaries: tuple
+        the last pixel coordinate on each CCD:
+    order: int
+        order of spline to fit
+
+    Returns
+    -------
+    float: normalized chi^2 of the spline fit
+    """
+    scaling = np.ones_like(data, dtype=np.float64)
+    for coeff, boundary in zip(coeffs, boundaries):
+        scaling[boundary:] = coeff
+    scaled_data = scaling * data
+    scaled_weights = 1. / scaling if weights is None else (weights / scaling).astype(np.float64)
+    spline = astromodels.UnivariateSplineWithOutlierRemoval(xpix, scaled_data,
+                        order=order, w=scaled_weights, niter=1, grow=0)
+    result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
+                                scaled_weights)).sum() / (~spline.mask).sum()
+    #print(coeffs, result, spline.mask.sum(), scaling.mean())
+    return result
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     fig, ax = plt.subplots()
