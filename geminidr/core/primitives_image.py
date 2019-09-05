@@ -481,6 +481,11 @@ class Image(Preprocess, Register, Resample):
         hsigma = params['hsigma']
         dilation = params['dilation']
 
+        if len(adinputs) < 2:
+            log.stdinfo("No cosmic rays will be flagged, since at least "
+                        "two images are required for {}".format(self.myself()))
+            return adinputs
+
         # This code is taken from dilateObjectMask; factor it out later.
         xgrid, ygrid = np.mgrid[-int(dilation):int(dilation+1),
                        -int(dilation):int(dilation+1)]
