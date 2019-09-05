@@ -10,7 +10,7 @@ from astropy.modeling import models
 from gempy.library import tracing
 
 
-@pytest.mark.parametrize("x0, fwhm", [(1600, 2), (1600, 4), (1600, 8)])
+@pytest.mark.parametrize("x0, fwhm", [(1600, 2), (1600, 4), (1600, 7)])
 def test_estimate_peak_width_with_one_line(x0, fwhm):
 
     stddev_to_fwhm = 2 * np.sqrt(2 * np.log(2))
