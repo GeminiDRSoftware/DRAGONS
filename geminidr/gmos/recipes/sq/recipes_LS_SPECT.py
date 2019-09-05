@@ -5,6 +5,7 @@ Default is "reduce".
 """
 recipe_tags = set(['GMOS', 'SPECT', 'LS'])
 
+
 def reduce(p):
     """
     todo: add docstring
