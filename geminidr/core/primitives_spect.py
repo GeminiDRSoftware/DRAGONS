@@ -38,8 +38,7 @@ from recipe_system.utils.decorators import parameter_override
 class Spect(PrimitivesBASE):
     """
     This is the class containing all of the pre-processing primitives
-    for the :class:`Spect` level of the type hierarchy tree. It inherits all
-    the primitives from :class:`geminidr.PrimitivesBASE`.
+    for the `Spect` level of the type hierarchy tree.
     """
     tagset = set(["GEMINI", "SPECT"])
 
@@ -51,29 +50,39 @@ class Spect(PrimitivesBASE):
         """
         Maps the distortion on a detector by tracing lines perpendicular to the
         dispersion direction. Then it fits a 2D Chebyshev polynomial to the
-        fitted coordinates in the dispersion direction. The distoimportion map does
+        fitted coordinates in the dispersion direction. The distortion map does
         not change the coordinates in the spatial direction.
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Arc data as 2D spectral images.
+
         suffix :  str
             Suffix to be added to output files.
+
         spatial_order : int
             Order of fit in spatial direction.
+
         spectral_order : int
             Order of fit in spectral direction.
+
         id_only : bool
             Trace using only those lines identified for wavelength calibration?
+
         min_snr : float
-            Minimum signal-to-noise ratio for identifying lines (if id_only=False).
+            Minimum signal-to-noise ratio for identifying lines (if
+            id_only=False).
+
         nsum : int
             Number of rows/columns to sum at each step.
+
         step : int
             Size of step in pixels when tracing.
+
         max_shift : float
             Maximum orthogonal shift (per pixel) for line-tracing.
+
         max_missed : int
             Maximum number of steps to miss before a line is lost.
 
@@ -335,14 +344,14 @@ class Spect(PrimitivesBASE):
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         This primitive determines the wavelength solution for an ARC and
-        stores it as an attached WAVECAL table.
+        stores it as an attached `.WAVECAL` table.
 
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
-        matched to an arc line list, using the KDTreeFitter.
+        matched to an arc line list, using the `KDTreeFitter`.
 
-        For each :class:`~astrodata.AstroData` object and for each extension
-        within it, this primitive contains the following bigger steps:
+        For each `AstroData` object and for each extension within it, this
+        primitive contains the following bigger steps:
 
         - Read Arc Lines;
 
@@ -350,22 +359,23 @@ class Spect(PrimitivesBASE):
 
         - Mask data skipping non-linear or saturated lines;
 
-        - Use known central wavelength to calculate wavelength range and dispersion;
+        - Use known central wavelength to calculate wavelength range and
+          dispersion;
 
         - Estimate line widths to be used on peak detection;
 
         - Detect peaks using Continuous Wavelet Transform;
 
-        - Create weight dictionary with different types of weights (intensity/flux);
+        - Create weight dictionary with different types of weights
+          (intensity/flux);
 
         - Create iteration sequence with different weights methods;
 
-        - Create 0th iteration :class:`~astropy.modeling.models.Chebyshev1D`
-          model;
+        - Create 0th iteration using a 1D Chebyshev model;
 
-        - Fit iteration using :class:`~gempy.library.matching.KDTreeFitter`;
+        - Fit iteration using `KDTreeFitter`;
 
-        - Matching using :class:`~gempy.library.matching.Chebyshev1DMatchBox`;`
+        - Matching using `Chebyshev1DMatchBox`;
 
         - Convert model into dictionary and, then, into a Table;
 
@@ -374,24 +384,34 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
+
         adinputs : list of :class:`~astrodata.AstroData`
             Arc data as 2D spectral images or 1D spectra.
+
         suffix : str
             Suffix to be added to output files.
+
         center : int or None
             Central row/column for 1D extraction (None => use middle).
+
         nsum : int
             Number of rows/columns to average.
+
         order : int
             Order of Chebyshev fitting function.
+
         min_snr : float
             Minimum S/N ratio in line peak to be used in fitting.
+
         fwidth : float
             Expected width of arc lines in pixels.
+
         linelist : str or None
             Name of file containing arc lines.
-        weighting : str
-            How to weight the detected peaks (none/natural/relative).
+
+        weighting : {'none', 'natural', 'relative'}
+            How to weight the detected peaks.
+
         nbright : int
             Number of brightest lines to cull before fitting.
 
@@ -400,6 +420,11 @@ class Spect(PrimitivesBASE):
         list of :class:`~astrodata.AstroData`
             Updated objects with the `.WAVECAL` attribute on each appropriated
             extension.
+
+        See Also
+        --------
+        :class:`~gempy.library.matching.KDTreeFitter`,
+        :class:`~gempy.library.matching.Chebyshev1DMatchBox`.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -686,13 +711,17 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            2D spectral images with a `.APERTURE` table
+            2D spectral images with a `.APERTURE` table.
+
         suffix : str
             Suffix to be added to output files.
+
         method : {'standard', 'weighted', 'optimal'}
             Extraction method.
+
         width : float
             Width of extraction aperture (in pixels).
+
         grow : float or None
             Avoidance region around each source aperture if a sky aperture
             is required.
@@ -862,7 +891,7 @@ class Spect(PrimitivesBASE):
 
     def findSourceApertures(self, adinputs=None, **params):
         """
-        Finds sources in 2D spectral imags and store them in an APERTURE table
+        Finds sources in 2D spectral images and store them in an APERTURE table
         for each extension. Each table will, then, be used in later primitives
         to perform aperture extraction.
 
@@ -872,12 +901,16 @@ class Spect(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Science data as 2D spectral images.
+
         suffix : str
             Suffix to be added to output files.
+
         max_apertures : int
             Maximum number of apertures expected to be found.
+
         threshold : float
             ???
+
         min_sky_pix : int
             ???
 
@@ -979,23 +1012,30 @@ class Spect(PrimitivesBASE):
 
     def linearizeSpectra(self, adinputs=None, **params):
         """
-        ???
+        Transforms 1D spectra so that the relationship between them and their
+        respective wavelength calibration is linear.
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D spectra. Each extension must have a .WAVECAL
-            table.
+            Wavelength calibrated 1D spectra. Each extension must have a
+            `.WAVECAL` table.
+
         suffix : str
             Suffix to be added to output files.
+
         w1 : float
             Wavelength of first pixel (nm). See Notes below.
+
         w2 : float
             Wavelength of last pixel (nm). See Notes below.
+
         dw : float
             Dispersion (nm/pixel). See Notes below.
+
         npix : int
             Number of pixels in output spectrum. See Notes below.
+
         conserve : bool
             Conserve flux (rather than interpolate)?
 
@@ -1205,17 +1245,15 @@ class Spect(PrimitivesBASE):
         """
         Performs row-by-row/column-by-column sky subtraction of 2D spectra.
 
-        For that, it fits the sky contribution using a Univariate Spline
-        (:class:`~gempy.library.astromodels.UnivariateSplineWithOutlierRemoval`)
-        and builds a mask of rejected pixels during the fitting process. It
-        also adds any apertures defined in the APERTURE table to this mask if it
+        For that, it fits the sky contribution using a Univariate Spline and
+        builds a mask of rejected pixels during the fitting process. It also
+        adds any apertures defined in the APERTURE table to this mask if it
         exists.
 
         If there are less than 4 good pixels on each row/column, then the fit
         is performed to every pixel.
 
         This primitive should be called on data free of distortion.
-
 
         Parameters
         ----------
@@ -1244,7 +1282,7 @@ class Spect(PrimitivesBASE):
         --------
         :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
         :meth:`~geminidr.core.primitives_spect.Spect.distortionCorrect`,
-        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
+        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`,
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1318,35 +1356,43 @@ class Spect(PrimitivesBASE):
 
     def traceApertures(self, adinputs=None, **params):
         """
-        Traces apertures listed in the APERTURE table along the dispersion
+        Traces apertures listed in the `.APERTURE` table along the dispersion
         direction, and estimates the optimal extraction aperture size from the
         spatial profile of each source.
 
-
         Parameters
         ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images with a `.APERTURE` table attached
+            to one or more of its extensions.
+
         suffix : str
-            suffix to be added to output files
+            Suffix to be added to output files.
 
         trace_order : int
-            fitting order along spectrum
+            Fitting order along spectrum.
 
-        step : ???
-            ???
+        step : int
+            Step size for sampling along dispersion direction.
 
-        nsum : ???
-            ???
+        nsum : int
+            Number of rows/columns to combine at each step.
 
-        max_missed : ???
-            ???
+        max_missed : int
+            Maximum number of interactions without finding line before line is
+            considered lost forever.
 
-        max_shift : ???
-            ???
+        max_shift : float
+            Maximum perpendicular shift (in pixels) from pixel to pixel.
 
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images with the `.APERTURE` the updated
+            to contain its upper and lower limits.
 
         See Also
         --------
-
         :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
 
         """
@@ -1418,6 +1464,7 @@ class Spect(PrimitivesBASE):
                     self.viewer.polygon(plot_coords, closed=False,
                                         xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
+                    print('>>>>>>>  ', model_dict)
 
                     # Recalculate aperture limits after rectification
                     apcoords = m_final(np.arange(ext.shape[dispaxis]))
@@ -1425,6 +1472,7 @@ class Spect(PrimitivesBASE):
                     model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()
                                              if k not in all_column_names])
+                    print('>>>>>>>  ', model_dict)
                     all_model_dicts.append(model_dict)
 
                 for name in all_column_names:
@@ -1439,9 +1487,9 @@ class Spect(PrimitivesBASE):
 
     def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None, **kwargs):
         """
-        This private method returns a list of wavelengths of the arc reference
-        lines used by the primitive determineWavelengthSolution(), if the user
-        paramater linelist=None (i.e., the default list is requested).
+        Returns a list of wavelengths of the arc reference lines used by the
+        primitive `determineWavelengthSolution()`, if the user parameter
+        `linelist=None` (i.e., the default list is requested).
 
         Parameters
         ----------
@@ -1456,8 +1504,10 @@ class Spect(PrimitivesBASE):
 
         Returns
         -------
-        array: arc line wavelengths
-        array/None: arc line weights
+        array_like :
+            arc line wavelengths
+        array_like or None :
+            arc line weights
         """
         lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
         filename = os.path.join(lookup_dir, 'linelist.dat')
@@ -1471,20 +1521,32 @@ class Spect(PrimitivesBASE):
 
 def _average_along_slit(ext, center=None, nsum=None):
     """
+    Calculated the average of long the slit and its pixel-by-pixel variance.
 
     Parameters
     ----------
-    ext: AstroData slice
-        2D spectral image from which trace is to be extracted
-    center: float/None
-        center of averaging region (None => center of axis)
-    nsum: int
-        number of rows/columns to combine
+    ext : `AstroData` slice
+        2D spectral image from which trace is to be extracted.
+
+    center : float or None
+        Center of averaging region (None => center of axis).
+
+    nsum : int
+        Number of rows/columns to combine
 
     Returns
     -------
-    4-tuple: data, mask, variance: of the extracted trace
-             extract_slice: slice object for extraction region
+    data : array_like
+        Averaged data of the extracted region.
+
+    mask : array_like
+        Mask of the extracted region.
+
+    variance : array_like
+        Variance of the extracted region based on pixel-to-pixel variation.
+
+    extract_slice : slice
+        Slice object for extraction region.
     """
     slitaxis = ext.dispersion_axis() - 1
     extraction = center or (0.5 * ext.data.shape[slitaxis])
@@ -1507,16 +1569,19 @@ def _transpose_if_needed(*args, transpose=False, section=slice(None)):
 
     Parameters
     ----------
-    args: sequence of arrays
-        the input arrays
-    transpose: bool
-        if True, return transposed versions
-    section: slice object
-        section of output data to return
+    args : sequence of arrays
+        The input arrays.
+
+    transpose : bool
+        If True, return transposed versions.
+
+    section : slice object
+        Section of output data to return.
 
     Returns
     -------
-    list of arrays: the input arrays, or transposed versions
+    list of arrays
+        The input arrays, or their transposed versions.
     """
     return list(None if arg is None
                 else arg.T[section] if transpose else arg[section] for arg in args)
@@ -1529,22 +1594,28 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
 
     Parameters
     ----------
-    coeffs: array
-        scaling factors for CCDs 2+
-    xpix: array
-        pixel numbers (0..N)
-    data: masked_array
-        data to be fit
+    coeffs : array_like
+        Scaling factors for CCDs 2+.
+
+    xpix : array
+        Pixel numbers (0..N).
+
+    data : masked_array
+        Data to be fit.
+
     weights: array
-        fitting weights (inverse standard deviations)
+        Fitting weights (inverse standard deviations).
+
     boundaries: tuple
-        the last pixel coordinate on each CCD:
+        The last pixel coordinate on each CCD.
+
     order: int
-        order of spline to fit
+        Order of spline to fit.
 
     Returns
     -------
-    float: normalized chi^2 of the spline fit
+    float
+        Normalized chi^2 of the spline fit.
     """
     scaling = np.ones_like(data, dtype=np.float64)
     for coeff, boundary in zip(coeffs, boundaries):

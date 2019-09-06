@@ -744,33 +744,44 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
     Parameters
     ----------
-    ext: single-sliced AD object
-        the extension within which to trace features
-    axis: int (0 or 1)
-        axis along which to trace (0=y-direction, 1=x-direction)
-    start: int/None
-        row/column to start trace (None => middle)
-    initial: sequence
-        coordinates of peaks
-    width: int
-        width of centroiding box in pixels
-    nsum: int
-        number of rows/columns to combine at each step
-    step: int
-        step size along axis in pixels
-    initial_tolerance: float
-        maximum perpendicular shift (in pixels) between provided
-        location and first calculation of peak
+    ext : single-sliced AD object
+        The extension within which to trace features.
+
+    axis : int (0 or 1)
+        Axis along which to trace (0=y-direction, 1=x-direction).
+
+    start : int/None
+        Row/column to start trace (None => middle).
+
+    initial : sequence
+        Coordinates of peaks.
+
+    width : int
+        Width of centroid box in pixels.
+
+    nsum : int
+        Number of rows/columns to combine at each step.
+
+    step : int
+        Step size along axis in pixels.
+
+    initial_tolerance : float
+        Maximum perpendicular shift (in pixels) between provided location and
+        first calculation of peak.
+
     max_shift: float
-        maximum perpendicular shift (in pixels) from pixel to pixel
+        Maximum perpendicular shift (in pixels) from pixel to pixel.
+
     max_missed: int
-        maximum number of interations without finding line before
-        line is considered lost forever
+        Maximum number of interactions without finding line before line is
+        considered lost forever.
+
     func: callable
-        function to use when collapsing to 1D. This takes the data,
-        mask, and variance as arguments
-    viewer: imexam viewer/None
-        viewer to draw lines on
+        function to use when collapsing to 1D. This takes the data, mask, and
+        variance as arguments.
+
+    viewer: imexam viewer or None
+        Viewer to draw lines on.
     """
     log = logutils.get_logger(__name__)
 
