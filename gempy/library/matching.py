@@ -501,32 +501,67 @@ class BruteLandscapeFitter(Fitter):
 
 class KDTreeFitter(Fitter):
     """
-    Fitter class that uses minimization (the method can be passed as a
-    parameter to the instance) to determine the transformation to map a set
-    of input coordinates to a set of reference coordinates.
+    Fitter class to determine the best transformation from a set of N input
+    coordinates (or any dimensionality) to a set of M reference coordinates
+    with the same dimensionality. The two coordinate lists need not have
+    the same length.
 
-    Parameters
-    ----------
-    proximity_function : callable/None
-        function to call to determine score for proximity of reference
-        and transformed input coordinates. Must take two arguments: the
-        distance and a "sigma" factor, indicating the matching scale
-        (in the reference frame). If None, use the default
-        `KDTreeFitter.gaussian`.
+    When a call to the KDTreeFitter instance is made, a KDTree is constructed
+    from the reference coordinates, allowing rapid computation of the distance
+    between any location in the reference coordinate system and each of the
+    reference coordinates. Then, for each interation of the optimization, the
+    input coordinate list is transformed and a score given to each combination
+    of input coordinates and reference coordinates. This score is defined by
+    the "proximity function" and should be a monotonically-decreasing function
+    of separation (although no check is made for this). Although there are NxM
+    combinations of coordinates, the calculations for each transformed input
+    coordinate are limited to those reference coordinates within a certain
+    distance ("maxsig" multiplied by "sigma", where "sigma" is a scale-length
+    in the proximity function), up to a maximum of "k" reference coordinates.
+    Each coordinate in both the input and reference lists can be assigned a
+    multiplicative weight to enhance the score when it is matched. These
+    scores are summed for each combination and that score is maximized.
 
-    sigma : float
-        matching scale (in the reference frame)
+    An example of when multiple reference coordinates should be matched to a
+    single input coordinate is the case of a low-resolution arc-lamp spectrum
+    where peaks in the data could be the result of multiple blended arc lines
+    in the reference list.
 
-    maxsig : float
-        maximum number of scale lengths for a match to be counted
+    An example of when a reference coordinate can match multiple input
+    coordinates is when a high-resolution image is matched to a lower-resolution
+    catalog (such as 2MASS) and a single catalog object may be detected as
+    multiple sources.
 
-    k : int
-        maximum number of matches to be considered
+    Although there is a defined maximum to the number of reference coordinates
+    that can be matched to an input coordinate, multiple input coordinates can
+    be matched to a single reference coordinate without limit (a coding
+    limitation).
 
+    The fitter is instantiated with parameters defining the matching
+    requirements, and then called with the coordinate lists and their weights,
+    and the initial guess of the transformation (an astropy Model instance).
     """
 
     def __init__(self, proximity_function=None, sigma=5.0, maxsig=5.0, k=5):
+        """
+        Parameters
+        ----------
+        proximity_function : callable/None
+            function to call to determine score for proximity of reference
+            and transformed input coordinates. Must take two arguments: the
+            distance and a "sigma" factor, indicating the matching scale
+            (in the reference frame). If None, use the default
+            `KDTreeFitter.gaussian`.
 
+        sigma : float
+            matching scale (in the reference frame)
+
+        maxsig : float
+            maximum number of scale lengths for a match to be counted
+
+        k : int
+            maximum number of matches to be considered
+        """
         if proximity_function is None:
             proximity_function = KDTreeFitter.gaussian
 
