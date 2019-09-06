@@ -30,7 +30,6 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
     p.stackFrames(zero=True)
-    p.writeOutputs()
     return
 
 _default = reduce

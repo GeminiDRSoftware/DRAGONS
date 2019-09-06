@@ -113,7 +113,8 @@ Then initialize the calibration database:
 
     caldb init
 
-That's it! It is ready to use!
+That's it! It is ready to use!   You can check the configuration and confirm
+the setting with ``caldb config``.
 
 You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and

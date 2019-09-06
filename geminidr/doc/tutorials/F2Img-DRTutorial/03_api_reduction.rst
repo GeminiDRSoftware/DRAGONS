@@ -13,7 +13,7 @@
 Reduction using API
 *******************
 
-There may be cases where you might be interested in accessing the DRAGONS
+There may be cases where you would be interested in accessing the DRAGONS
 Application Program Interface (API) directly instead of using the command
 line wrappers to reduce your data. Here we show you how to do the same
 reduction we did in the previous chapter but using the API.
@@ -45,7 +45,7 @@ Here is a copy of the table for quick reference.
 +---------------+---------------------+--------------------------------+
 
 
-Setting up
+Setting Up
 ==========
 
 Importing Libraries
@@ -328,7 +328,7 @@ We create the master flat field and add it to the calibration manager as follow:
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
-    calibration_service.add_cal(reduce_flats.output_filenames[0])
+    caldb.add_cal(reduce_flats.output_filenames[0])
 
 Note how we pass in the BPM we created in the previous step. The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named

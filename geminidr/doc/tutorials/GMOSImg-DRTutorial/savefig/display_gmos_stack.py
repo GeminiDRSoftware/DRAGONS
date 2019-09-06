@@ -42,10 +42,13 @@ def main():
     fig = plt.figure(num=filename)
     ax = fig.subplots(subplot_kw={"projection": wcs.WCS(header)})
 
+    print(norm_factor.vmin)
+    print(norm_factor.vmax)
     ax.imshow(masked_data,
               cmap=palette,
-              vmin=norm_factor.vmin,
-              vmax=norm_factor.vmax,
+              #vmin=norm_factor.vmin,
+              #vmax=norm_factor.vmax,
+              vmin=750., vmax=900.,
               origin='lower')
 
     ax.set_title(os.path.basename(filename))
