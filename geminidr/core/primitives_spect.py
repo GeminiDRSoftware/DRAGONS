@@ -1260,23 +1260,23 @@ class Spect(PrimitivesBASE):
         adinputs : list of :class:`~astrodata.AstroData`
             2D science spectra loaded as :class:`~astrodata.AstroData` objects.
 
-        suffix: str
-            suffix to be added to output files
+        suffix : str
+            Suffix to be added to output files.
 
-        order: int / None
-            order of piecewise cubic spline fit to each row/column. If `None`,
+        order : int or None
+            Order of piecewise cubic spline fit to each row/column. If `None`,
             it uses as many pieces as required to get chi^2=1. Else, it is
             reduced proportionately by the ratio between the number of good pixels
             in each row/column and the total number of pixels.
 
-        width: float/None
-            width (in pixels) for each aperture, if not specified in the
-            APERTURE table. None will use the value in the aperture table
+        width : float or None
+            Width in pixels for each aperture, if not specified in the
+            APERTURE table. `None` will use the value in the aperture table
             and, if one doesn't exist there, will result in the optimal width
-            being calculated for each aperture
+            being calculated for each aperture.
 
-        grow: float
-            masking growth radius (in pixels) for each aperture
+        grow : float
+            Masking growth radius (in pixels) for each aperture.
 
         See Also
         --------
@@ -1493,20 +1493,24 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
-        ext: single-slice AD object
-            extension being calibrated (allows descriptors to be calculated)
-        w1: float
-            approximate shortest wavelength (nm)
-        w2: float
-            approximate longest wavelength (nm)
-        dw: float
-            approximate dispersion (nm/pixel)
+        ext : single-slice AD object
+            Extension being calibrated (allows descriptors to be calculated).
+
+        w1 : float
+            Approximate shortest wavelength (nm).
+
+        w2 : float
+            Approximate longest wavelength (nm).
+
+        dw : float
+            Approximate dispersion (nm/pixel).
 
         Returns
         -------
-        array_like :
+        array_like
             arc line wavelengths
-        array_like or None :
+
+        array_like or None
             arc line weights
         """
         lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
