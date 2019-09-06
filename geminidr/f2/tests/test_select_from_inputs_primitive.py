@@ -9,6 +9,7 @@ import astrodata, gemini_instruments
 from geminidr.f2.primitives_f2_image import F2Image
 
 
+@pytest.mark.skip(reason="Test is hanging out forever. Needs to be reviewed.")
 def test_select_from_inputs_primitive(path_to_inputs):
 
     with open("recursion.log", 'w') as _log:

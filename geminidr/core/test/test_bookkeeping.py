@@ -21,10 +21,12 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
 logfilename = 'test_bookkeeping.log'
 
+
 class TestBookkeeping:
     """
     Suite of tests for the functions in the primitives_standardize module.
     """
+
     @classmethod
     def setup_class(cls):
         """Run once at the beginning."""
@@ -85,7 +87,7 @@ class TestBookkeeping:
         # Check renamed files are on disk and the filenames have been
         # changed for the adinputs
         for f, ad in zip(filenames, p.streams['main']):
-            newfilename = 'test'+f.replace('flatCorrected', 'blah')
+            newfilename = 'test' + f.replace('flatCorrected', 'blah')
             assert os.path.exists(newfilename)
             os.remove(newfilename)
             assert newfilename == ad.filename
