@@ -30,6 +30,7 @@ from matplotlib import pyplot as plt
 
 log = logutils.get_logger(__name__)
 
+
 ################################################################################
 class Aperture(object):
     def __init__(self, model, width=None, aper_lower=None, aper_upper=None):
@@ -105,7 +106,7 @@ class Aperture(object):
 
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         npix = ext.shape[dispaxis]
-        slitlength = ext.shape[1-dispaxis]
+        slitlength = ext.shape[1 - dispaxis]
         self.check_domain(npix)
         center_pixels = self.model(np.arange(npix))
         x1, x2 = center_pixels - aper_lower, center_pixels + aper_upper
@@ -132,11 +133,11 @@ class Aperture(object):
             # contribution, but add only a fraction of edge pixels in data, var
             if mask is not None:
                 self.mask[i] = np.bitwise_or.reduce(mask[ix1:ix2, i])
-            self.data[i] = (data[ix1:ix2, i].sum() - (x1-ix1+0.5) * data[ix1, i] -
-                         (ix2-x2-0.5) * data[ix2-1, i])
+            self.data[i] = (data[ix1:ix2, i].sum() - (x1 - ix1 + 0.5) * data[ix1, i] -
+                            (ix2 - x2 - 0.5) * data[ix2 - 1, i])
             if var is not None:
-                self.var[i] = (var[ix1:ix2, i].sum() - (x1-ix1+0.5) * var[ix1, i] -
-                            (ix2-x2-0.5) * var[ix2-1, i])
+                self.var[i] = (var[ix1:ix2, i].sum() - (x1 - ix1 + 0.5) * var[ix1, i] -
+                               (ix2 - x2 - 0.5) * var[ix2 - 1, i])
 
     def optimal_extraction(self, data, mask, var, aper_lower, aper_upper,
                            cr_rej=5, max_iters=None):
@@ -145,7 +146,7 @@ class Aperture(object):
         def divide0(num, denom, like_num=False):
             return np.divide(num, denom,
                              out=np.zeros_like(num if like_num else denom),
-                             where=denom>0)
+                             where=denom > 0)
 
         BAD_BITS = DQ.bad_pixel | DQ.cosmic_ray | DQ.no_data | DQ.unilluminated
 
@@ -163,7 +164,7 @@ class Aperture(object):
         # If we don't have a VAR plane, assume uniform variance based
         # on the pixel-to-pixel variations in the data
         if var is None:
-            var_model = models.Const1D(sigma_clipped_stats(data, mask=mask)[2]**2)
+            var_model = models.Const1D(sigma_clipped_stats(data, mask=mask)[2] ** 2)
             var = np.full_like(data[ix1:ix2], var_model.amplitude)
             var_mask = np.zeros_like(var, dtype=bool)
         else:
@@ -173,7 +174,7 @@ class Aperture(object):
             var = np.where(var_mask, var[ix1:ix2], var_model(data[ix1:ix2]))
 
         if mask is None:
-            mask = np.zeros((ix2-ix1, npix), dtype=DQ.datatype)
+            mask = np.zeros((ix2 - ix1, npix), dtype=DQ.datatype)
         else:
             mask = mask[ix1:ix2]
 
@@ -188,10 +189,10 @@ class Aperture(object):
         while True:
             # Step 5: construct spatial profile for each wavelength pixel
             profile = np.divide(data, spectrum,
-                                out=np.zeros_like(data), where=spectrum>0)
+                                out=np.zeros_like(data), where=spectrum > 0)
             profile_models = []
             for row, wt_row in zip(profile, weights):
-                m_init = models.Chebyshev1D(degree=3, domain=[0, npix-1])
+                m_init = models.Chebyshev1D(degree=3, domain=[0, npix - 1])
                 m_final, _ = fit_it(m_init, pixels, row, weights=wt_row)
                 profile_models.append(m_final(pixels))
             profile_model_spectrum = np.array([np.where(pm < 0, 0, pm) for pm in profile_models])
@@ -206,15 +207,15 @@ class Aperture(object):
             # to flag more than 1 per wavelength
             sigma_deviations = divide0(data - model_profile * spectrum, np.sqrt(var)) * unmask
             mask[sigma_deviations > cr_rej] |= DQ.cosmic_ray
-            #most_deviant = np.argmax(sigma_deviations, axis=0)
-            #for i, most in enumerate(most_deviant):
+            # most_deviant = np.argmax(sigma_deviations, axis=0)
+            # for i, most in enumerate(most_deviant):
             #    if sigma_deviations[most, i] > cr_rej:
             #        mask[most, i] |= DQ.cosmic_ray
 
             last_unmask = unmask
             unmask = (mask & BAD_BITS) == 0
             spec_numerator = np.sum(unmask * model_profile * data * weights, axis=0)
-            spec_denominator = np.sum(unmask * model_profile**2 * weights, axis=0)
+            spec_denominator = np.sum(unmask * model_profile ** 2 * weights, axis=0)
             self.data = divide0(spec_numerator, spec_denominator)
             self.var = divide0(np.sum(unmask * model_profile, axis=0), spec_denominator)
             self.mask = np.bitwise_and.reduce(mask, axis=0)
@@ -225,7 +226,6 @@ class Aperture(object):
             if ((np.sum(unmask ^ last_unmask) == 0) or
                     (max_iters is not None and iter > max_iters)):
                 break
-
 
     def extract(self, ext, width=None, aper_lower=None, aper_upper=None,
                 method='standard', dispaxis=None, viewer=None):
@@ -263,7 +263,7 @@ class Aperture(object):
 
         if dispaxis is None:
             dispaxis = 2 - ext.dispersion_axis()  # python sense
-        slitlength = ext.shape[1-dispaxis]
+        slitlength = ext.shape[1 - dispaxis]
         npix = ext.shape[dispaxis]
         direction = "row" if dispaxis == 0 else "column"
 
@@ -292,9 +292,9 @@ class Aperture(object):
             # Display extraction edges on viewer, every 10 pixels (for speed)
             pixels = np.arange(npix)
             edge_coords = np.array([pixels, all_x1]).T
-            viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis==1), origin=0)
+            viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis == 1), origin=0)
             edge_coords = np.array([pixels, all_x2]).T
-            viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis==1), origin=0)
+            viewer.polygon(edge_coords[::10], closed=False, xfirst=(dispaxis == 1), origin=0)
 
         # Remember how pixel coordinates are defined!
         off_low = np.where(all_x1 < -0.5)[0]
@@ -342,20 +342,20 @@ def estimate_peak_width(data, min=2, max=8):
     min: int
         minimum plausible peak width
     max: int
-        maximum plausible peak width
+        maximum plausible peak width (not inclusive)
 
     Returns
     -------
     float: estimate of FWHM of features
     """
     all_widths = []
-    for fwidth in range(min, max+1):  # plausible range of widths
+    for fwidth in range(min, max + 1):  # plausible range of widths
         data_copy = data.copy()  # We'll be editing the data
         widths = []
         for i in range(15):  # 15 brightest peaks, should ensure we get real ones
-            index = 2*fwidth + np.argmax(data_copy[2*fwidth:-2*fwidth-1])
+            index = 2 * fwidth + np.argmax(data_copy[2 * fwidth:-2 * fwidth - 1])
             data_to_fit = data_copy[index - 2 * fwidth:index + 2 * fwidth + 1]
-            m_init = models.Gaussian1D(stddev=0.42466*fwidth) + models.Const1D(np.min(data_to_fit))
+            m_init = models.Gaussian1D(stddev=0.42466 * fwidth) + models.Const1D(np.min(data_to_fit))
             m_init.mean_0.bounds = [-1, 1]
             m_init.amplitude_1.fixed = True
             fit_it = fitting.FittingWithOutlierRemoval(fitting.LevMarLSQFitter(),
@@ -363,16 +363,17 @@ def estimate_peak_width(data, min=2, max=8):
             with warnings.catch_warnings():
                 # Ignore model linearity warning from the fitter
                 warnings.simplefilter('ignore')
-                m_final, _ = fit_it(m_init, np.arange(-2*fwidth, 2*fwidth+1),
+                m_final, _ = fit_it(m_init, np.arange(-2 * fwidth, 2 * fwidth + 1),
                                     data_to_fit)
             # Quick'n'dirty logic to remove "peaks" at edges of CCDs
             if m_final.amplitude_1 != 0 and m_final.stddev_0 < fwidth:
-                widths.append(m_final.stddev_0/0.42466)
+                widths.append(m_final.stddev_0 / 0.42466)
 
             # Set data to zero so no peak is found here
-            data_copy[index-2*fwidth:index+2*fwidth+1] = 0.
+            data_copy[index - 2 * fwidth:index + 2 * fwidth + 1] = 0.
         all_widths.append(sigma_clip(widths).mean())
     return sigma_clip(all_widths).mean()
+
 
 def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
                reject_bad=True):
@@ -389,41 +390,53 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
         The pixel values of the 1D spectrum
     widths: array-like
         Sigma values of line-like features to look for
-    mask: 1D array
-        Mask (peaks with bad pixels are rejected)
-    variance: 1D array
-        Variance (to estimate SNR of peaks)
-    min_snr: float
+    mask: 1D array (optional)
+        Mask (peaks with bad pixels are rejected) - optional
+    variance: 1D array (optional)
+        Variance (to estimate SNR of peaks) - optional
+    min_snr: float (optional, default=1)
         Minimum SNR required of peak pixel
-    min_frac: float
+    min_frac: float (optional, default=0.25)
         minimum fraction of *widths* values at which a peak must be found
-    reject_bad: bool
+    reject_bad: bool (optional, default=True)
         clip lines using the reject_bad() function?
 
     Returns
     -------
     2D array: peak wavelengths and SNRs
     """
-    maxwidth = max(widths)
-    window_size = 4*maxwidth+1
-    cwt_dat = signal.cwt(data, signal.ricker, widths)
-    eps = np.finfo(np.float32).eps
-    cwt_dat[cwt_dat<eps] = eps
-    ridge_lines = signal._peak_finding._identify_ridge_lines(cwt_dat, 0.03*widths, 2)
-    filtered = signal._peak_finding._filter_ridge_lines(cwt_dat, ridge_lines,
-                                                        window_size=window_size,
-                                                        min_length=int(min_frac*len(widths)),
-                                                        min_snr=min_snr)
+    mask = mask if mask is not None else np.zeros_like(data, dtype=np.uint16)
+
+    if not np.issubdtype(mask.dtype, np.unsignedinteger):
+        raise TypeError("Expected input parameter 'mask' to be an array with unsigned integer. "
+                        "Found: {}".format(mask.dtype))
+
+    max_width = max(widths)
+    window_size = 4 * max_width + 1
+
+    wavelet_transformed_data = signal.cwt(data, signal.ricker, widths)
+
+    eps = np.finfo(np.float32).eps  # Minimum representative data
+    wavelet_transformed_data[wavelet_transformed_data < eps] = eps
+
+    ridge_lines = signal._peak_finding._identify_ridge_lines(
+        wavelet_transformed_data, 0.03 * widths, 2)
+
+    filtered = signal._peak_finding._filter_ridge_lines(
+        wavelet_transformed_data, ridge_lines, window_size=window_size,
+        min_length=int(min_frac * len(widths)), min_snr=min_snr)
+
     peaks = sorted([x[1][0] for x in filtered])
 
     # If no variance is supplied we take the "snr" to be the data.
     # We do this on the filtered data because the continuum level gets
     # subtracted by the Ricker filter
     if variance is not None:
-        snr = np.divide(cwt_dat[0], np.sqrt(variance), np.zeros_like(data),
-                        where=variance>0)
+        snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance), np.zeros_like(data),
+                        where=variance > 0)
     else:
-        snr = cwt_dat[0]
+        snr = wavelet_transformed_data[0]
+
     peaks = [x for x in peaks if snr[x] > min_snr]
 
     # remove adjacent points
@@ -432,7 +445,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     i = 0
     while i < len(peaks) - 1:
         j = i + 1
-        while j <= len(peaks) - 1 and (peaks[j] - peaks[j-1] < min_separation):
+        while j <= len(peaks) - 1 and (peaks[j] - peaks[j - 1] < min_separation):
             j += 1
         new_peaks.append(np.mean(peaks[i:j]))
         i = j
@@ -441,20 +454,18 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
-    edge = 2.35482 * maxwidth
-    peaks = peaks[np.logical_and(peaks>edge, peaks<len(data)-1-edge)]
+    edge = 2.35482 * max_width
+    peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
 
     # Remove peaks very close to unilluminated/no-data pixels
     # (e.g., chip gaps in GMOS)
-    if mask is not None:
-        peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)]
-                                            & (DQ.no_data | DQ.unilluminated))==0]
+    peaks = [x for x in peaks if np.sum(mask[int(x-edge):int(x+edge+1)] & (DQ.no_data | DQ.unilluminated)) == 0]
 
     # Clip the really noisy parts of the data before getting more accurate
     # peak positions and clip SNR again with new positions
-    peaks = pinpoint_peaks(np.where(snr<0.5, 0, data), mask, peaks)
-    final_peaks = [p for p in peaks if snr[int(p+0.5)] > min_snr]
-    peak_snrs = list(snr[int(p+0.5)] for p in final_peaks)
+    peaks = pinpoint_peaks(np.where(snr < 0.5, 0, data), mask, peaks)
+    final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
+    peak_snrs = list(snr[int(p + 0.5)] for p in final_peaks)
 
     # Remove suspiciously bright peaks and return as array of
     # locations and SNRs, sorted by location
@@ -462,7 +473,9 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
         good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
     else:
         good_peaks = list(zip(final_peaks, peak_snrs))
+
     return np.array(sorted(good_peaks)).T
+
 
 def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     """
@@ -495,11 +508,15 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     int_limits = np.array([-1, -0.5, 0.5, 1])
     npts = len(data)
     final_peaks = []
-    masked_data = np.where(np.logical_or(mask > 0, data < threshold), 0,
-                           data - threshold)
+
+    # mask = mask if mask is not None else np.zeros_like(data)
+
+    masked_data = np.where(
+        np.logical_or(mask > 0, data < threshold), 0, data - threshold)
+
     for peak in peaks:
         xc = int(peak + 0.5)
-        xc = np.argmax(masked_data[max(xc-1,0):min(xc+2,npts)]) + xc - 1
+        xc = np.argmax(masked_data[max(xc - 1, 0):min(xc + 2, npts)]) + xc - 1
         if xc < halfwidth or xc > npts - halfwidth:
             continue
         x1 = int(xc - halfwidth)
@@ -525,7 +542,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
             splint1 = [spline1.integrate(x1, x2) for x1, x2 in zip(limits[:-1], limits[1:])]
             splint2 = [spline2.integrate(x1, x2) for x1, x2 in zip(limits[:-1], limits[1:])]
             sum1 = (splint2[1] - splint2[0] - splint2[2] +
-                    (xc-halfwidth) * splint1[0] - xc*splint1[1] + (xc+halfwidth)*splint1[2])
+                    (xc - halfwidth) * splint1[0] - xc * splint1[1] + (xc + halfwidth) * splint1[2])
             sum2 = splint1[1] - splint1[0] - splint1[2]
 
             if sum2 == 0:
@@ -554,6 +571,7 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
 
     return final_peaks
 
+
 def reject_bad_peaks(peaks):
     """
     Go through the list of peaks and remove any that look really suspicious.
@@ -571,9 +589,10 @@ def reject_bad_peaks(peaks):
     """
     diff = 3  # Compare 1st brightest to 4th brightest
     peaks.sort(key=lambda x: x[1])  # Sort by SNR
-    while len(peaks) > diff and (peaks[-1][1] / peaks[-(diff+1)][1] > 3):
+    while len(peaks) > diff and (peaks[-1][1] / peaks[-(diff + 1)][1] > 3):
         del peaks[-1]
     return peaks
+
 
 def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     """
@@ -620,17 +639,17 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     except KeyError:
         method = None
 
-    x = np.arange(len(data))[mask==0]
-    y = data[mask==0]
+    x = np.arange(len(data))[mask == 0]
+    y = data[mask == 0]
 
     # Try to better estimate the true noise from the pixel-to-pixel
     # variations (the difference between adjacent pixels will be
     # sqrt(2) times larger than the rms noise).
     if variance is None:
-        w = np.full_like(y, np.sqrt(2)/sigma_clipped_stats(np.diff(y))[2])
+        w = np.full_like(y, np.sqrt(2) / sigma_clipped_stats(np.diff(y))[2])
     else:
-        w = np.divide(1.0, np.sqrt(variance[mask==0]), out=np.zeros_like(y),
-                      where=variance[mask==0]>0)
+        w = np.divide(1.0, np.sqrt(variance[mask == 0]), out=np.zeros_like(y),
+                      where=variance[mask == 0] > 0)
 
     # We need to fit a quartic spline since we want to know its
     # minima (roots of its derivative), and can only find the
@@ -643,7 +662,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
 
     all_limits = []
     for peak in peaks:
-        tweaked_peak = extrema[np.argmin(abs(extrema-peak))]
+        tweaked_peak = extrema[np.argmin(abs(extrema - peak))]
 
         # Now find the nearest minima above and below the peak
         for upper in minima:
@@ -666,6 +685,7 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
 
     return all_limits
 
+
 def threshold_limit(spline, peak, limit, other_limit, threshold):
     """Finds a threshold as a fraction of the way from the signal at the
        minimum to the signal at the peak"""
@@ -675,13 +695,15 @@ def threshold_limit(spline, peak, limit, other_limit, threshold):
     func = lambda x: spline(x) - target
     return optimize.bisect(func, limit, peak)
 
+
 def integral_limit(spline, peak, limit, other_limit, threshold):
     """Finds a threshold as a fraction of the missing flux, defined as the
        area under the signal between the peak and this limit, removing a
        straight line between the two points"""
     integral = spline.antiderivative()
     slope = (spline(other_limit) - spline(limit)) / (other_limit - limit)
-    definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * ((spline(limit) - slope * limit) + 0.5 * slope * (x + limit))
+    definite_integral = lambda x: integral(x) - integral(limit) - (x - limit) * (
+                (spline(limit) - slope * limit) + 0.5 * slope * (x + limit))
     flux_this_side = definite_integral(peak) - definite_integral(limit)
 
     # definite_integral is the flux from the limit towards the peak, so this
@@ -752,7 +774,7 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
         log.stdinfo("Starting trace at {} {}".format(direction, start))
 
     if initial is None:
-        y1 = int(start - 0.5*nsum + 0.5)
+        y1 = int(start - 0.5 * nsum + 0.5)
         data, mask, var = NDStacker.mean(ext_data[y1:y1 + nsum],
                                          mask=ext_mask[y1:y1 + nsum],
                                          variance=None)
@@ -768,16 +790,16 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
         last_coords = [[ypos, peak] for peak in initial]
 
         while True:
-            y1 = int(ypos - 0.5*nsum + 0.5)
-            data, mask, var = func(ext_data[y1:y1+nsum],
-                                   mask=ext_mask[y1:y1+nsum],
+            y1 = int(ypos - 0.5 * nsum + 0.5)
+            data, mask, var = func(ext_data[y1:y1 + nsum],
+                                   mask=ext_mask[y1:y1 + nsum],
                                    variance=None)
             # Variance could plausibly be zero
-            var = np.where(var<=0, np.inf, var)
-            clipped_data = np.where(data/np.sqrt(var) > 0.5, data, 0)
+            var = np.where(var <= 0, np.inf, var)
+            clipped_data = np.where(data / np.sqrt(var) > 0.5, data, 0)
             last_peaks = [c[1] for c in last_coords if not np.isnan(c[1])]
             peaks = pinpoint_peaks(clipped_data, mask, last_peaks)
-            #if ypos == start:
+            # if ypos == start:
             #    print("Found {} peaks".format(len(peaks)))
             #    print(peaks)
 
@@ -804,16 +826,16 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
                 # Too close to the edge?
                 if (new_peak < halfwidth or
-                    new_peak > ext_data.shape[1] - 0.5*halfwidth):
+                        new_peak > ext_data.shape[1] - 0.5 * halfwidth):
                     last_coords[i][1] = np.nan
                     continue
 
                 new_coord = [ypos, new_peak]
                 if viewer:
                     kwargs = dict(zip(('y1', 'x1'), last_coords[i] if axis == 0
-                                                    else reversed(last_coords[i])))
+                    else reversed(last_coords[i])))
                     kwargs.update(dict(zip(('y2', 'x2'), new_coord if axis == 0
-                                                         else reversed(new_coord))))
+                    else reversed(new_coord))))
                     viewer.line(origin=0, **kwargs)
 
                 if not (ypos == start and direction > 1):
@@ -822,7 +844,7 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
             ypos += direction * step
             # Reached the bottom or top?
-            if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5*nsum:
+            if ypos < 0.5 * nsum or ypos > ext_data.shape[0] - 0.5 * nsum:
                 break
 
             # Lost all lines!

@@ -4,6 +4,7 @@ Default is "reduce".
 """
 recipe_tags = set(['GMOS', 'IMAGE'])
 
+
 def reduce(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -32,6 +33,7 @@ def reduce(p):
     p.stackFrames(zero=True)
     p.writeOutputs()
     return
+
 
 _default = reduce
 

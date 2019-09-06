@@ -22,20 +22,18 @@ from ...gemini.lookups.timestamp_keywords import timestamp_keys
 
 from geminidr.niri.primitives_niri_image import NIRIImage
 
-
-STAR_POSITIONS = [(200.,200.), (300.5,800.5)]
+STAR_POSITIONS = [(200., 200.), (300.5, 800.5)]
 LOGFILE = 'test_photometry.log'
 
 
 @pytest.fixture
 def niri_image():
-
     try:
-        import AstroFaker
+        import astrofaker
     except ImportError:
-        pytest.skip("AstroFaker is not installed")
+        pytest.skip("astrofaker is not installed")
 
-    ad = AstroFaker.create('NIRI', 'IMAGE')
+    ad = astrofaker.create('NIRI', 'IMAGE')
     ad.init_default_extensions()
 
     # SExtractor struggles if the background is noiseless
@@ -48,7 +46,6 @@ def niri_image():
 
 
 def test_addReferenceCatalog(niri_image):
-
     adinputs = niri_image.addReferenceCatalog()
     assert len(adinputs) == 1
 
@@ -66,7 +63,6 @@ def test_addReferenceCatalog(niri_image):
 
 
 def test_detectSources(niri_image):
-
     def catsort(cat):
         # Sort catalogue by first ordinate
         return sorted(cat, key=lambda x: x[0])
@@ -89,7 +85,7 @@ def test_detectSources(niri_image):
     for (realx, realy), (catx, caty) in zip(catsort(STAR_POSITIONS),
                                             catsort(cat_positions)):
         # 0-index vs 1-index
-        assert abs(realx+1 - catx) < 0.5 and abs(realy+1 - caty) < 0.5
+        assert abs(realx + 1 - catx) < 0.5 and abs(realy + 1 - caty) < 0.5
 
 
 def test_calculate_magnitudes():
@@ -110,15 +106,15 @@ def test_calculate_magnitudes():
     refcat.remove_columns(['filtermag', 'filtermag_err'])
 
     # Constant offset
-    prims._calculate_magnitudes(refcat, ['h', (0.1,0.1)])
+    prims._calculate_magnitudes(refcat, ['h', (0.1, 0.1)])
 
-    assert all(refcat['filtermag'].data == refcat['hmag'].data+0.1)
-    assert all(abs(refcat['filtermag_err'].data - np.sqrt(0.01+refcat['hmag_err'].data**2)) < 0.001)
+    assert all(refcat['filtermag'].data == refcat['hmag'].data + 0.1)
+    assert all(abs(refcat['filtermag_err'].data - np.sqrt(0.01 + refcat['hmag_err'].data ** 2)) < 0.001)
 
     refcat.remove_columns(['filtermag', 'filtermag_err'])
 
     # Colour term
-    prims._calculate_magnitudes(refcat, ['h', (1.0,0.1,'j-h')])
+    prims._calculate_magnitudes(refcat, ['h', (1.0, 0.1, 'j-h')])
 
     assert all(refcat['filtermag'].data == refcat['jmag'].data)
 
@@ -127,7 +123,6 @@ def test_calculate_magnitudes():
 
 
 def test_cull_objcat(niri_image):
-
     ad = niri_image.detectSources()[0]
     total_objects = len(ad[0].OBJCAT)
     total_object_pixels = np.sum(ad[0].OBJMASK)
@@ -148,11 +143,10 @@ def test_estimate_seeing(niri_image):
     ad = niri_image.detectSources()[0]
     seeing = prims._estimate_seeing(ad[0].OBJCAT)
 
-    assert abs(seeing - ad.seeing)/ad.seeing < 0.05
+    assert abs(seeing - ad.seeing) / ad.seeing < 0.05
 
 
 def test_estimate_seeing_stats():
-
     # Set up an OBJCAT that's all good
     default_values = {'ISOAREA_IMAGE': (50, 15),
                       'B_IMAGE': (5.0, 1.0),
@@ -176,8 +170,7 @@ def test_estimate_seeing_stats():
 
     assert abs(prims._estimate_seeing(objcat) - 0.9) < 0.0001
 
-    for k,v in default_values.items():
-
+    for k, v in default_values.items():
         # Check rejection of bad object, OK value
         objcat[k][0] = v[1]
         objcat['FWHM_WORLD'][0] = 0.00025
@@ -207,7 +200,7 @@ def test_profile_sources(niri_image):
     pixscale = ad.pixel_scale()
 
     for value in ad[0].OBJCAT['PROFILE_FWHM']:
-        assert abs(value*pixscale - ad.seeing)/ad.seeing < 0.1
+        assert abs(value * pixscale - ad.seeing) / ad.seeing < 0.1
 
     for value in ad[0].OBJCAT['PROFILE_EE50']:
-        assert abs(value*pixscale - ad.seeing)/ad.seeing < 0.1
+        assert abs(value * pixscale - ad.seeing) / ad.seeing < 0.1

@@ -4,6 +4,7 @@ Default is "makeProcessedFlat".
 """
 recipe_tags = set(['GMOS', 'IMAGE', 'CAL', 'FLAT'])
 
+
 def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -29,5 +30,6 @@ def makeProcessedFlat(p):
     p.makeIRAFCompatible()
     p.storeProcessedFlat()
     return
+
 
 _default = makeProcessedFlat

@@ -39,6 +39,8 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+**/.pytest_cache
+**/reports
 
 # Translations
 *.mo
@@ -69,4 +71,7 @@ target/
 .DS_Store
 
 # Jupyter notebooks checkpoints
-.ipynb_checkpoints
+**/.ipynb_checkpoints
+
+# Data Reduction Products
+**/.reducecache

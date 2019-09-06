@@ -31,13 +31,15 @@ from datetime import datetime
 from copy import deepcopy
 
 from recipe_system.utils.decorators import parameter_override
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class Spect(PrimitivesBASE):
     """
-    This is the class containing all of the preprocessing primitives
-    for the Spect level of the type hierarchy tree. It inherits all
-    the primitives from the level above
+    This is the class containing all of the pre-processing primitives
+    for the :class:`Spect` level of the type hierarchy tree. It inherits all
+    the primitives from :class:`geminidr.PrimitivesBASE`.
     """
     tagset = set(["GEMINI", "SPECT"])
 
@@ -55,6 +57,8 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
+        adinputs: list
+            input instances of :class:`~astrodata.AstroData`
         suffix: str
             suffix to be added to output files
         spatial_order: int
@@ -73,6 +77,11 @@ class Spect(PrimitivesBASE):
             maximum orthogonal shift (per pixel) for line-tracing
         max_missed: int
             maximum number of steps to miss before a line is lost
+
+        Returns:
+        list: AstroData instances, each with a .FITCOORD Table appended to
+              each extension, providing details of the 2D Chebyshev fit which
+              maps the distortion
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -94,6 +103,7 @@ class Spect(PrimitivesBASE):
             for ext in ad:
                 self.viewer.display_image(ext, wcs=False)
                 self.viewer.width = 2
+
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
 
@@ -115,7 +125,7 @@ class Spect(PrimitivesBASE):
                                     "table on {} - identifying lines in "
                                     "middle {}. Wavelength calibration may "
                                     "not be correct.".format(direction, extname,
-                                            direction))
+                                                             direction))
                     else:
                         start = wavecal['coefficients'][index]
                     if id_only:
@@ -138,9 +148,9 @@ class Spect(PrimitivesBASE):
                         log.stdinfo("Estimated feature width: {:.2f} pixels".format(fwidth))
 
                     # Find peaks; convert width FWHM to sigma
-                    widths = 0.42466*fwidth * np.arange(0.8,1.21,0.05)  # TODO!
+                    widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
                     initial_peaks, _ = tracing.find_peaks(data, widths, mask=mask,
-                                                       variance=variance, min_snr=min_snr)
+                                                          variance=variance, min_snr=min_snr)
                     log.stdinfo("Found {} peaks".format(len(initial_peaks)))
 
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -151,8 +161,8 @@ class Spect(PrimitivesBASE):
 
                 m_init = models.Chebyshev2D(x_degree=orders[1-dispaxis],
                                             y_degree=orders[dispaxis],
-                                            x_domain=[0, ext.shape[1]-1],
-                                            y_domain=[0, ext.shape[0]-1])
+                                            x_domain=[0, ext.shape[1] - 1],
+                                            y_domain=[0, ext.shape[0] - 1])
                 # Find model to transform actual (x,y) locations to the
                 # value of the reference pixel along the dispersion axis
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
@@ -285,10 +295,8 @@ class Spect(PrimitivesBASE):
                 else:
                     # Single-extension AD, with single Transform
                     adg = transform.AstroDataGroup(ad, [transform.Transform(m_ident)])
-                    print(ad[0].data.mean())
 
                 ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
-                print(ad_out[0].data.mean())
                 try:
                     ad_out[0].WAVECAL = arc[0].WAVECAL
                 except AttributeError:
@@ -316,14 +324,45 @@ class Spect(PrimitivesBASE):
 
         return adoutputs
 
-
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
         This primitive determines the wavelength solution for an ARC and
-        stores it as an attached WAVECAL table. 2D input images are converted
-        to 1D by collapsing a slice of the image along the dispersion
-        direction, and peaks are identified. These are then matched to an
-        arc line list, using the KDTreeFitter.
+        stores it as an attached WAVECAL table.
+
+        2D input images are converted to 1D by collapsing a slice of the image
+        along the dispersion direction, and peaks are identified. These are then
+        matched to an arc line list, using the KDTreeFitter.
+
+        For each :class:`~astrodata.AstroData` object and for each extension
+        within it, this primitive contains the following bigger steps:
+
+        - Read Arc Lines;
+
+        - Extract 1D spectrum;
+
+        - Mask data skipping non-linear or saturated lines;
+
+        - Use known central wavelength to calculate wavelength range and dispersion;
+
+        - Estimate line widths to be used on peak detection;
+
+        - Detect peaks using Continuous Wavelet Transform;
+
+        - Create weight dictionary with different types of weights (intensity/flux);
+
+        - Create iteration sequence with different weights methods;
+
+        - Create 0th iteration :class:`~astropy.modeling.models.Chebyshev1D`
+          model;
+
+        - Fit iteration using :class:`~gempy.library.matching.KDTreeFitter`;
+
+        - Matching using :class:`~gempy.library.matching.Chebyshev1DMatchBox`;`
+
+        - Convert model into dictionary and, then, into a Table;
+
+        - Store solution as a Table.
+
 
         Parameters
         ----------
@@ -345,6 +384,12 @@ class Spect(PrimitivesBASE):
             how to weight the detected peaks
         nbright: int
             number of brightest lines to cull before fitting
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            List with updated :class:`~astrodata.AstroData` objects with the
+            `.WAVECAL` attribute on each appropriated extension.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -393,6 +438,7 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             for ext in ad:
                 log.info("Determining wavelength solution for {}".format(ad.filename))
+
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
                     direction = "row" if ext.dispersion_axis() == 1 else "column"
@@ -426,14 +472,14 @@ class Spect(PrimitivesBASE):
 
                 #arc_weights = None
 
-                if min(arc_lines) > cenwave + 0.5*len(data)*abs(dw):
+                if min(arc_lines) > cenwave + 0.5 * len(data) * abs(dw):
                     log.warning("Line list appears to be in Angstroms; converting to nm")
                     arc_lines *= 0.1
 
                 # Find peaks; convert width FWHM to sigma
-                widths = 0.42466*fwidth * np.arange(0.8,1.21,0.05)  # TODO!
+                widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
                 peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask,
-                                                   variance=variance, min_snr=min_snr)
+                                                      variance=variance, min_snr=min_snr)
                 log.stdinfo('{}: {} peaks and {} arc lines'.
                              format(ad.filename, len(peaks), len(arc_lines)))
 
@@ -477,7 +523,7 @@ class Spect(PrimitivesBASE):
                     plot_arc_fit(data, peaks, arc_lines, arc_weights, m_final, "Initial model")
                 log.stdinfo('Initial model: {}'.format(repr(m_final)))
 
-                kdsigma = fwidth*abs(dw)
+                kdsigma = fwidth * abs(dw)
                 peaks_to_fit = peak_snrs > min_snr
                 peaks_to_fit[np.argsort(peak_snrs)[len(peaks)-nbright:]] = False
 
@@ -548,14 +594,14 @@ class Spect(PrimitivesBASE):
                 # Remove bounds from the model
                 m_final._constraints['bounds'] = {p: (None, None)
                                                   for p in m_final.param_names}
-                match_radius = 2*fwidth*abs(m_final.c1) / len(data)  # fwidth pixels
-                #match_radius = kdsigma
+                match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
+                # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                 model=m_final, match_radius=match_radius, sigma_clip=3)
                 if plot:
                     for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
-                       ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
-                               ha='center', va='top')
+                        ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
+                                ha='center', va='top')
 
                 log.stdinfo('{} {} {}'.format(repr(m.forward), len(m.input_coords), m.rms_output))
                 if plot:
@@ -611,7 +657,6 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
 
     def extract1DSpectra(self, adinputs=None, **params):
         """
@@ -677,7 +722,7 @@ class Spect(PrimitivesBASE):
 
                 num_spec = len(aptable)
                 log.stdinfo("Extracting {} spectra from {}".format(num_spec,
-                            extname))
+                                                                   extname))
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
@@ -699,7 +744,7 @@ class Spect(PrimitivesBASE):
                     wave_model = astromodels.dict_to_chebyshev(wavecal)
                     hdr_dict.update({'CRPIX1': 0.5 * np.sum(wave_model.domain) + 1,
                                      'CRVAL1': wave_model.c0.value,
-                                     'CDELT1':  2 * wave_model.c1.value / np.diff(wave_model.domain)[0]})
+                                     'CDELT1': 2 * wave_model.c1.value / np.diff(wave_model.domain)[0]})
                 hdr_dict['CD1_1'] = hdr_dict['CDELT1']
 
                 # We loop twice so we can construct the aperture mask if needed
@@ -719,7 +764,7 @@ class Spect(PrimitivesBASE):
                                                    for ap in apertures])
 
                 for i, aperture in enumerate(apertures):
-                    log.stdinfo("    Extracting spectrum from aperture {}".format(i+1))
+                    log.stdinfo("    Extracting spectrum from aperture {}".format(i + 1))
                     self.viewer.width = 2
                     self.viewer.color = colors[i % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
@@ -749,7 +794,7 @@ class Spect(PrimitivesBASE):
                                 sky_spec = sky_aperture.extract(apmask, width=sky_width, dispaxis=dispaxis)
                                 if np.sum(sky_spec.data) == 0:
                                     sky_spectra.append(sky_aperture.extract(ext, width=sky_width,
-                                                       viewer=self.viewer))
+                                                                            viewer=self.viewer))
                                     ok = True
                                 offset += direction * offset_step
 
@@ -796,7 +841,6 @@ class Spect(PrimitivesBASE):
         # Only return extracted spectra
         return ad_extracted
 
-
     def findSourceApertures(self, adinputs=None, **params):
         """
         This primitive finds sources in 2D spectra. This information is
@@ -835,7 +879,7 @@ class Spect(PrimitivesBASE):
                 # data, mask, variance are all arrays in the GMOS orientation
                 # with spectra dispersed horizontally
                 data, mask, variance = _transpose_if_needed(ext.data, ext.mask,
-                                        ext.variance, transpose=dispaxis==0)
+                                                            ext.variance, transpose=dispaxis == 0)
                 direction = "column" if dispaxis == 0 else "row"
 
                 # Collapse image along spatial direction to find noisy regions
@@ -875,7 +919,6 @@ class Spect(PrimitivesBASE):
                                             reverse=True)[:max_apertures]).T[0]
                 log.stdinfo("Found sources at {}s: {}".format(direction,
                             ' '.join(['{:.1f}'.format(loc) for loc in locations])))
-
 
                 all_limits = tracing.get_limits(profile, prof_mask, peaks=locations,
                                                 threshold=threshold, method=limit_method)
@@ -975,7 +1018,7 @@ class Spect(PrimitivesBASE):
 
                 # Linearization (and inverse)
                 t.append(models.Shift(-w1))
-                t.append(models.Scale(1./dw))
+                t.append(models.Scale(1. / dw))
 
                 # If we resample to a coarser pixel scale, we may interpolate
                 # over features. We avoid this by subsampling back to the
@@ -1431,12 +1474,12 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     fig, ax = plt.subplots()
-    ax.plot(model(np.arange(len(data))), data/np.max(data))
+    ax.plot(model(np.arange(len(data))), data / np.max(data))
     weights = np.full_like(arc_lines, 5) if arc_weights is None else arc_weights
     for line, wt in zip(arc_lines, weights):
         ax.plot([line,line], [0,1], 'k', color='{}'.format(0.05*(9-wt)))
     for peak in model(peaks):
-        ax.plot([peak,peak], [0,1], 'r:')
+        ax.plot([peak, peak], [0, 1], 'r:')
     limits = model([0, len(data)])
     ax.set_xlim(min(limits), max(limits))
     ax.set_ylim(0, 1)

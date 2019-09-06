@@ -7,13 +7,12 @@ from geminidr.gmos.primitives_gmos_image import GMOSImage
 
 @pytest.fixture
 def astrofaker():
-
     try:
-        import AstroFaker
+        import astrofaker
     except ImportError:
-        pytest.skip("AstroFaker not installed")
+        pytest.skip("astrofaker not installed")
 
-    return AstroFaker
+    return astrofaker
 
 
 def test_mosaic_detectors_gmos_binning(astrofaker):
@@ -32,8 +31,8 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
                 ad.init_default_extensions(binning=binning, overscan=False)
                 for ext in ad:
                     shape = ext.data.shape
-                    ext.add_star(amplitude=10000, x=0.5*(shape[1]-1),
-                                 y=0.5*(shape[0]-1), fwhm=0.5*binning)
+                    ext.add_star(amplitude=10000, x=0.5 * (shape[1] - 1),
+                                 y=0.5 * (shape[0] - 1), fwhm=0.5 * binning)
                 p = GMOSImage([ad])
                 ad = p.mosaicDetectors([ad])
                 ad = p.detectSources([ad])
@@ -41,6 +40,5 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
                 if binning == 1:
                     unbinned_positions = x
                 else:
-                    diffs = np.diff(unbinned_positions) -  binning * np.diff(x)
+                    diffs = np.diff(unbinned_positions) - binning * np.diff(x)
                     assert np.max(abs(diffs)) < 0.01
-

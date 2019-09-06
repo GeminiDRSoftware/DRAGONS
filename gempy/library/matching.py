@@ -17,12 +17,15 @@ from ..utils import logutils
 
 from .transform import Transform
 from .astromodels import Pix2Sky
+
+
 ##############################################################################
 class MatchBox(object):
     """
     A class to hold two sets of coordinates that have a one-to-one
     correspondence, and the transformations that go between them.
     """
+
     def __init__(self, input_coords, output_coords, forward_model=None,
                  backward_model=None, fitter=fitting.LinearLSQFitter,
                  **kwargs):
@@ -70,7 +73,7 @@ class MatchBox(object):
             matched = match_sources(model(input_coords), output_coords,
                                     radius=match_radius)
             incoords, outcoords = zip(*[(input_coords[i], output_coords[m])
-                                        for i, m in enumerate(matched) if m>-1])
+                                        for i, m in enumerate(matched) if m > -1])
             m = cls(incoords, outcoords, forward_model=model)
             m.fit_forward()
             if sigma_clip is None or num_matches == len(incoords):
@@ -89,7 +92,7 @@ class MatchBox(object):
         if len(input_coords) != len(output_coords):
             raise ValueError("Coordinate lists have different lengths")
         try:
-            for coord in input_coords+output_coords:
+            for coord in input_coords + output_coords:
                 try:
                     assert len(coord) == self._ndim
                 except TypeError:
@@ -243,7 +246,7 @@ class MatchBox(object):
             If set, put the largest elements at the start of the list
         """
         ordered = zip(*sorted(zip(self._input_coords, self._output_coords),
-                                  reverse=reverse, key=lambda x: x[1 if by_output else 0]))
+                              reverse=reverse, key=lambda x: x[1 if by_output else 0]))
         self._input_coords, self._output_coords = ordered
 
     @property
@@ -256,8 +259,8 @@ class MatchBox(object):
         except TypeError:
             return self._output_coords - self.forward(self._input_coords)
         else:
-            return list(c1[i]-c2[i] for c1, c2 in zip(self._output_coords,
-                                                      self.forward(self._input_coords))
+            return list(c1[i] - c2[i] for c1, c2 in zip(self._output_coords,
+                                                        self.forward(self._input_coords))
                         for i in range(self._ndim))
 
     @property
@@ -280,8 +283,9 @@ class MatchBox(object):
         except TypeError:
             return np.std(coords1 - coords2)
         else:
-            return list(np.std([c1[i]-c2[i] for c1,c2 in zip(coords1,coords2)])
+            return list(np.std([c1[i] - c2[i] for c1, c2 in zip(coords1, coords2)])
                         for i in range(self._ndim))
+
 
 ##############################################################################
 
@@ -290,6 +294,7 @@ class Chebyshev1DMatchBox(MatchBox):
     A MatchBox that specifically has Chebyshev1D transformations, and provides
     additional plotting methods for analysis.
     """
+
     def __init__(self, input_coords, output_coords, forward_model=None,
                  backward_model=None, fitter=fitting.LinearLSQFitter,
                  **kwargs):
@@ -322,16 +327,17 @@ class Chebyshev1DMatchBox(MatchBox):
 
         model = self.forward.copy()
         if not (remove_orders is None or remove_orders < 0):
-            for i in range(0, remove_orders+1):
+            for i in range(0, remove_orders + 1):
                 setattr(model, 'c{}'.format(i), 0)
 
         limits = self._forward_model.domain or (min(self._input_coords), max(self._input_coords))
         x = np.linspace(limits[0], limits[1], 1000)
         axes.plot(self.forward(x), model(x))
-        axes.plot(self.forward(self._input_coords), model(self._input_coords)+self.residuals, 'ko')
+        axes.plot(self.forward(self._input_coords), model(self._input_coords) + self.residuals, 'ko')
 
         if show:
             plt.show()
+
 
 ##############################################################################
 
@@ -355,6 +361,7 @@ def _landstat(landscape, updated_model, in_coords):
     float:
         statistic representing quality of fit to be minimized
     """
+
     def _element_if_in_bounds(arr, index):
         try:
             return arr[index]
@@ -364,12 +371,12 @@ def _landstat(landscape, updated_model, in_coords):
     out_coords = updated_model(*in_coords)
     if len(in_coords) == 1:
         out_coords = (out_coords,)
-    out_coords2 = tuple((coords-0.5).astype(int) for coords in out_coords)
+    out_coords2 = tuple((coords - 0.5).astype(int) for coords in out_coords)
     sum = np.sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
     ################################################################################
     # This stuff replaces the above 3 lines if speed doesn't hold up
     #    sum = np.sum(landscape[i] for i in out_coords if i>=0 and i<len(landscape))
-    #elif len(in_coords) == 2:
+    # elif len(in_coords) == 2:
     #    xt, yt = out_coords
     #    sum = np.sum(landscape[iy,ix] for ix,iy in zip((xt-0.5).astype(int),
     #                                                   (yt-0.5).astype(int))
@@ -378,15 +385,17 @@ def _landstat(landscape, updated_model, in_coords):
     ################################################################################
     return -sum  # to minimize
 
+
 class BruteLandscapeFitter(Fitter):
     """
     Fitter class that employs brute-force optimization to map a set of input
     coordinates onto a set of reference coordinates by cross-correlation
     over a "landscape" of "mountains" representing the reference coords
     """
+
     def __init__(self):
         super(BruteLandscapeFitter, self).__init__(optimize.brute,
-                                              statistic=_landstat)
+                                                   statistic=_landstat)
 
     @staticmethod
     def mklandscape(coords, sigma, maxsig, landshape):
@@ -418,8 +427,8 @@ class BruteLandscapeFitter(Fitter):
 
         landscape = np.zeros(landshape)
         hw = int(maxsig * sigma)
-        grid = np.meshgrid(*[np.arange(0, hw*2+1)]*landscape.ndim)
-        rsq = np.sum((ax - hw)**2 for ax in grid)
+        grid = np.meshgrid(*[np.arange(0, hw * 2 + 1)] * landscape.ndim)
+        rsq = np.sum((ax - hw) ** 2 for ax in grid)
         mountain = np.exp(-0.5 * rsq / (sigma * sigma))
 
         # Place a mountain onto the landscape for each coord in coords
@@ -428,8 +437,8 @@ class BruteLandscapeFitter(Fitter):
             lslice = []
             mslice = []
             for pos, length in zip(coord[::-1], landshape):
-                l1, l2 = int(pos-0.5)-hw, int(pos-0.5)+hw+1
-                m1, m2 = 0, hw*2+1
+                l1, l2 = int(pos - 0.5) - hw, int(pos - 0.5) + hw + 1
+                m1, m2 = 0, hw * 2 + 1
                 if l2 < 0 or l1 >= length:
                     break
                 if l1 < 0:
@@ -460,7 +469,7 @@ class BruteLandscapeFitter(Fitter):
 
         # Remember, coords are x-first (reversed python order)
         if landscape is None:
-            landshape = tuple(int(max(np.max(inco), np.max(refco))+10)
+            landshape = tuple(int(max(np.max(inco), np.max(refco)) + 10)
                               for inco, refco in zip(in_coords, ref_coords))[::-1]
             landscape = self.mklandscape(ref_coords, sigma, maxsig, landshape)
 
@@ -478,7 +487,7 @@ class BruteLandscapeFitter(Fitter):
             else:
                 # We don't check that the value of a fixed param is within bounds
                 if diff > 0 and not model_copy.fixed[p]:
-                    ranges.append(slice(*(bounds+(min(0.5*sigma, 0.1*diff),))))
+                    ranges.append(slice(*(bounds + (min(0.5 * sigma, 0.1 * diff),))))
                     continue
             ranges.append((getattr(model_copy, p).value,) * 2)
 
@@ -495,40 +504,39 @@ class KDTreeFitter(Fitter):
     Fitter class that uses minimization (the method can be passed as a
     parameter to the instance) to determine the transformation to map a set
     of input coordinates to a set of reference coordinates.
-    """
-    @staticmethod
-    def gaussian(distance, sigma):
-        return np.exp(-0.5 * distance * distance / (sigma * sigma))
 
-    @staticmethod
-    def lorentzian(distance, sigma):
-        return 1./(distance * distance + sigma * sigma)
+    Parameters
+    ----------
+    proximity_function : callable/None
+        function to call to determine score for proximity of reference
+        and transformed input coordinates. Must take two arguments: the
+        distance and a "sigma" factor, indicating the matching scale
+        (in the reference frame). If None, use the default
+        `KDTreeFitter.gaussian`.
+
+    sigma : float
+        matching scale (in the reference frame)
+
+    maxsig : float
+        maximum number of scale lengths for a match to be counted
+
+    k : int
+        maximum number of matches to be considered
+
+    """
 
     def __init__(self, proximity_function=None, sigma=5.0, maxsig=5.0, k=5):
-        """
 
-        Parameters
-        ----------
-        proximity_function: callable/None
-            function to call to determine score for proximity of reference
-            and transformed input coordinates. Must take two arguments: the
-            distance and a "sigma" factor, indicating the matching scale
-            (in the reference frame). If None, use the default.
-        sigma: float
-            matching scale (in the reference frame)
-        maxsig: float
-            maximum number of scale lengths for a match to be counted
-        k: int
-            maximum number of matches to be considered
-        """
-        self.statistic = None
-        self.niter = None
         if proximity_function is None:
             proximity_function = KDTreeFitter.gaussian
+
+        self.statistic = None
+        self.niter = None
         self.sigma = sigma
         self.maxsep = self.sigma * maxsig
         self.k = k
         self.proximity_function = partial(proximity_function, sigma=self.sigma)
+
         super(KDTreeFitter, self).__init__(optimize.minimize,
                                            statistic=self._kdstat)
 
@@ -586,9 +594,9 @@ class KDTreeFitter(Fitter):
             for p in model_copy.param_names:
                 pval = getattr(model_copy, p).value
                 ### EDITED THIS LINE SO TAKE A LOOK IF 2D MATCHING GOES WRONG!!
-                if abs(pval) < 20*xtol and not model_copy.fixed[p]:  # and 'offset' in p
-                    getattr(model_copy, p).value = 20*xtol if pval == 0 \
-                        else (np.sign(pval) * 20*xtol)
+                if abs(pval) < 20 * xtol and not model_copy.fixed[p]:  # and 'offset' in p
+                    getattr(model_copy, p).value = 20 * xtol if pval == 0 \
+                        else (np.sign(pval) * 20 * xtol)
 
         if in_weights is None:
             in_weights = np.ones((len(in_coords[0]),))
@@ -605,7 +613,7 @@ class KDTreeFitter(Fitter):
         if kwargs.get('method') == 'basinhopping':
             kwargs['args'] = farg
             kwargs['method'] = 'Nelder-Mead'
-            result = optimize.basinhopping(self.objective_function, p0, T=0.1*len(in_coords),
+            result = optimize.basinhopping(self.objective_function, p0, T=0.1 * len(in_coords),
                                            niter=20, stepsize=5, minimizer_kwargs=kwargs)
         else:
             result = self._opt_method(self.objective_function, p0, farg,
@@ -617,43 +625,60 @@ class KDTreeFitter(Fitter):
         self.niter = result['nit']
         return model_copy
 
+    @staticmethod
+    def gaussian(distance, sigma):
+        return np.exp(-0.5 * distance * distance / (sigma * sigma))
+
+    @staticmethod
+    def lorentzian(distance, sigma):
+        return 1. / (distance * distance + sigma * sigma)
+
     def _kdstat(self, tree, updated_model, in_coords, in_weights, ref_weights):
         """
-        Compute the statistic for transforming coordinates onto a set of reference
-        coordinates. This uses mathematical calulations and is not pixellated like
-        the landscape-array methods.
+        Compute the statistic for transforming coordinates onto a set of
+        reference coordinates. This uses mathematical calculations and is not
+        pixellated like the landscape-array methods.
 
         Parameters
         ----------
-        tree: KDTree
+        tree: :class:`~scipy.spatial.KDTree`
             a KDTree made from the reference coordinates
-        updated_model: Model
+
+        updated_model: :class:`~astropy.modeling.FittableModel`
             transformation (input -> reference) being investigated
-        x, y: float arrays
-            input x, y coordinates
-        sigma: float
-            standard deviation of Gaussian (in pixels) used to represent each source
-        maxsig: float
-            maximum number of standard deviations of Gaussian extent
+
+        in_coords: list or :class:`~numpy.ndarray`
+            List or array with the input coordinates in 1D or 2D.
+
+        in_weights : list or :class:`~numpy.ndarray`
+            List or array with the input weights (or fluxes/intensities) in
+            1D or 2D. The size and dimension should match `in_coords`.
+
+        ref_weights : list or :class:`~numpy.ndarray`
+            List or array with the reference weights (or fluxes/intensities) in
+            1D or 2D. Only the dimension should match `in_coords`.
 
         Returns
         -------
-        float:
-            statistic representing quality of fit to be minimized
+        float : Statistic representing quality of fit to be minimized
         """
         out_coords = updated_model(*in_coords)
+
         if len(in_coords) == 1:
             out_coords = (out_coords,)
+
         dist, idx = tree.query(list(zip(*out_coords)), k=self.k,
                                distance_upper_bound=self.maxsep)
+
         if self.k > 1:
-            sum = np.sum(in_wt*ref_weights[i]*self.proximity_function(d)
-                         for in_wt, dd, ii in zip(in_weights, dist, idx)
-                         for d, i in zip(dd, ii))
+            sum_ = np.sum([in_wt * ref_weights[i] * self.proximity_function(d)
+                           for in_wt, dd, ii in zip(in_weights, dist, idx)
+                           for d, i in zip(dd, ii)])
         else:
-            sum = np.sum(in_wt*ref_weights[i]*self.proximity_function(d)
-                         for in_wt, d, i in zip(in_weights, dist, idx))
-        return -sum  # to minimize
+            sum_ = np.sum([in_wt * ref_weights[i] * self.proximity_function(d)
+                           for in_wt, d, i in zip(in_weights, dist, idx)])
+
+        return -sum_  # to minimize
 
 
 def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
@@ -725,11 +750,12 @@ def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
     # We don't care about how much the function value changes (ftol), only
     # that the position is robust (xtol)
     final_model = fit_it(m, xin, xout, method='Nelder-Mead',
-                     options={'xtol': tolerance})
+                         options={'xtol': tolerance})
     if verbose:
         log.stdinfo(_show_model(final_model, "Final model in {:.2f} seconds".
                                 format((datetime.now() - start).total_seconds())))
     return final_model
+
 
 def _show_model(model, intro=""):
     """Provide formatted output of a (possibly compound) transformation"""
@@ -747,7 +773,9 @@ def _show_model(model, intro=""):
                     model_str += "{}: {}\n".format(param.name, param.value)
     return model_str
 
+
 ##############################################################################
+
 
 def align_catalogs(incoords, refcoords, transform=None, tolerance=0.1):
     """
@@ -757,54 +785,40 @@ def align_catalogs(incoords, refcoords, transform=None, tolerance=0.1):
     transformations for which a *range* is specified will be used. In order
     to keep the translation close to zero, the rotation and magnification
     are performed around the centre of the field, which can either be provided
-    -- as (x,y) in 1-based pixels -- or will be determined from the mid-range
+    -- as (x, y) in 1-based pixels -- or will be determined from the mid-range
     of the x and y input coordinates.
 
     Parameters
     ----------
-    xin, yin: float arrays
-        input coordinates
-    xref, yref: float arrays
-        reference coordinates to map and match to
-    model_guess: Model
-        initial model guess (overrides the next parameters)
-    translation: 2-tuple of floats
-        initial translation guess
-    translation_range: None, value, 2-tuple or 2x2-tuple
-        None => fixed
-        value => search range from initial guess (same for x and y)
-        2-tuple => search limits (same for x and y)
-        2x2-tuple => search limits for x and y
-    rotation: float
-        initial rotation guess (degrees)
-    rotation_range: None, float, or 2-tuple
-        extent of search space for rotation
-    magnification: float
-        initial magnification factor
-    magnification_range: None, float, or 2-tuple
-        extent of search space for magnification
-    tolerance: float
-        accuracy required for final result
-    center_of_field: 2-tuple
-        rotation and magnification have no effect at this location
-         (if None, uses middle of xin,yin ranges)
+    incoords : ???
+        ???
+    refcoords : ???
+        ???
+    transform : ???
+        ???
+    tolerance : float
+        ???
 
     Returns
     -------
-    Model: a model that maps (xin,yin) to (xref,yref)
+    Model: a model that maps (xin, yin) to (xref, yref)
     """
     if transform is None:
+
         if len(incoords) == 2:
             transform = Transform.create2d()
         else:
             raise ValueError("No transformation provided and data are not 2D")
 
     final_model = fit_model(transform.asModel(), incoords, refcoords,
-                               sigma=10.0, tolerance=tolerance, brute=True)
+                            sigma=10.0, tolerance=tolerance, brute=True)
+
     transform.replace(final_model)
+
     return transform
 
-#def match_sources(incoords, refcoords, radius=2.0, priority=[]):
+
+# def match_sources(incoords, refcoords, radius=2.0, priority=[]):
 #    """
 #    Match two sets of sources that are on the same reference frame. In general
 #    the closest match will be used, but there can be a priority list that will
@@ -846,6 +860,7 @@ def align_catalogs(incoords, refcoords, transform=None, tolerance=0.1):
 #            if len(inidx):
 #                matched[inidx[0]] = i
 #    return matched
+
 
 def match_sources(incoords, refcoords, radius=2.0):
     """
@@ -890,8 +905,9 @@ def match_sources(incoords, refcoords, radius=2.0):
         # Remove this incoord from the pool
         dist[min_arg[0], :] = np.inf
         # Remove this refcoord from the pool
-        dist[idx==i] = np.inf
+        dist[idx == i] = np.inf
     return matched
+
 
 def align_images_from_wcs(adinput, adref, transform=None, cull_sources=False,
                           min_sources=1, search_radius=10, rotate=False,
@@ -971,9 +987,9 @@ def align_images_from_wcs(adinput, adref, transform=None, cull_sources=False,
     # OBJCAT coords immutably, and then the fit_transform is the fittable
     # thing we're trying to get to map those to the input OBJCAT coords
     ref_transform = Transform(Pix2Sky(WCS(adref[0].hdr)))
-    #pixel_range = max(adinput[0].data.shape)
+    # pixel_range = max(adinput[0].data.shape)
     if full_wcs:
-        #fit_transform = Transform(Pix2Sky(WCS(adinput[0].hdr), factor=pixel_range, factor_scale=pixel_range, angle_scale=pixel_range/57.3).inverse)
+        # fit_transform = Transform(Pix2Sky(WCS(adinput[0].hdr), factor=pixel_range, factor_scale=pixel_range, angle_scale=pixel_range/57.3).inverse)
         fit_transform = Transform(Pix2Sky(WCS(adinput[0].hdr)).rename('WCS').inverse)
         fit_transform.angle.fixed = not rotate
         fit_transform.factor.fixed = not scale

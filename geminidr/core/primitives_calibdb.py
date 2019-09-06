@@ -17,13 +17,16 @@ from geminidr import PrimitivesBASE
 from . import parameters_calibdb
 
 from recipe_system.utils.decorators import parameter_override
+
 # ------------------------------------------------------------------------------
-REQUIRED_TAG_DICT = {'processed_arc':    ['PROCESSED', 'ARC'],
-                     'processed_bias':   ['PROCESSED', 'BIAS'],
-                     'processed_dark':   ['PROCESSED', 'DARK'],
-                     'processed_flat':   ['PROCESSED', 'FLAT'],
+REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
+                     'processed_bias': ['PROCESSED', 'BIAS'],
+                     'processed_dark': ['PROCESSED', 'DARK'],
+                     'processed_flat': ['PROCESSED', 'FLAT'],
                      'processed_fringe': ['PROCESSED', 'FRINGE'],
-                     'bpm':              ['BPM']}
+                     'bpm': ['BPM']}
+
+
 # ------------------------------------------------------------------------------
 @parameter_override
 class CalibDB(PrimitivesBASE):
@@ -62,9 +65,9 @@ class CalibDB(PrimitivesBASE):
 
     def _assert_calibrations(self, adinputs, caltype):
         for ad in adinputs:
-            calurl = self._get_cal(ad, caltype)                 # from cache
+            calurl = self._get_cal(ad, caltype)  # from cache
             if not calurl and "qa" not in self.mode:
-                    raise IOError(self._not_found.format(ad.filename))
+                raise IOError(self._not_found.format(ad.filename))
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
@@ -82,16 +85,20 @@ class CalibDB(PrimitivesBASE):
         
         Parameters
         ----------
-        adinputs: list of ADs
-            files for which calibrations are needed
-        caltype: str
+        adinputs: <list>
+            List of ADs of files for which calibrations are needed
+
+        caltype: <str>
             type of calibration required (e.g., "processed_bias")
-        refresh: bool
+
+        refresh: <bool>
             if False, only seek calibrations for ADs without them; otherwise
-            request calibrations for all ADs
-        howmany: None/int
-            maximum number of calibrations to return per AD (None means return
+            request calibrations for all ADs. Default is True.
+
+        howmany: <int> or <None>
+            Maximum number of calibrations to return per AD (None means return
             the filename of one, rather than a list of filenames)
+
         """
         log = self.log
         ad_rq = adinputs if refresh else [ad for ad in adinputs
@@ -117,15 +124,15 @@ class CalibDB(PrimitivesBASE):
     def getProcessedDark(self, adinputs=None, **params):
         caltype = "processed_dark"
         self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)  
+        self._assert_calibrations(adinputs, caltype)
         return adinputs
-    
+
     def getProcessedFlat(self, adinputs=None, **params):
         caltype = "processed_flat"
         self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
-        self._assert_calibrations(adinputs, caltype)        
+        self._assert_calibrations(adinputs, caltype)
         return adinputs
-    
+
     def getProcessedFringe(self, adinputs=None, **params):
         caltype = "processed_fringe"
         log = self.log
@@ -169,7 +176,7 @@ class CalibDB(PrimitivesBASE):
     def storeCalibration(self, adinputs=None, **params):
         """
         Will write calibrations in calibrations/<cal_type>/
-        """ 
+        """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         storedcals = self.cachedict["calibrations"]
@@ -199,7 +206,7 @@ class CalibDB(PrimitivesBASE):
         return adinputs
 
     def _markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
-                          primname=None, keyword=None):
+                           primname=None, keyword=None):
         """
         Updates filenames, datalabels (if asked) and adds header keyword
         prior to storing AD objects as calibrations
@@ -219,7 +226,7 @@ class CalibDB(PrimitivesBASE):
             adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="arc",
                                                 keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                    primname=self.myself(), keyword="PROCARC")
+                                           primname=self.myself(), keyword="PROCARC")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
@@ -230,7 +237,7 @@ class CalibDB(PrimitivesBASE):
             adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bias",
                                                 keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                    primname=self.myself(), keyword="PROCBIAS")
+                                           primname=self.myself(), keyword="PROCBIAS")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
@@ -240,7 +247,7 @@ class CalibDB(PrimitivesBASE):
         adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="bpm",
                                             keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                    primname=self.myself(), update_datalab=False, keyword="BPM")
+                                           primname=self.myself(), update_datalab=False, keyword="BPM")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
@@ -251,7 +258,7 @@ class CalibDB(PrimitivesBASE):
             adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="dark",
                                                 keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                    primname=self.myself(), keyword="PROCDARK")
+                                           primname=self.myself(), keyword="PROCDARK")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
@@ -262,10 +269,10 @@ class CalibDB(PrimitivesBASE):
             adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="flat",
                                                 keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                    primname=self.myself(), keyword="PROCFLAT")
+                                           primname=self.myself(), keyword="PROCFLAT")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
-    
+
     def storeProcessedFringe(self, adinputs=None, suffix=None):
         caltype = 'processed_fringe'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -275,11 +282,12 @@ class CalibDB(PrimitivesBASE):
         # as FRINGE and available locally.
         if self.upload and 'calibs' in self.upload:
             adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="fringe",
-                                              keyword_comments=self.keyword_comments)
+                                                keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
+                                           primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
+
 
 ##################
 

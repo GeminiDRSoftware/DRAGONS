@@ -5,7 +5,16 @@ Default is "reduce".
 """
 recipe_tags = set(['GMOS', 'SPECT', 'LS'])
 
+
 def reduce(p):
+    """
+    todo: add docstring
+
+    Parameters
+    ----------
+    p : :class:`geminidr.core.primitives_gmos_longslit.GMOSLongslit`
+
+    """
     p.prepare()
     p.addDQ(static_bpm=None)
     p.addVAR(read_noise=True)
@@ -20,5 +29,6 @@ def reduce(p):
     p.extract1DSpectra()
     p.linearizeSpectra()
     p.writeOutputs()
+
 
 _default = reduce

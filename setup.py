@@ -100,7 +100,6 @@ GEMPY_MODULES = ['gempy',
                  'gempy.gemini.eti',
                  'gempy.library',
                  'gempy.library.config',
-                 'gempy.mosaic',
                  'gempy.utils',
                  ]
 

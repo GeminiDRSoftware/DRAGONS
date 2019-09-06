@@ -5,6 +5,7 @@ Default is "reduce".
 """
 recipe_tags = set(['GMOS', 'SPECT', 'LS', 'FLAT'])
 
+
 def reduce(p):
     p.prepare()
     p.addDQ(static_bpm=None)
@@ -18,5 +19,6 @@ def reduce(p):
     p.thresholdFlatfield()
     p.makeIRAFCompatible()
     p.storeProcessedFlat()
+
 
 _default = reduce
