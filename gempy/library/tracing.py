@@ -596,11 +596,13 @@ def reject_bad_peaks(peaks):
 
 def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     """
-    This function determines the region in a 1D array associated with each
-    already-identified peak. It operates by fitting a spline to the data
-    (with weighting set based on pixel-to-pixel scatter) and then
-    differentiating this to find maxima and minima. For each peak, the
-    region is between the two closest minima, one on each side.
+    Determines the region in a 1D array associated with each already-identified
+    peak.
+
+    It operates by fitting a spline to the data (with weighting set based on
+    pixel-to-pixel scatter) and then differentiating this to find maxima and
+    minima. For each peak, the region is between the two closest minima, one on
+    each side.
 
     If the threshold_function is None, then the locations of these minima
     are returned. Otherwise, this must be a callable function that takes
@@ -687,9 +689,28 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
 
 
 def threshold_limit(spline, peak, limit, other_limit, threshold):
-    """Finds a threshold as a fraction of the way from the signal at the
-       minimum to the signal at the peak"""
+    """
+    Finds a threshold as a fraction of the way from the signal at the minimum to
+    the signal at the peak.
 
+    Parameters
+    ----------
+    spline : callable
+        ???
+    peak : ???
+        ???
+    limit : ???
+        ???
+    other_limit : ???
+        ???
+    threshold : ???
+        ???
+
+    Returns
+    -------
+    ???
+        ???
+       """
     # target is the signal level at the threshold
     target = spline(limit) + threshold * (spline(peak) - spline(limit))
     func = lambda x: spline(x) - target

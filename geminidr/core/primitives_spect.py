@@ -49,39 +49,40 @@ class Spect(PrimitivesBASE):
 
     def determineDistortion(self, adinputs=None, **params):
         """
-        This primitives maps the distortion on a detector by tracing lines
-        perpendicular to the dispersion direction, and then fitting a
-        2D Chebyshev polynomial to the fitted coordinates in the dispersion
-        direction. The distortion map does not change the coordinates in the
-        spatial direction.
+        Maps the distortion on a detector by tracing lines perpendicular to the
+        dispersion direction. Then it fits a 2D Chebyshev polynomial to the
+        fitted coordinates in the dispersion direction. The distoimportion map does
+        not change the coordinates in the spatial direction.
 
         Parameters
         ----------
-        adinputs: list
-            input instances of :class:`~astrodata.AstroData`
-        suffix: str
-            suffix to be added to output files
-        spatial_order: int
-            order of fit in spatial direction
-        spectral_order: int
-            order of fit in spectral direction
-        id_only: bool
-            trace using only those lines identified for wavelength calibration?
-        min_snr: float
-            minimum signal-to-noise ratio for identifying lines (if id_only=False)
-        nsum: int
-            number of rows/columns to sum at each step
-        step: int
-            size of step in pixels when tracing
-        max_shift: float
-            maximum orthogonal shift (per pixel) for line-tracing
-        max_missed: int
-            maximum number of steps to miss before a line is lost
+        adinputs : list of :class:`~astrodata.AstroData`
+            Arc data as 2D spectral images.
+        suffix :  str
+            Suffix to be added to output files.
+        spatial_order : int
+            Order of fit in spatial direction.
+        spectral_order : int
+            Order of fit in spectral direction.
+        id_only : bool
+            Trace using only those lines identified for wavelength calibration?
+        min_snr : float
+            Minimum signal-to-noise ratio for identifying lines (if id_only=False).
+        nsum : int
+            Number of rows/columns to sum at each step.
+        step : int
+            Size of step in pixels when tracing.
+        max_shift : float
+            Maximum orthogonal shift (per pixel) for line-tracing.
+        max_missed : int
+            Maximum number of steps to miss before a line is lost.
 
-        Returns:
-        list: AstroData instances, each with a .FITCOORD Table appended to
-              each extension, providing details of the 2D Chebyshev fit which
-              maps the distortion
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object is has a
+            `.FITCOORD` table appended to each of its extensions. This table
+            provides details of the 2D Chebyshev fit which maps the distortion.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -212,27 +213,34 @@ class Spect(PrimitivesBASE):
 
     def distortionCorrect(self, adinputs=None, **params):
         """
-        This primitive corrects for the optical distortion in science frames.
-        It uses a processed_arc with attached disotrtion map (a Chebyshev2D
-        model) to resample the input image.
+        Corrects optical distortion in science frames using a `processed_arc`
+        with attached distortion map (a Chebyshev2D model).
 
         If the input image requires mosaicking, then this is done as part of
         the resampling, to ensure one, rather than two, interpolations.
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        arc: AstroData/str/None
-            arc(s) containing distortion map
-        order: int (0-5)
-            order of interpolation when resampling
-        subsample: int
-            pixel subsampling factor
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D spectral images.
+        suffix : str
+            Suffix to be added to output files.
+        arc : :class:`~astrodata.AstroData` or str or None
+            Arc(s) containing distortion map.
+        order : int (0 - 5)
+            Order of interpolation when resampling.
+        subsample : int
+            Pixel subsampling factor.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Modified input objects without distortion.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+
         sfx = params["suffix"]
         arc = params["arc"]
         order = params["order"]
@@ -366,30 +374,32 @@ class Spect(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        center: int/None
-            central row/column for 1D extraction (None => use middle)
-        nsum: int
-            number of rows/columns to average
-        order: int
-            order of Chebyshev fitting function
-        min_snr: float
-            minimum S/N ratio in line peak to be used in fitting
-        fwidth: float
-            expected width of arc lines in pixels
-        linelist: str/None
-            name of file containing arc lines
-        weighting: str (none/natural/relative)
-            how to weight the detected peaks
-        nbright: int
-            number of brightest lines to cull before fitting
+        adinputs : list of :class:`~astrodata.AstroData`
+            Arc data as 2D spectral images or 1D spectra.
+        suffix : str
+            Suffix to be added to output files.
+        center : int or None
+            Central row/column for 1D extraction (None => use middle).
+        nsum : int
+            Number of rows/columns to average.
+        order : int
+            Order of Chebyshev fitting function.
+        min_snr : float
+            Minimum S/N ratio in line peak to be used in fitting.
+        fwidth : float
+            Expected width of arc lines in pixels.
+        linelist : str or None
+            Name of file containing arc lines.
+        weighting : str
+            How to weight the detected peaks (none/natural/relative).
+        nbright : int
+            Number of brightest lines to cull before fitting.
 
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            List with updated :class:`~astrodata.AstroData` objects with the
-            `.WAVECAL` attribute on each appropriated extension.
+            Updated objects with the `.WAVECAL` attribute on each appropriated
+            extension.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -660,28 +670,37 @@ class Spect(PrimitivesBASE):
 
     def extract1DSpectra(self, adinputs=None, **params):
         """
-        This primitive extracts one or more 1D spectra from a 2D spectral
-        image, according to the contents of the APERTURE table. If the
-        skyCorrectFromSlit() primitive has not been performed, then a 1D sky
-        spectrum is constructed from a nearby region of the image, and
+        Extracts one or more 1D spectra from a 2D spectral image, according to
+        the contents of the `.APERTURE` table.
+
+        If the `skyCorrectFromSlit()` primitive has not been performed, then a
+        1D sky spectrum is constructed from a nearby region of the image, and
         subtracted from the source spectrum.
 
         Each 1D spectrum is stored as a separate extension in a new AstroData
-        object, and the WAVECAL table (if it exists) is copied from the
-        parent. These new AD objects are placed in a separate stream from the
+        object. The `.WAVECAL` table (if it exists) is copied from the parent.
+
+        These new AD objects are placed in a separate stream from the
         parent 2D images, which are returned in the default stream.
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        method: str ['standard'|'weighted'|'optimal']
-            extraction method
-        width: float
-            width of extraction aperture (in pixels)
-        grow: float/None
-            avoidance region around each source aperture if a sky aperture
-            is required
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D spectral images with a `.APERTURE` table
+        suffix : str
+            Suffix to be added to output files.
+        method : {'standard', 'weighted', 'optimal'}
+            Extraction method.
+        width : float
+            Width of extraction aperture (in pixels).
+        grow : float or None
+            Avoidance region around each source aperture if a sky aperture
+            is required.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Extracted spectra as 1D data.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -843,17 +862,33 @@ class Spect(PrimitivesBASE):
 
     def findSourceApertures(self, adinputs=None, **params):
         """
-        This primitive finds sources in 2D spectra. This information is
-        stored in an APERTURE table for each extension, to which data will
-        be added by later primitives.
+        Finds sources in 2D spectral imags and store them in an APERTURE table
+        for each extension. Each table will, then, be used in later primitives
+        to perform aperture extraction.
+
+        This primitive should be called on data free of distortion.
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        sources: int/None
-            number of sources to find (None => all down to some threshold)
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+        suffix : str
+            Suffix to be added to output files.
+        max_apertures : int
+            Maximum number of apertures expected to be found.
+        threshold : float
+            ???
+        min_sky_pix : int
+            ???
 
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+
+        See Also
+        --------
+        :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
+        :meth:`~geminidr.cofe.primitives_spect.Spect.distortionCorrect`
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -942,25 +977,36 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-
     def linearizeSpectra(self, adinputs=None, **params):
         """
+        ???
+
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        w1: float
-            Wavelength of first pixel (nm)
-        w2: float
-            Wavelength of last pixel (nm)
-        dw: float
-            Dispersion (nm/pixel)
-        npix: int
-            Number of pixels in output spectrum
-        conserve: bool
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 1D spectra. Each extension must have a .WAVECAL
+            table.
+        suffix : str
+            Suffix to be added to output files.
+        w1 : float
+            Wavelength of first pixel (nm). See Notes below.
+        w2 : float
+            Wavelength of last pixel (nm). See Notes below.
+        dw : float
+            Dispersion (nm/pixel). See Notes below.
+        npix : int
+            Number of pixels in output spectrum. See Notes below.
+        conserve : bool
             Conserve flux (rather than interpolate)?
 
+        Notes
+        -----
         Exactly 0 or 3 of (w1, w2, dw, npix) must be specified.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Linearized 1D spectra.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1157,29 +1203,48 @@ class Spect(PrimitivesBASE):
 
     def skyCorrectFromSlit(self, adinputs=None, **params):
         """
-        This primitives performs row-by-row or column-by-column sky
-        subtraction of a 2D spectral image. In addition to bad pixels being
-        masked in the fitting of each row/column, any apertures defined in
-        the APERTURE table are also masked. If a specific order of spline
-        (i.e., number of spline pieces) is specified, this is reduced
-        proportionately to the number of good pixels in each row/column, as
-        a fraction of the total number of pixels. If less than 4 good pixels
-        exist, then the fit is performed to all pixels, good or bad.
+        Performs row-by-row/column-by-column sky subtraction of 2D spectra.
+
+        For that, it fits the sky contribution using a Univariate Spline
+        (:class:`~gempy.library.astromodels.UnivariateSplineWithOutlierRemoval`)
+        and builds a mask of rejected pixels during the fitting process. It
+        also adds any apertures defined in the APERTURE table to this mask if it
+        exists.
+
+        If there are less than 4 good pixels on each row/column, then the fit
+        is performed to every pixel.
+
+        This primitive should be called on data free of distortion.
+
 
         Parameters
         ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D science spectra loaded as :class:`~astrodata.AstroData` objects.
+
         suffix: str
             suffix to be added to output files
-        order: int/None
-            order of piecewise cubic spline fit to each row/column (None =>
-            use as many pieces as required to get chi^2=1)
+
+        order: int / None
+            order of piecewise cubic spline fit to each row/column. If `None`,
+            it uses as many pieces as required to get chi^2=1. Else, it is
+            reduced proportionately by the ratio between the number of good pixels
+            in each row/column and the total number of pixels.
+
         width: float/None
             width (in pixels) for each aperture, if not specified in the
             APERTURE table. None will use the value in the aperture table
             and, if one doesn't exist there, will result in the optimal width
             being calculated for each aperture
+
         grow: float
             masking growth radius (in pixels) for each aperture
+
+        See Also
+        --------
+        :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
+        :meth:`~geminidr.core.primitives_spect.Spect.distortionCorrect`,
+        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1253,16 +1318,37 @@ class Spect(PrimitivesBASE):
 
     def traceApertures(self, adinputs=None, **params):
         """
-        This primitive traces apertures listed in the APERTURE table along
-        the dispersion direction, and estimates the optimal extraction
-        aperture size from the spatial profile of each source.
+        Traces apertures listed in the APERTURE table along the dispersion
+        direction, and estimates the optimal extraction aperture size from the
+        spatial profile of each source.
+
 
         Parameters
         ----------
-        suffix: str
+        suffix : str
             suffix to be added to output files
-        trace_order: int
+
+        trace_order : int
             fitting order along spectrum
+
+        step : ???
+            ???
+
+        nsum : ???
+            ???
+
+        max_missed : ???
+            ???
+
+        max_shift : ???
+            ???
+
+
+        See Also
+        --------
+
+        :meth:`~geminidr.core.primitives_spect.Spect.findSourceApertures`
+
         """
 
         def averaging_func(data, mask=None, variance=None):
