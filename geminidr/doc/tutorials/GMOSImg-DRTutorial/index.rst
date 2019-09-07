@@ -1,7 +1,11 @@
 
 
 DRAGONS - GMOS Data Reduction Tutorial
-=============================================
+======================================
+
+.. admonition:: Document ID
+
+   PIPE-USER-116_GMOSImg-DRTutorial
 
 This is a brief tutorial on how to reduce GMOS images using DRAGONS. It is
 based on information found in the `GEMINI GMOS

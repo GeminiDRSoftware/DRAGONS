@@ -32,8 +32,8 @@ sequence. Just open a terminal to get started.
 
 While the example cannot possibly cover all situations, it will help you get
 acquainted with the reduction of Flamingos-2 data with DRAGONS. We
-encourage you to look at the :ref:`beyond` chapter to learn more about F2
-data reduction.
+encourage you to look at the :ref:`tips_and_tricks` and
+:ref:`issues_and_limitations` chapters to learn more about F2 data reduction.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. The most important script is called

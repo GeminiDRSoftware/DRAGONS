@@ -1,4 +1,4 @@
-.. 04_beyond.rst
+.. 04_tips_and_tricks.rst
 
 .. include:: DRAGONSlinks.txt
 

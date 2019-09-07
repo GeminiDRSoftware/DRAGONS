@@ -1,4 +1,4 @@
-.. 04_beyond.rst
+.. 05_issues_and_limitations.rst
 
 .. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html
 

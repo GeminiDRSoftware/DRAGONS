@@ -19,7 +19,8 @@ Tutorial Series - NIRI Imaging Data Reduction with DRAGONS
    02_datasets
    03_extended_cmdline
    04_extended_api
-   05_beyond
+   05_tips_and_tricks
+   06_issues_and_limitations
    
 
 Indices and tables
