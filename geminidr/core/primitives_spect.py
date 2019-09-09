@@ -1464,7 +1464,6 @@ class Spect(PrimitivesBASE):
                     self.viewer.polygon(plot_coords, closed=False,
                                         xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
-                    print('>>>>>>>  ', model_dict)
 
                     # Recalculate aperture limits after rectification
                     apcoords = m_final(np.arange(ext.shape[dispaxis]))
@@ -1472,7 +1471,6 @@ class Spect(PrimitivesBASE):
                     model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()
                                              if k not in all_column_names])
-                    print('>>>>>>>  ', model_dict)
                     all_model_dicts.append(model_dict)
 
                 for name in all_column_names:
