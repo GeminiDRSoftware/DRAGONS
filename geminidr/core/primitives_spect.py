@@ -89,7 +89,7 @@ class Spect(PrimitivesBASE):
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            The same input list is used as output but each object is has a
+            The same input list is used as output but each object now has a
             `.FITCOORD` table appended to each of its extensions. This table
             provides details of the 2D Chebyshev fit which maps the distortion.
         """
@@ -244,7 +244,7 @@ class Spect(PrimitivesBASE):
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            Modified input objects without distortion.
+            Modified input objects with distortion correct applied.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -917,6 +917,7 @@ class Spect(PrimitivesBASE):
         Returns
         -------
         list of :class:`~astrodata.AstroData`
+            ???
 
         See Also
         --------
@@ -1277,6 +1278,11 @@ class Spect(PrimitivesBASE):
 
         grow : float
             Masking growth radius (in pixels) for each aperture.
+
+        Returns
+        -------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Sky subtractd 2D spectral images.
 
         See Also
         --------
