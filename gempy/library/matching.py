@@ -372,7 +372,7 @@ def _landstat(landscape, updated_model, in_coords):
     if len(in_coords) == 1:
         out_coords = (out_coords,)
     out_coords2 = tuple((coords - 0.5).astype(int) for coords in out_coords)
-    sum = np.sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
+    result = sum(_element_if_in_bounds(landscape, coord[::-1]) for coord in zip(*out_coords2))
     ################################################################################
     # This stuff replaces the above 3 lines if speed doesn't hold up
     #    sum = np.sum(landscape[i] for i in out_coords if i>=0 and i<len(landscape))
@@ -383,7 +383,7 @@ def _landstat(landscape, updated_model, in_coords):
     #                  if ix>=0 and iy>=0 and ix<landscape.shape[1]
     #                                     and iy<landscape.shape[0])
     ################################################################################
-    return -sum  # to minimize
+    return -result  # to minimize
 
 
 class BruteLandscapeFitter(Fitter):
@@ -428,7 +428,7 @@ class BruteLandscapeFitter(Fitter):
         landscape = np.zeros(landshape)
         hw = int(maxsig * sigma)
         grid = np.meshgrid(*[np.arange(0, hw * 2 + 1)] * landscape.ndim)
-        rsq = np.sum((ax - hw) ** 2 for ax in grid)
+        rsq = sum((ax - hw) ** 2 for ax in grid)
         mountain = np.exp(-0.5 * rsq / (sigma * sigma))
 
         # Place a mountain onto the landscape for each coord in coords
@@ -706,14 +706,14 @@ class KDTreeFitter(Fitter):
                                distance_upper_bound=self.maxsep)
 
         if self.k > 1:
-            sum_ = np.sum([in_wt * ref_weights[i] * self.proximity_function(d)
-                           for in_wt, dd, ii in zip(in_weights, dist, idx)
-                           for d, i in zip(dd, ii)])
+            result = sum(in_wt * ref_weights[i] * self.proximity_function(d)
+                         for in_wt, dd, ii in zip(in_weights, dist, idx)
+                         for d, i in zip(dd, ii))
         else:
-            sum_ = np.sum([in_wt * ref_weights[i] * self.proximity_function(d)
-                           for in_wt, d, i in zip(in_weights, dist, idx)])
+            result = sum(in_wt * ref_weights[i] * self.proximity_function(d)
+                         for in_wt, d, i in zip(in_weights, dist, idx))
 
-        return -sum_  # to minimize
+        return -result  # to minimize
 
 
 def fit_model(model, xin, xout, sigma=5.0, tolerance=1e-8, brute=True,
