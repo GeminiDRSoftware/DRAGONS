@@ -84,7 +84,6 @@ def test_can_run_reduce_flat(path_to_inputs, calibrations):
     # )
 
 
-# @pytest.mark.xfail(reason="gain_setting can't not found when running runr()")
 def test_can_run_reduce_arc(path_to_inputs, calibrations):
     """
     Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
@@ -93,7 +92,7 @@ def test_can_run_reduce_arc(path_to_inputs, calibrations):
 
     raw_subdir = 'GMOS/GN-2017A-FT-19'
 
-    logutils.config(file_name='reduce_GMOS_LS_flat.log')
+    logutils.config(file_name='reduce_GMOS_LS_arc.log')
 
     all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
     assert len(all_files) > 1
