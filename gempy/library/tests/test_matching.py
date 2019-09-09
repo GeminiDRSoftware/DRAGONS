@@ -33,12 +33,10 @@ def chebyshev1d():
     return model
 
 
-# ToDo: @csimpson - Test is now passing with an absolute tolerance of 3.
 def test_KDTreeFitter_can_fit_a_chebyshev1d_function(chebyshev1d):
-    np.random.seed(0)
+    np.random.seed(SEED)
 
-    x = np.append(np.linspace(0, 3200, 5),
-                  np.random.uniform(low=0, high=3200, size=60))
+    x = np.random.uniform(low=0, high=3200, size=40)
 
     y = chebyshev1d(x)
 
@@ -46,10 +44,14 @@ def test_KDTreeFitter_can_fit_a_chebyshev1d_function(chebyshev1d):
     input_model.c0 = chebyshev1d.c0
     input_model.c1 = chebyshev1d.c1
 
-    fitter = matching.KDTreeFitter()
+    # We're starting with a linear model guess, so scale of mismatch is similar
+    # to the scale of the quadratic term in the real model
+    kdsigma = chebyshev1d.c2
+
+    fitter = matching.KDTreeFitter(sigma=kdsigma)
     fitted_model = fitter(input_model, x, y)
 
-    np.testing.assert_allclose(fitted_model.parameters, chebyshev1d.parameters, atol=3)
+    np.testing.assert_allclose(fitted_model.parameters, chebyshev1d.parameters, atol=1)
 
 
 @pytest.fixture
@@ -60,7 +62,6 @@ def make_catalog():
     return x, y
 
 
-# ToDO: @csimpson - Rewrite these tests using current API and pytest fixtures
 def transform_coords(coords, model):
     """
     Transform input coordinates to output coordinates using the
