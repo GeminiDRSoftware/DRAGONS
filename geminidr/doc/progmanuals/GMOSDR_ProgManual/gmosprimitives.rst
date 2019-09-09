@@ -27,6 +27,8 @@ List classes being inherited or mixed in.
 
     .. rubric:: Methods defined in class
 
+.. inheritance-diagram:: geminidr.gmos.primitives_gmos.GMOS
+
 
 .. primitives_gmos_ifu
 .. _===================
@@ -45,6 +47,8 @@ primitives_gmos_image
 
     .. rubric:: Methods defined in class
 
+.. inheritance-diagram:: geminidr.gmos.primitives_gmos_image.GMOSImage
+
 
 primitives_gmos_longslit
 ========================
@@ -60,6 +64,7 @@ primitives_gmos_longslit
 
     .. rubric:: Methods defined in class
 
+.. inheritance-diagram:: geminidr.gmos.primitives_gmos_longslit.GMOSLongslit
 
 .. primitives_gmos_mos
 .. _===================
@@ -81,3 +86,4 @@ primitives_gmos_spect
 
     .. rubric:: Methods defined in class
 
+.. inheritance-diagram:: geminidr.gmos.primitives_gmos_spect.GMOSSpect

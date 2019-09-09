@@ -89,7 +89,7 @@ class Spect(PrimitivesBASE):
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            The same input list is used as output but each object is has a
+            The same input list is used as output but each object now has a
             `.FITCOORD` table appended to each of its extensions. This table
             provides details of the 2D Chebyshev fit which maps the distortion.
         """
@@ -244,7 +244,7 @@ class Spect(PrimitivesBASE):
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            Modified input objects without distortion.
+            Modified input objects with distortion correct applied.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -917,6 +917,7 @@ class Spect(PrimitivesBASE):
         Returns
         -------
         list of :class:`~astrodata.AstroData`
+            ???
 
         See Also
         --------
@@ -1278,6 +1279,11 @@ class Spect(PrimitivesBASE):
         grow : float
             Masking growth radius (in pixels) for each aperture.
 
+        Returns
+        -------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Sky subtractd 2D spectral images.
+
         See Also
         --------
         :meth:`~geminidr.core.primitives_spect.Spect.determineDistortion`,
@@ -1464,7 +1470,6 @@ class Spect(PrimitivesBASE):
                     self.viewer.polygon(plot_coords, closed=False,
                                         xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
-                    print('>>>>>>>  ', model_dict)
 
                     # Recalculate aperture limits after rectification
                     apcoords = m_final(np.arange(ext.shape[dispaxis]))
@@ -1472,7 +1477,6 @@ class Spect(PrimitivesBASE):
                     model_dict['aper_upper'] = aperture['aper_upper'] - (np.max(apcoords) - location)
                     all_column_names.extend([k for k in model_dict.keys()
                                              if k not in all_column_names])
-                    print('>>>>>>>  ', model_dict)
                     all_model_dicts.append(model_dict)
 
                 for name in all_column_names:
