@@ -45,22 +45,54 @@ class Stack(PrimitivesBASE):
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        apply_dq: bool
-            apply DQ mask to data before combining?
-        nhigh: int
-            number of high pixels to reject
-        nlow: int
-            number of low pixels to reject
-        operation: str
-            combine method
-        reject_method: str
-            type of pixel rejection (passed to gemcombine)
-        zero: bool
-            apply zero-level offset to match background levels?
-        memory: float/None
-            available memory (in GB) for stacking calculations
+        adinputs : list of :class:`~astrodata.AstroData`
+            Any set of 2D.
+
+        suffix : str
+            Suffix to be added to output files.
+
+        apply_dq : bool
+            Apply DQ mask to data before combining?
+
+        nhigh : int
+            Number of high pixels to reject.
+
+        nlow : int
+            Number of low pixels to reject.
+
+        operation : str
+            Combine method.
+
+        reject_method : str
+            Type of pixel rejection (passed to gemcombine).
+
+        zero : bool
+            Apply zero-level offset to match background levels?
+
+        memory : float or None
+            Available memory (in GB) for stacking calculations.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Sky stacked image. This list contains only one element. The list
+            format is maintained so this primitive is consistent with all the
+            others.
+
+        Raises
+        ------
+        IOError
+            If the number of extensions in any of the `AstroData` objects is
+            different.
+
+        IOError
+            If the shape of any extension in any `AstroData` object is different.
+
+        AssertError
+            If any of the `.gain()` descriptors is None.
+
+        AssertError
+            If any of the `.read_noise()` descriptors is None.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -283,28 +315,53 @@ class Stack(PrimitivesBASE):
 
     def stackSkyFrames(self, adinputs=None, **params):
         """
-        This primitive stacks the AD frames sent to it with object masking.
+        Adds the `OBJMASK` object mask to the `DQ` data quality plane for every
+        image and its extensions. Then, stacks all the images into a single
+        frame.
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        apply_dq: bool
-            apply DQ mask to data before combining?
-        dilation: int
-            dilation radius for expanding object mask
-        mask_objects: bool
-            mask objects from the input frames?
-        nhigh: int
-            number of high pixels to reject
-        nlow: int
-            number of low pixels to reject
-        operation: str
-            combine method
-        reject_method: str
-            type of pixel rejection (passed to gemcombine)
-        memory: float/None
-            available memory (in GB) for stacking calculations
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science images with objects properly detected and added to the
+            `OBJMASK` plane.
+
+        suffix : str
+            Suffix to be added to output files.
+
+        apply_dq : bool
+            Apply DQ mask to data before combining?
+
+        dilation : int
+            Dilation radius for expanding object mask.
+
+        mask_objects : bool
+            Mask objects from the input frames?
+
+        nhigh : int
+            Number of high pixels to reject.
+
+        nlow : int
+            Number of low pixels to reject.
+
+        operation : str
+            Combine method.
+
+        reject_method : str
+            Type of pixel rejection (passed to gemcombine).
+
+        memory : float or None
+            Available memory (in GB) for stacking calculations.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Sky stacked image. This list contains only one element. The list
+            format is maintained so this primitive is consistent with all the
+            others.
+
+        See Also
+        --------
+        :meth:`~geminidr.core.primitives_stack.Stack.stackFrames`
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))

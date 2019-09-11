@@ -40,13 +40,22 @@ class Preprocess(PrimitivesBASE):
 
     def addObjectMaskToDQ(self, adinputs=None, suffix=None):
         """
-        This primitive combines the object mask in a OBJMASK extension
-        into the DQ plane.
+        Combines the object mask in a `OBJMASK` extension into the `DQ` (Data
+        Quality) plane.
 
         Parameters
         ----------
+        adinputs : :class:`~astrodata.AstroData`
+            Images that contain `OBJMASK`. If `OBJMASK` does not exist, the
+            extension is untouched.
+
         suffix: str/None
-            suffix to be added to output filenames
+            Suffix to be added to output filenames.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Images with updated `DQ` plane.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))

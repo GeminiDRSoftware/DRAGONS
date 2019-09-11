@@ -153,16 +153,37 @@ class Image(Preprocess, Register, Resample):
 
     def makeFringeForQA(self, adinputs=None, **params):
         """
-        This primitive performs the bookkeeping related to the construction of
-        a GMOS fringe frame in QA mode. The pixel manipulation is left to
-        makeFringeFrame(). The resulting frame is placed in the "fringe" stream,
-        ready to be retrieved by subsequent primitives.
+        Performs the bookkeeping related to the construction of a GMOS fringe
+        frame in QA mode.
+
+        The pixel manipulation is left to `makeFringeFrame()`.
+
+        The resulting frame is placed in the "fringe" stream, ready to be
+        retrieved by subsequent primitives.
 
         Parameters
         ----------
-        subtract_median_image: bool
+        adinputs : list of :class:`~astrodata.AstroData`
+            List of images that must contains at least three elements.
+
+        subtract_median_image : bool
             subtract a median image before finding fringes?
-        - also inherits parameters for detectSources() and stackSkyFrames()
+
+        Other Parameters
+        ----------------
+        Inherits parameters for `detectSources()` and `stackSkyFrames()`
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Fringe frame. This list contains only one element. The list
+            format is maintained so this primitive is consistent with all the
+            others.
+
+        See also
+        --------
+        :meth:`~geminidr.core.primitives_stack.Stack.stackSkyFrames`,
+        :meth:`~geminidr.core.primitives_photometry.Photometry.detectSources`
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -208,21 +229,32 @@ class Image(Preprocess, Register, Resample):
 
     def makeFringeFrame(self, adinputs=None, **params):
         """
-        Make a fringe frame from a list of images. This will construct and
-        subtract a median image if the fringes are too strong for detectSources()
+        Makes a fringe frame from a list of images. This will construct and
+        subtract a median image if the fringes are too strong for `detectSources()`
         to work on the inputs as passed. Since a generic recipe cannot know
-        whether this parameter is set, including detectSources() in the recipe
+        whether this parameter is set, including `detectSources()` in the recipe
         prior to making the fringe frame may be a waste of time. Therefore this
-        primitive will call detectSources() if no OBJCATs are found on the inputs.
+        primitive will call `detectSources()` if no `OBJCAT`s are found on the
+        inputs.
 
         Parameters
         ----------
-        suffix: str
-            suffix to be added to output files
-        subtract_median_image: bool
-            if True, create and subtract a median image before object
-            detection as a first-pass fringe removal
+        adinputs : list of :class:`~astrodata.AstroData`
+            List of images that must contains at least three elements.
 
+        suffix : str
+            Suffix to be added to output files.
+
+        subtract_median_image : bool
+            If True, create and subtract a median image before object detection
+            as a first-pass fringe removal.
+
+        Returns
+        -------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Fringe frame. This list contains only one element. The list
+            format is maintained so this primitive is consistent with all the
+            others.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))

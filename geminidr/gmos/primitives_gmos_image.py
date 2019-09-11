@@ -39,27 +39,40 @@ class GMOSImage(GMOS, Image, Photometry):
 
     def addOIWFSToDQ(self, adinputs=None, **params):
         """
-        Flags pixels affected by the OIWFS on a GMOS image. It uses the
-        header information to determine the location of the guide star, and
-        basically "flood-fills" low-value pixels around it to give a first
-        estimate. This map is then grown pixel-by-pixel until the values of
-        the new pixels it covers stop increasing (indicating it's got to the
-        sky level). Extensions to the right of the one with the guide star
-        are handled by taking a starting point near the left-hand edge of the
-        extension, level with the location at which the probe met the right-
-        hand edge of the previous extension.
+        Flags pixels affected by the On-Instrument Wavefront Sensor (OIWFS) on a
+        GMOS image.
+
+        It uses the header information to determine the location of the
+        guide star, and basically "flood-fills" low-value pixels around it to
+        give a first estimate. This map is then grown pixel-by-pixel until the
+        values of the new pixels it covers stop increasing (indicating it's got to the
+        sky level).
+
+        Extensions to the right of the one with the guide star are handled by
+        taking a starting point near the left-hand edge of the extension, level
+        with the location at which the probe met the right-hand edge of the
+        previous extension.
         
         This code assumes that data_section extends over all rows. It is, of
         course, very GMOS-specific.
         
         Parameters
         ----------
-        contrast: float (range 0-1)
-            initial fractional decrease from sky level to minimum brightness
-            where the OIWFS "edge" is defined
-        convergence: float
-            amount within which successive sky level measurements have to
-            agree during dilation phase for this phase to finish
+        adinputs : list of :class:`~gemini_instruments.gmos.AstroDataGmos`
+            Science data that contains the shadow of the OIWFS.
+
+        contrast : float (range 0-1)
+            Initial fractional decrease from sky level to minimum brightness
+            where the OIWFS "edge" is defined.
+
+        convergence : float
+            Amount within which successive sky level measurements have to
+            agree during dilation phase for this phase to finish.
+
+        Returns
+        -------
+        list of :class:`~gemini_instruments.gmos.AstroDataGmos`
+            Data with updated `.DQ` plane considering the shadow of the OIWFS.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -194,16 +207,33 @@ class GMOSImage(GMOS, Image, Photometry):
 
     def makeFringeForQA(self, adinputs=None, **params):
         """
-        This primitive performs the bookkeeping related to the construction of
-        a GMOS fringe frame. The pixel manipulation is left to makeFringeFrame.
-        The GMOS version simply handles subtract_median_image=None and then
-        calls the Image() version.
+        Performs the bookkeeping related to the construction of a GMOS fringe
+        frame. The pixel manipulation is left to `makeFringeFrame`.
+
+        The GMOS version simply handles `subtract_median_image=None` and then
+        calls the `Image()` version.
 
         Parameters
         ----------
-        subtract_median_image: bool/None
-            subtract a median image before finding fringes?
+        adinputs : list of :class:`~gemini_instruments.gmos.AstroDataGmos`
+            List of images that must contains at least three elements.
+
+        subtract_median_image : bool or None
+            Subtract a median image before finding fringes?
             None => yes if any images are from Gemini-South
+
+        Returns
+        -------
+        list of :class:`~gemini_instruments.gmos.AstroDataGmos`
+            Fringe frame. This list contains only one element. The list
+            format is maintained so this primitive is consistent with all the
+            others.
+
+        See also
+        --------
+        :meth:`geminidr.gmos.primitives_gmos_image.GMOSImage.makeFringeFrame`,
+        :meth:`geminidr.core.primitives_image.Image.makeFringeFrame`
+
         """
         params = _modify_fringe_params(adinputs, params)
         return super(GMOSImage, self).makeFringeForQA(adinputs, **params)
@@ -211,14 +241,32 @@ class GMOSImage(GMOS, Image, Photometry):
     def makeFringeFrame(self, adinputs=None, **params):
         """
         Make a fringe frame from a list of images.
-        The GMOS version simply handles subtract_median_image=None and then
-        calls the Image() version.
+
+        The GMOS version simply handles `subtract_median_image=None` and then
+        calls the `Image()` version.
 
         Parameters
         ----------
-        subtract_median_image: bool/None
-            subtract a median image before finding fringes?
-            None => yes if any images are from Gemini-South
+        adinputs : list of :class:`~gemini_instruments.gmos.AstroDataGmos`
+            List of images that must contains at least three objects.
+
+        suffix : str
+            Suffix to be added to output files.
+
+        subtract_median_image : bool
+            If True, create and subtract a median image before object detection
+            as a first-pass fringe removal.
+
+        Returns
+        -------
+        adinputs : list of :class:`~gemini_instruments.gmos.AstroDataGmos`
+            Fringe frame. This list contains only one element. The list
+            format is maintained so this primitive is consistent with all the
+            others.
+
+        See Also
+        --------
+        :meth:`~geminidr.core.primitives_image.Image.makeFringeFrame`
         """
         params = _modify_fringe_params(adinputs, params)
         return super(GMOSImage, self).makeFringeFrame(adinputs, **params)
