@@ -22,6 +22,7 @@ def reduce(p):
     p.biasCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
+    p.flatCorrect()
     p.distortionCorrect()
     p.findSourceApertures()
     p.skyCorrectFromSlit()

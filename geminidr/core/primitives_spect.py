@@ -1151,6 +1151,12 @@ class Spect(PrimitivesBASE):
         the resultant flatfield always has the same format (i.e., number of
         extensions and their shape) as the input frame.
 
+        TODO: There is an issue here because the spline knots are equally
+        spaced but their separation should be much larger than any data-free
+        inter-chip gap, so this effectively sets a maxmimum spline order
+        which might not be very high. Can/should we set the spline knots only
+        within each chip?
+
         Parameters
         ----------
         suffix: str
@@ -1164,7 +1170,7 @@ class Spect(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         spectral_order = params["spectral_order"]
         center = params["center"]
@@ -1215,7 +1221,8 @@ class Spect(PrimitivesBASE):
                     for coeff, slice_ in zip(coeffs, slices):
                         masked_data[slice_] *= coeff
                         weights[slice_] /= coeff
-
+                    log.stdinfo("QE scaling factors: " +
+                                " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
                                                     order=spectral_order, w=weights)
 
@@ -1238,6 +1245,8 @@ class Spect(PrimitivesBASE):
                         flat_data = spline(geomap.coords[dispaxis])
                         ext.divide(flat_data)
 
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
@@ -1606,7 +1615,7 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
         Scaling factors for CCDs 2+.
 
     xpix : array
-        Pixel numbers (0..N).
+        Pixel numbers (in general, 0..N).
 
     data : masked_array
         Data to be fit.
@@ -1634,7 +1643,6 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
                         order=order, w=scaled_weights, niter=1, grow=0)
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
                                 scaled_weights)).sum() / (~spline.mask).sum()
-    #print(coeffs, result, spline.mask.sum(), scaling.mean())
     return result
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):

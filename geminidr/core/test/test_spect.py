@@ -5,6 +5,7 @@ Tests applied to primitives_spect.py
 """
 import pytest
 import os
+import numpy as np
 
 import astrodata
 import astrodata.testing as ad_test
@@ -123,6 +124,27 @@ def prepare_for_wavelength_calibration(ad):
     p.makeIRAFCompatible()
 
     return p
+
+
+def test_QESpline_optimization():
+    """
+    Test the optimization of the QESpline. This defines 3 regions, each of a
+    different constant value, with gaps between them. The spline optimization
+    should determine the relative offsets.
+    """
+    from geminidr.core.primitives_spect import QESpline
+    GAP = 20
+    DATA_LENGTH = 300
+    real_coeffs = [0.5, 1.2]
+    data = np.array([1] * DATA_LENGTH + [0] * GAP + [real_coeffs[0]] * DATA_LENGTH + [0] * GAP + [real_coeffs[1]] * DATA_LENGTH)
+    xpix = np.arange(len(data))
+    weights = np.where(data > 0, 1., 0.)
+    boundaries = (DATA_LENGTH, 2*DATA_LENGTH+GAP)
+
+    coeffs = np.ones((2,))
+    order = 10
+    result = QESpline(coeffs, xpix, data, weights, boundaries, order)
+    np.testing.assert_allclose(real_coeffs, 1./result.x, atol=0.01)
 
 
 class TestArcProcessing:
