@@ -675,8 +675,8 @@ class Spect(PrimitivesBASE):
                 # Ensure all columns have the same length
                 pad_rows = nmatched - len(model_dict)
                 if pad_rows < 0:  # Really shouldn't be the case
-                    incoords += [0] * (-pad_rows)
-                    outcoords += [0] * (-pad_rows)
+                    incoords = list(incoords) + [0] * (-pad_rows)
+                    outcoords = list(outcoords) + [0] * (-pad_rows)
                     pad_rows = 0
 
                 fit_table = Table([list(model_dict.keys()) + [''] * pad_rows,
