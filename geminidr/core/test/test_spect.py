@@ -6,6 +6,7 @@ Tests applied to primitives_spect.py
 import pytest
 import os
 import numpy as np
+from scipy import optimize
 
 import astrodata
 import astrodata.testing as ad_test
@@ -137,13 +138,14 @@ def test_QESpline_optimization():
     DATA_LENGTH = 300
     real_coeffs = [0.5, 1.2]
     data = np.array([1] * DATA_LENGTH + [0] * GAP + [real_coeffs[0]] * DATA_LENGTH + [0] * GAP + [real_coeffs[1]] * DATA_LENGTH)
+    masked_data = np.ma.masked_where(data==0, data)
     xpix = np.arange(len(data))
     weights = np.where(data > 0, 1., 0.)
     boundaries = (DATA_LENGTH, 2*DATA_LENGTH+GAP)
 
     coeffs = np.ones((2,))
     order = 10
-    result = QESpline(coeffs, xpix, data, weights, boundaries, order)
+    result = optimize.minimize(QESpline, coeffs, args=(xpix, masked_data, weights, boundaries, order), tol=1e-7, method='Nelder-Mead')
     np.testing.assert_allclose(real_coeffs, 1./result.x, atol=0.01)
 
 
