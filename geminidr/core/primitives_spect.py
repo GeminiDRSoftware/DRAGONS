@@ -566,7 +566,7 @@ class Spect(PrimitivesBASE):
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    sequence = (((1, 'none', 'basinhopping'), (2, 'none', 'Nelder-Mead')) +
+                    sequence = (((1, 'none', 'basinhopping'), (2, 'none', 'basinhopping')) +
                                 tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order+1)))
 
                 # Now make repeated fits, increasing the polynomial order
@@ -591,7 +591,7 @@ class Spect(PrimitivesBASE):
                     # Set some bounds; this may need to be abstracted for
                     # different instruments? TODO
                     dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
-                    c0_unc = 0.01 * cenwave
+                    c0_unc = 0.05 * cenwave
                     m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
                     c1_unc = (0.0 if ord == 1 else 0.005) * abs(m_init.c1)
                     m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
