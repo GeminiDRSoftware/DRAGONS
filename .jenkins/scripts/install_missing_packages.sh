@@ -20,4 +20,6 @@ else
     pip install --quiet GeminiCalMgr-0.9.11-py3-none-any.whl
 fi
 
+pip install -e git+https://github.com/GeminiDRSoftware/AstroFaker
+
 cd -
