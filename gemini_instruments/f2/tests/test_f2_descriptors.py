@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import glob
+import os
 import pytest
 
 import astrodata
@@ -12,6 +14,17 @@ F2_DESCRIPTORS_TYPES = [
     ('nonlinearity_coeffs', list),
     ('pixel_scale', float),
 ]
+
+@pytest.fixture
+def f2_files(path_to_inputs):
+    def get_files(instrument):
+        return glob.glob(os.path.join(path_to_inputs, instrument, "*fits"))
+
+    gemini_files = []
+    gemini_files.extend(get_files("F2"))
+    gemini_files.sort()
+
+    yield gemini_files
 
 
 @pytest.mark.parametrize("descriptor,expected_type", F2_DESCRIPTORS_TYPES)

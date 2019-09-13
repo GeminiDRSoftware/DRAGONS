@@ -1,9 +1,23 @@
 #!/usr/bin/env python
 
+import glob
+import os
 import pytest
 
 import astrodata
 import gemini_instruments
+
+
+@pytest.fixture
+def f2_files(path_to_inputs):
+    def get_files(instrument):
+        return glob.glob(os.path.join(path_to_inputs, instrument, "*fits"))
+
+    gemini_files = []
+    gemini_files.extend(get_files("F2"))
+    gemini_files.sort()
+
+    yield gemini_files
 
 
 def test_is_right_type(f2_files):
@@ -26,7 +40,6 @@ def test_extension_data_shape(f2_files):
 
 
 def test_tags(f2_files):
-
     for _file in f2_files:
         ad = astrodata.open(_file)
         tags = ad.tags
@@ -41,7 +54,6 @@ def test_tags(f2_files):
 
 
 def test_can_return_instrument(f2_files):
-
     for _file in f2_files:
         ad = astrodata.open(_file)
         assert ad.phu['INSTRUME'] == 'F2'
@@ -49,14 +61,12 @@ def test_can_return_instrument(f2_files):
 
 
 def test_can_return_ad_length(f2_files):
-
     for _file in f2_files:
         ad = astrodata.open(_file)
         assert len(ad) == 1
 
 
 def test_slice_range(f2_files):
-
     for _file in f2_files:
         ad = astrodata.open(_file)
         metadata = ('SCI', 2), ('SCI', 3)
@@ -69,14 +79,12 @@ def test_slice_range(f2_files):
 
 
 def test_read_a_keyword_from_phu(f2_files):
-
     for _file in f2_files:
         ad = astrodata.open(_file)
         assert ad.phu['INSTRUME'].strip() == 'F2'
 
 
 def test_read_a_keyword_from_hdr(f2_files):
-
     for _file in f2_files:
         ad = astrodata.open(_file)
         try:
