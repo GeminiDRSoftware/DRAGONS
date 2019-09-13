@@ -27,7 +27,7 @@ def calibrations():
     return my_cals
 
 
-class TestGmosReduceBias:
+class TestGmosReduceLongslit:
 
     @staticmethod
     def test_can_run_reduce_bias(path_to_inputs, calibrations):
@@ -56,85 +56,85 @@ class TestGmosReduceBias:
             'processed_bias:{}'.format(reduce_bias.output_filenames[0])
         )
 
+    @staticmethod
+    def test_can_run_reduce_flat(path_to_inputs, calibrations):
+        """
+        Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
+        """
 
-def test_can_run_reduce_flat(path_to_inputs, calibrations):
-    """
-    Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
-    """
+        raw_subdir = 'GMOS/GN-2017A-FT-19'
 
-    raw_subdir = 'GMOS/GN-2017A-FT-19'
+        logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
-    logutils.config(file_name='reduce_GMOS_LS_flat.log')
+        assert len(calibrations) == 1
 
-    assert len(calibrations) == 1
+        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+        assert len(all_files) > 1
 
-    all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-    assert len(all_files) > 1
+        list_of_flat = dataselect.select_data(all_files, ['FLAT'], [])
 
-    list_of_flat = dataselect.select_data(all_files, ['FLAT'], [])
+        reduce_flat = Reduce()
+        assert len(reduce_flat.files) == 0
 
-    reduce_flat = Reduce()
-    assert len(reduce_flat.files) == 0
+        reduce_flat.files.extend(list_of_flat)
+        assert len(reduce_flat.files) == len(list_of_flat)
 
-    reduce_flat.files.extend(list_of_flat)
-    assert len(reduce_flat.files) == len(list_of_flat)
+        reduce_flat.ucals = normalize_ucals(reduce_flat.files, calibrations)
 
-    reduce_flat.ucals = normalize_ucals(reduce_flat.files, calibrations)
+        reduce_flat.runr()
 
-    reduce_flat.runr()
+        # calibrations.append(
+        #     'processed_flat:{}'.format(reduce_flat.output_filenames[0])
+        # )
 
-    # calibrations.append(
-    #     'processed_flat:{}'.format(reduce_flat.output_filenames[0])
-    # )
+    @staticmethod
+    def test_can_run_reduce_arc(path_to_inputs, calibrations):
+        """
+        Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
+        data.
+        """
 
+        raw_subdir = 'GMOS/GN-2017A-FT-19'
 
-def test_can_run_reduce_arc(path_to_inputs, calibrations):
-    """
-    Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
-    data.
-    """
+        logutils.config(file_name='reduce_GMOS_LS_arc.log')
 
-    raw_subdir = 'GMOS/GN-2017A-FT-19'
+        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+        assert len(all_files) > 1
 
-    logutils.config(file_name='reduce_GMOS_LS_arc.log')
+        list_of_arcs = dataselect.select_data(all_files, ['ARC'], [])
 
-    all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-    assert len(all_files) > 1
+        for f in list_of_arcs:
+            ad = astrodata.open(f)
+            _ = ad.gain_setting()
 
-    list_of_arcs = dataselect.select_data(all_files, ['ARC'], [])
+        for c in calibrations:
+            f = c.split(':')[-1]
+            ad = astrodata.open(f)
+            _ = ad.gain_setting()
 
-    for f in list_of_arcs:
-        ad = astrodata.open(f)
-        _ = ad.gain_setting()
+        temp = [c for c in calibrations if 'bias' in c]
+        processed_bias = temp[0].split(':')[-1]
 
-    for c in calibrations:
-        f = c.split(':')[-1]
-        ad = astrodata.open(f)
-        _ = ad.gain_setting()
+        adinputs = [astrodata.open(f) for f in list_of_arcs]
 
-    temp = [c for c in calibrations if 'bias' in c]
-    processed_bias = temp[0].split(':')[-1]
+        p = primitives_gmos_spect.GMOSSpect(adinputs)
 
-    adinputs = [astrodata.open(f) for f in list_of_arcs]
+        p.viewer = geminidr.dormantViewer(p, None)
 
-    p = primitives_gmos_spect.GMOSSpect(adinputs)
-
-    p.viewer = geminidr.dormantViewer(p, None)
-
-    p.prepare()
-    p.addDQ(static_bpm=None)
-    p.addVAR(read_noise=True)
-    p.overscanCorrect()
-    p.biasCorrect(bias=processed_bias)
-    p.ADUToElectrons()
-    p.addVAR(poisson_noise=True)
-    p.mosaicDetectors()
-    p.makeIRAFCompatible()
-    p.writeOutputs()  # for now, to speed up diagnostics of the next step
-    p.determineWavelengthSolution()
-    p.determineDistortion()
-    p.storeProcessedArc()
-    p.writeOutputs()
+        p.prepare()
+        p.addDQ(static_bpm=None)
+        p.addVAR(read_noise=True)
+        p.overscanCorrect()
+        p.biasCorrect(bias=processed_bias)
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.mosaicDetectors()
+        p.makeIRAFCompatible()
+        p.writeOutputs()  # for now, to speed up diagnostics of the next step
+        p.determineWavelengthSolution()
+        p.determineDistortion()
+        p.storeProcessedArc()
+        p.writeOutputs()
 
 
 # ToDo WIP - Define first how flats are processed
@@ -165,7 +165,7 @@ def test_can_run_reduce_arc(path_to_inputs, calibrations):
     # reduce_science.runr()
 
 
-class TestScienceProcessing:
+class TestGmosReduceFakeData:
     """
     The tests defined by this class reflect the expected behavior on science
     spectral data.
