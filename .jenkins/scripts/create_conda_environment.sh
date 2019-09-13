@@ -5,8 +5,8 @@
 # that the `$CONDA_ENV_NAME` virtual environment exists and its creating step
 # can be skipped
 
-#echo " Removing ${CONDA_ENV_NAME} ---"
-#conda env remove -n "${CONDA_ENV_NAME}" || echo 0
+echo " Removing ${CONDA_ENV_NAME} ---"
+conda env remove -n "${CONDA_ENV_NAME}" || echo 0
 
 
 echo " Installing ${CONDA_ENV_NAME} ---"

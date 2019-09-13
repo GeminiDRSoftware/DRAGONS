@@ -7,13 +7,13 @@ import pytest
 import astrodata
 import gemini_instruments
 
-
 F2_DESCRIPTORS_TYPES = [
     ('detector_x_offset', float),
     ('detector_y_offset', float),
     ('nonlinearity_coeffs', list),
     ('pixel_scale', float),
 ]
+
 
 @pytest.fixture
 def f2_files(path_to_inputs):
@@ -29,9 +29,7 @@ def f2_files(path_to_inputs):
 
 @pytest.mark.parametrize("descriptor,expected_type", F2_DESCRIPTORS_TYPES)
 def test_descriptor_matches_type(descriptor, expected_type, f2_files):
-
     for _file in f2_files:
-
         ad = astrodata.open(_file)
 
         value = getattr(ad, descriptor)()
