@@ -9,6 +9,7 @@ import os
 import pytest
 
 import astrodata
+import astrofaker
 import gemini_instruments
 import geminidr
 
@@ -17,6 +18,7 @@ from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
+from scipy import ndimage
 
 
 @pytest.fixture(scope='module')
@@ -198,9 +200,6 @@ class TestGmosReduceFakeData:
         return spectrum
 
     def test_can_extract_1d_spectra_from_2d_spectral_image(self):
-
-        import astrofaker
-        from scipy import ndimage
 
         logutils.config(file_name='foo.log')
 
