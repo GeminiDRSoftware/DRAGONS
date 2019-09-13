@@ -15,6 +15,9 @@ from importlib import import_module
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
+from astropy.io.registry import IORegistryError
+from astropy import units as u
+from astropy import constants as const
 
 from matplotlib import pyplot as plt
 
@@ -1534,6 +1537,111 @@ class Spect(PrimitivesBASE):
         except IndexError:
             weights = None
         return arc_lines, weights
+
+    def _get_spectrophotometry(self, filename):
+        """
+        Reads a file containing spectrophotometric data for a standard star
+        and returns these data as a Table(), converted to AB magnitudes. We
+        attempt to read a range of files and interpret them, either using
+        metadata or guesswork. If there's no metadata, we assume that the
+        first column is the wavelength, the second is the brightness data,
+        there may then be additional columns with uncertainty information,
+        and the width of the bandpass is always the last column.
+
+        We ignore any uncertainty information because, for ground-based data,
+        this will be swamped by limitations of the user's data.
+
+        Parameters
+        ----------
+        filename: str
+            name of file containing spectrophotometric data
+
+        Returns
+        -------
+        Table:
+            the spectrophotometric data, with columns 'WAVELENGTH',
+            'MAGNITUDE', and possibly 'WIDTH'
+        """
+        log = self.log
+        try:
+            tbl = Table.read(filename)
+        except FileNotFoundError:
+            log.warning("File {} not found!".format(filename))
+            return
+        except IORegistryError:
+            try:
+                tbl = Table.read(filename, format='ascii')
+            except:
+                self.log.warning("Cannot read file {}".format(filename))
+                return
+        num_columns = len(tbl.columns)
+
+        spec_table = Table()
+        for column_name in ('WAVELENGTH', 'WAVE', 'LAMBDA', 'col1'):
+            if column_name in tbl.colnames:
+                spec_table['WAVELENGTH'] = tbl[column_name]
+                break
+        else:
+            log.warning("Cannot find a wavelength column in {}".format(filename))
+            return
+
+        # Add the width (for IRAF files it's the last column)
+        # If it doesn't exist, we're OK with that
+        for column_name in ('WIDTH', 'FWHM'):
+            if column_name in tbl.colnames:
+                spec_table['WIDTH'] = tbl[column_name]
+                break
+        else:
+            if num_columns > 2:
+                try:
+                    spec_table['WIDTH'] = tbl['col{}'.format(num_columns)]
+                except KeyError:
+                    pass
+
+        # Ensure wavelength is in nm, and update metadata
+        # We assume the wavelength can only be Angstroms or nanometers
+        # STScI FITS tables have units of "ANGSTROMS", not "ANGSTROM",
+        # which is wrong so we handle this here.
+        is_angstroms = ('ANGSTROM' in str(spec_table['WAVELENGTH'].unit).upper()
+                        or max(spec_table['WAVELENGTH']) > 5000)
+        if is_angstroms:
+            spec_table['WAVELENGTH'] *= 0.1
+            if 'WIDTH' in spec_table.colnames:
+                spec_table['WIDTH'] *= 0.1
+
+        # Update metadata regardless (it may have been missing)
+        spec_table['WAVELENGTH'].unit = u.nm
+        if 'WIDTH' in spec_table.colnames:
+            spec_table['WIDTH'].unit = u.nm
+
+        for column_name in ('MAG', 'MAGNITUDE', 'ABMAG', 'FLUX', 'FLAM'):
+            if column_name in tbl.colnames:
+                brightness = tbl[column_name]
+                brightness_is_mag = 'MAG' in column_name
+                break
+        else:  # look for flux-type data
+            for column_name in ('col2', 'DATA'):
+                if column_name in tbl.colnames:
+                    brightness = tbl[column_name]
+                    break
+            else:
+                log.warning("Cannot find a data column in {}".format(filename))
+                return
+            brightness_is_mag = np.median(brightness) > 1
+
+        if brightness_is_mag:
+            spec_table['MAGNITUDE'] = brightness
+        else:
+            magnitudes = convert_flam_to_magnitude(spec_table['WAVELENGTH'].quantity,
+                                                   brightness.quantity)
+            if magnitudes is None:
+                log.warning("Problem converting units to magnitudes in {}".format(filename))
+                return
+            spec_table['MAGNITUDE'] = magnitudes
+        spec_table['MAGNITUDE'].unit = u.mag
+
+        return spec_table
+
 #-----------------------------------------------------------------------------
 
 def _average_along_slit(ext, center=None, nsum=None):
@@ -1644,6 +1752,46 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
                                 scaled_weights)).sum() / (~spline.mask).sum()
     return result
+
+def convert_flam_to_magnitude(wavelength, flam):
+    """
+    Helper function to convert flux density to AB magnitudes.
+    The input wavelength and flux density arrays can be Quantity objects
+    with units, which are respected. If there are no units, or the units
+    are unrecognized, wavelength is assumed to be in nm and flux density
+    in erg/cm^2/s/A. The returned array of magnitudes is dimensionless.
+
+    Parameters
+    ----------
+    wavelength: Quantity / array-like
+        wavelengths (in nm if no units)
+    flam: Quantity / array-like
+        flux density (in erg/cm^2/s/A if no units)
+
+    Returns
+    -------
+    array:
+        brightness in AB magnitudes
+    """
+    # Keep units if the input has them.
+    # Note that we may be unable to set the "unit" attribute
+    try:
+        if (isinstance(wavelength.unit, u.UnrecognizedUnit) or
+                wavelength.unit.physical_type == 'dimensionless'):
+            wavelength = wavelength.value * u.nm
+    except AttributeError:  # No unit
+        wavelength *= u.nm
+    try:
+        if (isinstance(flam.unit, u.UnrecognizedUnit) or
+                flam.unit.physical_type == 'dimensionless'):
+            flam = flam.value * u.erg / u.cm**2 / u.Angstrom
+    except AttributeError:
+        flam *= u.erg / u.cm**2 / u.Angstrom
+
+    fnu = (flam * wavelength * wavelength / const.c / (u.erg / u.cm**2 / u.Hz)).decompose()
+    if fnu.unit == u.dimensionless_unscaled:
+        mag = np.full_like(flam, np.nan)
+        return -48.6 - 2.5 * np.log10(fnu, out=mag, where=fnu>0)
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     fig, ax = plt.subplots()
