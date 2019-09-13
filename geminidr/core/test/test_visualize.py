@@ -34,8 +34,8 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
                     ext.add_star(amplitude=10000, x=0.5 * (shape[1] - 1),
                                  y=0.5 * (shape[0] - 1), fwhm=0.5 * binning)
                 p = GMOSImage([ad])
-                ad = p.mosaicDetectors([ad])
-                ad = p.detectSources([ad])
+                ad = p.mosaicDetectors([ad])[0]
+                ad = p.detectSources([ad])[0]
                 x = np.array(sorted(ad[0].OBJCAT['X_IMAGE']))
                 if binning == 1:
                     unbinned_positions = x
