@@ -898,7 +898,17 @@ class Spect(PrimitivesBASE):
         for each extension. Each table will, then, be used in later primitives
         to perform aperture extraction.
 
-        This primitive should be called on data free of distortion.
+        The primitive operates by first collapsing the 2D spectral image in
+        the spatial direction to identify sky lines as regions of high
+        pixel-to-pixel variance, and the regions between the sky lines which
+        consist of at least `min_sky_pix` pixels are selected. These are then
+        collapsed in the dispersion direction to produce a 1D spatial profile,
+        from which sources are identified using a peak-finding algorithm.
+
+        The widths of the apertures are determined by calculating a threshold
+        level relative to the peak, or an integrated flux relative to the
+        total between the minima on either side and determining where a smoothed
+        version of the source profile reaches this threshold.
 
         Parameters
         ----------
@@ -912,15 +922,17 @@ class Spect(PrimitivesBASE):
             Maximum number of apertures expected to be found.
 
         threshold : float
-            ???
+            height above background (relative to peak) at which to define
+            the edges of the aperture
 
         min_sky_pix : int
-            ???
+            minimum number of contiguous pixels between sky lines
+            for a region to be added to the spectrum before collapsing to 1D
 
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            ???
+            The 2D spectral images with APERTURE tables attached
 
         See Also
         --------
