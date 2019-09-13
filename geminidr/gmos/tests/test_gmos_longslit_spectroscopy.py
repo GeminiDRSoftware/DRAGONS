@@ -27,31 +27,34 @@ def calibrations():
     return my_cals
 
 
-def test_can_run_reduce_bias(path_to_inputs, calibrations):
-    """
-    Make sure that the reduce_BIAS works for spectroscopic data.
-    """
+class TestGmosReduceBias:
 
-    raw_subdir = 'GMOS/GN-2017A-FT-19'
+    @staticmethod
+    def test_can_run_reduce_bias(path_to_inputs, calibrations):
+        """
+        Make sure that the reduce_BIAS works for spectroscopic data.
+        """
 
-    logutils.config(file_name='reduce_GMOS_LS_bias.log')
+        raw_subdir = 'GMOS/GN-2017A-FT-19'
 
-    all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-    assert len(all_files) > 1
+        logutils.config(file_name='reduce_GMOS_LS_bias.log')
 
-    list_of_bias = dataselect.select_data(all_files, ['BIAS'], [])
+        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+        assert len(all_files) > 1
 
-    reduce_bias = Reduce()
-    assert len(reduce_bias.files) == 0
+        list_of_bias = dataselect.select_data(all_files, ['BIAS'], [])
 
-    reduce_bias.files.extend(list_of_bias)
-    assert len(reduce_bias.files) == len(list_of_bias)
+        reduce_bias = Reduce()
+        assert len(reduce_bias.files) == 0
 
-    reduce_bias.runr()
+        reduce_bias.files.extend(list_of_bias)
+        assert len(reduce_bias.files) == len(list_of_bias)
 
-    calibrations.append(
-        'processed_bias:{}'.format(reduce_bias.output_filenames[0])
-    )
+        reduce_bias.runr()
+
+        calibrations.append(
+            'processed_bias:{}'.format(reduce_bias.output_filenames[0])
+        )
 
 
 def test_can_run_reduce_flat(path_to_inputs, calibrations):
