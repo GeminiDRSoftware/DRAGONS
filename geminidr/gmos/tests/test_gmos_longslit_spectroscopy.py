@@ -178,6 +178,49 @@ class TestGmosReduceLongslit:
 
                 np.testing.assert_array_less(rms, 0.5)
 
+    @staticmethod
+    def test_reduced_arcs_contains_model_with_stable_wavelength_solution(
+            dataset_folder, calibrations, path_to_outputs, path_to_refs):
+        """
+        Make sure that the wavelength solution gives same results on different
+        runs.
+        """
+        from gempy.library.astromodels import dict_to_chebyshev
+
+        arcs = glob.glob(
+            os.path.join(path_to_outputs, dataset_folder, '*_arc.fits'))
+
+        for arc in arcs:
+
+            filename = os.path.split(arc)[-1]
+            output = os.path.join(path_to_outputs, dataset_folder, filename)
+            reference = os.path.join(path_to_refs, dataset_folder, filename)
+
+            if not os.path.exists(output):
+                pytest.skip('Output file not found: {}'.format(output))
+
+            if not os.path.exists(reference):
+                pytest.skip('Reference file not found: {}'.format(reference))
+
+            ad = astrodata.open(output)
+            ad_ref = astrodata.open(reference)
+
+            for ext, ext_ref in zip(ad, ad_ref):
+
+                model = dict_to_chebyshev(
+                    dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
+                )
+
+                ref_model = dict_to_chebyshev(
+                    dict(zip(ext_ref.WAVECAL["name"], ext_ref.WAVECAL["coefficients"]))
+                )
+
+                x = np.arange(ext.shape[1])
+                y = model(x)
+                ref_y = ref_model(x)
+
+                np.testing.assert_allclose(y, ref_y, rtol=1)
+
 
 # ToDo WIP - Define first how flats are processed
 # def test_can_run_reduce_science(path_to_inputs, calibrations):
