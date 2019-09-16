@@ -35,6 +35,11 @@ def calibrations():
 
 @pytest.mark.parametrize('dataset_folder', dataset_list, scope='class')
 class TestGmosReduceLongslit:
+    """
+    Collection of tests that will run on every `dataset_folder`. Both
+    `dataset_folder` and `calibrations` parameter should be present on every
+    test. Even when the test does not use it.
+    """
 
     @staticmethod
     def test_can_run_reduce_bias(dataset_folder, calibrations, path_to_inputs,
@@ -153,8 +158,8 @@ class TestGmosReduceLongslit:
     @staticmethod
     def test_reduced_arcs_contain_model_with_expected_rms(dataset_folder, calibrations):
         """
-        Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
-        data.
+        Make sure that the WAVECAL model was fitted with an RMS smaller than
+        0.5.
         """
         arcs = [c.split(':')[-1] for c in calibrations if 'processed_arc' in c]
 
