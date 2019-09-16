@@ -17,7 +17,6 @@ from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
-from scipy import ndimage
 
 
 @pytest.fixture(scope='module')
@@ -28,23 +27,21 @@ def calibrations():
     return my_cals
 
 
+@pytest.mark.parametrize('dataset_folder', ['GMOS/GN-2017A-FT-19'])
 class TestGmosReduceLongslit:
 
     @staticmethod
-    def test_can_run_reduce_bias(path_to_inputs, calibrations):
+    def test_can_run_reduce_bias(dataset_folder, path_to_inputs, calibrations):
         """
         Make sure that the reduce_BIAS works for spectroscopic data.
         """
-
-        raw_subdir = 'GMOS/GN-2017A-FT-19'
-
         logutils.config(file_name='reduce_GMOS_LS_bias.log')
 
-        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+        all_files = sorted(
+            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
         assert len(all_files) > 1
 
         list_of_bias = dataselect.select_data(all_files, ['BIAS'], [])
-
         reduce_bias = Reduce()
         assert len(reduce_bias.files) == 0
 
@@ -58,18 +55,16 @@ class TestGmosReduceLongslit:
         )
 
     @staticmethod
-    def test_can_run_reduce_flat(path_to_inputs, calibrations):
+    def test_can_run_reduce_flat(dataset_folder, path_to_inputs, calibrations):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
         """
-
-        raw_subdir = 'GMOS/GN-2017A-FT-19'
-
         logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
         assert len(calibrations) == 1
 
-        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+        all_files = sorted(
+            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
         assert len(all_files) > 1
 
         list_of_flat = dataselect.select_data(all_files, ['FLAT'], [])
@@ -89,17 +84,15 @@ class TestGmosReduceLongslit:
         # )
 
     @staticmethod
-    def test_can_run_reduce_arc(path_to_inputs, calibrations):
+    def test_can_run_reduce_arc(dataset_folder, path_to_inputs, calibrations):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
         data.
         """
-
-        raw_subdir = 'GMOS/GN-2017A-FT-19'
-
         logutils.config(file_name='reduce_GMOS_LS_arc.log')
 
-        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+        all_files = sorted(
+            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
         assert len(all_files) > 1
 
         list_of_arcs = dataselect.select_data(all_files, ['ARC'], [])
@@ -166,6 +159,7 @@ class TestGmosReduceLongslit:
     # reduce_science.runr()
 
 
+# ToDo - Using AstroFaker messes up with other tests. How could I fix this?
 # class TestGmosReduceFakeData:
 #     """
 #     The tests defined by this class reflect the expected behavior on science
