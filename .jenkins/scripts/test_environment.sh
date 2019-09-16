@@ -18,3 +18,6 @@ python -c "import gemini_calmgr"
 echo "Test import gemini_calmgr passed"
 
 python -c "from gempy.library import cyclip"
+
+chmod a+rw $DRAGONS_TEST_OUTPUTS
+chmod a+rw $DRAGONS_TEST_REFS
