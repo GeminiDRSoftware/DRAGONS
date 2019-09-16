@@ -56,14 +56,12 @@ class TestGmosReduceLongslit:
 
         reduce_bias.runr()
 
-        if not os.path.exists(os.path.join(path_to_outputs, dataset_folder)):
-            os.makedirs(os.path.join(path_to_outputs, dataset_folder))
+        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+                     for f in reduce_bias.output_filenames]
 
-        bias_name = reduce_bias.output_filenames[0]
-        bias_name = os.path.join(path_to_outputs, bias_name)
-        os.rename(reduce_bias.output_filenames[0], bias_name)
-
-        calibrations.append('processed_bias:{}'.format(bias_name))
+        for old, new in zip(reduce_bias.output_filenames, new_files):
+            os.renames(old, new)
+            calibrations.append('processed_bias:{}'.format(new))
 
     @staticmethod
     def test_can_run_reduce_flat(dataset_folder, calibrations, path_to_inputs,
@@ -91,17 +89,18 @@ class TestGmosReduceLongslit:
         if not os.path.exists(os.path.join(path_to_outputs, dataset_folder)):
             os.makedirs(os.path.join(path_to_outputs, dataset_folder))
 
-        flat_name = reduce_flat.output_filenames[0]
-        flat_name = os.path.join(path_to_outputs, flat_name)
-        os.rename(reduce_flat.output_filenames[0], flat_name)
+        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+                     for f in reduce_flat.output_filenames]
 
-        calibrations.append('processed_flat:{}'.format(flat_name))
+        for old, new in zip(reduce_flat.output_filenames, new_files):
+            os.renames(old, new)
+            calibrations.append('processed_flat:{}'.format(new))
 
     @staticmethod
     def test_can_run_reduce_arc(dataset_folder, calibrations, path_to_inputs,
                                 path_to_outputs):
         """
-        Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
+        Make sure that the reduce_FLAT_LS_SPECT can run for spectroscopic
         data.
         """
         logutils.config(file_name='reduce_GMOS_LS_arc.log')
@@ -138,11 +137,41 @@ class TestGmosReduceLongslit:
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
         p.makeIRAFCompatible()
-        p.writeOutputs()  # for now, to speed up diagnostics of the next step
         p.determineWavelengthSolution()
         p.determineDistortion()
         p.storeProcessedArc()
         p.writeOutputs()
+
+        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+                     for f in glob.glob('*.fits')]
+
+        for old, new in zip(glob.glob('*.fits'), new_files):
+            os.renames(old, new)
+            if 'arc' in new:
+                calibrations.append('processed_arc:{}'.format(new))
+
+    @staticmethod
+    def test_reduced_arcs_contain_model_with_expected_rms(dataset_folder, calibrations):
+        """
+        Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
+        data.
+        """
+        arcs = [c.split(':')[-1] for c in calibrations if 'processed_arc' in c]
+
+        for arc in arcs:
+
+            ad = astrodata.open(arc)
+
+            for ext in ad:
+
+                if not hasattr(ext, 'WAVECAL'):
+                    continue
+
+                table = ext.WAVECAL
+                coefficients = table['coefficients']
+                rms = coefficients[table['name'] == 'rms']
+
+                np.testing.assert_array_less(rms, 0.5)
 
 
 # ToDo WIP - Define first how flats are processed
