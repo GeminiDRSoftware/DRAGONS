@@ -30,7 +30,7 @@ def calibrations():
 
     yield my_calibrations
 
-    os.remove(glob.glob(os.path.join(os.getcwd(), '*.fits')))
+    _ = [os.remove(f) for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
 
 
 @pytest.mark.parametrize('dataset_folder', dataset_list, scope='class')
