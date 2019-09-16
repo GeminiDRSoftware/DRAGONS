@@ -94,16 +94,15 @@ def path_to_outputs():
     try:
         path = os.path.expanduser(os.environ['DRAGONS_TEST_OUTPUTS'])
     except KeyError:
-        warnings.warn("Could not find environment variable: $DRAGONS_TEST_REFS"
+        warnings.warn("Could not find environment variable: $DRAGONS_TEST_OUTPUTS"
                       "\n Using current working directory")
         path = os.getcwd()
 
     if not os.path.exists(path):
-        pytest.skip(
-            "Could not access path stored in $DRAGONS_TEST_REFS: "
+        warnings.warn(
+            "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
             "{}".format(path) +
-            "\n Using current working directory"
-        )
+            "\n Using current working directory")
         path = os.getcwd()
 
     return path

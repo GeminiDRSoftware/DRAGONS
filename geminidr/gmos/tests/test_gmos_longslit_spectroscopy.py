@@ -19,29 +19,35 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
 
-@pytest.fixture(scope='module')
+dataset_list = ['GMOS/GN-2017A-FT-19',
+                'GMOS/GS-2016B-Q-54-32']
+
+
+@pytest.fixture(scope='class')
 def calibrations():
 
-    my_cals = []
+    my_calibrations = []
 
-    return my_cals
+    yield my_calibrations
+
+    os.remove(os.path.join(os.getcwd(), '*.fits'))
 
 
-@pytest.mark.parametrize('dataset_folder', ['GMOS/GN-2017A-FT-19'])
+@pytest.mark.parametrize('dataset_folder', dataset_list, scope='class')
 class TestGmosReduceLongslit:
 
     @staticmethod
-    def test_can_run_reduce_bias(dataset_folder, path_to_inputs, calibrations):
+    def test_can_run_reduce_bias(dataset_folder, calibrations, path_to_inputs,
+                                 path_to_outputs):
         """
         Make sure that the reduce_BIAS works for spectroscopic data.
         """
         logutils.config(file_name='reduce_GMOS_LS_bias.log')
 
-        all_files = sorted(
+        dataset = sorted(
             glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
-        assert len(all_files) > 1
 
-        list_of_bias = dataselect.select_data(all_files, ['BIAS'], [])
+        list_of_bias = dataselect.select_data(dataset, ['BIAS'], [])
         reduce_bias = Reduce()
         assert len(reduce_bias.files) == 0
 
@@ -50,24 +56,27 @@ class TestGmosReduceLongslit:
 
         reduce_bias.runr()
 
-        calibrations.append(
-            'processed_bias:{}'.format(reduce_bias.output_filenames[0])
-        )
+        if not os.path.exists(os.path.join(path_to_outputs, dataset_folder)):
+            os.makedirs(os.path.join(path_to_outputs, dataset_folder))
+
+        bias_name = reduce_bias.output_filenames[0]
+        bias_name = os.path.join(path_to_outputs, bias_name)
+        os.rename(reduce_bias.output_filenames[0], bias_name)
+
+        calibrations.append('processed_bias:{}'.format(bias_name))
 
     @staticmethod
-    def test_can_run_reduce_flat(dataset_folder, path_to_inputs, calibrations):
+    def test_can_run_reduce_flat(dataset_folder, calibrations, path_to_inputs,
+                                 path_to_outputs):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
         """
         logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
-        assert len(calibrations) == 1
-
-        all_files = sorted(
+        dataset = sorted(
             glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
-        assert len(all_files) > 1
 
-        list_of_flat = dataselect.select_data(all_files, ['FLAT'], [])
+        list_of_flat = dataselect.select_data(dataset, ['FLAT'], [])
 
         reduce_flat = Reduce()
         assert len(reduce_flat.files) == 0
@@ -79,23 +88,28 @@ class TestGmosReduceLongslit:
 
         reduce_flat.runr()
 
-        # calibrations.append(
-        #     'processed_flat:{}'.format(reduce_flat.output_filenames[0])
-        # )
+        if not os.path.exists(os.path.join(path_to_outputs, dataset_folder)):
+            os.makedirs(os.path.join(path_to_outputs, dataset_folder))
+
+        flat_name = reduce_flat.output_filenames[0]
+        flat_name = os.path.join(path_to_outputs, flat_name)
+        os.rename(reduce_flat.output_filenames[0], flat_name)
+
+        calibrations.append('processed_flat:{}'.format(flat_name))
 
     @staticmethod
-    def test_can_run_reduce_arc(dataset_folder, path_to_inputs, calibrations):
+    def test_can_run_reduce_arc(dataset_folder, calibrations, path_to_inputs,
+                                path_to_outputs):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
         data.
         """
         logutils.config(file_name='reduce_GMOS_LS_arc.log')
 
-        all_files = sorted(
+        dataset = sorted(
             glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
-        assert len(all_files) > 1
 
-        list_of_arcs = dataselect.select_data(all_files, ['ARC'], [])
+        list_of_arcs = dataselect.select_data(dataset, ['ARC'], [])
 
         for f in list_of_arcs:
             ad = astrodata.open(f)
@@ -106,10 +120,10 @@ class TestGmosReduceLongslit:
             ad = astrodata.open(f)
             _ = ad.gain_setting()
 
-        temp = [c for c in calibrations if 'bias' in c]
-        processed_bias = temp[0].split(':')[-1]
-
         adinputs = [astrodata.open(f) for f in list_of_arcs]
+
+        cal_files = normalize_ucals(list_of_arcs, calibrations)
+        processed_bias = [cal_files[k] for k in cal_files.keys() if 'processed_bias' in k]
 
         p = primitives_gmos_spect.GMOSSpect(adinputs)
 
