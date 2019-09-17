@@ -51,6 +51,11 @@ pipeline {
                 sh 'rm -rf ./reports'
                 sh 'mkdir -p ./reports'
             }
+            post {
+                always {
+                      sh '.jenkins/scripts/update_files_permissions.sh'
+                }
+            }
 
         }
 
@@ -75,6 +80,7 @@ pipeline {
         }
 
         stage('Unit tests') {
+
             steps {
 
                 echo "ensure cleaning __pycache__"
@@ -83,7 +89,21 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m "not integtest" --junit-xml ./reports/unittests_results.xml
+                    coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
+                    '''
+
+            }
+
+        }
+
+        stage('GMOS LS Tests') {
+
+            steps {
+
+                echo "Running tests"
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m gmosls --junit-xml ./reports/unittests_results.xml
                     '''
 
                 echo "Reporting coverage"
@@ -91,17 +111,22 @@ pipeline {
                     source activate ${CONDA_ENV_NAME}
                     python -m coverage xml -o ./reports/coverage.xml
                     '''
+
             }
+
         }
 
         stage('Integration tests') {
+
             steps {
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
                     '''
             }
+
         }
+
 
     }
     post {
@@ -110,7 +135,7 @@ pipeline {
             allowEmptyResults: true,
             testResults: 'reports/*_results.xml'
             )
-          sh 'chmod 777 ./reports/'
+          sh '.jenkins/scripts/update_files_permissions.sh'
         }
         success {
             sendNotifications 'SUCCESSFUL'

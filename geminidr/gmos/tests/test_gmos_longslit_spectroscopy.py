@@ -17,34 +17,42 @@ from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
-from scipy import ndimage
 
 
-@pytest.fixture(scope='module')
+dataset_list = ['GMOS/GN-2017A-FT-19',
+                'GMOS/GS-2016B-Q-54-32']
+
+
+@pytest.fixture(scope='class')
 def calibrations():
 
-    my_cals = []
+    my_calibrations = []
 
-    return my_cals
+    yield my_calibrations
 
+    _ = [os.remove(f) for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
 
+@pytest.mark.gmosls
+@pytest.mark.parametrize('dataset_folder', dataset_list, scope='class')
 class TestGmosReduceLongslit:
+    """
+    Collection of tests that will run on every `dataset_folder`. Both
+    `dataset_folder` and `calibrations` parameter should be present on every
+    test. Even when the test does not use it.
+    """
 
     @staticmethod
-    def test_can_run_reduce_bias(path_to_inputs, calibrations):
+    def test_can_run_reduce_bias(dataset_folder, calibrations, path_to_inputs,
+                                 path_to_outputs):
         """
         Make sure that the reduce_BIAS works for spectroscopic data.
         """
-
-        raw_subdir = 'GMOS/GN-2017A-FT-19'
-
         logutils.config(file_name='reduce_GMOS_LS_bias.log')
 
-        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-        assert len(all_files) > 1
+        dataset = sorted(
+            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
 
-        list_of_bias = dataselect.select_data(all_files, ['BIAS'], [])
-
+        list_of_bias = dataselect.select_data(dataset, ['BIAS'], [])
         reduce_bias = Reduce()
         assert len(reduce_bias.files) == 0
 
@@ -53,26 +61,25 @@ class TestGmosReduceLongslit:
 
         reduce_bias.runr()
 
-        calibrations.append(
-            'processed_bias:{}'.format(reduce_bias.output_filenames[0])
-        )
+        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+                     for f in reduce_bias.output_filenames]
+
+        for old, new in zip(reduce_bias.output_filenames, new_files):
+            os.renames(old, new)
+            calibrations.append('processed_bias:{}'.format(new))
 
     @staticmethod
-    def test_can_run_reduce_flat(path_to_inputs, calibrations):
+    def test_can_run_reduce_flat(dataset_folder, calibrations, path_to_inputs,
+                                 path_to_outputs):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
         """
-
-        raw_subdir = 'GMOS/GN-2017A-FT-19'
-
         logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
-        assert len(calibrations) == 1
+        dataset = sorted(
+            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
 
-        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-        assert len(all_files) > 1
-
-        list_of_flat = dataselect.select_data(all_files, ['FLAT'], [])
+        list_of_flat = dataselect.select_data(dataset, ['FLAT'], [])
 
         reduce_flat = Reduce()
         assert len(reduce_flat.files) == 0
@@ -84,25 +91,29 @@ class TestGmosReduceLongslit:
 
         reduce_flat.runr()
 
-        # calibrations.append(
-        #     'processed_flat:{}'.format(reduce_flat.output_filenames[0])
-        # )
+        if not os.path.exists(os.path.join(path_to_outputs, dataset_folder)):
+            os.makedirs(os.path.join(path_to_outputs, dataset_folder))
+
+        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+                     for f in reduce_flat.output_filenames]
+
+        for old, new in zip(reduce_flat.output_filenames, new_files):
+            os.renames(old, new)
+            calibrations.append('processed_flat:{}'.format(new))
 
     @staticmethod
-    def test_can_run_reduce_arc(path_to_inputs, calibrations):
+    def test_can_run_reduce_arc(dataset_folder, calibrations, path_to_inputs,
+                                path_to_outputs):
         """
-        Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic
+        Make sure that the reduce_FLAT_LS_SPECT can run for spectroscopic
         data.
         """
-
-        raw_subdir = 'GMOS/GN-2017A-FT-19'
-
         logutils.config(file_name='reduce_GMOS_LS_arc.log')
 
-        all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-        assert len(all_files) > 1
+        dataset = sorted(
+            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
 
-        list_of_arcs = dataselect.select_data(all_files, ['ARC'], [])
+        list_of_arcs = dataselect.select_data(dataset, ['ARC'], [])
 
         for f in list_of_arcs:
             ad = astrodata.open(f)
@@ -113,10 +124,10 @@ class TestGmosReduceLongslit:
             ad = astrodata.open(f)
             _ = ad.gain_setting()
 
-        temp = [c for c in calibrations if 'bias' in c]
-        processed_bias = temp[0].split(':')[-1]
-
         adinputs = [astrodata.open(f) for f in list_of_arcs]
+
+        cal_files = normalize_ucals(list_of_arcs, calibrations)
+        processed_bias = [cal_files[k] for k in cal_files.keys() if 'processed_bias' in k]
 
         p = primitives_gmos_spect.GMOSSpect(adinputs)
 
@@ -131,11 +142,84 @@ class TestGmosReduceLongslit:
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
         p.makeIRAFCompatible()
-        p.writeOutputs()  # for now, to speed up diagnostics of the next step
         p.determineWavelengthSolution()
         p.determineDistortion()
         p.storeProcessedArc()
         p.writeOutputs()
+
+        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+                     for f in glob.glob('*.fits')]
+
+        for old, new in zip(glob.glob('*.fits'), new_files):
+            os.renames(old, new)
+            if 'arc' in new:
+                calibrations.append('processed_arc:{}'.format(new))
+
+    @staticmethod
+    def test_reduced_arcs_contain_model_with_expected_rms(dataset_folder, calibrations):
+        """
+        Make sure that the WAVECAL model was fitted with an RMS smaller than
+        0.5.
+        """
+        arcs = [c.split(':')[-1] for c in calibrations if 'processed_arc' in c]
+
+        for arc in arcs:
+
+            ad = astrodata.open(arc)
+
+            for ext in ad:
+
+                if not hasattr(ext, 'WAVECAL'):
+                    continue
+
+                table = ext.WAVECAL
+                coefficients = table['coefficients']
+                rms = coefficients[table['name'] == 'rms']
+
+                np.testing.assert_array_less(rms, 0.5)
+
+    @staticmethod
+    def test_reduced_arcs_contains_model_with_stable_wavelength_solution(
+            dataset_folder, calibrations, path_to_outputs, path_to_refs):
+        """
+        Make sure that the wavelength solution gives same results on different
+        runs.
+        """
+        from gempy.library.astromodels import dict_to_chebyshev
+
+        arcs = glob.glob(
+            os.path.join(path_to_outputs, dataset_folder, '*_arc.fits'))
+
+        for arc in arcs:
+
+            filename = os.path.split(arc)[-1]
+            output = os.path.join(path_to_outputs, dataset_folder, filename)
+            reference = os.path.join(path_to_refs, dataset_folder, filename)
+
+            if not os.path.exists(output):
+                pytest.skip('Output file not found: {}'.format(output))
+
+            if not os.path.exists(reference):
+                pytest.skip('Reference file not found: {}'.format(reference))
+
+            ad = astrodata.open(output)
+            ad_ref = astrodata.open(reference)
+
+            for ext, ext_ref in zip(ad, ad_ref):
+
+                model = dict_to_chebyshev(
+                    dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
+                )
+
+                ref_model = dict_to_chebyshev(
+                    dict(zip(ext_ref.WAVECAL["name"], ext_ref.WAVECAL["coefficients"]))
+                )
+
+                x = np.arange(ext.shape[1])
+                y = model(x)
+                ref_y = ref_model(x)
+
+                np.testing.assert_allclose(y, ref_y, rtol=1)
 
 
 # ToDo WIP - Define first how flats are processed
@@ -166,6 +250,7 @@ class TestGmosReduceLongslit:
     # reduce_science.runr()
 
 
+# ToDo - Using AstroFaker messes up with other tests. How could I fix this?
 # class TestGmosReduceFakeData:
 #     """
 #     The tests defined by this class reflect the expected behavior on science
