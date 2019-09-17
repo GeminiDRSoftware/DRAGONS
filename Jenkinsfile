@@ -75,6 +75,7 @@ pipeline {
         }
 
         stage('Unit tests') {
+
             steps {
 
                 echo "ensure cleaning __pycache__"
@@ -87,9 +88,17 @@ pipeline {
                     '''
 
             }
+
+            post {
+                always {
+                    sh '.jenkins/scripts/update_files_permissions.sh'
+                }
+            }
+
         }
 
         stage('GMOS LS Tests') {
+
             steps {
 
                 echo "Running tests"
@@ -105,16 +114,33 @@ pipeline {
                     '''
 
             }
+
+            post {
+                always {
+                    sh '.jenkins/scripts/update_files_permissions.sh'
+                }
+            }
+
+
         }
 
         stage('Integration tests') {
+
             steps {
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
                     '''
             }
+
+            post {
+                always {
+                    sh '.jenkins/scripts/update_files_permissions.sh'
+                }
+            }
+
         }
+
 
     }
     post {
