@@ -184,7 +184,7 @@ class TestArcProcessing:
             reference containing strings with the paths to the respective
             input, output and reference files.
         """
-        _suffix = "_wavelength_solution_determined"
+        _suffix = "_wavelengthSolutionDetermined"
 
         _input = test_files.input
         _output = add_suffix(test_files.output, _suffix)
