@@ -16,7 +16,7 @@ to isolate tests.
 import os
 import subprocess
 import sys
-
+import re
 
 URL = u'https://archive.gemini.edu/file/'
 
@@ -102,16 +102,19 @@ def download_non_existing_test_files(path, list_of_files):
     path : str
         This is where all the data will be stored
 
-    list_of_files : list
+    list_of_files : str
         Names of the files that will be downloaded. Should contain subdirectories.
     """
+
     with open(list_of_files, 'r') as _files:
 
         print('')
 
         for _filename in _files.readlines():
 
+            # Remove spaces and special characters from string
             current_file = os.path.join(path, _filename).strip()
+            current_file = current_file.replace("\x1b", "")
 
             if len(_filename.strip()) == 0:
                 print('')
@@ -135,8 +138,13 @@ def download_non_existing_test_files(path, list_of_files):
                     subprocess.run(['curl', '--silent', URL + _file, '--output',
                                     current_file], check=True)
 
-                except subprocess.CalledProcessError:
+                except subprocess.CalledProcessError as e:
                     print(' Failed to download file: {}'.format(current_file))
+
+                    if hasattr(e, 'message'):
+                        print(e.message)
+                    else:
+                        print(e)
 
         print('')
 
