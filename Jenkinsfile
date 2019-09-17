@@ -89,12 +89,6 @@ pipeline {
 
             }
 
-            post {
-                always {
-                    sh '.jenkins/scripts/update_files_permissions.sh'
-                }
-            }
-
         }
 
         stage('GMOS LS Tests') {
@@ -115,13 +109,6 @@ pipeline {
 
             }
 
-            post {
-                always {
-                    sh '.jenkins/scripts/update_files_permissions.sh'
-                }
-            }
-
-
         }
 
         stage('Integration tests') {
@@ -131,12 +118,6 @@ pipeline {
                     source activate ${CONDA_ENV_NAME}
                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
                     '''
-            }
-
-            post {
-                always {
-                    sh '.jenkins/scripts/update_files_permissions.sh'
-                }
             }
 
         }
@@ -149,7 +130,7 @@ pipeline {
             allowEmptyResults: true,
             testResults: 'reports/*_results.xml'
             )
-          sh 'chmod 777 ./reports/'
+          sh '.jenkins/scripts/update_files_permissions.sh'
         }
         success {
             sendNotifications 'SUCCESSFUL'
