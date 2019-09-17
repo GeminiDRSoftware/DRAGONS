@@ -51,6 +51,11 @@ pipeline {
                 sh 'rm -rf ./reports'
                 sh 'mkdir -p ./reports'
             }
+            post {
+                always {
+                      sh '.jenkins/scripts/update_files_permissions.sh'
+                }
+            }
 
         }
 
