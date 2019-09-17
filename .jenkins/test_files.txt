@@ -123,6 +123,7 @@ Archive/S20190221S0251.fits
 
 
 # Gempy Tests
+Gempy/N20110826S0336.fits
 Gempy/S20171208S0054.fits
 Gempy/N20190206S0279.fits
 Gempy/S20180223S0229.fits
