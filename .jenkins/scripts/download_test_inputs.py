@@ -153,8 +153,6 @@ def update_fils_permissions(path):
         Path that contains the downloaded files.
     """
 
-    os.chmod(path, 0o775)
-
     for root, dirs, files in os.walk(path):
 
         for d in dirs:
