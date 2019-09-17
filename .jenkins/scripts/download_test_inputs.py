@@ -28,7 +28,6 @@ def main():
     path = _get_dragons_input_test_path()
     create_test_folder_if_does_not_exist(path)
     download_non_existing_test_files(path, args.list_of_files)
-    update_fils_permissions(path)
 
 
 def _parse_arguments():
@@ -140,28 +139,6 @@ def download_non_existing_test_files(path, list_of_files):
                     print(' Failed to download file: {}'.format(current_file))
 
         print('')
-
-
-def update_fils_permissions(path):
-    """
-    Updates the files permissions to 775 so Jenkins and local users can
-    manipulate them.
-
-    Parameters
-    ----------
-    path : str
-        Path that contains the downloaded files.
-    """
-
-    for root, dirs, files in os.walk(path):
-
-        for d in dirs:
-            print(os.path.join(root, d))
-            os.chmod(os.path.join(root, d), 0o775)
-
-        for f in files:
-            print(os.path.join(root, f))
-            os.chmod(os.path.join(root, f), 0o775)
 
 
 if __name__ == "__main__":
