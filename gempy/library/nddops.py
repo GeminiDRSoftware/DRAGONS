@@ -13,6 +13,8 @@
 from __future__ import print_function
 
 import numpy as np
+import inspect
+from collections import namedtuple
 from functools import wraps
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -20,6 +22,9 @@ try:
     from . import cyclip
 except ImportError:
     raise ImportError("Run 'cythonize -i cyclip.pyx' in gempy/library")
+
+# A lightweight NDData-like object
+NDD = namedtuple("NDD", "data mask variance")
 
 # Some definitions. Non-linear and saturated pixels are not considered to
 # be "bad" when rejecting pixels from the input data. If one takes multiple
@@ -36,7 +41,6 @@ DQhierarchy = (DQ.no_data, DQ.unilluminated, DQ.bad_pixel, DQ.overlap,
 ZERO = DQ.datatype(0)
 ONE = DQ.datatype(DQ.bad_pixel)
 
-import inspect
 
 def take_along_axis(arr, ind, axis):
     """
@@ -551,3 +555,55 @@ class NDStacker(object):
         else:
             mask |= clipped_data.mask
         return data, mask, variance
+
+def sum1d(ndd, x1, x2, proportional_variance=True):
+    """
+    This function sums the pixels between x1 and x2 of a 1-dimensional
+    NDData-like object. Fractional pixel locations are defined in the usual
+    manner such that each pixel covers the region (i-0.5, i+0.5) where i
+    is the integer index.
+
+    Parameters
+    ----------
+    ndd: NDAstroData
+        A 1D NDAstroData object
+    x1: float
+        start pixel location of region to sum
+    x2: float
+        end pixel location of region to sum
+    proportional_variance: bool
+        should fractional pixels contribute to the total variance in linear,
+        rather than quadratic, proportion? When summing rows of a spectral
+        image, this removes the strong dependency of the output variance on
+        the subpixel alignement of the aperture edges.
+
+    Returns
+    -------
+    NDD:
+        sum of pixels (and partial pixels) between x1 and x2, with mask
+        and variance
+    """
+    x1 = max(x1, -0.5)
+    x2 = min(x2, ndd.shape[0]-0.5)
+    ix1 = int(x1 + 0.5)
+    ix2 = int(x2 + 0.5)
+    fx1 = x1 - ix1 + 0.5
+    fx2 = x2 - ix2 + 0.5
+    mask = var = None
+
+    data = fx1*ndd.data[ix1] + ndd.data[ix1:ix2].sum()
+    if ndd.mask is not None:
+        mask = np.bitwise_or.reduce(ndd.mask[ix1:ix2])
+    if ndd.variance is not None:
+        var = (fx1 if proportional_variance else fx1*fx1)*ndd.variance[ix1] + ndd.variance[ix1:ix2].sum()
+
+    # If end is right on a pixel boundary, fx2=0 and ix2=ndd.shape,
+    # so IndexError will occur
+    if fx2 > 0:
+        data += fx2*ndd.data[ix2]
+        if mask is not None:
+            mask |= ndd.mask[ix2]
+        if var is not None:
+            var += (fx2 if proportional_variance else fx2*fx2)*ndd.variance[ix2]
+
+    return NDD(data, mask, var)
