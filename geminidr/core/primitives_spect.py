@@ -780,7 +780,7 @@ class Spect(PrimitivesBASE):
                 # Create dict of wavelength keywords to add to new headers
                 # TODO: Properly. Simply put the linear approximation here for now
                 hdr_dict = {'CTYPE1': 'Wavelength',
-                            'CUNIT1': 'nanometers'}
+                            'CUNIT1': 'nanometer'}
 
                 try:
                     wavecal = dict(zip(ext.WAVECAL["name"],
@@ -1141,7 +1141,7 @@ class Spect(PrimitivesBASE):
                 ext.hdr["CRVAL1"] = w1
                 ext.hdr["CDELT1"] = dw
                 ext.hdr["CD1_1"] = dw
-                ext.hdr["CUNIT1"] = "nanometers"
+                ext.hdr["CUNIT1"] = "nanometer"
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1807,14 +1807,16 @@ def convert_flam_to_magnitude(wavelength, flam):
 
 def plot_arc_fit(data, peaks, arc_lines, arc_weights, model, title):
     fig, ax = plt.subplots()
-    ax.plot(model(np.arange(len(data))), data / np.max(data))
-    weights = np.full_like(arc_lines, 5) if arc_weights is None else arc_weights
+    plt.rcParams.update({'font.size': 12})
+    weights = np.full_like(arc_lines, 3) if arc_weights is None else arc_weights
     for line, wt in zip(arc_lines, weights):
-        ax.plot([line,line], [0,1], 'k', color='{}'.format(0.05*(9-wt)))
+        ax.plot([line, line], [0, 1], color='{}'.format(0.07 * (9 - wt)))
     for peak in model(peaks):
         ax.plot([peak, peak], [0, 1], 'r:')
+    ax.plot(model(np.arange(len(data))), data / np.max(data), 'b-')
     limits = model([0, len(data)])
     ax.set_xlim(min(limits), max(limits))
     ax.set_ylim(0, 1)
     ax.set_xlabel("Wavelength (nm)")
+    ax.set_ylabel("Relative intensity")
     ax.set_title(title)
