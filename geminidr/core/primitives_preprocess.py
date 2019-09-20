@@ -1154,7 +1154,11 @@ class Preprocess(PrimitivesBASE):
                 # If already been sky-subtracted or not yet processed
                 if not skytables[j] or stacked_skies[j] == 0:
                     continue
-                if ad2 not in [sky_dict.get(sky) for skytable in skytables for sky in skytable]:
+
+                # We're iterating over *all* skytables so replace "None"s
+                # with iterable empty lists
+                if ad2 not in [sky_dict.get(sky) for skytable in skytables
+                               for sky in (skytable or [])]:
                     # Sky-subtraction is in place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
                                      offset_sky=offset_sky, reset_sky=reset_sky,
