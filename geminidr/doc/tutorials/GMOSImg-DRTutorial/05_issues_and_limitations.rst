@@ -1,4 +1,4 @@
-.. 04_beyond.rst
+.. 05_issues_and_limitations.rst
 
 .. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html
 
@@ -43,4 +43,10 @@ screen. We recommend using the DRAGONS logger located in the
     :linenos:
 
     from gempy.utils import logutils
-    logutils.config(file_name='f2_data_reduction.log')
+    logutils.config(file_name='gmos_data_reduction.log')
+
+
+Astropy warnings
+================
+You might see some warning messages from AstroPy that are related to the
+header of the images. It is safe to ignore them.

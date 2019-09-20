@@ -1,47 +1,15 @@
-.. 04_beyond.rst
+.. 05_issues_and_limitations.rst
 
-.. _beyond:
+.. include:: DRAGONSlinks.txt
 
-*************************
-Going beyond the examples
-*************************
+.. _issues_and_limitations:
 
-Tips and Tricks
-===============
-This is a collection of tips and tricks that can be useful for reducing
-different data, or to do it slightly differently from what is presented
-in the example.
-
-.. _bypass_caldb:
-
-Bypassing automatic calibration association
---------------------------------------------
-We can think of two reasons why a user might want to bypass the calibration
-manager and the automatic processed calibration association.  The first is
-to override the automatic selection, to force the use of a different processed
-calibration than what the system finds.  The second is if there is a problem
-with the calibration manager and it is not working for some reason.
-
-Whatever the specific situation, the following syntax can be used to bypass
-the calibration manager and set the input processed calibration yourself::
-
-     $ reduce @sci_images.list --user_cal processed_dark:N20120102S0538_dark.fits processed_flat:N20120117S0034_flat.fits
-
-The list of recognized processed calibration is:
-
-* processed_arc
-* processed_bias
-* processed_dark
-* processed_flat
-* processed_fringe
-
-
-
+**********************
 Issues and Limitations
-======================
+**********************
 
 Missing Processed Dark Calibration Association Rules
-----------------------------------------------------
+====================================================
 GNIRS not being an imager, and the keyhole being normally used only for
 acquisition, it turns out that there are no calibration association rules
 between GNIRS keyhole images and darks.  This is recently discovered
@@ -51,7 +19,7 @@ user can simply specify the dark on the command line as shown above in
 
 
 Memory Issues
--------------
+=============
 Some primitives use a lot of RAM memory and they can cause a
 crash. Memory management in Python is notoriously difficult. The
 DRAGONS's team is constantly trying to improve memory management
@@ -72,7 +40,7 @@ educe a very large number of frames in one go.
 .. _double_messaging:
 
 Double messaging issue
-----------------------
+======================
 If you run ``Reduce`` without setting up a logger, you will notice that the
 output messages appear twice.  To prevent this behaviour set up a logger.
 This will send one of the output stream to a file, keeping the other on the

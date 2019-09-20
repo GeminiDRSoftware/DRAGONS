@@ -15,8 +15,8 @@ recommended that you download the pre-made package (:ref:`datasetup`) instead
 of getting everything manually.
 
 
-Step by step instructions
-=========================
+Query and Download
+==================
 
 This tutorial uses observations from program GS-2013B-Q-15 (PI: Leggett),
 NIR photometry of the faint T-dwarf star WISE J041358.14-475039.3, obtained on
@@ -83,6 +83,9 @@ on header of the "ExpT" column. Several 2-second darks show up. Some were
 even taken on the same date as the science data (20131121). Select those,
 and download them as we did before for the other calibrations.
 
+
+Unpacking the data
+==================
 
 Now, copy all the ``.tar`` files to the same place in your computer. Then use
 ``tar`` and ``bunzip2`` commands to decompress them. For example:

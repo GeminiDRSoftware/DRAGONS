@@ -22,7 +22,8 @@ WebPage <https://www.gemini.edu/sciops/instruments/flamingos2/>`_ and in the
    01_introduction
    02_data_reduction
    03_api_reduction
-   04_beyond
+   04_tips_and_tricks
+   05_issues_and_limitations
 
 
 .. toctree::

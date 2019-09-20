@@ -20,8 +20,9 @@ get started.
 
 While the example cannot possibly cover all situations, it will help you get
 acquainted with the reduction of GSAOI data with DRAGONS. We
-encourage you to look at the :ref:`beyond` chapter to learn more about
-GSAOI data reduction.
+encourage you to look at the :ref:`tips_and_tricks` and
+ :ref:`issues_and_limitations` chapters to learn more about GSAOI data
+ reduction.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. The most important script is called

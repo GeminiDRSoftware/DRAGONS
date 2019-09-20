@@ -32,8 +32,8 @@ sequence. Just open a terminal to get started.
 
 While the example cannot possibly cover all situations, it will help you get
 acquainted with the reduction of Flamingos-2 data with DRAGONS. We
-encourage you to look at the :ref:`beyond` chapter to learn more about F2
-data reduction.
+encourage you to look at the :ref:`tips_and_tricks` and
+:ref:`issues_and_limitations` chapters to learn more about F2 data reduction.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. The most important script is called
@@ -113,7 +113,8 @@ Then initialize the calibration database:
 
     caldb init
 
-That's it! It is ready to use!
+That's it! It is ready to use!   You can check the configuration and confirm
+the setting with ``caldb config``.
 
 You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and

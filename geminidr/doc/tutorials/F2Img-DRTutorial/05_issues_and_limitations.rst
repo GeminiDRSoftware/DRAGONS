@@ -1,0 +1,52 @@
+.. 05_issues_and_limitations.rst
+
+.. include:: DRAGONSlinks.txt
+
+.. _issues_and_limitations:
+
+**********************
+Issues and Limitations
+**********************
+
+Memory Issues
+=============
+Some primitives use a lot of RAM memory and they can cause a
+crash. Memory management in Python is notoriously difficult. The
+DRAGONS's team is constantly trying to improve memory management
+within ``astrodata`` and the DRAGONS recipes and primitives. If
+an "Out of memory" crash happens to you, if possible for your
+observation sequence, try to run the pipeline on fewer images at the time,
+like for each dither pattern sequence separately.
+
+.. todo::  We need to show the user how to bring them all back
+     together in a final stack at the end. This means showing
+     what custom recipe to use and how to invoke it.
+
+.. _issue_p2:
+
+Emission from PWFS2 guide probe
+===============================
+The PWFS2 guide probe leaves a signature on imaging data that cannot be
+removed. Ideally, one would be using the OIWFS, the On-Instrument Wave Front
+Sensor, but at the time of this writing, it is not yet available, (see
+`F2 instrument status note <https://www.gemini.edu/sciops/instruments/flamingos2/status-and-availability>`_
+for Sep. 5, 2003). The effect of the PWFS2 guide probe will in many cases
+compromise photometry in the region affected.
+
+.. _double_messaging:
+
+Double messaging issue
+======================
+If you run ``Reduce`` without setting up a logger, you will notice that the
+output messages appear twice. To prevent this behaviour set up a logger.
+This will send one of the output stream to a file, keeping the other on the
+screen. We recommend using the DRAGONS logger located in the
+:mod:`gempy.utils.logutils` module and its
+:func:`~gempy.utils.logutils.config()` function:
+
+
+.. code-block:: python
+    :linenos:
+
+    from gempy.utils import logutils
+    logutils.config(file_name='f2_data_reduction.log')
