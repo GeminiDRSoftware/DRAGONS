@@ -1121,6 +1121,9 @@ class Preprocess(PrimitivesBASE):
         # Fill initial list with None where the SKYTABLE produced None
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
+            if skytable is None:
+                log.stdinfo("Cannot subtract sky from {}".format(ad.filename))
+                continue
             if stacked_skies[i] == 0:
                 log.stdinfo("Creating sky frame for {}".format(ad.filename))
                 stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
