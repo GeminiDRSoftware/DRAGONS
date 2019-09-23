@@ -9,17 +9,23 @@ from io import StringIO
 from recipe_system.cal_service import CalibrationService, get_calconf
 
 
-on_travis = pytest.mark.skipif(
-    'TRAVIS' in os.environ, reason="Test won't run on Travis.")
-
-print('TRAVIS' in os.environ)
-
-
 @pytest.fixture(scope='session', autouse=True)
 def caldb():
-    print(' Creating cal_service object.')
+
+    path = os.path.dirname(__file__)
+    filename = 'rsys.cfg'
+
+    caldb_config = ("[calibs]\n"
+                    "standalone=True\n"
+                    "database_dir={:s}\n".format(path))
+
+    with open(os.path.join(path, filename), 'w') as _file:
+        _file.write(caldb_config)
+
     yield CalibrationService()
-    print(' Tearing down cal_service')
+
+    os.remove(os.path.join(path, filename))
+    os.remove(os.path.join(path, 'cal_manager.db'))
 
 
 @contextmanager
@@ -34,23 +40,20 @@ def captured_output():
         sys.stdout, sys.stderr = old_out, old_err
 
 
-@on_travis
 def test_caldb_has_no_manager_on_creation(caldb):
     assert caldb._mgr is None
 
 
-@on_travis
 def test_caldb_config_adds_manager(caldb):
-    caldb.config()
+    config_file = os.path.join(os.path.dirname(__file__), 'rsys.cfg')
+    caldb.config(config_file=config_file)
     assert caldb._mgr is not None
 
 
-@on_travis
 def test_can_call_caldb_init(caldb):
     caldb.init()
 
 
-@on_travis
 def test_can_change_caldb_config_file_path(caldb):
 
     test_directory = os.path.dirname(__file__)
