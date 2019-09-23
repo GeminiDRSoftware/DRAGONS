@@ -28,51 +28,31 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                echo "Checkout code"
-            }
-        }
+
         stage("Build") {
+
             parallel {
-                stage("CentOS 6") {
-                    steps {
-                        echo "build on ${env.NODE_NAME}"
-                    }
-                }
+
                 stage("CentOS 7") {
+                    agent{
+                        label "centos7"
+                    }
                     steps {
-                        echo "build on ${env.NODE_NAME}"
+                        echo "Building on ${env.NODE_NAME}"
+                        checkout scm
                     }
                 }
-                stage("MacOs 10.10") {
-                    steps {
-                        echo "build on ${env.NODE_NAME}"
-                    }
-                }
+
                 stage("MacOs 10.11") {
                     agent {
                         label "macos10.11"
                     }
                     steps {
-                        echo "build on ${env.NODE_NAME}"
+                        echo "Building on ${env.NODE_NAME}"
+                        checkout scm
                     }
                 }
-                stage("MacOs 10.12") {
-                    steps {
-                        echo "build on ${env.NODE_NAME}"
-                    }
-                }
-                stage("MacOs 10.13") {
-                    steps {
-                        echo "build on ${env.NODE_NAME}"
-                    }
-                }
-                stage("MacOs 10.14") {
-                    steps {
-                        echo "build on ${env.NODE_NAME}"
-                    }
-                }
+
             }
         }
         stage('Provide') {
