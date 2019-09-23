@@ -111,6 +111,16 @@ class Image(Preprocess, Register, Resample):
                             format(ad.filename))
                 continue
 
+            if fringe is None:
+                if 'qa' in self.mode:
+                    log.warning("No changes will be made to {}, since no "
+                                "fringe frame has been specified".
+                                format(ad.filename))
+                    continue
+                else:
+                    raise IOError("No processed fringe listed for {}".
+                                   format(ad.filename))
+
             # Logic to deal with different exposure times
             if do_fringe is None and not correct:
                 log.stdinfo("{} does not require a fringe correction".
