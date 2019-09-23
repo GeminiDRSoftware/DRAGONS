@@ -32,6 +32,7 @@ def calibrations():
 
     _ = [os.remove(f) for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
 
+
 @pytest.mark.gmosls
 @pytest.mark.parametrize('dataset_folder', dataset_list, scope='class')
 class TestGmosReduceLongslit:
