@@ -45,7 +45,7 @@ pipeline {
                     steps {
                         echo "Building on ${env.NODE_NAME}"
                         checkout scm
-                        conda create $CONDA_ENV_NAME $CONDA_ENV_FILE
+                        condaCreateEnv $CONDA_ENV_NAME $CONDA_ENV_FILE
                     }
                 }
 
@@ -56,7 +56,7 @@ pipeline {
                     steps {
                         echo "Building on ${env.NODE_NAME}"
                         checkout scm
-                        conda create $CONDA_ENV_NAME $CONDA_ENV_FILE
+                        condaCreateEnv $CONDA_ENV_NAME $CONDA_ENV_FILE
                     }
                 }
 
