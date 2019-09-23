@@ -111,6 +111,16 @@ class Image(Preprocess, Register, Resample):
                             format(ad.filename))
                 continue
 
+            # Logic to deal with different exposure times where only
+            # some inputs might require fringe correction
+            if do_fringe is None and not correct:
+                log.stdinfo("{} does not require a fringe correction".
+                            format(ad.filename))
+                ad.update_filename(suffix=params["suffix"], strip=True)
+                continue
+
+            # At this point, we definitely want to do a fringe correction
+            # so we'd better have a fringe frame!
             if fringe is None:
                 if 'qa' in self.mode:
                     log.warning("No changes will be made to {}, since no "
@@ -120,13 +130,6 @@ class Image(Preprocess, Register, Resample):
                 else:
                     raise IOError("No processed fringe listed for {}".
                                    format(ad.filename))
-
-            # Logic to deal with different exposure times
-            if do_fringe is None and not correct:
-                log.stdinfo("{} does not require a fringe correction".
-                            format(ad.filename))
-                ad.update_filename(suffix=params["suffix"], strip=True)
-                continue
 
             # Check the inputs have matching filters, binning, and shapes
             try:
