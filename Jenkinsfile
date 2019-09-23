@@ -103,7 +103,7 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m gmosls --junit-xml ./reports/unittests_results.xml
+                    coverage run -m pytest -m gmosls --junit-xml ./reports/gmoslstests_results.xml
                     '''
 
                 echo "Reporting coverage"
