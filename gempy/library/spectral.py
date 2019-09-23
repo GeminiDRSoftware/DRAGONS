@@ -26,8 +26,13 @@ class Spek1D(Spectrum1D, NDAstroData):
         WCS information (if not included in `spectrum`)
     """
     def __init__(self, spectrum=None, spectral_axis=None, wcs=None, **kwargs):
+        # This handles cases where arithmetic is being performed, and an
+        # object is created that's just a number
         if not isinstance(spectrum, (AstroData, NDData)):
-            raise ValueError("Spectrum must be an `AstroData` or `NDData` object")
+            super().__init__(spectrum, spectral_axis=spectral_axis, wcs=wcs, **kwargs)
+            return
+
+        # Unit handling
         try:  # for NDData-like
             flux_unit = spectrum.unit
         except AttributeError:
