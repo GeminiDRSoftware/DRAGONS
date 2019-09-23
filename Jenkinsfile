@@ -45,7 +45,7 @@ pipeline {
 
                 stage("MacOs 10.11") {
                     agent {
-                        label "macos10.11"
+                        label "macosX11"
                     }
                     steps {
                         echo "Building on ${env.NODE_NAME}"
