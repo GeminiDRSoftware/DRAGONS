@@ -43,6 +43,7 @@ def log():
     os.remove(logfilename)
 
 
+# --- Tests ---
 class TestBookkeeping:
     """
     Suite of tests for the functions in the primitives_standardize module.
