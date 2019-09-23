@@ -6,7 +6,11 @@
  *
  * Required Plug-ins:
  * - Cobertura Plug-in
+ *
  */
+
+@Library('dragons_ci@master')_
+
 
 pipeline {
 
@@ -24,7 +28,8 @@ pipeline {
 
     environment {
         PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
-        TEST_PATH = "$JENKINS_HOME/DRAGONS/test_path/"
+        CONDA_ENV_FILE=".jenkins/conda_py3env_stable.yml"
+        CONDA_ENV_NAME="py3stable"
     }
 
     stages {
@@ -40,6 +45,7 @@ pipeline {
                     steps {
                         echo "Building on ${env.NODE_NAME}"
                         checkout scm
+                        conda create $CONDA_ENV_NAME $CONDA_ENV_FILE
                     }
                 }
 
@@ -50,6 +56,7 @@ pipeline {
                     steps {
                         echo "Building on ${env.NODE_NAME}"
                         checkout scm
+                        conda create $CONDA_ENV_NAME $CONDA_ENV_FILE
                     }
                 }
 
