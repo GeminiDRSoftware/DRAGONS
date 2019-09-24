@@ -9,7 +9,6 @@ echo "Installing missing packages for Python ${parsedVersion}"
 
 cd .jenkins/local_calibration_manager/
 
-
 if [[ "$parsedVersion" -lt "300" && "$parsedVersion" -gt "270" ]]; then
     conda env update --file ../conda_py2env_stable.yml
     pip install --quiet -r requirements_py2.txt
@@ -21,3 +20,5 @@ else
 fi
 
 cd -
+
+pip install git+https://github.com/GeminiDRSoftware/AstroFaker
