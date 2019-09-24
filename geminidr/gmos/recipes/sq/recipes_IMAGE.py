@@ -4,6 +4,7 @@ Default is "reduce".
 """
 recipe_tags = set(['GMOS', 'IMAGE'])
 
+
 def reduce(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -33,6 +34,7 @@ def reduce(p):
     p.writeOutputs()
     return
 
+
 _default = reduce
 
 
@@ -44,7 +46,7 @@ def makeProcessedFringe(p):
 
     Parameters
     ----------
-    p : PrimitivesBASEE object
+    p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
     p.prepare()

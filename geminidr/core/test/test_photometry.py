@@ -122,14 +122,14 @@ def test_calculate_magnitudes():
     assert all(abs(refcat['filtermag_err'].data - 0.2) < 0.001)
 
 
-def test_cull_objcat(niri_image):
+def test_clean_objcat(niri_image):
     ad = niri_image.detectSources()[0]
     total_objects = len(ad[0].OBJCAT)
     total_object_pixels = np.sum(ad[0].OBJMASK)
 
     ad[0].OBJCAT['B_IMAGE'][0] = 1.0
 
-    prims._cull_objcat(ad[0])
+    prims.clean_objcat(ad[0])
 
     # Check one object has gone and "some" OBJMASK pixels have gone
     assert len(ad[0].OBJCAT) == total_objects - 1

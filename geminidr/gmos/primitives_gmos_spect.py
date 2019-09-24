@@ -5,6 +5,9 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 
+from importlib import import_module
+import os
+
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 
@@ -15,10 +18,10 @@ from . import parameters_gmos_spect
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class GMOSSpect(GMOS, Spect):
+class GMOSSpect(Spect, GMOS):
     """
     This is the class containing all of the preprocessing primitives
-    for the GMOSImage level of the type hierarchy tree. It inherits all
+    for the GMOSSpect level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
     tagset = set(["GEMINI", "GMOS", "SPECT"])
@@ -139,3 +142,13 @@ class GMOSSpect(GMOS, Spect):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
+
+    def _get_arc_linelist(self, ext, w1=None, w2=None, dw=None):
+        use_second_order = w2 > 820 and abs(dw) < 0.2
+        use_second_order = False
+        lookup_dir = os.path.dirname(import_module('.__init__', self.inst_lookups).__file__)
+        filename = os.path.join(lookup_dir,
+                                'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
+
+        return np.loadtxt(filename, usecols=[0]), None
+

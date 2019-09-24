@@ -8,9 +8,9 @@ import numpy as np
 import astrodata
 import gemini_instruments
 
-
 THIS_DIR = os.path.dirname(__file__)
 CHARA = '/net/chara/data2/pub'
+
 
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
@@ -24,10 +24,8 @@ CHARA = '/net/chara/data2/pub'
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 ## NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 
-# Load data when accessing it
-@pytest.mark.ad_local_data
-def test_for_length(path_to_inputs):
 
+def test_for_length(path_to_inputs):
     test_filename = 'GMOS/N20110826S0336.fits'
     ad = astrodata.open(os.path.join(path_to_inputs, test_filename))
 
@@ -39,7 +37,6 @@ def test_for_length(path_to_inputs):
 # TODO: This one fails as it is written. Decide later if it's relevant or not
 @pytest.mark.xfail(reason="Test fails for unknown reason. Should I keep it?")
 def test_keyword_changes_preserved_on_lazy_loading(path_to_inputs):
-
     input_file = os.path.join(path_to_inputs, 'GMOS/N20110826S0336.fits')
     ad = astrodata.open(input_file)
 
@@ -48,7 +45,7 @@ def test_keyword_changes_preserved_on_lazy_loading(path_to_inputs):
     del ad.phu['RAWCC']
     del ad[0].hdr['DATATYPE']
 
-    ad._lazy_populate_object() # Force lazy load
+    ad._lazy_populate_object()  # Force lazy load
     # assert ad.phu['RAWIQ'] == 'Any'
     # assert 'RAWCC' not in ad.phu
     # assert 'DATATYPE' not in ad[0].hdr

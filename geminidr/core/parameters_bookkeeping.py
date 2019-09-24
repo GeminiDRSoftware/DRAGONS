@@ -22,6 +22,9 @@ class rejectInputsConfig(config.Config):
     at_start = config.RangeField("Number of files to remove from start of list", int, 0, min=0)
     at_end = config.RangeField("Number of files to remove from end of list", int, 0, min=0)
 
+class removeFromInputsConfig(config.Config):
+    tags = config.Field("List of tags for selection", str, None, optional=True)
+
 class selectFromInputsConfig(config.Config):
     tags = config.Field("List of tags for selection", str, None, optional=True)
 

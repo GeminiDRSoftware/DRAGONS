@@ -155,7 +155,7 @@ class CCD(PrimitivesBASE):
 
             osec_list = ad.overscan_section()
             dsec_list = ad.data_section()
-            for i, (ext, osec, dsec) in enumerate(zip(ad, osec_list, dsec_list)):
+            for ext, osec, dsec in zip(ad, osec_list, dsec_list):
                 x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
                 if x1 > dsec.x1:  # Bias on right
                     x1 += nbiascontam

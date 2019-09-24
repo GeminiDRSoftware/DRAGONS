@@ -5,7 +5,6 @@ import pytest
 import astrodata
 import gemini_instruments
 
-
 DESCRIPTORS_TYPES = [
     ('airmass', float),
     ('amp_read_area', list),
@@ -91,9 +90,7 @@ DESCRIPTORS_TYPES = [
 
 @pytest.mark.parametrize("descriptor,expected_type", DESCRIPTORS_TYPES)
 def test_descriptor_matches_type(descriptor, expected_type, gemini_files):
-
     for _file in gemini_files:
-
         ad = astrodata.open(_file)
 
         value = getattr(ad, descriptor)()
@@ -103,5 +100,4 @@ def test_descriptor_matches_type(descriptor, expected_type, gemini_files):
 
 
 if __name__ == "__main__":
-
     pytest.main()

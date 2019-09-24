@@ -5,13 +5,10 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from astropy.wcs import WCS
-from scipy.ndimage import affine_transform
 
-from gempy.library import astrotools as at
 from gempy.library.transform import Transform, AstroDataGroup
 from gempy.library.matching import Pix2Sky
 from gempy.gemini import gemini_tools as gt
-from gempy.utils import logutils
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -45,31 +42,16 @@ class Resample(PrimitivesBASE):
         WCSs to align them with a reference image, in reference image pixel
         coordinates. The reference image is taken to be the first image in
         the input list.
-        
+
         By default, the transformation into the reference frame is done via
-        interpolation. The interpolator parameter specifies the interpolation 
-        method. The options are nearest-neighbor, bilinear, or nth-order 
-        spline, with n = 2, 3, 4, or 5. If interpolator is None, 
-        no interpolation is done: the input image is shifted by an integer
-        number of pixels, such that the center of the frame matches up as
-        well as possible. The variance plane, if present, is transformed in
+        interpolation. The variance plane, if present, is transformed in
         the same way as the science data.
-        
-        The data quality plane, if present, must be handled a little
-        differently. DQ flags are set bit-wise, such that each pixel is the 
-        sum of any of the following values: 0=good pixel,
-        1=bad pixel (from bad pixel mask), 2=nonlinear, 4=saturated, etc.
-        To transform the DQ plane without losing flag information, it is
-        unpacked into separate masks, each of which is transformed in the same
-        way as the science data. A pixel is flagged if it had greater than
-        1% influence from a bad pixel. The transformed masks are then added
-        back together to generate the transformed DQ plane.
-        
-        In order not to lose any data, the output image arrays (including the
-        reference image's) are expanded with respect to the input image arrays.
-        The science and variance data arrays are padded with zeros; the DQ
-        plane is padded with 16s.
-        
+
+        The data quality plane, if present, is handled in a bitwise manner
+        with each bit of each pixel in the output image being set it it has
+        >1% influence from that bit of a bad pixel. The transformed masks are
+        then added back together to generate the transformed DQ plane.
+
         The WCS keywords in the headers of the output images are updated
         to reflect the transformation.
 
@@ -77,16 +59,19 @@ class Resample(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        interpolator: str
-            desired interpolation [nearest | linear | spline2 | spline3 |
-                                   spline4 | spline5]
+        order: int (0-5)
+            order of interpolation (0=nearest, 1=linear, etc.)
         trim_data: bool
             trim image to size of reference image?
+        clean_data: bool
+            replace bad pixels with a ring median of their values to avoid
+            ringing if using a high-order interpolation?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        interpolator = params["interpolator"]
+        order = params["order"]
         trim_data = params["trim_data"]
+        clean_data = params["clean_data"]
         sfx = params["suffix"]
 
         if len(adinputs) < 2:
@@ -95,279 +80,133 @@ class Resample(PrimitivesBASE):
                         "resampleToCommonFrame")
             return adinputs
 
+        # TODO: Can we make it so that we don't need to mosaic detectors
+        # before doing this? That would mean we only do one interpolation,
+        # not two, and that's definitely better!
         if not all(len(ad)==1 for ad in adinputs):
             raise IOError("All input images must have only one extension.")
 
-        # --------------------  BEGIN establish reference frame  -------------------
-        ref_image = adinputs[0]
-        ref_wcs = WCS(ref_image[0].hdr)
-        ref_shape = ref_image[0].data.shape
-        ref_corners = at.get_corners(ref_shape)
-        naxis = len(ref_shape)
+        attributes = [attr for attr in ('data', 'mask', 'variance', 'OBJMASK')
+                      if all(hasattr(ad, attr) for ad in adinputs)]
 
-        # first pass: get output image shape required to fit all
-        # data in output by transforming corner coordinates of images
-        all_corners = [ref_corners]
-        corner_values = _transform_corners(adinputs[1:], all_corners, ref_wcs,
-                                           interpolator)
-        all_corners, xy_img_corners, shifts = corner_values
-        refoff, out_shape = _shifts_and_shapes(all_corners, ref_shape, naxis,
-                                               interpolator, trim_data, shifts)
-        ref_corners = [(corner[1] - refoff[1] + 1, corner[0] - refoff[0] + 1) # x,y
-                       for corner in ref_corners]
-        area_keys = _build_area_keys(ref_corners)
+        # Clean data en masse (improves logging by showing a single call)
+        if clean_data:
+            adinputs = self.applyDQPlane(adinputs, replace_flags=65535 ^ (DQ.non_linear | DQ.saturated | DQ.no_data),
+                                   replace_value="median", inner_radius=3, outer_radius=5)[0]
 
-        ref_image.hdr.set('CRPIX1', ref_wcs.wcs.crpix[0]-refoff[1],
-                          self.keyword_comments["CRPIX1"])
-        ref_image.hdr.set('CRPIX2', ref_wcs.wcs.crpix[1]-refoff[0],
-                          self.keyword_comments["CRPIX2"])
-        padding = tuple((int(-cen),out-int(ref-cen)) for cen, out, ref in
-                        zip(refoff, out_shape, ref_shape))
-        _pad_image(ref_image, padding)
+        ad_ref = adinputs[0]
+        ref_wcs = WCS(ad_ref[0].hdr)
+        ndim = len(ad_ref[0].shape)
 
-        for key in area_keys:
-            ref_image[0].hdr.set(*key)
-        out_wcs = WCS(ref_image[0].hdr)
-        ref_image.update_filename(suffix=sfx, strip=True)
-        # -------------------- END establish reference frame -----------------------
+        #for ad in adinputs[1:]:
+        #    print(ad.filename)
+        #    print(WCS(ad[0].hdr))
 
-        # --------------------   BEGIN transform data ...  -------------------------
-        for ad, corners in zip(adinputs[1:], xy_img_corners):
-            if interpolator:
-                trans_parameters = _composite_transformation_matrix(ad,
-                                        out_wcs, self.keyword_comments)
-                matrix, matrix_det, img_wcs, offset = trans_parameters
-            else:
-                shift = _composite_from_ref_wcs(ad, out_wcs,
-                                                self.keyword_comments)
-                matrix_det = 1.0
+        # No transform for the reference AD
+        transforms = [Transform()] + [Transform([Pix2Sky(WCS(ad[0].hdr)),
+                                                 Pix2Sky(ref_wcs).inverse])
+                                      for ad in adinputs[1:]]
+        for t in transforms:
+            t._affine = True  # We'll perform an approximation
 
-            # transform corners to find new location of original data
-            data_corners = out_wcs.all_world2pix(
-                img_wcs.all_pix2world(corners, 0), 1)
-            area_keys = _build_area_keys(data_corners)
+        # Compute output frame. If we're trimming data, this is the frame of
+        # the reference image; otherwise we have to calculate it as the
+        # smallest rectangle (in 2D) including all transformed inputs
+        if trim_data:
+            log.fullinfo("Trimming data to size of reference image")
+            output_shape = ad_ref[0].shape
+            origin = (0,) * ndim
+        else:
+            log.fullinfo("Output image will contain all transformed images")
+            # Calculate corners of all transformed images so we can compute
+            # the size and relative location of output image. We do this by
+            # making an AstroDataGroup containing all of them, although we're
+            # not going to process it.
+            adg = AstroDataGroup(adinputs, transforms)
+            adg.calculate_output_shape()
+            output_shape = adg.output_shape
+            origin = adg.origin
+        log.stdinfo("Output image will have shape "+repr(output_shape[::-1]))
 
-            if interpolator:
-                kwargs = {'matrix': matrix, 'offset': offset,
-                          'order': interpolators[interpolator],
-                          'output_shape': out_shape}
-                new_var = None if ad[0].variance is None else \
-                    affine_transform(ad[0].variance, cval=0.0, **kwargs)
-                new_mask = _transform_mask(ad[0].mask if ad[0].mask is not None
-                        else np.zeros_like(ad[0].data, dtype=DQ.datatype), **kwargs)
-                if hasattr(ad[0], 'OBJMASK'):
-                    ad[0].OBJMASK = _transform_mask(ad[0].OBJMASK, **kwargs)
-                ad[0].reset(affine_transform(ad[0].data, cval=0.0, **kwargs),
-                            new_mask, new_var)
-            else:
-                padding = tuple((int(-s), out-int(img-s)) for s, out, img in
-                                zip(shift, out_shape, ad[0].data.shape))
-                _pad_image(ad, padding)
+        adoutputs = []
+        for ad, transform in zip(adinputs, transforms):
+            #print(ad.filename+" "+repr(transform.affine_matrices(shape=ad[0].shape)))
+            adg = AstroDataGroup(ad, [transform])
+            # Set the output shape and origin to keep coordinate frame
+            adg.output_shape = output_shape
+            adg.origin = origin
+            ad_out = adg.transform(attributes=attributes, order=order)
 
-            if abs(1.0 - matrix_det) > 1e-6:
-                    log.fullinfo("Multiplying by {} to conserve flux".format(matrix_det))
-                    # Allow the arith toolbox to do the multiplication
-                    # so that variance is handled correctly
-                    ad.multiply(matrix_det)
-
-            for key in area_keys:
-                ref_image[0].hdr.set(*key)
+            # Add a bunch of header keywords describing the transformed shape
+            corners = adg.corners[0]
+            ad_out[0].hdr["AREATYPE"] = ("P{}".format(len(corners)),
+                                         "Region with {} vertices".format(len(corners)))
+            for i, corner in enumerate(zip(*corners), start=1):
+                for axis, value in enumerate(corner, start=1):
+                    key_name = "AREA{}_{}".format(i, axis)
+                    key_comment = "Vertex {}, dimension {}".format(i, axis)
+                    ad_out[0].hdr[key_name] = (value+1, key_comment)
 
             # Timestamp and update filename
+            ad_out.update_filename(suffix=sfx, strip=True)
+            log.fullinfo("{} resampled with jfactor {:.2f}".
+                         format(ad.filename, adg.jfactors[0]))
+            adoutputs.append(ad_out)
+
+        return adoutputs
+
+    def applyStackedObjectMask(self, adinputs=None, **params):
+        """
+        This primitive takes an image with an OBJMASK and transforms that
+        OBJMASK onto the pixel planes of the input images, using their WCS
+        information. If the first image is a stack, this allows us to mask
+        fainter objects than can be detected in the individual input images.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        source: str
+            name of stream containing single stacked image
+        order: int (0-5)
+            order of interpolation
+        threshold: float
+            threshold above which an interpolated pixel should be flagged
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        source = params["source"]
+        order = params["order"]
+        threshold = params["threshold"]
+        sfx = params["suffix"]
+
+        source_stream = self.streams.get(source, [])
+        if len(source_stream) != 1:
+            log.warning("Stream {} not found or does not contain single "
+                        "AstroData object. Continuing.".format(source_stream))
+            return adinputs
+        
+        ad_source = source_stream[0]
+        # There's no reason why we can't handle multiple extensions
+        if any(len(ad) != len(ad_source) for ad in adinputs):
+            log.warning("At least one AstroData input has a different number "
+                        "of extensions to the reference. Continuing.")
+            return adinputs
+
+        for ad in adinputs:
+            for ext, source_ext in zip(ad, ad_source):
+                transform = Transform([Pix2Sky(WCS(source_ext.hdr)),
+                                       Pix2Sky(WCS(ext.hdr)).inverse])
+                transform._affine = True
+                try:
+                    # Convert OBJMASK to float or else uint8 will be returned
+                    objmask = transform.apply(source_ext.OBJMASK.astype(np.float32),
+                                              output_shape=ext.shape, order=order, cval=0)
+                    ext.OBJMASK = np.where(abs(objmask) > threshold, 1, 0).astype(np.uint8)
+                except:  # source_ext.OBJMASK not present, or None
+                    pass
+                # We will deliberately keep the input image's OBJCAT (if it
+                # exists) since this will be required for aligning the inputs.
             ad.update_filename(suffix=sfx, strip=True)
+
         return adinputs
-
-# =================================== prive ====================================
-def _transform_corners(ads, all_corners, ref_wcs, interpolator):
-    shifts = []
-    xy_img_corners = []
-
-    for ad in ads:
-        img_wcs = WCS(ad[0].hdr)
-        img_shape = ad[0].data.shape
-        img_corners = at.get_corners(img_shape)
-        xy_corners  = [(corner[1],corner[0]) for corner in img_corners]
-        xy_img_corners.append(xy_corners)
-
-        if interpolator is None:
-            # find shift by transforming center position of field
-            # (so that center matches best)
-            x1y1 = np.array([img_shape[1]/2.0, img_shape[0]/2.0])
-            x2y2 = img_wcs.all_world2pix(ref_wcs.all_pix2world([x1y1],1), 1)[0]
-
-            # round shift to nearest integer and flip x and y
-            offset = np.roll(np.rint(x2y2-x1y1),1)
-
-            # shift corners of image
-            img_corners = [tuple(offset+corner) for corner in img_corners]
-            shifts.append(offset)
-        else:
-            # transform corners of image via WCS
-            xy_corners = img_wcs.all_world2pix(ref_wcs.all_pix2world(xy_corners,0),0)
-            img_corners = [(corner[1],corner[0]) for corner in xy_corners]
-
-        all_corners.append(img_corners)
-    return all_corners, xy_img_corners, shifts
-
-def _shifts_and_shapes(all_corners, ref_shape, naxis, interpolator, trim_data, shifts):
-    """
-    all_corners are locations (y,x) of all 4 corners of the reference image in the
-    pixel space of each image
-    """
-    log = logutils.get_logger(__name__)
-    if trim_data:
-        refoff=[0]*naxis
-        out_shape = ref_shape
-        log.fullinfo("Trimming data to size of reference image")
-    else:
-        log.fullinfo("Growing reference image to keep all data; "
-                     "centering data, and updating WCS to account "
-                     "for shift")
-
-        # Otherwise, use the corners of the images to get the minimum
-        # required output shape to hold all data
-        out_shape = []
-        refoff = []
-        for axis in range(naxis):
-            # get output shape from corner values
-            cvals = [corner[axis] for ic in all_corners for corner in ic]
-            out_shape.append(int(max(cvals)-min(cvals)+1))
-            refoff.append(-max(0, int(max(cvals) - ref_shape[axis] + 1)))
-
-            # if just shifting, need to set centering shift
-            # for reference image from offsets already calculated
-            if interpolator is None:
-                svals = [shift[axis] for shift in shifts]
-                # include a 0 shift for the reference image
-                # (in case it's already centered)
-                svals.append(0.0)
-                refoff.append(-int(max(svals)))
-
-        out_shape = tuple(out_shape)
-        log.fullinfo("New output shape: "+repr(out_shape))
-
-        # if not shifting, get offset required to center reference image
-        # from the size of the image
-        #if interpolator:
-        #    incen = [0.5*(axlen-1) for axlen in ref_shape]
-        #    outcen = [0.5*(axlen-1) for axlen in out_shape]
-        #    cenoff = np.rint(incen) - np.rint(outcen)
-    return refoff, out_shape
-
-def _build_area_keys(corners):
-    log = logutils.get_logger(__name__)
-    log.fullinfo("Setting AREA keywords to denote original data area.")
-    log.fullinfo("AREATYPE = 'P4'     / Polygon with 4 vertices")
-    area_keys = [("AREATYPE", "P4", "Polygon with 4 vertices")]
-    for i in range(len(corners)):
-        for axis in range(len(corners[i])):
-            key_name = "AREA{}_{}".format(i+1, axis+1)
-            key_value = corners[i][axis]
-            key_comment = "Vertex {}, dimension {}".format(i+1, axis+1)
-            area_keys.append((key_name, key_value, key_comment))
-            log.fullinfo("{:8s} = {:7.2f}  / {}".format(key_name, key_value,
-                                                        key_comment))
-    return area_keys
-
-def _composite_transformation_matrix(ad, out_wcs, keyword_comments):
-    log = logutils.get_logger(__name__)
-    img_wcs = WCS(ad[0].hdr)
-    # get transformation matrix from composite of wcs's
-    # matrix = in_sky2pix*out_pix2sky (converts output to input)
-    xy_matrix = np.dot(np.linalg.inv(img_wcs.wcs.cd), out_wcs.wcs.cd)
-    # switch x and y for compatibility with numpy ordering
-    flip_xy = np.roll(np.eye(2), 2)
-    matrix = np.dot(flip_xy,np.dot(xy_matrix, flip_xy))
-    matrix_det = np.linalg.det(matrix)
-
-    # offsets: shift origin of transformation to the reference
-    # pixel by subtracting the transformation of the output
-    # reference pixel and adding the input reference pixel
-    # back in
-    refcrpix = np.roll(out_wcs.wcs.crpix, 1)
-    imgcrpix = np.roll(img_wcs.wcs.crpix, 1)
-    offset = imgcrpix - np.dot(matrix, refcrpix)
-
-    # then add in the shift of origin due to dithering offset.
-    # This is the transform of the reference CRPIX position,
-    # minus the original position
-    trans_crpix = img_wcs.all_world2pix(
-                  out_wcs.all_pix2world([out_wcs.wcs.crpix],1), 1)[0]
-    trans_crpix = np.roll(trans_crpix, 1)
-    offset = offset + trans_crpix-imgcrpix
-
-    # Since the transformation really is into the reference
-    # WCS coordinate system as near as possible, just set image
-    # WCS equal to reference WCS
-    log.fullinfo("Offsets: "+repr(np.roll(offset, 1)))
-    log.fullinfo("Transformation matrix:\n"+repr(matrix))
-    log.fullinfo("Updating WCS to match reference WCS")
-
-    for ax in (1, 2):
-        ad.hdr.set('CRPIX{}'.format(ax), out_wcs.wcs.crpix[ax-1],
-                   comment=keyword_comments["CRPIX{}".format(ax)])
-        ad.hdr.set('CRVAL{}'.format(ax), out_wcs.wcs.crval[ax-1],
-                    comment=keyword_comments["CRVAL{}".format(ax)])
-        for ax2 in (1, 2):
-            ad.hdr.set('CD{}_{}'.format(ax,ax2), out_wcs.wcs.cd[ax-1,ax2-1],
-                       comment=keyword_comments["CD{}_{}".format(ax,ax2)])
-
-    return (matrix, matrix_det, img_wcs, offset) # ad ?
-
-def _composite_from_ref_wcs(ad, out_wcs, keyword_comments):
-    log = logutils.get_logger(__name__)
-    img_wcs = WCS(ad[0].hdr)
-    img_shape = ad[0].data.shape
-
-    # recalculate shift from new reference wcs
-    x1y1 = np.array([img_shape[1] / 2.0, img_shape[0]/2.0])
-    x2y2 = img_wcs.all_world2pix(out_wcs.all_pix2world([x1y1], 1), 1)[0]
-    shift = np.roll(np.rint(x2y2 - x1y1), 1)
-    if np.any(shift > 0):
-        log.warning("Shift was calculated to be > 0; interpolator=None "
-                    "may not be appropriate for this data.")
-        shift = np.where(shift > 0, 0, shift)
-
-    # update PHU WCS keywords
-    log.fullinfo("Offsets: " + repr(np.roll(shift, 1)))
-    log.fullinfo("Updating WCS to track shift in data")
-    ad.hdr.set("CRPIX1", img_wcs.wcs.crpix[0] - shift[1],
-                         comment=keyword_comments["CRPIX1"])
-    ad.hdr.set("CRPIX2", img_wcs.wcs.crpix[1] - shift[0],
-                         comment=keyword_comments["CRPIX2"])
-    return shift  # ad ?
-
-def _pad_image(ad, padding):
-    """Pads the image with zeroes, except DQ, which is padded with 16s"""
-    ad.operate(np.pad, padding, 'constant', constant_values=0)
-    # We want the mask padding to be DQ.no_data, so have to fix
-    # that up by hand...
-    if ad[0].mask is None:
-        ad[0].mask = np.zeros_like(ad[0].data, dtype=DQ.datatype)
-    ad[0].mask[:padding[0][0]] = DQ.no_data
-    if padding[0][1] > 0:
-        ad[0].mask[-padding[0][1]:] = DQ.no_data
-    ad[0].mask[:,:padding[1][0]] = DQ.no_data
-    if padding[1][1] > 0:
-        ad[0].mask[:,-padding[1][1]:] = DQ.no_data
-    if hasattr(ad[0], 'OBJMASK'):
-        ad[0].OBJMASK = np.pad(ad[0].OBJMASK, padding, 'constant',
-                             constant_values=0)
-
-def _transform_mask(mask, **kwargs):
-    """
-    Transform the DQ plane, bit by bit. Since np.unpackbits() only works
-    on uint8 data, we have to do this by hand
-    """
-    trans_mask = np.zeros(kwargs['output_shape'], dtype=np.uint16)
-    for j in range(0, 16):
-        bit = 2**j
-        # Only transform bits that have a pixel set. But we always want
-        # to do one transformation so we can pad the data with DQ.no_data
-        if bit==DQ.no_data or np.sum(mask & bit) > 0:
-            temp_mask = affine_transform((mask & 2**j).astype(np.float32),
-                                         cval=DQ.no_data if bit==DQ.no_data
-                                         else 0, **kwargs)
-            trans_mask += np.where(np.abs(temp_mask>0.01*bit), bit,
-                                          0).astype(np.uint16)
-    return trans_mask

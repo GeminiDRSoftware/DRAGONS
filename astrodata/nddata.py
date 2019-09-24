@@ -201,6 +201,19 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
             new.variance = deepcopy(self.variance)
         return new
 
+    def _arithmetic(self, operation, operand,
+                    propagate_uncertainties=True, handle_mask=np.bitwise_or,
+                    handle_meta=None, uncertainty_correlation=0,
+                    compare_wcs='first_found', **kwds):
+        """
+        Override the NDData method so that "bitwise_or" becomes the default
+        operation to combine masks, rather than "logical_or"
+        """
+        return super()._arithmetic(operation, operand, propagate_uncertainties=propagate_uncertainties,
+                                   handle_mask=handle_mask, handle_meta=handle_meta,
+                                   uncertainty_correlation=uncertainty_correlation,
+                                   compare_wcs=compare_wcs, **kwds)
+
     @property
     def window(self):
         """

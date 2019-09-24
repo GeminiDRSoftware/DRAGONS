@@ -16,6 +16,10 @@ Classes:
                combined into a single output (more precisely, a single output
                per attribute)
     AstroDataGroup: a subclass of DataGroup for AstroData objects
+
+Functions:
+    create_mosaic_transform: construct an AstroDataGroup instance that will
+                             mosaic the detectors
 """
 import numpy as np
 import copy
@@ -29,13 +33,14 @@ from astropy.wcs import WCS
 from scipy import ndimage
 
 from gempy.library import astrotools as at
+from gempy.gemini import gemini_tools as gt
 
 import multiprocessing as multi
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 import astrodata, gemini_instruments
 
-from .matching import Rotate2D, Shift2D, Scale2D
+from .astromodels import Rotate2D, Shift2D, Scale2D
 from ..utils import logutils
 
 AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
@@ -187,6 +192,38 @@ class Block(object):
             slice_ = tuple(slice(c, c+a) for c, a in zip(corner, arr.shape))
             output[slice_] = arr
         return output
+
+    def pixel(self, *coords, attribute="data"):
+        """
+        Returns the value of a pixel in a Block.
+
+        Parameters
+        ----------
+        coords: tuple
+            the coordinates in the Block whose pixel value we want
+        attribute: str
+            name of attribute to extract
+
+        Returns
+        -------
+            float: the pixel value at this coordinate
+        """
+        if len(coords) != len(self.shape):
+            raise ValueError("Incorrect number of coordinates")
+
+        for corner, arr in zip(self.corners, self._elements):
+            offset_coords = tuple(coord - corner_coord
+                             for coord, corner_coord in zip(coords, corner))
+            if all(c >=0 and c < s for c, s in zip(offset_coords, arr.shape)):
+                if attribute == "data" and isinstance(arr, np.ndarray):
+                    return arr[offset_coords]
+                else:
+                    attr = getattr(arr, attribute)
+                    if attr is None:
+                        return None
+                    else:
+                        return attr[offset_coords]
+        raise IndexError("Coordinates not in block")
 
     def _return_table(self, name):
         """
@@ -465,7 +502,9 @@ class Transform(object):
         if index == 0:
             self._ndim = model.n_inputs
 
-        # Ugly stuff to break down a CompoundModel.
+        # Ugly stuff to break down a CompoundModel. We need a general except
+        # here because there are multuple reasons this might fail -- it's not
+        # a CompoundModel, or it is, but the mappings are i
         try:
             sequence = self.split_compound_model(model._tree, required_inputs)
         except AttributeError:
@@ -515,8 +554,13 @@ class Transform(object):
                 # we have on the stack takes the right number of inputs.
                 # If so, leave it there and updated the required number of
                 # inputs; otherwise, combine the models and continue.
-                if operand == "|" and stack[-1].n_inputs == ndim:
-                    ndim = stack[1].n_outputs
+
+                # TODO: Allowing the number of inputs/outputs to change is
+                # causing problems with complicated compound models.
+                # For now, we will only consider as discrete models those
+                # that preserve the number of inputs/outputs
+                if operand == "|" and stack[-1].n_inputs == stack[-1].n_outputs == ndim:
+                    #ndim = stack[1].n_outputs
                     continue
                 right = stack.pop()
                 left = stack.pop()
@@ -857,6 +901,23 @@ class DataGroup(object):
         self.output_shape = tuple(max_ - min_ for min_, max_ in limits)
         self.origin = tuple(min_ for min_, max_ in limits)
 
+    def shift_origin(self, *args):
+        """
+        This method shifts the origin of the output frame. Positive values
+        will result in the bottom and/or left of the mosaic being eliminated
+        from the output image.
+
+        Parameters
+        ----------
+        args: numbers
+            shifts to apply to the origin (standard python order)
+        """
+        if self.origin is None:
+            raise ValueError("Origin has not been set")
+        if len(args) != len(self.origin):
+            raise ValueError("Number of shifts has wrong dimensionality")
+        self.origin = tuple(orig + shift for orig, shift in zip(self.origin, args))
+
     def transform(self, attributes=['data'], order=1, subsample=1,
                   threshold=0.01, conserve=False, parallel=False):
         """
@@ -902,9 +963,6 @@ class DataGroup(object):
         self.corners = []
         self.jfactors = []
 
-        if subsample > 1:
-            self.log.warning("Subsampling has not been fully tested")
-
         for input_array, transform in zip(self._arrays, self._transforms):
             # Since this may be modified, deepcopy to preserve the one if
             # the DataGroup's _transforms list
@@ -915,6 +973,11 @@ class DataGroup(object):
             output_corners = self._prepare_for_output(input_array,
                                                       transform, subsample)
             output_array_shape = tuple(max_ - min_ for min_, max_ in output_corners)
+
+            # This can happen if the origin and/or output_shape are modified
+            if not all(length > 0 for length in output_array_shape):
+                self.log.stdinfo("Array falls outside output region")
+                continue
 
             # Create a mapping from output pixel to input pixels
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
@@ -937,15 +1000,13 @@ class DataGroup(object):
                     transform.append([rescale, rescale_shift])
 
                 trans_output_shape = tuple(length * subsample for length in output_array_shape)
-                if transform.is_affine:
+                if transform.inverse.is_affine:
                     mapping = transform.inverse.affine_matrices(shape=trans_output_shape)
                 else:
                     # If we're conserving the flux, we need to compute the
                     # Jacobian at every input point. This is done by numerical
                     # derivatives so expand the output pixel grid.
                     if conserve:
-                        self.log.warning("Flux conservation has not been fully"
-                                         "test for non-affine transforms")
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
                         transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
                         jacobian_mapping = GeoMap(transform, jacobian_shape)
@@ -981,12 +1042,18 @@ class DataGroup(object):
                 # Integer shifts mean the output will be unchanged by the
                 # transform, so we can put it straight in the output, since
                 # only this array will map into the region.
+                #
+                # The origin and output_shape may have been set in order to
+                # only transform some of the input image into the final output
+                # array, so we need to account for that (with slice_2)
                 if integer_shift:
                     self.log.debug("Placing {} array in [".format(attr) +
                                    ",".join(["{}:{}".format(limits[0] + 1, limits[1])
                                              for limits in output_corners[::-1]]) + "]")
                     slice_ = tuple(slice(min_, max_) for min_, max_ in output_corners)
-                    self.output_dict[attr][slice_] = arr
+                    slice_2 = tuple(slice(int(offset), int(offset) + max_ - min_)
+                                    for offset, (min_, max_) in zip(mapping.offset, output_corners))
+                    self.output_dict[attr][slice_] = arr[slice_2]
                     continue
 
                 # Set up the functions to call to transform this attribute
@@ -1264,6 +1331,31 @@ class AstroDataGroup(DataGroup):
 
     def transform(self, attributes=None, order=1, subsample=1, threshold=0.01,
                   conserve=False, parallel=False, process_objcat=False):
+        """
+        This method
+
+        Parameters
+        ----------
+        attributes: list-like
+            attributes to be transformed (None => all)
+        order: int
+            order of interpolation
+        subsample: int
+            if >1, will transform onto finer pixel grid and block-average down
+        threshold: float
+            for transforming the DQ plane, output pixels larger than this value
+            will be flagged as "bad"
+        conserve: bool
+            conserve flux rather than interpolate?
+        parallel: bool
+            use parallel processing to speed up operation?
+        process_objcat: bool
+            merge input OBJCATs into output AD instance?
+
+        Returns
+        -------
+
+        """
         if attributes is None:
             attributes = [attr for attr in self.array_attributes
                           if all(getattr(ad, attr, None) is not None for ad in self._arrays)]
@@ -1394,3 +1486,143 @@ class AstroDataGroup(DataGroup):
                 objcat = table.vstack(tables, metadata_conflicts='silent')
                 objcat['NUMBER'] = np.arange(len(objcat)) + 1
                 ad[0].OBJCAT = objcat
+
+
+    def inverse_transform(self, admos, attributes=None, order=1, subsample=1,
+                          threshold=0.01, conserve=False):
+        """
+        The method performs the inverse transformation, which includes breaking
+        the input file into multiple extensions.
+
+        Parameters
+        ----------
+        admos: AstroData
+            an AD object compatible with the output of self.transform()
+        attributes: list-like
+            attributes to be transformed (None => all)
+        order: int
+            order of interpolation
+        subsample: int
+            if >1, will transform onto finer pixel grid and block-average down
+        threshold: float
+            for transforming the DQ plane, output pixels larger than this value
+            will be flagged as "bad"
+        conserve: bool
+            conserve flux rather than interpolate?
+
+        Returns
+        -------
+        AstroData: a multi-extension AD instance from unmosaicking the input
+        """
+        if len(admos) != 1:
+            raise ValueError("AstroData instance must have only one extension")
+        if admos[0].shape != self.output_shape:
+            raise ValueError("AstroData shape incompatible with transform")
+
+        adout = astrodata.create(admos.phu)
+        adout.orig_filename = admos.orig_filename
+
+        for arr, t in self:
+            # Since the origin shift is the last thing applied before
+            # transforming, it must be the first thing in the inverse
+            t_inverse = t.inverse
+            t_inverse.prepend(reduce(Model.__and__,
+                                     [models.Shift(o) for o in self.origin[::-1]]))
+            adg = self.__class__(admos, [t_inverse])
+            # Transformations are interpolations on the input pixel grid. So
+            # pixels are typically lost around the edges and the footprint is
+            # smaller than the input image's footprint. So we force the shape
+            # of the inverse-transformed image to be that of the input array
+            # and only take the region starting from (0,0) in the output frame
+            adg.origin = (0, 0)
+            adg.output_shape = arr.shape
+            block = adg.transform(attributes=attributes, order=order,
+                                  subsample=subsample, threshold=threshold,
+                                  conserve=conserve)
+
+            # Now we split the block into its constituent extensions
+            for ext, corner in zip(arr, arr.corners):
+                slice_ = tuple(slice(start, start+length)
+                               for start, length in zip(corner, ext.shape))
+                # We need to deepcopy here to protect the header, because of
+                # the way _append_nddata behaves
+                ndd = copy.deepcopy(block[0].nddata[slice_])
+                adout.append(ndd, header=ext.hdr, reset_ver=False)
+
+        return adout
+
+#-----------------------------------------------------------------------------
+def create_mosaic_transform(ad, geotable):
+    """
+    Constructs an AstroDataGroup object that will perform the mosaicking
+    operation on an AstroData instance.
+
+    Parameters
+    ----------
+    ad: AstroData
+        the AD object that will be mosaicked
+    geotable: module
+        the geometry_conf module with the required information
+
+    Returns
+    -------
+    AstroDataGroup: the ADG object that can be transformed to perform
+                    the mosaicking
+    """
+
+
+    # Create the blocks (individual physical detectors)
+    array_info = gt.array_information(ad)
+    blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
+              zip(array_info.extensions, array_info.array_shapes)]
+    offsets = [ad[exts[0]].array_section()
+               for exts in array_info.extensions]
+
+    detname = ad.detector_name()
+    xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+    geometry = geotable.geometry[detname]
+    default_shape = geometry.get('default_shape')
+    adg = AstroDataGroup()
+
+    for block, origin, offset in zip(blocks, array_info.origins, offsets):
+        # Origins are in (x, y) order in LUT
+        block_geom = geometry[origin[::-1]]
+        nx, ny = block_geom.get('shape', default_shape)
+        nx /= xbin
+        ny /= ybin
+        shift = block_geom.get('shift', (0, 0))
+        rot = block_geom.get('rotation', 0.)
+        mag = block_geom.get('magnification', (1, 1))
+        transform = Transform()
+
+        # Shift the Block's coordinates based on its location within
+        # the full array, to ensure any rotation takes place around
+        # the true centre.
+        if offset.x1 != 0 or offset.y1 != 0:
+            transform.append(models.Shift(float(offset.x1) / xbin) &
+                             models.Shift(float(offset.y1) / ybin))
+
+        if rot != 0 or mag != (1, 1):
+            # Shift to centre, do whatever, and then shift back
+            transform.append(models.Shift(-0.5 * (nx - 1)) &
+                             models.Shift(-0.5 * (ny - 1)))
+            if rot != 0:
+                # Cope with non-square pixels by scaling in one
+                # direction to make them square before applying the
+                # rotation, and then reversing that.
+                if xbin != ybin:
+                    transform.append(models.Identity(1) & models.Scale(ybin / xbin))
+                transform.append(models.Rotation2D(rot))
+                if xbin != ybin:
+                    transform.append(models.Identity(1) & models.Scale(xbin / ybin))
+            if mag != (1, 1):
+                transform.append(models.Scale(mag[0]) &
+                                 models.Scale(mag[1]))
+            transform.append(models.Shift(0.5 * (nx - 1)) &
+                             models.Shift(0.5 * (ny - 1)))
+        transform.append(models.Shift(float(shift[0]) / xbin) &
+                         models.Shift(float(shift[1]) / ybin))
+        adg.append(block, transform)
+
+    adg.set_reference()
+    return adg

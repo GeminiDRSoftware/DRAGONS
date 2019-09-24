@@ -460,6 +460,8 @@ class FitsProviderProxy(DataProvider):
         self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
         return self
 
+    __itruediv__ = __idiv__
+
     def __rdiv__(self, operand):
         self._provider._oper(self._provider._rdiv, operand, self._mapping)
         return self
@@ -926,6 +928,8 @@ class FitsProvider(DataProvider):
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
         else:
+            if custom_header is not None:
+                pixim.meta['header'] = custom_header
             header = pixim.meta['header']
             nd = pixim
             currname = header.get('EXTNAME')

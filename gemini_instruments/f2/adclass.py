@@ -10,13 +10,14 @@ import warnings
 from ..common import section_to_tuple, build_group_id
 from .. import gmu
 
-class AstroDataF2(AstroDataGemini):
 
-    __keyword_dict = dict(camera = 'LYOT',
-                          central_wavelength = 'GRWLEN',
-                          disperser = 'GRISM',
-                          focal_plane_mask = 'MOSPOS',
-                          lyot_stop = 'LYOT',
+class AstroDataF2(AstroDataGemini):
+    __keyword_dict = dict(camera='LYOT',
+                          central_wavelength='GRWLEN',
+                          disperser='GRISM',
+                          dispersion='DISPERSI',
+                          focal_plane_mask='MOSPOS',
+                          lyot_stop='LYOT',
                           )
 
     @staticmethod
@@ -171,7 +172,7 @@ class AstroDataF2(AstroDataGemini):
 
         central_wavelength = float(self.phu['GRWLEN'])
         if self.phu['FILTER1'] == 'K-long-G0812':
-                central_wavelength = 2.2
+            central_wavelength = 2.2
 
         if central_wavelength < 0.0:
             return None
@@ -283,7 +284,44 @@ class AstroDataF2(AstroDataGemini):
         except TypeError:  # either is None
             return None
         # Bottom port flip
-        return -offset if self.phu.get('INPORT')==1 else offset
+        return -offset if self.phu.get('INPORT') == 1 else offset
+
+    @astro_data_descriptor
+    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+        """
+        Returns the dispersion in meters per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice. It is
+        possible to control the units of wavelength using the input arguments.
+
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
+
+        Returns
+        -------
+        list/float
+            The dispersion(s)
+        """
+        # F2 header keyword value is in Angstroms, not meters
+        dispersion = super(AstroDataF2, self).dispersion(
+            asMicrometers=asMicrometers,
+            asNanometers=asNanometers,
+            asAngstroms=asAngstroms)
+
+        # Convert dispersion from Angstroms to Meters
+        if isinstance(dispersion, list):
+            dispersion = [disp * 1e-10 for disp in dispersion]
+        elif isinstance(dispersion, (int, float)):
+            dispersion = dispersion * 1e-10
+        else:
+            dispersion = None
+
+        return dispersion
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
@@ -334,7 +372,7 @@ class AstroDataF2(AstroDataGemini):
                 del filter[0]
 
             if ('Block' in filter1 or 'Block' in filter2 or 'Dark' in filter1
-                or 'Dark' in filter2):
+                    or 'Dark' in filter2):
                 filter = ['blank']
             if 'DK' in filter1 or 'DK' in filter2:
                 filter = ['dark']
@@ -459,7 +497,7 @@ class AstroDataF2(AstroDataGemini):
                 return None
         else:
             return [(zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
-                    else None) for g in gain]
+                     else None) for g in gain]
 
     @returns_list
     @astro_data_descriptor
@@ -561,7 +599,7 @@ class AstroDataF2(AstroDataGemini):
             saturation level
         """
         well_depth = getattr(array_properties.get(self.read_mode(), None),
-                       'welldepth', None)
+                             'welldepth', None)
         gain = self.gain()
         if self.is_single:
             try:
@@ -624,8 +662,8 @@ class AstroDataF2(AstroDataGemini):
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=FITSFixedWarning)
             wcs = WCS(self[0].hdr)
-            result = wcs.wcs_pix2world(x,y,1, 1) if wcs.naxis==3 \
-                else wcs.wcs_pix2world(x,y, 1)
+            result = wcs.wcs_pix2world(x, y, 1, 1) if wcs.naxis == 3 \
+                else wcs.wcs_pix2world(x, y, 1)
         ra, dec = float(result[0]), float(result[1])
 
         if 'NON_SIDEREAL' in self.tags:

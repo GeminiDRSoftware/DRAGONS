@@ -19,6 +19,7 @@ import os
 import gc
 import pickle
 import warnings
+import weakref
 
 from copy import deepcopy
 from inspect import stack, isclass
@@ -26,6 +27,7 @@ from inspect import stack, isclass
 from gempy.eti_core.eti import ETISubprocess
 from gempy.library import config
 from gempy.utils import logutils
+from gempy import display
 
 from astropy.io.fits.verify import VerifyWarning
 
@@ -112,6 +114,55 @@ class Calibrations(object):
         save_cache(self._dict, self._calindfile)
         return
 # ------------------------------------------------------------------------------
+class dormantViewer(object):
+    """
+    An object that p.viewer can be assigned to, which only creates or connects
+    to a display tool when required.
+    """
+    def __init__(self, parent=None, viewer_name=None, use_existing=True):
+        """
+        Create a dormantViewer() object.
+
+        Parameters
+        ----------
+        parent: a PrimitivesBASE object
+            the parent to attach the viewer to when it awakes
+        viewer_name: str/None
+            name of the viewer (passed to gempy.display.connect)
+        use_existing: bool
+            connect to an existing viewer?
+        """
+        if not isinstance(parent, PrimitivesBASE):
+            raise ValueError("dormantViewer must be instantiated with a "
+                             "parent")
+        self.parent = weakref.ref(parent)
+        self.viewer_name = viewer_name
+        self.use_existing = use_existing
+
+    def __getattr__(self, name):
+        """This is how the viewer will wake up"""
+        if self.viewer_name is not None:
+            try:
+                self.parent().viewer = display.connect(self.viewer_name,
+                            use_existing=self.use_existing, quit_window=False)
+            except NotImplementedError:
+                self.parent().log.warning("Attempting to display to an unknown"
+                                          " display ({}). Image display turned"
+                                          " off".format(self.viewer_name))
+                self.viewer_name = None
+            else:
+                return getattr(self.parent().viewer, name)
+        return self
+
+    def __setattr__(self, name, value):
+        # Ignore anything else
+        if name in ('parent', 'viewer_name', 'use_existing'):
+            object.__setattr__(self, name, value)
+
+    def __call__(self, *args, **kwargs):
+        pass
+
+# ------------------------------------------------------------------------------
 def cleanup(process):
     # Function for the atexit registry to kill the ETISubprocess
     process.terminate()
@@ -171,6 +222,9 @@ class PrimitivesBASE(object):
         gc.collect()
         self.eti_subprocess = ETISubprocess()
         atexit.register(cleanup, self.eti_subprocess)
+
+        # Instantiate a dormantViewer(). Only ds9 for now.
+        self.viewer = dormantViewer(self, 'ds9')
 
     @property
     def upload(self):
@@ -241,7 +295,7 @@ class PrimitivesBASE(object):
     def _inherit_params(self, params, primname, pass_suffix=False):
         """Create a dict of params for a primitive from a larger dict,
         using only those that the primitive needs
-        
+
         Parameters
         ----------
         params: dict

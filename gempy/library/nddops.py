@@ -115,13 +115,13 @@ def unpack_nddata(fn):
 # NDStacker.<method>.required_args will return a list of required arguments
 def combiner(fn):
     fn.is_combiner = True
-    args = inspect.getargspec(fn).args[3:]
+    args = inspect.getfullargspec(fn).args[3:]
     fn.required_args = list(args)
     return fn
 
 def rejector(fn):
     fn.is_rejector = True
-    args = inspect.getargspec(fn).args[3:]
+    args = inspect.getfullargspec(fn).args[3:]
     fn.required_args = list(args)
     return fn
 
@@ -290,6 +290,22 @@ class NDStacker(object):
             info.append(None if out_mask is None else out_mask[self._debug_pixel])
             info.append(None if out_var is None else out_var[self._debug_pixel])
             self._logmsg("out {:15.4f} {:5d} {:15.4f}".format(*info))
+        return out_data, out_mask, out_var
+
+    @classmethod
+    def combine(cls, data, mask=None, variance=None, rejector="none", combiner="mean", **kwargs):
+        """
+        Perform the same job as calling an instance of the NDStacker class,
+        but without the data unpacking. A convenience method.
+        """
+        rej_func = getattr(cls, rejector)
+        comb_func = getattr(cls, combiner)
+        rej_args = {arg: kwargs[arg] for arg in rej_func.required_args
+                    if arg in kwargs}
+        data, mask, variance = rej_func(data, mask, variance, **rej_args)
+        comb_args = {arg: kwargs[arg] for arg in comb_func.required_args
+                     if arg in kwargs}
+        out_data, out_mask, out_var = comb_func(data, mask, variance, **comb_args)
         return out_data, out_mask, out_var
 
 
@@ -486,8 +502,10 @@ class NDStacker(object):
         # will be the (0,0) pixels from each image, and so on...
         shape = data.shape
         num_img = shape[0]
-        data_size = np.multiply.reduce(data.shape[1:])
-        data, mask, variance = cyclip.iterclip(data.ravel(), mask.ravel(), variance.ravel(),
+        # Force int in case arrays are 1D
+        data_size = int(np.multiply.reduce(data.shape[1:]))
+        data, mask, variance = cyclip.iterclip(data.ravel().astype(np.float32), mask.ravel().astype(DQ.datatype),
+                                               variance.ravel().astype(np.float32),
                                                has_var=has_var, num_img=num_img, data_size=data_size,
                                                mclip=int(mclip), lsigma=lsigma, hsigma=hsigma,
                                                max_iters=max_iters, sigclip=int(sigclip))

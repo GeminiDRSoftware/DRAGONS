@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import re
 from datetime import date
 
@@ -9,12 +10,12 @@ from .. import gmu
 from ..common import Section
 from ..gemini import AstroDataGemini
 
-class AstroDataGmos(AstroDataGemini):
 
-    __keyword_dict = dict(array_name = 'AMPNAME',
-                          array_section = 'CCDSEC',
-                          camera = 'INSTRUME',
-                          overscan_section = 'BIASSEC',
+class AstroDataGmos(AstroDataGemini):
+    __keyword_dict = dict(array_name='AMPNAME',
+                          array_section='CCDSEC',
+                          camera='INSTRUME',
+                          overscan_section='BIASSEC',
                           )
 
     @staticmethod
@@ -77,7 +78,7 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_ifu(self):
-        #if not self._tag_is_spect():
+        # if not self._tag_is_spect():
         #    return
 
         mapping = {
@@ -116,7 +117,7 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_ls(self):
-        #if not self._tag_is_spect():
+        # if not self._tag_is_spect():
         #    return
 
         if self.phu.get('MASKTYP') == 1 and self.phu.get('MASKNAME', '').endswith('arcsec'):
@@ -124,7 +125,7 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_tag
     def _tag_mos(self):
-        #if not self._tag_is_spect():
+        # if not self._tag_is_spect():
         #    return
 
         mskt = self.phu.get('MASKTYP')
@@ -154,10 +155,10 @@ class AstroDataGmos(AstroDataGemini):
         # Combine the amp name(s) and detector section(s)
         if self.is_single:
             return "'{}':{}".format(ampname,
-                        detsec) if ampname and detsec else None
+                                    detsec) if ampname and detsec else None
         else:
-            return ["'{}':{}".format(a,d) if a and d else None
-                    for a,d in zip(ampname, detsec)]
+            return ["'{}':{}".format(a, d) if a and d else None
+                    for a, d in zip(ampname, detsec)]
 
     @astro_data_descriptor
     def array_name(self):
@@ -240,7 +241,7 @@ class AstroDataGmos(AstroDataGemini):
                 "SDSU II e2v DD CCD42-90": "e2vDD",
                 "S10892": "Hamamatsu-S",
                 "S10892-N": "Hamamatsu-N"
-                }
+            }
             return pretty_detname_dict.get(self.phu.get('DETTYPE'))
         else:
             return self.phu.get('DETID')
@@ -264,8 +265,8 @@ class AstroDataGmos(AstroDataGemini):
             if x1 and xs and y1 and ys:
                 xs *= self.detector_x_bin()
                 ys *= self.detector_y_bin()
-                roi_section = Section(x1=x1-1, x2=x1+xs-1,
-                                      y1=y1-1, y2=y1+ys-1)
+                roi_section = Section(x1=x1 - 1, x2=x1 + xs - 1,
+                                      y1=y1 - 1, y2=y1 + ys - 1)
                 roi_list.append(roi_section)
             else:
                 break
@@ -306,6 +307,7 @@ class AstroDataGmos(AstroDataGemini):
         int
             The detector binning
         """
+
         def _get_xbin(b):
             try:
                 return int(b.split()[0])
@@ -330,6 +332,7 @@ class AstroDataGmos(AstroDataGemini):
         int
             The detector binning
         """
+
         def _get_ybin(b):
             try:
                 return int(b.split()[1])
@@ -360,8 +363,8 @@ class AstroDataGmos(AstroDataGemini):
         except TypeError:  # either is None
             return None
         # Flipped for GMOS-N if on bottom port
-        return -offset if (self.phu.get('INPORT')==1 and
-                           self.instrument()=='GMOS-N') else offset
+        return -offset if (self.phu.get('INPORT') == 1 and
+                           self.instrument() == 'GMOS-N') else offset
 
     @astro_data_descriptor
     def detector_y_offset(self):
@@ -379,8 +382,8 @@ class AstroDataGmos(AstroDataGemini):
         except TypeError:  # either is None
             return None
         # Flipped for GMOS-S if on bottom port
-        return -offset if (self.phu.get('INPORT')==1 and
-                           self.instrument()=='GMOS-S') else offset
+        return -offset if (self.phu.get('INPORT') == 1 and
+                           self.instrument() == 'GMOS-S') else offset
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
@@ -434,6 +437,7 @@ class AstroDataGmos(AstroDataGemini):
             The dispersion(s)
         """
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+
         if unit_arg_list.count(True) == 1:
             # Just one of the unit arguments was set to True. Return the
             # central wavelength in these units
@@ -448,12 +452,44 @@ class AstroDataGmos(AstroDataGemini):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters.
             output_units = "meters"
-        cd11 = self.hdr.get('CD1_1')
+
+        # This was breaking before
         try:
-            dispersion = [gmu.convert_units('meters', d, output_units)
-                          for d in cd11]
-        except TypeError:
-            dispersion = gmu.convert_units('meters', cd11, output_units)
+            grule = float(self.disperser(pretty=True)[1:])
+        except ValueError:
+            grule = None
+
+        # Temporary setup. Assume wavelength calibration creates a
+        # WDELTA keyword
+        if self._keyword_for('dispersion') in self.hdr:
+            dispersion = self.hdr[self._keyword_for('dispersion')]
+
+        # Straight from gsappwave; linear interpolation does OK
+        elif grule is not None:
+            cenwave = self.central_wavelength()  # meters
+            greq = 1000 * cenwave * grule
+
+            gtilt = np.deg2rad(
+                np.interp(
+                    greq,
+                    lookup.gratingeq[::-1],
+                    np.arange(len(lookup.gratingeq), 0, -1)
+                )
+            )
+
+            dispersion = - (81 * math.sin(gtilt + 0.87266) * self.pixel_scale() * cenwave) / (206265. * greq)
+
+        else:
+            dispersion = None
+
+        if dispersion is not None:
+            grating_order = self.phu.get('GRORDER', 1)
+            dispersion = gmu.convert_units('meters', dispersion / grating_order,
+                                           output_units)
+
+            if not self.is_single:
+                dispersion = [dispersion] * len(self)
+
         return dispersion
 
     @returns_list
@@ -555,6 +591,7 @@ class AstroDataGmos(AstroDataGemini):
         str
             Gain setting
         """
+
         def _get_setting(g):
             if g is None:
                 return None
@@ -621,7 +658,7 @@ class AstroDataGmos(AstroDataGemini):
 
         # Things needed for all observations
         unique_id_descriptor_list_all = ['detector_x_bin', 'detector_y_bin',
-                                             'read_mode', 'amp_read_area']
+                                         'read_mode', 'amp_read_area']
         if 'SPECT' in tags:
             unique_id_descriptor_list_all.append('disperser')
 
@@ -745,6 +782,7 @@ class AstroDataGmos(AstroDataGemini):
         float/list
             zeropoint values, one per SCI extension
         """
+
         def _zpt(ccd, filt, gain, in_adu):
             zpt = lookup.nominal_zeropoints.get((ccd, filt))
             try:
@@ -824,7 +862,7 @@ class AstroDataGmos(AstroDataGemini):
             raw_pixel_scale = pixscale_dict[pixscale_key]
         except KeyError:
             return None
-        return raw_pixel_scale * self.detector_y_bin()
+        return raw_pixel_scale * self.detector_x_bin()
 
     @astro_data_descriptor
     def read_mode(self):
@@ -905,7 +943,7 @@ class AstroDataGmos(AstroDataGemini):
         if detector.startswith('Hamamatsu'):
             return 'slow' if ampinteg > 8000 else 'fast'
         else:
-            return'slow' if ampinteg > 2000 else 'fast'
+            return 'slow' if ampinteg > 2000 else 'fast'
 
     @astro_data_descriptor
     def saturation_level(self):
@@ -917,6 +955,7 @@ class AstroDataGmos(AstroDataGemini):
         int/list
             saturation level
         """
+
         def _well_depth(detector, amp, bin, gain, in_adu):
             try:
                 return lookup.gmosThresholds[detector][amp] * bin / (
@@ -957,15 +996,14 @@ class AstroDataGmos(AstroDataGemini):
         if self.is_single:
             bias_subtracted |= overscan_levels is not None
             processed_limit = (adc_limit - (bias_levels if bias_subtracted
-                              else 0)) * (1 if in_adu else gain)
+                                            else 0)) * (1 if in_adu else gain)
         else:
             bias_subtracted = [bias_subtracted or o is not None
                                for o in overscan_levels]
             processed_limit = [(adc_limit - (blev if bsub else 0))
-                              * (1 if in_adu else g)
-                              for blev, bsub, g in
-                              zip(bias_levels, bias_subtracted, gain)]
-
+                               * (1 if in_adu else g)
+                               for blev, bsub, g in
+                               zip(bias_levels, bias_subtracted, gain)]
 
         # For old EEV data, or heavily-binned data, we're ADC-limited
         if detname == 'EEV' or bin_factor > 2:
@@ -986,7 +1024,7 @@ class AstroDataGmos(AstroDataGemini):
                 saturation = [None if w is None else
                               min(w + blev if not bsub else 0, p)
                               for w, p, blev, bsub in zip(well_limit,
-                                processed_limit, bias_levels, bias_subtracted)]
+                                                          processed_limit, bias_levels, bias_subtracted)]
         return saturation
 
     @astro_data_descriptor

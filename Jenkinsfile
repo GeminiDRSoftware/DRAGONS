@@ -4,22 +4,10 @@
  *
  * by Bruno C. Quint
  *
- *
- * Required Plug-ins
- * -----------------
- *
+ * Required Plug-ins:
  * - CloudBees File Leak Detector
  * - Cobertura Plug-in
  * - Warnings NG
- *
- *
- * Shared Libraries
- * ----------------
- *
- * This Jenkins Pipeline uses Shared Libraries that live inside the
- * `bquint/dragons_ci` repository. Make sure you set up it first before running
- * it.
- *
  */
 
 @Library('dragons_ci@master') _
@@ -56,12 +44,17 @@ pipeline {
                 sh '.jenkins/scripts/install_missing_packages.sh'
                 sh '.jenkins/scripts/install_dragons.sh'
                 sh '''source activate ${CONDA_ENV_NAME}
-                      python .jenkins/scripts/download_test_inputs.py || echo 0
+                      python .jenkins/scripts/download_test_inputs.py .jenkins/test_files.txt || echo 0
                       '''
                 sh '.jenkins/scripts/test_environment.sh'
                 sh 'conda list -n ${CONDA_ENV_NAME}'
                 sh 'rm -rf ./reports'
                 sh 'mkdir -p ./reports'
+            }
+            post {
+                always {
+                      sh '.jenkins/scripts/update_files_permissions.sh'
+                }
             }
 
         }
@@ -87,6 +80,7 @@ pipeline {
         }
 
         stage('Unit tests') {
+
             steps {
 
                 echo "ensure cleaning __pycache__"
@@ -95,7 +89,21 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m "not integtest" --junit-xml ./reports/unittests_results.xml
+                    coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
+                    '''
+
+            }
+
+        }
+
+        stage('GMOS LS Tests') {
+
+            steps {
+
+                echo "Running tests"
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m gmosls --junit-xml ./reports/gmoslstests_results.xml
                     '''
 
                 echo "Reporting coverage"
@@ -103,17 +111,22 @@ pipeline {
                     source activate ${CONDA_ENV_NAME}
                     python -m coverage xml -o ./reports/coverage.xml
                     '''
+
             }
+
         }
 
         stage('Integration tests') {
+
             steps {
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
                     '''
             }
+
         }
+
 
     }
     post {
@@ -121,7 +134,8 @@ pipeline {
           junit (
             allowEmptyResults: true,
             testResults: 'reports/*_results.xml'
-          )
+            )
+          sh '.jenkins/scripts/update_files_permissions.sh'
         }
         success {
             sendNotifications 'SUCCESSFUL'
