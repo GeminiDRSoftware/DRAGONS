@@ -9,6 +9,7 @@ import os
 import pytest
 
 import astrodata
+import astrofaker
 import gemini_instruments
 import geminidr
 
@@ -17,6 +18,7 @@ from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
+from scipy import ndimage
 
 
 dataset_list = ['GMOS/GN-2017A-FT-19',
@@ -156,8 +158,10 @@ class TestGmosReduceLongslit:
             if 'arc' in new:
                 calibrations.append('processed_arc:{}'.format(new))
 
+    # noinspection PyUnusedLocal
     @staticmethod
-    def test_reduced_arcs_contain_model_with_expected_rms(dataset_folder, calibrations):
+    def test_reduced_arcs_contain_model_with_expected_rms(dataset_folder,
+                                                          calibrations):
         """
         Make sure that the WAVECAL model was fitted with an RMS smaller than
         0.5.
@@ -250,96 +254,94 @@ class TestGmosReduceLongslit:
     #
     # reduce_science.runr()
 
+class TestGmosReduceFakeData:
+    """
+    The tests defined by this class reflect the expected behavior on science
+    spectral data.
+    """
+    @staticmethod
+    def create_1d_spectrum(width, n_lines, max_weight):
+        """
+        Generates a 1D NDArray noiseless spectrum.
 
-# ToDo - Using AstroFaker messes up with other tests. How could I fix this?
-# class TestGmosReduceFakeData:
-#     """
-#     The tests defined by this class reflect the expected behavior on science
-#     spectral data.
-#     """
-#     @staticmethod
-#     def create_1d_spectrum(width, n_lines, max_weight):
-#         """
-#         Generates a 1D NDArray with the sky spectrum.
-#
-#         Parameters
-#         ----------
-#         width : int
-#             Number of array elements.
-#         n_lines : int
-#             Number of artificial lines.
-#         max_weight : float
-#             Maximum weight (or flux, or intensity) of the lines.
-#
-#         Returns
-#         -------
-#         sky_1d_spectrum : numpy.ndarray
-#
-#         """
-#         lines = np.random.randint(low=0, high=width, size=n_lines)
-#         weights = max_weight * np.random.random(size=n_lines)
-#
-#         spectrum = np.zeros(width)
-#         spectrum[lines] = weights
-#
-#         return spectrum
-#
-#     def test_can_extract_1d_spectra_from_2d_spectral_image(self):
-#
-#         logutils.config(file_name='foo.log')
-#
-#         np.random.seed(0)
-#
-#         ad = astrofaker.create('GMOS-S')
-#
-#         ad.phu['DETECTOR'] = 'GMOS-S + Hamamatsu'
-#         ad.phu['UT'] = '04:00:00.000'
-#         ad.phu['DATE'] = '2017-05-30'
-#         ad.phu['OBSTYPE'] = 'OBJECT'
-#
-#         ad.init_default_extensions()
-#
-#         for ext in ad:
-#             ext.hdr['GAIN'] = 1.0
-#
-#         width = np.sum([ext.shape[1] for ext in ad])
-#         height = ad[0].shape[0]
-#         snr = 0.1
-#
-#         obj_max_weight = 300.
-#         obj_continnum = 600. + 0.01 * np.arange(width)
-#
-#         sky = self.create_1d_spectrum(width, int(0.01 * width), 300.)
-#         obj = self.create_1d_spectrum(width, int(0.1 * width), obj_max_weight) + \
-#             obj_continnum
-#
-#         obj_pos = np.random.randint(low=height // 2 - int(0.1 * height),
-#                                     high=height // 2 + int(0.1 * height))
-#
-#         spec = np.repeat(sky[np.newaxis, :], height, axis=0)
-#         spec[obj_pos] += obj
-#         spec = ndimage.gaussian_filter(spec, sigma=(7, 3))
-#
-#         spec += snr * obj_max_weight * np.random.random(spec.shape)
-#
-#         for i, ext in enumerate(ad):
-#
-#             left = i * ext.shape[1]
-#             right = (i + 1) * ext.shape[1] - 1
-#
-#             ext.data = spec[:, left:right]
-#
-#         p = primitives_gmos_longslit.GMOSLongslit([ad])
-#
-#         p.prepare()  # Needs 'DETECTOR', 'UT', and 'DATE'
-#         p.addDQ(static_bpm=None)  # Needs 'GAIN'
-#         p.addVAR(read_noise=True)
-#         # p.overscanCorrect()
-#         # p.biasCorrect(bias=processed_bias)
-#         p.ADUToElectrons()
-#         p.addVAR(poisson_noise=True)
-#         p.mosaicDetectors()
-#         # p.makeIRAFCompatible()  # Needs 'OBSTYPE'
+        Parameters
+        ----------
+        width : int
+            Number of array elements.
+        n_lines : int
+            Number of artificial lines.
+        max_weight : float
+            Maximum weight (or flux, or intensity) of the lines.
+
+        Returns
+        -------
+        sky_1d_spectrum : numpy.ndarray
+
+        """
+        lines = np.random.randint(low=0, high=width, size=n_lines)
+        weights = max_weight * np.random.random(size=n_lines)
+
+        spectrum = np.zeros(width)
+        spectrum[lines] = weights
+
+        return spectrum
+
+    def test_can_extract_1d_spectra_from_2d_spectral_image(self):
+
+        logutils.config(file_name='foo.log')
+
+        np.random.seed(0)
+
+        ad = astrofaker.create('GMOS-S')
+
+        ad.phu['DETECTOR'] = 'GMOS-S + Hamamatsu'
+        ad.phu['UT'] = '04:00:00.000'
+        ad.phu['DATE'] = '2017-05-30'
+        ad.phu['OBSTYPE'] = 'OBJECT'
+
+        ad.init_default_extensions()
+
+        for ext in ad:
+            ext.hdr['GAIN'] = 1.0
+
+        width = int(np.sum([ext.shape[1] for ext in ad]))
+        height = ad[0].shape[0]
+        snr = 0.1
+
+        obj_max_weight = 300.
+        obj_continnum = 600. + 0.01 * np.arange(width)
+
+        sky = self.create_1d_spectrum(width, int(0.01 * width), 300.)
+        obj = self.create_1d_spectrum(width, int(0.1 * width), obj_max_weight) \
+            + obj_continnum
+
+        obj_pos = np.random.randint(low=height // 2 - int(0.1 * height),
+                                    high=height // 2 + int(0.1 * height))
+
+        spec = np.repeat(sky[np.newaxis, :], height, axis=0)
+        spec[obj_pos] += obj
+        spec = ndimage.gaussian_filter(spec, sigma=(7, 3))
+
+        spec += snr * obj_max_weight * np.random.random(spec.shape)
+
+        for i, ext in enumerate(ad):
+
+            left = i * ext.shape[1]
+            right = (i + 1) * ext.shape[1] - 1
+
+            ext.data = spec[:, left:right]
+
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
+
+        p.prepare()  # Needs 'DETECTOR', 'UT', and 'DATE'
+        p.addDQ(static_bpm=None)  # Needs 'GAIN'
+        p.addVAR(read_noise=True)
+        # p.overscanCorrect()
+        # p.biasCorrect(bias=processed_bias)
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.mosaicDetectors()
+        # p.makeIRAFCompatible()  # Needs 'OBSTYPE'
 
 
 if __name__ == '__main__':

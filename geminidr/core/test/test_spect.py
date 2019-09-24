@@ -10,10 +10,13 @@ from scipy import optimize
 
 import astrodata
 import astrodata.testing as ad_test
-import gemini_instruments
 import geminidr
 
+# noinspection PyUnresolvedReferences
+import gemini_instruments
+
 from gempy.utils import logutils
+
 
 logutils.config(file_name='foo.log')
 
@@ -127,6 +130,7 @@ def prepare_for_wavelength_calibration(ad):
     return p
 
 
+# noinspection PyPep8Naming
 def test_QESpline_optimization():
     """
     Test the optimization of the QESpline. This defines 3 regions, each of a
@@ -134,18 +138,33 @@ def test_QESpline_optimization():
     should determine the relative offsets.
     """
     from geminidr.core.primitives_spect import QESpline
-    GAP = 20
-    DATA_LENGTH = 300
+
+    gap = 20
+    data_length = 300
     real_coeffs = [0.5, 1.2]
-    data = np.array([1] * DATA_LENGTH + [0] * GAP + [real_coeffs[0]] * DATA_LENGTH + [0] * GAP + [real_coeffs[1]] * DATA_LENGTH)
-    masked_data = np.ma.masked_where(data==0, data)
+
+    # noinspection PyTypeChecker
+    data = np.array([1] * data_length +
+                    [0] * gap +
+                    [real_coeffs[0]] * data_length +
+                    [0] * gap +
+                    [real_coeffs[1]] * data_length)
+
+    masked_data = np.ma.masked_where(data == 0, data)
     xpix = np.arange(len(data))
     weights = np.where(data > 0, 1., 0.)
-    boundaries = (DATA_LENGTH, 2*DATA_LENGTH+GAP)
+    boundaries = (data_length, 2*data_length+gap)
 
     coeffs = np.ones((2,))
     order = 10
-    result = optimize.minimize(QESpline, coeffs, args=(xpix, masked_data, weights, boundaries, order), tol=1e-7, method='Nelder-Mead')
+
+    result = optimize.minimize(
+        QESpline, coeffs,
+        args=(xpix, masked_data, weights, boundaries, order),
+        tol=1e-7,
+        method='Nelder-Mead'
+    )
+
     np.testing.assert_allclose(real_coeffs, 1./result.x, atol=0.01)
 
 
@@ -154,10 +173,13 @@ def test_convert_flam_to_magnitude():
     Test the conversion of flux density to magnitude using SDSS zeropoints
     """
     from geminidr.core.primitives_spect import convert_flam_to_magnitude
+
     # AB zeropoints from Fukugita et al. (1996; AJ 111, 1748)
     wavelength = np.array([355.7, 482.5, 626.1, 767.2, 909.7, 1000.0])
     flam = np.array([860.3, 467.4, 277.7, 185.0, 131.5, -1.0]) * 1e-11
+
     mags = convert_flam_to_magnitude(wavelength, flam)
+
     np.testing.assert_allclose(mags[:-1], np.zeros_like(mags[:-1]), atol=0.001)
     assert np.isnan(mags[-1])
 
