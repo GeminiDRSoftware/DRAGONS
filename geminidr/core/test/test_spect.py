@@ -20,7 +20,7 @@ from astropy.io import fits
 from gempy.utils import logutils
 from scipy import ndimage
 
-from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
+from geminidr.gmos import primitives_gmos_longslit
 
 
 file_list = [
@@ -316,6 +316,7 @@ class TestArcProcessing:
         ad_test.assert_same_class(output_ad, reference_ad)
         ad_test.assert_have_same_distortion(output_ad, reference_ad)
 
+    @pytest.mark.xfail("Work in progress")
     def test_find_source_apertures(self):
         """
         Regression test that uses a generic AstroFaker longslit data with a
@@ -379,7 +380,7 @@ class TestArcProcessing:
         p.mosaicDetectors()
         p.makeIRAFCompatible()  # Needs 'OBSTYPE', 'MASKNAME', and 'MASKTYP'
 
-        # p.findSourceApertures()
+        p.findSourceApertures()
 
 
 if __name__ == '__main__':
