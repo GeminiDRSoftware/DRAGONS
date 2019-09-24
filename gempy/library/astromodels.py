@@ -220,10 +220,10 @@ class UnivariateSplineWithOutlierRemoval(object):
             raise ValueError("Both t and s have been specified")
 
         if isinstance(y, np.ma.masked_array):
-            orig_mask = np.zeros_like(x, dtype=bool) if y.mask is np.ma.nomask else y.mask.astype(bool)
+            orig_mask = np.zeros(x.shape, dtype=bool) if y.mask is np.ma.nomask else y.mask.astype(bool)
             y = y.data
         else:
-            orig_mask = np.zeros_like(x, dtype=bool)
+            orig_mask = np.zeros(x.shape, dtype=bool)
 
         iter = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"

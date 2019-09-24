@@ -20,13 +20,14 @@ from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip, sigma_clipped_stats
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.library.nddops import NDStacker
+from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
 from . import astromodels
 
 from astrodata import NDAstroData
 from matplotlib import pyplot as plt
+from datetime import datetime
 
 log = logutils.get_logger(__name__)
 
@@ -123,21 +124,15 @@ class Aperture(object):
         slitlength = data.shape[0]
         all_x1 = self.center_pixels - aper_lower
         all_x2 = self.center_pixels + aper_upper
-        for i, (x1, x2) in enumerate(zip(all_x1, all_x2)):
-            if x1 < -0.5 or x2 >= slitlength - 0.5:
-                x1 = max(x1, -0.5)
-                x2 = min(x2, slitlength - 0.5)
-            ix1, ix2 = int(x1 + 0.5), int(x2 + 1.5)
 
-            # Mask has to consider bits from all pixels with even a fractional
-            # contribution, but add only a fraction of edge pixels in data, var
-            if mask is not None:
-                self.mask[i] = np.bitwise_or.reduce(mask[ix1:ix2, i])
-            self.data[i] = (data[ix1:ix2, i].sum() - (x1 - ix1 + 0.5) * data[ix1, i] -
-                            (ix2 - x2 - 0.5) * data[ix2 - 1, i])
-            if var is not None:
-                self.var[i] = (var[ix1:ix2, i].sum() - (x1 - ix1 + 0.5) * var[ix1, i] -
-                               (ix2 - x2 - 0.5) * var[ix2 - 1, i])
+        ext = NDAstroData(data, mask=mask)
+        ext.variance = var
+        results = [sum1d(ext[:,i], x1, x2) for i, (x1, x2) in enumerate(zip(all_x1, all_x2))]
+        self.data[:] = [result.data for result in results]
+        if mask is not None:
+            self.mask[:] = [result.mask for result in results]
+        if var is not None:
+            self.var[:] = [result.variance for result in results]
 
     def optimal_extraction(self, data, mask, var, aper_lower, aper_upper,
                            cr_rej=5, max_iters=None):
@@ -270,6 +265,7 @@ class Aperture(object):
         self.check_domain(npix)
 
         # make data look like it's dispersed horizontally
+        # (this is best for optimal extraction, but not standard)
         try:
             mask = ext.mask
         except AttributeError:  # ext is just an ndarray

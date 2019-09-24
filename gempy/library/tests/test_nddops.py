@@ -1,5 +1,5 @@
 import numpy as np
-from gempy.library.nddops import NDStacker
+from gempy.library.nddops import NDStacker, sum1d
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from astrodata import NDAstroData
 
@@ -40,3 +40,27 @@ def test_varclip():
     result = stackit(ndd)
     assert result == [1.6]
     assert result.mask == [0]
+
+def test_sum1d():
+    big_value = 10
+    data = np.ones((10,))
+    ndd = NDAstroData(data)
+    ndd.mask = np.zeros_like(data, dtype=DQ.datatype)
+    ndd.mask[1] = 1
+    ndd.mask[2] = 2
+    ndd.data[4] = big_value
+    ndd.variance = np.ones_like(data)
+    x1 = -0.5
+    for x2 in np.arange(0., 4.5, 0.5):
+        result = sum1d(ndd, x1, x2, proportional_variance=True)
+        if x2 > 3.5:
+            np.testing.assert_almost_equal(4 + big_value*(x2-3.5), result.data)
+        else:
+            np.testing.assert_almost_equal(x2-x1, result.data)
+        np.testing.assert_almost_equal(x2-x1, result.variance)
+        if x2 > 1.5:
+            assert result.mask == 3
+        elif x2 > 0.5:
+            assert result.mask == 1
+        else:
+            assert result.mask == 0

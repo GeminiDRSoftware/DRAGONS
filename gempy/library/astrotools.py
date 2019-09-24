@@ -7,8 +7,29 @@ import os
 import re
 import numpy as np
 from collections import namedtuple
+from astropy import units as u
 
 Section = namedtuple('Section', 'x1 x2 y1 y2')
+
+def array_from_list(list_of_quantities):
+    """
+    Convert a list of Quantity objects to a numpy array. The elements of the
+    input list must all be converted to the same units.
+
+    Parameters
+    ----------
+    list_of_quantities: list
+        Quantities objects that all have equivalencies
+
+    Returns
+    -------
+    array: array representation of this list
+    """
+    unit = list_of_quantities[0].unit
+    values = [x.to(unit).value for x in list_of_quantities]
+    # subok=True is needed to handle magnitude/log units
+    return u.Quantity(np.array(values), unit, subok=True)
+
 
 def rasextodec(string):
     """
