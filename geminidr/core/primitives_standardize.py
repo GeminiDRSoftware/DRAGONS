@@ -233,10 +233,17 @@ class Standardize(PrimitivesBASE):
 
     def addMDF(self, adinputs=None, suffix=None, mdf=None):
         """
-        This primitive is used to add an MDF extension to the input AstroData
-        object. If only one MDF is provided, that MDF will be add to all input
-        AstroData object(s). If more than one MDF is provided, the number of
-        MDF AstroData objects must match the number of input AstroData objects.
+        This primitive is used to add an Mask Definition File (MDF) extension to
+        the input AstroData object. This MDF extension consists of a FITS binary
+        table with information about where the spectroscopy slits are in
+        the focal plane mask. In IFU, it is the position of the fibers. In
+        Multi-Object Spectroscopy, it is the position of the multiple slits.
+        In longslit is it the position of the single slit.
+
+        If only one MDF is provided, that MDF will be add to all input AstroData
+        object(s). If more than one MDF is provided, the number of MDF AstroData
+        objects must match the number of input AstroData objects.
+
         If no MDF is provided, the primitive will attempt to determine an
         appropriate MDF.
 
