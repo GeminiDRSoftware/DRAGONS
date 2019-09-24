@@ -158,6 +158,13 @@ class TestGmosReduceLongslit:
             if 'arc' in new:
                 calibrations.append('processed_arc:{}'.format(new))
 
+
+    @staticmethod
+    def test_matched_lines_are_properly_identified(dataset_folder, calibrations):
+        """
+        Make sure that the matched lines
+        """
+
     # noinspection PyUnusedLocal
     @staticmethod
     def test_reduced_arcs_contain_model_with_expected_rms(dataset_folder,
@@ -342,6 +349,7 @@ class TestGmosReduceFakeData:
         p.addVAR(poisson_noise=True)
         p.mosaicDetectors()
         # p.makeIRAFCompatible()  # Needs 'OBSTYPE'
+
 
 
 if __name__ == '__main__':
