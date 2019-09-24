@@ -6,7 +6,7 @@ Default is "reduce".
 recipe_tags = set(['GMOS', 'SPECT', 'LS', 'FLAT'])
 
 
-def reduce(p):
+def makeProcessedFlat(p):
     p.prepare()
     p.addDQ(static_bpm=None)
     p.addVAR(read_noise=True)
@@ -21,4 +21,4 @@ def reduce(p):
     p.storeProcessedFlat()
 
 
-_default = reduce
+_default = makeProcessedFlat
