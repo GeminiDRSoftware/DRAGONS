@@ -20,5 +20,3 @@ else
 fi
 
 cd -
-
-pip install git+https://github.com/GeminiDRSoftware/AstroFaker

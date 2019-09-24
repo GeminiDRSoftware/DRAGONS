@@ -9,4 +9,7 @@ python setup.py build
 python setup.py build_ext --inplace
 
 # install dragons in current env
-python setup.py install
+pip install -e .
+
+# install astrofaker for tests
+pip install git+https://github.com/GeminiDRSoftware/AstroFaker
