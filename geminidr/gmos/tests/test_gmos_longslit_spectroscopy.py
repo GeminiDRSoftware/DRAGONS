@@ -159,11 +159,55 @@ class TestGmosReduceLongslit:
                 calibrations.append('processed_arc:{}'.format(new))
 
 
+    @pytest.mark.skip(reason="Work in progress")
     @staticmethod
-    def test_matched_lines_are_properly_identified(dataset_folder, calibrations):
+    def test_arc_lines_are_properly_matched(
+            dataset_folder, calibrations, path_to_outputs, path_to_refs):
         """
-        Make sure that the matched lines
+        Test that Arc lines are properly matched to the reference lines.
         """
+        from matplotlib import pyplot as plt
+
+        arcs = glob.glob(
+            os.path.join(path_to_outputs, dataset_folder, '*_arc.fits'))
+
+        for arc in arcs:
+
+            name, _ = os.path.split(os.path.basename(arc))
+            ad = astrodata.open(arc)
+
+            for i, ext in enumerate(ad):
+
+                table = ext.WAVECAL
+                data = ext.data
+                mask = ext.mask
+                peaks = np.array(table['peaks'])
+                wavelengths = np.array(table['wavelengths'])
+
+                mask = np.average(data, axis=0)
+
+                data = np.average(data, axis=0)
+                data = np.ma.masked_where(mask > 0, data)
+                data = (data - data.min()) / data.ptp()
+
+                x = np.arange(data.size)
+                x = np.ma.masked_where(mask > 0, x)
+
+                fig, ax = plt.subplots(num="name")
+
+                ax.plot(x, data, 'C0-', alpha=0.5)
+                ax.set_xlabel('pixels')
+                ax.set_ylabel('weights [counts]')
+                ax.set_title("{} - Lines Identified".format(name))
+                ax.grid(alpha=0.25)
+
+                for p, w, d in zip(peaks, wavelengths, data):
+                    ax.axvline(p, ymax=d + 0.5)
+                    ax.text(p, d + 0.55, '{:.2f}'.format(w),
+                            transform=ax.transData, rotation='vertical')
+
+                fig.savefig(arc.replace('.fits', '.jpg'))
+
 
     # noinspection PyUnusedLocal
     @staticmethod
