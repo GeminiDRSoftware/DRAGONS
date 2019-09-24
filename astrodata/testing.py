@@ -8,7 +8,7 @@ import pytest
 import warnings
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def path_to_inputs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_INPUTS that
@@ -42,7 +42,7 @@ def path_to_inputs():
     return path
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def path_to_refs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_REFS that
@@ -74,7 +74,7 @@ def path_to_refs():
     return path
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def path_to_outputs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_OUTPUTS

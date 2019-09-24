@@ -20,6 +20,7 @@ def f2_files(path_to_inputs):
     yield gemini_files
 
 
+@pytest.mark.xfail(reason="AstroFaker changes the AstroData factory")
 def test_is_right_type(f2_files):
     for _file in f2_files:
         ad = astrodata.open(_file)

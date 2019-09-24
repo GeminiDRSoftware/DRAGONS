@@ -10,7 +10,7 @@
  * - Warnings NG
  */
 
-@Library('bquint-shared-libs@master') _
+@Library('dragons_ci@master') _
 
 pipeline {
 
@@ -44,7 +44,7 @@ pipeline {
                 sh '.jenkins/scripts/install_missing_packages.sh'
                 sh '.jenkins/scripts/install_dragons.sh'
                 sh '''source activate ${CONDA_ENV_NAME}
-                      python .jenkins/scripts/download_test_inputs.py .jenkins/test_files.txt
+                      python .jenkins/scripts/download_test_inputs.py .jenkins/test_files.txt || echo 0
                       '''
                 sh '.jenkins/scripts/test_environment.sh'
                 sh 'conda list -n ${CONDA_ENV_NAME}'
@@ -103,7 +103,7 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m gmosls --junit-xml ./reports/unittests_results.xml
+                    coverage run -m pytest -m gmosls --junit-xml ./reports/gmoslstests_results.xml
                     '''
 
                 echo "Reporting coverage"

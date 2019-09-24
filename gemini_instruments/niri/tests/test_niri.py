@@ -1,4 +1,5 @@
 import os
+import pytest
 
 import astrodata
 import gemini_instruments
@@ -6,6 +7,7 @@ import gemini_instruments
 filename = 'N20190120S0287.fits'
 
 
+@pytest.mark.xfail(reason="AstroFaker changes the AstroData factory")
 def test_is_right_type(path_to_inputs):
     ad = astrodata.open(os.path.join(path_to_inputs, filename))
     assert type(ad) == gemini_instruments.niri.adclass.AstroDataNiri
