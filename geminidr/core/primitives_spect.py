@@ -19,10 +19,14 @@ from astropy.io.registry import IORegistryError
 from astropy import units as u
 from astropy import constants as const
 
+from specutils import SpectralRegion
+
 from matplotlib import pyplot as plt
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library.astrotools import array_from_list
 from gempy.library import astromodels, matching, tracing
+from gempy.library.spectral import Spek1D
 from gempy.library.nddops import NDStacker
 from gempy.library import transform
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -48,6 +52,88 @@ class Spect(PrimitivesBASE):
     def __init__(self, adinputs, **kwargs):
         super(Spect, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
+
+
+    def calculateSensitivity(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            1D spectra of spectrophotometric standard stars
+
+        suffix :  str
+            Suffix to be added to output files.
+
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The same input list is used as output but each object now has a
+            `.SENSFUNC` table appended to each of its extensions. This table
+            provides details of the 1D Chebyshev fit which describes the
+            sensitivity as a function of wavelength.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+
+
+        for ad in adinputs:
+
+            # TODO: Fix when we know how/where these will be stored
+            iraf_dir = os.path.join(os.environ.get('iraf'), "noao",
+                                    "lib", "onedstds")
+            filename = os.path.join(iraf_dir, "spec50cal",
+                                    "{}.dat".format(ad.object().lower()))
+            spec_table = self._get_spectrophotometry(filename)
+            if not spec_table:
+                log.warning("Unable to determine sensitivity for {}".
+                            format(ad.filename))
+                continue
+
+            exptime = ad.exposure_time()
+
+            # Could be XD so iterate over extensions
+            for ext in ad:
+                if len(ext.shape) != 1:
+                    log.warning("{}:{} is not a 1D spectrum".
+                                format(ad.filename, ext.hdr['EXTVER']))
+                    continue
+
+                spectrum = Spek1D(ext) / (exptime * u.s)
+
+                wave, zpt, zpt_err = [], [], []
+                for w0, dw, mag in zip(spec_table['WAVELENGTH'].quantity,
+                    spec_table['WIDTH'].quantity, spec_table['MAGNITUDE'].quantity):
+                    region = SpectralRegion(w0 - 0.5*dw, w0 + 0.5*dw)
+                    flux, mask, variance = spectrum.signal(region)
+                    if not mask and flux > 0:
+                        wave.append(w0)
+                        zpt.append((mag - u.Magnitude(flux)))
+                        zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / flux))
+
+                wave = array_from_list(wave)
+                zpt = array_from_list(zpt)
+                zpt_err = array_from_list(zpt_err)
+
+                spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value,
+                                            zpt.value, w=1./zpt_err.value, order=4)
+
+                plt.ioff()
+                fig, ax = plt.subplots()
+                ax.plot(wave, zpt, 'ko')
+                x = np.linspace(min(wave), max(wave), ext.shape[0])
+                ax.plot(x, spline(x), 'r-')
+                plt.show()
+
+            # Timestamp and update the filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
 
     def determineDistortion(self, adinputs=None, **params):
         """

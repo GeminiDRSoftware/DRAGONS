@@ -3,6 +3,9 @@
 from gempy.library import config
 from astrodata import AstroData
 
+class calculateSensitivityConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
+
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
     spatial_order = config.RangeField("Fitting order in spatial direction", int, 3, min=1)
