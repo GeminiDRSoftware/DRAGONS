@@ -316,14 +316,12 @@ class TestArcProcessing:
         ad_test.assert_same_class(output_ad, reference_ad)
         ad_test.assert_have_same_distortion(output_ad, reference_ad)
 
-    @pytest.mark.xfail("Work in progress")
+    @pytest.mark.xfail(reason="Work in progress")
     def test_find_source_apertures(self):
         """
         Regression test that uses a generic AstroFaker longslit data with a
         single point source object.
         """
-        logutils.config(file_name='foo.log')
-
         np.random.seed(0)
 
         ad = astrofaker.create('GMOS-S')
@@ -371,16 +369,16 @@ class TestArcProcessing:
         p = primitives_gmos_longslit.GMOSLongslit([ad])
 
         p.prepare()  # Needs 'DETECTOR', 'UT', and 'DATE'
-        p.addDQ(static_bpm=None)  # Needs 'GAIN'
-        p.addVAR(read_noise=True)
+        # p.addDQ(static_bpm=None)  # Needs 'GAIN'
+        # p.addVAR(read_noise=True)
         # p.overscanCorrect()
         # p.biasCorrect(bias=processed_bias)
-        p.ADUToElectrons()
-        p.addVAR(poisson_noise=True)
-        p.mosaicDetectors()
-        p.makeIRAFCompatible()  # Needs 'OBSTYPE', 'MASKNAME', and 'MASKTYP'
-
-        p.findSourceApertures()
+        # p.ADUToElectrons()
+        # p.addVAR(poisson_noise=True)
+        # p.mosaicDetectors()
+        # p.makeIRAFCompatible()  # Needs 'OBSTYPE', 'MASKNAME', and 'MASKTYP'
+        #
+        # p.findSourceApertures()
 
 
 if __name__ == '__main__':
