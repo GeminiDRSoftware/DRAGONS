@@ -10,15 +10,18 @@ from scipy import optimize
 
 import astrodata
 import astrodata.testing as ad_test
+import astrofaker
 import geminidr
 
 # noinspection PyUnresolvedReferences
 import gemini_instruments
 
+from astropy.io import fits
 from gempy.utils import logutils
+from scipy import ndimage
 
+from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 
-logutils.config(file_name='foo.log')
 
 file_list = [
     "process_arcs/N20170530S0006.fits",
@@ -31,6 +34,16 @@ file_list = [
     # "process_arcs/N20181115S0175.fits", # File failed loading
     # "process_arcs/S20181128S0099.fits", # File failed loading
 ]
+
+
+@pytest.fixture(scope='module', autouse=True)
+def setup_log(path_to_outputs):
+
+    log_folder = os.path.join(path_to_outputs, 'logs')
+    log_name = os.path.splitext(__file__)[0] + '.log'
+
+    os.makedirs(log_folder, exist_ok=True)
+    logutils.config(file_name=os.path.join(log_folder, log_name))
 
 
 @pytest.fixture(params=file_list)
@@ -189,6 +202,32 @@ class TestArcProcessing:
     This class structure simply holds together tests inside a single context.
     There is no actual functionality.
     """
+    @staticmethod
+    def create_1d_spectrum(width, n_lines, max_weight):
+        """
+        Generates a 1D NDArray noiseless spectrum.
+
+        Parameters
+        ----------
+        width : int
+            Number of array elements.
+        n_lines : int
+            Number of artificial lines.
+        max_weight : float
+            Maximum weight (or flux, or intensity) of the lines.
+
+        Returns
+        -------
+        sky_1d_spectrum : numpy.ndarray
+
+        """
+        lines = np.random.randint(low=0, high=width, size=n_lines)
+        weights = max_weight * np.random.random(size=n_lines)
+
+        spectrum = np.zeros(width)
+        spectrum[lines] = weights
+
+        return spectrum
 
     def test_determine_wavelength_solution(self, test_files):
         """
@@ -276,6 +315,71 @@ class TestArcProcessing:
 
         ad_test.assert_same_class(output_ad, reference_ad)
         ad_test.assert_have_same_distortion(output_ad, reference_ad)
+
+    def test_find_source_apertures(self):
+        """
+        Regression test that uses a generic AstroFaker longslit data with a
+        single point source object.
+        """
+        logutils.config(file_name='foo.log')
+
+        np.random.seed(0)
+
+        ad = astrofaker.create('GMOS-S')
+
+        ad.phu['DATE'] = '2017-05-30'
+        ad.phu['DETECTOR'] = 'GMOS-S + Hamamatsu'
+        ad.phu['MASKNAME'] = 'none'
+        ad.phu['MASKTYP'] = 'longslit'
+        ad.phu['OBSMODE'] = 'SPECT'
+        ad.phu['OBSTYPE'] = 'OBJECT'
+        ad.phu['UT'] = '04:00:00.000'
+
+        ad.init_default_extensions()
+
+        for ext in ad:
+            ext.hdr['GAIN'] = 1.0
+
+        width = int(np.sum([ext.shape[1] for ext in ad]))
+        height = ad[0].shape[0]
+        snr = 0.1
+
+        obj_max_weight = 300.
+        obj_continnum = 600. + 0.01 * np.arange(width)
+
+        sky = self.create_1d_spectrum(width, int(0.01 * width), 300.)
+        obj = self.create_1d_spectrum(width, int(0.1 * width), obj_max_weight) \
+            + obj_continnum
+
+        obj_pos = np.random.randint(low=height // 2 - int(0.1 * height),
+                                    high=height // 2 + int(0.1 * height))
+
+        spec = np.repeat(sky[np.newaxis, :], height, axis=0)
+        spec[obj_pos] += obj
+        spec = ndimage.gaussian_filter(spec, sigma=(7, 3))
+
+        spec += snr * obj_max_weight * np.random.random(spec.shape)
+
+        for i, ext in enumerate(ad):
+
+            left = i * ext.shape[1]
+            right = (i + 1) * ext.shape[1] - 1
+
+            ext.data = spec[:, left:right]
+
+        p = primitives_gmos_longslit.GMOSLongslit([ad])
+
+        p.prepare()  # Needs 'DETECTOR', 'UT', and 'DATE'
+        p.addDQ(static_bpm=None)  # Needs 'GAIN'
+        p.addVAR(read_noise=True)
+        # p.overscanCorrect()
+        # p.biasCorrect(bias=processed_bias)
+        p.ADUToElectrons()
+        p.addVAR(poisson_noise=True)
+        p.mosaicDetectors()
+        p.makeIRAFCompatible()  # Needs 'OBSTYPE', 'MASKNAME', and 'MASKTYP'
+
+        # p.findSourceApertures()
 
 
 if __name__ == '__main__':
