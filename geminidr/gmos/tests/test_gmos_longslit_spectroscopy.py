@@ -1,17 +1,20 @@
 #!/usr/bin/python
 """
 Tests related to GMOS Long-slit Spectroscopy data reduction.
-
 """
 import glob
 import numpy as np
 import os
-import pytest
 
 import astrodata
 import astrofaker
-import gemini_instruments
 import geminidr
+
+# noinspection PyPackageRequirements
+import pytest
+
+# noinspection PyUnresolvedReferences
+import gemini_instruments
 
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.adlibrary import dataselect
@@ -20,9 +23,8 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 from scipy import ndimage
 
-
-dataset_list = ['GMOS/GN-2017A-FT-19',
-                'GMOS/GS-2016B-Q-54-32']
+dataset_folder_list = ['GMOS/GN-2017A-FT-19',
+                       'GMOS/GS-2016B-Q-54-32']
 
 
 @pytest.fixture(scope='class')
@@ -36,14 +38,13 @@ def calibrations():
 
 
 @pytest.mark.gmosls
-@pytest.mark.parametrize('dataset_folder', dataset_list, scope='class')
+@pytest.mark.parametrize('dataset_folder', dataset_folder_list, scope='class')
 class TestGmosReduceLongslit:
     """
     Collection of tests that will run on every `dataset_folder`. Both
     `dataset_folder` and `calibrations` parameter should be present on every
     test. Even when the test does not use it.
     """
-
     @staticmethod
     def test_can_run_reduce_bias(dataset_folder, calibrations, path_to_inputs,
                                  path_to_outputs):
@@ -158,152 +159,36 @@ class TestGmosReduceLongslit:
             if 'arc' in new:
                 calibrations.append('processed_arc:{}'.format(new))
 
-
-    @pytest.mark.skip(reason="Work in progress")
-    @staticmethod
-    def test_arc_lines_are_properly_matched(
-            dataset_folder, calibrations, path_to_outputs, path_to_refs):
-        """
-        Test that Arc lines are properly matched to the reference lines.
-        """
-        from matplotlib import pyplot as plt
-
-        arcs = glob.glob(
-            os.path.join(path_to_outputs, dataset_folder, '*_arc.fits'))
-
-        for arc in arcs:
-
-            name, _ = os.path.split(os.path.basename(arc))
-            ad = astrodata.open(arc)
-
-            for i, ext in enumerate(ad):
-
-                table = ext.WAVECAL
-                data = ext.data
-                mask = ext.mask
-                peaks = np.array(table['peaks'])
-                wavelengths = np.array(table['wavelengths'])
-
-                mask = np.average(data, axis=0)
-
-                data = np.average(data, axis=0)
-                data = np.ma.masked_where(mask > 0, data)
-                data = (data - data.min()) / data.ptp()
-
-                x = np.arange(data.size)
-                x = np.ma.masked_where(mask > 0, x)
-
-                fig, ax = plt.subplots(num="name")
-
-                ax.plot(x, data, 'C0-', alpha=0.5)
-                ax.set_xlabel('pixels')
-                ax.set_ylabel('weights [counts]')
-                ax.set_title("{} - Lines Identified".format(name))
-                ax.grid(alpha=0.25)
-
-                for p, w, d in zip(peaks, wavelengths, data):
-                    ax.axvline(p, ymax=d + 0.5)
-                    ax.text(p, d + 0.55, '{:.2f}'.format(w),
-                            transform=ax.transData, rotation='vertical')
-
-                fig.savefig(arc.replace('.fits', '.jpg'))
-
-
     # noinspection PyUnusedLocal
     @staticmethod
-    def test_reduced_arcs_contain_model_with_expected_rms(dataset_folder,
-                                                          calibrations):
+    @pytest.mark.skip(reason="Work in progress")
+    def test_can_run_reduce_science(dataset_folder, calibrations):
         """
-        Make sure that the WAVECAL model was fitted with an RMS smaller than
-        0.5.
+        Make sure that the recipes_ARC_LS_SPECT works for spectroscopic data.
         """
-        arcs = [c.split(':')[-1] for c in calibrations if 'processed_arc' in c]
+        assert True
+        # ToDo WIP - Define first how flats are processed
+        # raw_subdir = 'GMOS/GN-2017A-FT-19'
+        #
+        # logutils.config(file_name='reduce_GMOS_LS_arc.log')
+        #
+        # assert len(calibrations) == 2
+        #
+        # all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
+        # assert len(all_files) > 1
+        #
+        # list_of_science = dataselect.select_data(all_files, [], ['CAL'])
+        #
+        # reduce_science = Reduce()
+        # assert len(reduce_science.files) == 0
+        #
+        # reduce_science.files.extend(list_of_science)
+        # assert len(reduce_science.files) == len(list_of_science)
+        #
+        # reduce_science.ucals = normalize_ucals(reduce_science.files, calibrations)
+        #
+        # reduce_science.runr()
 
-        for arc in arcs:
-
-            ad = astrodata.open(arc)
-
-            for ext in ad:
-
-                if not hasattr(ext, 'WAVECAL'):
-                    continue
-
-                table = ext.WAVECAL
-                coefficients = table['coefficients']
-                rms = coefficients[table['name'] == 'rms']
-
-                np.testing.assert_array_less(rms, 0.5)
-
-    @staticmethod
-    def test_reduced_arcs_contains_model_with_stable_wavelength_solution(
-            dataset_folder, calibrations, path_to_outputs, path_to_refs):
-        """
-        Make sure that the wavelength solution gives same results on different
-        runs.
-        """
-        from gempy.library.astromodels import dict_to_chebyshev
-
-        arcs = glob.glob(
-            os.path.join(path_to_outputs, dataset_folder, '*_arc.fits'))
-
-        for arc in arcs:
-
-            filename = os.path.split(arc)[-1]
-            output = os.path.join(path_to_outputs, dataset_folder, filename)
-            reference = os.path.join(path_to_refs, dataset_folder, filename)
-
-            if not os.path.exists(output):
-                pytest.skip('Output file not found: {}'.format(output))
-
-            if not os.path.exists(reference):
-                pytest.skip('Reference file not found: {}'.format(reference))
-
-            ad = astrodata.open(output)
-            ad_ref = astrodata.open(reference)
-
-            for ext, ext_ref in zip(ad, ad_ref):
-
-                model = dict_to_chebyshev(
-                    dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
-                )
-
-                ref_model = dict_to_chebyshev(
-                    dict(zip(ext_ref.WAVECAL["name"], ext_ref.WAVECAL["coefficients"]))
-                )
-
-                x = np.arange(ext.shape[1])
-                y = model(x)
-                ref_y = ref_model(x)
-
-                np.testing.assert_allclose(y, ref_y, rtol=1)
-
-
-# ToDo WIP - Define first how flats are processed
-# def test_can_run_reduce_science(path_to_inputs, calibrations):
-#     """
-#     Make sure that the recipes_ARC_LS_SPECT works for spectroscopic data.
-#     """
-
-    # raw_subdir = 'GMOS/GN-2017A-FT-19'
-    #
-    # logutils.config(file_name='reduce_GMOS_LS_arc.log')
-    #
-    # assert len(calibrations) == 2
-    #
-    # all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
-    # assert len(all_files) > 1
-    #
-    # list_of_science = dataselect.select_data(all_files, [], ['CAL'])
-    #
-    # reduce_science = Reduce()
-    # assert len(reduce_science.files) == 0
-    #
-    # reduce_science.files.extend(list_of_science)
-    # assert len(reduce_science.files) == len(list_of_science)
-    #
-    # reduce_science.ucals = normalize_ucals(reduce_science.files, calibrations)
-    #
-    # reduce_science.runr()
 
 class TestGmosReduceFakeData:
     """
