@@ -144,7 +144,6 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
-        adoutputs = []
         # If attach_mdf=False, this just zips up the ADs with a list of Nones,
         # which has no side-effects.
         for ad, mdf in zip(*gt.make_lists(adinputs, params['mdf'])):
@@ -152,16 +151,14 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by standardizeStructure".
                             format(ad.filename))
-                adoutputs.append(ad)
                 continue
 
-            # Attach an MDF to each input AstroData object
-            if params["attach_mdf"]:
-                ad = self.addMDF([ad], mdf=mdf)[0]
+            # Attach an MDF to each input AstroData object if it seems appropriate
+            if params["attach_mdf"] and (ad.tags & {'LS', 'MOS', 'IFU', 'XD'}):
+                self.addMDF([ad], mdf=mdf)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-            adoutputs.append(ad)
-        return adoutputs
+        return adinputs
 
