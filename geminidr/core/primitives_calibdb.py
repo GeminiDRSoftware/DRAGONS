@@ -152,23 +152,28 @@ class CalibDB(PrimitivesBASE):
 
         rqs_actual = [ad for ad in adinputs if self._get_cal(ad, caltype) is None]
         for ad in rqs_actual:
-            if 'SPECT' in ad.tags:
-                mask_name = ad.focal_plane_mask()
-                key = '{}_{}'.format(ad.instrument(), mask_name)
-                if mdf_dict is not None:
-                    try:
-                        mdf = os.path.join(os.path.dirname(masks.__file__),
-                                           'MDF', mdf_dict[key])
-                    except KeyError:
-                        log.warning("MDF not found in {}".format(inst_lookups))
-                    else:
-                        self.calibrations[ad, caltype] = mdf
+            mask_name = ad.focal_plane_mask()
+            key = '{}_{}'.format(ad.instrument(), mask_name)
+            if mdf_dict is not None:
+                try:
+                    filename = mdf_dict[key]
+
+                    # Escape route to allow certain focal plane masks to
+                    # not require MDFs
+                    if filename is None:
                         continue
-                log.stdinfo("Requesting MDF from fitsstore ...")
-                mdf_requests = get_cal_requests([ad], caltype)
-                mdf_records = process_cal_requests(mdf_requests)
-                for ad, calfile in mdf_records.items():
-                    self.calibrations[ad, caltype] = calfile
+                    mdf = os.path.join(os.path.dirname(masks.__file__),
+                                       'MDF', filename)
+                except KeyError:
+                    log.warning("MDF not found in {}".format(inst_lookups))
+                else:
+                    self.calibrations[ad, caltype] = mdf
+                    continue
+            log.stdinfo("Requesting MDF from calibration server...")
+            mdf_requests = get_cal_requests([ad], caltype)
+            mdf_records = process_cal_requests(mdf_requests)
+            for ad, calfile in mdf_records.items():
+                self.calibrations[ad, caltype] = calfile
 
         return adinputs
 
