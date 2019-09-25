@@ -27,6 +27,74 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
         self.inst_lookups = 'geminidr.gemini.lookups'
         self._param_update(parameters_gemini)
 
+    def addMDF(self, adinputs=None, suffix=None, mdf=None):
+        """
+        This primitive is used to add an Mask Definition File (MDF) extension to
+        the input AstroData object. This MDF extension consists of a FITS binary
+        table with information about where the spectroscopy slits are in
+        the focal plane mask. In IFU, it is the position of the fibers. In
+        Multi-Object Spectroscopy, it is the position of the multiple slits.
+        In longslit is it the position of the single slit.
+
+        If only one MDF is provided, that MDF will be add to all input AstroData
+        object(s). If more than one MDF is provided, the number of MDF AstroData
+        objects must match the number of input AstroData objects.
+
+        If no MDF is provided, the primitive will attempt to determine an
+        appropriate MDF.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mdf: str/None
+            name of MDF to add (None => use default)
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        if mdf is None:
+            self.getMDF(adinputs)
+            mdf_list = [self._get_cal(ad, 'mask') for ad in adinputs]
+        else:
+            mdf_list = mdf
+
+        for ad, mdf in zip(*gt.make_lists(adinputs, mdf_list, force_ad=True)):
+            if ad.phu.get(timestamp_key):
+                log.warning('No changes will be made to {}, since it has '
+                            'already been processed by addMDF'.
+                            format(ad.filename))
+                continue
+            if hasattr(ad, 'MDF'):
+                log.warning('An MDF extension already exists in {}, so no '
+                            'MDF will be added'.format(ad.filename))
+                continue
+
+            if mdf is None:
+                log.stdinfo('No MDF could be retrieved for {}'.
+                            format(ad.filename))
+                continue
+
+            try:
+                # This will raise some sort of exception unless the MDF file
+                # has a single MDF Table extension
+                ad.MDF = mdf.MDF
+            except:
+                if len(mdf.tables) == 1:
+                    ad.MDF = getattr(mdf, mdf.tables.pop())
+                else:
+                    log.warning('Cannot find MDF in {}, so no MDF will be '
+                                'added'.format(mdf.filename))
+                continue
+
+            log.fullinfo('Attaching the MDF {} to {}'.format(mdf.filename,
+                                                             ad.filename))
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
     def standardizeObservatoryHeaders(self, adinputs=None, **params):
         """
         This primitive is used to make the changes and additions to the
@@ -57,3 +125,43 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
+
+    def standardizeStructure(self, adinputs=None, **params):
+        """
+        This primitive is used to standardize the structure of Gemini data,
+        specifically.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        attach_mdf: bool
+            attach an MDF to the AD objects?
+        mdf: str
+            full path of the MDF to attach
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        adoutputs = []
+        # If attach_mdf=False, this just zips up the ADs with a list of Nones,
+        # which has no side-effects.
+        for ad, mdf in zip(*gt.make_lists(adinputs, params['mdf'])):
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by standardizeStructure".
+                            format(ad.filename))
+                adoutputs.append(ad)
+                continue
+
+            # Attach an MDF to each input AstroData object
+            if params["attach_mdf"]:
+                ad = self.addMDF([ad], mdf=mdf)[0]
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+            adoutputs.append(ad)
+        return adoutputs
+

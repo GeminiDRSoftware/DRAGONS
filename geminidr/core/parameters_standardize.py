@@ -15,10 +15,6 @@ class addDQConfig(addIllumMaskToDQConfig):
     def setDefaults(self):
         self.suffix = "_dqAdded"
 
-class addMDFConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_mdfAdded", optional=True)
-    mdf = config.Field("Name of MDF", str, None, optional=True)
-
 class addVARConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_varAdded", optional=True)
     read_noise = config.Field("Add read noise?", bool, False)
@@ -37,7 +33,8 @@ class standardizeHeadersConfig(standardizeObservatoryHeadersConfig, standardizeI
     def setDefaults(self):
         self.suffix = "_headersStandardized"
 
-class standardizeStructureConfig(addMDFConfig):
+class standardizeStructureConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_structureStandardized", optional=True)
     attach_mdf = config.Field("Attach MDF to spectroscopic data?", bool, True)
 
     def setDefaults(self):
