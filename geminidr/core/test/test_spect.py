@@ -19,10 +19,12 @@ from gempy.utils import logutils
 
 
 file_list = [
-    "process_arcs/N20170530S0006.fits",
-    "process_arcs/N20180119S0232.fits",
-    "process_arcs/N20181114S0512.fits",
-    "process_arcs/N20180120S0417.fits",
+    'process_arcs/GMOS/S20170103S0152.fits',
+    'process_arcs/GMOS/N20170530S0006.fits',
+    'process_arcs/GMOS/N20180119S0232.fits',
+    'process_arcs/GMOS/N20181114S0512.fits',
+    'process_arcs/GMOS/N20180120S0417.fits',
+    'process_arcs/GMOS/N20180516S0214.fits',
     # "process_arcs/N20180911S0156.fits", # File failed loading
     # "process_arcs/S20181022S0349.fits", # File failed loading
     # "process_arcs/N20181011S0220.fits", # File failed loading
