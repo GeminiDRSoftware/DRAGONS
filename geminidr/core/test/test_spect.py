@@ -263,6 +263,7 @@ class TestArcProcessing:
         p = prepare_for_wavelength_calibration(ad)
         p.determineWavelengthSolution()
         p.writeOutputs(outfilename=_output, overwrite=True)
+        os.chmod(_output, mode=0o775)
 
         output_ad = astrodata.open(_output)
         reference_ad = astrodata.open(_reference)
@@ -306,6 +307,7 @@ class TestArcProcessing:
         p.determineWavelengthSolution()
         p.determineDistortion()
         p.writeOutputs(outfilename=_output, overwrite=True)
+        os.chmod(_output, mode=0o775)
 
         output_ad = astrodata.open(_output)
         reference_ad = astrodata.open(_reference)
