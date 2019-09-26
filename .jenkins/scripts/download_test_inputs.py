@@ -89,7 +89,7 @@ def create_test_folder_if_does_not_exist(path):
         print(' Skip creation of existing folder: {}'.format(path))
     else:
         print(' Create non-existing test folder: {}'.format(path))
-        os.makedirs(path)
+        os.makedirs(path, mode=0o775)
 
 
 def download_non_existing_test_files(path, list_of_files):
@@ -132,11 +132,14 @@ def download_non_existing_test_files(path, list_of_files):
                 _path, _file = os.path.split(current_file)
 
                 if not os.path.exists(_path):
-                    os.makedirs(_path)
+                    oldmask = os.umask(000)
+                    os.makedirs(_path, mode=0o775)
+                    os.umask(oldmask)
 
                 try:
                     subprocess.run(['curl', '--silent', URL + _file, '--output',
                                     current_file], check=True)
+                    os.chmod(_file, mode=0o775)
 
                 except subprocess.CalledProcessError as e:
                     print(' Failed to download file: {}'.format(current_file))

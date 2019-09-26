@@ -301,7 +301,9 @@ GMOS/GS-2016B-Q-54-32/S20170104S0694.fits
 GMOS/GS-2016B-Q-54-32/S20170104S0695.fits
 
 # Process Arcs
-process_arcs/N20170530S0006.fits
-process_arcs/N20180119S0232.fits
-process_arcs/N20181114S0512.fits
-process_arcs/N20180120S0417.fits
+process_arcs/GMOS/S20170103S0152.fits
+process_arcs/GMOS/N20170530S0006.fits
+process_arcs/GMOS/N20180119S0232.fits
+process_arcs/GMOS/N20181114S0512.fits
+process_arcs/GMOS/N20180120S0417.fits
+process_arcs/GMOS/N20180516S0214.fits
