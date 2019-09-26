@@ -229,7 +229,8 @@ class TestGmosArcProcessing:
 
         fig_name = os.path.join(
             output_folder,
-            name + '_{:02d}_{}_{}.svg'.format(ext_num, grating, central_wavelength))
+            name + '_{:02d}_{:s}_{:.0f}.svg'.format(
+                ext_num, grating, central_wavelength))
 
         oldmask = os.umask(000)
         fig.savefig(fig_name)
@@ -246,6 +247,8 @@ class TestGmosArcProcessing:
         output_folder = inputs_for_tests.output_dir
 
         name, _ = os.path.splitext(ad.filename)
+        grating = ad.disperser(pretty=True)
+        central_wavelength = ad.central_wavelength() * 1e10
 
         for ext_num, ext in enumerate(ad):
 
