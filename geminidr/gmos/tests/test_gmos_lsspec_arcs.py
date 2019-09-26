@@ -167,64 +167,90 @@ class TestGmosArcProcessing:
         return arr, msk
 
     @staticmethod
-    def test_arc_lines_are_properly_matched(inputs_for_tests):
+    def plot_spectrum(name, ext_num, output_folder, data, mask, peaks, wavelengths):
         """
-        Test that Arc lines are properly matched to the reference lines.
+        Plot the spectrum for visual inspection. The 20 brightest lines are marked
+        with lines and tagged with the correspondent wavelengths.
+
+        Parameters
+        ----------
+        name : str
+            Base name of the plot and of the file.
+        ext_num : int
+            Extension number.
+        output_folder : str
+            Path to the output data.
+        data : ndarray
+            Masked 1D spectrum.
+        mask : ndarray
+            1D mask.
+        peaks : ndarray
+            Position of the identified peaks extracted from the WAVECAL table.
+        wavelengths : ndarray
+            Wavelengths related to the peaks extracted from the WAVECAL table.
         """
         # noinspection PyPackageRequirements
         from matplotlib import pyplot as plt
         from scipy.signal import argrelmax
 
+        x = np.arange(data.size)
+
+        fig, ax = plt.subplots(num="{:s}_{:d} Lines".format(name, ext_num))
+
+        print(x.size, data.size)
+
+        ax.plot(x, data, 'C0-')
+        ax.set_xlabel('pixels')
+        ax.set_ylabel('weights [counts]')
+        ax.set_title("{} - Lines Identified".format(name))
+        ax.grid(alpha=0.25)
+
+        n = 20
+
+        argmaxs = argrelmax(data, order=3)[0]
+        peak_idxs = [np.argmin(np.abs(p - argmaxs)) for p in peaks]
+        peaks = argmaxs[np.array(peak_idxs)]
+
+        peak_values = data[peaks]
+        idxs = np.argsort(peak_values)[-n:]
+
+        peaks = peaks[idxs]
+        wavelengths = wavelengths[idxs]
+
+        for p, w in zip(peaks, wavelengths):
+            v = np.max(data.data[p - 3:p + 3])
+            ymin = v + 0.01
+            ymax = v + 0.2 + 0.1 * v
+
+            ax.vlines(p, ymin=ymin, ymax=ymax, alpha=0.5, color='C1')
+            ax.text(p, ymax + 0.01, '{:.02f}'.format(10 * w),
+                    rotation='vertical', va='bottom', ha='center', size='small')
+
+        fig_name = os.path.join(output_folder, name + '_{:02d}.svg'.format(ext_num))
+        fig.savefig(fig_name)
+        os.chmod(fig_name, mode=0o775)
+
+        del fig, ax
+
+    def test_arc_lines_are_properly_matched(self, inputs_for_tests):
+        """
+        Test that Arc lines are properly matched to the reference lines.
+        """
         ad = inputs_for_tests.ad
         output_folder = inputs_for_tests.output_dir
 
         name, _ = os.path.splitext(ad.filename)
 
-        for i, ext in enumerate(ad):
+        for ext_num, ext in enumerate(ad):
 
             table = ext.WAVECAL
             peaks = np.array(table['peaks'])
             wavelengths = np.array(table['wavelengths'])
 
-            data, mask = TestGmosArcProcessing.remove_spect_continuum(
-                ext.data, ext.mask)
+            data, mask = self.remove_spect_continuum(ext.data, ext.mask)
 
-            x = np.arange(np.average(ext.data, axis=0).size)
-
-            fig, ax = plt.subplots(num="{:s}_{:d} Lines".format(name, i))
-
-            ax.plot(x, data, 'C0-')
-            ax.set_xlabel('pixels')
-            ax.set_ylabel('weights [counts]')
-            ax.set_title("{} - Lines Identified".format(name))
-            ax.grid(alpha=0.25)
-
-            n = 20
-
-            argmaxs = argrelmax(data, order=3)[0]
-            peak_idxs = [np.argmin(np.abs(p - argmaxs)) for p in peaks]
-            peaks = argmaxs[np.array(peak_idxs)]
-
-            peak_values = data[peaks]
-            idxs = np.argsort(peak_values)[-n:]
-
-            peaks = peaks[idxs]
-            wavelengths = wavelengths[idxs]
-
-            for p, w in zip(peaks, wavelengths):
-                v = np.max(data.data[p - 3:p + 3])
-                ymin = v + 0.01
-                ymax = v + 0.2 + 0.1 * v
-
-                ax.vlines(p, ymin=ymin, ymax=ymax, alpha=0.5, color='C1')
-                ax.text(p, ymax + 0.01, '{:.02f}'.format(10 * w),
-                        rotation='vertical', va='bottom', ha='center', size='small')
-
-            fig_name = os.path.join(output_folder, name + '_{:02d}.svg'.format(i))
-            fig.savefig(fig_name)
-            os.chmod(fig_name, mode=0o775)
-
-            del fig, ax
+            self.plot_spectrum(
+                name, ext_num, output_folder, data, mask, peaks, wavelengths)
 
     # noinspection PyUnusedLocal
     @staticmethod
