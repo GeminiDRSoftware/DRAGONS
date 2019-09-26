@@ -139,7 +139,7 @@ def download_non_existing_test_files(path, list_of_files):
                 try:
                     subprocess.run(['curl', '--silent', URL + _file, '--output',
                                     current_file], check=True)
-                    os.chmod(_file, mode=0o775)
+                    os.chmod(current_file, mode=0o775)
 
                 except subprocess.CalledProcessError as e:
                     print(' Failed to download file: {}'.format(current_file))

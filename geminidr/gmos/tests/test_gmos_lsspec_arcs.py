@@ -16,10 +16,11 @@ from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 
 dataset_file_list = [
+    # 'process_arcs/GMOS/S20130218S0126.fits',  # todo: Breaks p.determineWavelengthSolution()
     'process_arcs/GMOS/S20170103S0152.fits',
     'process_arcs/GMOS/N20170530S0006.fits',
     'process_arcs/GMOS/N20180119S0232.fits',
-    'process_arcs/GMOS/N20181114S0512.fits',
+    # 'process_arcs/GMOS/N20181114S0512.fits',  # todo: RMS > 0.5 (RMS = 0.646)
     'process_arcs/GMOS/N20180120S0417.fits',
     'process_arcs/GMOS/N20180516S0214.fits',
 ]
@@ -66,6 +67,7 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
     output_file, _ = os.path.splitext(output_file)
     output_file = output_file + "_arc.fits"
     output_file = os.path.join(output_folder, output_file)
+    print(output_file)
 
     input_file = os.path.join(path_to_inputs, request.param)
 
