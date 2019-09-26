@@ -167,7 +167,8 @@ class TestGmosArcProcessing:
         return arr, msk
 
     @staticmethod
-    def plot_spectrum(name, ext_num, output_folder, data, mask, peaks, wavelengths):
+    def plot_spectrum(name, ext_num, output_folder, data, mask, peaks,
+                      wavelengths, grating, central_wavelength):
         """
         Plot the spectrum for visual inspection. The 20 brightest lines are marked
         with lines and tagged with the correspondent wavelengths.
@@ -226,7 +227,9 @@ class TestGmosArcProcessing:
             ax.text(p, ymax + 0.01, '{:.02f}'.format(10 * w),
                     rotation='vertical', va='bottom', ha='center', size='small')
 
-        fig_name = os.path.join(output_folder, name + '_{:02d}.svg'.format(ext_num))
+        fig_name = os.path.join(
+            output_folder,
+            name + '_{:02d}_{}_{}.svg'.format(ext_num, grating, central_wavelength))
 
         oldmask = os.umask(000)
         fig.savefig(fig_name)
@@ -253,7 +256,8 @@ class TestGmosArcProcessing:
             data, mask = self.remove_spect_continuum(ext.data, ext.mask)
 
             self.plot_spectrum(
-                name, ext_num, output_folder, data, mask, peaks, wavelengths)
+                name, ext_num, output_folder, data, mask, peaks, wavelengths,
+                grating, central_wavelength)
 
     # noinspection PyUnusedLocal
     @staticmethod
