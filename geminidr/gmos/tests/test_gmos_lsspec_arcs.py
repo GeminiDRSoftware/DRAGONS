@@ -227,8 +227,11 @@ class TestGmosArcProcessing:
                     rotation='vertical', va='bottom', ha='center', size='small')
 
         fig_name = os.path.join(output_folder, name + '_{:02d}.svg'.format(ext_num))
+
+        oldmask = os.umask(000)
         fig.savefig(fig_name)
         os.chmod(fig_name, mode=0o775)
+        os.umask(oldmask)
 
         del fig, ax
 
