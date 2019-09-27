@@ -363,3 +363,13 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         else:
             return super(NDAstroData, self).__repr__()
 
+    @property
+    def T(self):
+        return self.transpose()
+
+    def transpose(self):
+        new = self.__class__(self.data.T,
+                             uncertainty=None if self.uncertainty is None else self.uncertainty.__class__(self.uncertainty.array.T),
+                             mask=None if self.mask is None else self.mask.T, copy=False)
+        return new
+
