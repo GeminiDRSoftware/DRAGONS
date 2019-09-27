@@ -106,73 +106,8 @@ class TestGmosArcProcessing:
     """
 
     @staticmethod
-    def remove_spect_continuum(data, mask):
-        """
-        Split the arr into different `arr` sections based on the `msk`, fit
-        a polynomium to each of them, and then, stack them together into a
-        single array.
-
-        Parameters
-        ----------
-        data : `ndarray`
-            Input 2D array with spectrum
-        mask : `ndarray`
-            Input 2D array with mask
-
-        Returns
-        -------
-        arr : `ndarray`
-            Masked output 1D array with no background.
-        msk : `ndarray`
-            Output 1D array containing mask.
-        """
-        from scipy.signal import argrelmax
-        from scipy.ndimage import binary_dilation
-
-        msk = np.array(np.average(mask, axis=0), dtype=int)
-        msk = np.bitwise_and(16, msk)  # 16 is the data quality bit for no-data
-        diff_msk = np.diff(msk)
-
-        idxs = argrelmax(diff_msk, order=15)
-        idxs = np.insert(idxs, 0, 0)
-        idxs = np.append(idxs, msk.size)
-
-        data = np.average(data, axis=0)
-        data = np.ma.masked_where(msk > 0, data)
-        data = (data - data.min()) / data.ptp()
-
-        # sub_arrs = []
-        # for i0, i1 in zip(idxs[:-1], idxs[1:]):
-        #
-        #     sub_arr = data[i0:i1]
-        #
-        #     x = np.arange(i0, i1)
-        #     y = sub_arr
-        #
-        #     for n in range(1):  # interacts 5 times
-        #
-        #         p = np.polyfit(x, y, 9)
-        #         y_fit = np.polyval(p, x)
-        #
-        #         err = np.abs(y_fit - y)
-        #
-        #         x = np.ma.masked_where(err > 3 * err.std(), x)
-        #         y = np.ma.masked_where(err > 3 * err.std(), y)
-        #
-        #     # noinspection PyUnboundLocalVariable
-        #     sub_arr = y - y_fit
-        #     sub_arrs.extend(sub_arr.data)
-
-        msk = binary_dilation(msk // msk.max(), iterations=3)
-        # arr = np.array(sub_arrs)
-        arr = data
-        arr = np.ma.masked_where(msk > 0, arr)
-
-        return arr, msk
-
-    @staticmethod
     def plot_spectrum(name, ext_num, output_folder, data, mask, peaks,
-                      wavelengths, grating, central_wavelength):
+                      wavelengths, grating, central_wavelength, model):
         """
         Plot the spectrum for visual inspection. The 20 brightest lines are marked
         with lines and tagged with the correspondent wavelengths.
@@ -193,43 +128,45 @@ class TestGmosArcProcessing:
             Position of the identified peaks extracted from the WAVECAL table.
         wavelengths : ndarray
             Wavelengths related to the peaks extracted from the WAVECAL table.
+        grating : str
+            The pretty name of the disperser. Used only to create the figure name.
+        central_wavelength : float
+            The central wavelength in Angstrom. Used only to create the figure name.
         """
         # noinspection PyPackageRequirements
         from matplotlib import pyplot as plt
-        from scipy.signal import argrelmax
 
         x = np.arange(data.size)
+        w = model(x) * 10.
 
         fig, ax = plt.subplots(num="{:s}_{:d} Lines".format(name, ext_num), dpi=300)
+        avg, std = np.mean(data), np.std(data)
+        ptp = np.ptp(data[np.abs(data - avg) < 2 * std])
 
-        print(x.size, data.size)
-
-        ax.plot(x, data, 'C0-')
-        ax.set_xlabel('pixels')
+        ax.plot(w, data, 'C0-', linewidth=0.5)
+        ax.set_xlabel('Wavelength [A]')
         ax.set_ylabel('weights [counts]')
         ax.set_title("{} - Lines Identified".format(name))
         ax.grid(alpha=0.25)
 
-        n = 20
+        ymin = avg - 0.25 * std
+        ymax = avg + 3 * std
+        ax.set_ylim(ymin, ymax)
 
-        argmaxs = argrelmax(data, order=3)[0]
-        peak_idxs = [np.argmin(np.abs(p - argmaxs)) for p in peaks]
-        peaks = argmaxs[np.array(peak_idxs)]
+        vlines_w = []
+        for i, p, w in zip(np.arange(peaks.size), peaks, wavelengths):
 
-        peak_values = data[peaks]
-        idxs = np.argsort(peak_values)[-n:]
-
-        peaks = peaks[idxs]
-        wavelengths = wavelengths[idxs]
-
-        for p, w in zip(peaks, wavelengths):
+            p = np.round(p).astype(int)
             v = np.max(data.data[p - 3:p + 3])
-            ymin = v + 0.01
-            ymax = v + 0.2 + 0.1 * v
 
-            ax.vlines(p, ymin=ymin, ymax=ymax, alpha=0.5, color='C1')
-            ax.text(p, ymax + 0.01, '{:.02f}'.format(10 * w),
-                    rotation='vertical', va='bottom', ha='center', size='small')
+            ymin = v + 0.01 * ptp
+            ymax = v + 0.1 * (1 + (i % 3)) * ptp
+
+            ax.vlines(w, ymin=ymin, ymax=ymax, lw=0.5, color='k')
+            ax.text(w, ymax, '{:.02f}'.format(w),
+                    rotation='vertical', va='bottom', ha='center', size='xx-small')
+
+            vlines_w.append(w)
 
         fig_name = os.path.join(
             output_folder,
@@ -248,10 +185,13 @@ class TestGmosArcProcessing:
 
         del fig, ax
 
+    @pytest.mark.skip(reason="Should only be used locally.")
     def test_arc_lines_are_properly_matched(self, inputs_for_tests):
         """
         Test that Arc lines are properly matched to the reference lines.
         """
+        from gempy.library.astromodels import dict_to_chebyshev
+
         ad = inputs_for_tests.ad
         output_folder = inputs_for_tests.output_dir
 
@@ -265,11 +205,26 @@ class TestGmosArcProcessing:
             peaks = np.array(table['peaks'])
             wavelengths = np.array(table['wavelengths'])
 
-            data, mask = self.remove_spect_continuum(ext.data, ext.mask)
+            # Convert from nm to A
+            wavelengths = wavelengths * 10.
+
+            model = dict_to_chebyshev(
+                dict(
+                    zip(
+                        ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
+                    )
+                )
+            )
+
+            mask = np.array(np.average(ext.mask, axis=0), dtype=int)
+
+            data = np.average(ext.data, axis=0)
+            data = np.ma.masked_where(mask > 0, data)
+            data = data - data.min()
 
             self.plot_spectrum(
                 name, ext_num, output_folder, data, mask, peaks, wavelengths,
-                grating, central_wavelength)
+                grating, central_wavelength, model)
 
     # noinspection PyUnusedLocal
     @staticmethod
