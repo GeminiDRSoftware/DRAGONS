@@ -18,6 +18,7 @@ from gempy.utils import logutils
 dataset_file_list = [
     # 'process_arcs/GMOS/S20130218S0126.fits',  # todo: Breaks p.determineWavelengthSolution()
     'process_arcs/GMOS/S20170103S0152.fits',
+    'process_arcs/GMOS/S20170116S0189.fits',
     'process_arcs/GMOS/N20170530S0006.fits',
     'process_arcs/GMOS/N20180119S0232.fits',
     # 'process_arcs/GMOS/N20181114S0512.fits',  # todo: RMS > 0.5 (RMS = 0.646)
@@ -140,30 +141,31 @@ class TestGmosArcProcessing:
         data = np.ma.masked_where(msk > 0, data)
         data = (data - data.min()) / data.ptp()
 
-        sub_arrs = []
-        for i0, i1 in zip(idxs[:-1], idxs[1:]):
-
-            sub_arr = data[i0:i1]
-
-            x = np.arange(i0, i1)
-            y = sub_arr
-
-            for n in range(1):  # interacts 5 times
-
-                p = np.polyfit(x, y, 9)
-                y_fit = np.polyval(p, x)
-
-                err = np.abs(y_fit - y)
-
-                x = np.ma.masked_where(err > 3 * err.std(), x)
-                y = np.ma.masked_where(err > 3 * err.std(), y)
-
-            # noinspection PyUnboundLocalVariable
-            sub_arr = y - y_fit
-            sub_arrs.extend(sub_arr.data)
+        # sub_arrs = []
+        # for i0, i1 in zip(idxs[:-1], idxs[1:]):
+        #
+        #     sub_arr = data[i0:i1]
+        #
+        #     x = np.arange(i0, i1)
+        #     y = sub_arr
+        #
+        #     for n in range(1):  # interacts 5 times
+        #
+        #         p = np.polyfit(x, y, 9)
+        #         y_fit = np.polyval(p, x)
+        #
+        #         err = np.abs(y_fit - y)
+        #
+        #         x = np.ma.masked_where(err > 3 * err.std(), x)
+        #         y = np.ma.masked_where(err > 3 * err.std(), y)
+        #
+        #     # noinspection PyUnboundLocalVariable
+        #     sub_arr = y - y_fit
+        #     sub_arrs.extend(sub_arr.data)
 
         msk = binary_dilation(msk // msk.max(), iterations=3)
-        arr = np.array(sub_arrs)
+        # arr = np.array(sub_arrs)
+        arr = data
         arr = np.ma.masked_where(msk > 0, arr)
 
         return arr, msk
@@ -198,7 +200,7 @@ class TestGmosArcProcessing:
 
         x = np.arange(data.size)
 
-        fig, ax = plt.subplots(num="{:s}_{:d} Lines".format(name, ext_num))
+        fig, ax = plt.subplots(num="{:s}_{:d} Lines".format(name, ext_num), dpi=300)
 
         print(x.size, data.size)
 
@@ -236,7 +238,12 @@ class TestGmosArcProcessing:
 
         oldmask = os.umask(000)
         fig.savefig(fig_name)
-        os.chmod(fig_name, mode=0o775)
+
+        try:
+            os.chmod(fig_name, mode=0o775)
+        except PermissionError:
+            pass
+
         os.umask(oldmask)
 
         del fig, ax
