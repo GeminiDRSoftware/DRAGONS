@@ -70,7 +70,7 @@ def take_along_axis(arr, ind, axis):
             inds.append(np.arange(n).reshape(ind_shape_dim))
     return arr[tuple(inds)]
 
-def unpack_nddata(fn):
+def stack_nddata(fn):
     """
     This decorator wraps a method that takes a sequence of NDAstroData
     objects and stacks them into data, mask, and variance arrays of one
@@ -249,10 +249,10 @@ class NDStacker(object):
         return np.divide(numerator, denominator,
                          out=np.zeros_like(numerator), where=(denominator!=0))
 
-    @unpack_nddata
+    @stack_nddata
     def __call__(self, data, mask=None, variance=None):
         """
-        Perform the rejection and combining. The unpack_nddata decorator
+        Perform the rejection and combining. The stack_nddata decorator
         allows a series of NDData object to be sent, and split into data, mask,
         and variance.
         """
