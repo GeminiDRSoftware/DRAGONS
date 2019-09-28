@@ -18,13 +18,15 @@ an "Out of memory" crash happens to you, if possible for your
 observation sequence, try to run the pipeline on fewer images at the time,
 like for each dither pattern sequence separately.
 
+Then to align and stack the pieces, run the ``alignAndStack`` recipe:
+
+.. code-block:: python
+
+    $ reduce @list_of_stacks -r alignAndStack
+
 For NIRI, this issue is relatively rare given that the NIRI detector is fairly
 small, but it could happen when trying to reduce a very large number of
 frames in one go.
-
-.. todo::  We need to show the user how to bring them all back
-     together in a final stack at the end.  This means showing
-     what custom recipe to use and how to invoke it.
 
 
 .. _double_messaging:

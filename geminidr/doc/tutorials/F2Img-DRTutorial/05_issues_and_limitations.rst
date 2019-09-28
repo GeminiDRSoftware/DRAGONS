@@ -18,9 +18,12 @@ an "Out of memory" crash happens to you, if possible for your
 observation sequence, try to run the pipeline on fewer images at the time,
 like for each dither pattern sequence separately.
 
-.. todo::  We need to show the user how to bring them all back
-     together in a final stack at the end. This means showing
-     what custom recipe to use and how to invoke it.
+Then to align and stack the pieces, run the ``alignAndStack`` recipe:
+
+.. code-block:: python
+
+    $ reduce @list_of_stacks -r alignAndStack
+
 
 .. _issue_p2:
 
