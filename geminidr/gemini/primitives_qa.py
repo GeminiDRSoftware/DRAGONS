@@ -499,10 +499,11 @@ class QA(PrimitivesBASE):
                                 "{} binned data".format(ad.filename, xbin, ybin))
                     measure_iq = False
 
-            # Get suitable FWHM-measurement sources
+            # Get suitable FWHM-measurement sources; through-slit imaging
+            # uses the spectroscopic method in case the slit width < seeing
             if {'IMAGE', 'SPECT'} & ad.tags:
-                is_image = 'IMAGE' in ad.tags
-                good_source = gt.clip_sources(adiq) if is_image else \
+                image_like = 'IMAGE' in ad.tags and not hasattr(ad, 'MDF')
+                good_source = gt.clip_sources(adiq) if image_like else \
                     gt.fit_continuum(adiq)
             else:
                 log.warning("{} is not IMAGE or SPECT; no IQ measurement "
@@ -524,7 +525,7 @@ class QA(PrimitivesBASE):
                     log.warning("This is an AO observation, the AO-estimated "
                                 "seeing will be used for the IQ band "
                                 "calculation")
-                if is_image and ad.instrument() in ('GSAOI', 'NIRI', 'GNIRS'):
+                if image_like and ad.instrument() in ('GSAOI', 'NIRI', 'GNIRS'):
                     if len(good_source) > 0:
                         strehl = _strehl(ad, good_source)
 
@@ -573,7 +574,7 @@ class QA(PrimitivesBASE):
                             std_fwhm = np.std(src["fwhm_arcsec"])
                         fwhm = Measurement(float(mean_fwhm), float(std_fwhm),
                                            len(src))
-                        if is_image:
+                        if image_like:
                             ellip = Measurement(float(np.mean(src['ellipticity'])),
                             float(np.std(src['ellipticity'])), len(src))
 
@@ -618,7 +619,7 @@ class QA(PrimitivesBASE):
                                 "comment": comments}
                     # These only exist for images
                     # Coerce to float from np.float so JSONable
-                    if is_image and len(src)>0:
+                    if image_like and len(src)>0:
                         ext_info.update({"isofwhm": float(np.mean(src["isofwhm_arcsec"])),
                                          "isofwhm_std": float(np.std(src["isofwhm_arcsec"])),
                                          "ee50d": float(np.mean(src["ee50d_arcsec"])),

@@ -28,7 +28,8 @@ from astropy.table import vstack, Table, Column
 
 from scipy.special import erf
 
-from ..library import astrotools as at
+from ..library import astromodels, tracing, astrotools as at
+from ..library.nddops import NDStacker
 from ..utils import logutils
 
 import astrodata
@@ -946,8 +947,20 @@ def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
 
 def fit_continuum(ad):
     """
-    This function fits Gaussians to the spectral continuum, a bit like
-    clip_sources for spectra
+    This function fits Gaussians to the spatial profile of a 2D image,
+    collapsed in the dispersion direction. It works both for dispersed 2D
+    spectral images (tagged as "SPECT") and through-slit images ("IMAGE").
+    Depending on the type of data and its processed state, there may be
+    information about the locations of sources suitable for profile
+    measurement.
+
+    For MOS data, the acquisition slits are used as these are known to
+    contain stellar objects; if this information is missing from the
+    header (where it is placed by the findAcqusitionSlits primitive) then
+    no further processing is performed.
+
+    If an extension has an APERTURE table, then source positions are taken
+    from this, otherwise the brightest pixel is used as an initial guess.
     
     Parameters
     ----------
@@ -964,114 +977,119 @@ def fit_continuum(ad):
 
     good_sources = []
     
-    # Get the pixel scale
     pixel_scale = ad.pixel_scale()
-    
-    # Set full aperture to 4 arcsec
-    ybox = int(2.0 / pixel_scale)
-
-    # Average 512 unbinned columns together
-    xbox = 256 // ad.detector_x_bin()
-
-    # Average 16 unbinned background rows together
-    bgbox = 8 // ad.detector_x_bin()
+    spatial_box = int(5.0 / pixel_scale)
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
     init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
 
-    # Ignore spectrum if not >1.5*background
-    s2n_bg = 1.5
-
-    # Ignore spectrum if mean not >.9*std
-    s2n_self = 0.9
-
     tags = ad.tags
-    for ext in ad:
-        data = ext.data
-        dqdata = ext.mask
-        vardata = ext.variance
+    acq_star_positions = ad.phu.get("ACQSLITS")
 
-        ####here - dispersion axis
-        # Taking the 95th percentile should remove CRs
-        signal = np.percentile(np.where(dqdata==0, data, 0), 95, axis=1)
-        acq_star_positions = ad.phu.get("ACQSLITS")
+    for ext in ad:
+        fwhm_list = []
+        x_list, y_list = [], []
+        weight_list = []
+
+        dispaxis = 2 - ext.dispersion_axis()  # python sense
+        dispersed_length = ext.shape[dispaxis]
+        binnings = (ext.detector_x_bin(), ext.detector_y_bin())
+        spatial_bin, spectral_bin = binnings[1-dispaxis], binnings[dispaxis]
+
+        # Determine regions for collapsing into 1D spatial profiles
+        if 'IMAGE' in tags:
+            # A through-slit image: extract a 2-arcsecond wide region about
+            # the center. This should be OK irrespective of the actual slit
+            # width and avoids having to work out the width from instrument-
+            # dependent header information.
+            centers = [dispersed_length // 2]
+            hwidth = int(1.0 / pixel_scale + 0.5)
+        else:
+            # This is a dispersed 2D spectral image, chop it into 512-pixel
+            # (unbinned) sections. This is one GMOS amp, and most detectors
+            # are a multiple of 512 pixels. We do this because the data are
+            # unlikely to have gone through traceApertures() so we can't
+            # account for curvature in the spectral trace.
+            hwidth = 512 // spectral_bin
+            centers = [i*hwidth for i in range(1, dispersed_length // hwidth, 1)]
+        spectral_slices = [slice(center-hwidth, center+hwidth) for center in centers]
+
+        # Try to get an idea of where peaks might be from header information
+        # We start with the entire slit length (for N&S, only use the part
+        # with both the +ve and -ve beams)
+        if 'NODANDSHUFFLE' in tags:
+            shuffle = ad.shuffle_pixels() // spatial_bin
+            spatial_slice = slice(shuffle, shuffle * 2)
+        else:
+            spatial_slice = slice(0, ext.shape[1 - dispaxis])
+
+        # First, if there are acquisition slits, we use those positions
+        spatial_slices = []
         if acq_star_positions is None:
             if 'MOS' in tags:
                 log.warning("{} is MOS but has no acquisition slits. "
                             "Not trying to find spectra.".format(ad.filename))
                 if not hasattr(ad, 'MDF'):
                     log.warning("No MDF is attached. Did addMDF find one?")
+                    good_sources.append(Table())
                 continue
-            else:
-                shuffle = ad.shuffle_pixels() // ad.detector_y_bin()
-                centers = [shuffle + np.argmax(signal[shuffle:shuffle*2])]
-                half_widths = [ybox]
-        else:
             try:
-                centers = []
-                half_widths = []
-                for x in acq_star_positions.split():
-                    c,w = x.split(':')
-                    # The -1 here because of python's 0-count
-                    centers.append(int(c)-1)
-                    half_widths.append(int(0.5*int(w)))
-            except ValueError:
-                log.warning("Image {} has unparseable ACQSLITS keyword".
-                            format(ad.filename))
-                centers = [np.argmax(signal)]
-                half_widths = [ybox]
-        
-        fwhm_list = []
-        y_list = []
-        x_list = []
-        weight_list = []
-                
-        for center,hwidth in zip(centers,half_widths):
-            if center+hwidth>data.shape[0]:
-                #print 'too high'
-                continue
-            if center-hwidth<0:
-                #print 'too low'
-                continue
-            
-            # Don't think it needs to do an overall check for each object
-            #bg_mean = np.mean([data[center - ybox - bgbox:center-ybox],
-            #                   data[center + ybox:center + ybox + bgbox]], dtype=np.float64)
-            #ctr_mean = np.mean(data[center,dqdata[center]==0], dtype=np.float64)
-            #ctr_std = np.std(data[center,dqdata[center]==0])
-    
-            #print 'mean ctr',ctr_mean,ctr_std
-            #print 'mean bg',bg_mean
-    
-            #if ctr_mean < s2n_bg * bg_mean:
-            #    print 'too faint'
-            #    continue
-            #if ctr_mean < s2n_self * ctr_std:
-            #    print 'too noisy'
-            #    continue
-            
-            for i in range(xbox, data.shape[1]-xbox, xbox):
-                databox = data[center-hwidth-1:center+hwidth,i-xbox:i+xbox]
-                if dqdata is None:
-                    dqbox = np.zeros_like(databox)
+                # No acquisition slits, maybe we've already found apertures?
+                aptable = ext.APERTURES
+                for row in aptable:
+                    model_dict = dict(zip(aptable.colnames, row))
+                    trace_model = astromodels.dict_to_chebyshev(model_dict)
+                    aperture = tracing.Aperture(trace_model,
+                                                aper_lower=model_dict['aper_lower'],
+                                                aper_upper=model_dict['aper_upper'])
+                    spatial_slices.append(aperture)
+            except AttributeError:
+                # No apertures, so find sources now in the region already defined
+                # Taking the 95th percentile should remove CRs
+                if ext.mask is None:
+                    profile = np.percentile(ext.data, 95, axis=dispaxis)
                 else:
-                    dqbox = dqdata[center-hwidth-1:center+hwidth,i-xbox:i+xbox]
-                if vardata is None:
-                    varbox = databox # Any better ideas?
-                else:
-                    varbox = vardata[center-hwidth-1:center+hwidth,i-xbox:i+xbox]
+                    profile = np.percentile(np.where(ext.mask==0, ext.data, 0), 95, axis=dispaxis)
+                center = np.argmax(profile[spatial_slice]) + spatial_slice.start
+                spatial_slices = [slice(max(center-spatial_box, 0),
+                                        min(center+spatial_box, ext.shape[1-dispaxis]))]
+        else:
+            for slit in acq_star_positions.split():
+                c, w = [int(x) for x in slit.split(':')]
+                spatial_slices.append(slice(c-w, c+w))
 
-                # Collapse in dispersion direction, using good pixels only
-                dqcol = np.sum(dqbox==0, axis=1)
-                if np.any(dqcol==0):
-                    continue
-                col = np.sum(databox, axis=1) / dqcol
-                maxflux = np.max(abs(col))
+        from matplotlib import pyplot as plt
+        for spectral_slice in spectral_slices:
+            coord = 0.5 * (spectral_slice.start + spectral_slice.stop)
+
+            for spatial_slice in spatial_slices:
+                try:
+                    length = spatial_slice.stop - spatial_slice.start
+                except AttributeError:
+                    # It's an Aperture, so convert to a regular slice object
+                    limits = spatial_slice.model(coord) + np.array([spatial_slice.lower,
+                                                                    spatial_slice.upper])
+                    spatial_slice = slice(*limits)
+                    length = spatial_slice.stop - spatial_slice.start
+
+                # These are all in terms of the full unsliced extension
+                pixels = np.arange(spatial_slice.start, spatial_slice.stop)
+
+                # Cut the rectangular region and collapse it
+                if dispaxis == 0:
+                    full_slice = (spectral_slice, spatial_slice)
+                    ndd = ext.nddata[full_slice]
+                else:
+                    full_slice = (spatial_slice, spectral_slice)
+                    ndd = ext.nddata[full_slice].T
+
+                data, mask, var = NDStacker.mean(ndd)
+                maxflux = np.max(abs(data))
                 
                 # Crude SNR test; is target bright enough in this wavelength range?
-                if np.percentile(col,90)*xbox < np.mean(databox[dqbox==0]) \
-                            + 10*np.sqrt(np.median(varbox)):
-                    continue
+                #if np.percentile(col,90)*xbox < np.mean(databox[dqbox==0]) \
+                #            + 10*np.sqrt(np.median(varbox)):
+                #    continue
 
                 # Check that the spectrum looks like a continuum source.
                 # This is needed to avoid cases where another slit is shuffled onto
@@ -1080,56 +1098,53 @@ def fit_continuum(ad):
                 # bright and dominates spectrum, then it doesn't matter.
                 # All non-N&S data should pass this step, which checks whether 80%
                 # of the spectrum has SNR>2
-                spectrum = databox[np.argmax(col),:]
-                if np.percentile(spectrum,20) < 2*np.sqrt(np.median(varbox)):
-                    continue
-                
-                if 'NODANDSHUFFLE' in tags:
-                    # N&S; background should be close to zero
-                    bg = models.Const1D(0.)
-                    # Fix background=0 if slit is in region where sky-subtraction will occur 
-                    if center > ad.shuffle_pixels() // ad.detector_y_bin():
-                            bg.amplitude.fixed = True
-                else:
-                    # Not N&S; background estimated from image
-                    bg = models.Const1D(
-                            amplitude=np.median([data[center-ybox-bgbox:center-ybox],
-                            data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]], 
-                            dtype=np.float64))
-                g_init = models.Gaussian1D(amplitude=maxflux, mean=np.argmax(col), 
-                            stddev=init_width) + models.Gaussian1D(amplitude=-maxflux,
-                                mean=np.argmin(col), stddev=init_width) + bg
+                #spectrum = databox[np.argmax(col),:]
+                #if np.percentile(spectrum,20) < 2*np.sqrt(np.median(varbox)):
+                #    continue
+
                 # Set one profile to be +ve, one -ve, and widths equal
-                g_init.amplitude_0.min = 0.
-                g_init.amplitude_1.max = 0.
-                g_init.stddev_1.tied = lambda f: f.stddev_0
-                fit_g = fitting.LevMarLSQFitter()
+                m_init = models.Gaussian1D(amplitude=maxflux, mean=pixels[np.argmax(data)],
+                            stddev=init_width) + models.Gaussian1D(amplitude=-maxflux,
+                                mean=pixels[np.argmin(data)], stddev=init_width) + models.Const1D(0.)
+                m_init.amplitude_0.min = 0.
+                m_init.amplitude_1.max = 0.
+                m_init.stddev_1.tied = lambda f: f.stddev_0
+
+                if 'NODANDSHUFFLE' in tags and shuffle < length:
+                    # Fix background=0 if slit is in region where sky-subtraction will occur
+                    if spatial_slice.start >= shuffle and spatial_slice.stop <= shuffle * 2:
+                            m_init.amplitude_2.fixed = True
+                else:
+                    # force -ve profile to have zero amplitude (since there won't be one)
+                    m_init.amplitude_1 = 0.
+                    m_init.amplitude_1.fixed = True
+
+                fit_it = fitting.LevMarLSQFitter()
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    g = fit_g(g_init, np.arange(len(col)), col)
-                
-                #print g
-                #x = np.arange(len(col))
-                #plt.plot(x, col)
-                #plt.plot(x, g(x))
-                #plt.show()
-                if fit_g.fit_info['ierr']<5:
+                    m_final = fit_it(m_init, pixels, data)
+
+                if fit_it.fit_info['ierr'] < 5:
                     # This is kind of ugly and empirical; philosophy is that peak should
                     # be away from the edge and should be similar to the maximum
-                    if (g.amplitude_0 > 0.5*maxflux and
-                        g.mean_0 > 1 and g.mean_0 < len(col)-2):
-                        fwhm = abs(2*np.sqrt(2*np.log(2))*g.stddev_0)
+                    if (m_final.amplitude_0 > 0.5*maxflux and
+                        pixels.min()+1 < m_final.mean_0 < pixels.max()-1):
+                        fwhm = abs(2 * np.sqrt(2*np.log(2)) * m_final.stddev_0)
                         fwhm_list.append(fwhm)
-                        y_list.append(center)
-                        x_list.append(i)
-                        # Add a "weight" (multiply by 1. to convert to float
-                        # If only one spectrum, all weights will be basically the same
-                        if g.mean_1 > g.mean_0:
-                            weight_list.append(1.*max(g.mean_0,
-                                                      2*hwidth-g.mean_1))
+                        if dispaxis == 0:
+                            x_list.append(m_final.mean_0.value)
+                            y_list.append(coord)
                         else:
-                            weight_list.append(1.*max(g.mean_1,
-                                                      2*hwidth-g.mean_0))
+                            x_list.append(coord)
+                            y_list.append(m_final.mean_0.value)
+                        # Add a "weight" based on distance from edge
+                        # If only one spectrum, all weights will be basically the same
+                        if m_final.mean_1 > m_final.mean_0:
+                            weight_list.append(max(m_final.mean_0 - pixels.min(),
+                                                   pixels.max() - m_final.mean_1))
+                        else:
+                            weight_list.append(max(m_final.mean_1 - pixels.min(),
+                                                   pixels.max() - m_final.mean_0))
 
 
         # Now do something with the list of measurements
@@ -1138,8 +1153,6 @@ def fit_continuum(ad):
 
         table = Table([x_list, y_list, fwhm_pix, fwhm_arcsec, weight_list],
                     names=("x", "y", "fwhm", "fwhm_arcsec", "weight"))
-        #plt.hist(rec["fwhm_arcsec"], 10)
-        #plt.show()
 
         # Clip outliers in FWHM
         if len(table) >= 3:
