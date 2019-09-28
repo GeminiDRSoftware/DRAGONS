@@ -250,7 +250,7 @@ class AstroDataF2(AstroDataGemini):
         (list of) int (2)
             Dispersion axis.
         """
-        return 2 if 'SPECT' in self.tags else None
+        return 2
 
     @astro_data_descriptor
     def detector_x_offset(self):
