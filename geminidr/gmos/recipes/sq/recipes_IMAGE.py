@@ -57,3 +57,19 @@ def makeProcessedFringe(p):
     p.makeFringeFrame()
     p.storeProcessedFringe()
     return
+
+def alignAndStack(p):
+    """
+    This recipe stack already preprocessed data.
+
+    Parameters
+    ----------
+    p : PrimitivesBASEE object
+        A primitive set matching the recipe_tags.
+    """
+
+    p.detectSources()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames(zero=True)
+    return

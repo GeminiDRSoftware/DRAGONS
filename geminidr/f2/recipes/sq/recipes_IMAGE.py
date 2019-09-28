@@ -78,5 +78,21 @@ def makeSkyFlat(p):
     p.storeProcessedFlat()
     return
 
-
 _default = reduce
+
+
+def alignAndStack(p):
+    """
+    This recipe stack already preprocessed data.
+
+    Parameters
+    ----------
+    p : PrimitivesBASEE object
+        A primitive set matching the recipe_tags.
+    """
+
+    p.detectSources()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames()
+    return
