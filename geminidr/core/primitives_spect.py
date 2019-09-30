@@ -199,6 +199,7 @@ class Spect(PrimitivesBASE):
         orders = (spectral_order, spatial_order)
 
         for ad in adinputs:
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             for ext in ad:
                 self.viewer.display_image(ext, wcs=False)
                 self.viewer.width = 2
@@ -257,6 +258,16 @@ class Spect(PrimitivesBASE):
                         start=start, initial=initial_peaks, width=5, step=step,
                         nsum=nsum, max_missed=max_missed,
                         max_shift=max_shift, viewer=self.viewer)
+
+                # These coordinates need to be in the reference frame of a
+                # full-frame image, so modify the coordinates by the detector
+                # section
+                x1, x2, y1, y2 = ext.detector_section()
+                offsets = (x1 // xbin, y1 // ybin)
+                ref_coords = np.array([[coord + offset for coord in coords]
+                                        for coords, offset in zip(ref_coords, offsets)])
+                in_coords = np.array([[coord + offset for coord in coords]
+                                       for coords, offset in zip(in_coords, offsets)])
 
                 m_init = models.Chebyshev2D(x_degree=orders[1-dispaxis],
                                             y_degree=orders[dispaxis],
