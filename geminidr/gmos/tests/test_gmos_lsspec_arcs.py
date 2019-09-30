@@ -179,6 +179,11 @@ def plot_lines(ad, output_folder):
 
         fig.savefig(fig_name)
 
+        try:
+            os.chmod(fig_name, 775)
+        except PermissionError:
+            pass
+
 
 def plot_residuals(ad, output_folder):
     """
@@ -232,6 +237,11 @@ def plot_residuals(ad, output_folder):
                                     name, i, grating, central_wavelength))
 
         fig.savefig(fig_name)
+
+        try:
+            os.chmod(fig_name, 775)
+        except PermissionError:
+            pass
 
 
 def plot_non_linear_components(ad, output_folder):
@@ -293,6 +303,10 @@ def plot_non_linear_components(ad, output_folder):
 
         fig.savefig(fig_name)
 
+        try:
+            os.chmod(fig_name, 775)
+        except PermissionError:
+            pass
 
 @pytest.mark.gmosls
 class TestGmosArcProcessing:
