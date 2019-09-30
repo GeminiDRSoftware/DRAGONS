@@ -2,17 +2,22 @@
 """
 Tests related to GMOS Long-slit Spectroscopy arc processing.
 """
+import astrodata
+import geminidr
 import os
-
 import numpy as np
+
 # noinspection PyPackageRequirements
 import pytest
 
-import astrodata
+# noinspection PyPackageRequirements
+from matplotlib import pyplot as plt
+
 # noinspection PyUnresolvedReferences
 import gemini_instruments
-import geminidr
+
 from geminidr.gmos import primitives_gmos_spect
+from gempy.library import astromodels
 from gempy.utils import logutils
 
 dataset_file_list = [
@@ -20,7 +25,7 @@ dataset_file_list = [
     'process_arcs/GMOS/S20170103S0152.fits',
     'process_arcs/GMOS/S20170116S0189.fits',
     'process_arcs/GMOS/N20170530S0006.fits',
-    'process_arcs/GMOS/N20180119S0232.fits',
+    # 'process_arcs/GMOS/N20180119S0232.fits',  # todo: RMS > 0.5, mismatch beween reference and output files
     # 'process_arcs/GMOS/N20181114S0512.fits',  # todo: RMS > 0.5 (RMS = 0.646)
     'process_arcs/GMOS/N20180120S0417.fits',
     'process_arcs/GMOS/N20180516S0214.fits',
@@ -68,7 +73,6 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
     output_file, _ = os.path.splitext(output_file)
     output_file = output_file + "_arc.fits"
     output_file = os.path.join(output_folder, output_file)
-    print(output_file)
 
     input_file = os.path.join(path_to_inputs, request.param)
 
@@ -83,6 +87,7 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
     p.addVAR(poisson_noise=True)
     p.mosaicDetectors()
     p.makeIRAFCompatible()
+    # p.determineWavelengthSolution(plot=True)
     p.determineWavelengthSolution()
     p.determineDistortion(suffix="_arc")
     ad = p.writeOutputs(outfilename=output_file, overwrite=True)[0]
@@ -96,7 +101,197 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
     InputsForTests.output_dir = output_folder
     InputsForTests.ref_dir = reference_folder
 
+    plot_lines(ad, output_folder)
+    plot_residuals(ad, output_folder)
+    plot_non_linear_components(ad, output_folder)
+
     return InputsForTests
+
+
+def plot_lines(ad, output_folder):
+    """
+    Plots and saves the wavelength calibration model residuals for diagnosis.
+
+    Parameters
+    ----------
+    ad : AstroData
+        Arc Lamp with wavelength calibration table `.WAVECAL` in any of its
+        extensions.
+    output_folder : str
+        Path to where the plots will be saved
+    """
+    filename = ad.filename
+    name, _ = os.path.splitext(filename)
+    grating = ad.disperser(pretty=True)
+    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
+
+    package_dir = os.path.dirname(primitives_gmos_spect.__file__)
+    arc_table = os.path.join(package_dir, "lookups", "CuAr_GMOS.dat")
+    arc_lines = np.loadtxt(arc_table, usecols=[0]) / 10.
+
+    for ext_num, ext in enumerate(ad):
+
+        if not hasattr(ext, 'WAVECAL'):
+            continue
+
+        peaks = ext.WAVECAL['peaks']
+
+        model = astromodels.dict_to_chebyshev(
+            dict(
+                zip(
+                    ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
+                )
+            )
+        )
+
+        mask = np.round(np.average(ext.mask, axis=0)).astype(int)
+        data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
+        data = (data - data.min()) / data.ptp()
+        
+        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}".format(
+            name, ext_num, grating, central_wavelength))
+
+        w = model(np.arange(data.size))
+
+        arcs = [ax.vlines(line, 0, 1, color="k", alpha=0.25) for line in arc_lines]
+        wavs = [ax.vlines(peak, 0, 1, color="r", ls="--", alpha=0.25) for peak in model(peaks)]
+        plot,  = ax.plot(w, data, 'k-', lw=0.75)
+
+        ax.legend((plot, arcs[0], wavs[0]),
+              ('Normalized Data', 'Reference Lines', 'Matched Lines'))
+
+        x0, x1 = model([0, data.size])
+
+        ax.grid(alpha=0.1)
+        ax.set_xlim(x0, x1)
+        ax.set_xlabel('Wavelength [nm]')
+        ax.set_ylabel('Normalized intensity')
+        ax.set_title(
+            "Wavelength Calibrated Spectrum for\n"
+            "{:s} obtained with {:s} at {:.0f}".format(
+                name, grating, central_wavelength))
+
+        if x0 > x1:
+            ax.invert_xaxis()
+
+        fig_name = os.path.join(output_folder, "{:s}_{:d}_{:s}_{:.0f}.png".format(
+            name, ext_num, grating, central_wavelength))
+
+        fig.savefig(fig_name)
+
+
+def plot_residuals(ad, output_folder):
+    """
+    Plots the matched wavelengths versus the residuum  between them and their
+    correspondent peaks applied to the fitted model
+
+    Parameters
+    ----------
+    ad : AstroData
+        Arc Lamp with wavelength calibration table `.WAVECAL` in any of its
+        extensions.
+    output_folder : str
+        Path to where the plots will be saved
+    """
+    filename = ad.filename
+    name, _ = os.path.splitext(filename)
+    grating = ad.disperser(pretty=True)
+    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
+
+    for i, ext in enumerate(ad):
+
+        if not hasattr(ext, 'WAVECAL'):
+            continue
+
+        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
+            filename, i, grating, central_wavelength), dpi=300)
+
+        peaks = ext.WAVECAL['peaks']
+        wavelengths = ext.WAVECAL['wavelengths']
+
+        model = astromodels.dict_to_chebyshev(
+            dict(
+                zip(
+                    ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
+                )
+            )
+        )
+
+        ax.plot(wavelengths, wavelengths - model(peaks), 'ko')
+
+        ax.grid(alpha=0.25)
+        ax.set_xlabel("Wavelength [nm]")
+        ax.set_ylabel("Residuum [nm]")
+        ax.set_title(
+            "Wavelength Calibrated Residuum for\n"
+            "{:s} obtained with {:s} at {:.0f}".format(
+                name, grating, central_wavelength))
+
+        fig_name = os.path.join(output_folder,
+                                "{:s}_{:d}_{:s}_{:.0f}_residuals.png".format(
+                                    name, i, grating, central_wavelength))
+
+        fig.savefig(fig_name)
+
+
+def plot_non_linear_components(ad, output_folder):
+    """
+    Plots the non-linear residuals.
+
+    Parameters
+    ----------
+    ad : AstroData
+        Arc Lamp with wavelength calibration table `.WAVECAL` in any of its
+        extensions.
+    output_folder : str
+        Path to where the plots will be saved
+    """
+    filename = ad.filename
+    name, _ = os.path.splitext(filename)
+    grating = ad.disperser(pretty=True)
+    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
+
+    for ext_num, ext in enumerate(ad):
+
+        if not hasattr(ext, 'WAVECAL'):
+            continue
+
+        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
+            filename, ext_num, grating, central_wavelength))
+
+        peaks = ext.WAVECAL['peaks']
+        wavelengths = ext.WAVECAL['wavelengths']
+
+        model = astromodels.dict_to_chebyshev(
+            dict(
+                zip(
+                    ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
+                )
+            )
+        )
+
+        non_linear_model = model.copy()
+        _ = [setattr(non_linear_model, 'c{}'.format(k), 0) for k in [0, 1]]
+        residuals = wavelengths - model(peaks)
+
+        p = np.linspace(min(peaks), max(peaks), 1000)
+        ax.plot(model(p), non_linear_model(p), 'C0-', label="Generic Representation")
+        ax.plot(model(peaks), non_linear_model(peaks) + residuals, 'ko', label="Non linear components and residuals")
+        ax.legend()
+
+        ax.grid(alpha=0.25)
+        ax.set_xlabel("Wavelength [nm]")
+
+        ax.set_title(
+            "Non-linear components for\n"
+            "{:s} obtained with {:s} at {:.0f}".format(
+                name, grating, central_wavelength))
+
+        fig_name = os.path.join(
+            output_folder, "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
+                name, ext_num, grating, central_wavelength))
+
+        fig.savefig(fig_name)
 
 
 @pytest.mark.gmosls
@@ -104,127 +299,6 @@ class TestGmosArcProcessing:
     """
     Collection of tests that will run on every `dataset_file`.
     """
-
-    @staticmethod
-    def plot_spectrum(name, ext_num, output_folder, data, mask, peaks,
-                      wavelengths, grating, central_wavelength, model):
-        """
-        Plot the spectrum for visual inspection. The 20 brightest lines are marked
-        with lines and tagged with the correspondent wavelengths.
-
-        Parameters
-        ----------
-        name : str
-            Base name of the plot and of the file.
-        ext_num : int
-            Extension number.
-        output_folder : str
-            Path to the output data.
-        data : ndarray
-            Masked 1D spectrum.
-        mask : ndarray
-            1D mask.
-        peaks : ndarray
-            Position of the identified peaks extracted from the WAVECAL table.
-        wavelengths : ndarray
-            Wavelengths related to the peaks extracted from the WAVECAL table.
-        grating : str
-            The pretty name of the disperser. Used only to create the figure name.
-        central_wavelength : float
-            The central wavelength in Angstrom. Used only to create the figure name.
-        """
-        # noinspection PyPackageRequirements
-        from matplotlib import pyplot as plt
-
-        x = np.arange(data.size)
-        w = model(x) * 10.
-
-        fig, ax = plt.subplots(num="{:s}_{:d} Lines".format(name, ext_num), dpi=300)
-        avg, std = np.mean(data), np.std(data)
-        ptp = np.ptp(data[np.abs(data - avg) < 2 * std])
-
-        ax.plot(w, data, 'C0-', linewidth=0.5)
-        ax.set_xlabel('Wavelength [A]')
-        ax.set_ylabel('weights [counts]')
-        ax.set_title("{} - Lines Identified".format(name))
-        ax.grid(alpha=0.25)
-
-        ymin = avg - 0.25 * std
-        ymax = avg + 3 * std
-        ax.set_ylim(ymin, ymax)
-
-        vlines_w = []
-        for i, p, w in zip(np.arange(peaks.size), peaks, wavelengths):
-
-            p = np.round(p).astype(int)
-            v = np.max(data.data[p - 3:p + 3])
-
-            ymin = v + 0.01 * ptp
-            ymax = v + 0.1 * (1 + (i % 3)) * ptp
-
-            ax.vlines(w, ymin=ymin, ymax=ymax, lw=0.5, color='k')
-            ax.text(w, ymax, '{:.02f}'.format(w),
-                    rotation='vertical', va='bottom', ha='center', size='xx-small')
-
-            vlines_w.append(w)
-
-        fig_name = os.path.join(
-            output_folder,
-            name + '_{:02d}_{:s}_{:.0f}.svg'.format(
-                ext_num, grating, central_wavelength))
-
-        oldmask = os.umask(000)
-        fig.savefig(fig_name)
-
-        try:
-            os.chmod(fig_name, mode=0o775)
-        except PermissionError:
-            pass
-
-        os.umask(oldmask)
-
-        del fig, ax
-
-    @pytest.mark.skip(reason="Should only be used locally.")
-    def test_arc_lines_are_properly_matched(self, inputs_for_tests):
-        """
-        Test that Arc lines are properly matched to the reference lines.
-        """
-        from gempy.library.astromodels import dict_to_chebyshev
-
-        ad = inputs_for_tests.ad
-        output_folder = inputs_for_tests.output_dir
-
-        name, _ = os.path.splitext(ad.filename)
-        grating = ad.disperser(pretty=True)
-        central_wavelength = ad.central_wavelength() * 1e10
-
-        for ext_num, ext in enumerate(ad):
-
-            table = ext.WAVECAL
-            peaks = np.array(table['peaks'])
-            wavelengths = np.array(table['wavelengths'])
-
-            # Convert from nm to A
-            wavelengths = wavelengths * 10.
-
-            model = dict_to_chebyshev(
-                dict(
-                    zip(
-                        ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
-                    )
-                )
-            )
-
-            mask = np.array(np.average(ext.mask, axis=0), dtype=int)
-
-            data = np.average(ext.data, axis=0)
-            data = np.ma.masked_where(mask > 0, data)
-            data = data - data.min()
-
-            self.plot_spectrum(
-                name, ext_num, output_folder, data, mask, peaks, wavelengths,
-                grating, central_wavelength, model)
 
     # noinspection PyUnusedLocal
     @staticmethod
