@@ -271,8 +271,8 @@ class Spect(PrimitivesBASE):
 
                 m_init = models.Chebyshev2D(x_degree=orders[1-dispaxis],
                                             y_degree=orders[dispaxis],
-                                            x_domain=[0, ext.shape[1] - 1],
-                                            y_domain=[0, ext.shape[0] - 1])
+                                            x_domain=[offsets[0], offsets[0]+ext.shape[1]-1],
+                                            y_domain=[offsets[1], offsets[1]+ext.shape[0]-1])
                 # Find model to transform actual (x,y) locations to the
                 # value of the reference pixel along the dispersion axis
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
