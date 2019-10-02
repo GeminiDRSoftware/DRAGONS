@@ -305,3 +305,6 @@ process_arcs/N20170530S0006.fits
 process_arcs/N20180119S0232.fits
 process_arcs/N20181114S0512.fits
 process_arcs/N20180120S0417.fits
+
+# gemini_tools things
+gt/slit_images/N20180118S0344.fits
