@@ -8,10 +8,10 @@ Metadata and Headers
 
 **Try it yourself**
 
-Download the data package if you wish to follow along and run the
+Download the data package (:ref:`datapkg`) if you wish to follow along and run the
 examples.  Then ::
 
-    $ cd <path>/dragons_datapkg-v1.0/playground
+    $ cd <path>/ad_usermanual/playground
     $ python
 
 You need to import Astrodata and the Gemini instrument configuration package.
@@ -36,14 +36,14 @@ For Gemini instruments, that package is named ``gemini_instruments``.
 For example, if the user is interested to know the effective filter used
 for an observation, normally one needs to know which specific keyword or
 set of keywords to look at for that instrument.  However, once the concept
-of "filter" is coded as a Descriptor, the use only needs to call the
+of "filter" is coded as a Descriptor, the user only needs to call the
 ``filter_name()`` descriptor to retrieve the information.
 
 The Descriptors are closely associated with the Astrodata Tags.  In fact,
 they are implemented in the same ``AstroData`` class as the tags.  Once
 the specific ``AstroData`` class is selected (upon opening the file), all
 the tags and descriptors for that class are defined.  For example, all the
-descriptor functions or GMOS data, ie. the function that maps a descriptor
+descriptor functions of GMOS data, ie. the functions that map a descriptor
 concept to the actual header content, are defined in the ``AstroDataGmos``
 class.
 
@@ -61,7 +61,7 @@ file and all the descriptors are ready to be used.
 To get the list of descriptors available for an ``AstroData`` object::
 
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
-    >>> astrodata.descriptor_list(ad)
+    >>> ad.descriptors
     ('airmass', 'amp_read_area', 'ao_seeing', ...
       ...)
 
@@ -81,7 +81,7 @@ Accessing Metadata
 Accessing Metadata with Descriptors
 -----------------------------------
 Whenever possible the Descriptors should be used to get information from
-headers.  This allows fro maximum re-usability of the code as it will then
+headers.  This allows for maximum re-usability of the code as it will then
 work on any datasets with an ``AstroData`` class.
 
 Here are a few examples using Descriptors::
@@ -190,8 +190,8 @@ follow ::
 Updating, Adding and Deleting Metadata
 ======================================
 Header cards can be updated, added to, or deleted from the headers.  The PHU
-and the extensions headers are again accessed in a slightly different way
-with ``phu`` and ``hdr``, respectively, but otherwise identical.
+and the extensions headers are again accessed in a mostly identical way
+with ``phu`` and ``hdr``, respectively.
 
 ::
 
@@ -226,8 +226,8 @@ package, not in ``astrodata``.  For example, for Gemini instruments, all the
 various ``AstroData`` classes are contained in the ``gemini_instruments``
 package.
 
-An Astrodata Descriptor is a function withing the instrument's ``AstroData``
-class.  The descriptor function is distinguised from normal functions by
+An Astrodata Descriptor is a function within the instrument's ``AstroData``
+class.  The descriptor function is distinguished from normal functions by
 applying the ``@astro_data_descriptor`` decorator to it.  The descriptor
 function returns the value(s) using a Python type, ``int``, ``float``,
 ``string``, ``list``; it depends on the value being returned.  There is no

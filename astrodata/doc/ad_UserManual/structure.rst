@@ -17,6 +17,15 @@ The internal structure of the |AstroData| object makes uses of
 :class:`astropy.io.fits.Header`, the latter simply because it is a
 convenient ordered dictionary.
 
+**Try it yourself**
+
+Download the data package (:ref:`datapkg`) if you wish to follow along and run the
+examples.  Then ::
+
+    $ cd <path>/ad_usermanual/playground
+    $ python
+
+
 Global vs Extension-specific
 ============================
 At the very top level, the structure is divided in two types of information.
@@ -25,11 +34,14 @@ globally, for example the information that would be stored in a FITS Primary
 Header Unit, a table from a catalog that matches the RA and DEC of the field,
 etc.  In the second category, there is the information specific to individual
 science pixel extensions, for example the gain of the amplifier, the data
-itself, the error on those data, etc.
+themselves, the error on those data, etc.
 
 Let us look at an example.  The :meth:`~astrodata.AstroData.info` method shows
 the content of the |AstroData| object and its organization, from the user's
 perspective.::
+
+    >>> import astrodata
+    >>> import gemini_instruments
 
     >>> ad = astrodata.open('../playdata/N20170609S0154_varAdded.fits')
     >>> ad.info()
