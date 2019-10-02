@@ -24,16 +24,19 @@ from gempy.library import astromodels
 from gempy.utils import logutils
 
 dataset_file_list = [
-    'process_arcs/GMOS/S20170116S0189.fits',
-    'process_arcs/GMOS/N20170530S0006.fits',
-    # 'process_arcs/GMOS/N20180119S0232.fits',  # todo: RMS > 0.5, mismatch beween reference and output files
-    # 'process_arcs/GMOS/N20181114S0512.fits',  # todo: RMS > 0.5 (RMS = 0.646)
-    'process_arcs/GMOS/N20180120S0417.fits',
-    'process_arcs/GMOS/N20180516S0214.fits',
-    # 'process_arcs/GMOS/S20130218S0126.fits',  # todo: Breaks p.determineWavelengthSolution()
-    'process_arcs/GMOS/S20100126S0070.fits',  # B600:0.500 EEV
-    'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 E2V
-    'process_arcs/GMOS/S20170103S0152.fits',
+    'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
+    'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
+    'process_arcs/GMOS/N20170530S0006.fits',  # B600:0.520 HAM
+    'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
+    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 and solution mismatch
+    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
+    'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
+    'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
+    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
+    'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
+    'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
+    'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
+    'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM
 ]
 
 
