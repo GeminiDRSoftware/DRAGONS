@@ -32,7 +32,7 @@ print(' Dragons path: {}\n'.format(dragons_path))
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - GSAOI Data Reduction'
-copyright = 'Gemini Observatory (AURA), 2019'
+copyright = '2019, Association of Universities for Research in Astronomy'
 author = 'Bruno C. Quint'
 
 # The short X.Y version

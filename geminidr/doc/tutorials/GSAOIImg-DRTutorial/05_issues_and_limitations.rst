@@ -18,6 +18,13 @@ an "Out of memory" crash happens to you, if possible for your
 observation sequence, try to run the pipeline on fewer images at the time,
 like for each dither pattern sequence separately.
 
+Then to align and stack the pieces, run the ``alignAndStack`` recipe:
+
+.. code-block:: bash
+
+    $ reduce @list_of_stacks -r alignAndStack
+
+
 
 .. _double_messaging:
 

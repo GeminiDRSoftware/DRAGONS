@@ -21,8 +21,8 @@ get started.
 While the example cannot possibly cover all situations, it will help you get
 acquainted with the reduction of GSAOI data with DRAGONS. We
 encourage you to look at the :ref:`tips_and_tricks` and
- :ref:`issues_and_limitations` chapters to learn more about GSAOI data
- reduction.
+:ref:`issues_and_limitations` chapters to learn more about GSAOI data
+reduction.
 
 DRAGONS installation comes with a set of handful scripts that are used to
 reduce astronomical data. The most important script is called
@@ -278,7 +278,7 @@ flat field is still valid will crop it to match the ROIs.
 
     $ reduce @std_9132.list
 
-To stack, the tool ``disco-stu`` is needed for GSAOI.  It is discussed later
+To stack, the tool ``disco_stu`` is needed for GSAOI.  It is discussed later
 in this chapter.
 
 ::
@@ -346,21 +346,21 @@ Stack Sky-Subtracted Science Images
 The final step is to stack the images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. The tool for distortion correction and image stacking is
-``disco-stu``.
+``disco_stu``.
 
-.. note:: ``disco-stu`` is installed with conda when the standard Gemini
+.. note:: ``disco_stu`` is installed with conda when the standard Gemini
           software installation instructions are followed. To install after the
           fact::
 
-            conda install disco-stu
+            conda install disco_stu
 
 
-The simplest use of ``disco-stu`` is to run the command ``disco`` on the
+The simplest use of ``disco_stu`` is to run the command ``disco`` on the
 files to be stacked.
 
 .. code-block:: bash
 
-   $ disco *_skySubtracted.fits --no_skysub -o my_Kshort_stack.fits
+   $ disco `dataselect *_skySubtracted.fits --expr 'observation_class=="science"'` --no_skysub -o my_Kshort_stack.fits
 
 
 By default, ``disco`` will write the output file as ``disco_stack.fits``, the
@@ -372,10 +372,10 @@ it from the data.  We have an extended source with no "sky" area to speak
 of.  We need to turn this behavior off, hence the ``--no_skysub`` flag added
 to the command.
 
-For absolute distortion correction and astrometry, ``disco-stu`` can use a
+For absolute distortion correction and astrometry, ``disco_stu`` can use a
 reference catalog provided by the user.  Without a reference catalog, like
 above, only the relative distortion between the frames is accounted for.  For
-more information about ``disco-stu`` see the ``disco_stu.pdf`` manual in
+more information about ``disco_stu`` see the ``disco_stu.pdf`` manual in
 ``$CONDA_PREFIX/share/disco_stu``.
 
 The final image is shown below.

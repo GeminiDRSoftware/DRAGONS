@@ -66,8 +66,6 @@ it will not break anything.
 
 
 .. todo @bquint: the gempy auto-api is not being generated anywhere.
-.. todo:: @bquint the gempy auto-api is not being generated anywhere. Find a
-    place for it.
 
 :mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
 darks, the flats and the science observations. The
@@ -262,13 +260,13 @@ the local calibration database will be fetched automatically.
     reduce_std.runr()
 
 For stacking the sky-subtracted standard star images, the easiest way is
-probably to use ``disco-stu``'s command line interface as follow:
+probably to use ``disco_stu``'s command line interface as follow:
 
 ::
 
     $ disco `dataselect *_skySubtracted.fits --expr='observation_class=="partnerCal"'`
 
-If you really want or need to run ``disco-stu``'s API, see the example later
+If you really want or need to run ``disco_stu``'s API, see the example later
 in this chapter where we do just that for the science frames.
 
 
@@ -303,13 +301,13 @@ Stack Sky-subtracted Science Images
 The final step is to stack the images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
 before stacking. The tool for distortion correction and image stacking is
-``disco-stu``.
+``disco_stu``.
 
-.. note:: ``disco-stu`` is installed with conda when the standard Gemini
+.. note:: ``disco_stu`` is installed with conda when the standard Gemini
           software installation instructions are followed. To install after the
           fact::
 
-            conda install disco-stu
+            conda install disco_stu
 
 This package was created to be accessed via command line. Because of that,
 the API is not the most polished, and using it requires a fair number of steps.
@@ -364,7 +362,7 @@ We now create objects of ``MatchInfo`` class:
     )
 
 Finally, we call the :func:`~disco_stu.disco.disco` function and pass the
-position arguments.
+arguments.
 
 .. code-block:: python
     :linenos:
