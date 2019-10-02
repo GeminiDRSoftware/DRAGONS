@@ -112,17 +112,44 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
     plot_residuals(ad, output_folder)
     plot_non_linear_components(ad, output_folder)
 
-    tar_name = os.path.join(output_folder, "test_gmos_lsspec_arcs.tar.gz")
-    with tarfile.open(tar_name, "w:gz") as tar:
-        for _file in glob.glob(os.path.join(output_folder, "*.png")):
-            tar.add(_file)
-    try:
-        os.chmod(tar_name, 0o775)
-    except PermissionError:
-        warnings.warn(
-            "Failed to update permissions for file: {}".format(tar_name))
+    create_tarfile_with_plots(output_folder)
 
     return InputsForTests
+
+
+def create_tarfile_with_plots(output_folder):
+    """
+    Created a .tar.gz file using the plots generated here so Jenkins can deliver
+    it as an artifact.
+
+    Parameters
+    ----------
+    output_folder : str
+        Path to where the PNG files are generated
+    """
+    # Runs only from inside Jenkins
+    if 'BUILD_ID' in os.environ:
+
+        tar_name = os.path.join(
+            output_folder, "test_gmos_lsspec_arcs.tar.gz".format())
+
+        with tarfile.open(tar_name, "w:gz") as tar:
+            for _file in glob.glob(os.path.join(output_folder, "*.png")):
+                tar.add(_file)
+
+        target_dir = "plots/"
+        target_file = os.path.join(target_dir, os.path.basename(tar_name))
+
+        os.makedirs(target_dir, exist_ok=True)
+        os.rename(tar_name, target_file)
+
+        for _file in [tar_name, target_file]:
+
+            try:
+                os.chmod(_file, 0o775)
+            except PermissionError:
+                warnings.warn(
+                    "Failed to update permissions for file: {}".format(_file))
 
 
 def plot_lines(ad, output_folder):
