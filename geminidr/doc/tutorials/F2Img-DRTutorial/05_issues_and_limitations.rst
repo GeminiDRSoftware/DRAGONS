@@ -20,7 +20,7 @@ like for each dither pattern sequence separately.
 
 Then to align and stack the pieces, run the ``alignAndStack`` recipe:
 
-.. code-block:: python
+.. code-block:: bash
 
     $ reduce @list_of_stacks -r alignAndStack
 
@@ -31,10 +31,10 @@ Emission from PWFS2 guide probe
 ===============================
 The PWFS2 guide probe leaves a signature on imaging data that cannot be
 removed. Ideally, one would be using the OIWFS, the On-Instrument Wave Front
-Sensor, but at the time of this writing, it is not yet available, (see
-`F2 instrument status note <https://www.gemini.edu/sciops/instruments/flamingos2/status-and-availability>`_
-for Sep. 5, 2003). The effect of the PWFS2 guide probe will in many cases
-compromise photometry in the region affected.
+Sensor, but there has been issues with it.  See
+`<https://www.gemini.edu/sciops/instruments/flamingos2/status-and-availability>`_
+for the current status of the instrument. The effect of the PWFS2 guide probe
+will in many cases compromise photometry in the region affected.
 
 .. _double_messaging:
 

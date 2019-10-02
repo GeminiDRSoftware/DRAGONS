@@ -29,7 +29,7 @@ that case both flats (lamp-off only for K-band) and darks need
 to be fed to "|reduce|". The darks' exposure time must match that
 of the flats. The first input file to "|reduce|" must be a flat
 for the correct recipe library to be selected. After that the
-software will still sort out how to use the inputs appropriately to
+software will sort out how to use the inputs appropriately to
 produce the flat. For example::
 
     $ reduce @flats_K.list @darks_for_flats.list

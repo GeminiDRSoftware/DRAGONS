@@ -74,8 +74,7 @@ it will not break anything.
 
 
 .. todo @bquint: the gempy auto-api is not being generated anywhere.
-.. todo:: @bquint the gempy auto-api is not being generated anywhere. Find a
-    place for it.
+
 
 :mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
 darks, the flats and the science observations. The
@@ -250,8 +249,8 @@ stored in the Reduce instance. The calibration service expects the name of a
 file on disk.
 
 .. code-block:: python
-   :linenos:
-   :lineno-start: 41
+    :linenos:
+    :lineno-start: 41
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(dark_files_120s)
@@ -260,7 +259,7 @@ file on disk.
     caldb.add_cal(reduce_darks.output_filenames[0])
 
 The :class:`~recipe_system.reduction.coreReduce.Reduce` class is our reduction
-"controller". This is were we collect all the information necessary for
+"controller". This is where we collect all the information necessary for
 the reduction. In this case, the only information necessary is the list of
 input files which we add to the ``files`` attribute. The
 :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method is where the
