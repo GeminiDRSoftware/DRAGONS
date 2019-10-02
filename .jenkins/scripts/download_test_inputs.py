@@ -122,7 +122,10 @@ def download_non_existing_test_files(path, list_of_files):
 
             if _filename.startswith('#'):
                 print(" {}".format(_filename.strip()))
-                continue
+
+            if '#' in current_file:
+                current_file = current_file.split('#')[0]
+                current_file = current_file.strip()
 
             if os.path.exists(current_file):
                 print(' Skip existing file: {:s}'.format(current_file))

@@ -31,8 +31,9 @@ dataset_file_list = [
     'process_arcs/GMOS/N20180120S0417.fits',
     'process_arcs/GMOS/N20180516S0214.fits',
     # 'process_arcs/GMOS/S20130218S0126.fits',  # todo: Breaks p.determineWavelengthSolution()
+    'process_arcs/GMOS/S20100126S0070.fits',  # B600:0.500 EEV
     'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 E2V
-    'process_arcs/GMOS/S20170103S0152.fits',  #
+    'process_arcs/GMOS/S20170103S0152.fits',
 ]
 
 
