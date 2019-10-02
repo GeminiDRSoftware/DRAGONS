@@ -9,8 +9,6 @@ standard_library.install_aliases()
 from builtins import zip
 from concurrent.futures import TimeoutError
 # ------------------------------------------------------------------------------
-__version__ = '2.0 (beta)'
-# ------------------------------------------------------------------------------
 import os
 import sys
 import json

@@ -7,7 +7,9 @@
 from __future__ import print_function
 from builtins import str
 from builtins import object
-__version__ = "v2.0 (beta) "
+
+from astrodata import version
+__version__ = version()
 # ------------------------------------------------------------------------------
 desc = """
 Description:

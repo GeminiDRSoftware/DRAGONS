@@ -5,7 +5,6 @@
 # ------------------------------------------------------------------------------
 from builtins import range
 from builtins import object
-__version__ = 'eventsManager, v(new hope)'
 # ------------------------------------------------------------------------------
 import json
 import time

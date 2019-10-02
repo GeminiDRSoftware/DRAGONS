@@ -5,8 +5,6 @@
 #                                                             gemini_instruments
 #                                                       hokupaa_QUIRC.adclass.py
 # ------------------------------------------------------------------------------
-__version__      = "0.1 (beta)"
-# ------------------------------------------------------------------------------
 
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor

@@ -5,7 +5,6 @@
 # ------------------------------------------------------------------------------
 from builtins import range
 
-__version__ = '2.0 (beta)'
 # ------------------------------------------------------------------------------
 """
 This gemini_catalog_client module contains code to access various catalogs
