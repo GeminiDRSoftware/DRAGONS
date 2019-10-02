@@ -233,7 +233,11 @@ class UnivariateSplineWithOutlierRemoval(object):
             if order is not None:
                 # Determine actual order to apply based on fraction of unmasked
                 # pixels, and place the knots equally among only the good pixels
+                # Unmask everything if there are too few good pixels
                 this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
+                if this_order == 0:
+                    full_mask = np.zeros(x.shape, dtype=bool)
+                    this_order = order
                 #knots = np.linspace(x[np.argmin(full_mask)],
                 #                    x[::-1][np.argmin(full_mask[::-1])],
                 #                    this_order + 1)[1:-1]

@@ -1464,10 +1464,6 @@ class Spect(PrimitivesBASE):
                 for i, (data_row, mask_row, weight_row) in enumerate(zip(data, mask,
                                                                          sky_weights)):
                     sky = np.ma.masked_array(data_row, mask=mask_row)
-                    # Need at least 4 good pixels for a spline.
-                    good_pixels = np.nonzero(mask_row == 0)[0]
-                    if len(good_pixels) < 4:
-                        sky.mask = np.ma.nomask
                     if weight_row.sum() == 0:
                         weight_row = None
 
