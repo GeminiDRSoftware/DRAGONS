@@ -378,6 +378,12 @@ above, only the relative distortion between the frames is accounted for.  For
 more information about ``disco_stu`` see the ``disco_stu.pdf`` manual in
 ``$CONDA_PREFIX/share/disco_stu``.
 
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
+
+
 The final image is shown below.
 
 .. figure:: _static/img/my_Kshort_stack.png

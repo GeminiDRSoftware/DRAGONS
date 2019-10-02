@@ -306,6 +306,11 @@ the dark on the command line.  The flat will be retrieved automatically.
     reduce_target.ucals = ucals_dict
     reduce_target.runr()
 
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
+
 Below are a raw image (top) and the final stacked image (bottom).  The stack
 keeps all the pixels and is never cropped to only the common area. Of course
 the areas covered by less than the full stack of images will have a lower

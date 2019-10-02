@@ -328,6 +328,12 @@ The master dark and the master flat will be retrieved automatically from the
 local calibration database. Again, the user BPM needs to be specified on
 the command line.
 
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
+
+
 ::
 
     reduce @target.lis -p addDQ:user_bpm=N20160102S0373_bpm.fits skyCorrect:scale_sky=False
