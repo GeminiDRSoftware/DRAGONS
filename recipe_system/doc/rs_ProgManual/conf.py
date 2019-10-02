@@ -37,7 +37,7 @@ else:
 # -- Project information -----------------------------------------------------
 
 project = u"DRAGONS - Recipe System Programmer's Manual"
-copyright = u'Gemini Observatory (AURA), 2018'
+copyright = u'2019, Association of Universities for Research in Astronomy'
 
 author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 
@@ -45,8 +45,8 @@ author = 'Kenneth Anderson, Kathleen Labrie, Bruno Quint'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-version = '2.2'  # The short X.Y version.
-release = '2.2.0'  # The full version, including alpha/beta/rc tags.
+version = '2.1'  # The short X.Y version.
+release = '2.1.0'  # The full version, including alpha/beta/rc tags.
 
 
 # -- General configuration -----------------------------------------------------
@@ -100,7 +100,7 @@ master_doc = 'index'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-#today = ''
+today = 'November 2019'
 
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
@@ -238,7 +238,7 @@ latex_documents = [
   ('index-latex',
    'RecipeSystemProgManual.tex',
    "DRAGONS - Recipe System Programmer's Manual",
-   'Kenneth Anderson', 'manual'),
+   'Kenneth Anderson, Kathleen Labrie, Bruno Quint', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -272,7 +272,7 @@ man_pages = [
     ('index',
      'recipesystemprogmanual',
      u"DRAGONS - Recipe System Programmer's Manual",
-     [u'Kenneth Anderson'], 1)
+     [u'Kenneth Anderson, Kathleen Labrie, Bruno Quint'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -288,7 +288,7 @@ texinfo_documents = [
   ('index',
    'RecipeSystemProgManual',
    u"DRAGONS - Recipe System Programmer's Manual",
-   u'Kenneth Anderson',
+   u'Kenneth Anderson, Kathleen Labrie, Bruno Quint',
    'RecipeSystemProgManual',
    'Recipe System programming "how to"',
    'Miscellaneous'),

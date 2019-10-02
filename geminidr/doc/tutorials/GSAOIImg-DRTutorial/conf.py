@@ -80,6 +80,13 @@ master_doc = 'index'
 # Usually you set "language" from the command line for these cases.
 language = None
 
+# There are two options for replacing |today|: either, you set today to some
+# non-false value, then it is used:
+today = 'November 2019'
+# Else, today_fmt is used as the format for a strftime call.
+#today_fmt = '%B %d, %Y'
+
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
