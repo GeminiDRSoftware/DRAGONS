@@ -143,13 +143,11 @@ def create_tarfile_with_plots(output_folder):
         os.makedirs(target_dir, exist_ok=True)
         os.rename(tar_name, target_file)
 
-        for _file in [tar_name, target_file]:
-
-            try:
-                os.chmod(_file, 0o775)
-            except PermissionError:
-                warnings.warn(
-                    "Failed to update permissions for file: {}".format(_file))
+        try:
+            os.chmod(target_file, 0o775)
+        except PermissionError:
+            warnings.warn(
+                "Failed to update permissions for file: {}".format(target_file))
 
 
 def plot_lines(ad, output_folder):
