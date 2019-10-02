@@ -4,8 +4,11 @@ Tests related to GMOS Long-slit Spectroscopy arc processing.
 """
 import astrodata
 import geminidr
+import glob
 import os
 import numpy as np
+import tarfile
+import warnings
 
 # noinspection PyPackageRequirements
 import pytest
@@ -21,14 +24,15 @@ from gempy.library import astromodels
 from gempy.utils import logutils
 
 dataset_file_list = [
-    # 'process_arcs/GMOS/S20130218S0126.fits',  # todo: Breaks p.determineWavelengthSolution()
-    'process_arcs/GMOS/S20170103S0152.fits',
     'process_arcs/GMOS/S20170116S0189.fits',
     'process_arcs/GMOS/N20170530S0006.fits',
     # 'process_arcs/GMOS/N20180119S0232.fits',  # todo: RMS > 0.5, mismatch beween reference and output files
     # 'process_arcs/GMOS/N20181114S0512.fits',  # todo: RMS > 0.5 (RMS = 0.646)
     'process_arcs/GMOS/N20180120S0417.fits',
     'process_arcs/GMOS/N20180516S0214.fits',
+    # 'process_arcs/GMOS/S20130218S0126.fits',  # todo: Breaks p.determineWavelengthSolution()
+    'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 E2V
+    'process_arcs/GMOS/S20170103S0152.fits',  #
 ]
 
 
@@ -101,9 +105,22 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
     InputsForTests.output_dir = output_folder
     InputsForTests.ref_dir = reference_folder
 
+    for _file in glob.glob(os.path.join(output_folder, "*.png")):
+        os.remove(_file)
+
     plot_lines(ad, output_folder)
     plot_residuals(ad, output_folder)
     plot_non_linear_components(ad, output_folder)
+
+    tar_name = os.path.join(output_folder, "test_gmos_lsspec_arcs.tar.gz")
+    with tarfile.open(tar_name, "w:gz") as tar:
+        for _file in glob.glob(os.path.join(output_folder, "*.png")):
+            tar.add(_file)
+    try:
+        os.chmod(tar_name, 0o775)
+    except PermissionError:
+        warnings.warn(
+            "Failed to update permissions for file: {}".format(tar_name))
 
     return InputsForTests
 
@@ -134,7 +151,7 @@ def plot_lines(ad, output_folder):
         if not hasattr(ext, 'WAVECAL'):
             continue
 
-        peaks = ext.WAVECAL['peaks']
+        peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
 
         model = astromodels.dict_to_chebyshev(
             dict(
@@ -149,7 +166,7 @@ def plot_lines(ad, output_folder):
         data = (data - data.min()) / data.ptp()
         
         fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}".format(
-            name, ext_num, grating, central_wavelength))
+            name, ext_num, grating, central_wavelength), dpi=300)
 
         w = model(np.arange(data.size))
 
@@ -180,9 +197,12 @@ def plot_lines(ad, output_folder):
         fig.savefig(fig_name)
 
         try:
-            os.chmod(fig_name, 775)
+            os.chmod(fig_name, 0o775)
         except PermissionError:
-            pass
+            warnings.warn(
+                "Failed to update permissions for file: {}".format(fig_name))
+
+        del fig, ax
 
 
 def plot_residuals(ad, output_folder):
@@ -211,7 +231,7 @@ def plot_residuals(ad, output_folder):
         fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
             filename, i, grating, central_wavelength), dpi=300)
 
-        peaks = ext.WAVECAL['peaks']
+        peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
         wavelengths = ext.WAVECAL['wavelengths']
 
         model = astromodels.dict_to_chebyshev(
@@ -222,7 +242,7 @@ def plot_residuals(ad, output_folder):
             )
         )
 
-        ax.plot(wavelengths, wavelengths - model(peaks), 'ko')
+        ax.plot(wavelengths, wavelengths - model(peaks - 1), 'ko')
 
         ax.grid(alpha=0.25)
         ax.set_xlabel("Wavelength [nm]")
@@ -239,9 +259,12 @@ def plot_residuals(ad, output_folder):
         fig.savefig(fig_name)
 
         try:
-            os.chmod(fig_name, 775)
+            os.chmod(fig_name, 0o775)
         except PermissionError:
-            pass
+            warnings.warn(
+                "Failed to update permissions for file: {}".format(fig_name))
+
+        del fig, ax
 
 
 def plot_non_linear_components(ad, output_folder):
@@ -267,9 +290,9 @@ def plot_non_linear_components(ad, output_folder):
             continue
 
         fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
-            filename, ext_num, grating, central_wavelength))
+            filename, ext_num, grating, central_wavelength), dpi=300)
 
-        peaks = ext.WAVECAL['peaks']
+        peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
         wavelengths = ext.WAVECAL['wavelengths']
 
         model = astromodels.dict_to_chebyshev(
@@ -301,12 +324,17 @@ def plot_non_linear_components(ad, output_folder):
             output_folder, "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
                 name, ext_num, grating, central_wavelength))
 
+
         fig.savefig(fig_name)
 
         try:
-            os.chmod(fig_name, 775)
+            os.chmod(fig_name, 0o775)
         except PermissionError:
-            pass
+            warnings.warn(
+                "Failed to update permissions for file: {}".format(fig_name))
+
+        del fig, ax
+
 
 @pytest.mark.gmosls
 class TestGmosArcProcessing:
