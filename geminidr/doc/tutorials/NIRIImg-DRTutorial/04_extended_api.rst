@@ -63,7 +63,7 @@ Importing Libraries
 
     import glob
 
-    # DRAGONS imports
+    import astrodata
     from recipe_system.reduction.coreReduce import Reduce
     from recipe_system import cal_service
     from gempy.adlibrary import dataselect
@@ -219,18 +219,18 @@ Let us create our two lists now.  The filenames will be stored in the variables
     :linenos:
     :lineno-start: 21
 
-    dark1s = dataselect.seclect_data(
+    darks1s = dataselect.select_data(
         all_files,
         ['DARK'],
         [],
-        dataselect.expr_parser('exposure_time=1')
+        dataselect.expr_parser('exposure_time==1')
     )
 
-    dark20s = dataselect.seclect_data(
+    darks20s = dataselect.select_data(
         all_files,
         ['DARK'],
         [],
-        dataselect.expr_parser('exposure_time=20')
+        dataselect.expr_parser('exposure_time==20')
     )
 
 .. note::  All expression need to be processed with ``dataselect.expr_parser``.
@@ -309,7 +309,7 @@ name of a file on disk.
 
     caldb.add_cal(reduce_darks.output_filenames[0])
 
-The ``Reduce`` class is our reduction "controller".  This is were we collect
+The ``Reduce`` class is our reduction "controller".  This is where we collect
 all the information necessary for the reduction.  In this case, the only
 information necessary is the list of input files which we add to the
 ``files`` attribute.  The ``Reduce.runr{}`` method is where the
@@ -396,7 +396,7 @@ the input data.
 Standard Star
 =============
 The standard star is reduced more or less the same way as the science
-target (next section) except that darks frames are not obtained for standard
+target (next section) except that dark frames are not obtained for standard
 star observations.  Therefore the dark correction needs to be turned off.
 
 The processed flat field that we added earlier to the local calibration
@@ -423,8 +423,7 @@ this particular case, it results in an over-subtraction of the sky frame.
 
 The sky frame comes from off-target sky observations.  We feed the pipeline
 all the on-target and off-target frames.  The software will split the
-on-target and the off-target appropriately as long as the first frame is
-on-target.
+on-target and the off-target appropriately.
 
 The master dark and the master flat will be retrieved automatically from the
 local calibration database. Again, the user BPM needs to be specified as the

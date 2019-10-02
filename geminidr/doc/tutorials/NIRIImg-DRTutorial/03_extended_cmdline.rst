@@ -322,8 +322,7 @@ this particular case*, it results in an over-subtraction of the sky frame.
 
 The sky frame comes from off-target sky observations.  We feed the pipeline
 all the on-target and off-target frames.  The software will split the
-on-target and the off-target appropriately as long as the first frame is
-on-target.
+on-target and the off-target appropriately.
 
 The master dark and the master flat will be retrieved automatically from the
 local calibration database. Again, the user BPM needs to be specified on
@@ -347,4 +346,6 @@ between each observation leading to a slightly larger final field of view
 than that of each individual image.  The stacked product is *not* cropped to
 the common area, rather the image size is adjusted to include the complete
 area covered by the whole sequence.  Of course the areas covered by less than
-the full stack of images will have a lower signal-to-noise.
+the full stack of images will have a lower signal-to-noise.  The final MEF file
+has three named extensions, the science (SCI), the variance (VAR), and the data
+quality plance (DQ).
