@@ -77,7 +77,7 @@ class Spect(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
 
@@ -120,17 +120,22 @@ class Spect(PrimitivesBASE):
                 zpt_err = array_from_list(zpt_err)
 
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value,
-                                            zpt.value, w=1./zpt_err.value, order=4)
+                                            zpt.value, w=1./zpt_err.value, order=6)
 
-                plt.ioff()
-                fig, ax = plt.subplots()
-                ax.plot(wave, zpt, 'ko')
-                x = np.linspace(min(wave), max(wave), ext.shape[0])
-                ax.plot(x, spline(x), 'r-')
-                plt.show()
+                #plt.ioff()
+                #fig, ax = plt.subplots()
+                #ax.plot(wave, zpt, 'ko')
+                #x = np.linspace(min(wave), max(wave), ext.shape[0])
+                #ax.plot(x, spline(x), 'r-')
+                #plt.show()
+
+                knots, coeffs, degree = spline._eval_args
+                sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
+                                 names=('knots', 'coefficients'))
+                ext.SENSFUNC = sensfunc
 
             # Timestamp and update the filename
-            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs

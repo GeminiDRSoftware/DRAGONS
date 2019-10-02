@@ -17,6 +17,7 @@ timestamp_keys = {
     "associateSky": "ASSOCSKY",
     "attachWavelengthSolution": "ATTWVSOL",
     "biasCorrect": "BIASCORR",
+    "calculateSensitivity": "SENSFUNC",
     "correctBackgroundToReference": "CORRBG",
     "adjustWCSToReference": "CORRWCS",
     "cutFootprints": "CUTSFP",
