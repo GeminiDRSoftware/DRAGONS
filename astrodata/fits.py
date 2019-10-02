@@ -30,6 +30,7 @@ from astropy.io.fits import HDUList, Header, DELAYED
 from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
 from astropy.io.fits import Column, FITS_rec
 from astropy.io.fits.hdu.table import _TableBaseHDU
+from astropy import units as u
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
@@ -867,6 +868,11 @@ class FitsProvider(DataProvider):
     def _process_table(self, table, name=None, header=None):
         if isinstance(table, BinTableHDU):
             obj = Table(table.data, meta={'header': header or table.header})
+            for i, col in enumerate(obj.columns, start=1):
+                try:
+                    obj[col].unit = u.Unit(obj.meta['header']['TUNIT{}'.format(i)])
+                except (KeyError, TypeError):
+                    pass
         elif isinstance(table, Table):
             obj = Table(table)
             if header is not None:
