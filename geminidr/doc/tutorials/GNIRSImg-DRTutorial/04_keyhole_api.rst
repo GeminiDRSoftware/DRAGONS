@@ -202,10 +202,10 @@ examples; of course, just one is required.
     :linenos:
     :lineno-start: 25
 
-    dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
+    target = dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
 
     # Or...
-    dataselect.select_data(
+    target = dataselect.select_data(
         all_files,
         [],
         ['FLAT'],
@@ -213,7 +213,7 @@ examples; of course, just one is required.
     )
 
     # Or...
-    dataselect.select_data(
+    target = dataselect.select_data(
         all_files,
         [],
         [],
@@ -241,7 +241,7 @@ name of a file on disk.
 
     caldb.add_cal(reduce_darks.output_filenames[0])
 
-The ``Reduce`` class is our reduction "controller".  This is were we collect
+The ``Reduce`` class is our reduction "controller".  This is where we collect
 all the information necessary for the reduction.  In this case, the only
 information necessary is the list of input files which we add to the
 ``files`` attribute.  The ``Reduce.runr{}`` method is where the

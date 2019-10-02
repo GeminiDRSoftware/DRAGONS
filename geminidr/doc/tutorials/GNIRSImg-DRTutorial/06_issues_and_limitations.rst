@@ -14,8 +14,8 @@ GNIRS not being an imager, and the keyhole being normally used only for
 acquisition, it turns out that there are no calibration association rules
 between GNIRS keyhole images and darks.  This is recently discovered
 limitation that we plan to fix in a future release.  In the meantime, the
-user can simply specify the dark on the command line as shown above in
-:ref:`bypass_caldb`.
+user can simply specify the dark on the command line as shown in the previous
+chapter in the :ref:`bypass_caldb` section.
 
 
 Memory Issues
@@ -28,13 +28,15 @@ an "Out of memory" crash happens to you, if possible for your
 observation sequence, try to run the pipeline on fewer images at the time,
 like for each dither pattern sequence separately.
 
-For GNIRS, this issue is very rare given that the GNIRS detector is fairly
-small and also rarely used for imaging, but it could happen when trying to r
-educe a very large number of frames in one go.
+Then to align and stack the pieces, run the ``alignAndStack`` recipe:
 
-.. todo::  We need to show the user how to bring them all back
-     together in a final stack at the end.  This means showing
-     what custom recipe to use and how to invoke it.
+.. code-block:: bash
+
+    $ reduce @list_of_stacks -r alignAndStack
+
+For GNIRS, this issue is very rare given that the GNIRS detector is fairly
+small and also rarely used for imaging, but it could happen when trying to
+reduce a very large number of frames in one go.
 
 
 .. _double_messaging:
