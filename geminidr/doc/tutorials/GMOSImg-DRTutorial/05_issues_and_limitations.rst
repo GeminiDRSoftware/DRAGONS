@@ -24,7 +24,7 @@ like for each dither pattern sequence separately.
 
 Then to align and stack the pieces, run the ``alignAndStack`` recipe:
 
-.. code-block:: python
+.. code-block:: bash
 
     $ reduce @list_of_stacks -r alignAndStack
 

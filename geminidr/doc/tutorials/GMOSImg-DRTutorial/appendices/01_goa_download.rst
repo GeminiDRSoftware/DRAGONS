@@ -19,7 +19,7 @@ Query and Download
 ==================
 
 This tutorial uses observations from a Science Verification program done during
-the commissioning and characterizing phase of the GMOS-N Hamamamatsu CCDs..
+the commissioning and characterizing phase of the GMOS-N Hamamamatsu CCDs.
 The program ID is GN-2017A-SV-151.
 
 The first step of any reduction is to retrieve the data from the
@@ -105,6 +105,6 @@ downloaded the data from the `Gemini Archive <https://archive.gemini.edu/searchf
 
 .. note:: If you are using the manually selected data to run the tutorial,
      please remember to put all the data in a directory called ``playdata``,
-     and create a parallel directory of running the tutorial called
+     and create a parallel directory for running the tutorial called
      ``playground``. The tutorial makes assumption as to where everything
      is located.

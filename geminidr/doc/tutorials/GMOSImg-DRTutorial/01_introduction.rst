@@ -54,17 +54,19 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package (KL??? name of the package, with URL). Download it and unpack it
-somewhere convenient.
+package:
 
-.. todo:: add name of and URL to the data package
+    `<http://www.gemini.edu/sciops/data/software/datapkgs/gmosimg_tutorial_datapkg-v1.tar>`_
+
+Download it and unpack it somewhere convenient.
 
 .. highlight:: bash
 
 ::
 
     cd <somewhere convenient>
-    tar xvzf KL???
+    tar xvzf gmosimg_tutorial_datapkg-v1.tar
+    bunzip2 gmosimg_tutorial/playdata/*.bz2
 
 The datasets are found in the subdirectory ``gmosimg_tutorial/playdata``, and we
 will work in the subdirectory named ``gmosimg_tutorial/playground``.

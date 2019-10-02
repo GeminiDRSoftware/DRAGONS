@@ -53,7 +53,7 @@ We first import the necessary modules and classes:
 .. code-block:: python
     :linenos:
 
-    from __fugure__ import print_function
+    from __future__ import print_function
 
     import glob
 
@@ -141,7 +141,7 @@ check the
 Create list of files
 ====================
 
-Next step is to create lists of files that will be used as input to each of the
+The next step is to create lists of files that will be used as input to each of the
 data reduction steps. Let us start by creating a :class:`list` of all the
 FITS files in the directory ``../playdata/``.
 
@@ -259,7 +259,7 @@ manager (line 37).
 Make Master Flat
 ================
 
-We create the master flat field and add it to the calibration manager as follow:
+We create the master flat field and add it to the calibration database as follow:
 
 .. code-block:: python
     :linenos:

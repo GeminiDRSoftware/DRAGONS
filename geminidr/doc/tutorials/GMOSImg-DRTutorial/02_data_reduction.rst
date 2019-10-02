@@ -245,7 +245,7 @@ Create a Master Bias
 ====================
 
 We start the data reduction by creating a master bias for the science data.
-It can be created and added to the calibratio database using the commands below:
+It can be created and added to the calibration database using the commands below:
 
 ..  code-block:: bash
 
@@ -261,16 +261,16 @@ To check that the master bias was added to the database, use ``caldb list``.
 
 .. note::
     The master bias will be saved in the same folder where "|reduce|" was
-    called *and* inside the ``./calibration/processed_bias`` folder. The latter
+    called *and* inside the ``./calibrations/processed_bias`` folder. The latter
     location is to cache a copy of the file. This applies to all the processed
-    calibration, eg. master flat.
+    calibration.
 
-    Some people might prefer adding the copy in the ``calibration`` directory
+    Some people might prefer adding the copy in the ``calibrations`` directory
     as it is safe from a ``rm *``, for example.
 
     .. code-block:: bash
 
-        $ caldb add ./calibration/processed_dark/N20170613S0180_bias.fits
+        $ caldb add ./calibrations/processed_dark/N20170613S0180_bias.fits
 
 .. note::
     "|reduce|" uses the first filename in the input list as basename and adds
@@ -283,8 +283,8 @@ To check that the master bias was added to the database, use ``caldb list``.
 Create a Master Flat Field
 ==========================
 
-Twilight flats images are reduced to produced a master flat and then added
-to the calibration database as follow:
+Twilight flats images are used to produced an imaging master flat and the
+result is added to the calibration database.
 
 ..  code-block:: bash
 
@@ -295,7 +295,7 @@ to the calibration database as follow:
 Note "|reduce|" will query the local calibration manager for the master bias
 and use it in the data reduction.
 
-Once finished you will have the Master Flat in the current work directory and
+Once finished you will have the master flat in the current work directory and
 inside ``./calibrations/processed_flat``. It will have a ``_flat`` suffix.
 
 
@@ -321,10 +321,10 @@ run ``reduce`` on our science data:
    $ reduce @list_of_science.txt
 
 This command will generate bias and flat corrected files and will stack them.
-If a fringe frames is needed this command apply the correction.  The stacked
+If a fringe frames is needed this command will apply the correction.  The stacked
 image will have the ``_stack`` suffix.
 
-.. note::  Depending on your version of Astropy, you will see a lot of
+.. note::  Depending on your version of Astropy, you might see a lot of
     Astropy warnings about headers and coordinates system.  You can safely
     ignore them.
 
