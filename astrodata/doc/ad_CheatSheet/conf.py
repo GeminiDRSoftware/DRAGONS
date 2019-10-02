@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Astrodata Cheat Sheet'
-copyright = u'2017, Kathleen Labrie'
+copyright = u'2019, Association of Universities for Research in Astronomy'
 # Note that AURA owns the Copyright, not you.
 
 # The version info for the project you're documenting, acts as replacement for

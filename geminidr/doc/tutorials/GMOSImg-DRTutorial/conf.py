@@ -32,8 +32,8 @@ print(' Dragons path: {}\n'.format(dragons_path))
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial<br> GMOS Imaging Data Reduction'
-copyright = 'Gemini Observatory (AURA), 2019'
-author = 'Bruno C. Quint'
+copyright = '2019, Association of Universities for Research in Astronomy'
+author = 'Bruno C. Quint, Kathleen Labrie'
 
 # The short X.Y version
 version = astrodata.version(short=True)
@@ -149,7 +149,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'DRAGONSTutorial-GMOStut.tex', 'DRAGONS Tutorial - GMOS Data Reduction',
-     'Bruno Quint', 'manual'),
+     'Bruno Quint, Kathleen Labrie', 'manual'),
 ]
 
 
