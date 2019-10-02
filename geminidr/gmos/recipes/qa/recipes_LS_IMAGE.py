@@ -18,10 +18,7 @@ def reduce(p):
     p.prepare(attach_mdf=True)
     p.addDQ()
     p.trimOverscan()
-    #p.biasCorrect()
     p.ADUToElectrons()
-    #p.flatCorrect()
-    p.mosaicDetectors()
     p.measureIQ(display=True)
     p.writeOutputs()
     return
