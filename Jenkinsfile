@@ -115,8 +115,9 @@ pipeline {
             }
             post {
                 always {
-                    echo "Running 'archivePlots' from inside GmosArcTests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                    script {
+                        gemini.dragons.GmosArcTests(this).archivePlots()
+                    }
                 }
             }
 
