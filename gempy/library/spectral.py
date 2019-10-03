@@ -122,7 +122,7 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         Returns
         -------
-
+        3-tuple: flux, mask, and variance summed over selected region(s)
         """
         flux_density = (self.unit * self.spectral_axis.unit).is_equivalent(u.Jy * u.Hz)
         flux = 0
