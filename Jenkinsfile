@@ -113,6 +113,12 @@ pipeline {
                     '''
 
             }
+            post {
+                always {
+                    echo "Running 'archivePlots' from inside GmosArcTests"
+                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                }
+            }
 
         }
 

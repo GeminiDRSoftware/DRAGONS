@@ -116,12 +116,12 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
     plot_residuals(ad, output_folder)
     plot_non_linear_components(ad, output_folder)
 
-    create_tarfile_with_plots(output_folder)
+    create_artifact_from_plots(output_folder)
 
     return InputsForTests
 
 
-def create_tarfile_with_plots(output_folder):
+def create_artifact_from_plots(output_folder):
     """
     Created a .tar.gz file using the plots generated here so Jenkins can deliver
     it as an artifact.
@@ -141,7 +141,7 @@ def create_tarfile_with_plots(output_folder):
             for _file in glob.glob(os.path.join(output_folder, "*.png")):
                 tar.add(_file)
 
-        target_dir = "plots/"
+        target_dir = "./plots/"
         target_file = os.path.join(target_dir, os.path.basename(tar_name))
 
         os.makedirs(target_dir, exist_ok=True)
