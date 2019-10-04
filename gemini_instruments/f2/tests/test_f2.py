@@ -27,19 +27,19 @@ def test_is_right_type(f2_files):
         assert type(ad) == gemini_instruments.f2.adclass.AstroDataF2
 
 
-# def test_is_right_instance(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         assert isinstance(ad, gemini_instruments.f2.adclass.AstroDataF2)
-#
-#
-# def test_extension_data_shape(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         data = ad[0].data
-#         assert data.shape == (1, 2048, 2048)
-#
-#
+def test_is_right_instance(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        assert isinstance(ad, gemini_instruments.f2.adclass.AstroDataF2)
+
+
+def test_extension_data_shape(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        data = ad[0].data
+        assert data.shape == (1, 2048, 2048)
+
+
 # def test_tags(f2_files):
 #     for _file in f2_files:
 #         ad = astrodata.open(_file)
