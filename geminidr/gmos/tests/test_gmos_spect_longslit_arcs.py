@@ -23,18 +23,18 @@ from gempy.utils import logutils
 
 dataset_file_list = [
     'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
-    # 'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
-    # 'process_arcs/GMOS/N20170530S0006.fits',  # B600:0.520 HAM
-    # 'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
-    # # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 and solution mismatch
-    # # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
-    # 'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
-    # 'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
-    # # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
-    # 'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
-    # 'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
-    # 'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
-    # 'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM
+    'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
+    'process_arcs/GMOS/N20170530S0006.fits',  # B600:0.520 HAM
+    'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
+    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 and solution mismatch
+    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
+    'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
+    'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
+    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
+    'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
+    'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
+    'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
+    'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM
 ]
 
 
@@ -71,8 +71,8 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
         Config class created for each dataset file. It is created from within
         this a fixture so it can inherit the `path_to_*` fixtures as well.
         """
-        def __init__(self, filename):
 
+        def __init__(self, filename):
             input_file = os.path.join(path_to_inputs, filename)
             dataset_sub_dir = os.path.dirname(filename)
 
@@ -88,9 +88,9 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
             output_file = output_file + "_arc.fits"
             output_file = os.path.join(output_folder, output_file)
 
-            p = self.reduce(input_file)
+            r = self.reduce(input_file)
 
-            ad = p.writeOutputs(outfilename=output_file, overwrite=True)[0]
+            ad = r.writeOutputs(outfilename=output_file, overwrite=True)[0]
             os.chmod(output_file, mode=0o775)
 
             self.ad = ad
@@ -102,15 +102,11 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
             for _file in glob.glob(os.path.join(output_folder, "*.png")):
                 os.remove(_file)
 
-            plot_lines(ad, output_folder)
-            plot_residuals(ad, output_folder)
-            plot_non_linear_components(ad, output_folder)
-
-            create_artifact_from_plots(output_folder)
+            p = PlotGmosSpectLongslitArcs(ad, output_folder)
+            p.plot_all()
 
         @staticmethod
         def reduce(filename):
-
             p = primitives_gmos_spect.GMOSSpect([astrodata.open(filename)])
             p.viewer = geminidr.dormantViewer(p, None)
 
@@ -131,86 +127,109 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     return ConfigTest(request.param)
 
 
-def create_artifact_from_plots(output_folder):
+class PlotGmosSpectLongslitArcs:
     """
-    Created a .tar.gz file using the plots generated here so Jenkins can deliver
-    it as an artifact.
-
-    Parameters
-    ----------
-    output_folder : str
-        Path to where the PNG files are generated
-    """
-    # Runs only from inside Jenkins
-    if 'BUILD_ID' in os.environ:
-
-        tar_name = os.path.join(
-            output_folder, "test_gmos_lsspec_arcs.tar.gz".format())
-
-        with tarfile.open(tar_name, "w:gz") as tar:
-            for _file in glob.glob(os.path.join(output_folder, "*.png")):
-                tar.add(_file)
-
-        target_dir = "./plots/"
-        target_file = os.path.join(target_dir, os.path.basename(tar_name))
-
-        os.makedirs(target_dir, exist_ok=True)
-        os.rename(tar_name, target_file)
-
-        try:
-            os.chmod(target_file, 0o775)
-        except PermissionError:
-            warnings.warn(
-                "Failed to update permissions for file: {}".format(target_file))
-
-
-def plot_lines(ad, output_folder):
-    """
-    Plots and saves the wavelength calibration model residuals for diagnosis.
+    Plot solutions for extensions inside `ad` that have a `WAVECAL` and save the
+    results inside the `output_folder`
 
     Parameters
     ----------
     ad : AstroData
-        Arc Lamp with wavelength calibration table `.WAVECAL` in any of its
-        extensions.
+        Reduced arc with a wavelength solution.
     output_folder : str
-        Path to where the plots will be saved
+        Path to where the plots will be saved.
     """
-    filename = ad.filename
-    name, _ = os.path.splitext(filename)
-    grating = ad.disperser(pretty=True)
-    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
+    def __init__(self, ad, output_folder):
 
-    package_dir = os.path.dirname(primitives_gmos_spect.__file__)
-    arc_table = os.path.join(package_dir, "lookups", "CuAr_GMOS.dat")
-    arc_lines = np.loadtxt(arc_table, usecols=[0]) / 10.
+        filename = ad.filename
+        self.ad = ad
+        self.name, _ = os.path.splitext(filename)
+        self.grating = ad.disperser(pretty=True)
+        self.central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
+        self.output_folder = output_folder
 
-    for ext_num, ext in enumerate(ad):
+        self.package_dir = os.path.dirname(primitives_gmos_spect.__file__)
+        self.arc_table = os.path.join(self.package_dir, "lookups", "CuAr_GMOS.dat")
+        self.arc_lines = np.loadtxt(self.arc_table, usecols=[0]) / 10.
 
-        if not hasattr(ext, 'WAVECAL'):
-            continue
+    def create_artifact_from_plots(self):
+        """
+        Created a .tar.gz file using the plots generated here so Jenkins can deliver
+        it as an artifact.
+        """
+        # Runs only from inside Jenkins
+        if 'BUILD_ID' in os.environ:
 
-        peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
+            tar_name = os.path.join(
+                self.output_folder, "test_gmos_lsspec_arcs.tar.gz".format())
 
-        model = astromodels.dict_to_chebyshev(
-            dict(
-                zip(
-                    ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
+            with tarfile.open(tar_name, "w:gz") as tar:
+                for _file in glob.glob(os.path.join(self.output_folder, "*.png")):
+                    tar.add(_file)
+
+            target_dir = "./plots/"
+            target_file = os.path.join(target_dir, os.path.basename(tar_name))
+
+            os.makedirs(target_dir, exist_ok=True)
+            os.rename(tar_name, target_file)
+
+            try:
+                os.chmod(target_file, 0o775)
+            except PermissionError:
+                warnings.warn(
+                    "Failed to update permissions for file: {}".format(target_file))
+
+    def plot_all(self):
+
+        for ext_num, ext in enumerate(self.ad):
+
+            if not hasattr(ext, 'WAVECAL'):
+                continue
+
+            peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
+            wavelengths = ext.WAVECAL['wavelengths']
+
+            model = astromodels.dict_to_chebyshev(
+                dict(
+                    zip(
+                        ext.WAVECAL["name"], ext.WAVECAL["coefficients"]
+                    )
                 )
             )
-        )
 
-        mask = np.round(np.average(ext.mask, axis=0)).astype(int)
-        data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
-        data = (data - data.min()) / data.ptp()
+            mask = np.round(np.average(ext.mask, axis=0)).astype(int)
+            data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
+            data = (data - data.min()) / data.ptp()
 
+            self.plot_lines(ext_num, data, peaks, model)
+            self.plot_non_linear_components(ext_num, peaks, wavelengths, model)
+            self.plot_residuals(ext_num, peaks, wavelengths, model)
+            self.create_artifact_from_plots()
+
+    def plot_lines(self, ext_num, data, peaks, model):
+        """
+        Plots and saves the wavelength calibration model residuals for diagnosis.
+
+        Parameters
+        ----------
+        ext_num : int
+            Extension number.
+        data : ndarray
+            1D numpy masked array that represents the data.
+        peaks : ndarray
+            1D array with 1-indexed peaks positon.
+        model : Chebyshev1D
+            Model that represents the wavelength solution.
+        """
         fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}".format(
-            name, ext_num, grating, central_wavelength), dpi=300)
+            self.name, ext_num, self.grating, self.central_wavelength, dpi=300))
 
         w = model(np.arange(data.size))
 
-        arcs = [ax.vlines(line, 0, 1, color="k", alpha=0.25) for line in arc_lines]
-        wavs = [ax.vlines(peak, 0, 1, color="r", ls="--", alpha=0.25) for peak in model(peaks)]
+        arcs = [ax.vlines(line, 0, 1, color="k", alpha=0.25)
+                for line in self.arc_lines]
+        wavs = [ax.vlines(peak, 0, 1, color="r", ls="--", alpha=0.25)
+                for peak in model(peaks)]
         plot, = ax.plot(w, data, 'k-', lw=0.75)
 
         ax.legend((plot, arcs[0], wavs[0]),
@@ -225,13 +244,14 @@ def plot_lines(ad, output_folder):
         ax.set_title(
             "Wavelength Calibrated Spectrum for\n"
             "{:s} obtained with {:s} at {:.0f}".format(
-                name, grating, central_wavelength))
+                self.name, self.grating, self.central_wavelength))
 
         if x0 > x1:
             ax.invert_xaxis()
 
-        fig_name = os.path.join(output_folder, "{:s}_{:d}_{:s}_{:.0f}.png".format(
-            name, ext_num, grating, central_wavelength))
+        fig_name = os.path.join(
+            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}.png".format(
+                self.name, ext_num, self.grating, self.central_wavelength))
 
         fig.savefig(fig_name)
 
@@ -243,104 +263,23 @@ def plot_lines(ad, output_folder):
 
         del fig, ax
 
+    def plot_non_linear_components(self, ext_num, peaks, wavelengths, model):
+        """
+        Plots the non-linear residuals.
 
-def plot_residuals(ad, output_folder):
-    """
-    Plots the matched wavelengths versus the residuum  between them and their
-    correspondent peaks applied to the fitted model
-
-    Parameters
-    ----------
-    ad : AstroData
-        Arc Lamp with wavelength calibration table `.WAVECAL` in any of its
-        extensions.
-    output_folder : str
-        Path to where the plots will be saved
-    """
-    filename = ad.filename
-    name, _ = os.path.splitext(filename)
-    grating = ad.disperser(pretty=True)
-    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
-
-    for i, ext in enumerate(ad):
-
-        if not hasattr(ext, 'WAVECAL'):
-            continue
-
-        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
-            filename, i, grating, central_wavelength), dpi=300)
-
-        peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
-        wavelengths = ext.WAVECAL['wavelengths']
-
-        model = astromodels.dict_to_chebyshev(
-            dict(
-                zip(
-                    ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
-                )
-            )
-        )
-
-        ax.plot(wavelengths, wavelengths - model(peaks - 1), 'ko')
-
-        ax.grid(alpha=0.25)
-        ax.set_xlabel("Wavelength [nm]")
-        ax.set_ylabel("Residuum [nm]")
-        ax.set_title(
-            "Wavelength Calibrated Residuum for\n"
-            "{:s} obtained with {:s} at {:.0f}".format(
-                name, grating, central_wavelength))
-
-        fig_name = os.path.join(output_folder,
-                                "{:s}_{:d}_{:s}_{:.0f}_residuals.png".format(
-                                    name, i, grating, central_wavelength))
-
-        fig.savefig(fig_name)
-
-        try:
-            os.chmod(fig_name, 0o775)
-        except PermissionError:
-            warnings.warn(
-                "Failed to update permissions for file: {}".format(fig_name))
-
-        del fig, ax
-
-
-def plot_non_linear_components(ad, output_folder):
-    """
-    Plots the non-linear residuals.
-
-    Parameters
-    ----------
-    ad : AstroData
-        Arc Lamp with wavelength calibration table `.WAVECAL` in any of its
-        extensions.
-    output_folder : str
-        Path to where the plots will be saved
-    """
-    filename = ad.filename
-    name, _ = os.path.splitext(filename)
-    grating = ad.disperser(pretty=True)
-    central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
-
-    for ext_num, ext in enumerate(ad):
-
-        if not hasattr(ext, 'WAVECAL'):
-            continue
-
+        Parameters
+        ----------
+        ext_num : int
+            Extension number.
+        peaks : ndarray
+            1D array with 1-indexed peaks positon.
+        wavelengths : ndarray
+            1D array with wavelengths matching peaks.
+        model : Chebyshev1D
+            Model that represents the wavelength solution.
+        """
         fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
-            filename, ext_num, grating, central_wavelength), dpi=300)
-
-        peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
-        wavelengths = ext.WAVECAL['wavelengths']
-
-        model = astromodels.dict_to_chebyshev(
-            dict(
-                zip(
-                    ad[0].WAVECAL["name"], ad[0].WAVECAL["coefficients"]
-                )
-            )
-        )
+            self.name, ext_num, self.grating, self.central_wavelength), dpi=300)
 
         non_linear_model = model.copy()
         _ = [setattr(non_linear_model, 'c{}'.format(k), 0) for k in [0, 1]]
@@ -348,7 +287,8 @@ def plot_non_linear_components(ad, output_folder):
 
         p = np.linspace(min(peaks), max(peaks), 1000)
         ax.plot(model(p), non_linear_model(p), 'C0-', label="Generic Representation")
-        ax.plot(model(peaks), non_linear_model(peaks) + residuals, 'ko', label="Non linear components and residuals")
+        ax.plot(model(peaks), non_linear_model(peaks) + residuals, 'ko',
+                label="Non linear components and residuals")
         ax.legend()
 
         ax.grid(alpha=0.25)
@@ -357,11 +297,54 @@ def plot_non_linear_components(ad, output_folder):
         ax.set_title(
             "Non-linear components for\n"
             "{:s} obtained with {:s} at {:.0f}".format(
-                name, grating, central_wavelength))
+                self.name, self.grating, self.central_wavelength))
 
         fig_name = os.path.join(
-            output_folder, "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
-                name, ext_num, grating, central_wavelength))
+            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
+                self.name, ext_num, self.grating, self.central_wavelength))
+
+        fig.savefig(fig_name)
+
+        try:
+            os.chmod(fig_name, 0o775)
+        except PermissionError:
+            warnings.warn(
+                "Failed to update permissions for file: {}".format(fig_name))
+
+        del fig, ax
+
+    def plot_residuals(self, ext_num, peaks, wavelengths, model):
+        """
+        Plots the matched wavelengths versus the residuum  between them and their
+        correspondent peaks applied to the fitted model.
+
+        Parameters
+        ----------
+        ext_num : int
+            Extension number.
+        peaks : ndarray
+            1D array with 1-indexed peaks positon.
+        wavelengths : ndarray
+            1D array with wavelengths matching peaks.
+        model : Chebyshev1D
+            Model that represents the wavelength solution.
+        """
+        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
+            self.name, ext_num, self.grating, self.central_wavelength), dpi=300)
+
+        ax.plot(wavelengths, wavelengths - model(peaks), 'ko')
+
+        ax.grid(alpha=0.25)
+        ax.set_xlabel("Wavelength [nm]")
+        ax.set_ylabel("Residuum [nm]")
+        ax.set_title(
+            "Wavelength Calibrated Residuum for\n"
+            "{:s} obtained with {:s} at {:.0f}".format(
+                self.name, self.grating, self.central_wavelength))
+
+        fig_name = os.path.join(
+            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_residuals.png".format(
+                self.name, ext_num, self.grating, self.central_wavelength))
 
         fig.savefig(fig_name)
 
@@ -415,7 +398,6 @@ class TestGmosSpectLongslitArcs:
         ad_ref = astrodata.open(reference)
 
         for ext, ext_ref in zip(config.ad, ad_ref):
-
             model = astromodels.dict_to_chebyshev(
                 dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
             )
