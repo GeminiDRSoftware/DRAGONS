@@ -2,9 +2,30 @@
 # in the primitives_spect.py file, in alphabetical order.
 from gempy.library import config
 from astrodata import AstroData
+from astropy import units as u
+
+def flux_units_check(value):
+    # Confirm that the specified units can be converted to a flux density
+    try:
+        unit = u.Unit(value)
+    except:
+        raise ValueError("{} is not a recognized unit".format(value))
+    try:
+        unit.to(u.W / u.m**3, equivalencies=u.spectral_density(1.*u.m))
+    except:
+        raise ValueError("Cannot convert {} to a flux density".format(value))
+    return True
+
+class fluxCalibrateConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_fluxCalibrated", optional=True)
+    standard = config.ListField("Standard(s) with sensitivity function", (AstroData, str),
+                                None, optional=True, single=True)
+    units = config.Field("Units for output spectrum", str, "W m-2 nm-1",
+                         check=flux_units_check)
 
 class calculateSensitivityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
+    order = config.RangeField("Order of spline fit", int, 6, min=1)
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)

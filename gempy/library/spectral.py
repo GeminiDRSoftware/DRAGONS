@@ -109,6 +109,18 @@ class Spek1D(Spectrum1D, NDAstroData):
             limits.append(float(loc_in_pix))
         return limits
 
+    def pixel_sizes(self):
+        """
+        Provide the wavelength extent of each pixel in the spectrum.
+
+        Returns
+        -------
+        Quantity: pixel extent
+        """
+        pixel_edges = np.arange(len(self.spectral_axis)+1) - 0.5
+        wave_edges = self.wcs.pixel_to_world(pixel_edges)
+        return np.diff(wave_edges)
+
     def signal(self, region):
         """
         Measure the signal over a defined region of the spectrum. If the

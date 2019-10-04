@@ -34,6 +34,7 @@ timestamp_keys = {
     "findAcquisitionSlits": "FINDACQS",
     "findSourceApertures": "FINDAPER",
     "flatCorrect": "FLATCORR",
+    "fluxCalibrate": "FLUXCAL",
     "fringeCorrect": "FRNGCORR",
     "linearizeSpectra": "LINEARZE",
     "makeBPM": "BPMASK",
