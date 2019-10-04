@@ -2,46 +2,44 @@
 """
 Tests related to GMOS Long-slit Spectroscopy arc processing.
 """
-import astrodata
-import geminidr
 import glob
 import os
-import numpy as np
 import tarfile
 import warnings
 
+import numpy as np
 # noinspection PyPackageRequirements
 import pytest
-
 # noinspection PyPackageRequirements
 from matplotlib import pyplot as plt
 
+import astrodata
 # noinspection PyUnresolvedReferences
 import gemini_instruments
-
+import geminidr
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
 from gempy.utils import logutils
 
 dataset_file_list = [
     'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
-    'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
-    'process_arcs/GMOS/N20170530S0006.fits',  # B600:0.520 HAM
-    'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
-    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 and solution mismatch
-    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
-    'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
-    'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
-    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
-    'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
-    'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
-    'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
-    'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM
+    # 'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
+    # 'process_arcs/GMOS/N20170530S0006.fits',  # B600:0.520 HAM
+    # 'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
+    # # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 and solution mismatch
+    # # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
+    # 'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
+    # 'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
+    # # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
+    # 'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
+    # 'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
+    # 'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
+    # 'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM
 ]
 
 
-@pytest.fixture(scope='class', params=dataset_file_list)
-def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
+@pytest.fixture(scope='class')
+def config(path_to_inputs, path_to_outputs, path_to_refs):
     """
     Super fixture that returns an object with the data required for the tests
     inside this file. This super fixture avoid confusions with Pytest, Fixtures
@@ -51,8 +49,6 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
 
     Parameters
     ----------
-    request : pytest.fixture
-        Special fixture providing information of the requesting test function.
     path_to_inputs : pytest.fixture
         Fixture inherited from astrodata.testing with path to the input files.
     path_to_outputs : pytest.fixture
@@ -66,59 +62,72 @@ def inputs_for_tests(request, path_to_inputs, path_to_outputs, path_to_refs):
         An object that contains `.ad`, `.output_dir`, `.ref_dir`, and
         `.filename` attributes.
     """
+
     logutils.config(mode='quiet', file_name='foo.log')
 
-    reference_folder = os.path.join(path_to_refs, os.path.dirname(request.param))
+    class ConfigTest:
+        """
+        Config class created for each dataset file. It is created from within
+        this a fixture so it can inherit the `path_to_*` fixtures as well.
+        """
+        def __init__(self, filename):
 
-    dirname = os.path.dirname(request.param)
-    output_folder = os.path.join(path_to_outputs, dirname)
+            input_file = os.path.join(path_to_inputs, filename)
+            dataset_sub_dir = os.path.dirname(filename)
 
-    oldmask = os.umask(000)
-    os.makedirs(output_folder, exist_ok=True, mode=0o775)
-    os.umask(oldmask)
+            reference_folder = os.path.join(path_to_refs, dataset_sub_dir)
+            output_folder = os.path.join(path_to_outputs, dataset_sub_dir)
 
-    output_file = os.path.join(path_to_outputs, request.param)
-    output_file, _ = os.path.splitext(output_file)
-    output_file = output_file + "_arc.fits"
-    output_file = os.path.join(output_folder, output_file)
+            oldmask = os.umask(000)
+            os.makedirs(output_folder, exist_ok=True, mode=0o775)
+            os.umask(oldmask)
 
-    input_file = os.path.join(path_to_inputs, request.param)
+            output_file = os.path.join(path_to_outputs, filename)
+            output_file, _ = os.path.splitext(output_file)
+            output_file = output_file + "_arc.fits"
+            output_file = os.path.join(output_folder, output_file)
 
-    p = primitives_gmos_spect.GMOSSpect([astrodata.open(input_file)])
-    p.viewer = geminidr.dormantViewer(p, None)
+            p = self.reduce(input_file)
 
-    p.prepare()
-    p.addDQ(static_bpm=None)
-    p.addVAR(read_noise=True)
-    p.overscanCorrect()
-    p.ADUToElectrons()
-    p.addVAR(poisson_noise=True)
-    p.mosaicDetectors()
-    p.makeIRAFCompatible()
-    # p.determineWavelengthSolution(plot=True)
-    p.determineWavelengthSolution()
-    p.determineDistortion(suffix="_arc")
-    ad = p.writeOutputs(outfilename=output_file, overwrite=True)[0]
-    os.chmod(output_file, mode=0o775)
+            ad = p.writeOutputs(outfilename=output_file, overwrite=True)[0]
+            os.chmod(output_file, mode=0o775)
 
-    class InputsForTests:
-        pass
+            self.ad = ad
+            self.filename = ad.filename
+            self.output_file = output_file
+            self.output_dir = output_folder
+            self.ref_dir = reference_folder
 
-    InputsForTests.ad = ad
-    InputsForTests.output_file = output_file
-    InputsForTests.output_dir = output_folder
-    InputsForTests.ref_dir = reference_folder
+            for _file in glob.glob(os.path.join(output_folder, "*.png")):
+                os.remove(_file)
 
-    for _file in glob.glob(os.path.join(output_folder, "*.png")):
-        os.remove(_file)
+            plot_lines(ad, output_folder)
+            plot_residuals(ad, output_folder)
+            plot_non_linear_components(ad, output_folder)
 
-    plot_lines(ad, output_folder)
-    plot_residuals(ad, output_folder)
-    plot_non_linear_components(ad, output_folder)
+            create_artifact_from_plots(output_folder)
 
-    create_artifact_from_plots(output_folder)
+        @staticmethod
+        def reduce(filename):
 
-    return InputsForTests
+            p = primitives_gmos_spect.GMOSSpect([astrodata.open(filename)])
+            p.viewer = geminidr.dormantViewer(p, None)
+
+            p.prepare()
+            p.addDQ(static_bpm=None)
+            p.addVAR(read_noise=True)
+            p.overscanCorrect()
+            p.ADUToElectrons()
+            p.addVAR(poisson_noise=True)
+            p.mosaicDetectors()
+            p.makeIRAFCompatible()
+            # p.determineWavelengthSolution(plot=True)
+            p.determineWavelengthSolution()
+            p.determineDistortion(suffix="_arc")
+
+            return p
+
+    return ConfigTest
 
 
 def create_artifact_from_plots(output_folder):
@@ -193,7 +202,7 @@ def plot_lines(ad, output_folder):
         mask = np.round(np.average(ext.mask, axis=0)).astype(int)
         data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
         data = (data - data.min()) / data.ptp()
-        
+
         fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}".format(
             name, ext_num, grating, central_wavelength), dpi=300)
 
@@ -201,10 +210,10 @@ def plot_lines(ad, output_folder):
 
         arcs = [ax.vlines(line, 0, 1, color="k", alpha=0.25) for line in arc_lines]
         wavs = [ax.vlines(peak, 0, 1, color="r", ls="--", alpha=0.25) for peak in model(peaks)]
-        plot,  = ax.plot(w, data, 'k-', lw=0.75)
+        plot, = ax.plot(w, data, 'k-', lw=0.75)
 
         ax.legend((plot, arcs[0], wavs[0]),
-              ('Normalized Data', 'Reference Lines', 'Matched Lines'))
+                  ('Normalized Data', 'Reference Lines', 'Matched Lines'))
 
         x0, x1 = model([0, data.size])
 
@@ -353,7 +362,6 @@ def plot_non_linear_components(ad, output_folder):
             output_folder, "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
                 name, ext_num, grating, central_wavelength))
 
-
         fig.savefig(fig_name)
 
         try:
@@ -366,21 +374,21 @@ def plot_non_linear_components(ad, output_folder):
 
 
 @pytest.mark.gmosls
-class TestGmosArcProcessing:
+@pytest.mark.parametrize('dataset', dataset_file_list)
+class TestGmosSpectLongslitArcs:
     """
-    Collection of tests that will run on every `dataset_file`.
+    Collection of tests that will run on every `dataset` file.
     """
 
-    # noinspection PyUnusedLocal
     @staticmethod
-    def test_reduced_arcs_contain_model_with_expected_rms(inputs_for_tests):
+    def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(dataset, config):
         """
-        Make sure that the WAVECAL model was fitted with an RMS smaller than
-        0.5.
+        Make sure that the WAVECAL model was fitted with an RMS smaller
+        than 0.5.
         """
-        ad = inputs_for_tests.ad
+        c = config(dataset)
 
-        for ext in ad:
+        for ext in c.ad:
 
             if not hasattr(ext, 'WAVECAL'):
                 continue
@@ -392,18 +400,17 @@ class TestGmosArcProcessing:
             np.testing.assert_array_less(rms, 0.5)
 
     @staticmethod
-    def test_reduced_arcs_contains_model_with_stable_wavelength_solution(inputs_for_tests):
+    def test_reduced_arcs_contains_stable_wavelength_solution(dataset, config):
         """
         Make sure that the wavelength solution gives same results on different
         runs.
         """
-        from gempy.library.astromodels import dict_to_chebyshev
+        c = config(dataset)
 
-        ad = inputs_for_tests.ad
-        output_folder = inputs_for_tests.output_dir
-        reference_folder = inputs_for_tests.ref_dir
+        output_folder = c.output_dir
+        reference_folder = c.ref_dir
 
-        filename = ad.filename
+        filename = c.filename
         output = os.path.join(output_folder, filename)
         reference = os.path.join(reference_folder, filename)
 
@@ -415,12 +422,12 @@ class TestGmosArcProcessing:
 
         ad_ref = astrodata.open(reference)
 
-        for ext, ext_ref in zip(ad, ad_ref):
-            model = dict_to_chebyshev(
+        for ext, ext_ref in zip(c.ad, ad_ref):
+            model = astromodels.dict_to_chebyshev(
                 dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
             )
 
-            ref_model = dict_to_chebyshev(
+            ref_model = astromodels.dict_to_chebyshev(
                 dict(zip(ext_ref.WAVECAL["name"], ext_ref.WAVECAL["coefficients"]))
             )
 

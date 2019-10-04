@@ -23,8 +23,10 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 from scipy import ndimage
 
-dataset_folder_list = ['GMOS/GN-2017A-FT-19',
-                       'GMOS/GS-2016B-Q-54-32']
+dataset_folder_list = [
+    'GMOS/GN-2017A-FT-19',
+    # 'GMOS/GS-2016B-Q-54-32'
+]
 
 
 @pytest.fixture(scope='class')
