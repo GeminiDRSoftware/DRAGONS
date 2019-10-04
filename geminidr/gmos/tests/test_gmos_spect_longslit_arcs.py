@@ -38,8 +38,8 @@ dataset_file_list = [
 ]
 
 
-@pytest.fixture(scope='class')
-def config(path_to_inputs, path_to_outputs, path_to_refs):
+@pytest.fixture(scope='class', params=dataset_file_list)
+def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     """
     Super fixture that returns an object with the data required for the tests
     inside this file. This super fixture avoid confusions with Pytest, Fixtures
@@ -49,6 +49,7 @@ def config(path_to_inputs, path_to_outputs, path_to_refs):
 
     Parameters
     ----------
+    request :
     path_to_inputs : pytest.fixture
         Fixture inherited from astrodata.testing with path to the input files.
     path_to_outputs : pytest.fixture
@@ -127,7 +128,7 @@ def config(path_to_inputs, path_to_outputs, path_to_refs):
 
             return p
 
-    return ConfigTest
+    return ConfigTest(request.param)
 
 
 def create_artifact_from_plots(output_folder):
@@ -374,21 +375,18 @@ def plot_non_linear_components(ad, output_folder):
 
 
 @pytest.mark.gmosls
-@pytest.mark.parametrize('dataset', dataset_file_list)
 class TestGmosSpectLongslitArcs:
     """
     Collection of tests that will run on every `dataset` file.
     """
 
     @staticmethod
-    def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(dataset, config):
+    def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(config):
         """
         Make sure that the WAVECAL model was fitted with an RMS smaller
         than 0.5.
         """
-        c = config(dataset)
-
-        for ext in c.ad:
+        for ext in config.ad:
 
             if not hasattr(ext, 'WAVECAL'):
                 continue
@@ -400,19 +398,13 @@ class TestGmosSpectLongslitArcs:
             np.testing.assert_array_less(rms, 0.5)
 
     @staticmethod
-    def test_reduced_arcs_contains_stable_wavelength_solution(dataset, config):
+    def test_reduced_arcs_contains_stable_wavelength_solution(config):
         """
         Make sure that the wavelength solution gives same results on different
         runs.
         """
-        c = config(dataset)
-
-        output_folder = c.output_dir
-        reference_folder = c.ref_dir
-
-        filename = c.filename
-        output = os.path.join(output_folder, filename)
-        reference = os.path.join(reference_folder, filename)
+        output = os.path.join(config.output_dir, config.filename)
+        reference = os.path.join(config.ref_dir, config.filename)
 
         if not os.path.exists(output):
             pytest.skip('Output file not found: {}'.format(output))
@@ -422,7 +414,8 @@ class TestGmosSpectLongslitArcs:
 
         ad_ref = astrodata.open(reference)
 
-        for ext, ext_ref in zip(c.ad, ad_ref):
+        for ext, ext_ref in zip(config.ad, ad_ref):
+
             model = astromodels.dict_to_chebyshev(
                 dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
             )
