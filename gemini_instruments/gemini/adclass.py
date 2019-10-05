@@ -801,14 +801,8 @@ class AstroDataGemini(AstroDataFits):
         -------
         int
             Dispersion axis.
-
-        Raises
-        ------
-        ValueError
-            If the data is tagged IMAGE or is not PREPARED.
         """
-        tags = self.tags
-        if 'IMAGE' in tags or 'PREPARED' not in tags:
+        if 'PREPARED' not in self.tags:
             return None
 
         # TODO: We may need to sort out Nones here...

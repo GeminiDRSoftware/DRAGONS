@@ -737,6 +737,16 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
                 step=1, initial_tolerance=1.0, max_shift=0.05, max_missed=10,
                 func=NDStacker.mean, viewer=None):
     """
+    This function traces features along one axis of a two-dimensional image.
+    Initial peak locations are provided and then these are matched to peaks
+    found a small distance away along the direction of tracing. In terms of
+    its use to map the distortion from a 2D spectral image of an arc lamp,
+    these lists of coordinates can then be used to determine a distortion map
+    that will remove any curvature of lines of constant wavelength.
+
+    For a horizontally-dispersed spectrum like GMOS, the reference y-coords
+    will match the input y-coords, while the reference x-coords will all be
+    equal to the initial x-coords of the peaks.
 
     Parameters
     ----------
@@ -778,6 +788,10 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
 
     viewer: imexam viewer or None
         Viewer to draw lines on.
+
+    Returns
+    -------
+    refcoords, incoords: 2xN arrays (x-first) of coordinates
     """
     log = logutils.get_logger(__name__)
 

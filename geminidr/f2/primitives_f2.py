@@ -95,35 +95,16 @@ class F2(Gemini, NearIR):
         mdf: str
             full path of the MDF to attach
         """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        adinputs = super().standardizeStructure(adinputs, **params)
 
-        adoutputs = []
-        for ad, mdf in zip(*gt.make_lists(adinputs, params['mdf'])):
-            if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by standardizeStructure".
-                            format(ad.filename))
-                adoutputs.append(ad)
-                continue
-
-            # Attach an MDF to each input AstroData object
-            if params["attach_mdf"] and 'SPECT' in ad.tags:
-                ad = self.addMDF([ad], mdf=mdf)[0]
-
-            # Raw FLAMINGOS-2 pixel data have three dimensions (2048x2048x1).
-            # Remove the single length dimension from the pixel data.
-            # CD3_3 keyword must also be removed or alignAndStack complains.
-            ad = remove_single_length_dimension(ad)
-
-            # Need to change dtype from int32 to float32, or else numpy will
-            # promote to float64. There's no VAR or DQ at this stage.
+        # Raw FLAMINGOS-2 pixel data have three dimensions (2048x2048x1).
+        # Remove the single length dimension from the pixel data.
+        # CD3_3 keyword must also be removed.
+        # Also, F2 data are written with BITPIX=32, which astropy.io.fits
+        # turns to np.float64. But the raw data values could be represented
+        # as 16-bit integers, so we downgrade to np.float32 here
+        for ad in adinputs:
             ad[0].data = ad[0].data.astype(np.float32)
+            remove_single_length_dimension(ad)  # in-place
 
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
-            adoutputs.append(ad)
-
-        return adoutputs
+        return adinputs

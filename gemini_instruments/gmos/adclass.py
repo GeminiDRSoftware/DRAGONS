@@ -503,7 +503,7 @@ class AstroDataGmos(AstroDataGemini):
         (list of) int (1)
             Dispersion axis.
        """
-        return 1 if 'SPECT' in self.tags else None
+        return 1
 
     @astro_data_descriptor
     def exposure_time(self):

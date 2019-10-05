@@ -314,3 +314,6 @@ process_arcs/GMOS/S20140504S0008.fits  # B600:0.500 EEV
 process_arcs/GMOS/S20170103S0152.fits  # B600:0.600 HAM
 process_arcs/GMOS/S20170108S0085.fits  # B600:0.500 HAM
 process_arcs/GMOS/S20170116S0189.fits  # B1200:0.440 HAM
+
+# gemini_tools things
+gt/slit_images/N20180118S0344.fits

@@ -73,6 +73,10 @@ class Connect(object):
             elif use_existing and len(existing_ds9_viewers):
                 target = existing_ds9_viewers[0]
 
+            # This Exception will be picked up by the dormant viewer
+            if target is None and use_existing:
+                raise ValueError("No existing viewer to use.")
+
             instance = ds9Viewer(target=target, path=path,
                                  wait_time=wait_time,
                                  quit_ds9_on_del=quit_window)

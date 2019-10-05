@@ -138,10 +138,10 @@ class ds9(imexam.ds9_viewer.ds9):
     viewer as we wish, and to sleep after creation, as required.
     """
     def __init__(self, target=None, path=None, wait_time=5,
-                 quit_ds9_on_del=True):
+                 quit_ds9_on_del=False):
         super().__init__(target=target, path=path, wait_time=wait_time,
                          quit_ds9_on_del=quit_ds9_on_del)
-        # No need to sleep if we're connceting to an existing ds9
+        # No need to sleep if we're connecting to an existing ds9
         if target is None:
             time.sleep(2)
 
@@ -169,7 +169,7 @@ class ds9(imexam.ds9_viewer.ds9):
             self._ds9_process = p
             self._process_list.append(p)
             self._need_to_purge = False
-            #time.sleep(2)
+            time.sleep(2)
             return xpaname
 
         except Exception as e:  # refine error class

@@ -70,7 +70,7 @@ def take_along_axis(arr, ind, axis):
             inds.append(np.arange(n).reshape(ind_shape_dim))
     return arr[tuple(inds)]
 
-def unpack_nddata(fn):
+def stack_nddata(fn):
     """
     This decorator wraps a method that takes a sequence of NDAstroData
     objects and stacks them into data, mask, and variance arrays of one
@@ -112,6 +112,23 @@ def unpack_nddata(fn):
         ret_value = NDAstroData(out_data, mask=out_mask)
         if out_var is not None:
             ret_value.variance = out_var
+        return ret_value
+    return wrapper
+
+def unpack_nddata(fn):
+    """
+    This decorator wraps a function/staticmethod that expects separate
+    data, mask, and variance parameters and allows an NDAstroData instance
+    to be sent instead. This is similar to nddata.support_nddata, but
+    handles variance and doesn't give warnings if the NDData instance has
+    attributes set which aren't picked up by the function.
+    """
+    @wraps(fn)
+    def wrapper(data, mask=None, variance=None, **kwargs):
+        if isinstance(data, NDAstroData):
+            ret_value = fn(data.data, mask=data.mask, variance=data.variance, **kwargs)
+        else:
+            ret_value = fn(data, mask=mask, variance=variance, **kwargs)
         return ret_value
     return wrapper
 
@@ -241,7 +258,7 @@ class NDStacker(object):
     @staticmethod
     def _num_good(mask):
         # Return the number of unflagged pixels at each output pixel
-        return np.sum(mask==False, axis=0)
+        return np.sum(mask == False, axis=0)
 
     @staticmethod
     def _divide0(numerator, denominator):
@@ -249,10 +266,10 @@ class NDStacker(object):
         return np.divide(numerator, denominator,
                          out=np.zeros_like(numerator), where=(denominator!=0))
 
-    @unpack_nddata
+    @stack_nddata
     def __call__(self, data, mask=None, variance=None):
         """
-        Perform the rejection and combining. The unpack_nddata decorator
+        Perform the rejection and combining. The stack_nddata decorator
         allows a series of NDData object to be sent, and split into data, mask,
         and variance.
         """
@@ -330,6 +347,7 @@ class NDStacker(object):
 
     @staticmethod
     @combiner
+    @unpack_nddata
     def mean(data, mask=None, variance=None):
         # Regular arithmetic mean
         mask, out_mask = NDStacker._process_mask(mask)
@@ -345,6 +363,7 @@ class NDStacker(object):
 
     @staticmethod
     @combiner
+    @unpack_nddata
     def wtmean(data, mask=None, variance=None):
         # Inverse-variance weighted mean
         if variance is None:
@@ -357,6 +376,7 @@ class NDStacker(object):
 
     @staticmethod
     @combiner
+    @unpack_nddata
     def median(data, mask=None, variance=None):
         # Median
         if mask is None:
@@ -396,6 +416,7 @@ class NDStacker(object):
 
     @staticmethod
     @combiner
+    @unpack_nddata
     def lmedian(data, mask=None, variance=None):
         # Low median: i.e., if even number, take lower of 2 middle items
         num_img = data.shape[0]
@@ -427,12 +448,14 @@ class NDStacker(object):
 
     @staticmethod
     @rejector
+    @unpack_nddata
     def none(data, mask=None, variance=None):
         # No rejection: That's easy!
         return data, mask, variance
 
     @staticmethod
     @rejector
+    @unpack_nddata
     def minmax(data, mask=None, variance=None, nlow=0, nhigh=0):
         # minmax rejection, following IRAF rules when pixels are rejected
         # We flag the pixels to be rejected as DQ.bad_pixel. For any pixels
@@ -472,6 +495,7 @@ class NDStacker(object):
 
     @staticmethod
     @rejector
+    @unpack_nddata
     def sigclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
                 hsigma=3.0, max_iters=None):
         # Sigma-clipping based on scatter of data
@@ -481,6 +505,7 @@ class NDStacker(object):
 
     @staticmethod
     @rejector
+    @unpack_nddata
     def varclip(data, mask=None, variance=None, mclip=True, lsigma=3.0,
                 hsigma=3.0, max_iters=None):
         # Sigma-type-clipping where VAR array is used to determine deviancy
