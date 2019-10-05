@@ -130,7 +130,7 @@ class dormantViewer(object):
         viewer_name: str/None
             name of the viewer (passed to gempy.display.connect)
         use_existing: bool
-            connect to an existing viewer?
+            must connect to an existing viewer?
         """
         if not isinstance(parent, PrimitivesBASE):
             raise ValueError("dormantViewer must be instantiated with a "
@@ -149,6 +149,8 @@ class dormantViewer(object):
                 self.parent().log.warning("Attempting to display to an unknown"
                                           " display ({}). Image display turned"
                                           " off".format(self.viewer_name))
+                self.viewer_name = None
+            except ValueError:
                 self.viewer_name = None
             else:
                 return getattr(self.parent().viewer, name)
