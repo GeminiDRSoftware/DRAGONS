@@ -178,21 +178,6 @@ def test_QESpline_optimization():
     np.testing.assert_allclose(real_coeffs, 1./result.x, atol=0.01)
 
 
-def test_convert_flam_to_magnitude():
-    """
-    Test the conversion of flux density to magnitude using SDSS zeropoints
-    """
-    from geminidr.core.primitives_spect import convert_flam_to_magnitude
-
-    # AB zeropoints from Fukugita et al. (1996; AJ 111, 1748)
-    wavelength = np.array([355.7, 482.5, 626.1, 767.2, 909.7, 1000.0])
-    flam = np.array([860.3, 467.4, 277.7, 185.0, 131.5, -1.0]) * 1e-11
-
-    mags = convert_flam_to_magnitude(wavelength, flam)
-
-    np.testing.assert_allclose(mags[:-1], np.zeros_like(mags[:-1]), atol=0.001)
-    assert np.isnan(mags[-1])
-
 
 class TestArcProcessing:
     """
