@@ -279,8 +279,9 @@ class PlotGmosSpectLongslitArcs:
         model : Chebyshev1D
             Model that represents the wavelength solution.
         """
-        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}".format(
-            self.name, ext_num, self.grating, self.central_wavelength, dpi=300))
+        fig, ax = plt.subplots(
+            dpi=300, num="{:s}_{:d}_{:s}_{:.0f}".format(
+                self.name, ext_num, self.grating, self.central_wavelength))
 
         w = model(np.arange(data.size))
 
@@ -336,8 +337,9 @@ class PlotGmosSpectLongslitArcs:
         model : Chebyshev1D
             Model that represents the wavelength solution.
         """
-        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
-            self.name, ext_num, self.grating, self.central_wavelength), dpi=300)
+        fig, ax = plt.subplots(
+            dpi=300, num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
+                self.name, ext_num, self.grating, self.central_wavelength))
 
         non_linear_model = model.copy()
         _ = [setattr(non_linear_model, 'c{}'.format(k), 0) for k in [0, 1]]
@@ -387,8 +389,9 @@ class PlotGmosSpectLongslitArcs:
         model : Chebyshev1D
             Model that represents the wavelength solution.
         """
-        fig, ax = plt.subplots(num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
-            self.name, ext_num, self.grating, self.central_wavelength), dpi=300)
+        fig, ax = plt.subplots(
+            dpi=300, num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
+                self.name, ext_num, self.grating, self.central_wavelength))
 
         ax.plot(wavelengths, wavelengths - model(peaks), 'ko')
 
