@@ -213,7 +213,7 @@ class PlotGmosSpectLongslitArcs:
             build_number = int(os.environ['BUILD_NUMBER'])
 
             tar_name = os.path.join(
-                self.output_folder, "{:s}_b{:04d}.tar.gz".format(
+                self.output_folder, "plots_{:s}_b{:03d}.tar.gz".format(
                     branch_name, build_number))
 
             with tarfile.open(tar_name, "w:gz") as tar:
