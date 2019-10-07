@@ -1,2 +1,7 @@
+#!/usr/bin/env python
+"""
+Configuration File for `gemini_instruments.f2`.
+"""
+from astrodata import testing
 
-from astrodata.testing import path_to_inputs
+path_to_inputs = testing.path_to_inputs
