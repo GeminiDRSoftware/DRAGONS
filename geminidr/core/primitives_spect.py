@@ -599,8 +599,9 @@ class Spect(PrimitivesBASE):
                     variance = ext.variance
 
                 # Mask bad columns but not saturated/non-linear data points
-                mask &= 65535 ^ (DQ.saturated | DQ.non_linear)
-                data[mask > 0] = 0.
+                if mask is not None:
+                    mask = mask & (65535 ^ (DQ.saturated | DQ.non_linear))
+                    data[mask > 0] = 0.
 
                 cenwave = params["central_wavelength"] or ext.central_wavelength(asNanometers=True)
                 dw = params["dispersion"] or ext.dispersion(asNanometers=True)
