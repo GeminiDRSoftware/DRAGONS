@@ -22,7 +22,7 @@ from gempy.library import astromodels
 from gempy.utils import logutils
 
 dataset_file_list = [
-    # Process Arcs: GMOS-N
+    # Process Arcs: GMOS-N ---
     'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
     'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
     'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
@@ -33,8 +33,8 @@ dataset_file_list = [
     'process_arcs/GMOS/N20100830S0594.fits',  # R150:0.500 EEV
     'process_arcs/GMOS/N20100702S0321.fits',  # R150:0.700 EEV
     'process_arcs/GMOS/N20130606S0291.fits',  # R150:0.550 E2V
-    'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V
-    'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM
+    # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61)
+    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol.
     'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
     'process_arcs/GMOS/N20101212S0213.fits',  # R400:0.550 EEV
     'process_arcs/GMOS/N20100202S0214.fits',  # R400:0.700 EEV
@@ -50,10 +50,10 @@ dataset_file_list = [
     'process_arcs/GMOS/N20130830S0291.fits',  # R831:0.845 E2V
     'process_arcs/GMOS/N20170910S0009.fits',  # R831:0.653 HAM
     'process_arcs/GMOS/N20170509S0682.fits',  # R831:0.750 HAM
-    'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
+    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
 
-    # Process Arcs: GMOS-S
-    'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
+    # Process Arcs: GMOS-S ---
+    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
     'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
     'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
     'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
@@ -73,7 +73,7 @@ dataset_file_list = [
     'process_arcs/GMOS/S20170129S0125.fits',  # R400:0.685 HAM
     'process_arcs/GMOS/S20170703S0199.fits',  # R400:0.800 HAM
     'process_arcs/GMOS/S20170718S0420.fits',  # R400:0.910 HAM
-    'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV
+    # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
     'process_arcs/GMOS/S20120322S0122.fits',  # R600:0.900 EEV
     'process_arcs/GMOS/S20130803S0011.fits',  # R831:0.576 EEV
     'process_arcs/GMOS/S20130414S0040.fits',  # R831:0.845 EEV
