@@ -24,6 +24,7 @@ from gempy.library.nddops import NDStacker, sum1d
 from gempy.utils import logutils
 
 from . import astromodels
+from .astrotools import divide0
 
 from astrodata import NDAstroData
 from matplotlib import pyplot as plt
@@ -137,12 +138,6 @@ class Aperture(object):
     def optimal_extraction(self, data, mask, var, aper_lower, aper_upper,
                            cr_rej=5, max_iters=None):
         """Optimal extraction following Horne (1986, PASP 98, 609)"""
-
-        def divide0(num, denom, like_num=False):
-            return np.divide(num, denom,
-                             out=np.zeros_like(num if like_num else denom),
-                             where=denom > 0)
-
         BAD_BITS = DQ.bad_pixel | DQ.cosmic_ray | DQ.no_data | DQ.unilluminated
 
         slitlength, npix = data.shape
