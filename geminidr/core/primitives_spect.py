@@ -158,7 +158,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Arc data as 2D spectral images.
+            Arc data as 2D spectral images with a WAVECAL table.
 
         suffix :  str
             Suffix to be added to output files.
@@ -499,7 +499,7 @@ class Spect(PrimitivesBASE):
         ----------
 
         adinputs : list of :class:`~astrodata.AstroData`
-            Arc data as 2D spectral images or 1D spectra.
+             Mosaicked Arc data as 2D spectral images or 1D spectra.
 
         suffix : str
             Suffix to be added to output files.
@@ -536,6 +536,7 @@ class Spect(PrimitivesBASE):
 
         See Also
         --------
+        :class:`~geminidr.core.primitives_visualize.Visualize.mosaicDetectors`,
         :class:`~gempy.library.matching.KDTreeFitter`,
         :class:`~gempy.library.matching.Chebyshev1DMatchBox`.
         """
