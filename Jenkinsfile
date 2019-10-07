@@ -39,6 +39,7 @@ pipeline {
             steps{
                 sendNotifications 'STARTED'
                 checkout scm
+                sh 'rm ./plots/*.tar.gz'
                 sh '.jenkins/scripts/download_and_install_anaconda.sh'
                 sh '.jenkins/scripts/create_conda_environment.sh'
                 sh '.jenkins/scripts/install_missing_packages.sh'

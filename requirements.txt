@@ -4,6 +4,7 @@ cython
 future
 numpy
 python-dateutil
+pytest
 scipy
 sqlalchemy
 stsci.numdisplay

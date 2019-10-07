@@ -23,22 +23,73 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 from scipy import ndimage
 
-dataset_folder_list = ['GMOS/GN-2017A-FT-19',
-                       'GMOS/GS-2016B-Q-54-32']
+dataset_folder_list = [
+    'GMOS/GN-2017A-FT-19',
+    # 'GMOS/GS-2016B-Q-54-32'
+]
 
 
-@pytest.fixture(scope='class')
-def calibrations():
+@pytest.fixture(scope='class', params=dataset_folder_list)
+def config(request, path_to_inputs, path_to_outputs, path_to_refs):
+    """
+    Super fixture that returns an object with the data required for the tests
+    inside this file. This super fixture avoid confusions with Pytest, Fixtures
+    and Parameters that could generate a very large matrix of configurations.
 
-    my_calibrations = []
+    The `path_to_*` fixtures are defined inside the `conftest.py` file.
 
-    yield my_calibrations
+    Parameters
+    ----------
+    path_to_inputs : pytest.fixture
+        Fixture inherited from astrodata.testing with path to the input files.
+    path_to_outputs : pytest.fixture
+        Fixture inherited from astrodata.testing with path to the output files.
+    path_to_refs : pytest.fixture
+        Fixture inherited from astrodata.testing with path to the reference files.
+
+    Returns
+    -------
+    namespace
+        An object that contains `.ad`, `.output_dir`, `.ref_dir`, and
+        `.filename` attributes.
+    """
+
+    class ConfigTest:
+        """
+        Config class created for each dataset file. It is created from within
+        this a fixture so it can inherit the `path_to_*` fixtures as well.
+        """
+        def __init__(self, path):
+
+            dataset = sorted(
+                glob.glob(os.path.join(path_to_inputs, path, '*.fits')))
+
+            list_of_bias = dataselect.select_data(dataset, ['BIAS'], [])
+            list_of_flats = dataselect.select_data(dataset, ['FLAT'], [])
+            list_of_arcs = dataselect.select_data(dataset, ['ARC'], [])
+            list_of_science = dataselect.select_data(dataset, [], ['CAL'])
+
+            full_path = os.path.join(path_to_outputs, path)
+
+            oldmask = os.umask(000)
+            os.makedirs(full_path, mode=0o775, exist_ok=True)
+            os.umask(oldmask)
+
+            self.biases = list_of_bias
+            self.calibrations = []
+            self.flats = list_of_flats
+            self.arcs = list_of_arcs
+            self.science = list_of_science
+            self.full_path = full_path
+
+    c = ConfigTest(request.param)
+    yield c
 
     _ = [os.remove(f) for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
+    del c
 
 
 @pytest.mark.gmosls
-@pytest.mark.parametrize('dataset_folder', dataset_folder_list, scope='class')
 class TestGmosReduceLongslit:
     """
     Collection of tests that will run on every `dataset_folder`. Both
@@ -46,91 +97,74 @@ class TestGmosReduceLongslit:
     test. Even when the test does not use it.
     """
     @staticmethod
-    def test_can_run_reduce_bias(dataset_folder, calibrations, path_to_inputs,
-                                 path_to_outputs):
+    def test_can_run_reduce_bias(config):
         """
         Make sure that the reduce_BIAS works for spectroscopic data.
         """
         logutils.config(file_name='reduce_GMOS_LS_bias.log')
 
-        dataset = sorted(
-            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
-
-        list_of_bias = dataselect.select_data(dataset, ['BIAS'], [])
         reduce_bias = Reduce()
         assert len(reduce_bias.files) == 0
 
-        reduce_bias.files.extend(list_of_bias)
-        assert len(reduce_bias.files) == len(list_of_bias)
+        reduce_bias.files.extend(config.biases)
+        assert len(reduce_bias.files) == len(config.biases)
 
         reduce_bias.runr()
 
-        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+        new_files = [os.path.join(config.full_path, f)
                      for f in reduce_bias.output_filenames]
 
         for old, new in zip(reduce_bias.output_filenames, new_files):
-            os.renames(old, new)
-            calibrations.append('processed_bias:{}'.format(new))
+            os.rename(old, new)
+            os.chmod(new, mode=0o775)
+            config.calibrations.append('processed_bias:{}'.format(new))
 
     @staticmethod
-    def test_can_run_reduce_flat(dataset_folder, calibrations, path_to_inputs,
-                                 path_to_outputs):
+    def test_can_run_reduce_flat(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
         """
         logutils.config(file_name='reduce_GMOS_LS_flat.log')
 
-        dataset = sorted(
-            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
-
-        list_of_flat = dataselect.select_data(dataset, ['FLAT'], [])
-
         reduce_flat = Reduce()
         assert len(reduce_flat.files) == 0
 
-        reduce_flat.files.extend(list_of_flat)
-        assert len(reduce_flat.files) == len(list_of_flat)
+        reduce_flat.files.extend(config.flats)
+        assert len(reduce_flat.files) == len(config.flats)
 
-        reduce_flat.ucals = normalize_ucals(reduce_flat.files, calibrations)
+        reduce_flat.ucals = normalize_ucals(
+            reduce_flat.files, config.calibrations)
 
         reduce_flat.runr()
 
-        if not os.path.exists(os.path.join(path_to_outputs, dataset_folder)):
-            os.makedirs(os.path.join(path_to_outputs, dataset_folder))
-
-        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+        new_files = [os.path.join(config.full_path, f)
                      for f in reduce_flat.output_filenames]
 
         for old, new in zip(reduce_flat.output_filenames, new_files):
-            os.renames(old, new)
-            calibrations.append('processed_flat:{}'.format(new))
+            os.rename(old, new)
+            os.chmod(new, mode=0o775)
+            config.calibrations.append('processed_flat:{}'.format(new))
 
     @staticmethod
-    def test_can_run_reduce_arc(dataset_folder, calibrations, path_to_inputs,
-                                path_to_outputs):
+    def test_can_run_reduce_arc(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT can run for spectroscopic
         data.
         """
         logutils.config(file_name='reduce_GMOS_LS_arc.log')
 
-        dataset = sorted(
-            glob.glob(os.path.join(path_to_inputs, dataset_folder, '*.fits')))
-
-        list_of_arcs = dataselect.select_data(dataset, ['ARC'], [])
-
-        for f in list_of_arcs:
+        for f in config.arcs:
             ad = astrodata.open(f)
             _ = ad.gain_setting()
 
-        for c in calibrations:
+        for c in config.calibrations:
             f = c.split(':')[-1]
             ad = astrodata.open(f)
             _ = ad.gain_setting()
 
-        adinputs = [astrodata.open(f) for f in list_of_arcs]
+        adinputs = [astrodata.open(f) for f in config.arcs]
 
-        cal_files = normalize_ucals(list_of_arcs, calibrations)
+        cal_files = normalize_ucals(config.arcs, config.calibrations)
         processed_bias = [cal_files[k] for k in cal_files.keys() if 'processed_bias' in k]
 
         p = primitives_gmos_spect.GMOSSpect(adinputs)
@@ -151,13 +185,13 @@ class TestGmosReduceLongslit:
         p.storeProcessedArc()
         p.writeOutputs()
 
-        new_files = [os.path.join(path_to_outputs, dataset_folder, f)
+        new_files = [os.path.join(config.full_path, f)
                      for f in glob.glob('*.fits')]
 
         for old, new in zip(glob.glob('*.fits'), new_files):
             os.renames(old, new)
             if 'arc' in new:
-                calibrations.append('processed_arc:{}'.format(new))
+                config.calibrations.append('processed_arc:{}'.format(new))
 
     # noinspection PyUnusedLocal
     @staticmethod
@@ -177,7 +211,7 @@ class TestGmosReduceLongslit:
         # all_files = sorted(glob.glob(os.path.join(path_to_inputs, raw_subdir, '*.fits')))
         # assert len(all_files) > 1
         #
-        # list_of_science = dataselect.select_data(all_files, [], ['CAL'])
+        #
         #
         # reduce_science = Reduce()
         # assert len(reduce_science.files) == 0
