@@ -218,12 +218,7 @@ class PlotGmosSpectLongslitArcs:
 
             with tarfile.open(tar_name, "w:gz") as tar:
                 for _file in glob.glob(os.path.join(self.output_folder, "*.png")):
-
-                    arc_name = os.path.join(
-                        os.path.splitext(__file__)[-1], '/',
-                        os.path.basename(_file))
-
-                    tar.add(name=_file, arcname=arc_name)
+                    tar.add(name=_file, arcname=os.path.basename(_file))
 
             target_dir = "./plots/"
             target_file = os.path.join(target_dir, os.path.basename(tar_name))
