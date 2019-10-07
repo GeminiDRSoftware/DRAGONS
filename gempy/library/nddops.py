@@ -264,7 +264,7 @@ class NDStacker(object):
     def _divide0(numerator, denominator):
         # Division with divide-by-zero catching
         return np.divide(numerator, denominator,
-                         out=np.zeros_like(numerator), where=(denominator!=0))
+                         out=np.zeros(numerator.shape, dtype=np.float32), where=(denominator!=0))
 
     @stack_nddata
     def __call__(self, data, mask=None, variance=None):
