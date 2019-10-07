@@ -55,42 +55,42 @@ pipeline {
 
         }
 
-//         stage('Code Metrics') {
-//
-//             steps {
-//                 sh '.jenkins/code_metrics/pylint.sh'
-//                 sh '.jenkins/code_metrics/pydocstring.sh'
-//             }
-//             post {
-//                 success {
-//                     recordIssues(
-//                         enabledForFailure: true,
-//                         tools: [
-//                             pyLint(pattern: '**/reports/pylint.log'),
-//                             pyDocStyle(pattern: '**/reports/pydocstyle.log')
-//                         ]
-//                     )
-//                 }
-//             }
-//
-//         }
+        stage('Code Metrics') {
 
-//         stage('Unit tests') {
-//
-//             steps {
-//
-//                 echo "ensure cleaning __pycache__"
-//                 sh  'find . | grep -E "(__pycache__|\\.pyc|\\.pyo$)" | xargs rm -rfv'
-//
-//                 echo "Running tests"
-//                 sh  '''
-//                     source activate ${CONDA_ENV_NAME}
-//                     coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
-//                     '''
-//
-//             }
-//
-//         }
+            steps {
+                sh '.jenkins/code_metrics/pylint.sh'
+                sh '.jenkins/code_metrics/pydocstring.sh'
+            }
+            post {
+                success {
+                    recordIssues(
+                        enabledForFailure: true,
+                        tools: [
+                            pyLint(pattern: '**/reports/pylint.log'),
+                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
+                        ]
+                    )
+                }
+            }
+
+        }
+
+        stage('Unit tests') {
+
+            steps {
+
+                echo "ensure cleaning __pycache__"
+                sh  'find . | grep -E "(__pycache__|\\.pyc|\\.pyo$)" | xargs rm -rfv'
+
+                echo "Running tests"
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
+                    '''
+
+            }
+
+        }
 
         stage('GMOS LS Tests') {
 
@@ -118,16 +118,16 @@ pipeline {
 
         }
 
-//         stage('Integration tests') {
-//
-//             steps {
-//                 sh  '''
-//                     source activate ${CONDA_ENV_NAME}
-//                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
-//                     '''
-//             }
-//
-//         }
+        stage('Integration tests') {
+
+            steps {
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
+                    '''
+            }
+
+        }
 
 
     }
