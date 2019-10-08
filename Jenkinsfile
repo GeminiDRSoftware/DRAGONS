@@ -82,10 +82,10 @@ pipeline {
                 sh  'find . | grep -E "(__pycache__|\\.pyc|\\.pyo$)" | xargs rm -rfv'
 
                 echo "Running tests"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
-                    '''
+//                 sh  '''
+//                     source activate ${CONDA_ENV_NAME}
+//                     coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
+//                     '''
 
             }
 
@@ -120,10 +120,11 @@ pipeline {
         stage('Integration tests') {
 
             steps {
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
-                    '''
+                echo "Integration tests"
+//                 sh  '''
+//                     source activate ${CONDA_ENV_NAME}
+//                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
+//                     '''
             }
 
         }
