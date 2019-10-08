@@ -61,12 +61,12 @@ def test_can_return_instrument(f2_files):
         assert ad.instrument() == ad.phu['INSTRUME']
 
 
-# def test_can_return_ad_length(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         assert len(ad) == 1
-#
-#
+def test_can_return_ad_length(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        assert len(ad) == 1
+
+
 # def test_slice_range(f2_files):
 #     for _file in f2_files:
 #         ad = astrodata.open(_file)
