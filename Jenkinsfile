@@ -39,7 +39,8 @@ pipeline {
             steps{
                 sendNotifications 'STARTED'
                 checkout scm
-                sh 'rm ./plots/*.tar.gz'
+                sh 'rm -rf ./plots; mkdir -p ./plots'
+                sh 'rm -rf ./reports; mkdir -p ./reports'
                 sh '.jenkins/scripts/download_and_install_anaconda.sh'
                 sh '.jenkins/scripts/create_conda_environment.sh'
                 sh '.jenkins/scripts/install_missing_packages.sh'
@@ -49,8 +50,6 @@ pipeline {
                       '''
                 sh '.jenkins/scripts/test_environment.sh'
                 sh 'conda list -n ${CONDA_ENV_NAME}'
-                sh 'rm -rf ./reports'
-                sh 'mkdir -p ./reports'
             }
 
         }
