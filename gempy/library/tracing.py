@@ -179,7 +179,7 @@ class Aperture(object):
         while True:
             # Step 5: construct spatial profile for each wavelength pixel
             profile = np.divide(data, spectrum,
-                                out=np.zeros_like(data), where=spectrum > 0)
+                                out=np.zeros_like(data, dtype=np.float32), where=spectrum > 0)
             profile_models = []
             for row, wt_row in zip(profile, weights):
                 m_init = models.Chebyshev1D(degree=3, domain=[0, npix - 1])
@@ -423,7 +423,8 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
     # We do this on the filtered data because the continuum level gets
     # subtracted by the Ricker filter
     if variance is not None:
-        snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance), np.zeros_like(data),
+        snr = np.divide(wavelet_transformed_data[0], np.sqrt(variance),
+                        out=np.zeros_like(data, dtype=np.float32),
                         where=variance > 0)
     else:
         snr = wavelet_transformed_data[0]
@@ -641,7 +642,8 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     if variance is None:
         w = np.full_like(y, np.sqrt(2) / sigma_clipped_stats(np.diff(y))[2])
     else:
-        w = np.divide(1.0, np.sqrt(variance[mask == 0]), out=np.zeros_like(y),
+        w = np.divide(1.0, np.sqrt(variance[mask == 0]),
+                      out=np.zeros_like(y, dtype=np.float32),
                       where=variance[mask == 0] > 0)
 
     # We need to fit a quartic spline since we want to know its
