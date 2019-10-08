@@ -209,7 +209,7 @@ class PlotGmosSpectLongslitArcs:
         # Runs only from inside Jenkins
         if 'BUILD_ID' in os.environ:
 
-            branch_name = os.environ['BRANCH_NAME'].split('/')[-1]
+            branch_name = os.environ['BRANCH_NAME'].replace('/', '.')
             build_number = int(os.environ['BUILD_NUMBER'])
 
             tar_name = os.path.join(
