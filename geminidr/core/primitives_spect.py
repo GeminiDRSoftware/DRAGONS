@@ -585,8 +585,10 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("Read arc line relative weights")
 
         for ad in adinputs:
+            log.info("Determining wavelength solution for {}".format(ad.filename))
             for ext in ad:
-                log.info("Determining wavelength solution for {}".format(ad.filename))
+                if len(ad) > 1:
+                    log.info("Determining solution for EXTVER {}".format(ext.hdr['EXTVER']))
 
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
@@ -600,8 +602,9 @@ class Spect(PrimitivesBASE):
                     variance = ext.variance
 
                 # Mask bad columns but not saturated/non-linear data points
-                mask &= 65535 ^ (DQ.saturated | DQ.non_linear)
-                data[mask > 0] = 0.
+                if mask is not None:
+                    mask = mask & (65535 ^ (DQ.saturated | DQ.non_linear))
+                    data[mask > 0] = 0.
 
                 cenwave = params["central_wavelength"] or ext.central_wavelength(asNanometers=True)
                 dw = params["dispersion"] or ext.dispersion(asNanometers=True)
@@ -774,7 +777,7 @@ class Spect(PrimitivesBASE):
                     plt.show()
 
                 m.display_fit()
-                plt.savefig(ad.filename.replace('_mosaic.fits', '.jpg'))
+                plt.savefig(ad.filename.replace('.fits', '.jpg'))
 
                 m.sort()
                 # Add 1 to pixel coordinates so they're 1-indexed

@@ -30,6 +30,39 @@ def array_from_list(list_of_quantities):
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
 
+def divide0(numerator, denominator):
+    """
+    Perform division, replacing division by zero with zero. This expands
+    on the np.divide() function by having to deal with cases where either
+    the numerator and/or denominator might be scalars, rather than arrays,
+    and also deals with cases where they might be integer types.
+
+    Parameters
+    ----------
+    numerator: float/array-like
+        the numerator for the division
+    denominator: float/array-like
+        the denominator for the division
+
+    Returns
+    -------
+    The quotient, with instances where the denominator is zero replace by zero
+    """
+    try:
+        is_int = np.issubdtype(denominator.dtype, np.integer)
+    except AttributeError:
+        # denominator is a scalar
+        try:
+            is_int = np.issubdtype(numerator.dtype, np.integer)
+        except AttributeError:
+            # numerator is also a scalar
+            return 0 if denominator == 0 else numerator / denominator
+        else:
+            dtype = np.float32 if is_int else numerator.dtype
+            return np.divide(numerator, denominator, out=np.zeros(numerator.shape, dtype=dtype), where=denominator!=0)
+    else:
+        dtype = np.float32 if is_int else denominator.dtype
+        return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=dtype), where=denominator!=0)
 
 def rasextodec(string):
     """

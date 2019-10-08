@@ -17,6 +17,7 @@ import inspect
 from collections import namedtuple
 from functools import wraps
 from astrodata import NDAstroData
+from .astrotools import divide0
 from geminidr.gemini.lookups import DQ_definitions as DQ
 try:
     from . import cyclip
@@ -252,19 +253,13 @@ class NDStacker(object):
     def calculate_variance(data, mask, out_data):
         # gemcombine-style estimate of variance about the returned value
         ngood = data.shape[0] if mask is None else NDStacker._num_good(mask)
-        return NDStacker._divide0(np.ma.masked_array(np.square(data - out_data),
-                                            mask=mask).sum(axis=0).data.astype(data.dtype), ngood*(ngood-1))
+        return divide0(np.ma.masked_array(np.square(data - out_data),
+                       mask=mask).sum(axis=0).data.astype(data.dtype), ngood*(ngood-1))
 
     @staticmethod
     def _num_good(mask):
         # Return the number of unflagged pixels at each output pixel
         return np.sum(mask == False, axis=0)
-
-    @staticmethod
-    def _divide0(numerator, denominator):
-        # Division with divide-by-zero catching
-        return np.divide(numerator, denominator,
-                         out=np.zeros_like(numerator), where=(denominator!=0))
 
     @stack_nddata
     def __call__(self, data, mask=None, variance=None):
