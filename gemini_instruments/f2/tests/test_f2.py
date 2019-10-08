@@ -54,13 +54,13 @@ def test_tags(f2_files):
         assert expected_tags.issubset(tags)
 
 
-# def test_can_return_instrument(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         assert ad.phu['INSTRUME'] == 'F2'
-#         assert ad.instrument() == ad.phu['INSTRUME']
-#
-#
+def test_can_return_instrument(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        assert ad.phu['INSTRUME'] == 'F2'
+        assert ad.instrument() == ad.phu['INSTRUME']
+
+
 # def test_can_return_ad_length(f2_files):
 #     for _file in f2_files:
 #         ad = astrodata.open(_file)
