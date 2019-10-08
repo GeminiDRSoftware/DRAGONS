@@ -33,60 +33,60 @@ dataset_file_list = [
     'process_arcs/GMOS/N20100830S0594.fits',  # R150:0.500 EEV
     'process_arcs/GMOS/N20100702S0321.fits',  # R150:0.700 EEV
     'process_arcs/GMOS/N20130606S0291.fits',  # R150:0.550 E2V
-    # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61)
-    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol.
-    'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
-    'process_arcs/GMOS/N20101212S0213.fits',  # R400:0.550 EEV
-    'process_arcs/GMOS/N20100202S0214.fits',  # R400:0.700 EEV
-    'process_arcs/GMOS/N20130106S0194.fits',  # R400:0.500 E2V
-    'process_arcs/GMOS/N20130422S0217.fits',  # R400:0.700 E2V
-    'process_arcs/GMOS/N20170108S0210.fits',  # R400:0.660 HAM
-    'process_arcs/GMOS/N20171113S0135.fits',  # R400:0.750 HAM
-    'process_arcs/GMOS/N20100427S1276.fits',  # R600:0.675 EEV
-    'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
-    'process_arcs/GMOS/N20100212S0143.fits',  # R831:0.450 EEV
-    'process_arcs/GMOS/N20100720S0247.fits',  # R831:0.850 EEV
-    'process_arcs/GMOS/N20130808S0490.fits',  # R831:0.571 E2V
-    'process_arcs/GMOS/N20130830S0291.fits',  # R831:0.845 E2V
-    'process_arcs/GMOS/N20170910S0009.fits',  # R831:0.653 HAM
-    'process_arcs/GMOS/N20170509S0682.fits',  # R831:0.750 HAM
-    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
-
-    # Process Arcs: GMOS-S ---
-    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
-    'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
-    'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
-    'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
-    'process_arcs/GMOS/S20130510S0103.fits',  # B1200:0.450 EEV
-    'process_arcs/GMOS/S20130629S0002.fits',  # B1200:0.525 EEV
-    'process_arcs/GMOS/S20131123S0044.fits',  # B1200:0.595 EEV
-    'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM - todo: very weird non-linear plot
-    'process_arcs/GMOS/S20170908S0189.fits',  # B1200:0.550 HAM
-    'process_arcs/GMOS/S20131230S0153.fits',  # R150:0.550 EEV
-    'process_arcs/GMOS/S20130801S0140.fits',  # R150:0.700 EEV
-    'process_arcs/GMOS/S20170430S0060.fits',  # R150:0.717 HAM
-    'process_arcs/GMOS/S20170430S0063.fits',  # R150:0.727 HAM
-    'process_arcs/GMOS/S20171102S0051.fits',  # R150:0.950 HAM
-    'process_arcs/GMOS/S20130114S0100.fits',  # R400:0.620 EEV
-    'process_arcs/GMOS/S20130217S0073.fits',  # R400:0.800 EEV
-    'process_arcs/GMOS/S20170108S0046.fits',  # R400:0.550 HAM
-    'process_arcs/GMOS/S20170129S0125.fits',  # R400:0.685 HAM
-    'process_arcs/GMOS/S20170703S0199.fits',  # R400:0.800 HAM
-    'process_arcs/GMOS/S20170718S0420.fits',  # R400:0.910 HAM
-    # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
-    'process_arcs/GMOS/S20120322S0122.fits',  # R600:0.900 EEV
-    'process_arcs/GMOS/S20130803S0011.fits',  # R831:0.576 EEV
-    'process_arcs/GMOS/S20130414S0040.fits',  # R831:0.845 EEV
-    'process_arcs/GMOS/S20170214S0059.fits',  # R831:0.440 HAM
-    'process_arcs/GMOS/S20170703S0204.fits',  # R831:0.600 HAM
-    'process_arcs/GMOS/S20171018S0048.fits',  # R831:0.865 HAM
-
-    'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
-    'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
-    'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
-    'process_arcs/GMOS/N20100307S0236.fits',  # B1200:0.445 EEV
-    'process_arcs/GMOS/N20130628S0290.fits',  # B1200:0.420 E2V
-    'process_arcs/GMOS/N20170904S0078.fits',  # B1200:0.440 HAM
+    # # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61)
+    # # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol.
+    # 'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
+    # 'process_arcs/GMOS/N20101212S0213.fits',  # R400:0.550 EEV
+    # 'process_arcs/GMOS/N20100202S0214.fits',  # R400:0.700 EEV
+    # 'process_arcs/GMOS/N20130106S0194.fits',  # R400:0.500 E2V
+    # 'process_arcs/GMOS/N20130422S0217.fits',  # R400:0.700 E2V
+    # 'process_arcs/GMOS/N20170108S0210.fits',  # R400:0.660 HAM
+    # 'process_arcs/GMOS/N20171113S0135.fits',  # R400:0.750 HAM
+    # 'process_arcs/GMOS/N20100427S1276.fits',  # R600:0.675 EEV
+    # 'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
+    # 'process_arcs/GMOS/N20100212S0143.fits',  # R831:0.450 EEV
+    # 'process_arcs/GMOS/N20100720S0247.fits',  # R831:0.850 EEV
+    # 'process_arcs/GMOS/N20130808S0490.fits',  # R831:0.571 E2V
+    # 'process_arcs/GMOS/N20130830S0291.fits',  # R831:0.845 E2V
+    # 'process_arcs/GMOS/N20170910S0009.fits',  # R831:0.653 HAM
+    # 'process_arcs/GMOS/N20170509S0682.fits',  # R831:0.750 HAM
+    # # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
+    #
+    # # Process Arcs: GMOS-S ---
+    # # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
+    # 'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
+    # 'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
+    # 'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
+    # 'process_arcs/GMOS/S20130510S0103.fits',  # B1200:0.450 EEV
+    # 'process_arcs/GMOS/S20130629S0002.fits',  # B1200:0.525 EEV
+    # 'process_arcs/GMOS/S20131123S0044.fits',  # B1200:0.595 EEV
+    # 'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM - todo: very weird non-linear plot
+    # 'process_arcs/GMOS/S20170908S0189.fits',  # B1200:0.550 HAM
+    # 'process_arcs/GMOS/S20131230S0153.fits',  # R150:0.550 EEV
+    # 'process_arcs/GMOS/S20130801S0140.fits',  # R150:0.700 EEV
+    # 'process_arcs/GMOS/S20170430S0060.fits',  # R150:0.717 HAM
+    # 'process_arcs/GMOS/S20170430S0063.fits',  # R150:0.727 HAM
+    # 'process_arcs/GMOS/S20171102S0051.fits',  # R150:0.950 HAM
+    # 'process_arcs/GMOS/S20130114S0100.fits',  # R400:0.620 EEV
+    # 'process_arcs/GMOS/S20130217S0073.fits',  # R400:0.800 EEV
+    # 'process_arcs/GMOS/S20170108S0046.fits',  # R400:0.550 HAM
+    # 'process_arcs/GMOS/S20170129S0125.fits',  # R400:0.685 HAM
+    # 'process_arcs/GMOS/S20170703S0199.fits',  # R400:0.800 HAM
+    # 'process_arcs/GMOS/S20170718S0420.fits',  # R400:0.910 HAM
+    # # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
+    # 'process_arcs/GMOS/S20120322S0122.fits',  # R600:0.900 EEV
+    # 'process_arcs/GMOS/S20130803S0011.fits',  # R831:0.576 EEV
+    # 'process_arcs/GMOS/S20130414S0040.fits',  # R831:0.845 EEV
+    # 'process_arcs/GMOS/S20170214S0059.fits',  # R831:0.440 HAM
+    # 'process_arcs/GMOS/S20170703S0204.fits',  # R831:0.600 HAM
+    # 'process_arcs/GMOS/S20171018S0048.fits',  # R831:0.865 HAM
+    #
+    # 'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
+    # 'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
+    # 'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
+    # 'process_arcs/GMOS/N20100307S0236.fits',  # B1200:0.445 EEV
+    # 'process_arcs/GMOS/N20130628S0290.fits',  # B1200:0.420 E2V
+    # 'process_arcs/GMOS/N20170904S0078.fits',  # B1200:0.440 HAM
 ]
 
 
@@ -467,3 +467,82 @@ class TestGmosSpectLongslitArcs:
             ref_y = ref_model(x)
 
             np.testing.assert_allclose(y, ref_y, rtol=1)
+
+    @staticmethod
+    def test_reduced_arcs_are_similar(config):
+        """
+        Compares the output and the reference arcs to make sure their data are
+        similar before running further tests.
+        """
+        output = os.path.join(config.output_dir, config.filename)
+        reference = os.path.join(config.ref_dir, config.filename)
+
+        if not os.path.exists(output):
+            pytest.skip('Output file not found: {}'.format(output))
+
+        if not os.path.exists(reference):
+            pytest.fail('Reference file not found: {}'.format(reference))
+
+        ad_ref = astrodata.open(reference)
+
+        # Test reduced arcs are similar
+        for ext, ext_ref in zip(config.ad, ad_ref):
+            np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1)
+
+    @staticmethod
+    def test_distortion_correction_is_applied_the_same_way(config):
+        """
+        Applies the same distortion correction model to both output and reference
+        arcs and compares the results.
+        """
+        output = os.path.join(config.output_dir, config.filename)
+        reference = os.path.join(config.ref_dir, config.filename)
+
+        if not os.path.exists(output):
+            pytest.skip('Output file not found: {}'.format(output))
+
+        if not os.path.exists(reference):
+            pytest.fail('Reference file not found: {}'.format(reference))
+
+        ad_ref = astrodata.open(reference)
+
+        p = primitives_gmos_spect.GMOSSpect([])
+
+        distortion_corrected_ad = p.distortionCorrect(
+            adinputs=[config.ad], arc=config.ad)
+
+        distortion_corrected_ref = p.distortionCorrect(
+            adinputs=[ad_ref], arc=config.ad)
+
+        for ext, ext_ref in zip(distortion_corrected_ad, distortion_corrected_ref):
+            np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1)
+
+    @staticmethod
+    def test_distortion_model_is_the_same(config):
+        """
+        Correscts distortion on both output and reference files using the
+        distortion model stored in themselves. Previous tests assures that
+        these data are similar and that distortion correct is applied the same
+        way. Now, this one tests the model itself.
+        """
+        output = os.path.join(config.output_dir, config.filename)
+        reference = os.path.join(config.ref_dir, config.filename)
+
+        if not os.path.exists(output):
+            pytest.skip('Output file not found: {}'.format(output))
+
+        if not os.path.exists(reference):
+            pytest.fail('Reference file not found: {}'.format(reference))
+
+        ad_ref = astrodata.open(reference)
+
+        p = primitives_gmos_spect.GMOSSpect([])
+
+        distortion_corrected_ad = p.distortionCorrect(
+            adinputs=[config.ad], arc=config.ad)
+
+        distortion_corrected_ref = p.distortionCorrect(
+            adinputs=[ad_ref], arc=ad_ref)
+
+        for ext, ext_ref in zip(distortion_corrected_ad, distortion_corrected_ref):
+            np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1)
