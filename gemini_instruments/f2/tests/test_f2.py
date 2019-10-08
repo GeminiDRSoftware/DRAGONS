@@ -40,20 +40,20 @@ def test_extension_data_shape(f2_files):
         assert data.shape == (1, 2048, 2048)
 
 
-# def test_tags(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         tags = ad.tags
-#
-#         expected_tags = {
-#             'F2',
-#             'SOUTH',
-#             'GEMINI',
-#         }
-#
-#         assert expected_tags.issubset(tags)
-#
-#
+def test_tags(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        tags = ad.tags
+
+        expected_tags = {
+            'F2',
+            'SOUTH',
+            'GEMINI',
+        }
+
+        assert expected_tags.issubset(tags)
+
+
 # def test_can_return_instrument(f2_files):
 #     for _file in f2_files:
 #         ad = astrodata.open(_file)
