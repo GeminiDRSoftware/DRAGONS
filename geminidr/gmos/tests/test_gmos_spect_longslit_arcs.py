@@ -451,18 +451,19 @@ class TestGmosSpectLongslitArcs:
         if not os.path.exists(reference):
             pytest.fail('Reference file not found: {}'.format(reference))
 
+        ad_out = config.ad
         ad_ref = astrodata.open(reference)
 
-        for ext, ext_ref in zip(config.ad, ad_ref):
+        for ext_out, ext_ref in zip(ad_out, ad_ref):
             model = astromodels.dict_to_chebyshev(
-                dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
+                dict(zip(ext_out.WAVECAL["name"], ext_out.WAVECAL["coefficients"]))
             )
 
             ref_model = astromodels.dict_to_chebyshev(
                 dict(zip(ext_ref.WAVECAL["name"], ext_ref.WAVECAL["coefficients"]))
             )
 
-            x = np.arange(ext.shape[1])
+            x = np.arange(ext_out.shape[1])
             y = model(x)
             ref_y = ref_model(x)
 
@@ -483,11 +484,12 @@ class TestGmosSpectLongslitArcs:
         if not os.path.exists(reference):
             pytest.fail('Reference file not found: {}'.format(reference))
 
+        ad_out = config.ad
         ad_ref = astrodata.open(reference)
 
         # Test reduced arcs are similar
-        for ext, ext_ref in zip(config.ad, ad_ref):
-            np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1)
+        for ext_out, ext_ref in zip(ad_out, ad_ref):
+            np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
 
     @staticmethod
     def test_distortion_correction_is_applied_the_same_way(config):
@@ -504,18 +506,19 @@ class TestGmosSpectLongslitArcs:
         if not os.path.exists(reference):
             pytest.fail('Reference file not found: {}'.format(reference))
 
+        ad_out = config.ad
         ad_ref = astrodata.open(reference)
 
         p = primitives_gmos_spect.GMOSSpect([])
 
-        distortion_corrected_ad = p.distortionCorrect(
-            adinputs=[config.ad], arc=config.ad)
+        distortion_corrected_ad_out = p.distortionCorrect(
+            adinputs=[ad_out], arc=ad_out)[0]
 
-        distortion_corrected_ref = p.distortionCorrect(
-            adinputs=[ad_ref], arc=config.ad)
+        distortion_corrected_ad_ref = p.distortionCorrect(
+            adinputs=[ad_ref], arc=ad_out)[0]
 
-        for ext, ext_ref in zip(distortion_corrected_ad, distortion_corrected_ref):
-            np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1)
+        for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
+            np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
 
     @staticmethod
     def test_distortion_model_is_the_same(config):
@@ -538,11 +541,11 @@ class TestGmosSpectLongslitArcs:
 
         p = primitives_gmos_spect.GMOSSpect([])
 
-        distortion_corrected_ad = p.distortionCorrect(
+        distortion_corrected_ad_out = p.distortionCorrect(
             adinputs=[config.ad], arc=config.ad)
 
-        distortion_corrected_ref = p.distortionCorrect(
+        distortion_corrected_ad_ref = p.distortionCorrect(
             adinputs=[ad_ref], arc=ad_ref)
 
-        for ext, ext_ref in zip(distortion_corrected_ad, distortion_corrected_ref):
-            np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1)
+        for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
+            np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
