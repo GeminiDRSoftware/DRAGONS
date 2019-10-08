@@ -55,25 +55,25 @@ pipeline {
 
         }
 
-        stage('Code Metrics') {
-
-            steps {
-                sh '.jenkins/code_metrics/pylint.sh'
-                sh '.jenkins/code_metrics/pydocstring.sh'
-            }
-            post {
-                success {
-                    recordIssues(
-                        enabledForFailure: true,
-                        tools: [
-                            pyLint(pattern: '**/reports/pylint.log'),
-                            pyDocStyle(pattern: '**/reports/pydocstyle.log')
-                        ]
-                    )
-                }
-            }
-
-        }
+//         stage('Code Metrics') {
+//
+//             steps {
+//                 sh '.jenkins/code_metrics/pylint.sh'
+//                 sh '.jenkins/code_metrics/pydocstring.sh'
+//             }
+//             post {
+//                 success {
+//                     recordIssues(
+//                         enabledForFailure: true,
+//                         tools: [
+//                             pyLint(pattern: '**/reports/pylint.log'),
+//                             pyDocStyle(pattern: '**/reports/pydocstyle.log')
+//                         ]
+//                     )
+//                 }
+//             }
+//
+//         }
 
         stage('Unit tests') {
 
@@ -92,42 +92,41 @@ pipeline {
 
         }
 
-        stage('GMOS LS Tests') {
+//         stage('GMOS LS Tests') {
+//
+//             steps {
+//
+//                 echo "Running tests"
+//                 sh  '''
+//                     source activate ${CONDA_ENV_NAME}
+//                     coverage run -m pytest -m gmosls --junit-xml ./reports/gmoslstests_results.xml
+//                     '''
+//
+//                 echo "Reporting coverage"
+//                 sh  '''
+//                     source activate ${CONDA_ENV_NAME}
+//                     python -m coverage xml -o ./reports/coverage.xml
+//                     '''
+//             }
+//             post {
+//                 always {
+//                     echo "Running 'archivePlots' from inside GmosArcTests"
+//                     archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+//                 }
+//             }
+//
+//         }
 
-            steps {
-
-                echo "Running tests"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m gmosls --junit-xml ./reports/gmoslstests_results.xml
-                    '''
-
-                echo "Reporting coverage"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    python -m coverage xml -o ./reports/coverage.xml
-                    '''
-
-            }
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside GmosArcTests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                }
-            }
-
-        }
-
-        stage('Integration tests') {
-
-            steps {
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
-                    '''
-            }
-
-        }
+//         stage('Integration tests') {
+//
+//             steps {
+//                 sh  '''
+//                     source activate ${CONDA_ENV_NAME}
+//                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
+//                     '''
+//             }
+//
+//         }
 
 
     }
