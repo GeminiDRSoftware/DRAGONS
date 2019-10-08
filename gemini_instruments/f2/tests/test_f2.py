@@ -85,14 +85,14 @@ def test_read_a_keyword_from_phu(f2_files):
         assert ad.phu['INSTRUME'].strip() == 'F2'
 
 
-# def test_read_a_keyword_from_hdr(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         try:
-#             assert ad.hdr['CCDNAME'] == 'F2'
-#         except KeyError:
-#             # KeyError only accepted if it's because headers out of range
-#             assert len(ad) == 1
+def test_read_a_keyword_from_hdr(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        try:
+            assert ad.hdr['CCDNAME'] == 'F2'
+        except KeyError:
+            # KeyError only accepted if it's because headers out of range
+            assert len(ad) == 1
 
 
 if __name__ == "__main__":
