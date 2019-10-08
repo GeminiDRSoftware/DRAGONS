@@ -67,18 +67,18 @@ def test_can_return_ad_length(f2_files):
         assert len(ad) == 1
 
 
-# def test_slice_range(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         metadata = ('SCI', 2), ('SCI', 3)
-#         slc = ad[1:]
-#
-#         assert len(slc) == 0
-#
-#     for ext, md in zip(slc, metadata):
-#         assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
-#
-#
+def test_slice_range(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        metadata = ('SCI', 2), ('SCI', 3)
+        slc = ad[1:]
+
+        assert len(slc) == 0
+
+    for ext, md in zip(slc, metadata):
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
+
+
 # def test_read_a_keyword_from_phu(f2_files):
 #     for _file in f2_files:
 #         ad = astrodata.open(_file)
