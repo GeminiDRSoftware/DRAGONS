@@ -30,7 +30,7 @@ dataset_folder_list = [
 
 
 @pytest.fixture(scope='class', params=dataset_folder_list)
-def config(request, path_to_inputs, path_to_outputs, path_to_refs):
+def config(request, path_to_inputs, path_to_outputs):
     """
     Super fixture that returns an object with the data required for the tests
     inside this file. This super fixture avoid confusions with Pytest, Fixtures
@@ -40,26 +40,26 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
 
     Parameters
     ----------
+    request : pytest.fixture
+        A special fixture providing information of the requesting test function.
     path_to_inputs : pytest.fixture
-        Fixture inherited from astrodata.testing with path to the input files.
+        Fixture inherited from `astrodata.testing` with path to the input files.
     path_to_outputs : pytest.fixture
-        Fixture inherited from astrodata.testing with path to the output files.
-    path_to_refs : pytest.fixture
-        Fixture inherited from astrodata.testing with path to the reference files.
+        Fixture inherited from `astrodata.testing` with path to the output files.
 
     Returns
     -------
     namespace
-        An object that contains `.ad`, `.output_dir`, `.ref_dir`, and
-        `.filename` attributes.
+        An object that contains `.input_dir` and `.output_dir`
     """
-
     class ConfigTest:
         """
         Config class created for each dataset file. It is created from within
         this a fixture so it can inherit the `path_to_*` fixtures as well.
         """
         def __init__(self, path):
+
+            log_dir = "./logs"
 
             dataset = sorted(
                 glob.glob(os.path.join(path_to_inputs, path, '*.fits')))
@@ -72,15 +72,17 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
             full_path = os.path.join(path_to_outputs, path)
 
             oldmask = os.umask(000)
+            os.makedirs(log_dir, mode=0o775, exist_ok=True)
             os.makedirs(full_path, mode=0o775, exist_ok=True)
             os.umask(oldmask)
 
+            self.arcs = list_of_arcs
             self.biases = list_of_bias
             self.calibrations = []
             self.flats = list_of_flats
-            self.arcs = list_of_arcs
-            self.science = list_of_science
             self.full_path = full_path
+            self.log_dir = log_dir
+            self.science = list_of_science
 
     c = ConfigTest(request.param)
     yield c
@@ -101,51 +103,54 @@ class TestGmosReduceLongslit:
         """
         Make sure that the reduce_BIAS works for spectroscopic data.
         """
-        logutils.config(file_name='reduce_GMOS_LS_bias.log')
+        # Set up loging ---
+        logutils.config(
+            mode='quiet', file_name=os.path.join(
+                config.log_dir, 'reduce_GMOS_LS_bias.log'))
 
-        reduce_bias = Reduce()
-        assert len(reduce_bias.files) == 0
+        # Reduce ---
+        reduce = Reduce()
+        reduce.files.extend(config.biases)
+        reduce.upload = 'calibs'
+        reduce.runr()
 
-        reduce_bias.files.extend(config.biases)
-        assert len(reduce_bias.files) == len(config.biases)
-
-        reduce_bias.runr()
-
+        # Move files to output folder ---
         new_files = [os.path.join(config.full_path, f)
-                     for f in reduce_bias.output_filenames]
+                     for f in reduce.output_filenames]
 
-        for old, new in zip(reduce_bias.output_filenames, new_files):
+        for old, new in zip(reduce.output_filenames, new_files):
             os.rename(old, new)
             os.chmod(new, mode=0o775)
-            config.calibrations.append('processed_bias:{}'.format(new))
+            # config.calibrations.append('processed_bias:{}'.format(new))
 
     @staticmethod
     def test_can_run_reduce_flat(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
         """
-        logutils.config(file_name='reduce_GMOS_LS_flat.log')
+        # Set up loging ---
+        logutils.config(
+            mode='quiet', file_name=os.path.join(
+                config.log_dir, 'reduce_GMOS_LS_flat.log'))
 
-        reduce_flat = Reduce()
-        assert len(reduce_flat.files) == 0
+        # Reduce ---
+        reduce = Reduce()
+        reduce.files.extend(config.flats)
+        reduce.upload = 'calibs'
+        # reduce.ucals = normalize_ucals(reduce.files, config.calibrations)
+        reduce.runr()
 
-        reduce_flat.files.extend(config.flats)
-        assert len(reduce_flat.files) == len(config.flats)
-
-        reduce_flat.ucals = normalize_ucals(
-            reduce_flat.files, config.calibrations)
-
-        reduce_flat.runr()
-
+        # Move files to output folder ---
         new_files = [os.path.join(config.full_path, f)
-                     for f in reduce_flat.output_filenames]
+                     for f in reduce.output_filenames]
 
-        for old, new in zip(reduce_flat.output_filenames, new_files):
+        for old, new in zip(reduce.output_filenames, new_files):
             os.rename(old, new)
             os.chmod(new, mode=0o775)
-            config.calibrations.append('processed_flat:{}'.format(new))
+            # config.calibrations.append('processed_flat:{}'.format(new))
 
     @staticmethod
+    @pytest.mark.skip(reason="Work in progress")
     def test_can_run_reduce_arc(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT can run for spectroscopic
@@ -224,94 +229,94 @@ class TestGmosReduceLongslit:
         # reduce_science.runr()
 
 
-class TestGmosReduceFakeData:
-    """
-    The tests defined by this class reflect the expected behavior on science
-    spectral data.
-    """
-    @staticmethod
-    def create_1d_spectrum(width, n_lines, max_weight):
-        """
-        Generates a 1D NDArray noiseless spectrum.
-
-        Parameters
-        ----------
-        width : int
-            Number of array elements.
-        n_lines : int
-            Number of artificial lines.
-        max_weight : float
-            Maximum weight (or flux, or intensity) of the lines.
-
-        Returns
-        -------
-        sky_1d_spectrum : numpy.ndarray
-
-        """
-        lines = np.random.randint(low=0, high=width, size=n_lines)
-        weights = max_weight * np.random.random(size=n_lines)
-
-        spectrum = np.zeros(width)
-        spectrum[lines] = weights
-
-        return spectrum
-
-    def test_can_extract_1d_spectra_from_2d_spectral_image(self):
-
-        logutils.config(file_name='foo.log')
-
-        np.random.seed(0)
-
-        ad = astrofaker.create('GMOS-S')
-
-        ad.phu['DETECTOR'] = 'GMOS-S + Hamamatsu'
-        ad.phu['UT'] = '04:00:00.000'
-        ad.phu['DATE'] = '2017-05-30'
-        ad.phu['OBSTYPE'] = 'OBJECT'
-
-        ad.init_default_extensions()
-
-        for ext in ad:
-            ext.hdr['GAIN'] = 1.0
-
-        width = int(np.sum([ext.shape[1] for ext in ad]))
-        height = ad[0].shape[0]
-        snr = 0.1
-
-        obj_max_weight = 300.
-        obj_continnum = 600. + 0.01 * np.arange(width)
-
-        sky = self.create_1d_spectrum(width, int(0.01 * width), 300.)
-        obj = self.create_1d_spectrum(width, int(0.1 * width), obj_max_weight) \
-            + obj_continnum
-
-        obj_pos = np.random.randint(low=height // 2 - int(0.1 * height),
-                                    high=height // 2 + int(0.1 * height))
-
-        spec = np.repeat(sky[np.newaxis, :], height, axis=0)
-        spec[obj_pos] += obj
-        spec = ndimage.gaussian_filter(spec, sigma=(7, 3))
-
-        spec += snr * obj_max_weight * np.random.random(spec.shape)
-
-        for i, ext in enumerate(ad):
-
-            left = i * ext.shape[1]
-            right = (i + 1) * ext.shape[1] - 1
-
-            ext.data = spec[:, left:right]
-
-        p = primitives_gmos_longslit.GMOSLongslit([ad])
-
-        p.prepare()  # Needs 'DETECTOR', 'UT', and 'DATE'
-        p.addDQ(static_bpm=None)  # Needs 'GAIN'
-        p.addVAR(read_noise=True)
-        # p.overscanCorrect()
-        # p.biasCorrect(bias=processed_bias)
-        p.ADUToElectrons()
-        p.addVAR(poisson_noise=True)
-        p.mosaicDetectors()
-        # p.makeIRAFCompatible()  # Needs 'OBSTYPE'
+# class TestGmosReduceFakeData:
+#     """
+#     The tests defined by this class reflect the expected behavior on science
+#     spectral data.
+#     """
+#     @staticmethod
+#     def create_1d_spectrum(width, n_lines, max_weight):
+#         """
+#         Generates a 1D NDArray noiseless spectrum.
+#
+#         Parameters
+#         ----------
+#         width : int
+#             Number of array elements.
+#         n_lines : int
+#             Number of artificial lines.
+#         max_weight : float
+#             Maximum weight (or flux, or intensity) of the lines.
+#
+#         Returns
+#         -------
+#         sky_1d_spectrum : numpy.ndarray
+#
+#         """
+#         lines = np.random.randint(low=0, high=width, size=n_lines)
+#         weights = max_weight * np.random.random(size=n_lines)
+#
+#         spectrum = np.zeros(width)
+#         spectrum[lines] = weights
+#
+#         return spectrum
+#
+#     def test_can_extract_1d_spectra_from_2d_spectral_image(self):
+#
+#         logutils.config(file_name='foo.log')
+#
+#         np.random.seed(0)
+#
+#         ad = astrofaker.create('GMOS-S')
+#
+#         ad.phu['DETECTOR'] = 'GMOS-S + Hamamatsu'
+#         ad.phu['UT'] = '04:00:00.000'
+#         ad.phu['DATE'] = '2017-05-30'
+#         ad.phu['OBSTYPE'] = 'OBJECT'
+#
+#         ad.init_default_extensions()
+#
+#         for ext in ad:
+#             ext.hdr['GAIN'] = 1.0
+#
+#         width = int(np.sum([ext.shape[1] for ext in ad]))
+#         height = ad[0].shape[0]
+#         snr = 0.1
+#
+#         obj_max_weight = 300.
+#         obj_continnum = 600. + 0.01 * np.arange(width)
+#
+#         sky = self.create_1d_spectrum(width, int(0.01 * width), 300.)
+#         obj = self.create_1d_spectrum(width, int(0.1 * width), obj_max_weight) \
+#             + obj_continnum
+#
+#         obj_pos = np.random.randint(low=height // 2 - int(0.1 * height),
+#                                     high=height // 2 + int(0.1 * height))
+#
+#         spec = np.repeat(sky[np.newaxis, :], height, axis=0)
+#         spec[obj_pos] += obj
+#         spec = ndimage.gaussian_filter(spec, sigma=(7, 3))
+#
+#         spec += snr * obj_max_weight * np.random.random(spec.shape)
+#
+#         for i, ext in enumerate(ad):
+#
+#             left = i * ext.shape[1]
+#             right = (i + 1) * ext.shape[1] - 1
+#
+#             ext.data = spec[:, left:right]
+#
+#         p = primitives_gmos_longslit.GMOSLongslit([ad])
+#
+#         p.prepare()  # Needs 'DETECTOR', 'UT', and 'DATE'
+#         p.addDQ(static_bpm=None)  # Needs 'GAIN'
+#         p.addVAR(read_noise=True)
+#         # p.overscanCorrect()
+#         # p.biasCorrect(bias=processed_bias)
+#         p.ADUToElectrons()
+#         p.addVAR(poisson_noise=True)
+#         p.mosaicDetectors()
+#         # p.makeIRAFCompatible()  # Needs 'OBSTYPE'
 
 
 
