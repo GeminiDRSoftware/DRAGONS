@@ -188,6 +188,7 @@ class PlotGmosSpectLongslitArcs:
     output_folder : str
         Path to where the plots will be saved.
     """
+
     def __init__(self, ad, output_folder):
 
         filename = ad.filename
@@ -209,7 +210,7 @@ class PlotGmosSpectLongslitArcs:
         # Runs only from inside Jenkins
         if 'BUILD_ID' in os.environ:
 
-            branch_name = os.environ['BRANCH_NAME'].replace('/', '.')
+            branch_name = os.environ['BRANCH_NAME'].replace('/', '_')
             build_number = int(os.environ['BUILD_NUMBER'])
 
             tar_name = os.path.join(
@@ -425,7 +426,9 @@ class TestGmosSpectLongslitArcs:
         Make sure that the WAVECAL model was fitted with an RMS smaller
         than 0.5.
         """
-        for ext in config.ad:
+        ad_out = config.ad
+
+        for ext in ad_out:
 
             if not hasattr(ext, 'WAVECAL'):
                 continue
@@ -435,6 +438,8 @@ class TestGmosSpectLongslitArcs:
             rms = coefficients[table['name'] == 'rms']
 
             np.testing.assert_array_less(rms, 0.5)
+
+        del ad_out
 
     @staticmethod
     def test_reduced_arcs_contains_stable_wavelength_solution(config):
@@ -469,6 +474,8 @@ class TestGmosSpectLongslitArcs:
 
             np.testing.assert_allclose(y, ref_y, rtol=1)
 
+        del ad_out, ad_ref
+
     @staticmethod
     def test_reduced_arcs_are_similar(config):
         """
@@ -490,6 +497,8 @@ class TestGmosSpectLongslitArcs:
         # Test reduced arcs are similar
         for ext_out, ext_ref in zip(ad_out, ad_ref):
             np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
+
+        del ad_out, ad_ref
 
     @staticmethod
     def test_distortion_correction_is_applied_the_same_way(config):
@@ -520,6 +529,10 @@ class TestGmosSpectLongslitArcs:
         for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
             np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
 
+        del ad_out, ad_ref
+        del p, distortion_corrected_ad_out, distortion_corrected_ad_ref
+
+
     @staticmethod
     def test_distortion_model_is_the_same(config):
         """
@@ -537,15 +550,19 @@ class TestGmosSpectLongslitArcs:
         if not os.path.exists(reference):
             pytest.fail('Reference file not found: {}'.format(reference))
 
+        ad_out = config.ad
         ad_ref = astrodata.open(reference)
 
         p = primitives_gmos_spect.GMOSSpect([])
 
         distortion_corrected_ad_out = p.distortionCorrect(
-            adinputs=[config.ad], arc=config.ad)
+            adinputs=[ad_out], arc=ad_out)
 
         distortion_corrected_ad_ref = p.distortionCorrect(
             adinputs=[ad_ref], arc=ad_ref)
 
         for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
             np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
+
+        del ad_out, ad_ref
+        del p, distortion_corrected_ad_out, distortion_corrected_ad_ref
