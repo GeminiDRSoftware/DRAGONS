@@ -140,10 +140,10 @@ pipeline {
           sh '.jenkins/scripts/update_files_permissions.sh'
         }
         success {
+//             sh  '.jenkins/scripts/build_sdist_file.sh'
+//             sh  'pwd'
+//             echo 'Make tarball available'
             sendNotifications 'SUCCESSFUL'
-            sh  '.jenkins/scripts/build_sdist_file.sh'
-            sh  'pwd'
-            echo 'Make tarball available'
         }
         failure {
             sendNotifications 'FAILED'
