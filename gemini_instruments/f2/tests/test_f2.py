@@ -79,12 +79,12 @@ def test_slice_range(f2_files):
         assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
 
-# def test_read_a_keyword_from_phu(f2_files):
-#     for _file in f2_files:
-#         ad = astrodata.open(_file)
-#         assert ad.phu['INSTRUME'].strip() == 'F2'
-#
-#
+def test_read_a_keyword_from_phu(f2_files):
+    for _file in f2_files:
+        ad = astrodata.open(_file)
+        assert ad.phu['INSTRUME'].strip() == 'F2'
+
+
 # def test_read_a_keyword_from_hdr(f2_files):
 #     for _file in f2_files:
 #         ad = astrodata.open(_file)
