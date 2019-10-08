@@ -584,8 +584,10 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("Read arc line relative weights")
 
         for ad in adinputs:
+            log.info("Determining wavelength solution for {}".format(ad.filename))
             for ext in ad:
-                log.info("Determining wavelength solution for {}".format(ad.filename))
+                if len(ad) > 1:
+                    log.info("Determining solution for EXTVER {}".format(ext.hdr['EXTVER']))
 
                 # Determine direction of extraction for 2D spectrum
                 if ext.data.ndim > 1:
