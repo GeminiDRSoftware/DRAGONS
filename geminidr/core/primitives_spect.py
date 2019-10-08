@@ -774,7 +774,7 @@ class Spect(PrimitivesBASE):
                     plt.show()
 
                 m.display_fit()
-                plt.savefig(ad.filename.replace('_mosaic.fits', '.jpg'))
+                plt.savefig(ad.filename.replace('.fits', '.jpg'))
 
                 m.sort()
                 # Add 1 to pixel coordinates so they're 1-indexed
