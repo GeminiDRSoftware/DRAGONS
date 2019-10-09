@@ -107,7 +107,7 @@ def config(request, path_to_inputs, path_to_outputs):
     yield c
 
     # Tear Down ---
-    shutil.rmtree(os.path.join(c.full_path, 'calibrations/'), ignore_errors=True)
+    shutil.rmtree(os.path.join(c.full_path, 'calibrations/'))
     shutil.move('calibrations/', c.full_path)
 
     _ = [shutil.move(f, os.path.join(c.full_path, f))
