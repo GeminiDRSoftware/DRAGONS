@@ -108,7 +108,7 @@ def config(request, path_to_inputs, path_to_outputs):
 
     # Tear Down ---
     shutil.rmtree(os.path.join(c.full_path, 'calibrations/'), ignore_errors=True)
-    shutil.move(os.path.join(os.getcwd(), 'calibrations/'), c.full_path)
+    shutil.move('calibrations/', c.full_path)
 
     _ = [shutil.move(f, os.path.join(c.full_path, f))
          for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
