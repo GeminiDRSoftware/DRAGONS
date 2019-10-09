@@ -108,10 +108,10 @@ def config(request, path_to_inputs, path_to_outputs):
 
     # Tear Down ---
     for root, dirs, files in os.walk('calibrations/'):
-        for d in dirs:
-            os.chmod(os.path.join(root, d), 0o775)
         for f in files:
             os.chmod(os.path.join(root, f), 0o775)
+        for d in dirs:
+            os.chmod(os.path.join(root, d), 0o775)
 
     shutil.rmtree(os.path.join(c.full_path, 'calibrations/'))
     shutil.move('calibrations/', c.full_path)

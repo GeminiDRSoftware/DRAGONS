@@ -144,7 +144,6 @@ pipeline {
             allowEmptyResults: true,
             testResults: 'reports/*_results.xml'
             )
-          sh '.jenkins/scripts/update_files_permissions.sh'
         }
         success {
             sendNotifications 'SUCCESSFUL'
