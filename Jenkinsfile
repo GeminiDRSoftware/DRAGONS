@@ -56,6 +56,9 @@ pipeline {
 
         stage('Code Metrics') {
 
+            when {
+                branch 'master'
+            }
             steps {
                 sh '.jenkins/code_metrics/pylint.sh'
                 sh '.jenkins/code_metrics/pydocstring.sh'
@@ -76,6 +79,9 @@ pipeline {
 
         stage('Unit tests') {
 
+            when {
+                branch 'master'
+            }
             steps {
 
                 echo "ensure cleaning __pycache__"
@@ -118,6 +124,9 @@ pipeline {
 
         stage('Integration tests') {
 
+            when {
+                branch 'master'
+            }
             steps {
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
