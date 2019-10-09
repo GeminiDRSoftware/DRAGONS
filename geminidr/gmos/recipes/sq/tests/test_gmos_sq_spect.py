@@ -4,6 +4,7 @@ Tests related to GMOS Long-slit Spectroscopy data reduction.
 """
 import glob
 import os
+import shutil
 
 import astrodata
 import geminidr
@@ -50,6 +51,8 @@ def config(request, path_to_inputs, path_to_outputs):
     namespace
         An object that contains `.input_dir` and `.output_dir`
     """
+    oldmask = os.umask(000)  # Allows manipulating permissions
+
     # Define the ConfigTest class ---
     class ConfigTest:
         """
@@ -70,10 +73,8 @@ def config(request, path_to_inputs, path_to_outputs):
 
             full_path = os.path.join(path_to_outputs, path)
 
-            oldmask = os.umask(000)
             os.makedirs(log_dir, mode=0o775, exist_ok=True)
             os.makedirs(full_path, mode=0o775, exist_ok=True)
-            os.umask(oldmask)
 
             config_file_name = os.path.join(full_path, "calibration_manager.cfg")
             config_file_content = (
@@ -101,8 +102,20 @@ def config(request, path_to_inputs, path_to_outputs):
     c = ConfigTest(request.param)
     yield c
 
-    # Clean up (just in case...) ---
-    _ = [os.remove(f) for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
+    # Tear Down ---
+    shutil.rmtree(os.path.join(c.full_path, 'calibrations/'), ignore_errors=True)
+    shutil.move(os.path.join(os.getcwd(), 'calibrations/'), c.full_path)
+
+    _ = [shutil.move(f, os.path.join(c.full_path, f))
+         for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
+
+    for root, dirs, files in os.walk(c.full_path):
+        for d in dirs:
+            os.chmod(os.path.join(root, d), 0o775)
+        for f in files:
+            os.chmod(os.path.join(root, f), 0o775)
+
+    os.umask(oldmask)  # Restores default permission restrictions
     del c
 
 
@@ -118,103 +131,45 @@ class TestGmosReduceLongslit:
         """
         Make sure that the reduce_BIAS works for spectroscopic data.
         """
-        # Set up loging ---
         logutils.config(
             mode='quiet', file_name=os.path.join(
                 config.log_dir, 'reduce_GMOS_LS_bias.log'))
 
-        # Reduce ---
         reduce = Reduce()
         reduce.files.extend(config.biases)
         reduce.upload = 'calibs'
         reduce.runr()
 
-        # Move files to output folder ---
-        new_files = [os.path.join(config.full_path, f)
-                     for f in reduce.output_filenames]
-
-        for old, new in zip(reduce.output_filenames, new_files):
-            os.rename(old, new)
-            os.chmod(new, mode=0o775)
-            # config.calibrations.append('processed_bias:{}'.format(new))
-
     @staticmethod
-    @pytest.mark.skip(reason="Work in progress")
+    # @pytest.mark.skip(reason="Work in progress")
     def test_can_run_reduce_flat(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
         """
-        # Set up loging ---
         logutils.config(
             mode='quiet', file_name=os.path.join(
                 config.log_dir, 'reduce_GMOS_LS_flat.log'))
 
-        # Reduce ---
         reduce = Reduce()
         reduce.files.extend(config.flats)
         reduce.upload = 'calibs'
-        # reduce.ucals = normalize_ucals(reduce.files, config.calibrations)
         reduce.runr()
 
-        # Move files to output folder ---
-        new_files = [os.path.join(config.full_path, f)
-                     for f in reduce.output_filenames]
-
-        for old, new in zip(reduce.output_filenames, new_files):
-            os.rename(old, new)
-            os.chmod(new, mode=0o775)
-            # config.calibrations.append('processed_flat:{}'.format(new))
-
     @staticmethod
-    @pytest.mark.skip(reason="Work in progress")
     def test_can_run_reduce_arc(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT can run for spectroscopic
         data.
         """
-        logutils.config(file_name='reduce_GMOS_LS_arc.log')
+        logutils.config(
+            mode='quiet', file_name=os.path.join(
+                config.log_dir, 'reduce_GMOS_LS_arc.log'))
 
-        for f in config.arcs:
-            ad = astrodata.open(f)
-            _ = ad.gain_setting()
+        reduce = Reduce()
+        reduce.files.extend(config.arcs)
+        reduce.upload = 'calibs'
+        reduce.runr()
 
-        for c in config.calibrations:
-            f = c.split(':')[-1]
-            ad = astrodata.open(f)
-            _ = ad.gain_setting()
-
-        adinputs = [astrodata.open(f) for f in config.arcs]
-
-        cal_files = normalize_ucals(config.arcs, config.calibrations)
-        processed_bias = [cal_files[k] for k in cal_files.keys() if 'processed_bias' in k]
-
-        p = primitives_gmos_spect.GMOSSpect(adinputs)
-
-        p.viewer = geminidr.dormantViewer(p, None)
-
-        p.prepare()
-        p.addDQ(static_bpm=None)
-        p.addVAR(read_noise=True)
-        p.overscanCorrect()
-        p.biasCorrect(bias=processed_bias)
-        p.ADUToElectrons()
-        p.addVAR(poisson_noise=True)
-        p.mosaicDetectors()
-        p.makeIRAFCompatible()
-        p.determineWavelengthSolution()
-        p.determineDistortion()
-        p.storeProcessedArc()
-        p.writeOutputs()
-
-        new_files = [os.path.join(config.full_path, f)
-                     for f in glob.glob('*.fits')]
-
-        for old, new in zip(glob.glob('*.fits'), new_files):
-            os.renames(old, new)
-            if 'arc' in new:
-                config.calibrations.append('processed_arc:{}'.format(new))
-
-    # noinspection PyUnusedLocal
     @staticmethod
     @pytest.mark.skip(reason="Work in progress")
     def test_can_run_reduce_science(dataset_folder, calibrations):
