@@ -113,7 +113,11 @@ def config(request, path_to_inputs, path_to_outputs):
         for d in dirs:
             os.chmod(os.path.join(root, d), 0o775)
 
-    shutil.rmtree(os.path.join(c.full_path, 'calibrations/'))
+    try:
+        shutil.rmtree(os.path.join(c.full_path, 'calibrations/'))
+    except FileNotFoundError:
+        pass
+
     shutil.move('calibrations/', c.full_path)
 
     _ = [shutil.move(f, os.path.join(c.full_path, f))
