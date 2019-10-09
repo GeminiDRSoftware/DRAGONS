@@ -77,6 +77,10 @@ def config(request, path_to_inputs, path_to_outputs):
             os.makedirs(full_path, mode=0o775, exist_ok=True)
 
             config_file_name = os.path.join(full_path, "calibration_manager.cfg")
+
+            if os.path.exists(config_file_name):
+                os.remove(config_file_name)
+
             config_file_content = (
                 "[calibs]\n"
                 "standalone = False\n"
