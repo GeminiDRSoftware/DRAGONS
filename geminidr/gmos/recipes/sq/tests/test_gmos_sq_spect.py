@@ -120,8 +120,8 @@ def config(request, path_to_inputs, path_to_outputs):
 
     shutil.move('calibrations/', c.full_path)
 
-    _ = [shutil.move(f, os.path.join(c.full_path, f))
-         for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
+    for f in glob.glob(os.path.join(os.getcwd(), '*.fits')):
+        shutil.move(f, os.path.join(c.full_path, f))
 
     for root, dirs, files in os.walk(c.full_path):
         for d in dirs:
