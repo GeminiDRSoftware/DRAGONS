@@ -3,11 +3,9 @@
 Tests related to GMOS Long-slit Spectroscopy data reduction.
 """
 import glob
-import numpy as np
 import os
 
 import astrodata
-import astrofaker
 import geminidr
 
 # noinspection PyPackageRequirements
@@ -19,9 +17,9 @@ import gemini_instruments
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.adlibrary import dataselect
 from gempy.utils import logutils
+from recipe_system import cal_service
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
-from scipy import ndimage
 
 dataset_folder_list = [
     'GMOS/GN-2017A-FT-19',
@@ -52,6 +50,7 @@ def config(request, path_to_inputs, path_to_outputs):
     namespace
         An object that contains `.input_dir` and `.output_dir`
     """
+    # Define the ConfigTest class ---
     class ConfigTest:
         """
         Config class created for each dataset file. It is created from within
@@ -76,17 +75,33 @@ def config(request, path_to_inputs, path_to_outputs):
             os.makedirs(full_path, mode=0o775, exist_ok=True)
             os.umask(oldmask)
 
+            config_file_name = os.path.join(full_path, "calibration_manager.cfg")
+            config_file_content = (
+                "[calibs]\n"
+                "standalone = False\n"
+                "database_dir = {:s}\n".format(full_path)
+            )
+
+            with open(config_file_name, mode='w') as config_file:
+                config_file.write(config_file_content)
+            os.chmod(config_file_name, mode=0o775)
+
+            calibration_service = cal_service.CalibrationService()
+            calibration_service.config(config_file=config_file_name)
+
             self.arcs = list_of_arcs
             self.biases = list_of_bias
-            self.calibrations = []
+            self.calibration_service = calibration_service
             self.flats = list_of_flats
             self.full_path = full_path
             self.log_dir = log_dir
             self.science = list_of_science
 
+    # Create ConfigTest object ---
     c = ConfigTest(request.param)
     yield c
 
+    # Clean up (just in case...) ---
     _ = [os.remove(f) for f in glob.glob(os.path.join(os.getcwd(), '*.fits'))]
     del c
 
@@ -124,6 +139,7 @@ class TestGmosReduceLongslit:
             # config.calibrations.append('processed_bias:{}'.format(new))
 
     @staticmethod
+    @pytest.mark.skip(reason="Work in progress")
     def test_can_run_reduce_flat(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.
