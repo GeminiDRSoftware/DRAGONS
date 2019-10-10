@@ -33,9 +33,13 @@ dataset_file_list = [
     'process_arcs/GMOS/N20100830S0594.fits',  # R150:0.500 EEV
     'process_arcs/GMOS/N20100702S0321.fits',  # R150:0.700 EEV
     'process_arcs/GMOS/N20130606S0291.fits',  # R150:0.550 E2V
-    # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61)
-    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol.
+    'process_arcs/GMOS/N20130112S0574.fits',  # R150:0.700 E2V
+    # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61) | `gswavelength` cannot find solution either.
+    'process_arcs/GMOS/N20140408S0218.fits',  # R150:0.700 E2V
+    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol. | `gswavelength` cannot find solution either.
     'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
+    'process_arcs/GMOS/N20171007S0439.fits',  # R150:0.650 HAM
+    'process_arcs/GMOS/N20171007S0441.fits',  # R150:0.650 HAM
     'process_arcs/GMOS/N20101212S0213.fits',  # R400:0.550 EEV
     'process_arcs/GMOS/N20100202S0214.fits',  # R400:0.700 EEV
     'process_arcs/GMOS/N20130106S0194.fits',  # R400:0.500 E2V
@@ -50,17 +54,28 @@ dataset_file_list = [
     'process_arcs/GMOS/N20130830S0291.fits',  # R831:0.845 E2V
     'process_arcs/GMOS/N20170910S0009.fits',  # R831:0.653 HAM
     'process_arcs/GMOS/N20170509S0682.fits',  # R831:0.750 HAM
-    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646)
+    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646) | `gswavelength` cannot find solution either.
+    'process_arcs/GMOS/N20170416S0058.fits',  # R831:0.865 HAM
+    'process_arcs/GMOS/N20170416S0081.fits',  # R831:0.865 HAM
+    'process_arcs/GMOS/N20180120S0315.fits',  # R831:0.865 HAM
 
-    # Process Arcs: GMOS-S ---
-    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution()
+    # # Process Arcs: GMOS-S ---
+    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution() | `gswavelength` cannot find solution either.
+    'process_arcs/GMOS/S20130111S0278.fits',  # B600:0.520 EEV
+    'process_arcs/GMOS/S20130114S0120.fits',  # B600:0.500 EEV
+    'process_arcs/GMOS/S20130216S0243.fits',  # B600:0.480 EEV
+    'process_arcs/GMOS/S20130608S0182.fits',  # B600:0.500 EEV
+    'process_arcs/GMOS/S20131105S0105.fits',  # B600:0.500 EEV
     'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
     'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
     'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
     'process_arcs/GMOS/S20130510S0103.fits',  # B1200:0.450 EEV
     'process_arcs/GMOS/S20130629S0002.fits',  # B1200:0.525 EEV
     'process_arcs/GMOS/S20131123S0044.fits',  # B1200:0.595 EEV
-    'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM - todo: very weird non-linear plot
+    'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM - todo: very weird non-linear plot | non-linear plot using `gswavelength` seems fine.
+    'process_arcs/GMOS/S20170103S0149.fits',  # B1200:0.440 HAM
+    'process_arcs/GMOS/S20170730S0155.fits',  # B1200:0.440 HAM
+    'process_arcs/GMOS/S20171219S0117.fits',  # B1200:0.440 HAM
     'process_arcs/GMOS/S20170908S0189.fits',  # B1200:0.550 HAM
     'process_arcs/GMOS/S20131230S0153.fits',  # R150:0.550 EEV
     'process_arcs/GMOS/S20130801S0140.fits',  # R150:0.700 EEV
@@ -73,20 +88,17 @@ dataset_file_list = [
     'process_arcs/GMOS/S20170129S0125.fits',  # R400:0.685 HAM
     'process_arcs/GMOS/S20170703S0199.fits',  # R400:0.800 HAM
     'process_arcs/GMOS/S20170718S0420.fits',  # R400:0.910 HAM
+    # 'process_arcs/GMOS/S20100306S0460.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    # 'process_arcs/GMOS/S20101218S0139.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    'process_arcs/GMOS/S20110306S0294.fits',  # R600:0.675 EEV
     # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
+    'process_arcs/GMOS/S20101221S0090.fits',  # R600:0.690 EEV
     'process_arcs/GMOS/S20120322S0122.fits',  # R600:0.900 EEV
     'process_arcs/GMOS/S20130803S0011.fits',  # R831:0.576 EEV
     'process_arcs/GMOS/S20130414S0040.fits',  # R831:0.845 EEV
     'process_arcs/GMOS/S20170214S0059.fits',  # R831:0.440 HAM
     'process_arcs/GMOS/S20170703S0204.fits',  # R831:0.600 HAM
     'process_arcs/GMOS/S20171018S0048.fits',  # R831:0.865 HAM
-
-    'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
-    'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
-    'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
-    'process_arcs/GMOS/N20100307S0236.fits',  # B1200:0.445 EEV
-    'process_arcs/GMOS/N20130628S0290.fits',  # B1200:0.420 E2V
-    'process_arcs/GMOS/N20170904S0078.fits',  # B1200:0.440 HAM
 ]
 
 
