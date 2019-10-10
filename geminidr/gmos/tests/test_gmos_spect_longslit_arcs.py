@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Tests related to GMOS Long-slit Spectroscopy arc processing.
+Tests related to GMOS Long-slit Spectroscopy Arc primitives.
 """
 import glob
 import os
