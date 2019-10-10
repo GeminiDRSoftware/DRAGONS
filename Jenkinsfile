@@ -56,6 +56,9 @@ pipeline {
 
         stage('Code Metrics') {
 
+            when {
+                branch 'master'
+            }
             steps {
                 sh '.jenkins/code_metrics/pylint.sh'
                 sh '.jenkins/code_metrics/pydocstring.sh'
@@ -76,6 +79,9 @@ pipeline {
 
         stage('Unit tests') {
 
+            when {
+                branch 'master'
+            }
             steps {
 
                 echo "ensure cleaning __pycache__"
@@ -106,7 +112,6 @@ pipeline {
                     source activate ${CONDA_ENV_NAME}
                     python -m coverage xml -o ./reports/coverage.xml
                     '''
-
             }
             post {
                 always {
@@ -119,6 +124,9 @@ pipeline {
 
         stage('Integration tests') {
 
+            when {
+                branch 'master'
+            }
             steps {
                 echo "Integration tests"
 //                 sh  '''
@@ -137,7 +145,6 @@ pipeline {
             allowEmptyResults: true,
             testResults: 'reports/*_results.xml'
             )
-          sh '.jenkins/scripts/update_files_permissions.sh'
         }
         success {
 //             sh  '.jenkins/scripts/build_sdist_file.sh'
