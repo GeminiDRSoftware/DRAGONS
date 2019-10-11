@@ -156,6 +156,7 @@ class TestGmosReduceLongslit:
         reduce.runr()
 
     @staticmethod
+    @pytest.mark.skip(reason="Waiting dev fitsserver to be deployed")
     def test_can_run_reduce_flat(config):
         """
         Make sure that the reduce_FLAT_LS_SPECT works for spectroscopic data.

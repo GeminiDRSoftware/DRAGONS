@@ -14,7 +14,9 @@
 
 pipeline {
 
-    agent any
+    agent {
+        label 'bquint-ld1'
+    }
 
     triggers {
         pollSCM('H * * * *')  // Polls Source Code Manager every hour
