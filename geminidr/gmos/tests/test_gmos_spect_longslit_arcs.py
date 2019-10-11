@@ -180,8 +180,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
             p.mosaicDetectors()
             p.makeIRAFCompatible()
             # p.determineWavelengthSolution(plot=True)
-            p.determineWavelengthSolution()
-            p.determineDistortion(suffix="_arc")
+            p.determineWavelengthSolution(suffix="_arc")
 
             return p
 
@@ -430,6 +429,9 @@ class PlotGmosSpectLongslitArcs:
 class TestGmosSpectLongslitArcs:
     """
     Collection of tests that will run on every `dataset` file.
+
+    Here, it is important to keep the order of the tests since it reflects the
+    order that they are executed.
     """
 
     @staticmethod
@@ -513,6 +515,41 @@ class TestGmosSpectLongslitArcs:
         del ad_out, ad_ref
 
     @staticmethod
+    def test_distortion_model_is_the_same(config):
+        """
+        Correscts distortion on both output and reference files using the
+        distortion model stored in themselves. Previous tests assures that
+        these data are similar and that distortion correct is applied the same
+        way. Now, this one tests the model itself.
+        """
+        output = os.path.join(config.output_dir, config.filename)
+        reference = os.path.join(config.ref_dir, config.filename)
+
+        if not os.path.exists(output):
+            pytest.skip('Output file not found: {}'.format(output))
+
+        if not os.path.exists(reference):
+            pytest.fail('Reference file not found: {}'.format(reference))
+
+        ad_out = config.ad
+        ad_ref = astrodata.open(reference)
+
+        p = primitives_gmos_spect.GMOSSpect([])
+
+        distortion_corrected_ad_out = p.determineDistortion(adinputs=[ad_out])[0]
+        distortion_corrected_ad_ref = p.determineDistortion(adinputs=[ad_ref])[0]
+
+        for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
+            model_out = ext_out.FITCOORD['coefficients']
+            model_ref = ext_ref.FITCOORD['coefficients']
+            np.testing.assert_allclose(model_out, model_ref, rtol=1e-3)
+
+        del ad_out, ad_ref
+        del p, distortion_corrected_ad_out, distortion_corrected_ad_ref
+
+
+    @staticmethod
+    @pytest.mark.skip(reason="Need revision")
     def test_distortion_correction_is_applied_the_same_way(config):
         """
         Applies the same distortion correction model to both output and reference
@@ -537,41 +574,6 @@ class TestGmosSpectLongslitArcs:
 
         distortion_corrected_ad_ref = p.distortionCorrect(
             adinputs=[ad_ref], arc=ad_out)[0]
-
-        for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
-            np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
-
-        del ad_out, ad_ref
-        del p, distortion_corrected_ad_out, distortion_corrected_ad_ref
-
-
-    @staticmethod
-    def test_distortion_model_is_the_same(config):
-        """
-        Correscts distortion on both output and reference files using the
-        distortion model stored in themselves. Previous tests assures that
-        these data are similar and that distortion correct is applied the same
-        way. Now, this one tests the model itself.
-        """
-        output = os.path.join(config.output_dir, config.filename)
-        reference = os.path.join(config.ref_dir, config.filename)
-
-        if not os.path.exists(output):
-            pytest.skip('Output file not found: {}'.format(output))
-
-        if not os.path.exists(reference):
-            pytest.fail('Reference file not found: {}'.format(reference))
-
-        ad_out = config.ad
-        ad_ref = astrodata.open(reference)
-
-        p = primitives_gmos_spect.GMOSSpect([])
-
-        distortion_corrected_ad_out = p.distortionCorrect(
-            adinputs=[ad_out], arc=ad_out)
-
-        distortion_corrected_ad_ref = p.distortionCorrect(
-            adinputs=[ad_ref], arc=ad_ref)
 
         for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
             np.testing.assert_allclose(ext_out.data, ext_ref.data, rtol=1)
