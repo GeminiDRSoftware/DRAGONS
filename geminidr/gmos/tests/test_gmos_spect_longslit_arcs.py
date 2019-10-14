@@ -129,7 +129,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     """
     log_file = os.path.join(path_to_outputs, '{}.log'.format(
         os.path.splitext(
-            os.path.basename(__file__))))
+            os.path.basename(__file__)[0])))
 
     logutils.config(mode='quiet', file_name=log_file)
 
