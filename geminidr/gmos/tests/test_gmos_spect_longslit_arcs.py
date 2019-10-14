@@ -146,9 +146,9 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
             reference_folder = os.path.join(path_to_refs, dataset_sub_dir)
             output_folder = os.path.join(path_to_outputs, dataset_sub_dir)
 
-            oldmask = os.umask(000)
+            old_mask = os.umask(000)
             os.makedirs(output_folder, exist_ok=True, mode=0o775)
-            os.umask(oldmask)
+            os.umask(old_mask)
 
             output_file = os.path.join(path_to_outputs, filename)
             output_file, _ = os.path.splitext(output_file)
@@ -320,7 +320,6 @@ class TestGmosSpectLongslitArcs:
             np.testing.assert_allclose(model_out, model_ref, rtol=1e-3)
 
         del ad_out, ad_ref, p
-
 
     @staticmethod
     @pytest.mark.skip(reason='review previous test first')
