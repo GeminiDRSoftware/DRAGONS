@@ -3,29 +3,19 @@
 
 from __future__ import print_function
 
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+
 from gempy.utils import showrecipes
 
 __author__ = 'Ivan Sharankov'
 
 
 def main():
-    args = showprims_argparser()
-    if args.all:
-        recipes_found = showrecipes.showrecipes(args.inputfile)
-        print(recipes_found)
-    else:
-        primitives_found = showrecipes.showprims(
-            args.inputfile, args.mode, args.recipe)
-        print(primitives_found)
-
-
-def showprims_argparser():
-    from argparse import ArgumentParser
-    from argparse import RawDescriptionHelpFormatter
-
-    parser = ArgumentParser(description="desc", prog='showprims',
-                            formatter_class=RawDescriptionHelpFormatter)
-
+    parser = ArgumentParser(
+        description="Shows what sequence of primitives a recipe will execute "
+        "or which recipes are available for the dataset.",
+        formatter_class=RawDescriptionHelpFormatter
+    )
     parser.add_argument('inputfile', type=str,
                         help="The fits file needed to extract the tags. This "
                              "file must be opened by astrodata as an object")
@@ -50,7 +40,13 @@ def showprims_argparser():
     if args.debug:
         print(args)
 
-    return parser.parse_args()
+    if args.all:
+        recipes_found = showrecipes.showrecipes(args.inputfile)
+        print(recipes_found)
+    else:
+        primitives_found = showrecipes.showprims(
+            args.inputfile, args.mode, args.recipe)
+        print(primitives_found)
 
 
 if __name__ == "__main__":
