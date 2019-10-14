@@ -24,7 +24,7 @@ from gempy.utils import logutils
 dataset_file_list = [
     # Process Arcs: GMOS-N ---
     'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
-    'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
+    # 'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
     # 'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
     # 'process_arcs/GMOS/N20100307S0236.fits',  # B1200:0.445 EEV
     # 'process_arcs/GMOS/N20130628S0290.fits',  # B1200:0.420 E2V
@@ -127,8 +127,11 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
         An object that contains `.ad`, `.output_dir`, `.ref_dir`, and
         `.filename` attributes.
     """
+    log_file = os.path.join(path_to_outputs, '{}.log'.format(
+        os.path.splitext(
+            os.path.basename(__file__))))
 
-    logutils.config(mode='quiet', file_name='foo.log')
+    logutils.config(mode='quiet', file_name=log_file)
 
     class ConfigTest:
         """
@@ -295,6 +298,13 @@ class TestGmosSpectLongslitArcs:
         p = primitives_gmos_spect.GMOSSpect([])
         ad_out = p.determineDistortion(adinputs=[ad_out])[0]
 
+        ad_out.write()
+        os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
+
+        old_mask = os.umask(000)
+        os.chmod(os.path.join(config.output_dir, ad_out.filename), mode=0o775)
+        os.umask(old_mask)
+
         # Reads the reference file ---
         reference = os.path.join(config.ref_dir, ad_out.filename)
 
@@ -308,13 +318,6 @@ class TestGmosSpectLongslitArcs:
             model_out = ext_out.FITCOORD['coefficients']
             model_ref = ext_ref.FITCOORD['coefficients']
             np.testing.assert_allclose(model_out, model_ref, rtol=1e-3)
-
-        ad_out.write()
-        os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
-
-        oldmask = os.umask(000)
-        os.chmod(os.path.join(config.output_dir, ad_out.filename), mode=0o775)
-        os.umask(oldmask)
 
         del ad_out, ad_ref, p
 
