@@ -18,7 +18,7 @@ from builtins import object
 import os
 import sys
 import inspect
-import traceback
+#import traceback
 
 from importlib import import_module
 
@@ -38,21 +38,14 @@ from recipe_system.utils.errors import PrimitivesNotFound
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_ucals
 from recipe_system.utils.reduce_utils import set_btypes
+from recipe_system.utils.rs_utilities import log_traceback
 
 from recipe_system.mappers.recipeMapper import RecipeMapper
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
-
-
-def _log_traceback():
-    exc_type, exc_value, exc_traceback = sys.exc_info()
-    tblist = traceback.format_exception(exc_type, exc_value, exc_traceback)
-    [log.error(line.rstrip()) for line in tblist]
-    return
-
-
+# ------------------------------------------------------------------------------
 class Reduce(object):
     """
     The Reduce class encapsulates the core processing to be done by reduce.
@@ -220,7 +213,7 @@ class Reduce(object):
             try:
                 primitive_as_recipe()
             except Exception as err:
-                _log_traceback()
+                log_traceback(log)
                 log.error(str(err))
                 raise
         else:
@@ -229,7 +222,7 @@ class Reduce(object):
                 recipe(p)
             except Exception as err:
                 log.error("Reduce received an unhandled exception. Aborting ...")
-                _log_traceback()
+                log_traceback(log)
                 log.stdinfo("Writing final outputs ...")
                 self._write_final(p.streams['main'])
                 self._output_filenames = [ad.filename for ad in p.streams['main']]
@@ -370,7 +363,7 @@ class Reduce(object):
         return is_reduce
 
     def _logheader(self, recipe):
-        if self.recipename == 'default':
+        if self.recipename == '_default':
             r_actual = recipe.__name__
         else:
             r_actual = self.recipename
