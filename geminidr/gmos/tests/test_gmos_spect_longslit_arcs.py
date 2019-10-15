@@ -322,36 +322,51 @@ class TestGmosSpectLongslitArcs:
         del ad_out, ad_ref, p
 
     @staticmethod
-    @pytest.mark.skip(reason='review previous test first')
     def test_distortion_correction_is_applied_the_same_way(config):
         """
         Applies the same distortion correction model to both output and reference
         arcs and compares the results.
         """
-        output = os.path.join(config.output_dir, config.filename)
-        reference = os.path.join(config.ref_dir, config.filename)
+        # Process the output file ---
+        basename, ext = os.path.splitext(config.filename)
+        basename, _ = basename.split('_')[0], basename.split('_')[1:]
 
-        if not os.path.exists(output):
-            pytest.skip('Output file not found: {}'.format(output))
+        arc_basename = "{:s}_{:s}{:s}".format(
+            basename, "distortionDetermined", ext)
+
+        arc_name = os.path.join(config.output_dir, arc_basename)
+
+        if not os.path.exists(arc_name):
+            pytest.skip('Arc file not found: {}'.format(arc_name))
+
+        ad_out = config.ad
+
+        p = primitives_gmos_spect.GMOSSpect([])
+        ad_out = p.distortionCorrect(adinputs=[ad_out], arc=arc_name)[0]
+
+        filename = ad_out.filename
+        ad_out = p.determineDistortion(adinputs=[ad_out])[0]
+        ad_out.write(filename=filename, overwrite=True)
+
+        os.rename(filename, os.path.join(config.output_dir, filename))
+
+        old_mask = os.umask(000)
+        os.chmod(os.path.join(config.output_dir, ad_out.filename), mode=0o775)
+        os.umask(old_mask)
+
+        # Reads the reference file ---
+        reference = os.path.join(config.ref_dir, ad_out.filename)
 
         if not os.path.exists(reference):
             pytest.fail('Reference file not found: {}'.format(reference))
 
-        ad_out = config.ad
         ad_ref = astrodata.open(reference)
 
-        p = primitives_gmos_spect.GMOSSpect([])
+        # Compare them ---
+        for ext_out, ext_ref in zip(ad_out, ad_ref):
+            np.testing.assert_allclose(actual=ext_out, desired=ext_ref)
 
-        distortion_corrected_ad_out = p.determineDistortion(adinputs=[ad_out])[0]
-        distortion_corrected_ad_ref = p.determineDistortion(adinputs=[ad_ref])[0]
-
-        for ext_out, ext_ref in zip(distortion_corrected_ad_out, distortion_corrected_ad_ref):
-            model_out = ext_out.FITCOORD['coefficients']
-            model_ref = ext_ref.FITCOORD['coefficients']
-            np.testing.assert_allclose(model_out, model_ref, rtol=1e-3)
-
-        del ad_out, ad_ref
-        del p, distortion_corrected_ad_out, distortion_corrected_ad_ref
+        del ad_out, ad_ref, p
 
 
 class PlotGmosSpectLongslitArcs:
