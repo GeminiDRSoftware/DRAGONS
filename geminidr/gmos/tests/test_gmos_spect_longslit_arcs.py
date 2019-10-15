@@ -192,7 +192,14 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
 
             return p
 
-    return ConfigTest(request.param)
+    c = ConfigTest(request.param)
+    yield c
+
+    old_mask = os.umask(000)
+    os.chmod(log_file, 775)
+    os.umask(old_mask)
+
+    del c
 
 
 @pytest.mark.gmosls
