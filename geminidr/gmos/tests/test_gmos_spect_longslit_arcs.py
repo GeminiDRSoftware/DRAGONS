@@ -356,13 +356,21 @@ class TestGmosSpectLongslitArcs:
 
         filename = ad_out.filename
         ad_out = p.determineDistortion(adinputs=[ad_out])[0]
+
+        for ext in ad_out:
+            assert hasattr(ext, "FITCOORD")
+
         ad_out.write(filename=filename, overwrite=True)
 
         os.rename(filename, os.path.join(config.output_dir, filename))
 
         old_mask = os.umask(000)
-        os.chmod(os.path.join(config.output_dir, ad_out.filename), mode=0o775)
+        os.chmod(os.path.join(config.output_dir, filename), mode=0o775)
         os.umask(old_mask)
+
+        print(" >>> {}".format(os.path.join(config.output_dir, filename)))
+
+        # assert False
 
         # Reads the reference file ---
         reference = os.path.join(config.ref_dir, ad_out.filename)
@@ -372,11 +380,18 @@ class TestGmosSpectLongslitArcs:
 
         ad_ref = astrodata.open(reference)
 
-        # Compare them ---
-        for ext_out, ext_ref in zip(ad_out, ad_ref):
-            np.testing.assert_allclose(actual=ext_out, desired=ext_ref)
-
-        del ad_out, ad_ref, p
+        # # Compare them ---
+        # for ext_out, ext_ref in zip(ad_out, ad_ref):
+        #
+        #     model_out = astromodels.dict_to_chebyshev(
+        #         dict(zip(
+        #             ext_out.FITCOORD['name'], ext_out.FITCOORD['coefficients'])))
+        #
+        #     # model_ref = astromodels.dict_to_chebyshev(
+        #     #     dict(zip(
+        #     #         ext_ref.FITCOORD['name'], ext_ref.FITCOORD['coefficients'])))
+        #
+        # del ad_out, ad_ref, p
 
 
 class PlotGmosSpectLongslitArcs:
