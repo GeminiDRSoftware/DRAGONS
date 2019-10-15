@@ -139,7 +139,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     logutils.config(mode='quiet', file_name=log_file)
 
     old_mask = os.umask(000)
-    os.chmod(log_file, 775)
+    os.chmod(log_file, 0o775)
     os.umask(old_mask)
 
     # Setup configuration for tests ---
