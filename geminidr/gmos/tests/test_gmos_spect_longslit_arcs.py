@@ -127,7 +127,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
         An object that contains `.ad`, `.output_dir`, `.ref_dir`, and
         `.filename` attributes.
     """
-
+    # Setup log ---
     log_file = os.path.join(
         path_to_outputs, '{}.log'.format(
             os.path.splitext(
@@ -138,6 +138,11 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
 
     logutils.config(mode='quiet', file_name=log_file)
 
+    old_mask = os.umask(000)
+    os.chmod(log_file, 775)
+    os.umask(old_mask)
+
+    # Setup configuration for tests ---
     class ConfigTest:
         """
         Config class created for each dataset file. It is created from within
@@ -192,14 +197,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
 
             return p
 
-    c = ConfigTest(request.param)
-    yield c
-
-    old_mask = os.umask(000)
-    os.chmod(log_file, 775)
-    os.umask(old_mask)
-
-    del c
+    return ConfigTest(request.param)
 
 
 @pytest.mark.gmosls
@@ -334,7 +332,6 @@ class TestGmosSpectLongslitArcs:
         del ad_out, ad_ref, p
 
     @staticmethod
-    @pytest.mark.skip(reason="WIP: test will fail")
     def test_distortion_correction_is_applied_the_same_way(config):
         """
         Applies the same distortion correction model to both output and reference
