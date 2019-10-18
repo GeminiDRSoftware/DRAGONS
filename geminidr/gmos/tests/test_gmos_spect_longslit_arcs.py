@@ -11,7 +11,9 @@ import numpy as np
 # noinspection PyPackageRequirements
 import pytest
 # noinspection PyPackageRequirements
+from matplotlib import colors
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import astrodata
 # noinspection PyUnresolvedReferences
@@ -26,6 +28,10 @@ dataset_file_list = [
     'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
     # 'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
     # 'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
+    'process_arcs/GMOS/N20170403S0452.fits',  # B600:0.590 HAM Full Frame 1x1
+    'process_arcs/GMOS/N20170415S0255.fits',  # B600:0.590 HAM Central Spectrum 1x1
+    # 'process_arcs/GMOS/N20171016S0010.fits',  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
+    # 'process_arcs/GMOS/N20171016S0127.fits',  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
     # 'process_arcs/GMOS/N20100307S0236.fits',  # B1200:0.445 EEV
     # 'process_arcs/GMOS/N20130628S0290.fits',  # B1200:0.420 E2V
     # 'process_arcs/GMOS/N20170904S0078.fits',  # B1200:0.440 HAM
@@ -148,7 +154,6 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
         Config class created for each dataset file. It is created from within
         this a fixture so it can inherit the `path_to_*` fixtures as well.
         """
-
         def __init__(self, filename):
             input_file = os.path.join(path_to_inputs, filename)
             dataset_sub_dir = os.path.dirname(filename)
@@ -176,28 +181,34 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
             self.output_dir = output_folder
             self.ref_dir = reference_folder
 
-            p = PlotGmosSpectLongslitArcs(ad, output_folder)
-            p.plot_all()
-
         @staticmethod
         def reduce(filename):
-            p = primitives_gmos_spect.GMOSSpect([astrodata.open(filename)])
-            p.viewer = geminidr.dormantViewer(p, None)
 
-            p.prepare()
-            p.addDQ(static_bpm=None)
-            p.addVAR(read_noise=True)
-            p.overscanCorrect()
-            p.ADUToElectrons()
-            p.addVAR(poisson_noise=True)
-            p.mosaicDetectors()
-            p.makeIRAFCompatible()
+            _p = primitives_gmos_spect.GMOSSpect([astrodata.open(filename)])
+            _p.viewer = geminidr.dormantViewer(_p, None)
+
+            _p.prepare()
+            _p.addDQ(static_bpm=None)
+            _p.addVAR(read_noise=True)
+            _p.overscanCorrect()
+            _p.ADUToElectrons()
+            _p.addVAR(poisson_noise=True)
+            _p.mosaicDetectors()
+            _p.makeIRAFCompatible()
             # p.determineWavelengthSolution(plot=True)
-            p.determineWavelengthSolution(suffix="_arc")
+            _p.determineWavelengthSolution(suffix="_arc")
 
-            return p
+            return _p
 
-    return ConfigTest(request.param)
+    c = ConfigTest(request.param)
+
+    yield c
+
+    p = PlotGmosSpectLongslitArcs(c.ad, c.output_dir)
+    p.wavelength_calibration_plots()
+    p.distortion_diagnosis_plots()
+
+    del c, p
 
 
 @pytest.mark.gmosls
@@ -292,7 +303,7 @@ class TestGmosSpectLongslitArcs:
     @staticmethod
     def test_distortion_model_is_the_same(config):
         """
-        Correscts distortion on both output and reference files using the
+        Corrects distortion on both output and reference files using the
         distortion model stored in themselves. Previous tests assures that
         these data are similar and that distortion correct is applied the same
         way. Now, this one tests the model itself.
@@ -308,7 +319,7 @@ class TestGmosSpectLongslitArcs:
         p = primitives_gmos_spect.GMOSSpect([])
         ad_out = p.determineDistortion(adinputs=[ad_out])[0]
 
-        ad_out.write()
+        ad_out.write(overwrite=True)
         os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
 
         old_mask = os.umask(000)
@@ -330,6 +341,52 @@ class TestGmosSpectLongslitArcs:
             np.testing.assert_allclose(model_out, model_ref, rtol=1e-3)
 
         del ad_out, ad_ref, p
+
+    @staticmethod
+    @pytest.mark.skip(reason='debug')
+    def test_distortionCorrect_works_when_using_FullROI_on_CentralROI(path_to_outputs):
+        """
+        Test if a model obtained in a Full Frame ROI can be applied to a Central
+        Spectra ROI.
+        """
+        class Config:
+
+            def __init__(self, name):
+                sub_path, basename = os.path.split(name)
+
+                basename, ext = os.path.splitext(basename)
+                basename = basename + "_distortionDetermined.fits"
+
+                self._filename = basename
+                self.output_dir = os.path.join(path_to_outputs, sub_path)
+                self.full_name = os.path.join(self.output_dir, self._filename)
+
+            @property
+            def filename(self):
+                return self._filename
+
+            @filename.setter
+            def filename(self, name):
+                self._filename = name
+                self.full_name = os.path.join(self.output_dir, self._filename)
+
+        # B600:0.500 HAM, ROI="Central Spectrum" ---
+        cs = Config('process_arcs/GMOS/N20171016S0010.fits')
+        cs.ad = astrodata.open(
+            os.path.join(cs.output_dir, cs.filename))
+
+        # B600:0.500 HAM, ROI="Full Frame" ---
+        ff = Config('process_arcs/GMOS/N20171016S0127.fits')
+
+        # Apply full frame roi to central-spect roi
+        p = primitives_gmos_spect.GMOSSpect([])
+        cs.ad = p.distortionCorrect(adinputs=[cs.ad], arc=ff.full_name)[0]
+        cs.filename = cs.filename.replace('.fits', '_fromFullFrame.fits')
+        cs.ad.write(filename=cs.full_name, overwrite=True)
+
+        old_mask = os.umask(000)
+        os.chmod(os.path.join(cs.full_name), mode=0o775)
+        os.umask(old_mask)
 
     @staticmethod
     def test_distortion_correction_is_applied_the_same_way(config):
@@ -368,19 +425,24 @@ class TestGmosSpectLongslitArcs:
         os.chmod(os.path.join(config.output_dir, filename), mode=0o775)
         os.umask(old_mask)
 
-        print(" >>> {}".format(os.path.join(config.output_dir, filename)))
-
         # assert False
 
-        # Reads the reference file ---
-        reference = os.path.join(config.ref_dir, ad_out.filename)
+        # # Reads the reference file ---
+        # reference = os.path.join(config.ref_dir, ad_out.filename)
+        #
+        # if not os.path.exists(reference):
+        #     pytest.fail('Reference file not found: {}'.format(reference))
+        #
+        # ad_ref = astrodata.open(reference)
 
-        if not os.path.exists(reference):
-            pytest.fail('Reference file not found: {}'.format(reference))
+        # Evaluate them ---
+        for ext in ad_out:
 
-        ad_ref = astrodata.open(reference)
+            coefficients = dict(zip(
+                ext.FITCOORD['name'], ext.FITCOORD['coefficients']))
 
-        # # Compare them ---
+            print(coefficients)
+
         # for ext_out, ext_ref in zip(ad_out, ad_ref):
         #
         #     model_out = astromodels.dict_to_chebyshev(
@@ -413,6 +475,8 @@ class PlotGmosSpectLongslitArcs:
         self.ad = ad
         self.name, _ = os.path.splitext(filename)
         self.grating = ad.disperser(pretty=True)
+        self.bin_x = ad.detector_x_bin()
+        self.bin_y = ad.detector_y_bin()
         self.central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
         self.output_folder = output_folder
 
@@ -451,32 +515,92 @@ class PlotGmosSpectLongslitArcs:
                 warnings.warn(
                     "Failed to update permissions for file: {}".format(target_file))
 
-    def plot_all(self):
+    def distortion_diagnosis_plots(self):
+        """
+        Makes the Diagnosis Plots for `determineDistortion` and
+        `distortionCorrect` for each extension inside the reduced arc.
+        """
+        filename = os.path.join(self.output_folder, self.name + '.fits')
 
-        for ext_num, ext in enumerate(self.ad):
+        ad = astrodata.open(filename)
 
-            if not hasattr(ext, 'WAVECAL'):
+        for e_num, e in enumerate(ad):
+
+            if not hasattr(e, 'FITCOORD'):
                 continue
 
-            peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
-            wavelengths = ext.WAVECAL['wavelengths']
-
-            model = astromodels.dict_to_chebyshev(
+            distortion_model = astromodels.dict_to_chebyshev(
                 dict(
                     zip(
-                        ext.WAVECAL["name"], ext.WAVECAL["coefficients"]
+                        e.FITCOORD["name"], e.FITCOORD["coefficients"]
                     )
                 )
             )
 
-            mask = np.round(np.average(ext.mask, axis=0)).astype(int)
-            data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
-            data = (data - data.min()) / data.ptp()
+            model_dict = dict(zip(e.FITCOORD["name"], e.FITCOORD["coefficients"]))
+            for k in model_dict:
+                s = "{:15s}{:10.3f}".format(k, model_dict[k])
+                print(s)
 
-            self.plot_lines(ext_num, data, peaks, model)
-            self.plot_non_linear_components(ext_num, peaks, wavelengths, model)
-            self.plot_residuals(ext_num, peaks, wavelengths, model)
-            self.create_artifact_from_plots()
+            self.plot_distortion_map(e_num, e.shape, distortion_model)
+
+    def plot_distortion_map(self, ext_num, shape, model):
+        """
+        Plots the distortion map determined for a given file.
+
+        Parameters
+        ----------
+        ext_num : int
+            Extension number.
+        shape : tuple
+            Data shape.
+        model : Chebyshev1D
+            Model that represents the wavelength solution.
+        """
+        n_hlines = 50
+        n_vlines = 50
+        n_rows, n_cols = shape
+
+        x = np.linspace(0, n_cols, n_vlines, dtype=int)
+        y = np.linspace(0, n_rows, n_hlines, dtype=int)
+
+        X, Y = np.meshgrid(x, y)
+
+        U = X - model(X, Y)
+        V = np.zeros_like(U)
+
+        fig, ax = plt.subplots(num="Distortion Map {}".format(self.name))
+
+        vmin = U.min() if U.min() < 0 else -0.1 * U.ptp()
+        vmax = U.max() if U.max() > 0 else +0.1 * U.ptp()
+        vcen = 0
+
+        Q = ax.quiver(
+            X, Y, U, V, U, cmap='coolwarm',
+            norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax))
+
+        ax.set_xlabel('X [px]')
+        ax.set_ylabel('Y [px]')
+        ax.set_title('Detected Distortion for:\n{} - Bin {:d}x{:d}'.format(
+            self.name, self.bin_x, self.bin_y))
+
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+
+        cbar = fig.colorbar(Q, extend='max', cax=cax, orientation='vertical')
+        cbar.set_label('Distortion [px]')
+
+        fig.tight_layout()
+
+        fig_name = os.path.join(
+            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_distortionMap.png".format(
+                self.name, ext_num, self.grating, self.central_wavelength))
+
+        fig.savefig(fig_name)
+
+        old_mask = os.umask(000)
+        os.chmod(fig_name, 0o775)
+        os.umask(old_mask)
 
     def plot_lines(self, ext_num, data, peaks, model):
         """
@@ -630,3 +754,34 @@ class PlotGmosSpectLongslitArcs:
                 "Failed to update permissions for file: {}".format(fig_name))
 
         del fig, ax
+
+    def wavelength_calibration_plots(self):
+        """
+        Makes the Wavelength Calibration Diagnosis Plots for each extension
+        inside the reduced arc.
+        """
+
+        for ext_num, ext in enumerate(self.ad):
+
+            if not hasattr(ext, 'WAVECAL'):
+                continue
+
+            peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
+            wavelengths = ext.WAVECAL['wavelengths']
+
+            wavecal_model = astromodels.dict_to_chebyshev(
+                dict(
+                    zip(
+                        ext.WAVECAL["name"], ext.WAVECAL["coefficients"]
+                    )
+                )
+            )
+
+            mask = np.round(np.average(ext.mask, axis=0)).astype(int)
+            data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
+            data = (data - data.min()) / data.ptp()
+
+            self.plot_lines(ext_num, data, peaks, wavecal_model)
+            self.plot_non_linear_components(ext_num, peaks, wavelengths, wavecal_model)
+            self.plot_residuals(ext_num, peaks, wavelengths, wavecal_model)
+            self.create_artifact_from_plots()

@@ -304,6 +304,10 @@ GMOS/GS-2016B-Q-54-32/S20170104S0695.fits
 process_arcs/GMOS/N20100115S0346.fits  # B600:0.500 EEV
 process_arcs/GMOS/N20130112S0390.fits  # B600:0.500 E2V
 process_arcs/GMOS/N20170609S0173.fits  # B600:0.500 HAM
+process_arcs/GMOS/N20170403S0452.fits  # B600:0.590 HAM Full Frame 1x1
+process_arcs/GMOS/N20170415S0255.fits  # B600:0.590 HAM Central Spectrum 1x1
+process_arcs/GMOS/N20171016S0010.fits  # B600:0.500 HAM, ROI="Central Spectrum", 2x1
+process_arcs/GMOS/N20171016S0127.fits  # B600:0.500 HAM, ROI="Full Frame", 2x1
 process_arcs/GMOS/N20100307S0236.fits  # B1200:0.445 EEV
 process_arcs/GMOS/N20130628S0290.fits  # B1200:0.420 E2V
 process_arcs/GMOS/N20170904S0078.fits  # B1200:0.440 HAM
