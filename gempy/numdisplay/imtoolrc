@@ -56,6 +56,13 @@
 43  1 2200  2200	# imt43|imt2200
 44  1 1100  1100	# imt44|imt1100
 
+# Gemini - GMOS Devices
+45  1 2080  4644        # imt45|imtgmosccd
+46  1 6400  4644        # imt46|imtgmos
+47  1 3200  2322        # imt47|imtgmos2
+48  1 1600  1161        # imt48|imtgmos4
+49  1  800   581        # imt49|imtgmos8
+
 # User added formats.  (start with #64)
 # (add here)
 64 1 3200 3200          # imt64|imt3200
