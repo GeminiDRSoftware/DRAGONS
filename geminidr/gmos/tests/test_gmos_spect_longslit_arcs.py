@@ -598,9 +598,12 @@ class PlotGmosSpectLongslitArcs:
 
         fig.savefig(fig_name)
 
-        old_mask = os.umask(000)
-        os.chmod(fig_name, 0o775)
-        os.umask(old_mask)
+        try:
+            old_mask = os.umask(000)
+            os.chmod(fig_name, 0o775)
+            os.umask(old_mask)
+        except PermissionError:
+            pass
 
     def plot_lines(self, ext_num, data, peaks, model):
         """
