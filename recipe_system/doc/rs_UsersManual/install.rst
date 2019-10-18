@@ -22,7 +22,7 @@ The use of the ``bash`` shell is required by Anaconda.
 
 Install Anaconda
 ================
-If you already have Anaconnda installed, you can skip this step and go to
+If you already have Anaconda installed, you can skip this step and go to
 the :ref:`Install DRAGONS <install_dragons>` section below.  If not, then your
 first step is to get and install Anaconda.  You can download it at:
 
@@ -89,7 +89,7 @@ anaconda.  To activate or deactivate Anaconda manually::
     $ conda activate
     $ conda deactivate
 
-Now that Anaconda works, we add the needed astronomy softare.  Add the
+Now that Anaconda works, we add the needed astronomy software.  Add the
 Astroconda channel and the Gemini channel.  Those channels host
 the conda astronomy packages.
 

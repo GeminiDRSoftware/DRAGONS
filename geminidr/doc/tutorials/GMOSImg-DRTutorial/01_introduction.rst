@@ -65,7 +65,7 @@ Download it and unpack it somewhere convenient.
 ::
 
     cd <somewhere convenient>
-    tar xvzf gmosimg_tutorial_datapkg-v1.tar
+    tar xvf gmosimg_tutorial_datapkg-v1.tar
     bunzip2 gmosimg_tutorial/playdata/*.bz2
 
 The datasets are found in the subdirectory ``gmosimg_tutorial/playdata``, and we
