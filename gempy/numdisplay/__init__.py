@@ -84,7 +84,7 @@
 """
 from __future__ import absolute_import, division, print_function # confidence medium
 
-from .version import *
+__version__ = '1.6.2-gemini'
 
 import numpy as n
 import math, string
