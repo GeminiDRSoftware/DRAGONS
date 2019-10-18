@@ -26,11 +26,11 @@ except ImportError:
 import numpy as np
 
 from astropy import wcs
-from stsci.numdisplay import display
 
 import astrodata
 import gemini_instruments
 
+from gempy.numdisplay import display
 from gempy.mosaic.mosaic import Mosaic
 from gempy.mosaic.mosaicData import MosaicData
 from gempy.mosaic.mosaicGeometry import MosaicGeometry
@@ -160,10 +160,6 @@ def at5():
 
     """
     import numpy as np
-    try:
-        from stsci.numdisplay import display
-    except ImportError:
-        from numdisplay import display
 
     print('\n at5 REQUIREMENT.......')
     print ('MosaicData uses the geometry dictionary to mosaic the input ndarrays.')

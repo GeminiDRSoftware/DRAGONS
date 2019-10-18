@@ -246,11 +246,10 @@ The mask can be accessed as follow::
 
 Display
 =======
-Since the data is stored in the ``AstroData`` object as a nummpy ``ndarray``
+Since the data is stored in the ``AstroData`` object as a numpy ``ndarray``
 any tool that works on ``ndarray`` can be used.  To display to DS9 there
 is the ``imexam`` package.  The ``numdisplay`` package is still available for
-now but it is
-no longer supported by STScI.  We will show
+now but it is no longer supported by STScI.  We will show
 how to use ``imexam`` to display and read the cursor position.  Read the
 documentation on that tool to learn more about what else it has
 to offer.
