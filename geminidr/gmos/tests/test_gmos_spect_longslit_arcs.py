@@ -144,9 +144,12 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
 
     logutils.config(mode='quiet', file_name=log_file)
 
-    old_mask = os.umask(000)
-    os.chmod(log_file, 0o775)
-    os.umask(old_mask)
+    try:
+        old_mask = os.umask(000)
+        os.chmod(log_file, 0o775)
+        os.umask(old_mask)
+    except PermissionError:
+        pass
 
     # Setup configuration for tests ---
     class ConfigTest:
@@ -520,36 +523,51 @@ class PlotGmosSpectLongslitArcs:
         Makes the Diagnosis Plots for `determineDistortion` and
         `distortionCorrect` for each extension inside the reduced arc.
         """
-        filename = os.path.join(self.output_folder, self.name + '.fits')
+        full_name = os.path.join(self.output_folder, self.name + '.fits')
 
-        ad = astrodata.open(filename)
+        file_list = [
+            full_name,
+            full_name.replace('distortionDetermined', 'distortionCorrected')]
 
-        for e_num, e in enumerate(ad):
+        for filename in file_list:
 
-            if not hasattr(e, 'FITCOORD'):
-                continue
+            ad = astrodata.open(filename)
 
-            distortion_model = astromodels.dict_to_chebyshev(
-                dict(
-                    zip(
-                        e.FITCOORD["name"], e.FITCOORD["coefficients"]
+            for e_num, e in enumerate(ad):
+
+                if not hasattr(e, 'FITCOORD'):
+                    continue
+
+                distortion_model = astromodels.dict_to_chebyshev(
+                    dict(
+                        zip(
+                            e.FITCOORD["name"], e.FITCOORD["coefficients"]
+                        )
                     )
                 )
-            )
 
-            model_dict = dict(zip(e.FITCOORD["name"], e.FITCOORD["coefficients"]))
-            for k in model_dict:
-                s = "{:15s}{:10.3f}".format(k, model_dict[k])
-                print(s)
+                model_dict = dict(zip(
+                    e.FITCOORD["name"], e.FITCOORD["coefficients"]))
 
-            self.plot_distortion_map(e_num, e.shape, distortion_model)
+                for k in model_dict:
+                    s = "{:15s}{:10.3f}".format(k, model_dict[k])
+                    print(s)
 
-    def plot_distortion_map(self, ext_num, shape, model):
+                self.plot_distortion_map(
+                    ad.filename, e_num, e.shape, distortion_model)
+
+                if 'distortionCorrected' in filename:
+                    self.plot_distortion_residuals(
+                        ad.filename, e_num, e.shape, distortion_model)
+
+    def plot_distortion_map(self, fname, ext_num, shape, model):
         """
         Plots the distortion map determined for a given file.
 
         Parameters
         ----------
+        fname : str
+            File name
         ext_num : int
             Extension number.
         shape : tuple
@@ -569,7 +587,7 @@ class PlotGmosSpectLongslitArcs:
         U = X - model(X, Y)
         V = np.zeros_like(U)
 
-        fig, ax = plt.subplots(num="Distortion Map {}".format(self.name))
+        fig, ax = plt.subplots(num="Distortion Map {}".format(fname))
 
         vmin = U.min() if U.min() < 0 else -0.1 * U.ptp()
         vmax = U.max() if U.max() > 0 else +0.1 * U.ptp()
@@ -581,8 +599,8 @@ class PlotGmosSpectLongslitArcs:
 
         ax.set_xlabel('X [px]')
         ax.set_ylabel('Y [px]')
-        ax.set_title('Detected Distortion for:\n{} - Bin {:d}x{:d}'.format(
-            self.name, self.bin_x, self.bin_y))
+        ax.set_title('Distortion Map\n{} - Bin {:d}x{:d}'.format(
+            fname, self.bin_x, self.bin_y))
 
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -593,14 +611,82 @@ class PlotGmosSpectLongslitArcs:
         fig.tight_layout()
 
         fig_name = os.path.join(
-            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_distortionMap.png".format(
-                self.name, ext_num, self.grating, self.central_wavelength))
+            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_dmap.png".format(
+                fname, ext_num, self.grating, self.central_wavelength))
 
         fig.savefig(fig_name)
 
-        old_mask = os.umask(000)
-        os.chmod(fig_name, 0o775)
-        os.umask(old_mask)
+        try:
+            old_mask = os.umask(000)
+            os.chmod(fig_name, 0o775)
+            os.umask(old_mask)
+        except PermissionError:
+            pass
+
+    def plot_distortion_residuals(self, fname, ext_num, shape, model):
+        """
+        Plots the distortion residuals calculated on an arc dataset that passed
+        through `distortionCorrect`. The residuals are calculated based on an
+        artificial mesh and using a model obtained from `determinedDistortion`
+        applied to the distortion corrected file.
+
+        Parameters
+        ----------
+        fname : str
+            File name
+        ext_num : int
+            Number of the extension.
+        shape : tuple
+            Data shape
+        model : distortion model calculated on a distortion corrected file.
+        """
+        n_hlines = 25
+        n_vlines = 25
+        n_rows, n_cols = shape
+
+        x = np.linspace(0, n_cols, n_vlines, dtype=int)
+        y = np.linspace(0, n_rows, n_hlines, dtype=int)
+
+        X, Y = np.meshgrid(x, y)
+
+        U = X - model(X, Y)
+
+        width = 0.75 * np.diff(x).mean()
+        _min, _med, _max = np.percentile(U, [0, 50, 100], axis=0)
+
+        fig, ax = plt.subplots(
+            num="Corrected Distortion Residual Stats {:s}".format(fname))
+
+        ax.scatter(x, _min, marker='^', s=4, c='C0')
+        ax.scatter(x, _max, marker='v', s=4, c='C0')
+
+        parts = ax.violinplot(
+            U, positions=x, showmeans=True, showextrema=True, widths=width)
+
+        parts['cmins'].set_linewidth(0)
+        parts['cmaxes'].set_linewidth(0)
+        parts['cbars'].set_linewidth(0.75)
+        parts['cmeans'].set_linewidth(0.75)
+
+        ax.grid('k-', alpha=0.25)
+        ax.set_xlabel('X [px]')
+        ax.set_ylabel('Position Residual [px]')
+        ax.set_title('Corrected Distortion Residual Stats\n{}'.format(fname))
+
+        fig.tight_layout()
+
+        fig_name = os.path.join(
+            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_dres.png".format(
+                fname, ext_num, self.grating, self.central_wavelength))
+
+        fig.savefig(fig_name)
+
+        try:
+            old_mask = os.umask(000)
+            os.chmod(fig_name, 0o775)
+            os.umask(old_mask)
+        except PermissionError:
+            pass
 
     def plot_lines(self, ext_num, data, peaks, model):
         """

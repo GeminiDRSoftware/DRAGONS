@@ -294,9 +294,16 @@ Con: Deeper package levels
     |    |    |    |    |    |--- primitives.py
     |    |    |    |    |    |--- imaging.py
     |    |    |    |    |    |--- spectroscopy.py
+    |    |    |    |    |    |--- tests/
     |    |    |    |    |--- parameters/
     |    |    |    |    |    |--- __init__.py
     |    |    |    |    |    |--- imaging.py
     |    |    |    |    |    |--- spectroctopy.py
-    |    |    |    |    |--- tests/
+    |    |    |    |    |--- recipes/
+    |    |    |    |    |    |--- sq/
+    |    |    |    |    |    |    |---- reduce_BIAS.py
+    |    |    |    |    |    |    |---- reduce_FLAT.py
+    |    |    |    |    |    |    |---- tests/
+    |    |    |    |    |    |    |---- (...)
+    |    |    |    |    |    |--- qa/
     |    |    |    |    ...
