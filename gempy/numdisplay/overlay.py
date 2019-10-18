@@ -4,7 +4,6 @@ import math
 import struct
 
 import numpy as N
-import stsci.numdisplay as numdisplay
 from . import ichar
 
 """The public functions are the following.  For point, rectangle, circle
@@ -65,7 +64,8 @@ global_radius = 3
 
 def _open_display(frame=1):
     """Open the device."""
-    fd = numdisplay.getHandle()
+    from . import getHandle
+    fd = getHandle()
 
     fd.setFrame(frame_num=frame)
     (tx, ty, fbwidth, fbheight) = fd.readInfo()
@@ -73,9 +73,10 @@ def _open_display(frame=1):
 
 def close_display(frame=1):
     """Close the device."""
-    fd = numdisplay.getHandle()
+    from . import getHandle, close
+    fd = getHandle()
     fd.close()
-    numdisplay.close()
+    close()
 
 def set (color=None, radius=None):
     """Specify the color or the radius.
