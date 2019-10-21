@@ -8,11 +8,15 @@ import pkgutil
 from importlib import import_module
 from inspect import isclass
 
+from gempy.utils import logutils
+
 from .baseMapper import Mapper
 
 from ..utils.mapper_utils import dotpath
 from ..utils.errors import PrimitivesNotFound
-
+from ..utils.rs_utilities import log_traceback
+# ------------------------------------------------------------------------------
+log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 class PrimitiveMapper(Mapper):
     """
@@ -73,7 +77,8 @@ class PrimitiveMapper(Mapper):
     def _get_tagged_primitives(self):
         try:
             loaded_pkg = import_module(self.dotpackage)
-        except:
+        except ModuleNotFoundError as err:
+            log_traceback(log)
             yield None
             return
         for pkgpath, pkg in self._generate_primitive_modules(loaded_pkg):

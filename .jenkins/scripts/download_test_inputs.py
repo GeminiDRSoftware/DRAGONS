@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 """
 Script used to download test files from the GEMINI archive and save them inside
-the path stored in the TEST_PATH environment variable. Before running it, make
-sure that you set this path using the following command:
+the path stored in the DRAGONS_TEST_INPUTS environment variable. Before running
+it, make sure that you set this path using the following command:
 
-    $ export TEST_PATH="/path/to/my/test/data/"
-    $ echo $TEST_PATH      
+    $ export DRAGONS_TEST_INPUTS="/path/to/my/test/data/"
+    $ echo $DRAGONS_TEST_INPUTS
       /path/to/my/test/data/
 
-The test data is listed inside the global variable FILE_WITH_TEST_FILES. Each
-row has one file. Each file can be preceeded with a subfolder. This is useful
-to isolate tests.
+The test data is listed inside a text file that is passed passed via command
+line. Each row has one file. Each file can be preceeded with a subfolder. This
+is useful to isolate tests.
 """
 
 import os
 import subprocess
 import sys
-import re
 
 URL = u'https://archive.gemini.edu/file/'
 

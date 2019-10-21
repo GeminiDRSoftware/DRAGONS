@@ -308,6 +308,10 @@ class Swap(object):
     def setup_search(self):
         if self.userpath:
             self.search_root = self.userpath
+            if self.search_fits:
+                self.search_set = fits_set
+            else:
+                self.search_set = dragons_set
         elif self.search_fits:
             try:
                 self.search_root = os.path.abspath(os.environ['FITSSTORE'])
