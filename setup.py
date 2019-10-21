@@ -101,6 +101,7 @@ GEMPY_MODULES = ['gempy',
                  'gempy.library',
                  'gempy.library.config',
                  'gempy.mosaic',
+                 'gempy.numdisplay',
                  'gempy.utils',
                  ]
 
@@ -169,6 +170,11 @@ for root, dirs, files in os.walk(os.path.join('recipe_system', 'adcc',
     PACKAGE_DATA['recipe_system'].extend(
         map((lambda f: os.path.join(rsdir.sub('', root), f)), files)
     )
+
+# Numdisplay support files
+PACKAGE_DATA['gempy'] = []
+for f in ('ichar.dat', 'imtoolrc', 'README'):
+    PACKAGE_DATA['gempy'].append(os.path.join('numdisplay', f))
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # For packaging, need to add tests and docs
