@@ -333,11 +333,26 @@ def dict_to_chebyshev(model_dict):
 
     Parameters
     ----------
-    model_dict: dict-like object of names and values
+    model_dict: dict
+        Dictionary with pair/value that defines the Chebyshev model.
 
     Returns
     -------
-    models.ChebyshevND instance
+    models.ChebyshevND or None
+        Returns the models if it is parsed successfully. If not, it will return
+        None.
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+        my_model = dict(
+            zip(
+                ad[0].WAVECAL['name'], ad[0].WAVECAL['coefficient']
+            )
+        )
+
     """
     try:
         ndim = int(model_dict.pop('ndim'))
