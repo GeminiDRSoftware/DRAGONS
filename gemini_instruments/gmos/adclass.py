@@ -862,7 +862,7 @@ class AstroDataGmos(AstroDataGemini):
             raw_pixel_scale = pixscale_dict[pixscale_key]
         except KeyError:
             return None
-        return raw_pixel_scale * self.detector_x_bin()
+        return raw_pixel_scale * self.detector_y_bin()
 
     @astro_data_descriptor
     def read_mode(self):
