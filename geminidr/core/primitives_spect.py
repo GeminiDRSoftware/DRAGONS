@@ -405,6 +405,8 @@ class Spect(PrimitivesBASE):
                     adoutputs.append(ad)
                     continue
 
+                # Use AstroPy Compound Models to have a model that can be applied to 2D data:
+                # https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
                 dispaxis = arc[0].dispersion_axis() - 1
                 if dispaxis == 0:
                     m_ident.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
