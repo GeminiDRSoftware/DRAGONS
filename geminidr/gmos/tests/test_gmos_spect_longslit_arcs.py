@@ -8,107 +8,111 @@ import tarfile
 import warnings
 
 import numpy as np
+
 # noinspection PyPackageRequirements
 import pytest
+
 # noinspection PyPackageRequirements
+from astropy.modeling import models
 from matplotlib import colors
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy import ndimage
 
 import astrodata
+
 # noinspection PyUnresolvedReferences
 import gemini_instruments
 import geminidr
 from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels
+from gempy.library import astromodels, transform
 from gempy.utils import logutils
 
 dataset_file_list = [
     # Process Arcs: GMOS-N ---
-    'process_arcs/GMOS/N20100115S0346.fits',  # B600:0.500 EEV
-    # 'process_arcs/GMOS/N20130112S0390.fits',  # B600:0.500 E2V
-    # 'process_arcs/GMOS/N20170609S0173.fits',  # B600:0.500 HAM
-    'process_arcs/GMOS/N20170403S0452.fits',  # B600:0.590 HAM Full Frame 1x1
-    'process_arcs/GMOS/N20170415S0255.fits',  # B600:0.590 HAM Central Spectrum 1x1
-    # 'process_arcs/GMOS/N20171016S0010.fits',  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
-    # 'process_arcs/GMOS/N20171016S0127.fits',  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
-    # 'process_arcs/GMOS/N20100307S0236.fits',  # B1200:0.445 EEV
-    # 'process_arcs/GMOS/N20130628S0290.fits',  # B1200:0.420 E2V
-    # 'process_arcs/GMOS/N20170904S0078.fits',  # B1200:0.440 HAM
-    # 'process_arcs/GMOS/N20170627S0116.fits',  # B1200:0.520 HAM
-    # 'process_arcs/GMOS/N20100830S0594.fits',  # R150:0.500 EEV
-    # 'process_arcs/GMOS/N20100702S0321.fits',  # R150:0.700 EEV
-    # 'process_arcs/GMOS/N20130606S0291.fits',  # R150:0.550 E2V
-    # 'process_arcs/GMOS/N20130112S0574.fits',  # R150:0.700 E2V
-    # # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61) | `gswavelength` cannot find solution either.
-    # 'process_arcs/GMOS/N20140408S0218.fits',  # R150:0.700 E2V
-    # # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol. | `gswavelength` cannot find solution either.
-    # 'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM
-    # 'process_arcs/GMOS/N20171007S0439.fits',  # R150:0.650 HAM
-    # 'process_arcs/GMOS/N20171007S0441.fits',  # R150:0.650 HAM
-    # 'process_arcs/GMOS/N20101212S0213.fits',  # R400:0.550 EEV
-    # 'process_arcs/GMOS/N20100202S0214.fits',  # R400:0.700 EEV
-    # 'process_arcs/GMOS/N20130106S0194.fits',  # R400:0.500 E2V
-    # 'process_arcs/GMOS/N20130422S0217.fits',  # R400:0.700 E2V
-    # 'process_arcs/GMOS/N20170108S0210.fits',  # R400:0.660 HAM
-    # 'process_arcs/GMOS/N20171113S0135.fits',  # R400:0.750 HAM
-    # 'process_arcs/GMOS/N20100427S1276.fits',  # R600:0.675 EEV
-    # 'process_arcs/GMOS/N20180120S0417.fits',  # R600:0.860 HAM
-    # 'process_arcs/GMOS/N20100212S0143.fits',  # R831:0.450 EEV
-    # 'process_arcs/GMOS/N20100720S0247.fits',  # R831:0.850 EEV
-    # 'process_arcs/GMOS/N20130808S0490.fits',  # R831:0.571 E2V
-    # 'process_arcs/GMOS/N20130830S0291.fits',  # R831:0.845 E2V
-    # 'process_arcs/GMOS/N20170910S0009.fits',  # R831:0.653 HAM
-    # 'process_arcs/GMOS/N20170509S0682.fits',  # R831:0.750 HAM
-    # # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646) | `gswavelength` cannot find solution either.
-    # 'process_arcs/GMOS/N20170416S0058.fits',  # R831:0.865 HAM
-    # 'process_arcs/GMOS/N20170416S0081.fits',  # R831:0.865 HAM
-    # 'process_arcs/GMOS/N20180120S0315.fits',  # R831:0.865 HAM
-    #
-    # # # Process Arcs: GMOS-S ---
-    # # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution() | `gswavelength` cannot find solution either.
-    # 'process_arcs/GMOS/S20130111S0278.fits',  # B600:0.520 EEV
-    # 'process_arcs/GMOS/S20130114S0120.fits',  # B600:0.500 EEV
-    # 'process_arcs/GMOS/S20130216S0243.fits',  # B600:0.480 EEV
-    # 'process_arcs/GMOS/S20130608S0182.fits',  # B600:0.500 EEV
-    # 'process_arcs/GMOS/S20131105S0105.fits',  # B600:0.500 EEV
-    # 'process_arcs/GMOS/S20140504S0008.fits',  # B600:0.500 EEV
-    # 'process_arcs/GMOS/S20170103S0152.fits',  # B600:0.600 HAM
-    # 'process_arcs/GMOS/S20170108S0085.fits',  # B600:0.500 HAM
-    # 'process_arcs/GMOS/S20130510S0103.fits',  # B1200:0.450 EEV
-    # 'process_arcs/GMOS/S20130629S0002.fits',  # B1200:0.525 EEV
-    # 'process_arcs/GMOS/S20131123S0044.fits',  # B1200:0.595 EEV
+    "process_arcs/GMOS/N20100115S0346.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/N20130112S0390.fits",  # B600:0.500 E2V
+    "process_arcs/GMOS/N20170609S0173.fits",  # B600:0.500 HAM
+    "process_arcs/GMOS/N20170403S0452.fits",  # B600:0.590 HAM Full Frame 1x1
+    "process_arcs/GMOS/N20170415S0255.fits",  # B600:0.590 HAM Central Spectrum 1x1
+    "process_arcs/GMOS/N20171016S0010.fits",  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
+    "process_arcs/GMOS/N20171016S0127.fits",  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
+    "process_arcs/GMOS/N20100307S0236.fits",  # B1200:0.445 EEV
+    "process_arcs/GMOS/N20130628S0290.fits",  # B1200:0.420 E2V
+    "process_arcs/GMOS/N20170904S0078.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/N20170627S0116.fits",  # B1200:0.520 HAM
+    "process_arcs/GMOS/N20100830S0594.fits",  # R150:0.500 EEV
+    "process_arcs/GMOS/N20100702S0321.fits",  # R150:0.700 EEV
+    "process_arcs/GMOS/N20130606S0291.fits",  # R150:0.550 E2V
+    "process_arcs/GMOS/N20130112S0574.fits",  # R150:0.700 E2V
+    # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61) | `gswavelength` cannot find solution either.
+    "process_arcs/GMOS/N20140408S0218.fits",  # R150:0.700 E2V
+    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol. | `gswavelength` cannot find solution either.
+    # 'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
+    "process_arcs/GMOS/N20171007S0439.fits",  # R150:0.650 HAM
+    "process_arcs/GMOS/N20171007S0441.fits",  # R150:0.650 HAM
+    "process_arcs/GMOS/N20101212S0213.fits",  # R400:0.550 EEV
+    "process_arcs/GMOS/N20100202S0214.fits",  # R400:0.700 EEV
+    "process_arcs/GMOS/N20130106S0194.fits",  # R400:0.500 E2V
+    "process_arcs/GMOS/N20130422S0217.fits",  # R400:0.700 E2V
+    "process_arcs/GMOS/N20170108S0210.fits",  # R400:0.660 HAM
+    "process_arcs/GMOS/N20171113S0135.fits",  # R400:0.750 HAM
+    "process_arcs/GMOS/N20100427S1276.fits",  # R600:0.675 EEV - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20180120S0417.fits",  # R600:0.860 HAM
+    "process_arcs/GMOS/N20100212S0143.fits",  # R831:0.450 EEV
+    "process_arcs/GMOS/N20100720S0247.fits",  # R831:0.850 EEV - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20130808S0490.fits",  # R831:0.571 E2V
+    "process_arcs/GMOS/N20130830S0291.fits",  # R831:0.845 E2V - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20170910S0009.fits",  # R831:0.653 HAM
+    "process_arcs/GMOS/N20170509S0682.fits",  # R831:0.750 HAM
+    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646) | `gswavelength` cannot find solution either.
+    "process_arcs/GMOS/N20170416S0058.fits",  # R831:0.865 HAM - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20170416S0081.fits",  # R831:0.865 HAM
+    "process_arcs/GMOS/N20180120S0315.fits",  # R831:0.865 HAM
+    # # Process Arcs: GMOS-S ---
+    # 'process_arcs/GMOS/S20130218S0126.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution() | `gswavelength` cannot find solution either.
+    "process_arcs/GMOS/S20130111S0278.fits",  # B600:0.520 EEV
+    "process_arcs/GMOS/S20130114S0120.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20130216S0243.fits",  # B600:0.480 EEV
+    "process_arcs/GMOS/S20130608S0182.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20131105S0105.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20140504S0008.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20170103S0152.fits",  # B600:0.600 HAM
+    "process_arcs/GMOS/S20170108S0085.fits",  # B600:0.500 HAM
+    "process_arcs/GMOS/S20130510S0103.fits",  # B1200:0.450 EEV
+    "process_arcs/GMOS/S20130629S0002.fits",  # B1200:0.525 EEV
+    "process_arcs/GMOS/S20131123S0044.fits",  # B1200:0.595 EEV
     # 'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM - todo: very weird non-linear plot | non-linear plot using `gswavelength` seems fine.
-    # 'process_arcs/GMOS/S20170103S0149.fits',  # B1200:0.440 HAM
-    # 'process_arcs/GMOS/S20170730S0155.fits',  # B1200:0.440 HAM
-    # 'process_arcs/GMOS/S20171219S0117.fits',  # B1200:0.440 HAM
-    # 'process_arcs/GMOS/S20170908S0189.fits',  # B1200:0.550 HAM
-    # 'process_arcs/GMOS/S20131230S0153.fits',  # R150:0.550 EEV
-    # 'process_arcs/GMOS/S20130801S0140.fits',  # R150:0.700 EEV
-    # 'process_arcs/GMOS/S20170430S0060.fits',  # R150:0.717 HAM
-    # 'process_arcs/GMOS/S20170430S0063.fits',  # R150:0.727 HAM
-    # 'process_arcs/GMOS/S20171102S0051.fits',  # R150:0.950 HAM
-    # 'process_arcs/GMOS/S20130114S0100.fits',  # R400:0.620 EEV
-    # 'process_arcs/GMOS/S20130217S0073.fits',  # R400:0.800 EEV
-    # 'process_arcs/GMOS/S20170108S0046.fits',  # R400:0.550 HAM
-    # 'process_arcs/GMOS/S20170129S0125.fits',  # R400:0.685 HAM
-    # 'process_arcs/GMOS/S20170703S0199.fits',  # R400:0.800 HAM
-    # 'process_arcs/GMOS/S20170718S0420.fits',  # R400:0.910 HAM
-    # # 'process_arcs/GMOS/S20100306S0460.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
-    # # 'process_arcs/GMOS/S20101218S0139.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
-    # 'process_arcs/GMOS/S20110306S0294.fits',  # R600:0.675 EEV
-    # # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
-    # 'process_arcs/GMOS/S20101221S0090.fits',  # R600:0.690 EEV
-    # 'process_arcs/GMOS/S20120322S0122.fits',  # R600:0.900 EEV
-    # 'process_arcs/GMOS/S20130803S0011.fits',  # R831:0.576 EEV
-    # 'process_arcs/GMOS/S20130414S0040.fits',  # R831:0.845 EEV
-    # 'process_arcs/GMOS/S20170214S0059.fits',  # R831:0.440 HAM
-    # 'process_arcs/GMOS/S20170703S0204.fits',  # R831:0.600 HAM
-    # 'process_arcs/GMOS/S20171018S0048.fits',  # R831:0.865 HAM
+    "process_arcs/GMOS/S20170103S0149.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/S20170730S0155.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/S20171219S0117.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/S20170908S0189.fits",  # B1200:0.550 HAM
+    "process_arcs/GMOS/S20131230S0153.fits",  # R150:0.550 EEV
+    "process_arcs/GMOS/S20130801S0140.fits",  # R150:0.700 EEV
+    "process_arcs/GMOS/S20170430S0060.fits",  # R150:0.717 HAM
+    "process_arcs/GMOS/S20170430S0063.fits",  # R150:0.727 HAM
+    "process_arcs/GMOS/S20171102S0051.fits",  # R150:0.950 HAM
+    "process_arcs/GMOS/S20130114S0100.fits",  # R400:0.620 EEV
+    "process_arcs/GMOS/S20130217S0073.fits",  # R400:0.800 EEV
+    "process_arcs/GMOS/S20170108S0046.fits",  # R400:0.550 HAM - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/S20170129S0125.fits",  # R400:0.685 HAM
+    "process_arcs/GMOS/S20170703S0199.fits",  # R400:0.800 HAM
+    "process_arcs/GMOS/S20170718S0420.fits",  # R400:0.910 HAM
+    'process_arcs/GMOS/S20100306S0460.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    'process_arcs/GMOS/S20101218S0139.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    "process_arcs/GMOS/S20110306S0294.fits",  # R600:0.675 EEV
+    'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
+    "process_arcs/GMOS/S20101221S0090.fits",  # R600:0.690 EEV
+    "process_arcs/GMOS/S20120322S0122.fits",  # R600:0.900 EEV
+    "process_arcs/GMOS/S20130803S0011.fits",  # R831:0.576 EEV - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/S20130414S0040.fits",  # R831:0.845 EEV - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/S20170214S0059.fits",  # R831:0.440 HAM
+    "process_arcs/GMOS/S20170703S0204.fits",  # R831:0.600 HAM - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/S20171018S0048.fits",  # R831:0.865 HAM - todo: test_distortion_is_the_same fails
 ]
 
 
-@pytest.fixture(scope='class', params=dataset_file_list)
+@pytest.fixture(scope="class", params=dataset_file_list)
 def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     """
     Super fixture that returns an object with the data required for the tests
@@ -135,14 +139,11 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     """
     # Setup log ---
     log_file = os.path.join(
-        path_to_outputs, '{}.log'.format(
-            os.path.splitext(
-                os.path.basename(__file__)
-            )[0]
-        )
+        path_to_outputs,
+        "{}.log".format(os.path.splitext(os.path.basename(__file__))[0]),
     )
 
-    logutils.config(mode='quiet', file_name=log_file)
+    logutils.config(mode="quiet", file_name=log_file)
 
     try:
         old_mask = os.umask(000)
@@ -157,6 +158,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
         Config class created for each dataset file. It is created from within
         this a fixture so it can inherit the `path_to_*` fixtures as well.
         """
+
         def __init__(self, filename):
             input_file = os.path.join(path_to_inputs, filename)
             dataset_sub_dir = os.path.dirname(filename)
@@ -198,10 +200,33 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
             _p.addVAR(poisson_noise=True)
             _p.mosaicDetectors()
             _p.makeIRAFCompatible()
-            # p.determineWavelengthSolution(plot=True)
             _p.determineWavelengthSolution(suffix="_arc")
 
             return _p
+
+        @staticmethod
+        def generate_fake_data(ad):
+
+            nrows, ncols = ad.shape
+            dispaxis = ad.dispersion_axis() - 1
+
+            n_lines = 100
+            np.random.seed(0)
+
+            data = np.zeros((nrows, ncols))
+            line_positions = np.random.random_integers(0, ncols, size=n_lines)
+            line_intensities = 100 * np.random.random_sample(n_lines)
+
+            if dispaxis == 0:
+                data[:, line_positions] = line_intensities
+                data = ndimage.gaussian_filter(data, [5, 1])
+            else:
+                data[line_positions, :] = line_intensities
+                data = ndimage.gaussian_filter(data, [1, 5])
+
+            data = data + (np.random.random_sample(data.shape) - 0.5) * 10
+
+            return data
 
     c = ConfigTest(request.param)
 
@@ -233,12 +258,12 @@ class TestGmosSpectLongslitArcs:
 
         for ext in ad_out:
 
-            if not hasattr(ext, 'WAVECAL'):
+            if not hasattr(ext, "WAVECAL"):
                 continue
 
             table = ext.WAVECAL
-            coefficients = table['coefficients']
-            rms = coefficients[table['name'] == 'rms']
+            coefficients = table["coefficients"]
+            rms = coefficients[table["name"] == "rms"]
 
             np.testing.assert_array_less(rms, 0.5)
 
@@ -254,10 +279,10 @@ class TestGmosSpectLongslitArcs:
         reference = os.path.join(config.ref_dir, config.filename)
 
         if not os.path.exists(output):
-            pytest.skip('Output file not found: {}'.format(output))
+            pytest.skip("Output file not found: {}".format(output))
 
         if not os.path.exists(reference):
-            pytest.fail('Reference file not found: {}'.format(reference))
+            pytest.fail("Reference file not found: {}".format(reference))
 
         ad_out = config.ad
         ad_ref = astrodata.open(reference)
@@ -289,10 +314,10 @@ class TestGmosSpectLongslitArcs:
         reference = os.path.join(config.ref_dir, config.filename)
 
         if not os.path.exists(output):
-            pytest.skip('Output file not found: {}'.format(output))
+            pytest.skip("Output file not found: {}".format(output))
 
         if not os.path.exists(reference):
-            pytest.fail('Reference file not found: {}'.format(reference))
+            pytest.fail("Reference file not found: {}".format(reference))
 
         ad_out = config.ad
         ad_ref = astrodata.open(reference)
@@ -311,18 +336,20 @@ class TestGmosSpectLongslitArcs:
         these data are similar and that distortion correct is applied the same
         way. Now, this one tests the model itself.
         """
-        # Process the output file ---
-        output = os.path.join(config.output_dir, config.filename)
-
-        if not os.path.exists(output):
-            pytest.skip('Output file not found: {}'.format(output))
+        if not os.path.exists(config.output_file):
+            pytest.skip("Output file not found: {}".format(config.output_file))
 
         ad_out = config.ad
 
         p = primitives_gmos_spect.GMOSSpect([])
-        ad_out = p.determineDistortion(adinputs=[ad_out])[0]
 
+        # Using with id_only=True isolates this test from the wavelength
+        # calibration tests
+        ad_out = p.determineDistortion(
+            adinputs=[ad_out], id_only=False, suffix="_distortionDetermined"
+        )[0]
         ad_out.write(overwrite=True)
+
         os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
 
         old_mask = os.umask(000)
@@ -333,27 +360,122 @@ class TestGmosSpectLongslitArcs:
         reference = os.path.join(config.ref_dir, ad_out.filename)
 
         if not os.path.exists(reference):
-            pytest.fail('Reference file not found: {}'.format(reference))
+            pytest.fail("Reference file not found: {}".format(reference))
 
         ad_ref = astrodata.open(reference)
 
         # Compare them ---
         for ext_out, ext_ref in zip(ad_out, ad_ref):
-            model_out = ext_out.FITCOORD['coefficients']
-            model_ref = ext_ref.FITCOORD['coefficients']
-            np.testing.assert_allclose(model_out, model_ref, rtol=1e-3)
+
+            coeffs_out = np.ma.masked_invalid(ext_out.FITCOORD["coefficients"])
+            coeffs_ref = np.ma.masked_invalid(ext_ref.FITCOORD["coefficients"])
+
+            np.testing.assert_allclose(coeffs_out, coeffs_ref, atol=0.1)
 
         del ad_out, ad_ref, p
 
+    # @staticmethod
+    # def test_distortion_model_is_the_same(config):
+    #     """
+    #     Corrects distortion on both output and reference files using the
+    #     distortion model stored in themselves. Previous tests assures that
+    #     these data are similar and that distortion correct is applied the same
+    #     way. Now, this one tests the model itself.
+    #     """
+    #     # Process the output file ---
+    #     output = os.path.join(config.output_dir, config.filename)
+    #
+    #     if not os.path.exists(output):
+    #         pytest.skip('Output file not found: {}'.format(output))
+    #
+    #     ad_out = config.ad
+    #
+    #     p = primitives_gmos_spect.GMOSSpect([])
+    #
+    #     # Using with id_only=True isolates this test from the wavelength
+    #     # calibration tests
+    #     ad_out = p.determineDistortion(adinputs=[ad_out], id_only=True)[0]
+    #
+    #     ad_out.write(overwrite=True)
+    #     os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
+    #
+    #     old_mask = os.umask(000)
+    #     os.chmod(os.path.join(config.output_dir, ad_out.filename), mode=0o775)
+    #     os.umask(old_mask)
+    #
+    #     # Reads the reference file ---
+    #     reference = os.path.join(config.ref_dir, ad_out.filename)
+    #
+    #     if not os.path.exists(reference):
+    #         pytest.fail('Reference file not found: {}'.format(reference))
+    #
+    #     ad_ref = astrodata.open(reference)
+    #
+    #     # Helper function to build model ---
+    #     def build_model(ext):
+    #
+    #         dispaxis = ext.dispersion_axis() - 1
+    #
+    #         m = models.Identity(2)
+    #         m_inv = astromodels.dict_to_chebyshev(
+    #             dict(zip(
+    #                 ext.FITCOORD["name"], ext.FITCOORD["coefficients"])))
+    #
+    #         # See https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
+    #         if dispaxis == 0:
+    #             m.inverse = models.Mapping((0, 1, 1)) | (m_inv & models.Identity(1))
+    #         else:
+    #             m.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inv)
+    #
+    #         return m
+    #
+    #     # Compare them ---
+    #     for ext_out, ext_ref in zip(ad_out, ad_ref):
+    #         data = config.generate_fake_data(ext_out)
+    #
+    #         model_out = build_model(ext_out)
+    #         model_ext = build_model(ext_ref)
+    #
+    #         transform_out = transform.Transform(model_out)
+    #         transform_ref = transform.Transform(model_ext)
+    #
+    #         data_out = transform_out.apply(data, output_shape=ext_out.shape)
+    #         data_ref = transform_ref.apply(data, output_shape=ext_ref.shape)
+    #
+    #         data_out = np.ma.masked_invalid(data_out)
+    #         data_ref = np.ma.masked_invalid(data_ref)
+    #
+    #         fig, ax = plt.subplots(num="Distortion Comparison: {}".format(config.filename))
+    #
+    #         im = ax.imshow(data_ref - data_out)
+    #
+    #         ax.set_xlabel('X [px]')
+    #         ax.set_ylabel('Y [px]')
+    #         ax.set_title('Difference between output and reference \n {}'.format(
+    #             os.path.basename(config.filename)))
+    #
+    #         divider = make_axes_locatable(ax)
+    #         cax = divider.append_axes('right', size='5%', pad=0.05)
+    #
+    #         cbar = fig.colorbar(im, extend='max', cax=cax, orientation='vertical')
+    #         cbar.set_label('Distortion [px]')
+    #
+    #         fig.savefig(output.replace('.fits', '_distortionDifference.png'))
+    #
+    #         np.testing.assert_allclose(data_out, data_ref)
+    #         np.testing.assert_allclose(ext_out.FITCOORD['coefficients'], ext_ref.FITCOORD['coefficients'])
+    #
+    #     del ad_out, ad_ref, p
+
     @staticmethod
-    @pytest.mark.skip(reason='debug')
+    @pytest.mark.skip(reason="not fully implemented yet")
     def test_distortionCorrect_works_when_using_FullROI_on_CentralROI(path_to_outputs):
         """
         Test if a model obtained in a Full Frame ROI can be applied to a Central
         Spectra ROI.
         """
-        class Config:
 
+        class Config:
             def __init__(self, name):
                 sub_path, basename = os.path.split(name)
 
@@ -374,17 +496,16 @@ class TestGmosSpectLongslitArcs:
                 self.full_name = os.path.join(self.output_dir, self._filename)
 
         # B600:0.500 HAM, ROI="Central Spectrum" ---
-        cs = Config('process_arcs/GMOS/N20171016S0010.fits')
-        cs.ad = astrodata.open(
-            os.path.join(cs.output_dir, cs.filename))
+        cs = Config("process_arcs/GMOS/N20171016S0010.fits")
+        cs.ad = astrodata.open(os.path.join(cs.output_dir, cs.filename))
 
         # B600:0.500 HAM, ROI="Full Frame" ---
-        ff = Config('process_arcs/GMOS/N20171016S0127.fits')
+        ff = Config("process_arcs/GMOS/N20171016S0127.fits")
 
         # Apply full frame roi to central-spect roi
         p = primitives_gmos_spect.GMOSSpect([])
         cs.ad = p.distortionCorrect(adinputs=[cs.ad], arc=ff.full_name)[0]
-        cs.filename = cs.filename.replace('.fits', '_fromFullFrame.fits')
+        cs.filename = cs.filename.replace(".fits", "_fromFullFrame.fits")
         cs.ad.write(filename=cs.full_name, overwrite=True)
 
         old_mask = os.umask(000)
@@ -392,6 +513,7 @@ class TestGmosSpectLongslitArcs:
         os.umask(old_mask)
 
     @staticmethod
+    @pytest.mark.skip(reason="not fully implemented yet")
     def test_distortion_correction_is_applied_the_same_way(config):
         """
         Applies the same distortion correction model to both output and reference
@@ -399,15 +521,14 @@ class TestGmosSpectLongslitArcs:
         """
         # Process the output file ---
         basename, ext = os.path.splitext(config.filename)
-        basename, _ = basename.split('_')[0], basename.split('_')[1:]
+        basename, _ = basename.split("_")[0], basename.split("_")[1:]
 
-        arc_basename = "{:s}_{:s}{:s}".format(
-            basename, "distortionDetermined", ext)
+        arc_basename = "{:s}_{:s}{:s}".format(basename, "distortionDetermined", ext)
 
         arc_name = os.path.join(config.output_dir, arc_basename)
 
         if not os.path.exists(arc_name):
-            pytest.skip('Arc file not found: {}'.format(arc_name))
+            pytest.skip("Arc file not found: {}".format(arc_name))
 
         ad_out = config.ad
 
@@ -440,11 +561,9 @@ class TestGmosSpectLongslitArcs:
 
         # Evaluate them ---
         for ext in ad_out:
+            coefficients = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
 
-            coefficients = dict(zip(
-                ext.FITCOORD['name'], ext.FITCOORD['coefficients']))
-
-            print(coefficients)
+            # print(coefficients)
 
         # for ext_out, ext_ref in zip(ad_out, ad_ref):
         #
@@ -485,7 +604,7 @@ class PlotGmosSpectLongslitArcs:
 
         self.package_dir = os.path.dirname(primitives_gmos_spect.__file__)
         self.arc_table = os.path.join(self.package_dir, "lookups", "CuAr_GMOS.dat")
-        self.arc_lines = np.loadtxt(self.arc_table, usecols=[0]) / 10.
+        self.arc_lines = np.loadtxt(self.arc_table, usecols=[0]) / 10.0
 
     def create_artifact_from_plots(self):
         """
@@ -493,14 +612,15 @@ class PlotGmosSpectLongslitArcs:
         it as an artifact.
         """
         # Runs only from inside Jenkins
-        if 'BUILD_ID' in os.environ:
+        if "BUILD_ID" in os.environ:
 
-            branch_name = os.environ['BRANCH_NAME'].replace('/', '_')
-            build_number = int(os.environ['BUILD_NUMBER'])
+            branch_name = os.environ["BRANCH_NAME"].replace("/", "_")
+            build_number = int(os.environ["BUILD_NUMBER"])
 
             tar_name = os.path.join(
-                self.output_folder, "plots_{:s}_b{:03d}.tar.gz".format(
-                    branch_name, build_number))
+                self.output_folder,
+                "plots_{:s}_b{:03d}.tar.gz".format(branch_name, build_number),
+            )
 
             with tarfile.open(tar_name, "w:gz") as tar:
                 for _file in glob.glob(os.path.join(self.output_folder, "*.png")):
@@ -516,18 +636,20 @@ class PlotGmosSpectLongslitArcs:
                 os.chmod(target_file, 0o775)
             except PermissionError:
                 warnings.warn(
-                    "Failed to update permissions for file: {}".format(target_file))
+                    "Failed to update permissions for file: {}".format(target_file)
+                )
 
     def distortion_diagnosis_plots(self):
         """
         Makes the Diagnosis Plots for `determineDistortion` and
         `distortionCorrect` for each extension inside the reduced arc.
         """
-        full_name = os.path.join(self.output_folder, self.name + '.fits')
+        full_name = os.path.join(self.output_folder, self.name + ".fits")
 
         file_list = [
             full_name,
-            full_name.replace('distortionDetermined', 'distortionCorrected')]
+            full_name.replace("distortionDetermined", "distortionCorrected"),
+        ]
 
         for filename in file_list:
 
@@ -535,30 +657,21 @@ class PlotGmosSpectLongslitArcs:
 
             for e_num, e in enumerate(ad):
 
-                if not hasattr(e, 'FITCOORD'):
+                if not hasattr(e, "FITCOORD"):
                     continue
 
                 distortion_model = astromodels.dict_to_chebyshev(
-                    dict(
-                        zip(
-                            e.FITCOORD["name"], e.FITCOORD["coefficients"]
-                        )
-                    )
+                    dict(zip(e.FITCOORD["name"], e.FITCOORD["coefficients"]))
                 )
 
-                model_dict = dict(zip(
-                    e.FITCOORD["name"], e.FITCOORD["coefficients"]))
+                model_dict = dict(zip(e.FITCOORD["name"], e.FITCOORD["coefficients"]))
 
-                for k in model_dict:
-                    s = "{:15s}{:10.3f}".format(k, model_dict[k])
-                    print(s)
+                self.plot_distortion_map(ad.filename, e_num, e.shape, distortion_model)
 
-                self.plot_distortion_map(
-                    ad.filename, e_num, e.shape, distortion_model)
-
-                if 'distortionCorrected' in filename:
+                if "distortionCorrected" in filename:
                     self.plot_distortion_residuals(
-                        ad.filename, e_num, e.shape, distortion_model)
+                        ad.filename, e_num, e.shape, distortion_model
+                    )
 
     def plot_distortion_map(self, fname, ext_num, shape, model):
         """
@@ -594,25 +707,35 @@ class PlotGmosSpectLongslitArcs:
         vcen = 0
 
         Q = ax.quiver(
-            X, Y, U, V, U, cmap='coolwarm',
-            norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax))
+            X,
+            Y,
+            U,
+            V,
+            U,
+            cmap="coolwarm",
+            norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax),
+        )
 
-        ax.set_xlabel('X [px]')
-        ax.set_ylabel('Y [px]')
-        ax.set_title('Distortion Map\n{} - Bin {:d}x{:d}'.format(
-            fname, self.bin_x, self.bin_y))
+        ax.set_xlabel("X [px]")
+        ax.set_ylabel("Y [px]")
+        ax.set_title(
+            "Distortion Map\n{} - Bin {:d}x{:d}".format(fname, self.bin_x, self.bin_y)
+        )
 
         divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
 
-        cbar = fig.colorbar(Q, extend='max', cax=cax, orientation='vertical')
-        cbar.set_label('Distortion [px]')
+        cbar = fig.colorbar(Q, extend="max", cax=cax, orientation="vertical")
+        cbar.set_label("Distortion [px]")
 
         fig.tight_layout()
 
         fig_name = os.path.join(
-            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_dmap.png".format(
-                fname, ext_num, self.grating, self.central_wavelength))
+            self.output_folder,
+            "{:s}_{:d}_{:s}_{:.0f}_dmap.png".format(
+                fname, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
         fig.savefig(fig_name)
 
@@ -655,29 +778,34 @@ class PlotGmosSpectLongslitArcs:
         _min, _med, _max = np.percentile(U, [0, 50, 100], axis=0)
 
         fig, ax = plt.subplots(
-            num="Corrected Distortion Residual Stats {:s}".format(fname))
+            num="Corrected Distortion Residual Stats {:s}".format(fname)
+        )
 
-        ax.scatter(x, _min, marker='^', s=4, c='C0')
-        ax.scatter(x, _max, marker='v', s=4, c='C0')
+        ax.scatter(x, _min, marker="^", s=4, c="C0")
+        ax.scatter(x, _max, marker="v", s=4, c="C0")
 
         parts = ax.violinplot(
-            U, positions=x, showmeans=True, showextrema=True, widths=width)
+            U, positions=x, showmeans=True, showextrema=True, widths=width
+        )
 
-        parts['cmins'].set_linewidth(0)
-        parts['cmaxes'].set_linewidth(0)
-        parts['cbars'].set_linewidth(0.75)
-        parts['cmeans'].set_linewidth(0.75)
+        parts["cmins"].set_linewidth(0)
+        parts["cmaxes"].set_linewidth(0)
+        parts["cbars"].set_linewidth(0.75)
+        parts["cmeans"].set_linewidth(0.75)
 
-        ax.grid('k-', alpha=0.25)
-        ax.set_xlabel('X [px]')
-        ax.set_ylabel('Position Residual [px]')
-        ax.set_title('Corrected Distortion Residual Stats\n{}'.format(fname))
+        ax.grid("k-", alpha=0.25)
+        ax.set_xlabel("X [px]")
+        ax.set_ylabel("Position Residual [px]")
+        ax.set_title("Corrected Distortion Residual Stats\n{}".format(fname))
 
         fig.tight_layout()
 
         fig_name = os.path.join(
-            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_dres.png".format(
-                fname, ext_num, self.grating, self.central_wavelength))
+            self.output_folder,
+            "{:s}_{:d}_{:s}_{:.0f}_dres.png".format(
+                fname, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
         fig.savefig(fig_name)
 
@@ -704,45 +832,55 @@ class PlotGmosSpectLongslitArcs:
             Model that represents the wavelength solution.
         """
         fig, ax = plt.subplots(
-            dpi=300, num="{:s}_{:d}_{:s}_{:.0f}".format(
-                self.name, ext_num, self.grating, self.central_wavelength))
+            dpi=300,
+            num="{:s}_{:d}_{:s}_{:.0f}".format(
+                self.name, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
         w = model(np.arange(data.size))
 
-        arcs = [ax.vlines(line, 0, 1, color="k", alpha=0.25)
-                for line in self.arc_lines]
-        wavs = [ax.vlines(peak, 0, 1, color="r", ls="--", alpha=0.25)
-                for peak in model(peaks)]
-        plot, = ax.plot(w, data, 'k-', lw=0.75)
+        arcs = [ax.vlines(line, 0, 1, color="k", alpha=0.25) for line in self.arc_lines]
+        wavs = [
+            ax.vlines(peak, 0, 1, color="r", ls="--", alpha=0.25)
+            for peak in model(peaks)
+        ]
+        plot, = ax.plot(w, data, "k-", lw=0.75)
 
-        ax.legend((plot, arcs[0], wavs[0]),
-                  ('Normalized Data', 'Reference Lines', 'Matched Lines'))
+        ax.legend(
+            (plot, arcs[0], wavs[0]),
+            ("Normalized Data", "Reference Lines", "Matched Lines"),
+        )
 
         x0, x1 = model([0, data.size])
 
         ax.grid(alpha=0.1)
         ax.set_xlim(x0, x1)
-        ax.set_xlabel('Wavelength [nm]')
-        ax.set_ylabel('Normalized intensity')
+        ax.set_xlabel("Wavelength [nm]")
+        ax.set_ylabel("Normalized intensity")
         ax.set_title(
             "Wavelength Calibrated Spectrum for\n"
             "{:s} obtained with {:s} at {:.0f}".format(
-                self.name, self.grating, self.central_wavelength))
+                self.name, self.grating, self.central_wavelength
+            )
+        )
 
         if x0 > x1:
             ax.invert_xaxis()
 
         fig_name = os.path.join(
-            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}.png".format(
-                self.name, ext_num, self.grating, self.central_wavelength))
+            self.output_folder,
+            "{:s}_{:d}_{:s}_{:.0f}.png".format(
+                self.name, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
         fig.savefig(fig_name)
 
         try:
             os.chmod(fig_name, 0o775)
         except PermissionError:
-            warnings.warn(
-                "Failed to update permissions for file: {}".format(fig_name))
+            warnings.warn("Failed to update permissions for file: {}".format(fig_name))
 
         del fig, ax
 
@@ -762,17 +900,24 @@ class PlotGmosSpectLongslitArcs:
             Model that represents the wavelength solution.
         """
         fig, ax = plt.subplots(
-            dpi=300, num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
-                self.name, ext_num, self.grating, self.central_wavelength))
+            dpi=300,
+            num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
+                self.name, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
         non_linear_model = model.copy()
-        _ = [setattr(non_linear_model, 'c{}'.format(k), 0) for k in [0, 1]]
+        _ = [setattr(non_linear_model, "c{}".format(k), 0) for k in [0, 1]]
         residuals = wavelengths - model(peaks)
 
         p = np.linspace(min(peaks), max(peaks), 1000)
-        ax.plot(model(p), non_linear_model(p), 'C0-', label="Generic Representation")
-        ax.plot(model(peaks), non_linear_model(peaks) + residuals, 'ko',
-                label="Non linear components and residuals")
+        ax.plot(model(p), non_linear_model(p), "C0-", label="Generic Representation")
+        ax.plot(
+            model(peaks),
+            non_linear_model(peaks) + residuals,
+            "ko",
+            label="Non linear components and residuals",
+        )
         ax.legend()
 
         ax.grid(alpha=0.25)
@@ -781,19 +926,23 @@ class PlotGmosSpectLongslitArcs:
         ax.set_title(
             "Non-linear components for\n"
             "{:s} obtained with {:s} at {:.0f}".format(
-                self.name, self.grating, self.central_wavelength))
+                self.name, self.grating, self.central_wavelength
+            )
+        )
 
         fig_name = os.path.join(
-            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
-                self.name, ext_num, self.grating, self.central_wavelength))
+            self.output_folder,
+            "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
+                self.name, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
         fig.savefig(fig_name)
 
         try:
             os.chmod(fig_name, 0o775)
         except PermissionError:
-            warnings.warn(
-                "Failed to update permissions for file: {}".format(fig_name))
+            warnings.warn("Failed to update permissions for file: {}".format(fig_name))
 
         del fig, ax
 
@@ -814,10 +963,13 @@ class PlotGmosSpectLongslitArcs:
             Model that represents the wavelength solution.
         """
         fig, ax = plt.subplots(
-            dpi=300, num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
-                self.name, ext_num, self.grating, self.central_wavelength))
+            dpi=300,
+            num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
+                self.name, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
-        ax.plot(wavelengths, wavelengths - model(peaks), 'ko')
+        ax.plot(wavelengths, wavelengths - model(peaks), "ko")
 
         ax.grid(alpha=0.25)
         ax.set_xlabel("Wavelength [nm]")
@@ -825,19 +977,23 @@ class PlotGmosSpectLongslitArcs:
         ax.set_title(
             "Wavelength Calibrated Residuum for\n"
             "{:s} obtained with {:s} at {:.0f}".format(
-                self.name, self.grating, self.central_wavelength))
+                self.name, self.grating, self.central_wavelength
+            )
+        )
 
         fig_name = os.path.join(
-            self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_residuals.png".format(
-                self.name, ext_num, self.grating, self.central_wavelength))
+            self.output_folder,
+            "{:s}_{:d}_{:s}_{:.0f}_residuals.png".format(
+                self.name, ext_num, self.grating, self.central_wavelength
+            ),
+        )
 
         fig.savefig(fig_name)
 
         try:
             os.chmod(fig_name, 0o775)
         except PermissionError:
-            warnings.warn(
-                "Failed to update permissions for file: {}".format(fig_name))
+            warnings.warn("Failed to update permissions for file: {}".format(fig_name))
 
         del fig, ax
 
@@ -849,18 +1005,14 @@ class PlotGmosSpectLongslitArcs:
 
         for ext_num, ext in enumerate(self.ad):
 
-            if not hasattr(ext, 'WAVECAL'):
+            if not hasattr(ext, "WAVECAL"):
                 continue
 
-            peaks = ext.WAVECAL['peaks'] - 1  # ToDo: Refactor peaks to be 0-indexed
-            wavelengths = ext.WAVECAL['wavelengths']
+            peaks = ext.WAVECAL["peaks"] - 1  # ToDo: Refactor peaks to be 0-indexed
+            wavelengths = ext.WAVECAL["wavelengths"]
 
             wavecal_model = astromodels.dict_to_chebyshev(
-                dict(
-                    zip(
-                        ext.WAVECAL["name"], ext.WAVECAL["coefficients"]
-                    )
-                )
+                dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
             )
 
             mask = np.round(np.average(ext.mask, axis=0)).astype(int)
