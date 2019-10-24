@@ -1400,8 +1400,7 @@ class AstroDataGroup(DataGroup):
         # Data section probably has meaning even if ndim!=2
         ad.hdr[keywords['data']] = '['+','.join('1:{}'.format(length)
                                     for length in ad[0].shape[::-1])+']'
-        # For protection against ndim!=2 arrays where descriptor returns
-        # are unspecified, wrap this in a big try...except
+        # These descriptor returns are unclear in non-2D data
         if ndim == 2:
             # If detector_section returned something, set an appropriate value
             all_detsec = np.array(self.descriptor('detector_section')).T
@@ -1415,6 +1414,8 @@ class AstroDataGroup(DataGroup):
                                     for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
             else:
                 del ad.hdr[keywords['array']]
+        if 'CCDNAME' in ad[0].hdr:
+            ad.hdr['CCDNAME'] = ad.detector_name()
 
         # Now sort out the WCS. CRPIXi values have to be added to the coords
         # of the bottom-left of the Block. We want them in x-first order.
