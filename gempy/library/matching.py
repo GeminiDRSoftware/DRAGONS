@@ -9,6 +9,7 @@ from astropy.wcs import WCS
 from scipy import optimize, spatial
 from datetime import datetime
 from functools import partial
+import inspect
 
 from matplotlib import pyplot as plt
 
@@ -542,7 +543,8 @@ class KDTreeFitter(Fitter):
     and the initial guess of the transformation (an astropy Model instance).
     """
 
-    def __init__(self, proximity_function=None, sigma=5.0, maxsig=5.0, k=5):
+    def __init__(self, method='Nelder-Mead', proximity_function=None,
+                 sigma=5.0, maxsig=5.0, k=5):
         """
         Parameters
         ----------
@@ -572,7 +574,15 @@ class KDTreeFitter(Fitter):
         self.k = k
         self.proximity_function = partial(proximity_function, sigma=self.sigma)
 
-        super(KDTreeFitter, self).__init__(optimize.minimize,
+        try:
+            opt_method = getattr(optimize, method)
+            self._method = None
+        except AttributeError:
+            # Fitter won't accept a partial object(!?)
+            opt_method = optimize.minimize
+            self._method = method
+
+        super(KDTreeFitter, self).__init__(opt_method,
                                            statistic=self._kdstat)
 
     def __call__(self, model, in_coords, ref_coords, in_weights=None,
@@ -637,7 +647,8 @@ class KDTreeFitter(Fitter):
             in_weights = np.ones((len(in_coords[0]),))
         if ref_weights is None:
             ref_weights = np.ones((len(ref_coords[0]),))
-        # cKDTree.query() returns a value of n for no neighbour
+        # cKDTree.query() returns a value of n for no neighbour so make coding
+        # easier by allowing this to match a zero-weighted reference
         ref_weights = np.append(ref_weights, (0,))
 
         tree = spatial.cKDTree(list(zip(*ref_coords)))
@@ -645,14 +656,26 @@ class KDTreeFitter(Fitter):
         farg = (model_copy, in_coords, in_weights, ref_weights, tree)
         p0, _ = _model_to_fit_params(model_copy)
 
-        if kwargs.get('method') == 'basinhopping':
-            kwargs['args'] = farg
-            kwargs['method'] = 'Nelder-Mead'
-            result = optimize.basinhopping(self.objective_function, p0, T=0.1 * len(in_coords),
-                                           niter=20, stepsize=5, minimizer_kwargs=kwargs)
+        arg_names = inspect.getfullargspec(self._opt_method).args
+        args = [self.objective_function]
+        if arg_names[1] == 'x0':
+            args.append(p0)
+        elif arg_names[1] == 'bounds':
+            args.append(tuple(model_copy.bounds[p] for p in model_copy.param_names))
         else:
-            result = self._opt_method(self.objective_function, p0, farg,
-                                      **kwargs)
+            raise ValueError("Don't understand argument {}".format(arg_names[1]))
+
+        if 'args' in arg_names:
+            kwargs['args'] = farg
+
+        if 'method' in arg_names:
+            kwargs['method'] = self._method
+
+        if 'minimizer_kwargs' in arg_names:
+            kwargs['minimizer_kwargs'] = {'args': farg,
+                                          'method': 'Nelder-Mead'}
+
+        result = self._opt_method(*args, **kwargs)
 
         fitted_params = result['x']
         _fitter_to_model_params(model_copy, fitted_params)
