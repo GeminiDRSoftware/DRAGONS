@@ -865,7 +865,7 @@ class DataGroup(object):
         self._arrays.append(array)
         self._transforms.append(copy.deepcopy(transform))
 
-    def calculate_output_shape(self, additional_arrays=[],
+    def calculate_output_shape(self, additional_array_shapes=[],
                                additional_transforms=[]):
         """
         This method sets the output_shape and origin attributes of the
@@ -879,21 +879,21 @@ class DataGroup(object):
 
         Parameters
         ----------
-        additional_arrays: list
-            additional arrays to supplement this DataGroup's list when
-            calculating the output shape
+        additional_array_shapes: list of tuples
+            shapes of any other arrays that will be transformed later, to
+            ensure a uniform pixel output grid
         additional_transforms: list
-            additional transforms, one for each of additional_arrays
+            additional transforms, one for each of additional_array_shapes
         """
-        arrays = list(self._arrays) + additional_arrays
-        transforms = self._transforms + additional_transforms
-        if len(arrays) != len(transforms):
+        array_shapes = [arr.shape for arr in self.arrays] + additional_array_shapes
+        transforms = self.transforms + additional_transforms
+        if len(array_shapes) != len(transforms):
             raise self.UnequalError
         all_corners = []
         # The [::-1] are because we need to convert from python order to
         # astropy Model order (x-first) and then back again
-        for array, transform in zip(arrays, transforms):
-            corners = np.array(at.get_corners(array.shape)).T[::-1]
+        for array_shape, transform in zip(array_shapes, transforms):
+            corners = np.array(at.get_corners(array_shape)).T[::-1]
             trans_corners = transform(*corners)
             all_corners.extend(corner[::-1] for corner in zip(*trans_corners))
         limits = [(int(np.ceil(min(c))), int(np.floor(max(c))) + 1)
