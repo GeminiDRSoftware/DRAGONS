@@ -6,6 +6,14 @@ Fixtures to be used in tests in DRAGONS
 import os
 import pytest
 import warnings
+from astropy.utils.data import download_file
+from urllib.parse import urljoin
+
+URL = u'https://archive.gemini.edu/file/'
+
+
+def download_from_archive(path):
+    return download_file(urljoin(URL, path), cache=True, show_progress=True)
 
 
 def assert_have_same_distortion(ad, ad_ref):

@@ -8,20 +8,23 @@ from astropy.nddata import NDData
 from astropy.table import Table
 
 import astrodata
+from astrodata.testing import download_from_archive
 
 
-def test_can_read_data(path_to_inputs):
-    test_filename = "GMOS/N20110826S0336.fits"
-    ad = astrodata.open(os.path.join(path_to_inputs, test_filename))
+@pytest.mark.remote_data
+def test_can_read_data():
+    test_filename = download_from_archive("N20110826S0336.fits")
+    ad = astrodata.open(test_filename)
     assert len(ad) == 3
 
 
-def test_append_array_to_root_no_name(path_to_inputs):
-    test_filename = 'GMOS/N20160524S0119.fits'
-    ad = astrodata.open(os.path.join(path_to_inputs, test_filename))
+@pytest.mark.remote_data
+def test_append_array_to_root_no_name():
+    test_filename = download_from_archive('N20160524S0119.fits')
+    ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
-    ones = np.ones((100, 100))
+    ones = np.ones((10, 10))
     ad.append(ones)
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
