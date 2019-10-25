@@ -43,7 +43,7 @@ dataset_file_list = [
     "process_arcs/GMOS/N20170627S0116.fits",  # B1200:0.520 HAM
     "process_arcs/GMOS/N20100830S0594.fits",  # R150:0.500 EEV
     "process_arcs/GMOS/N20100702S0321.fits",  # R150:0.700 EEV
-    "process_arcs/GMOS/N20130606S0291.fits",  # R150:0.550 E2V
+    # "process_arcs/GMOS/N20130606S0291.fits",  # R150:0.550 E2V - todo: Unstable Wavelength Solution
     "process_arcs/GMOS/N20130112S0574.fits",  # R150:0.700 E2V
     # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61) | `gswavelength` cannot find solution either.
     "process_arcs/GMOS/N20140408S0218.fits",  # R150:0.700 E2V
@@ -101,7 +101,7 @@ dataset_file_list = [
     # 'process_arcs/GMOS/S20100306S0460.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
     # 'process_arcs/GMOS/S20101218S0139.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
     "process_arcs/GMOS/S20110306S0294.fits",  # R600:0.675 EEV
-    'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
+    # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
     "process_arcs/GMOS/S20101221S0090.fits",  # R600:0.690 EEV
     "process_arcs/GMOS/S20120322S0122.fits",  # R600:0.900 EEV
     "process_arcs/GMOS/S20130803S0011.fits",  # R831:0.576 EEV
