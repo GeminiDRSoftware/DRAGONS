@@ -501,10 +501,11 @@ def pinpoint_peaks(data, mask, peaks, halfwidth=4, threshold=0):
     npts = len(data)
     final_peaks = []
 
-    # mask = mask if mask is not None else np.zeros_like(data)
-
-    masked_data = np.where(
-        np.logical_or(mask > 0, data < threshold), 0, data - threshold)
+    if mask is None:
+        masked_data = data - threshold
+    else:
+        masked_data = np.where(np.logical_or(mask > 0, data < threshold),
+                               0, data - threshold)
 
     for peak in peaks:
         xc = int(peak + 0.5)
@@ -815,7 +816,7 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
     if initial is None:
         y1 = int(start - 0.5 * nsum + 0.5)
         data, mask, var = NDStacker.mean(ext_data[y1:y1 + nsum],
-                                         mask=ext_mask[y1:y1 + nsum],
+                                         mask=None if ext_mask is None else ext_mask[y1:y1 + nsum],
                                          variance=None)
         fwidth = estimate_peak_width(data.copy(), 10)
         widths = 0.42466 * fwidth * np.arange(0.8, 1.21, 0.05)  # TODO!
@@ -831,7 +832,7 @@ def trace_lines(ext, axis, start=None, initial=None, width=5, nsum=10,
         while True:
             y1 = int(ypos - 0.5 * nsum + 0.5)
             data, mask, var = func(ext_data[y1:y1 + nsum],
-                                   mask=ext_mask[y1:y1 + nsum],
+                                   mask=None if ext_mask is None else ext_mask[y1:y1 + nsum],
                                    variance=None)
             # Variance could plausibly be zero
             var = np.where(var <= 0, np.inf, var)
