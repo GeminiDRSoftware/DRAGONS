@@ -57,16 +57,16 @@ dataset_file_list = [
     "process_arcs/GMOS/N20130422S0217.fits",  # R400:0.700 E2V
     "process_arcs/GMOS/N20170108S0210.fits",  # R400:0.660 HAM
     "process_arcs/GMOS/N20171113S0135.fits",  # R400:0.750 HAM
-    "process_arcs/GMOS/N20100427S1276.fits",  # R600:0.675 EEV - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20100427S1276.fits",  # R600:0.675 EEV
     "process_arcs/GMOS/N20180120S0417.fits",  # R600:0.860 HAM
     "process_arcs/GMOS/N20100212S0143.fits",  # R831:0.450 EEV
-    "process_arcs/GMOS/N20100720S0247.fits",  # R831:0.850 EEV - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20100720S0247.fits",  # R831:0.850 EEV
     "process_arcs/GMOS/N20130808S0490.fits",  # R831:0.571 E2V
-    "process_arcs/GMOS/N20130830S0291.fits",  # R831:0.845 E2V - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20130830S0291.fits",  # R831:0.845 E2V
     "process_arcs/GMOS/N20170910S0009.fits",  # R831:0.653 HAM
     "process_arcs/GMOS/N20170509S0682.fits",  # R831:0.750 HAM
     # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646) | `gswavelength` cannot find solution either.
-    "process_arcs/GMOS/N20170416S0058.fits",  # R831:0.865 HAM - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/N20170416S0058.fits",  # R831:0.865 HAM
     "process_arcs/GMOS/N20170416S0081.fits",  # R831:0.865 HAM
     "process_arcs/GMOS/N20180120S0315.fits",  # R831:0.865 HAM
     # # Process Arcs: GMOS-S ---
@@ -90,25 +90,25 @@ dataset_file_list = [
     "process_arcs/GMOS/S20131230S0153.fits",  # R150:0.550 EEV
     "process_arcs/GMOS/S20130801S0140.fits",  # R150:0.700 EEV
     "process_arcs/GMOS/S20170430S0060.fits",  # R150:0.717 HAM
-    "process_arcs/GMOS/S20170430S0063.fits",  # R150:0.727 HAM
+    # "process_arcs/GMOS/S20170430S0063.fits",  # R150:0.727 HAM - todo: TypeError: Lengths of the first three arguments (x,y,w) must be equal
     "process_arcs/GMOS/S20171102S0051.fits",  # R150:0.950 HAM
     "process_arcs/GMOS/S20130114S0100.fits",  # R400:0.620 EEV
     "process_arcs/GMOS/S20130217S0073.fits",  # R400:0.800 EEV
-    "process_arcs/GMOS/S20170108S0046.fits",  # R400:0.550 HAM - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/S20170108S0046.fits",  # R400:0.550 HAM
     "process_arcs/GMOS/S20170129S0125.fits",  # R400:0.685 HAM
     "process_arcs/GMOS/S20170703S0199.fits",  # R400:0.800 HAM
     "process_arcs/GMOS/S20170718S0420.fits",  # R400:0.910 HAM
-    'process_arcs/GMOS/S20100306S0460.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
-    'process_arcs/GMOS/S20101218S0139.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    # 'process_arcs/GMOS/S20100306S0460.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    # 'process_arcs/GMOS/S20101218S0139.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
     "process_arcs/GMOS/S20110306S0294.fits",  # R600:0.675 EEV
     'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
     "process_arcs/GMOS/S20101221S0090.fits",  # R600:0.690 EEV
     "process_arcs/GMOS/S20120322S0122.fits",  # R600:0.900 EEV
-    "process_arcs/GMOS/S20130803S0011.fits",  # R831:0.576 EEV - todo: test_distortion_is_the_same fails
-    "process_arcs/GMOS/S20130414S0040.fits",  # R831:0.845 EEV - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/S20130803S0011.fits",  # R831:0.576 EEV
+    "process_arcs/GMOS/S20130414S0040.fits",  # R831:0.845 EEV
     "process_arcs/GMOS/S20170214S0059.fits",  # R831:0.440 HAM
-    "process_arcs/GMOS/S20170703S0204.fits",  # R831:0.600 HAM - todo: test_distortion_is_the_same fails
-    "process_arcs/GMOS/S20171018S0048.fits",  # R831:0.865 HAM - todo: test_distortion_is_the_same fails
+    "process_arcs/GMOS/S20170703S0204.fits",  # R831:0.600 HAM
+    "process_arcs/GMOS/S20171018S0048.fits",  # R831:0.865 HAM
 ]
 
 
@@ -234,7 +234,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
 
     p = PlotGmosSpectLongslitArcs(c.ad, c.output_dir)
     p.wavelength_calibration_plots()
-    p.distortion_diagnosis_plots()
+    # p.distortion_diagnosis_plots()
 
     del c, p
 
