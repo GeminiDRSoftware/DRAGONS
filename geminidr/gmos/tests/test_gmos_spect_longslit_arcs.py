@@ -149,11 +149,11 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     c = ConfigTest(request.param, path_to_inputs, path_to_outputs, path_to_refs)
     yield c
 
-    do_plots(c.ad, c.output_dir)
+    do_plots(c.ad, c.output_dir, c.ref_dir)
     del c
 
 
-def do_plots(ad, output_dir):
+def do_plots(ad, output_dir, ref_dir):
     """
     Generate diagnostic plots.
 
@@ -161,11 +161,12 @@ def do_plots(ad, output_dir):
     ----------
     ad : astrodata
     output_dir : str
+    ref_dir : str
     """
     try:
         from .plots_gmos_spect_longslit_arcs import PlotGmosSpectLongslitArcs
 
-        p = PlotGmosSpectLongslitArcs(ad, output_dir)
+        p = PlotGmosSpectLongslitArcs(ad, output_dir, ref_dir)
         p.wavelength_calibration_plots()
         p.distortion_diagnosis_plots()
 
@@ -389,9 +390,8 @@ class TestGmosSpectLongslitArcs:
         ad_out_corrected_with_out = p.distortionCorrect([ad_out], arc=output)[0]
         ad_out_corrected_with_ref = p.distortionCorrect([ad_out], arc=reference)[0]
 
-        ad_out_corrected_with_out.write(
-            overwrite=True, filename=os.path.join(
-                config.output_dir, ad_out_corrected_with_out.filename))
+        ad_out_corrected_with_out.write(overwrite=True, filename=os.path.join(
+            config.output_dir, ad_out_corrected_with_out.filename))
 
         for ext_out, ext_ref in zip(ad_out_corrected_with_out, ad_out_corrected_with_ref):
             np.testing.assert_allclose(ext_out.data, ext_ref.data)

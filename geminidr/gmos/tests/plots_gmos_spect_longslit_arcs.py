@@ -129,7 +129,7 @@ class PlotGmosSpectLongslitArcs:
         Path to where the plots will be saved.
     """
 
-    def __init__(self, ad, output_folder):
+    def __init__(self, ad, output_folder, ref_folder):
 
         filename = ad.filename
         self.ad = ad
@@ -139,6 +139,7 @@ class PlotGmosSpectLongslitArcs:
         self.bin_y = ad.detector_y_bin()
         self.central_wavelength = ad.central_wavelength() * 1e9  # in nanometers
         self.output_folder = output_folder
+        self.ref_folder = ref_folder
 
         self.package_dir = os.path.dirname(primitives_gmos_spect.__file__)
         self.arc_table = os.path.join(self.package_dir, "lookups", "CuAr_GMOS.dat")
@@ -182,16 +183,14 @@ class PlotGmosSpectLongslitArcs:
         Makes the Diagnosis Plots for `determineDistortion` and
         `distortionCorrect` for each extension inside the reduced arc.
         """
-        distortion_determined_filename = os.path.join(
-            self.output_folder, self.name + ".fits")
+        output_file = os.path.join(self.output_folder, self.name + ".fits")
+        reference_file = os.path.join(self.ref_folder, self.name + ".fits")
 
-        distortion_corrected_filename = distortion_determined_filename.replace(
-            "distortionDetermined", "distortionCorrected")
+        ad = astrodata.open(output_file)
+        ad_ref = astrodata.open(reference_file)
 
-        distortion_determined_ad = astrodata.open(distortion_determined_filename)
-        distortion_corrected_ad = astrodata.open(distortion_corrected_filename)
-
-        self.show_distortion_map(distortion_determined_ad)
+        self.show_distortion_map(ad)
+        self.show_distortion_model_difference(ad, ad_ref)
 
 
     def plot_distortion_residuals(self, fname, ext_num, shape, model):
@@ -440,53 +439,61 @@ class PlotGmosSpectLongslitArcs:
 
         del fig, ax
 
-    def show_distortion_correct_difference(self, ext_):
+    def show_distortion_model_difference(self, ad, ad_ref):
         """
         Shows the difference between the distortion corrected output file and
         the corresponding reference file.
 
         Parameters
         ----------
-
+        ad : AstroData
+            Distortion Determined AstroData object
+        ad_ref : AstroData
+            Distortion Determined AstroData reference object
         """
-        shape = ext.shape
-        data = generate_fake_data(shape, ext.dispersion_axis() - 1)
+        for num, (ext, ext_ref) in enumerate(zip(ad, ad_ref)):
 
-        model_out = rebuild_distortion_model(ext)
-        transform_out = transform.Transform(model_out)
-        data_out = transform_out.apply(data, output_shape=ext.shape)
-        data_out = np.ma.masked_invalid(data_out)
+            name, _ = os.path.splitext(ext.filename)
+            shape = ext.shape
+            data = generate_fake_data(shape, ext.dispersion_axis() - 1)
 
-        model_ext = rebuild_distortion_model(ext)
-        transform_ref = transform.Transform(model_ext)
-        data_ref = transform_ref.apply(data, output_shape=ext.shape)
-        data_ref = np.ma.masked_invalid(data_ref)
+            model_out = remap_distortion_model(
+                rebuild_distortion_model(ext), ext.dispersion_axis() - 1)
 
-        fig, ax = plt.subplots(dpi=300, num="Distortion Comparison: {}".format(fname))
+            model_ref = remap_distortion_model(
+                rebuild_distortion_model(ext_ref), ext_ref.dispersion_axis() - 1)
 
-        im = ax.imshow(data_ref - data_out)
+            transform_out = transform.Transform(model_out)
+            transform_ref = transform.Transform(model_ref)
 
-        ax.set_xlabel('X [px]')
-        ax.set_ylabel('Y [px]')
-        ax.set_title('Difference between output and reference \n {}'.format(
-            os.path.basename(fname)))
+            data_out = transform_out.apply(data, output_shape=ext.shape)
+            data_ref = transform_ref.apply(data, output_shape=ext.shape)
 
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
+            data_out = np.ma.masked_invalid(data_out)
+            data_ref = np.ma.masked_invalid(data_ref)
 
-        cbar = fig.colorbar(im, extend='max', cax=cax, orientation='vertical')
-        cbar.set_label('Distortion [px]')
+            fig, ax = plt.subplots(
+                dpi=300, num="Distortion Comparison: {:s} #{:d}".format(name, num))
 
-        plt.show()
+            im = ax.imshow(data_ref - data_out)
 
-        fig_name = os.path.join(
-            self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
-                fname, ext_num, self.grating, self.central_wavelength
-            )
-        )
+            ax.set_xlabel('X [px]')
+            ax.set_ylabel('Y [px]')
+            ax.set_title(
+                'Difference between output and reference: \n {:s} #{:d} '.format(
+                    name, num))
 
-        fig.savefig(fig_name)
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+
+            cbar = fig.colorbar(im, extend='max', cax=cax, orientation='vertical')
+            cbar.set_label('Distortion [px]')
+
+            fig_name = os.path.join(
+                self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
+                    name, num, self.grating, self.central_wavelength))
+
+            fig.savefig(fig_name)
 
     def show_distortion_map(self, ad):
         """
