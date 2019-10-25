@@ -10,6 +10,7 @@ import warnings
 
 import numpy as np
 from astropy.modeling import models
+
 # noinspection PyPackageRequirements
 from matplotlib import colors
 from matplotlib import pyplot as plt
@@ -17,6 +18,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy import ndimage
 
 import astrodata
+
 # noinspection PyUnresolvedReferences
 import gemini_instruments
 from geminidr.gmos import primitives_gmos_spect
@@ -78,8 +80,8 @@ def rebuild_distortion_model(ext):
         Model that receives 2D data and return a 1D array.
     """
     model = astromodels.dict_to_chebyshev(
-        dict(zip(
-            ext.FITCOORD["name"], ext.FITCOORD["coefficients"])))
+        dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
+    )
 
     return model
 
@@ -171,12 +173,6 @@ class PlotGmosSpectLongslitArcs:
             os.makedirs(target_dir, exist_ok=True)
             os.rename(tar_name, target_file)
 
-            try:
-                os.chmod(target_file, 0o775)
-            except PermissionError:
-                warnings.warn(
-                    "Failed to update permissions for file: {}".format(target_file)
-                )
 
     def distortion_diagnosis_plots(self):
         """
@@ -217,7 +213,8 @@ class PlotGmosSpectLongslitArcs:
 
             X, Y = np.meshgrid(x, y)
 
-        U = X - model(X, Y)
+            model = rebuild_distortion_model(ext)
+            U = X - model(X, Y)
 
             width = 0.75 * np.diff(x).mean()
             _min, _med, _max = np.percentile(U, [0, 50, 100], axis=0)
@@ -253,13 +250,6 @@ class PlotGmosSpectLongslitArcs:
             )
 
             fig.savefig(fig_name)
-
-        try:
-            old_mask = os.umask(000)
-            os.chmod(fig_name, 0o775)
-            os.umask(old_mask)
-        except PermissionError:
-            pass
 
     def plot_lines(self, ext_num, data, peaks, model):
         """
@@ -321,12 +311,6 @@ class PlotGmosSpectLongslitArcs:
         )
 
         fig.savefig(fig_name)
-
-        try:
-            os.chmod(fig_name, 0o775)
-        except PermissionError:
-            warnings.warn("Failed to update permissions for file: {}".format(fig_name))
-
         del fig, ax
 
     def plot_non_linear_components(self, ext_num, peaks, wavelengths, model):
@@ -383,12 +367,6 @@ class PlotGmosSpectLongslitArcs:
         )
 
         fig.savefig(fig_name)
-
-        try:
-            os.chmod(fig_name, 0o775)
-        except PermissionError:
-            warnings.warn("Failed to update permissions for file: {}".format(fig_name))
-
         del fig, ax
 
     def plot_wavelength_solution_residuals(self, ext_num, peaks, wavelengths, model):
@@ -456,10 +434,12 @@ class PlotGmosSpectLongslitArcs:
             data = generate_fake_data(shape, ext.dispersion_axis() - 1)
 
             model_out = remap_distortion_model(
-                rebuild_distortion_model(ext), ext.dispersion_axis() - 1)
+                rebuild_distortion_model(ext), ext.dispersion_axis() - 1
+            )
 
             model_ref = remap_distortion_model(
-                rebuild_distortion_model(ext_ref), ext_ref.dispersion_axis() - 1)
+                rebuild_distortion_model(ext_ref), ext_ref.dispersion_axis() - 1
+            )
 
             transform_out = transform.Transform(model_out)
             transform_ref = transform.Transform(model_ref)
@@ -471,25 +451,31 @@ class PlotGmosSpectLongslitArcs:
             data_ref = np.ma.masked_invalid(data_ref)
 
             fig, ax = plt.subplots(
-                dpi=300, num="Distortion Comparison: {:s} #{:d}".format(name, num))
+                dpi=300, num="Distortion Comparison: {:s} #{:d}".format(name, num)
+            )
 
             im = ax.imshow(data_ref - data_out)
 
-            ax.set_xlabel('X [px]')
-            ax.set_ylabel('Y [px]')
+            ax.set_xlabel("X [px]")
+            ax.set_ylabel("Y [px]")
             ax.set_title(
-                'Difference between output and reference: \n {:s} #{:d} '.format(
-                    name, num))
+                "Difference between output and reference: \n {:s} #{:d} ".format(
+                    name, num
+                )
+            )
 
             divider = make_axes_locatable(ax)
-            cax = divider.append_axes('right', size='5%', pad=0.05)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
 
-            cbar = fig.colorbar(im, extend='max', cax=cax, orientation='vertical')
-            cbar.set_label('Distortion [px]')
+            cbar = fig.colorbar(im, extend="max", cax=cax, orientation="vertical")
+            cbar.set_label("Distortion [px]")
 
             fig_name = os.path.join(
-                self.output_folder, "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
-                    name, num, self.grating, self.central_wavelength))
+                self.output_folder,
+                "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
+                    name, num, self.grating, self.central_wavelength
+                ),
+            )
 
             fig.savefig(fig_name)
 
@@ -520,20 +506,29 @@ class PlotGmosSpectLongslitArcs:
             U = X - model(X, Y)
             V = np.zeros_like(U)
 
-            fig, ax = plt.subplots(
-                num="Distortion Map {:s} #{:d}".format(fname, num))
+            fig, ax = plt.subplots(num="Distortion Map {:s} #{:d}".format(fname, num))
 
             vmin = U.min() if U.min() < 0 else -0.1 * U.ptp()
             vmax = U.max() if U.max() > 0 else +0.1 * U.ptp()
             vcen = 0
 
-            Q = ax.quiver(X, Y, U, V, U, cmap="coolwarm",
-                          norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax))
+            Q = ax.quiver(
+                X,
+                Y,
+                U,
+                V,
+                U,
+                cmap="coolwarm",
+                norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax),
+            )
 
             ax.set_xlabel("X [px]")
             ax.set_ylabel("Y [px]")
-            ax.set_title("Distortion Map\n{:s} #{:d}- Bin {:d}x{:d}".format(
-                fname, num, self.bin_x, self.bin_y))
+            ax.set_title(
+                "Distortion Map\n{:s} #{:d}- Bin {:d}x{:d}".format(
+                    fname, num, self.bin_x, self.bin_y
+                )
+            )
 
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -546,7 +541,9 @@ class PlotGmosSpectLongslitArcs:
             fig_name = os.path.join(
                 self.output_folder,
                 "{:s}_{:d}_{:s}_{:.0f}_distMap.png".format(
-                    fname, num, self.grating, self.central_wavelength))
+                    fname, num, self.grating, self.central_wavelength
+                ),
+            )
 
             fig.savefig(fig_name)
             del fig, ax
@@ -575,5 +572,7 @@ class PlotGmosSpectLongslitArcs:
 
             self.plot_lines(ext_num, data, peaks, wavecal_model)
             self.plot_non_linear_components(ext_num, peaks, wavelengths, wavecal_model)
-            self.plot_wavelength_solution_residuals(ext_num, peaks, wavelengths, wavecal_model)
+            self.plot_wavelength_solution_residuals(
+                ext_num, peaks, wavelengths, wavecal_model
+            )
             self.create_artifact_from_plots()

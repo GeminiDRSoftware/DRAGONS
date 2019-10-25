@@ -139,13 +139,6 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
 
     logutils.config(mode="quiet", file_name=log_file)
 
-    try:
-        old_mask = os.umask(000)
-        os.chmod(log_file, 0o775)
-        os.umask(old_mask)
-    except PermissionError:
-        pass
-
     c = ConfigTest(request.param, path_to_inputs, path_to_outputs, path_to_refs)
     yield c
 
@@ -172,6 +165,7 @@ def do_plots(ad, output_dir, ref_dir):
 
     except ImportError:
         from warnings import warn
+
         warn("Could not generate plots")
 
 
@@ -200,7 +194,6 @@ class ConfigTest:
         r = self.reduce(input_file)
 
         ad = r.writeOutputs(outfilename=output_file, overwrite=True)[0]
-        os.chmod(output_file, mode=0o775)
 
         self.ad = ad
         self.filename = ad.filename
@@ -340,10 +333,6 @@ class TestGmosSpectLongslitArcs:
 
         os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
 
-        old_mask = os.umask(000)
-        os.chmod(os.path.join(config.output_dir, ad_out.filename), mode=0o775)
-        os.umask(old_mask)
-
         # Reads the reference file ---
         reference = os.path.join(config.ref_dir, ad_out.filename)
 
@@ -373,7 +362,7 @@ class TestGmosSpectLongslitArcs:
         # Recover name of the distortion corrected arc files ---
         basename = os.path.basename(config.filename)
         filename, extension = os.path.splitext(basename)
-        filename = filename.split('_')[0] + "_distortionDetermined" + extension
+        filename = filename.split("_")[0] + "_distortionDetermined" + extension
 
         output = os.path.join(config.output_dir, filename)
         reference = os.path.join(config.ref_dir, filename)
@@ -382,7 +371,7 @@ class TestGmosSpectLongslitArcs:
             pytest.fail("Processed arc file not found: {}".format(output))
 
         if not os.path.exists(reference):
-            pytest.fail('Processed reference file not found: {}'.format(reference))
+            pytest.fail("Processed reference file not found: {}".format(reference))
 
         p = primitives_gmos_spect.GMOSSpect([])
 
@@ -390,12 +379,17 @@ class TestGmosSpectLongslitArcs:
         ad_out_corrected_with_out = p.distortionCorrect([ad_out], arc=output)[0]
         ad_out_corrected_with_ref = p.distortionCorrect([ad_out], arc=reference)[0]
 
-        ad_out_corrected_with_out.write(overwrite=True, filename=os.path.join(
-            config.output_dir, ad_out_corrected_with_out.filename))
+        ad_out_corrected_with_out.write(
+            overwrite=True,
+            filename=os.path.join(
+                config.output_dir, ad_out_corrected_with_out.filename
+            ),
+        )
 
-        for ext_out, ext_ref in zip(ad_out_corrected_with_out, ad_out_corrected_with_ref):
+        for ext_out, ext_ref in zip(
+            ad_out_corrected_with_out, ad_out_corrected_with_ref
+        ):
             np.testing.assert_allclose(ext_out.data, ext_ref.data)
-
 
     @staticmethod
     @pytest.mark.skip(reason="not fully implemented yet")
@@ -438,10 +432,6 @@ class TestGmosSpectLongslitArcs:
         cs.filename = cs.filename.replace(".fits", "_fromFullFrame.fits")
         cs.ad.write(filename=cs.full_name, overwrite=True)
 
-        old_mask = os.umask(000)
-        os.chmod(os.path.join(cs.full_name), mode=0o775)
-        os.umask(old_mask)
-
     @staticmethod
     @pytest.mark.skip(reason="not fully implemented yet")
     def test_distortion_correction_is_applied_the_same_way(config):
@@ -474,10 +464,6 @@ class TestGmosSpectLongslitArcs:
         ad_out.write(filename=filename, overwrite=True)
 
         os.rename(filename, os.path.join(config.output_dir, filename))
-
-        old_mask = os.umask(000)
-        os.chmod(os.path.join(config.output_dir, filename), mode=0o775)
-        os.umask(old_mask)
 
         # assert False
 
