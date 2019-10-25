@@ -192,8 +192,7 @@ class PlotGmosSpectLongslitArcs:
         self.show_distortion_map(ad)
         self.show_distortion_model_difference(ad, ad_ref)
 
-
-    def plot_distortion_residuals(self, fname, ext_num, shape, model):
+    def plot_distortion_residuals(self, ad):
         """
         Plots the distortion residuals calculated on an arc dataset that passed
         through `distortionCorrect`. The residuals are calculated based on an
@@ -202,59 +201,58 @@ class PlotGmosSpectLongslitArcs:
 
         Parameters
         ----------
-        fname : str
-            File name
-        ext_num : int
-            Number of the extension.
-        shape : tuple
-            Data shape
-        model : distortion model calculated on a distortion corrected file.
+        ad : AstroData
+            Distortion Determined arc.
         """
-        n_hlines = 25
-        n_vlines = 25
-        n_rows, n_cols = shape
+        for num, ext in enumerate(ad):
 
-        x = np.linspace(0, n_cols, n_vlines, dtype=int)
-        y = np.linspace(0, n_rows, n_hlines, dtype=int)
+            fname, _ = os.path.splitext(os.path.basename(ext.filename))
 
-        X, Y = np.meshgrid(x, y)
+            n_hlines = 25
+            n_vlines = 25
+            n_rows, n_cols = ext.shape
+
+            x = np.linspace(0, n_cols, n_vlines, dtype=int)
+            y = np.linspace(0, n_rows, n_hlines, dtype=int)
+
+            X, Y = np.meshgrid(x, y)
 
         U = X - model(X, Y)
 
-        width = 0.75 * np.diff(x).mean()
-        _min, _med, _max = np.percentile(U, [0, 50, 100], axis=0)
+            width = 0.75 * np.diff(x).mean()
+            _min, _med, _max = np.percentile(U, [0, 50, 100], axis=0)
 
-        fig, ax = plt.subplots(
-            num="Corrected Distortion Residual Stats {:s}".format(fname)
-        )
+            fig, ax = plt.subplots(
+                num="Corrected Distortion Residual Stats {:s} #{:d}".format(fname, num)
+            )
 
-        ax.scatter(x, _min, marker="^", s=4, c="C0")
-        ax.scatter(x, _max, marker="v", s=4, c="C0")
+            ax.scatter(x, _min, marker="^", s=4, c="C0")
+            ax.scatter(x, _max, marker="v", s=4, c="C0")
 
-        parts = ax.violinplot(
-            U, positions=x, showmeans=True, showextrema=True, widths=width
-        )
+            parts = ax.violinplot(
+                U, positions=x, showmeans=True, showextrema=True, widths=width
+            )
 
-        parts["cmins"].set_linewidth(0)
-        parts["cmaxes"].set_linewidth(0)
-        parts["cbars"].set_linewidth(0.75)
-        parts["cmeans"].set_linewidth(0.75)
+            parts["cmins"].set_linewidth(0)
+            parts["cmaxes"].set_linewidth(0)
+            parts["cbars"].set_linewidth(0.75)
+            parts["cmeans"].set_linewidth(0.75)
 
-        ax.grid("k-", alpha=0.25)
-        ax.set_xlabel("X [px]")
-        ax.set_ylabel("Position Residual [px]")
-        ax.set_title("Corrected Distortion Residual Stats\n{}".format(fname))
+            ax.grid("k-", alpha=0.25)
+            ax.set_xlabel("X [px]")
+            ax.set_ylabel("Position Residual [px]")
+            ax.set_title("Corrected Distortion Residual Stats\n{}".format(fname))
 
-        fig.tight_layout()
+            fig.tight_layout()
 
-        fig_name = os.path.join(
-            self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}_dres.png".format(
-                fname, ext_num, self.grating, self.central_wavelength
-            ),
-        )
+            fig_name = os.path.join(
+                self.output_folder,
+                "{:s}_{:d}_{:s}_{:.0f}_dres.png".format(
+                    fname, num, self.grating, self.central_wavelength
+                ),
+            )
 
-        fig.savefig(fig_name)
+            fig.savefig(fig_name)
 
         try:
             old_mask = os.umask(000)
