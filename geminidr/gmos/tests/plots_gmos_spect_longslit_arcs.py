@@ -9,18 +9,19 @@ import tarfile
 import warnings
 
 import numpy as np
+from astropy.modeling import models
 # noinspection PyPackageRequirements
 from matplotlib import colors
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy import ndimage
 
 import astrodata
 # noinspection PyUnresolvedReferences
 import gemini_instruments
-from astropy.modeling import models
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
-from scipy import ndimage
+from gempy.library import transform
 
 
 def generate_fake_data(shape, dispersion_axis, n_lines=100):
@@ -160,27 +161,8 @@ class PlotGmosSpectLongslitArcs:
         """
         full_name = os.path.join(self.output_folder, self.name + ".fits")
 
-        file_list = [
-            full_name,
-            full_name.replace("distortionDetermined", "distortionCorrected"),
-        ]
+        self.show_distortion_correct_difference(full_name)
 
-        for filename in file_list:
-
-            ad = astrodata.open(filename)
-
-            for e_num, e in enumerate(ad):
-
-                if not hasattr(e, "FITCOORD"):
-                    continue
-
-                distortion_model = rebuild_distortion_model(e)
-
-                self.plot_distortion_map(ad.filename, e_num, e.shape, distortion_model)
-                # self.plot_distortion_correct_difference()
-
-                if "distortionCorrected" in filename:
-                    self.plot_distortion_residuals(ad.filename, e_num, e.shape, distortion_model)
 
 
     def plot_distortion_map(self, fname, ext_num, shape, model):
@@ -325,52 +307,6 @@ class PlotGmosSpectLongslitArcs:
             os.umask(old_mask)
         except PermissionError:
             pass
-
-    def plot_distortion_correct_difference(self, fname, ext_num, shape, model):
-        """
-
-        :param fname:
-        :param ext_num:
-        :param shape:
-        :param model:
-        :return:
-        """
-
-        data = generate_fake_data(shape, dispersion_axis - 1)
-
-        model_out = rebuild_distortion_model(ext_out)
-        transform_out = transform.Transform(model_out)
-        data_out = transform_out.apply(data, output_shape=ext_out.shape)
-        data_out = np.ma.masked_invalid(data_out)
-
-        model_ext = rebuild_distortion_model(ext_ref)
-        transform_ref = transform.Transform(model_ext)
-        data_ref = transform_ref.apply(data, output_shape=ext_ref.shape)
-        data_ref = np.ma.masked_invalid(data_ref)
-
-        # np.testing.assert_allclose(data_out, data_ref)
-
-        # fig, ax = plt.subplots(num="Distortion Comparison: {}".format(config.filename))
-        #
-        #         im = ax.imshow(data_ref - data_out)
-        #
-        #         ax.set_xlabel('X [px]')
-        #         ax.set_ylabel('Y [px]')
-        #         ax.set_title('Difference between output and reference \n {}'.format(
-        #             os.path.basename(config.filename)))
-        #
-        #         divider = make_axes_locatable(ax)
-        #         cax = divider.append_axes('right', size='5%', pad=0.05)
-        #
-        #         cbar = fig.colorbar(im, extend='max', cax=cax, orientation='vertical')
-        #         cbar.set_label('Distortion [px]')
-        #
-        #         fig.savefig(output.replace('.fits', '_distortionDifference.png'))
-        #
-        #
-        #         np.testing.assert_allclose(ext_out.FITCOORD['coefficients'], ext_ref.FITCOORD['coefficients'])
-        #
-        #     del ad_out, ad_ref, p
 
     def plot_lines(self, ext_num, data, peaks, model):
         """
@@ -552,6 +488,57 @@ class PlotGmosSpectLongslitArcs:
             warnings.warn("Failed to update permissions for file: {}".format(fig_name))
 
         del fig, ax
+
+    def show_distortion_correct_difference(self, filename):
+        """
+        Shows the difference between the distortion corrected output file and
+        the corresponding reference file.
+
+        Parameters
+        ----------
+        filename : str
+        """
+
+
+
+        shape = ext.shape
+        data = generate_fake_data(shape, ext.dispersion_axis() - 1)
+
+        model_out = rebuild_distortion_model(ext)
+        transform_out = transform.Transform(model_out)
+        data_out = transform_out.apply(data, output_shape=ext.shape)
+        data_out = np.ma.masked_invalid(data_out)
+
+        model_ext = rebuild_distortion_model(ext)
+        transform_ref = transform.Transform(model_ext)
+        data_ref = transform_ref.apply(data, output_shape=ext.shape)
+        data_ref = np.ma.masked_invalid(data_ref)
+
+        fig, ax = plt.subplots(dpi=300, num="Distortion Comparison: {}".format(fname))
+
+        im = ax.imshow(data_ref - data_out)
+
+        ax.set_xlabel('X [px]')
+        ax.set_ylabel('Y [px]')
+        ax.set_title('Difference between output and reference \n {}'.format(
+            os.path.basename(fname)))
+
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+
+        cbar = fig.colorbar(im, extend='max', cax=cax, orientation='vertical')
+        cbar.set_label('Distortion [px]')
+
+        plt.show()
+
+        fig_name = os.path.join(
+            self.output_folder,
+            "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
+                fname, ext_num, self.grating, self.central_wavelength
+            )
+        )
+
+        fig.savefig(fig_name)
 
     def wavelength_calibration_plots(self):
         """
