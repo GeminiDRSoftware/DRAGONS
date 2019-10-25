@@ -13,14 +13,14 @@ from astrodata.testing import download_from_archive
 
 @pytest.mark.remote_data
 def test_can_read_data():
-    test_filename = download_from_archive("N20110826S0336.fits")
+    test_filename = download_from_archive("N20110826S0336.fits", path="GMOS")
     ad = astrodata.open(test_filename)
     assert len(ad) == 3
 
 
 @pytest.mark.remote_data
 def test_append_array_to_root_no_name():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -34,7 +34,7 @@ def test_append_array_to_root_no_name():
 
 @pytest.mark.remote_data
 def test_append_array_to_root_with_name_sci():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -48,7 +48,7 @@ def test_append_array_to_root_with_name_sci():
 
 @pytest.mark.remote_data
 def test_append_array_to_root_with_arbitrary_name():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -59,7 +59,7 @@ def test_append_array_to_root_with_arbitrary_name():
 
 @pytest.mark.remote_data
 def test_append_array_to_extension_with_name_sci():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -70,7 +70,7 @@ def test_append_array_to_extension_with_name_sci():
 
 @pytest.mark.remote_data
 def test_append_array_to_extension_with_arbitrary_name():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -83,7 +83,7 @@ def test_append_array_to_extension_with_arbitrary_name():
 
 @pytest.mark.remote_data
 def test_append_nddata_to_root_no_name():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -97,7 +97,7 @@ def test_append_nddata_to_root_no_name():
 
 @pytest.mark.remote_data
 def test_append_nddata_to_root_with_arbitrary_name():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -112,7 +112,7 @@ def test_append_nddata_to_root_with_arbitrary_name():
 
 @pytest.mark.remote_data
 def test_append_table_to_root():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -125,7 +125,7 @@ def test_append_table_to_root():
 @pytest.mark.skip("unknown expected behaviour")
 @pytest.mark.remote_data
 def test_append_table_to_root_without_name():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -138,7 +138,7 @@ def test_append_table_to_root_without_name():
 
 @pytest.mark.remote_data
 def test_append_table_to_extension():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     lbefore = len(ad)
@@ -152,7 +152,7 @@ def test_append_table_to_extension():
 
 @pytest.mark.remote_data
 def test_append_dq_to_root():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     dq = np.zeros(ad[0].data.shape)
@@ -162,7 +162,7 @@ def test_append_dq_to_root():
 
 @pytest.mark.remote_data
 def test_append_dq_to_ext():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     dq = np.zeros(ad[0].data.shape)
@@ -172,7 +172,7 @@ def test_append_dq_to_ext():
 
 @pytest.mark.remote_data
 def test_append_var_to_root():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     var = np.random.random(ad[0].data.shape)
@@ -182,7 +182,7 @@ def test_append_var_to_root():
 
 @pytest.mark.remote_data
 def test_append_var_to_ext():
-    test_filename = download_from_archive('N20160524S0119.fits')
+    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
     ad = astrodata.open(test_filename)
 
     var = np.random.random(ad[0].data.shape)
@@ -194,8 +194,8 @@ def test_append_var_to_ext():
 
 @pytest.mark.remote_data
 def test_append_single_slice():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits'))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits"))
+    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
+    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
 
     lbefore = len(ad2)
     last_ever = ad2[-1].nddata.meta['header'].get('EXTVER', -1)
@@ -208,8 +208,8 @@ def test_append_single_slice():
 
 @pytest.mark.remote_data
 def test_append_non_single_slice():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits'))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits"))
+    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
+    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
 
     with pytest.raises(ValueError):
         ad2.append(ad[1:])
@@ -217,8 +217,8 @@ def test_append_non_single_slice():
 
 @pytest.mark.remote_data
 def test_append_whole_instance():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits'))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits"))
+    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
+    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
 
     with pytest.raises(ValueError):
         ad2.append(ad)
@@ -226,8 +226,8 @@ def test_append_whole_instance():
 
 @pytest.mark.remote_data
 def test_append_slice_to_extension():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits'))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits"))
+    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
+    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
 
     with pytest.raises(ValueError):
         ad2[0].append(ad[0], name="FOOBAR")
@@ -244,7 +244,7 @@ def test_append_slice_to_extension():
 
 @pytest.mark.remote_data
 def test_delete_named_associated_extension():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits'))
+    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
     table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
                   names=('a', 'b', 'c'))
     ad[0].append(table, 'MYTABLE')
@@ -255,7 +255,7 @@ def test_delete_named_associated_extension():
 
 @pytest.mark.remote_data
 def test_delete_arbitrary_attribute_from_ad():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits'))
+    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
 
     with pytest.raises(AttributeError):
         ad.arbitrary
