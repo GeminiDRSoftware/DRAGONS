@@ -3,11 +3,13 @@
 #
 #                                                       primitives_photometry.py
 # ------------------------------------------------------------------------------
+import astropy
 import numpy as np
 import warnings
 
 from astropy.stats import sigma_clip
 from astropy.table import Column
+from astropy.utils import minversion
 
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
@@ -122,7 +124,7 @@ class Photometry(PrimitivesBASE):
 
     def detectSources(self, adinputs=None, **params):
         """
-        Find x,y positions of all the objects in the input image. Append 
+        Find x,y positions of all the objects in the input image. Append
         a FITS table extension with position information plus columns for
         standard objects to be updated with position from addReferenceCatalog
         (if any are found for the field).
@@ -443,8 +445,9 @@ def _estimate_seeing(objcat):
     good_fwhm = objcat['FWHM_WORLD'][good] * 3600  # degrees -> arcseconds
 
     if len(good_fwhm) > 3:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        if minversion(astropy, '3.1'):
+            seeing_estimate = sigma_clip(good_fwhm, sigma=3, maxiters=1).mean()
+        else:
             seeing_estimate = sigma_clip(good_fwhm, sigma=3, iters=1).mean()
     elif len(good_fwhm) > 0:
         seeing_estimate = np.mean(good_fwhm)
@@ -464,9 +467,9 @@ def _profile_sources(ad, seeing_estimate=None):
     and circularizing that number, Distant pixels are rejected in case
     there's a neighbouring object. This appears to work well and is
     fast, which is essential.
-    
+
     The 50% encircled energy (EE50) is just determined from a cumulative sum
-    of pixel values, sorted by distance from source center. 
+    of pixel values, sorted by distance from source center.
     """
     for ext in ad:
         try:
@@ -527,16 +530,16 @@ def _profile_sources(ad, seeing_estimate=None):
             shift_dist = dist.copy()
             shift_dist[0] += int(yc)-yc
             shift_dist[1] += int(xc)-xc
-    
+
             # Square root of the sum of the squares of the distances
             rdistsq = np.sum(shift_dist**2, axis=0)
 
             # Radius and flux arrays for the radial profile
             rpr = rdistsq.flatten()
             rpv = stamp.flatten() - bg
-    
+
             # Sort by the radius
-            sort_order = np.argsort(rpr) 
+            sort_order = np.argsort(rpr)
             radsq = rpr[sort_order]
             flux = rpv[sort_order]
 
