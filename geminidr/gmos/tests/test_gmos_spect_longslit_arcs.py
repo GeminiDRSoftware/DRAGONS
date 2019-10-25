@@ -374,98 +374,37 @@ class TestGmosSpectLongslitArcs:
 
         del ad_out, ad_ref, p
 
-    # @staticmethod
-    # def test_distortion_model_is_the_same(config):
-    #     """
-    #     Corrects distortion on both output and reference files using the
-    #     distortion model stored in themselves. Previous tests assures that
-    #     these data are similar and that distortion correct is applied the same
-    #     way. Now, this one tests the model itself.
-    #     """
-    #     # Process the output file ---
-    #     output = os.path.join(config.output_dir, config.filename)
-    #
-    #     if not os.path.exists(output):
-    #         pytest.skip('Output file not found: {}'.format(output))
-    #
-    #     ad_out = config.ad
-    #
-    #     p = primitives_gmos_spect.GMOSSpect([])
-    #
-    #     # Using with id_only=True isolates this test from the wavelength
-    #     # calibration tests
-    #     ad_out = p.determineDistortion(adinputs=[ad_out], id_only=True)[0]
-    #
-    #     ad_out.write(overwrite=True)
-    #     os.rename(ad_out.filename, os.path.join(config.output_dir, ad_out.filename))
-    #
-    #     old_mask = os.umask(000)
-    #     os.chmod(os.path.join(config.output_dir, ad_out.filename), mode=0o775)
-    #     os.umask(old_mask)
-    #
-    #     # Reads the reference file ---
-    #     reference = os.path.join(config.ref_dir, ad_out.filename)
-    #
-    #     if not os.path.exists(reference):
-    #         pytest.fail('Reference file not found: {}'.format(reference))
-    #
-    #     ad_ref = astrodata.open(reference)
-    #
-    #     # Helper function to build model ---
-    #     def build_model(ext):
-    #
-    #         dispaxis = ext.dispersion_axis() - 1
-    #
-    #         m = models.Identity(2)
-    #         m_inv = astromodels.dict_to_chebyshev(
-    #             dict(zip(
-    #                 ext.FITCOORD["name"], ext.FITCOORD["coefficients"])))
-    #
-    #         # See https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
-    #         if dispaxis == 0:
-    #             m.inverse = models.Mapping((0, 1, 1)) | (m_inv & models.Identity(1))
-    #         else:
-    #             m.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inv)
-    #
-    #         return m
-    #
-    #     # Compare them ---
-    #     for ext_out, ext_ref in zip(ad_out, ad_ref):
-    #         data = config.generate_fake_data(ext_out)
-    #
-    #         model_out = build_model(ext_out)
-    #         model_ext = build_model(ext_ref)
-    #
-    #         transform_out = transform.Transform(model_out)
-    #         transform_ref = transform.Transform(model_ext)
-    #
-    #         data_out = transform_out.apply(data, output_shape=ext_out.shape)
-    #         data_ref = transform_ref.apply(data, output_shape=ext_ref.shape)
-    #
-    #         data_out = np.ma.masked_invalid(data_out)
-    #         data_ref = np.ma.masked_invalid(data_ref)
-    #
-    #         fig, ax = plt.subplots(num="Distortion Comparison: {}".format(config.filename))
-    #
-    #         im = ax.imshow(data_ref - data_out)
-    #
-    #         ax.set_xlabel('X [px]')
-    #         ax.set_ylabel('Y [px]')
-    #         ax.set_title('Difference between output and reference \n {}'.format(
-    #             os.path.basename(config.filename)))
-    #
-    #         divider = make_axes_locatable(ax)
-    #         cax = divider.append_axes('right', size='5%', pad=0.05)
-    #
-    #         cbar = fig.colorbar(im, extend='max', cax=cax, orientation='vertical')
-    #         cbar.set_label('Distortion [px]')
-    #
-    #         fig.savefig(output.replace('.fits', '_distortionDifference.png'))
-    #
-    #         np.testing.assert_allclose(data_out, data_ref)
-    #         np.testing.assert_allclose(ext_out.FITCOORD['coefficients'], ext_ref.FITCOORD['coefficients'])
-    #
-    #     del ad_out, ad_ref, p
+    @staticmethod
+    def test_distortion_correct(config):
+        """
+        Corrects distortion on both output and reference files using the
+        distortion model stored in themselves. Previous tests assures that
+        these data are similar and that distortion correct is applied the same
+        way. Now, this one tests the model itself.
+        """
+        # Recover name of the distortion corrected arc files ---
+        basename = os.path.basename(config.filename)
+        filename, extension = os.path.splitext(basename)
+        filename = filename.split('_')[0] + "_distortionDetermined" + extension
+
+        output = os.path.join(config.output_dir, filename)
+        reference = os.path.join(config.ref_dir, filename)
+
+        if not os.path.exists(output):
+            pytest.fail("Processed arc file not found: {}".format(output))
+
+        if not os.path.exists(reference):
+            pytest.fail('Processed reference file not found: {}'.format(reference))
+
+        p = primitives_gmos_spect.GMOSSpect([])
+
+        ad_out = astrodata.open(output)
+        ad_out_corrected_with_out = p.distortionCorrect([ad_out], arc=output)
+        ad_out_corrected_with_ref = p.distortionCorrect([ad_out], arc=reference)
+
+        for ext_out, ext_ref in zip(ad_out_corrected_with_out, ad_out_corrected_with_ref):
+            np.testing.assert_allclose(ext_out.data, ext_ref.data)
+
 
     @staticmethod
     @pytest.mark.skip(reason="not fully implemented yet")
