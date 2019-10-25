@@ -75,20 +75,43 @@ def rebuild_distortion_model(ext):
     Returns
     -------
     :class:`~astropy.modeling.models.Model`
-        2D Model that can be applied to an array.
+        Model that receives 2D data and return a 1D array.
     """
-    dispaxis = ext.dispersion_axis() - 1
-
-    m = models.Identity(2)
-    m_inv = astromodels.dict_to_chebyshev(
+    model = astromodels.dict_to_chebyshev(
         dict(zip(
             ext.FITCOORD["name"], ext.FITCOORD["coefficients"])))
 
-    # See https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
-    if dispaxis == 0:
-        m.inverse = models.Mapping((0, 1, 1)) | (m_inv & models.Identity(1))
+    return model
+
+
+def remap_distortion_model(model, dispersion_axis):
+    """
+    Remaps the distortion model so it can return a 2D array.
+
+    Parameters
+    ----------
+    model : :class:`~astropy.modeling.models.Model`
+        A model that receives 2D data and returns 1D data.
+
+    dispersion_axis : {0 or 1}
+        Define distortion model along the rows (0) or along the columns (1).
+
+    Returns
+    -------
+    :class:`~astropy.modeling.models.Model`
+        A model that receives and returns 2D data.
+
+    See also
+    --------
+    - https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
+
+    """
+    m = models.Identity(2)
+
+    if dispersion_axis == 0:
+        m.inverse = models.Mapping((0, 1, 1)) | (model & models.Identity(1))
     else:
-        m.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inv)
+        m.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & model)
 
     return m
 
@@ -159,84 +182,17 @@ class PlotGmosSpectLongslitArcs:
         Makes the Diagnosis Plots for `determineDistortion` and
         `distortionCorrect` for each extension inside the reduced arc.
         """
-        full_name = os.path.join(self.output_folder, self.name + ".fits")
+        distortion_determined_filename = os.path.join(
+            self.output_folder, self.name + ".fits")
 
-        self.show_distortion_correct_difference(full_name)
+        distortion_corrected_filename = distortion_determined_filename.replace(
+            "distortionDetermined", "distortionCorrected")
 
+        distortion_determined_ad = astrodata.open(distortion_determined_filename)
+        distortion_corrected_ad = astrodata.open(distortion_corrected_filename)
 
+        self.show_distortion_map(distortion_determined_ad)
 
-    def plot_distortion_map(self, fname, ext_num, shape, model):
-        """
-        Plots the distortion map determined for a given file.
-
-        Parameters
-        ----------
-        fname : str
-            File name
-        ext_num : int
-            Extension number.
-        shape : tuple
-            Data shape.
-        model : Chebyshev1D
-            Model that represents the wavelength solution.
-        """
-        n_hlines = 50
-        n_vlines = 50
-        n_rows, n_cols = shape
-
-        x = np.linspace(0, n_cols, n_vlines, dtype=int)
-        y = np.linspace(0, n_rows, n_hlines, dtype=int)
-
-        X, Y = np.meshgrid(x, y)
-
-        U = X - model(X, Y)
-        V = np.zeros_like(U)
-
-        fig, ax = plt.subplots(num="Distortion Map {}".format(fname))
-
-        vmin = U.min() if U.min() < 0 else -0.1 * U.ptp()
-        vmax = U.max() if U.max() > 0 else +0.1 * U.ptp()
-        vcen = 0
-
-        Q = ax.quiver(
-            X,
-            Y,
-            U,
-            V,
-            U,
-            cmap="coolwarm",
-            norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax),
-        )
-
-        ax.set_xlabel("X [px]")
-        ax.set_ylabel("Y [px]")
-        ax.set_title(
-            "Distortion Map\n{} - Bin {:d}x{:d}".format(fname, self.bin_x, self.bin_y)
-        )
-
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-
-        cbar = fig.colorbar(Q, extend="max", cax=cax, orientation="vertical")
-        cbar.set_label("Distortion [px]")
-
-        fig.tight_layout()
-
-        fig_name = os.path.join(
-            self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}_dmap.png".format(
-                fname, ext_num, self.grating, self.central_wavelength
-            ),
-        )
-
-        fig.savefig(fig_name)
-
-        try:
-            old_mask = os.umask(000)
-            os.chmod(fig_name, 0o775)
-            os.umask(old_mask)
-        except PermissionError:
-            pass
 
     def plot_distortion_residuals(self, fname, ext_num, shape, model):
         """
@@ -482,25 +438,17 @@ class PlotGmosSpectLongslitArcs:
 
         fig.savefig(fig_name)
 
-        try:
-            os.chmod(fig_name, 0o775)
-        except PermissionError:
-            warnings.warn("Failed to update permissions for file: {}".format(fig_name))
-
         del fig, ax
 
-    def show_distortion_correct_difference(self, filename):
+    def show_distortion_correct_difference(self, ext_):
         """
         Shows the difference between the distortion corrected output file and
         the corresponding reference file.
 
         Parameters
         ----------
-        filename : str
+
         """
-
-
-
         shape = ext.shape
         data = generate_fake_data(shape, ext.dispersion_axis() - 1)
 
@@ -539,6 +487,64 @@ class PlotGmosSpectLongslitArcs:
         )
 
         fig.savefig(fig_name)
+
+    def show_distortion_map(self, ad):
+        """
+        Plots the distortion map determined for a given file.
+
+        Parameters
+        ----------
+        ad : AstroData
+            Distortion determined data.
+        """
+        n_hlines = 50
+        n_vlines = 50
+
+        for num, ext in enumerate(ad):
+
+            fname, _ = os.path.splitext(os.path.basename(ext.filename))
+
+            n_rows, n_cols = ext.shape
+
+            x = np.linspace(0, n_cols, n_vlines, dtype=int)
+            y = np.linspace(0, n_rows, n_hlines, dtype=int)
+
+            X, Y = np.meshgrid(x, y)
+
+            model = rebuild_distortion_model(ext)
+            U = X - model(X, Y)
+            V = np.zeros_like(U)
+
+            fig, ax = plt.subplots(
+                num="Distortion Map {:s} #{:d}".format(fname, num))
+
+            vmin = U.min() if U.min() < 0 else -0.1 * U.ptp()
+            vmax = U.max() if U.max() > 0 else +0.1 * U.ptp()
+            vcen = 0
+
+            Q = ax.quiver(X, Y, U, V, U, cmap="coolwarm",
+                          norm=colors.DivergingNorm(vcenter=vcen, vmin=vmin, vmax=vmax))
+
+            ax.set_xlabel("X [px]")
+            ax.set_ylabel("Y [px]")
+            ax.set_title("Distortion Map\n{:s} #{:d}- Bin {:d}x{:d}".format(
+                fname, num, self.bin_x, self.bin_y))
+
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+
+            cbar = fig.colorbar(Q, extend="max", cax=cax, orientation="vertical")
+            cbar.set_label("Distortion [px]")
+
+            fig.tight_layout()
+
+            fig_name = os.path.join(
+                self.output_folder,
+                "{:s}_{:d}_{:s}_{:.0f}_distMap.png".format(
+                    fname, num, self.grating, self.central_wavelength))
+
+            fig.savefig(fig_name)
+            del fig, ax
 
     def wavelength_calibration_plots(self):
         """
