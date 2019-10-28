@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -54,13 +55,21 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
             if illum is None:
                 # Default operation for GMOS LS
-                row_medians = np.sum(np.array([np.median(ext.data, axis=1) for ext in ad]), axis=0)
+                # The 95% cut should ensure that we're sampling something
+                # bright (even for an arc)
+                # The 75% cut is intended to handle R150 data, where many of
+                # the extensions are unilluminated
+                row_medians = np.percentile(np.array([np.percentile(ext.data, 95, axis=1)
+                                                      for ext in ad]), 75, axis=0)
                 rows = np.arange(len(row_medians))
-                m_init = models.Polynomial1D(degree=1)
+                m_init = models.Polynomial1D(degree=2)
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                            outlier_func=sigma_clip)
                 m_final, mask = fit_it(m_init, rows, row_medians)
                 mask &= (row_medians < m_final(rows))
+                # The default selection tends to mask the edges of the good
+                # regions, so rein it in a bit
+                mask = at.boxcar(mask, operation=np.logical_and, size=1)
                 for ext in ad:
                     ext.mask |= (mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
 

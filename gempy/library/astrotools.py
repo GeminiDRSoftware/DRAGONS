@@ -30,6 +30,33 @@ def array_from_list(list_of_quantities):
     # subok=True is needed to handle magnitude/log units
     return u.Quantity(np.array(values), unit, subok=True)
 
+def boxcar(data, operation=np.median, size=1):
+    """
+    "Smooth" a 1D array by applying a boxcar filter along it. Any operation
+    can be performed, as long as it can take a sequence and return a single
+    value.
+
+    Parameters
+    ----------
+    data: 1D ndarray
+        the data to be maninpulated
+    operation: callable
+        function for the boxcar to use
+    size: int
+        the boxcar width will be 2*size+1
+
+    Returns
+    -------
+    1D ndarray: same shape as data, after the boxcar operation
+    """
+    try:
+        boxarray = np.array([operation(data[max(i-size, 0):i+size+1])
+                             for i in range(len(data))])
+    except ValueError:  # Handle things like np.logical_and
+        boxarray = np.array([operation.reduce(data[max(i-size, 0):i+size+1])
+                             for i in range(len(data))])
+    return boxarray
+
 def divide0(numerator, denominator):
     """
     Perform division, replacing division by zero with zero. This expands
