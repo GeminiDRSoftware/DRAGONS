@@ -164,7 +164,7 @@ think that the file is there.
 
 To see what is in the database::
 
-    >>> for f in caldb.list_files:
+    >>> for f in caldb.list_files():
     ...     print(f)
     ...
     FileData(name=u'master_bias.fits', path=u'/path/to')
