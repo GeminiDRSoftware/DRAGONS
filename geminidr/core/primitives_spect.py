@@ -158,7 +158,7 @@ class Spect(PrimitivesBASE):
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Arc data as 2D spectral images.
+            Arc data as 2D spectral images with a WAVECAL table.
 
         suffix :  str
             Suffix to be added to output files.
@@ -405,6 +405,8 @@ class Spect(PrimitivesBASE):
                     adoutputs.append(ad)
                     continue
 
+                # Use AstroPy Compound Models to have a model that can be applied to 2D data:
+                # https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
                 dispaxis = arc[0].dispersion_axis() - 1
                 if dispaxis == 0:
                     m_ident.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
@@ -499,7 +501,7 @@ class Spect(PrimitivesBASE):
         ----------
 
         adinputs : list of :class:`~astrodata.AstroData`
-            Arc data as 2D spectral images or 1D spectra.
+             Mosaicked Arc data as 2D spectral images or 1D spectra.
 
         suffix : str
             Suffix to be added to output files.
@@ -536,6 +538,7 @@ class Spect(PrimitivesBASE):
 
         See Also
         --------
+        :class:`~geminidr.core.primitives_visualize.Visualize.mosaicDetectors`,
         :class:`~gempy.library.matching.KDTreeFitter`,
         :class:`~gempy.library.matching.Chebyshev1DMatchBox`.
         """
@@ -776,7 +779,9 @@ class Spect(PrimitivesBASE):
                     plt.show()
 
                 m.display_fit()
-                plt.savefig(ad.filename.replace('.fits', '.jpg'))
+
+                if plot:
+                    plt.savefig(ad.filename.replace('.fits', '.jpg'))
 
                 m.sort()
                 # Add 1 to pixel coordinates so they're 1-indexed

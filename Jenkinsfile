@@ -14,7 +14,9 @@
 
 pipeline {
 
-    agent any
+    agent {
+        label 'bquint-ld1'
+    }
 
     triggers {
         pollSCM('H * * * *')  // Polls Source Code Manager every hour
@@ -39,7 +41,8 @@ pipeline {
             steps{
                 sendNotifications 'STARTED'
                 checkout scm
-                sh 'rm ./plots/*.tar.gz'
+                sh 'rm -rf ./plots; mkdir -p ./plots'
+                sh 'rm -rf ./reports; mkdir -p ./reports'
                 sh '.jenkins/scripts/download_and_install_anaconda.sh'
                 sh '.jenkins/scripts/create_conda_environment.sh'
                 sh '.jenkins/scripts/install_missing_packages.sh'
@@ -49,14 +52,15 @@ pipeline {
                       '''
                 sh '.jenkins/scripts/test_environment.sh'
                 sh 'conda list -n ${CONDA_ENV_NAME}'
-                sh 'rm -rf ./reports'
-                sh 'mkdir -p ./reports'
             }
 
         }
 
         stage('Code Metrics') {
 
+            when {
+                branch 'master'
+            }
             steps {
                 sh '.jenkins/code_metrics/pylint.sh'
                 sh '.jenkins/code_metrics/pydocstring.sh'
@@ -77,16 +81,19 @@ pipeline {
 
         stage('Unit tests') {
 
+            when {
+                branch 'master'
+            }
             steps {
 
                 echo "ensure cleaning __pycache__"
                 sh  'find . | grep -E "(__pycache__|\\.pyc|\\.pyo$)" | xargs rm -rfv'
 
                 echo "Running tests"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
-                    '''
+//                 sh  '''
+//                     source activate ${CONDA_ENV_NAME}
+//                     coverage run -m pytest -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
+//                     '''
 
             }
 
@@ -107,7 +114,6 @@ pipeline {
                     source activate ${CONDA_ENV_NAME}
                     python -m coverage xml -o ./reports/coverage.xml
                     '''
-
             }
             post {
                 always {
@@ -120,11 +126,15 @@ pipeline {
 
         stage('Integration tests') {
 
+            when {
+                branch 'master'
+            }
             steps {
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
-                    '''
+                echo "Integration tests"
+//                 sh  '''
+//                     source activate ${CONDA_ENV_NAME}
+//                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
+//                     '''
             }
 
         }
@@ -137,13 +147,12 @@ pipeline {
             allowEmptyResults: true,
             testResults: 'reports/*_results.xml'
             )
-          sh '.jenkins/scripts/update_files_permissions.sh'
         }
         success {
+//             sh  '.jenkins/scripts/build_sdist_file.sh'
+//             sh  'pwd'
+//             echo 'Make tarball available'
             sendNotifications 'SUCCESSFUL'
-            sh  '.jenkins/scripts/build_sdist_file.sh'
-            sh  'pwd'
-            echo 'Make tarball available'
         }
         failure {
             sendNotifications 'FAILED'

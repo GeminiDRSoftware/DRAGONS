@@ -1,0 +1,100 @@
+.TH dataselect 1 "Oct 2019" "version 0.1" "dataselect man page"
+.SH NAME
+dataselect
+.SH SYNOPSIS
+.B dataselect
+[\fB\-h\fR]
+[\fB\-t\fR TAGS [TAGS ...], \fB\-\-tags\fR TAGS [TAGS ...]]
+[\fB\-\-xtags\fR XTAGS [XTAGS ...]]
+[\fB\-\-expr\fR EXPRESSION]
+[\fB-\-strict\fR]
+[\fB\-o\fR OUTPUT, \fB\-\-output\fR OUTPUT]
+[\fB\-v\ , \fB\-\-verbose\fR]
+[\fB\-\-debug\fR]
+inputs [inputs ...]
+
+.SH DESCRIPTION
+.B dataselect
+helps users find files matching certain criteria defined by astrodata tags and 
+expressions involving descriptors. Descriptors are specified to fine tune 
+dataselect matches.
+
+As the \fB--tags\fR option indicates, \fBdataselect\fR can find and report data 
+that match specific tag criteria. For example, a user might want to find all 
+GMOS image flats under a certain directory. \fBdataselect\fR will locate and 
+report all datasets that would match the tag set (GMOS, IMAGE, FLAT).
+
+A user may request that a file be written containing all datasets matching 
+the data selection. An output file is specified through the \fB\-o\fR,
+\fB\-\-output\fR option. Output files are formatted so they may be passed
+directly to the reduce command line via that applications 'at-file' (@file)
+facility. (See the \fIRecipe System Users Manual\fR for further detail.)
+
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show the \fBdataselect\fR help message and exit
+.TP
+\fB\-t\fR TAG [,TAG ...], \fB\-\-tags\fR TAG [,TAG ...]
+Comma-separated list of required tags. Find datasets that match only these tag
+criteria.
+
+.RS
+Eg.,
+.RS
+\fB\-\-tags\fR SOUTH,GMOS,IMAGE
+
+.RE
+will report datasets that are all tagged \fBSOUTH\fR and \fBGMOS\fR and \fBIMAGE\fR.
+.RE
+.TP
+\fB\-\-xtags\fR XTAG [,XTAG ...]
+Comma-separated list of tags to exclude from reporting. Same form as
+.B -t, --tags
+option (above).
+.TP
+\fB\-\-expr\fR EXPRESSION
+Show files matching <EXPRESSION>.
+.TP
+.TP
+\fB\-\-strict
+Toggle on strict expression matching for
+.B exposure_time
+(not just close) and for
+.B filter_name
+(match component number).
+.TP
+\fB\-o\fR OUTPUT, \fB\-\-output\fR OUTPUT
+Write reported files to this file. Effective only with \fB\-\-tags\fR option.
+.TP
+\fB\-v\fR, \fB-\-verbose\fR
+Toggle verbose mode when using [-o, --output]. Default is False.
+.TP
+\fB\-\-debug\fR
+Toggle debug mode. Default is False.
+.SH EXAMPLES
+Select all the FITS files inside the raw directory with a tag that matches DARK.
+
+.RS
+$ dataselect raw/*.fits --tags DARK
+
+.RE
+To select darks of a specific exposure time:
+
+.RS
+$ dataselect raw/*.fits --tags DARK --expr='exposure_time==20'
+.RE
+
+To send that list to a file that can be used later:
+
+.RS
+$ dataselect raw/*.fits --tags DARK --expr='exposure_time==20' -o dark20s.lis
+.RE
+
+.SH ENVIRONMENT
+Recommend Anaconda 4.2.0, Astropy 1.2.1.
+.SH BUGS
+None known.
+
+.SH SEE ALSO 
+.I reduce(1), typewalk(1)

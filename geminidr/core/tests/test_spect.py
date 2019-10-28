@@ -181,36 +181,8 @@ def test_QESpline_optimization():
 
 class TestArcProcessing:
     """
-    This class structure simply holds together tests inside a single context.
-    There is no actual functionality.
+    Generic tests to be applied to arcs on every instrument.
     """
-    @staticmethod
-    def create_1d_spectrum(width, n_lines, max_weight):
-        """
-        Generates a 1D NDArray noiseless spectrum.
-
-        Parameters
-        ----------
-        width : int
-            Number of array elements.
-        n_lines : int
-            Number of artificial lines.
-        max_weight : float
-            Maximum weight (or flux, or intensity) of the lines.
-
-        Returns
-        -------
-        sky_1d_spectrum : numpy.ndarray
-
-        """
-        lines = np.random.randint(low=0, high=width, size=n_lines)
-        weights = max_weight * np.random.random(size=n_lines)
-
-        spectrum = np.zeros(width)
-        spectrum[lines] = weights
-
-        return spectrum
-
     def test_determine_wavelength_solution(self, test_files):
         """
         Regression test for determine wavelength solution. It checks if the
