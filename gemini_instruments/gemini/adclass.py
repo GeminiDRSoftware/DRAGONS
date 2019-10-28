@@ -314,10 +314,10 @@ class AstroDataGemini(AstroDataFits):
             return self.phu[self._keyword_for('ao_seeing')]
         except KeyError:
             try:
-                # If r_zero_val (Fried's parameter) is present, 
-                # a seeing estimate can be calculated (NOTE: Jo Thomas-Osip 
-                # is providing a reference for this calculation. Until then, 
-                # EJD checked using 
+                # If r_zero_val (Fried's parameter) is present,
+                # a seeing estimate can be calculated (NOTE: Jo Thomas-Osip
+                # is providing a reference for this calculation. Until then,
+                # EJD checked using
                 # http://www.ctio.noao.edu/~atokovin/tutorial/part1/turb.html )
 
                 # Seeing at 0.5 micron
@@ -402,7 +402,7 @@ class AstroDataGemini(AstroDataFits):
         of calibration for each key. data_label() is the default.
         "_stack" is removed to avoid making a new request for a stacked
         frame, which will need the same calibration as the original.
-        
+
         Returns
         -------
         string
@@ -1698,8 +1698,8 @@ class AstroDataGemini(AstroDataFits):
             utdate_hdr = self.phu.get(kw, '').strip()
 
             # Is this a full date+time string?
-            if re.match("(\d\d\d\d-[01]\d-[0123]\d)(T)"
-                        "([012]\d:[012345]\d:\d\d.*\d*)", utdate_hdr):
+            if re.match(r"(\d\d\d\d-[01]\d-[0123]\d)(T)"
+                        r"([012]\d:[012345]\d:\d\d.*\d*)", utdate_hdr):
                 ut_datetime = dateutil.parser.parse(utdate_hdr)
                 if dateonly:
                     return ut_datetime.date()
@@ -1708,11 +1708,11 @@ class AstroDataGemini(AstroDataFits):
                 return ut_datetime
 
             # Did we just get a date?
-            if re.match("\d\d\d\d-[01]\d-[0123]\d", utdate_hdr):
+            if re.match(r"\d\d\d\d-[01]\d-[0123]\d", utdate_hdr):
                 break
 
             # Did we get a horrible early NIRI date: DD/MM/YY[Y]?
-            match = re.match("([0123]\d)/([01]\d)/(\d\d+)", utdate_hdr)
+            match = re.match(r"([0123]\d)/([01]\d)/(\d\d+)", utdate_hdr)
             if match:
                 y = 1900 + int(match.group(3))
                 utdate_hdr = '{}-{}-{}'.format(y, match.group(2),
@@ -1731,7 +1731,7 @@ class AstroDataGemini(AstroDataFits):
         for kw in [self._keyword_for('ut_time'), 'UT', 'TIME-OBS',
                    'STARTUT', 'UTSTART']:
             uttime_hdr = self.phu.get(kw, '').strip()
-            if re.match("^([012]?\d)(:)([012345]?\d)(:)(\d\d?\.?\d*)$",
+            if re.match(r"^([012]?\d)(:)([012345]?\d)(:)(\d\d?\.?\d*)$",
                         uttime_hdr):
                 break
             else:
