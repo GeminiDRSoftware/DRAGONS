@@ -273,7 +273,7 @@ class PlotGmosSpectLongslitArcs:
             Model that represents the wavelength solution.
         """
         fig, ax = plt.subplots(
-            dpi=300,
+            dpi=150,
             num="{:s}_{:d}_{:s}_{:.0f}".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
@@ -335,7 +335,7 @@ class PlotGmosSpectLongslitArcs:
             Model that represents the wavelength solution.
         """
         fig, ax = plt.subplots(
-            dpi=300,
+            dpi=150,
             num="{:s}_{:d}_{:s}_{:.0f}_non_linear_comps".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
@@ -392,7 +392,7 @@ class PlotGmosSpectLongslitArcs:
             Model that represents the wavelength solution.
         """
         fig, ax = plt.subplots(
-            dpi=300,
+            dpi=150,
             num="{:s}_{:d}_{:s}_{:.0f}_residuals".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
@@ -457,7 +457,7 @@ class PlotGmosSpectLongslitArcs:
             data_ref = np.ma.masked_invalid(data_ref)
 
             fig, ax = plt.subplots(
-                dpi=300, num="Distortion Comparison: {:s} #{:d}".format(name, num)
+                dpi=150, num="Distortion Comparison: {:s} #{:d}".format(name, num)
             )
 
             im = ax.imshow(data_ref - data_out)
