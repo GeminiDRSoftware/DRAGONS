@@ -147,6 +147,12 @@ class PlotGmosSpectLongslitArcs:
         self.arc_table = os.path.join(self.package_dir, "lookups", "CuAr_GMOS.dat")
         self.arc_lines = np.loadtxt(self.arc_table, usecols=[0]) / 10.0
 
+    def close_all(self):
+        """
+        Makes sure we close every figure in memory.
+        """
+        plt.close('all')
+
     def create_artifact_from_plots(self):
         """
         Created a .tar.gz file using the plots generated here so Jenkins can deliver

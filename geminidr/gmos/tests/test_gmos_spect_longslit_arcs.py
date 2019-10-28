@@ -162,6 +162,7 @@ def do_plots(ad, output_dir, ref_dir):
         p = PlotGmosSpectLongslitArcs(ad, output_dir, ref_dir)
         p.wavelength_calibration_plots()
         p.distortion_diagnosis_plots()
+        p.close_all()
 
     except ImportError:
         from warnings import warn
