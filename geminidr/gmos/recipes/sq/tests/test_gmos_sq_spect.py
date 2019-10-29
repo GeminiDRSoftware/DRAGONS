@@ -51,7 +51,6 @@ def config(request, path_to_inputs, path_to_outputs):
     namespace
         An object that contains `.input_dir` and `.output_dir`
     """
-    oldmask = os.umask(000)  # Allows manipulating permissions
 
     # Define the ConfigTest class ---
     class ConfigTest:
@@ -89,7 +88,6 @@ def config(request, path_to_inputs, path_to_outputs):
 
             with open(config_file_name, mode='w') as config_file:
                 config_file.write(config_file_content)
-            os.chmod(config_file_name, mode=0o775)
 
             calibration_service = cal_service.CalibrationService()
             calibration_service.config(config_file=config_file_name)
@@ -107,13 +105,6 @@ def config(request, path_to_inputs, path_to_outputs):
     yield c
 
     # Tear Down ---
-    for root, dirs, files in os.walk('calibrations/'):
-        os.chmod(root, 0o775)
-        for f in files:
-            os.chmod(os.path.join(root, f), 0o775)
-        for d in dirs:
-            os.chmod(os.path.join(root, d), 0o775)
-
     try:
         shutil.rmtree(os.path.join(c.full_path, 'calibrations/'))
     except FileNotFoundError:
@@ -124,13 +115,6 @@ def config(request, path_to_inputs, path_to_outputs):
     for f in glob.glob(os.path.join(os.getcwd(), '*.fits')):
         shutil.move(f, os.path.join(c.full_path, f))
 
-    for root, dirs, files in os.walk(c.full_path):
-        for d in dirs:
-            os.chmod(os.path.join(root, d), 0o775)
-        for f in files:
-            os.chmod(os.path.join(root, f), 0o775)
-
-    os.umask(oldmask)  # Restores default permission restrictions
     del c
 
 
