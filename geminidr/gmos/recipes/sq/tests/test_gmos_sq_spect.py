@@ -72,8 +72,8 @@ def config(request, path_to_inputs, path_to_outputs):
 
             full_path = os.path.join(path_to_outputs, path)
 
-            os.makedirs(log_dir, mode=0o775, exist_ok=True)
-            os.makedirs(full_path, mode=0o775, exist_ok=True)
+            os.makedirs(log_dir, exist_ok=True)
+            os.makedirs(full_path, exist_ok=True)
 
             config_file_name = os.path.join(full_path, "calibration_manager.cfg")
 
