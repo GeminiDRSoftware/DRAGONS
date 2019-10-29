@@ -20,7 +20,6 @@ from astropy.table import Table
 from astropy.io.registry import IORegistryError
 from astropy.wcs import WCS
 from astropy import units as u
-from astropy import constants as const
 
 from specutils import SpectralRegion
 
@@ -183,7 +182,7 @@ class Spect(PrimitivesBASE):
             Size of step in pixels when tracing.
 
         max_shift : float
-            Maximum orthogonal shift (per pixel) for line-tracing.
+            Maximum orthogonal shift (per pixel) for line-tracing (unbinned).
 
         max_missed : int
             Maximum number of steps to miss before a line is lost.
@@ -270,22 +269,25 @@ class Spect(PrimitivesBASE):
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1-dispaxis,
                         start=start, initial=initial_peaks, width=5, step=step,
                         nsum=nsum, max_missed=max_missed,
-                        max_shift=max_shift, viewer=self.viewer)
+                        max_shift=max_shift*ybin/xbin, viewer=self.viewer)
 
-                # These coordinates need to be in the reference frame of a
-                # full-frame image, so modify the coordinates by the detector
-                # section
-                x1, x2, y1, y2 = ext.detector_section()
-                offsets = (x1 // xbin, y1 // ybin)
-                ref_coords = np.array([[coord + offset for coord in coords]
-                                        for coords, offset in zip(ref_coords, offsets)])
-                in_coords = np.array([[coord + offset for coord in coords]
-                                       for coords, offset in zip(in_coords, offsets)])
+                ## These coordinates need to be in the reference frame of a
+                ## full-frame unbinned image, so modify the coordinates by
+                ## the detector section
+                #x1, x2, y1, y2 = ext.detector_section()
+                #ref_coords = np.array([ref_coords[0] * xbin + x1,
+                #                       ref_coords[1] * ybin + y1])
+                #in_coords = np.array([in_coords[0] * xbin + x1,
+                #                      in_coords[1] * ybin + y1])
 
+                # The model is computed entirely in the pixel coordinate frame
+                # of the data, so it could be used as a gWCS object
                 m_init = models.Chebyshev2D(x_degree=orders[1-dispaxis],
                                             y_degree=orders[dispaxis],
-                                            x_domain=[offsets[0], offsets[0]+ext.shape[1]-1],
-                                            y_domain=[offsets[1], offsets[1]+ext.shape[0]-1])
+                                            x_domain=[0, ext.shape[1]],
+                                            y_domain=[0, ext.shape[0]])
+                #x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
+                #y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
                 # Find model to transform actual (x,y) locations to the
                 # value of the reference pixel along the dispersion axis
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
@@ -304,7 +306,8 @@ class Spect(PrimitivesBASE):
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
                 self.viewer.color = "blue"
-                spatial_coords = np.arange(0, ext.shape[1-dispaxis], step*10)
+                spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
+                                             ext.shape[1-dispaxis] // (step*10))
                 spectral_coords = np.unique(ref_coords[1-dispaxis])
                 for coord in spectral_coords:
                     if dispaxis == 1:
@@ -313,6 +316,8 @@ class Spect(PrimitivesBASE):
                     else:
                         xref = spatial_coords
                         yref = [coord] * len(spatial_coords)
+                    #mapped_coords = (np.array(model.inverse(xref, yref)).T -
+                    #                 np.array([x1, y1])) / np.array([xbin, ybin])
                     mapped_coords = np.array(model.inverse(xref, yref)).T
                     self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
@@ -386,8 +391,14 @@ class Spect(PrimitivesBASE):
             len_ad = len(ad)
             if len_arc not in (1, len_ad):
                 log.warning("Science frame {} has {} extensions and arc {} "
-                            "has {} extension.".format(ad.filename, len_ad,
+                            "has {} extensions.".format(ad.filename, len_ad,
                                                        arc.filename, len_arc))
+                adoutputs.append(ad)
+                continue
+
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            if arc.detector_x_bin() != xbin or arc.detector_y_bin() != ybin:
+                log.warning("Science frame and arc have different binnings.")
                 adoutputs.append(ad)
                 continue
 
@@ -417,16 +428,68 @@ class Spect(PrimitivesBASE):
             # Determine whether we're producing a single-extension AD
             # or keeping the number of extensions as-is
             if len_arc == 1:
+                arc_detsec = arc.detector_section()[0]
+                ad_detsec = ad.detector_section()
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
-                    # same distortion correction to each input extension
+                    # same distortion correction to each input extension.
+                    # The problem is that the arc may be a larger area than
+                    # the science frame, and the arc's pixel coordinates have
+                    # had the "origin shift" applied after mosaicking. So we
+                    # need to work out what that was and apply it so that the
+                    # science frame's pixel coords after mosaicking (i.e., in
+                    # the middle of this transform) match those of the
+                    # mosaicked arc. We assume that one of the shifts will be
+                    # zero (i.e., that the science frame is a subregion of the
+                    # arc only along one dimension).
                     geotable = import_module('.geometry_conf', self.inst_lookups)
                     adg = transform.create_mosaic_transform(ad, geotable)
+                    shifts = [c1 - c2 for c1, c2 in zip(np.array(ad_detsec).min(axis=0),
+                                                        arc_detsec)]
+                    xshift, yshift = shifts[0] / xbin, shifts[2] / ybin  # x1, y1
+                    if xshift or yshift:
+                        log.stdinfo("Found a shift of ({},{}) pixels between "
+                                    "{} and the calibration.".
+                                    format(xshift, yshift, ad.filename))
+                    add_shapes, add_transforms = [], []
+                    for (arr, trans) in adg:
+                        # Try to work out shape of this Block in the unmosaicked
+                        # arc, and then apply a shift to align it with the
+                        # science Block before applying the same transform.
+                        if xshift == 0:
+                            add_shapes.append(((arc_detsec.y2 - arc_detsec.y1) // ybin, arr.shape[1]))
+                        else:
+                            add_shapes.append((arr.shape[0], (arc_detsec.x2 - arc_detsec.x1) // xbin))
+                        t = transform.Transform(models.Shift(-xshift) & models.Shift(-yshift))
+                        t.append(trans)
+                        add_transforms.append(t)
+                    adg.calculate_output_shape(additional_array_shapes=add_shapes,
+                                               additional_transforms=add_transforms)
+                    # This tells us where the arc would have been in pixel
+                    # space after mosaicking, so make sure the science frame
+                    # has the same coordinates, and then apply the distortion
+                    # correction transform
+                    origin_shift = models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0])
                     for t in adg.transforms:
-                        t.append(distortion_models[0])
+                        t.append([origin_shift, m_ident.copy()])
+                    # And recalculate output_shape and origin properly
+                    adg.calculate_output_shape()
                 else:
                     # Single-extension AD, with single Transform
-                    adg = transform.AstroDataGroup(ad, [transform.Transform(m_ident)])
+                    ad_detsec = ad.detector_section()[0]
+                    if ad_detsec != arc_detsec:
+                        if self.timestamp_keys['mosaicDetectors'] in ad.phu:
+                            log.warning("Cannot distortionCorrect mosaicked "
+                                        "data unless calibration has the "
+                                        "same ROI. Continuing.")
+                            adoutputs.append(ad)
+                            continue
+                        # No mosaicking, so we can just do a shift
+                        m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
+                                   models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
+                        adg = transform.AstroDataGroup(ad, [transform.Transform([m_shift, m_ident])])
+                    else:
+                        adg = transform.AstroDataGroup(ad, [transform.Transform(m_ident)])
 
                 ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
                 try:
@@ -434,8 +497,16 @@ class Spect(PrimitivesBASE):
                 except AttributeError:
                     log.warning("No WAVECAL table in {}".format(arc.filename))
             else:
-                for i, (ext, model) in enumerate(zip(ad, distortion_models)):
-                    adg = transform.AstroDataGroup([ext], transform.Transform(model))
+                log.warning("Distortion correction with multiple-extension "
+                            "arcs has not been tested.")
+                for i, (ext, ext_arc, model) in enumerate(zip(ad, arc, distortion_models)):
+                    # Shift science so its pixel coords match the arc's before
+                    # applying the distortion correction
+                    shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
+                                                        ext_arc.detector_section())]
+                    t = transform.Transform([models.Shift(shifts[0] / xbin) &
+                                             models.Shift(shifts[1] / ybin), model])
+                    adg = transform.AstroDataGroup([ext], t)
                     adg.set_reference()
                     if i == 0:
                         ad_out = adg.transform(order=order, subsample=subsample,
@@ -652,14 +723,6 @@ class Spect(PrimitivesBASE):
                 # Normalize weights by the maximum of these lines
                 weights['relative'] = peak_snrs / np.nanmedian(snrs, axis=1)
 
-                # Construct a sequence for making progressively improved fits
-                sequence = [(1, 'none')]
-                if order > 1:
-                    sequence += [(2, 'none')]
-                    sequence += [(ord, weighting) for ord in range(2, order+1)]
-                else:
-                    sequence += [(1, weighting)]
-
                 plot_data = data
 
                 # Some diagnostic plotting
@@ -685,7 +748,7 @@ class Spect(PrimitivesBASE):
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    sequence = (((1, 'none', 'basinhopping'), (2, 'none', 'basinhopping')) +
+                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
                                 tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order+1)))
 
                 # Now make repeated fits, increasing the polynomial order
@@ -712,7 +775,7 @@ class Spect(PrimitivesBASE):
                     dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
                     c0_unc = 0.05 * cenwave
                     m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
-                    c1_unc = (0.0 if ord == 1 else 0.005) * abs(m_init.c1)
+                    c1_unc = 0.005 * abs(m_init.c1)
                     m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
                     for i in range(2, ord + 1):
                         getattr(m_init, 'c{}'.format(i)).bounds = (-5, 5)
@@ -721,11 +784,10 @@ class Spect(PrimitivesBASE):
                         for fx in fixems:
                             getattr(m_init, fx).fixed = True
 
-                    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=2)
+                    fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=3, method=method)
                     m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines,
                                      in_weights=in_weights[peaks_to_fit],
-                                     ref_weights=None if weight_type is 'none' else arc_weights,
-                                     method=method)
+                                     ref_weights=None if weight_type is 'none' else arc_weights)
                     #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
                     #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
 
