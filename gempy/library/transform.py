@@ -793,7 +793,8 @@ class GeoMap(object):
         self._shape = shape
         transformed = (self._transform(*grids)[::-1] if len(shape) > 1
                        else self._transform(grids))
-        self.coords = [coord.astype(np.float32) for coord in transformed]
+        #self.coords = [coord.astype(np.float32) for coord in transformed]
+        self.coords = transformed
 
     def affinity(self):
         """
