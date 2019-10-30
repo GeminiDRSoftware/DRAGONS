@@ -6,7 +6,7 @@ Default is "reduce".
 recipe_tags = set(['GMOS', 'SPECT', 'LS', 'ARC'])
 
 
-def reduce(p):
+def makeProcessedArc(p):
     p.prepare()
     p.addDQ(static_bpm=None)
     p.addVAR(read_noise=True)
@@ -23,4 +23,4 @@ def reduce(p):
     p.writeOutputs()
 
 
-_default = reduce
+_default = makeProcessedArc
