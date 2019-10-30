@@ -387,8 +387,27 @@ class Spect(PrimitivesBASE):
         adoutputs = []
         # Provide an arc AD object for every science frame
         for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
-            len_arc = len(arc)
+            # We don't check for a timestamp since it's not unreasonable
+            # to do multiple distortion corrections on a single AD object
+
             len_ad = len(ad)
+            if arc is None:
+                if 'qa' in self.mode:
+                    # TODO: Think about this when we have MOS/XD/IFU
+                    if len(ad) == 1:
+                        log.warning("No changes will be made to {}, since no "
+                                    "arc was specified".format(ad.filename))
+                        adoutputs.append(ad)
+                    else:
+                        log.warning("{} will only be mosaicked, since no "
+                                    "arc was specified".format(ad.filename))
+                        adoutputs.extend(self.mosaicDetectors([ad]))
+                    continue
+                else:
+                    raise IOError('No processed arc listed for {}'.
+                                  format(ad.filename))
+
+            len_arc = len(arc)
             if len_arc not in (1, len_ad):
                 log.warning("Science frame {} has {} extensions and arc {} "
                             "has {} extensions.".format(ad.filename, len_ad,
