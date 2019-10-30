@@ -1062,7 +1062,10 @@ class Spect(PrimitivesBASE):
 
                     # Copy wavelength solution and add a header keyword
                     # with the extraction location
-                    ad_spec[-1].WAVECAL = ext.WAVECAL
+                    try:
+                        ad_spec[-1].WAVECAL = ext.WAVECAL
+                    except AttributeError:  # That's OK, there wasn't one
+                        pass
                     center = model_dict['c0']
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
                                 "from {} {}".format(direction, int(center + 0.5)))
