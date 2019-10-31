@@ -175,6 +175,7 @@ for root, dirs, files in os.walk(os.path.join('recipe_system', 'adcc',
 PACKAGE_DATA['gempy'] = []
 for f in ('ichar.dat', 'imtoolrc', 'README'):
     PACKAGE_DATA['gempy'].append(os.path.join('numdisplay', f))
+PACKAGE_DATA['gempy'].append(os.path.join('library', 'config', 'README'))
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # For packaging, need to add tests and docs
