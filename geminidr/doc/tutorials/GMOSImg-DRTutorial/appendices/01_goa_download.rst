@@ -1,4 +1,4 @@
-.. goadownload.rst
+.. 01_goa_download.rst
 
 .. _goadownload:
 
@@ -10,20 +10,17 @@ For this tutorial we provide a pre-made package with all the necessary data.
 Here we show how one can search and download the data directly from the
 archive, like one would have to do for their own program.
 
-If you are just interested in trying out the tutorial, we still
-recommended that you download the pre-made package (:ref:`datasetup`) instead
+If you are just interested in trying out the tutorial, we
+recommend that you download the pre-made package (:ref:`datasetup`) instead
 of getting everything manually.
 
 
 Query and Download
 ==================
 
-This tutorial will use observations from program GN-2017A-LP-1 (PI: Wesley
-Fraser), "COL-OSSOS: COLours for the Outer Solar System Object Survey", obtained
-on 2017-May-25.
-`Bannister, et al. (2017) <https://iopscience.iop.org/article/10.3847/2041-8213/aaa07c>`_
-describes in more detail the science motivation and the observation steps and
-the data reduction steps, which are similir to those described in this tutorial.
+This tutorial uses observations from a Science Verification program done during
+the commissioning and characterizing phase of the GMOS-N Hamamamatsu CCDs.
+The program ID is GN-2017A-SV-151.
 
 The first step of any reduction is to retrieve the data from the
 `Gemini Observatory Archive (GOA) <https://archive.gemini.edu/>`_. For more
@@ -34,27 +31,25 @@ details on using the Archive, check its
 Science Data
 ------------
 
-Once you are in the `Gemini Observatory Archive (GOA) <https://archive.gemini.edu/>`_
-put the data label **GN-2017A-LP-1-74** in the ``PROGRAM_ID`` text field, and
-press the ``Search`` button in the middle of the page. The page will refresh and
-display a table with all the data for this dataset.
+Access the `Gemini Observatory Archive (GOA) <https://archive.gemini.edu/>`_
+and fill the search form as follow:
 
-The table will show you 6 files: five g-band images and one r-band image. We
-can exclude the r-band image by selecting **GMOS-N** in the ``Instrument``
-drop-down menu. When you do that, the page will display more options. Select
-**g'** in the ``Filter`` drop-down that just showed up and press the ``Search``
-button again. Now we have only 5 files, 0.10 Gb.
+* Program ID: GN-2017A-SV-151-382
+* Instrument: GMOS-N
+* Filter: i'
+
+Press the ``Search`` button in the middle of the page.
+
+The table will show you 10 files. Mark the checkbox for the first 5 files in
+the list.  Normally, you would use all 10 files, but for the purpose of the
+tutorial, 5 files will do and will run faster.
 
 You can also copy the URL below and paste it on browser to see the search
 results:
 
 ..  code-block:: none
 
-    https://archive.gemini.edu/searchform/GN-2017A-LP-1-74/cols=CTOWEQ/filter=g/notengineering/GMOS-N/NotFail
-
-At the bottom of the page, you will find a button saying ``Download all 5 files
-totalling 0.10 Gb`` . Click on it to download a `` .tar `` file with all the
-data.
+    https://archive.gemini.edu/searchform/GN-2017A-SV-151-382/cols=CTOWEQ/filter=i/notengineering/GMOS-N/imaging/science/NotFail
 
 
 Calibrations
@@ -62,41 +57,39 @@ Calibrations
 
 The calibration files could be obtained by simply clicking on the
 **Load Associated Calibrations** tab. You will see that the Gemini Archive will
-load much more files than we need (239 files, totalling 2.09 Gb). That is too
-much for a tutorial so we will look for our calibration files manually.
+load much more files than we need (129 files, totalling 0.53 Gb). Obviously
+we don't need all that.
 
-For the Bias images, fill the search parameters below with their associated
-values and click on the ``Search`` button:
+For this data, we need a few biases and a few twilight flats, all taken around
+the time of the observations. How many to download depends on your personal
+philosophy to some extend.  For the biases, using 10 to 20 raw biases works
+well.  For the twilight flats, make sure that they are set to "Pass", do not
+use the "Usable" if you can avoid it.  In this case, because it was
+commissioning data, the quality status was not set and all calibrations are
+set to "Undefined".  It will be fine for our purpose.
 
-- Program ID: GN-CAL20170527-11
-- Instrument: GMOS-N
-- Binning: 1x1
-- Raw / Reduced: Raw Only
-- ROI: Full Frame
+For this tutorial, we will pick the 10 biases taken on the day previous to our
+observations since none were taken on the day. The twilight flats from
+2017 July 2, GN-CAL20170702-3, are the closest in time to our observations, we
+will use those.
 
-Once the page reloads, you should see a table with five files. The ``Type``
-collumn will tell us that they are all BIAS. Go to the botton of the page and
-click on the ``Download all 5 files totalling 0.06 Gb`` .
+For the biases, let's pick the first ten (10) on the list, skipping the very
+top one which comes from an engineering program (the GN-ENG- in the program
+ID gives it up).  The selected biases are from observation ID GN-CAL20170613-3
+and GN-CAL20170615-14.  Select the checkboxes on the left.
 
-For the Flat images, fill the search form using the following parameters:
+For the twilight flats, scroll down the table until you see them, about half
+way down.  Be mindful of the last column, we normally must select the
+flats with a "Pass" status.  Here all the flats are set to "Undefined" because
+this was commissioning data so we will have to make due with them.  Let's pick
+the flats from the night of 2017 July 2 with observation ID GN-CAL20170702-3.
+Let's pick the first 5 flats.  Select them checkboxes on the left.
 
-- Program ID: GN-CAL20170530-2
-- Instrument: GMOS-N
-- Binning: 1x1
-- Raw / Reduced: Raw Only
-- ROI: Full Frame
-
-Now click on the little black arrow close to the ``Advanced Options`` and change
-the ``QA State`` drop-down menu to **Pass** to ensure we have good quality data.
-
-Press the ``Search`` button, the page will reload and show you six
-files. The ``Type`` column says **OBJECT** but the ``Object`` columnn says
-**Twilight**. This tells us that these are Twilight Flats. Go to the botton of
-the page and click on the ``Download alll 6 files totalling 0.20 Gb`` .
+Now scroll all the way down and press the "Download Marked Files" button.
 
 
-Organize the data
-=================
+Unpacking the data
+==================
 
 Now, copy all the ``.tar`` files to the same place in your computer. Then use
 ``tar`` and ``bunzip2`` commands to decompress them. For example:
@@ -112,6 +105,6 @@ downloaded the data from the `Gemini Archive <https://archive.gemini.edu/searchf
 
 .. note:: If you are using the manually selected data to run the tutorial,
      please remember to put all the data in a directory called ``playdata``,
-     and create a parallel directory of running the tutorial called
+     and create a parallel directory for running the tutorial called
      ``playground``. The tutorial makes assumption as to where everything
      is located.

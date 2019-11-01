@@ -169,6 +169,12 @@ for root, dirs, files in os.walk(os.path.join('recipe_system', 'adcc',
         map((lambda f: os.path.join(rsdir.sub('', root), f)), files)
     )
 
+# Numdisplay support files
+PACKAGE_DATA['gempy'] = []
+for f in ('ichar.dat', 'imtoolrc', 'README'):
+    PACKAGE_DATA['gempy'].append(os.path.join('numdisplay', f))
+PACKAGE_DATA['gempy'].append(os.path.join('library', 'config', 'README'))
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # For packaging, need to add tests and docs
 #    (also see the 'sdist' section in the

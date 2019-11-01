@@ -15,8 +15,8 @@ The Astrodata Tags identify the data represented in the |AstroData| object.
 When a file on disk is opened with |astrodata|, the headers are inspected to
 identify which specific |AstroData| class needs to be loaded,
 :class:`~gemini_instruments.gmos.AstroDataGmos`,
-:class:`~gemini_instruments.niri.AstroDataNiri`. Based on the class the data is
-associated to, a list of "tags" will be defined. The tags will tell whether the
+:class:`~gemini_instruments.niri.AstroDataNiri`, etc. Based on the class the data is
+associated with, a list of "tags" will be defined. The tags will tell whether the
 file is a flatfield or a dark, if it is a raw dataset, or if it has been processed by the
 recipe system, if it is imaging or spectroscopy. The tags will tell the
 users and the system what that data is and also give some information about
@@ -29,10 +29,10 @@ Using the Astrodata Tags
 ========================
 **Try it yourself**
 
-Download the data package if you wish to follow along and run the
+Download the data package (:ref:`datapkg`) if you wish to follow along and run the
 examples.  Then ::
 
-    $ cd <path>/dragons_datapkg-v1.0/playground
+    $ cd <path>/ad_usermanual/playground
     $ python
 
 Before doing anything, you need to import |astrodata| and the Gemini instrument
@@ -49,7 +49,7 @@ Let us open a Gemini dataset and see what tags we get::
     >>> ad.tags
     set(['RAW', 'GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'UNPREPARED', 'IMAGE', 'ACQUISITION'])
 
-The file we loaded is raw, GMOS North data. It is a 2D image and it was an
+The file we loaded is raw, GMOS North data. It is a 2D image and it is an
 acquisition image, not a science observation. The "UNPREPARED" tag indicates
 that the file has never been touched by the Recipe System which runs a
 "prepare" primitive as the first step of each recipe.
@@ -58,8 +58,8 @@ Let's try another ::
 
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
     >>> ad.tags
-    set(['PROCESSED_SCIENCE', 'GEMINI', 'NORTH', 'SIDEREAL', 'OVERSCAN_TRIMMED',
-    'IMAGE', 'OVERSCAN_SUBTRACTED', 'GMOS', 'PREPARED'])
+    set(['GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'OVERSCAN_TRIMMED', 'IMAGE',
+    'OVERSCAN_SUBTRACTED', 'PREPARED'])
 
 This file is a science GMOS North image.  It has been processed by the
 Recipe System.  The overscan level has been subtracted and the section has
@@ -71,7 +71,7 @@ The tags can be used when coding.  For example::
 
     >>> if 'GMOS' in ad.tags:
     ...   print('I am GMOS')
-    ... else
+    ... else:
     ...   print('I am these instead:', ad.tags)
     ...
 
@@ -89,7 +89,7 @@ for all the FITS file in a directory.
 To try it, from the shell, not Python, go to the "playdata" directory and
 run typewalk ::
 
-    % cd <path>/dragons_datapkg-v1.0/playdata
+    % cd <path>/ad_usermanual/playdata
     % typewalk
 
     directory:  /data/workspace/ad_usermanual/playdata
@@ -123,7 +123,7 @@ lists ::
 Creating New Astrodata Tags [Advanced Topic]
 ============================================
 For proper and complete instructions on how to create Astrodata Tags and
-the |AstroData| class that host the tags, the reader is invited to refer to the
+the |AstroData| class that hosts the tags, the reader is invited to refer to the
 Astrodata Programmer Manual. Here we provide a simple introduction that
 might help some readers better understand Astrodata Tags, or serve as a
 quick reference for those who have written Astrodata Tags in the past but need
@@ -155,15 +155,15 @@ to "ARC", the tags "ARC" and "CAL" (for calibration) will be assigned to the
 A whole suite of such tag functions is needed to fully characterize all
 types of data an instrument can produce.
 
-Tags are about what the dataset is, not it's flavour.  The Astrodata
-"descriptors" (see the section on :ref:`headers`) will describe the flavour.
+Tags are about what the dataset is, not it's flavor.  The Astrodata
+"descriptors" (see the section on :ref:`headers`) will describe the flavor.
 For example, tags will say that the data is an image, but the descriptor
 will say whether is B-band or R-band.   Tags are used for recipe and
 primitive selection.  A way to understand the difference between a tag and
-a descriptor is in term of the recipe that will be selected: A GMOS image
+a descriptor is in terms of the recipe that will be selected: A GMOS image
 will use the same recipe whether it's a B-band or R-band image. However,
 a GMOS longslit spectrum will need a very different recipe.  A bias is
-reduce differently from a science image, there should be tag differentiating
+reduced differently from a science image, there should be tag differentiating
 a bias from a science image.  (There is for GMOS.)
 
 For more information on adding to Astrodata, see the Astrodata Programmer

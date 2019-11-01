@@ -120,6 +120,10 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             log.status("Updating keywords that are common to all Gemini data")
             ad.phu.set('NSCIEXT', len(ad), self.keyword_comments['NSCIEXT'])
             ad.hdr.set('BUNIT', 'adu', self.keyword_comments['BUNIT'])
+            for ext in ad:
+                if 'RADECSYS' in ext.hdr:
+                    ext.hdr['RADESYS'] = (ext.hdr['RADECSYS'], ext.hdr.comments['RADECSYS'])
+                    del ext.hdr['RADECSYS']
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

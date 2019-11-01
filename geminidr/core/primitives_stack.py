@@ -224,8 +224,8 @@ class Stack(PrimitivesBASE):
         if reject_method == "varclip" and any(ext.variance is None
                                               for ad in adinputs for ext in ad):
             log.warning("Rejection method 'varclip' has been chosen but some"
-                        "extensions have no variance. 'sigclip' will be used"
-                        "instead.")
+                        " extensions have no variance. 'sigclip' will be used"
+                        " instead.")
             reject_method = "sigclip"
 
         stack_function = NDStacker(combine=params["operation"],

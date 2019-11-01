@@ -202,10 +202,10 @@ examples; of course, just one is required.
     :linenos:
     :lineno-start: 25
 
-    dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
+    target = dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
 
     # Or...
-    dataselect.select_data(
+    target = dataselect.select_data(
         all_files,
         [],
         ['FLAT'],
@@ -213,7 +213,7 @@ examples; of course, just one is required.
     )
 
     # Or...
-    dataselect.select_data(
+    target = dataselect.select_data(
         all_files,
         [],
         [],
@@ -241,7 +241,7 @@ name of a file on disk.
 
     caldb.add_cal(reduce_darks.output_filenames[0])
 
-The ``Reduce`` class is our reduction "controller".  This is were we collect
+The ``Reduce`` class is our reduction "controller".  This is where we collect
 all the information necessary for the reduction.  In this case, the only
 information necessary is the list of input files which we add to the
 ``files`` attribute.  The ``Reduce.runr{}`` method is where the
@@ -305,6 +305,11 @@ the dark on the command line.  The flat will be retrieved automatically.
     ucals_dict = normalize_ucals(reduce_target.files, mycalibrations)
     reduce_target.ucals = ucals_dict
     reduce_target.runr()
+
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
 
 Below are a raw image (top) and the final stacked image (bottom).  The stack
 keeps all the pixels and is never cropped to only the common area. Of course

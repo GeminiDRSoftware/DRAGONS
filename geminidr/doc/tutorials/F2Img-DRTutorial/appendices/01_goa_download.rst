@@ -1,4 +1,4 @@
-.. goadownload.rst
+.. 01_goa_download.rst
 
 .. _goadownload:
 
@@ -10,18 +10,18 @@ For this tutorial we provide a pre-made package with all the necessary data.
 Here we show how one can search and download the data directly from the
 archive, like one would have to do for their own program.
 
-If you are just interested in trying out the tutorial, we still
-recommended that you download the pre-made package (:ref:`datasetup`) instead
+If you are just interested in trying out the tutorial, we
+recommend that you download the pre-made package (:ref:`datasetup`) instead
 of getting everything manually.
 
 
-Step by step instructions
-=========================
+Query and Download
+==================
 
 This tutorial uses observations from program GS-2013B-Q-15 (PI: Leggett),
 NIR photometry of the faint T-dwarf star WISE J041358.14-475039.3, obtained on
 2013-Nov-21. Images of this sparse field were obtained in the Y, J, H, Ks bands
-using a dither sequence; dayCal DARKS and GCAL flats were obtained as well.
+using a dither sequence; daytime calibrations, darks and GCAL flats, were obtained as well.
 `Leggett, et al. (2015) <https://ui.adsabs.harvard.edu/#abs/2015ApJ...799...37L/abstract>`_
 briefly describes the data reduction procedures they followed, which are
 similar to those described in this tutorial.
@@ -35,7 +35,7 @@ details on using the Archive, check its
 Science data
 ------------
 
-Access the `GOA webpage <https://archive.gemini.edu/>`_, put the data label
+Navigate to the `GOA webpage <https://archive.gemini.edu/>`_ search form.  Put the data label
 **GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
 button in the middle of the page. The page will refresh and display a table with
 all the data for this dataset. Since the amount of data is unnecessarily large
@@ -83,6 +83,9 @@ on header of the "ExpT" column. Several 2-second darks show up. Some were
 even taken on the same date as the science data (20131121). Select those,
 and download them as we did before for the other calibrations.
 
+
+Unpacking the data
+==================
 
 Now, copy all the ``.tar`` files to the same place in your computer. Then use
 ``tar`` and ``bunzip2`` commands to decompress them. For example:

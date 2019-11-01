@@ -7,8 +7,6 @@ from __future__ import print_function
 #                                                             gemini_instruments
 #                                                              skycam.adclass.py
 # ------------------------------------------------------------------------------
-__version__      = "0.1 (beta)"
-# ------------------------------------------------------------------------------
 import datetime
 import dateutil.parser
 

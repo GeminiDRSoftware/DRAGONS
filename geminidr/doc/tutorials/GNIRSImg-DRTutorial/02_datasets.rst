@@ -12,17 +12,19 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package (KL??? name of the package, with URL).  Download it and unpack it
-somewhere convenient.
+package:
 
-.. todo:: add name of and URL to the data package
+    `<http://www.gemini.edu/sciops/data/software/datapkgs/gnirsimg_tutorial_datapkg-v1.tar>`_
+
+Download it and unpack it somewhere convenient.
 
 .. highlight:: bash
 
 ::
 
     cd <somewhere convenient>
-    tar xvzf KL???
+    tar xvf gnirsimg_tutorial_datapkg-v1.tar
+    bunzip2 gnirsimg_tutorial/playdata/*.bz2
 
 The datasets are found in the subdirectory ``gnirsimg_tutorial/playdata``, and we
 will work in the subdirectory named ``gnirsimg_tutorial/playground``.
@@ -40,8 +42,8 @@ Dataset for example 1: Point source through the acquisition keyhole
 -------------------------------------------------------------------
 
 This is a GNIRS acquisition keyhole imaging observation of a point source.
-The observation sequence uses dither on target.  Dithered observations
-nearby in time will be use for sky subtraction of each frame.
+The observation sequence uses dither-on-target.  Dithered observations
+nearby in time will be used for sky subtraction of each frame.
 
 The calibrations we use for this example include:
 

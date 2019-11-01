@@ -13,6 +13,17 @@
 Astrodata Cheat Sheet
 *********************
 
+A data package is available for download if you wish to run the examples
+included in this cheat sheet.  Download it at:  KL???  URL
+
+To unpack::
+
+    $ cd <somewhere_convenient>
+    $ tar xvf ad_usermanual_datapkg-v1.tar
+    $ bunzip2 ad_usermanual/playdata/*.bz2
+
+Then go to the ``ad_usermanual/playground` directory to run the examples.
+
 Imports
 =======
 
@@ -60,7 +71,7 @@ type of data it contains. The tags are drawn from rules defined in
 |gemini_instruments| and are based on header information.
 
 When mapping a FITS file, each science pixel extension is loaded as a
-|NDAstroData| object. The list is zero-based. So FITS
+|NDAstroData| object. The list is zero-indexed. So FITS
 extension 1 becomes element 0 of the |astrodata_class| object. If a ``VAR``
 extension is present, it is loaded to the variance attribute of the
 |NDAstroData|. If a ``DQ`` extension is present, it is loaded to the ``.mask``
@@ -163,8 +174,8 @@ Astrodata tags
 
     >>> ad = astrodata.open('../playdata/N20170521S0925_forStack.fits')
     >>> ad.tags
-    set(['PROCESSED_SCIENCE', 'GEMINI', 'NORTH', 'SIDEREAL', 'OVERSCAN_TRIMMED',
-    'IMAGE', 'OVERSCAN_SUBTRACTED', 'GMOS', 'PREPARED'])
+    set(['GMOS', 'GEMINI', 'NORTH', 'SIDEREAL', 'OVERSCAN_TRIMMED', 'IMAGE',
+    'OVERSCAN_SUBTRACTED', 'PREPARED'])
 
     >>> type(ad.tags)
     <type 'set'>
@@ -201,7 +212,7 @@ Descriptors
     >>> ad.gain()[0]
     2.03
 
-    >>> astrodata.descriptor_list(ad)
+    >>> ad.descriptors
     ('airmass', 'amp_read_area', 'ao_seeing', ...
      ...)
 
@@ -292,16 +303,16 @@ Arithmetics with variance and mask propagation is offered for
     >>> ad_halpha[0].data.mean()
     646.11896
     >>> ad_hcont[0].data.mean()
-    580.91235
+    581.81342
     >>> adsub[0].data.mean()
-    65.206596
+    64.305862
 
     >>> ad_halpha[0].variance.mean()
     669.80664
     >>> ad_hcont[0].variance.mean()
-    604.63196
+    598.46667
     >>> adsub[0].variance.mean()
-    1274.4387
+    1268.274
 
 
     # In place multiplication
@@ -448,4 +459,8 @@ A |Table| as an |astrodata_class| object::
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)
     >>> ad.append(my_fits_table, name='BOB')
+
+    WARNING: This last line will not run like the others as we have not defined
+    "my_fits_table".  This is nonetheless how it is done if you had a FITS table.
+
 

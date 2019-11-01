@@ -31,7 +31,6 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
     p.stackFrames(zero=True)
-    p.writeOutputs()
     return
 
 
@@ -59,4 +58,20 @@ def makeProcessedFringe(p):
     p.flatCorrect()
     p.makeFringeFrame()
     p.storeProcessedFringe()
+    return
+
+def alignAndStack(p):
+    """
+    This recipe stack already preprocessed data.
+
+    Parameters
+    ----------
+    p : PrimitivesBASEE object
+        A primitive set matching the recipe_tags.
+    """
+
+    p.detectSources()
+    p.adjustWCSToReference()
+    p.resampleToCommonFrame()
+    p.stackFrames(zero=True)
     return

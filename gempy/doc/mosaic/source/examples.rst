@@ -445,7 +445,7 @@ display it -using ds9.  Make sure you have ds9 up and running.
 
 ::
  
- from numdisplay import display
+ from gempy.numdisplay import display
  from gempy.mosaic import Mosaic
 
  # See Example 6 and create the data_object; see example 7 and create the 
@@ -491,7 +491,7 @@ of this example is to show the usage of the Mosaic method ``transform()``.
 
  import numpy as np
  from gempy.library.mosaic import Mosaic, MosaicGeometry, MosaicData
- from numdisplay import display
+ from gempy.numdisplay import display
 
  geo_dict = {
    'transformation': { (0,0)    (1,0)     (0,1)     (1,1)  # tuples repr blocks:

@@ -88,6 +88,7 @@ class subtractSkyConfig(config.Config):
     scale_sky = config.Field("Scale sky frame to science frame?", bool, True)
     offset_sky = config.Field("Apply offset to sky frame to match science frame?", bool, False)
     sky = config.ListField("Sky frame to subtract", (str, AstroData), None, optional=True, single=True)
+    save_sky = config.Field("Save sky frame to disk?", bool, False)
 
 class skyCorrectConfig(parameters_stack.stackSkyFramesConfig, subtractSkyConfig):
     def setDefaults(self):

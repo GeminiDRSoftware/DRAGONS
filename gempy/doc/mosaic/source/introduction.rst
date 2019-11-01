@@ -98,11 +98,10 @@ Create a mosaic with MosaicAD class.
 
     mosaic_array = mos.mosaic_image_data()
 
-- Display the resulting mosaic using DS9. Make sure you have DS9 up and running
-  and the *numdisplay* python module is available in your Python installation. ::
+- Display the resulting mosaic using DS9. Make sure you have DS9 up and
+  running::
 
-   # numdisplay package is from STScI
-   from numdisplay import display
+   from gempy.numdisplay import display
 
    display(mosaic_array)
 

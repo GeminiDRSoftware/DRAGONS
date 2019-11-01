@@ -5,7 +5,6 @@ from __future__ import print_function
 # ------------------------------------------------------------------------------
 from builtins import object
 from future.utils import with_metaclass
-__version__ = '2.0 (beta)'
 
 # ------------------------------------------------------------------------------
 import os

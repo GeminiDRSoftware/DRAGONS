@@ -7,4 +7,3 @@ python-dateutil
 pytest
 scipy
 sqlalchemy
-stsci.numdisplay

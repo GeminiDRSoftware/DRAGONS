@@ -1,27 +1,21 @@
 .. 01_introduction.rst
 
-.. warning::
-
-  This tutorial is under development. The pipeline is not ready for a release
-  yet. Please, have that in mind while running it.
-
-
 .. _introduction:
 
+************
 Introduction
 ************
 
-This tutorial covers the basics on reducing
-`GSAOI <https://www.gemini.edu/sciops/instruments/gsaoi/>`_ (Gemini South
-Adaptive Optics Imager) data using `DRAGONS <https://dragons.readthedocs.io/>`_
-(Data Reduction for Astronomy from Gemini Observatory North and South).
+This tutorial covers the basics of reducing
+`GSAOI <https://www.gemini.edu/sciops/instruments/gsaoi/>`_  data using
+`DRAGONS <https://dragons.readthedocs.io/>`_.
 
 The next two sections explain what are the required software and the data set
-that we use throughout the tutorial. `Chapter 2: Data Reduction
-<command_line_data_reduction>`_ contains a quick example on how to reduce data
-using the DRAGONS command line tools. `Chapter 3: Reduction with API
-<api_data_reduction>`_ shows how we can reduce the data using DRAGONS' packages
-from within Python.
+that we use throughout the tutorial.
+:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a
+quick example on how to reduce data using the DRAGONS command line tools.
+:ref:`Chapter 3: Reduction with API <api_data_reduction>` shows how we can
+reduce the data using DRAGONS packages from within Python.
 
 
 .. _requirements:
@@ -36,13 +30,12 @@ machine. You can test that by typing the following commands:
 .. code-block:: bash
 
     $ conda activate geminiconda
-
     $ python -c "import astrodata"
 
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
 be installed. If you have an error message, make sure:
 
-    - AnaConda or MiniConda is properly installed;
+    - Anaconda or MiniConda is properly installed;
 
     - A Conda Virtual Environment is properly created and is active;
 
@@ -50,82 +43,34 @@ be installed. If you have an error message, make sure:
 
     - DRAGONS was successfully installed within the Conda Virtual Environment;
 
+.. _datasetup:
 
-.. _download_sample_files:
+Downloading the tutorial datasets
+=================================
 
-Download Sample Files
-=====================
+All the data needed to run this tutorial are found in the tutorial's data
+package:
 
-.. todo @bquint Upload a ``.tar.gz`` file with the full dataset and use the URL here.
-..  todo:: @bquint Upload a ``.tar.gz`` file with the full dataset and use the
-    URL here.
+    `<http://www.gemini.edu/sciops/data/software/datapkgs/gsaoiimg_tutorial_datapkg-v1.tar>`_
 
+Download it and unpack it somewhere convenient.
 
-For this tutorial we selected data observed for for the GS-2017A-Q-29 program on
-the night starting on May 04, 2017.
+.. highlight:: bash
 
-You can search and download the files on the
-`Gemini Archive <https://archive.gemini.edu/searchform>`_ using the
-information above. Or simply copy the link below and past to your browser: ::
+::
 
-    https://archive.gemini.edu/searchform/cols=CTOWEQ/GS-2017A-Q-29/notengineering/GSAOI/20170504-20170505/science/NotFail
+    cd <somewhere convenient>
+    tar xvf gsaoiimg_tutorial_datapkg-v1.tar
+    bunzip2 gsaoiimg_tutorial/playdata/*.bz2
 
-Here is the `link that can be used to download the science files
-<https://archive.gemini.edu/download/20170504-20170505/GS-2017A-Q-29/notengineering/GSAOI/science/NotFail/present/canonical>`_
-(16 files, 0.37 Gb).
+The datasets are found in the subdirectory ``gsaoiimg_tutorial/playdata``, and we
+will work in the subdirectory named ``gsaoiimg_tutorial/playground``.
 
-Once you find the data, click on ``Load Associated Calibrations`` to bring up
-the associated calibrations. A link to download the data will be in the bottom
-of the page. Alternatively, you can simply click on the `link to download the
-associated calibration files
-<https://archive.gemini.edu/download/associated_calibrations/20170504-20170505/GS-2017A-Q-29/notengineering/GSAOI/science/NotFail/canonical>`_
-(34 files, 0.62 Gb).
-
-You might also want to download a set of DARK and H-Band FLAT images in
-order to build Bad Pixel Masks (BPM) if you do not have one. The DARK files
-can be downloaded using `this link
-<https://archive.gemini.edu/download/exposure_time=150/notengineering/GSAOI/Pass/DARK/present/canonical>`_.
-or copying and pasting the following address to search form into your browser: ::
-
-    https://archive.gemini.edu/searchform/exposure_time=150/cols=CTOWEQ/notengineering/GSAOI/Pass/DARK
-
-
-The FLAT files to build the BPM can be downloaded directly by `clicking here
-<https://archive.gemini.edu/download/20171201-20171231/object=Domeflat/filter=H/notengineering/GSAOI/Pass/present/canonical>`_
-or using the following address: ::
-
-    https://archive.gemini.edu/searchform/object=Domeflat/cols=CTOWEQ/filter=H/notengineering/GSAOI/20171201-20171231/Pass
-
-
-Copy all the files to the same place in your computer. Then use ``tar`` and
-``bunzip2`` to decompress them: ::
-
-    $ cd ${path_to_my_data}/
-    $ tar -xf gemini_calibs.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
-    $ tar -xf gemini_data.GS-2017A-Q-29_GSAOI_20170504-20170505.tar
-    $ tar -xf gemini_data.GSAOI.tar
-    $ tar -xf gemini_data.GSAOI_20171201-20171231.tar
-    $ bunzip2 *.fits.bz2
-
-You can add ``-v`` after each command to make it verbose since they can take a
-while to be executed. The files names may change depending on the parameters you
-used when searching in the `Gemini Archive <https://archive.gemini.edu/searchform>`_.
-
-For this tutorial, we will use a directory to separate the raw data from
-the processed data. This is how the data should be organized: ::
-
-  |-- ${path to my data}/
-  |   |-- playdata/  # directory for raw data
-  |   |-- playground/  # working directory
-
-Use the following commands to have a directory structure consistent the one
-used in this tutorial: ::
-
-  $ cd ${path_to_my_data}
-  $ mkdir playdata  # create directory for raw data
-  $ mkdir playground  #  create working directory
-  $ mv *.fits ./playdata/  # move all the FITS files to this directory
-
+.. note:: All the raw data can also be downloaded from the Gemini Observatory
+          Archive. Using the tutorial data package is probably more convenient
+          but if you really want to learn how to search for and retrieve the
+          data yourself, see the step-by-step instructions in the appendix,
+          :ref:`goadownload`.
 
 .. _about_data_set:
 
@@ -138,12 +83,9 @@ section:
 +---------------+---------------------+--------------------------------+
 | Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
 +---------------+---------------------+--------------------------------+
-| Darks         || S20150609S0022-031 || Only to create BPM, 150 s     |
-+---------------+---------------------+--------------------------------+
-| Flats         || S20171208S0053-067 || Lamp on, H-band, for BPM      |
-|               || S20170505S0030-044 || Lamp on, Kshort, for science  |
+| Flats         || S20170505S0030-044 || Lamp on, Kshort, for science  |
 |               || S20170505S0060-074 || Lamp off, Kshort, for science |
 +---------------+---------------------+--------------------------------+
-| Standard star || S20170504S0114-117 || Kshort, standart star, 30 s   |
+| Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
 +---------------+---------------------+--------------------------------+
 

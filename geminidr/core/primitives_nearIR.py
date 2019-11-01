@@ -187,7 +187,7 @@ class NearIR(PrimitivesBASE):
             log.fullinfo("Subtracting lampOff stack from lampOn stack")
             flat = ad_on[0]
             flat.subtract(ad_off[0])
-            flat.update_filename(suffix="_lampOnOff")
+            flat.update_filename(suffix="_lampOnOff", strip=True)
             return [flat]
         else:
             log.warning("Cannot subtract lampOff from lampOn flats as do not "

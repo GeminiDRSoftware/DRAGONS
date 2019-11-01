@@ -13,7 +13,7 @@
 Reduction using API
 *******************
 
-There may be cases where you might be interested in accessing the DRAGONS
+There may be cases where you would be interested in accessing the DRAGONS
 Application Program Interface (API) directly instead of using the command
 line wrappers to reduce your data. Here we show you how to do the same
 reduction we did in the previous chapter but using the API.
@@ -45,7 +45,7 @@ Here is a copy of the table for quick reference.
 +---------------+---------------------+--------------------------------+
 
 
-Setting up
+Setting Up
 ==========
 
 Importing Libraries
@@ -64,6 +64,7 @@ We first import the necessary modules and classes:
     from recipe_system import cal_service
     from recipe_system.reduction.coreReduce import Reduce
 
+
 Importing ``print_function`` is for compatibility with the Python 2.7 print
 statement. If you are working with Python 3, it is not needed, but importing
 it will not break anything.
@@ -73,8 +74,7 @@ it will not break anything.
 
 
 .. todo @bquint: the gempy auto-api is not being generated anywhere.
-.. todo:: @bquint the gempy auto-api is not being generated anywhere. Find a
-    place for it.
+
 
 :mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
 darks, the flats and the science observations. The
@@ -155,7 +155,7 @@ FITS files in the directory ``../playdata/``.
     all_files.sort()
 
 The :meth:`~list.sort` method simply re-organize the list with the file names
-and is an optional step. Before you carry on, you might want want to do
+and is an optional step. Before you carry on, you might want to do
 ``print(all_files)`` to check if they were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
@@ -232,6 +232,10 @@ Finally, the science data can be selected using:
         dataselect.expr_parser('(observation_class=="science" and filter_name=="Y")')
     )
 
+The filter name is not really needed in this case since there are only Y-band
+frames, but it shows how you could have two selection criteria in
+the expression.
+
 
 .. _api_process_dark_files:
 
@@ -245,8 +249,8 @@ stored in the Reduce instance. The calibration service expects the name of a
 file on disk.
 
 .. code-block:: python
-   :linenos:
-   :lineno-start: 41
+    :linenos:
+    :lineno-start: 41
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(dark_files_120s)
@@ -255,7 +259,7 @@ file on disk.
     caldb.add_cal(reduce_darks.output_filenames[0])
 
 The :class:`~recipe_system.reduction.coreReduce.Reduce` class is our reduction
-"controller". This is were we collect all the information necessary for
+"controller". This is where we collect all the information necessary for
 the reduction. In this case, the only information necessary is the list of
 input files which we add to the ``files`` attribute. The
 :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method is where the
@@ -323,7 +327,7 @@ We create the master flat field and add it to the calibration manager as follow:
     reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
-    calibration_service.add_cal(reduce_flats.output_filenames[0])
+    caldb.add_cal(reduce_flats.output_filenames[0])
 
 Note how we pass in the BPM we created in the previous step. The ``addDQ``
 primitive, one of the primitives in the recipe, has an input parameter named
@@ -357,4 +361,8 @@ science data:
     reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_target.runr()
 
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
 

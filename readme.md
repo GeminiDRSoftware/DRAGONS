@@ -11,33 +11,41 @@
 </table>
 
 # Current Status
-The software has not yet had its first public release.  The software is undergoing science-worthiness verification and testing.  **Do not use for science**.  To
-reduce Gemini science data, please continue to use, for the time being, the
-[Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
+**The stable version is v2.1.0.**  This is the first publicly released version
+of DRAGONS.  It is distributed as a conda package, *dragons*, and it is 
+included in the conda *gemini* stack.
 
-The first public release is currently expected to happen in **October 2019** and
-will be able to reduce **imaging data** from Gemini's current instruments.  There
-will no spectroscopy support in the first release, though we are working on
-that.
+Version 2.1.0 is recommend of the reduction of **imaging** data from Gemini's
+current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI.
 
-For now, please feel free to look around in the code and the documentation
-to see what's coming up.
+There is no spectroscopy support in this release.  To reduce Gemini spectroscopy
+data, please continue to use the [Gemini IRAF package](https://www.gemini.edu/sciops/data-and-results/processing-software).
+
+To install:
+
+$ conda create -n geminiconda python=3.6 gemini stsci
+
 
 ---
 # What is DRAGONS
 DRAGONS is a platform for the reduction and processing of astronomical data.
 The DRAGONS meta-package includes an infrastructure for automation of the
-processes and algorithms for processing of astromical data, with focus on the 
+processes and algorithms for processing of astronomical data, with focus on the 
 reduction of Gemini data.
-
 
 
 ---
 
 # Documentation
-Documentation on DRAGONS is available on "readthedocs" at:
+Documentation on DRAGONS v2.1 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/
+* https://dragons.readthedocs.io/en/stable
 
-There your will find manuals for Astrodata and the Recipe System.  We are
-working on adding tutorials too in the near future.
+There your will find manuals for Astrodata and the Recipe System, and hands-on
+tutorials on reducing Gemini imaging data with DRAGONS.
+
+Gemini users with imaging data to reduce should pick the tutorial discussing
+the reduction of data from the appropriate instrument.  
+
+Software developers should start with the Astrodata and Recipe System
+manuals.
