@@ -98,7 +98,6 @@ class Aperture(object):
         ndarray: boolean array, set to True if a pixel will be used in the
                  extraction
         """
-        print(width, self.aper_upper, self.aper_lower)
         if width is not None:
             aper_upper = 0.5 * width
             aper_lower = -aper_upper
