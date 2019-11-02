@@ -1192,7 +1192,10 @@ class Spect(PrimitivesBASE):
                 # the dispersion direction.
                 profile, prof_mask, prof_var = NDStacker.combine(data.T, mask=sky_mask.T,
                                                                  variance=None if variance is None else variance.T,
-                                                                 rejector="sigclip", combiner="mean")
+                                                                 rejector="none", combiner="mean")
+                #profile, prof_mask, prof_var = NDStacker.combine((data / data1d).T, mask=sky_mask.T,
+                #                                                 variance=None if variance is None else (variance / (data1d*data1d)).T,
+                #                                                 rejector="sigclip", combiner="wtmean")
 
                 # TODO: find_peaks might not be best considering we have no
                 # idea whether sources will be extended or not
@@ -1628,12 +1631,6 @@ class Spect(PrimitivesBASE):
             reduced proportionately by the ratio between the number of good pixels
             in each row/column and the total number of pixels.
 
-        width : float or None
-            Width in pixels for each aperture, if not specified in the
-            APERTURE table. `None` will use the value in the aperture table
-            and, if one doesn't exist there, will result in the optimal width
-            being calculated for each aperture.
-
         grow : float
             Masking growth radius (in pixels) for each aperture.
 
@@ -1653,7 +1650,6 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         order = params["order"]
-        default_width = params["width"]
         grow = params["grow"]
 
         for ad in adinputs:
@@ -1681,9 +1677,9 @@ class Spect(PrimitivesBASE):
                     for row in aptable:
                         model_dict = dict(zip(aptable.colnames, row))
                         trace_model = astromodels.dict_to_chebyshev(model_dict)
-                        aperture = tracing.Aperture(trace_model)
-                        width = model_dict.get('width', default_width)
-                        sky_mask |= aperture.aperture_mask(ext, width=width, grow=grow)
+                        aperture = tracing.Aperture(trace_model, aper_lower=model_dict['aper_lower'],
+                                                    aper_upper=model_dict['aper_upper'])
+                        sky_mask |= aperture.aperture_mask(ext, grow=grow)
 
                 # Transpose if needed so we're iterating along rows
                 data, mask, var = _transpose_if_needed(ext.data, sky_mask, ext.variance, transpose=dispaxis==1)

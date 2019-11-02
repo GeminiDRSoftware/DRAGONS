@@ -116,5 +116,4 @@ class traceAperturesConfig(config.Config):
 class skyCorrectFromSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
     order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
-    width = config.RangeField("Default width for apertures (pixels)", float, 10, min=0, optional=True)
     grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
