@@ -125,10 +125,7 @@ def test_apply_dq_plane(astrofaker):
 
     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                                        'N20070819S0104_dqPlaneApplied.fits'))
-<<<<<<< HEAD:geminidr/core/tests/test_preprocess.py
-=======
 
->>>>>>> release/2.1.x:geminidr/core/test/test_preprocess.py
 
 @pytest.mark.skip("Review me")
 def test_associateSky():

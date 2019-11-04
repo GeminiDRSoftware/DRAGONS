@@ -107,6 +107,21 @@ dataset_file_list = [
     "process_arcs/GMOS/S20171018S0048.fits",  # R831:0.865 HAM
 ]
 
+# todo @bquint - review these files
+# file_list = [
+#     'process_arcs/GMOS/S20170103S0152.fits',
+#     'process_arcs/GMOS/N20170530S0006.fits',
+#     'process_arcs/GMOS/N20180119S0232.fits',
+#     'process_arcs/GMOS/N20181114S0512.fits',
+#     'process_arcs/GMOS/N20180120S0417.fits',
+#     'process_arcs/GMOS/N20180516S0214.fits',
+#     # "process_arcs/N20180911S0156.fits", # File failed loading
+#     # "process_arcs/S20181022S0349.fits", # File failed loading
+#     # "process_arcs/N20181011S0220.fits", # File failed loading
+#     # "process_arcs/N20181115S0175.fits", # File failed loading
+#     # "process_arcs/S20181128S0099.fits", # File failed loading
+# ]
+
 
 @pytest.fixture(scope="class", params=dataset_file_list)
 def config(request, path_to_inputs, path_to_outputs, path_to_refs):
