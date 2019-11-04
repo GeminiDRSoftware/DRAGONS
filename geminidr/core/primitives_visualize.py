@@ -529,8 +529,11 @@ class _localNumDisplay(nd.NumDisplay):
                 # Set to red as default
                 mask_colors = [204]*len(masks)
             for i in range(len(masks)):
-                if (masks[i][0].size>0 and masks[i][1].size>0):
-                    bpix[masks[i]] = mask_colors[i]
+                try:
+                    if (masks[i][0].size>0 and masks[i][1].size>0):
+                        bpix[masks[i]] = mask_colors[i]
+                except TypeError:
+                    pass
 
         # Update the WCS to match the frame buffer being used.
         _d.syncWCS(_wcsinfo)
