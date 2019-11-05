@@ -81,9 +81,6 @@ pipeline {
 
         stage('Unit tests') {
 
-            when {
-                branch 'master'
-            }
             steps {
 
                 echo "ensure cleaning __pycache__"
@@ -131,10 +128,10 @@ pipeline {
             }
             steps {
                 echo "Integration tests"
-//                 sh  '''
-//                     source activate ${CONDA_ENV_NAME}
-//                     coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
-//                     '''
+                sh  '''
+                    source activate ${CONDA_ENV_NAME}
+                    coverage run -m pytest -m integtest --junit-xml ./reports/integration_results.xml
+                    '''
             }
 
         }
