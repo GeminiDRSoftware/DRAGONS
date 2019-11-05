@@ -18,17 +18,18 @@ from recipe_system.mappers.recipeMapper import RecipeMapper
 
 def showrecipes(_file):
     """
-    showrecipes takes in a file, and will return all the possible recipes
-    that can be used on the file.
+    Takes in a file, and will return all the possible recipes that can be used
+    on the file.
 
     Parameters
     ----------
-    file - str
+    _file - str
         file name for the fits file
 
-    Returns - str
-        returns  string with all the information provided
+    Returns
     -------
+    str
+        String with all the information provided
     """
     # string that results are appended to
     result = ""
