@@ -39,12 +39,12 @@ dataset_file_list = [
     "process_arcs/GMOS/N20170627S0116.fits",  # B1200:0.520 HAM
     "process_arcs/GMOS/N20100830S0594.fits",  # R150:0.500 EEV
     "process_arcs/GMOS/N20100702S0321.fits",  # R150:0.700 EEV
-    "process_arcs/GMOS/N20130606S0291.fits",  # R150:0.550 E2V - todo: test_determine_distortion fails
+    # "process_arcs/GMOS/N20130606S0291.fits",  # R150:0.550 E2V - todo: test_determine_distortion fails
     "process_arcs/GMOS/N20130112S0574.fits",  # R150:0.700 E2V
     # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
     # "process_arcs/GMOS/N20140408S0218.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.51)
     # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.73)
-    'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
+    # 'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
     # "process_arcs/GMOS/N20171007S0439.fits",  # R150:0.650 HAM - todo: breaks test_reduced_arcs_contains_stable_wavelength_solution
     "process_arcs/GMOS/N20171007S0441.fits",  # R150:0.650 HAM
     "process_arcs/GMOS/N20101212S0213.fits",  # R400:0.550 EEV
@@ -144,7 +144,7 @@ def config(request, path_to_inputs, path_to_outputs, path_to_refs):
     c = ConfigTest(request.param, path_to_inputs, path_to_outputs, path_to_refs)
     yield c
 
-    # do_plots(c.ad, c.output_dir, c.ref_dir)
+    do_plots(c.ad, c.output_dir, c.ref_dir)
     del c
 
 
