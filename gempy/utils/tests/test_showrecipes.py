@@ -26,7 +26,6 @@ dragons_location = '/'.join(geminidr.__file__.split("/")[:-1]) + '/'
 GNIRS = "S20171208S0054.fits"
 GNIRS_SPECT = "N20190206S0279.fits"
 GMOS = 'S20180223S0229.fits'
-# GMOS_NS = 'S20170111S0166.fits'
 GMOS_NS = 'S20171116S0078.fits'
 GMOS_SPECT = "N20170529S0168.fits"
 NIRI = "N20190120S0287.fits"
