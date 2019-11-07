@@ -179,7 +179,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
                  meta=None, unit=None, copy=False, window=None):
-        self._scalers = {}
         self._window = window
 
         super(NDAstroData, self).__init__(FakeArray(data) if is_lazy(data) else data,
@@ -373,4 +372,3 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
                              uncertainty=None if self.uncertainty is None else self.uncertainty.__class__(self.uncertainty.array.T),
                              mask=None if self.mask is None else self.mask.T, copy=False)
         return new
-
