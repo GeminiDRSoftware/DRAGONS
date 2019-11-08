@@ -112,7 +112,7 @@ class Visualize(PrimitivesBASE):
 
             if remove_bias:
                 if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
-                    any(ad.hdr.get('OVERSCAN'))):
+                    any(ad.hdr.get(self.timestamp_keys["subtractOverscan"]))):
                     log.fullinfo("Bias level has already been removed from "
                                  "data; no approximate correction will be "
                                  "performed")
