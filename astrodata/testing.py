@@ -5,7 +5,40 @@ Fixtures to be used in tests in DRAGONS
 
 import os
 import pytest
+import shutil
 import warnings
+from astropy.utils.data import download_file
+
+URL = 'https://archive.gemini.edu/file/'
+DEFAULT_CACHE_DIRECTORY = '~/.geminidr/cache'
+
+
+def download_from_archive(filename, path=None):
+    """Download file from the archive and store it in the local cache.
+
+    Parameters
+    ----------
+    filename : str
+        The filename, e.g. N20160524S0119.fits
+    path : str
+        By default the file is stored at the root of the cache directory, but
+        using ``path`` allows to specify a sub-directory.
+
+    """
+    # Find cache path and make sure it exists
+    cache_path = os.getenv('DRAGONS_TEST_INPUTS', DEFAULT_CACHE_DIRECTORY)
+    cache_path = os.path.expanduser(cache_path)
+    if path is not None:
+        cache_path = os.path.join(cache_path, path)
+    os.makedirs(cache_path, exist_ok=True)
+
+    # Now check if the local file exists and download if not
+    local_path = os.path.join(cache_path, filename)
+    if not os.path.exists(local_path):
+        tmp_path = download_file(URL + filename, cache=False)
+        shutil.move(tmp_path, local_path)
+
+    return local_path
 
 
 def assert_have_same_distortion(ad, ad_ref):
