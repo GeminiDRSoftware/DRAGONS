@@ -154,6 +154,12 @@ def array_information(adinput=None):
                     list and the tuples are sorted based on detector_section
                     first in y, then x (so order is along the bottom, then
                     the next row up, and so on).
+
+        An example for the standard 12-amp GMOS read is:
+            detector_shape=(1, 3)
+            origins=[(0, 0), (0, 2048), (0, 4096)]
+            array_shapes=[(1, 4), (1, 4), (1, 4)]
+            extensions=[(0, 1, 2, 3), (4, 5, 6, 7), (8, 9, 10, 11)]
     """
     array_info_list = []
     for ad in adinput:
