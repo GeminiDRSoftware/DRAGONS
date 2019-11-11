@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-import os
-
 import numpy as np
 import pytest
 from astropy.io.fits import ImageHDU
@@ -11,17 +8,42 @@ import astrodata
 from astrodata.testing import download_from_archive
 
 
+@pytest.fixture
+def testfile1():
+    """
+    Pixels Extensions
+    Index  Content                  Type              Dimensions     Format
+    [ 0]   science                  NDAstroData       (2304, 1056)   uint16
+    [ 1]   science                  NDAstroData       (2304, 1056)   uint16
+    [ 2]   science                  NDAstroData       (2304, 1056)   uint16
+    """
+    return download_from_archive("N20110826S0336.fits", path="GMOS")
+
+
+@pytest.fixture
+def testfile2():
+    """
+    Pixels Extensions
+    Index  Content                  Type              Dimensions     Format
+    [ 0]   science                  NDAstroData       (4608, 1056)   uint16
+    [ 1]   science                  NDAstroData       (4608, 1056)   uint16
+    [ 2]   science                  NDAstroData       (4608, 1056)   uint16
+    [ 3]   science                  NDAstroData       (4608, 1056)   uint16
+    [ 4]   science                  NDAstroData       (4608, 1056)   uint16
+    [ 5]   science                  NDAstroData       (4608, 1056)   uint16
+    """
+    return download_from_archive("N20160524S0119.fits", path="GMOS")
+
+
 @pytest.mark.remote_data
-def test_can_read_data():
-    test_filename = download_from_archive("N20110826S0336.fits", path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_can_read_data(testfile1):
+    ad = astrodata.open(testfile1)
     assert len(ad) == 3
 
 
 @pytest.mark.remote_data
-def test_append_array_to_root_no_name():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_array_to_root_no_name(testfile2):
+    ad = astrodata.open(testfile2)
 
     lbefore = len(ad)
     ones = np.ones((10, 10))
@@ -33,12 +55,11 @@ def test_append_array_to_root_no_name():
 
 
 @pytest.mark.remote_data
-def test_append_array_to_root_with_name_sci():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_array_to_root_with_name_sci(testfile2):
+    ad = astrodata.open(testfile2)
 
     lbefore = len(ad)
-    ones = np.ones((100, 100))
+    ones = np.ones((10, 10))
     ad.append(ones, name='SCI')
     assert len(ad) == (lbefore + 1)
     assert ad[-1].data is ones
@@ -47,34 +68,31 @@ def test_append_array_to_root_with_name_sci():
 
 
 @pytest.mark.remote_data
-def test_append_array_to_root_with_arbitrary_name():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_array_to_root_with_arbitrary_name(testfile2):
+    ad = astrodata.open(testfile2)
+    assert len(ad) == 6
 
-    lbefore = len(ad)
-    ones = np.ones((100, 100))
-    with pytest.raises(ValueError) as excinfo:
+    ones = np.ones((10, 10))
+    with pytest.raises(ValueError):
         ad.append(ones, name='ARBITRARY')
 
 
 @pytest.mark.remote_data
-def test_append_array_to_extension_with_name_sci():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_array_to_extension_with_name_sci(testfile2):
+    ad = astrodata.open(testfile2)
+    assert len(ad) == 6
 
-    lbefore = len(ad)
-    ones = np.ones((100, 100))
-    with pytest.raises(ValueError) as excinfo:
+    ones = np.ones((10, 10))
+    with pytest.raises(ValueError):
         ad[0].append(ones, name='SCI')
 
 
 @pytest.mark.remote_data
-def test_append_array_to_extension_with_arbitrary_name():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_array_to_extension_with_arbitrary_name(testfile2):
+    ad = astrodata.open(testfile2)
 
     lbefore = len(ad)
-    ones = np.ones((100, 100))
+    ones = np.ones((10, 10))
     ad[0].append(ones, name='ARBITRARY')
 
     assert len(ad) == lbefore
@@ -82,12 +100,11 @@ def test_append_array_to_extension_with_arbitrary_name():
 
 
 @pytest.mark.remote_data
-def test_append_nddata_to_root_no_name():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_nddata_to_root_no_name(testfile2):
+    ad = astrodata.open(testfile2)
 
     lbefore = len(ad)
-    ones = np.ones((100, 100))
+    ones = np.ones((10, 10))
     hdu = ImageHDU(ones)
     nd = NDData(hdu.data)
     nd.meta['header'] = hdu.header
@@ -96,54 +113,50 @@ def test_append_nddata_to_root_no_name():
 
 
 @pytest.mark.remote_data
-def test_append_nddata_to_root_with_arbitrary_name():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_nddata_to_root_with_arbitrary_name(testfile2):
+    ad = astrodata.open(testfile2)
+    assert len(ad) == 6
 
-    lbefore = len(ad)
-    ones = np.ones((100, 100))
+    ones = np.ones((10, 10))
     hdu = ImageHDU(ones)
     nd = NDData(hdu.data)
     nd.meta['header'] = hdu.header
     hdu.header['EXTNAME'] = 'ARBITRARY'
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError):
         ad.append(nd)
 
 
 @pytest.mark.remote_data
-def test_append_table_to_root():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_table_to_root(testfile2):
+    ad = astrodata.open(testfile2)
+    with pytest.raises(AttributeError):
+        ad.MYTABLE
 
-    lbefore = len(ad)
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
-                  names=('a', 'b', 'c'))
+    assert len(ad) == 6
+    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
     ad.append(table, 'MYTABLE')
     assert (ad.MYTABLE == table).all()
 
 
-@pytest.mark.skip("unknown expected behaviour")
 @pytest.mark.remote_data
-def test_append_table_to_root_without_name():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_table_to_root_without_name(testfile2):
+    ad = astrodata.open(testfile2)
+    assert len(ad) == 6
+    with pytest.raises(AttributeError):
+        ad.TABLE1
 
-    lbefore = len(ad)
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
-                  names=('a', 'b', 'c'))
-
-    with pytest.raises(ValueError) as excinfo:
-        ad.append(table)
+    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
+    ad.append(table)
+    assert len(ad) == 6
+    assert isinstance(ad.TABLE1, Table)
 
 
 @pytest.mark.remote_data
-def test_append_table_to_extension():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_table_to_extension(testfile2):
+    ad = astrodata.open(testfile2)
+    assert len(ad) == 6
 
-    lbefore = len(ad)
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
-                  names=('a', 'b', 'c'))
+    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
     ad[0].append(table, 'MYTABLE')
     assert (ad[0].MYTABLE == table).all()
 
@@ -151,9 +164,8 @@ def test_append_table_to_extension():
 # Append / assign Gemini specific
 
 @pytest.mark.remote_data
-def test_append_dq_to_root():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_dq_to_root(testfile2):
+    ad = astrodata.open(testfile2)
 
     dq = np.zeros(ad[0].data.shape)
     with pytest.raises(ValueError):
@@ -161,9 +173,8 @@ def test_append_dq_to_root():
 
 
 @pytest.mark.remote_data
-def test_append_dq_to_ext():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_dq_to_ext(testfile2):
+    ad = astrodata.open(testfile2)
 
     dq = np.zeros(ad[0].data.shape)
     ad[0].append(dq, 'DQ')
@@ -171,9 +182,8 @@ def test_append_dq_to_ext():
 
 
 @pytest.mark.remote_data
-def test_append_var_to_root():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_var_to_root(testfile2):
+    ad = astrodata.open(testfile2)
 
     var = np.random.random(ad[0].data.shape)
     with pytest.raises(ValueError):
@@ -181,9 +191,8 @@ def test_append_var_to_root():
 
 
 @pytest.mark.remote_data
-def test_append_var_to_ext():
-    test_filename = download_from_archive('N20160524S0119.fits', path="GMOS")
-    ad = astrodata.open(test_filename)
+def test_append_var_to_ext(testfile2):
+    ad = astrodata.open(testfile2)
 
     var = np.random.random(ad[0].data.shape)
     ad[0].append(var, 'VAR')
@@ -193,9 +202,9 @@ def test_append_var_to_ext():
 # Append AstroData slices
 
 @pytest.mark.remote_data
-def test_append_single_slice():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
+def test_append_single_slice(testfile1, testfile2):
+    ad = astrodata.open(testfile2)
+    ad2 = astrodata.open(testfile1)
 
     lbefore = len(ad2)
     last_ever = ad2[-1].nddata.meta['header'].get('EXTVER', -1)
@@ -207,46 +216,36 @@ def test_append_single_slice():
 
 
 @pytest.mark.remote_data
-def test_append_non_single_slice():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
+def test_append_non_single_slice(testfile1, testfile2):
+    ad = astrodata.open(testfile2)
+    ad2 = astrodata.open(testfile1)
 
     with pytest.raises(ValueError):
         ad2.append(ad[1:])
 
 
 @pytest.mark.remote_data
-def test_append_whole_instance():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
+def test_append_whole_instance(testfile1, testfile2):
+    ad = astrodata.open(testfile2)
+    ad2 = astrodata.open(testfile1)
 
     with pytest.raises(ValueError):
         ad2.append(ad)
 
 
 @pytest.mark.remote_data
-def test_append_slice_to_extension():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
-    ad2 = astrodata.open(download_from_archive("N20110826S0336.fits", path="GMOS"))
+def test_append_slice_to_extension(testfile1, testfile2):
+    ad = astrodata.open(testfile2)
+    ad2 = astrodata.open(testfile1)
 
     with pytest.raises(ValueError):
         ad2[0].append(ad[0], name="FOOBAR")
 
 
-# Deletion
-# @pytest.mark.xfail(reason="file not available")
-# def test_delete_named_attribute_at_top_level(path_to_inputs):
-#     ad = from_test_data('NIRI/N20131215S0202_refcatAdded.fits')
-#     assert 'REFCAT' in ad.tables
-#     del ad.REFCAT
-#     assert 'REFCAT' not in ad.tables
-
-
 @pytest.mark.remote_data
-def test_delete_named_associated_extension():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
-    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]),
-                  names=('a', 'b', 'c'))
+def test_delete_named_associated_extension(testfile2):
+    ad = astrodata.open(testfile2)
+    table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
     ad[0].append(table, 'MYTABLE')
     assert 'MYTABLE' in ad[0]
     del ad[0].MYTABLE
@@ -254,8 +253,8 @@ def test_delete_named_associated_extension():
 
 
 @pytest.mark.remote_data
-def test_delete_arbitrary_attribute_from_ad():
-    ad = astrodata.open(download_from_archive('N20160524S0119.fits', path="GMOS"))
+def test_delete_arbitrary_attribute_from_ad(testfile2):
+    ad = astrodata.open(testfile2)
 
     with pytest.raises(AttributeError):
         ad.arbitrary
