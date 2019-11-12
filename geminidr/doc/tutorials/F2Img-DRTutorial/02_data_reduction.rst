@@ -1,5 +1,8 @@
 .. 02_data_reduction.rst
 
+.. include:: DRAGONSlinks.txt
+
+
 .. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html
 
 .. _dataselect: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect
@@ -32,10 +35,10 @@ sequence. Just open a terminal to get started.
 
 While the example cannot possibly cover all situations, it will help you get
 acquainted with the reduction of Flamingos-2 data with DRAGONS. We
-encourage you to look at the :ref:`beyond` chapter to learn more about F2
-data reduction.
+encourage you to look at the :ref:`tips_and_tricks` and
+:ref:`issues_and_limitations` chapters to learn more about F2 data reduction.
 
-DRAGONS installation comes with a set of handful scripts that are used to
+DRAGONS installation comes with a set of useful scripts that are used to
 reduce astronomical data. The most important script is called
 reduce_, which is extensively explained in the `Recipe System Users Manual
 <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/index.html>`_.
@@ -113,7 +116,8 @@ Then initialize the calibration database:
 
     caldb init
 
-That's it! It is ready to use!
+That's it! It is ready to use!   You can check the configuration and confirm
+the setting with ``caldb config``.
 
 You can add processed calibrations with ``caldb add <filename>`` (we will
 later), list the database content with ``caldb list``, and
@@ -217,7 +221,7 @@ a list of dark files that have exposure time of 120 seconds:
 
 ``--expr`` is used to filter the files based on their descriptors_. Here we are
 selecting files with exposure time of 120 seconds. You can repeat the same
-command for the other exposure time.
+command with the other exposure time to get the list of short darks.
 
 .. code-block:: bash
 
@@ -268,15 +272,14 @@ Create a Master Dark
 ====================
 
 We start the data reduction by creating a master dark for the science data.
-Here is how you can reduce the 120 s dark data into a master dark:
+Here is how you reduce the 120 s dark data into a master dark:
 
 .. code-block:: bash
 
     $ reduce @darks_120s.list
 
-Note the ``@`` character before the name of the input file. This is the
-"at-file" syntax. More details can be found in the
-`DRAGONS - Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/howto.html#the-file-facility>`_.
+The ``@`` character before the name of the input file is the "at-file" syntax.
+More details can be found in the |atfile| documentation.
 
 The master dark is added to the local calibration manager using the
 following command:
@@ -290,16 +293,16 @@ other observations.
 
 .. note::
     The master dark will be saved in the same folder where reduce_ was
-    called *and* inside the ``./calibration/processed_dark`` folder. The latter
+    called *and* inside the ``./calibrations/processed_dark`` folder. The latter
     location is to cache a copy of the file. This applies to all the processed
-    calibration, eg. master flat.
+    calibration.
 
-    Some people might prefer adding the copy in the `calibration` directory
+    Some people might prefer adding the copy in the `calibrations` directory
     as it is safe from a `rm *`, for example.
 
     .. code-block:: bash
 
-        $ caldb add ./calibration/processed_dark/S20131120S0115_dark.fits
+        $ caldb add ./calibrations/processed_dark/S20131120S0115_dark.fits
 
 
 Create a Bad Pixel Mask
@@ -374,6 +377,11 @@ and then proceeds accordingly. Finally, the sky-subtracted frames are aligned
 and stacked together. Sources in the frames are used for the alignment.
 
 The final product file will have a ``_stack.fits`` suffix and it is shown below.
+
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
 
 .. warning::
 

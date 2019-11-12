@@ -1,1 +1,2 @@
-__version__ = '2.2.0'
+from astrodata import version
+__version__ = version()

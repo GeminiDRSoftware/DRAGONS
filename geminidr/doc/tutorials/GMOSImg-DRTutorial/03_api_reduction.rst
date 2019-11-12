@@ -1,6 +1,6 @@
 .. 03_api_reduction.rst
 
-.. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
+.. include:: DRAGONSlinks.txt
 
 .. _primitive: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/definitions.html#primitive
 
@@ -15,10 +15,10 @@
 Reduction using API
 *******************
 
-There may be cases where you might be interested in accessing the DRAGONS'
+There may be cases where you would be interested in accessing the DRAGONS'
 Application Program Interface (API) directly instead of using the command
-line wrappers to reduce your data. In this scenario, you will need to access
-DRAGONS' tools by importing the appropriate modules and packages.
+line wrappers to reduce your data. Here we show you how to do the same
+reduction we did in the previous chapter but using the API.
 
 
 The dataset
@@ -34,76 +34,60 @@ The dataset specific to this example is described in:
 Here is a copy of the table for quick reference.
 
 +---------------+---------------------+--------------------------------+
-| Science       || N20170525S0116-120 | 300 s, g-band                  |
+| Science       || N20170614S0201-205 || 10 s, i-band                  |
 +---------------+---------------------+--------------------------------+
-| Bias          || N20170527S0528-532 |                                |
+| Bias          || N20170613S0180-184 |                                |
+|               || N20170615S0534-538 |                                |
 +---------------+---------------------+--------------------------------+
-| Twilight Flats|| N20170530S0360     | 256 s, g-band                  |
-|               || N20170530S0363     | 64 s, g-band                   |
-|               || N20170530S0364     | 32 s, g-band                   |
-|               || N20170530S0365     | 16 s, g-band                   |
-|               || N20170530S0371-372 | 1 s, g-band                    |
+| Twilight Flats|| N20170702S0178-182 || 40 to 16 s, i-band            |
 +---------------+---------------------+--------------------------------+
 
-Set Up
-======
+Setting Up
+==========
 
-Import Libraries
-----------------
+Importing Libraries
+-------------------
 
-Here are all the packages and modules that you will have to import for running
-this tutorial:
+We first import the necessary modules and classes:
 
 .. code-block:: python
     :linenos:
 
+    from __future__ import print_function
+
     import glob
-    import os
 
     from gempy.adlibrary import dataselect
     from recipe_system import cal_service
     from recipe_system.reduction.coreReduce import Reduce
 
 
-The first two packages, :mod:`glob` and :mod:`os`, are Python built-in packages.
-Here, :mod:`os` will be used to perform operations with the files names and
-:mod:`glob` will be used to return a :class:`list` with the input file names.
+Importing ``print_function`` is for compatibility with the Python 2.7 print
+statement. If you are working with Python 3, it is not needed, but importing
+it will not break anything.
 
+:mod:`glob` is Python built-in packages. It will be used to return a
+:class:`list` with the input file names.
 
 .. todo @bquint: the gempy auto-api is not being generated anywhere. Find a
     place for it.
 
 
-Then, we are importing the :mod:`~gempy.adlibrary.dataselect` from the
-:mod:`gempy.adlibrary`. It will be used to select the data in the same way we
-did as in :ref:`create_file_lists` section. The
-:mod:`~recipe_system.cal_service` package will be our interface with the
-local calibration database. Finally, the
-:class:`~recipe_system.reduction.coreReduce.Reduce` class will be
-used to actually run the data reduction pipeline.
-
-When using the API, you will notice that the output messages appear twice.
-To prevent this behaviour you can set one of the output stream to a file
-using the :mod:`gempy.utils.logutils` module and its
-:func:`~gempy.utils.logutils.config()` function:
+:mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
+darks, the flats and the science observations. The
+:mod:`~recipe_system.cal_service` package is our interface with the local
+calibration database. Finally, the
+:class:`~recipe_system.reduction.coreReduce.Reduce` class is used to set up
+and run the data reduction.
 
 
-.. code-block:: python
-    :linenos:
-    :lineno-start: 7
-
-    from gempy.utils import logutils
-    logutils.config(file_name='gmos_data_reduction.log')
-
-
-Dragons Logger
---------------
-
+Setting up the logger
+---------------------
 We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 9
+    :lineno-start: 8
 
     from gempy.utils import logutils
     logutils.config(file_name='gmos_data_reduction.log')
@@ -111,10 +95,11 @@ We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
 
 .. _set_caldb_api:
 
-Calibration Service
--------------------
+Setting up the Calibration Service
+----------------------------------
 
-Before we start, let's be sure we have properly setup our database.
+Before we continue, let's be sure we have properly setup our calibration
+database and the calibration association service.
 
 First, check that you have already a ``rsys.cfg`` file inside the
 ``~/.geminidr/``. It should contain:
@@ -126,23 +111,23 @@ First, check that you have already a ``rsys.cfg`` file inside the
     database_dir = /path_to_my_data/gmosimg_tutorial_api/playground
 
 
-This simply tells the system where to put the calibration database. This
-database will keep track of the processed calibrations as we add these files
+This tells the system where to put the calibration database. This
+database will keep track of the processed calibrations as we add them
 to it.
 
-..  note:: The tilde (``~``) in the path above refers to your home directory.
+.. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.geminidr``.
 
 The calibration database is initialized and the calibration service is
-configured like this:
+configured as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 11
+    :lineno-start: 10
 
-    calibration_service = cal_service.CalibrationService()
-    calibration_service.config()
-    calibration_service.init()
+    caldb = cal_service.CalibrationService()
+    caldb.config()
+    caldb.init()
 
     cal_service.set_calservice()
 
@@ -156,37 +141,36 @@ check the
 Create list of files
 ====================
 
-Here, again, we have to create lists of files that will be used on each of the
-data reduction step. We can start by creating a :class:`list` will all the file
-names:
+The next step is to create lists of files that will be used as input to each of the
+data reduction steps. Let us start by creating a :class:`list` of all the
+FITS files in the directory ``../playdata/``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 16
+    :lineno-start: 15
 
     all_files = glob.glob('../playdata/*.fits')
     all_files.sort()
 
-Where the string between parenthesis means that we are selecting every file that
-ends with ``.fits`` and that lives withing the ``../playdata/`` directory.
 The :meth:`~list.sort` method simply re-organize the list with the file names
-and is an optional step. Before you carry on, we recommend that you use
+and is an optional step. Before you carry on, you might want to do
 ``print(all_files)`` to check if they were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
-:func:`~gempy.adlibrary.dataselect.select_data`. Your will have to add a
-:class:`list` of matching Tags and a :class:`list` of excluding Tags. These
-three arguments are positional arguments (position matters) and they are
-separated by comma.
+:func:`~gempy.adlibrary.dataselect.select_data`.  The
+``dataselect.select_data()`` function signature is::
+
+    select_data(inputs, tags=[], xtags=[], expression='True')
+
 
 List of Biases
 --------------
 
-Let us, now, select the files that will be used to create a Master Bias frame:
+Let us, now, select the files that will be used to create a master bias:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 18
+    :lineno-start: 17
 
     list_of_biases = dataselect.select_data(
         all_files,
@@ -194,7 +178,7 @@ Let us, now, select the files that will be used to create a Master Bias frame:
         []
     )
 
-Note the empty list ``[]`` in line 19. This positional argument receives a list
+Note the empty list ``[]`` in line 20. This positional argument receives a list
 of tags that will be used to exclude any files with the matching tag from our
 selection (i.e., equivalent to the ``--xtags`` option).
 
@@ -202,17 +186,19 @@ selection (i.e., equivalent to the ``--xtags`` option).
 List of Flats
 -------------
 
-Now you must create a list of FLAT images. You can do that by using the
-following commands:
+Next we create a list of twilight flats for each filter. The expression
+specifying the filter name is needed only if you have data from multiple
+filters. It is not really needed in this case.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 23
+    :lineno-start: 22
 
     list_of_flats = dataselect.select_data(
          all_files,
          ['FLAT'],
-         []
+         [],
+         dataselect.expr_parser('filter_name=="i"')
     )
 
 List of Science Data
@@ -222,22 +208,22 @@ Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 28
+    :lineno-start: 27
 
     list_of_science = dataselect.select_data(
         all_files,
         [],
         ['CAL'],
-        dataselect.expr_parser('(observation_class=="science" and filter_name=="g")')
+        dataselect.expr_parser('(observation_class=="science" and filter_name=="i")')
     )
 
-Here we left the ``TAGS`` argument as an empty list and passed the ``'CAL'`` as
-an ``XTAGS`` argument.
+Here we left the ``tags`` argument as an empty list and passed the tag
+``'CAL'`` as an exclusion tag through the ``xtags`` argument.
 
 We also added a fourth argument which is not necessary for our current dataset
 but that can be useful for others. It contains an expression that has to be
 parsed by :func:`~gempy.adlibrary.dataselect.expr_parser`, and which ensures
-that we are getting science frames obtained with the g-band filter.
+that we are getting *science* frames obtained with the *i-band* filter.
 
 
 .. _api_process_bias_files:
@@ -245,61 +231,45 @@ that we are getting science frames obtained with the g-band filter.
 Make Master Bias
 ================
 
-The Bias data reduction can be performed using the following commands:
+We create the master bias and add it to the calibration manager as follow:
 
 .. code-block:: python
    :linenos:
-   :lineno-start: 34
+   :lineno-start: 33
 
-    reduce_bias = Reduce()
-    reduce_bias.files.extend(list_of_biases)
-    reduce_bias.runr()
+   reduce_bias = Reduce()
+   reduce_bias.files.extend(list_of_biases)
+   reduce_bias.runr()
 
-    calibration_service.add_cal(reduce_bias.output_filenames[0])
+   caldb.add_cal(reduce_bias.output_filenames[0])
 
-The first line creates an instance of the
-:class:`~recipe_system.reduction.coreReduce.Reduce` class. It is responsible to
-check on the first image in the input :class:`list` and find what is the
-appropriate Recipe it should apply. The second line passes the :class:`list` of
-dark frames to the :class:`~recipe_system.reduction.coreReduce.Reduce`
-``files`` attribute. The
-:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method triggers the
-start of the data reduction.
+The :class:`~recipe_system.reduction.coreReduce.Reduce` class is our reduction
+"controller". This is where we collect all the information necessary for
+the reduction. In this case, the only information necessary is the list of
+input files which we add to the ``files`` attribute. The
+:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` method is where the
+recipe search is triggered and where it is executed.
 
-:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` uses the first filename
-in the input list as basename. So if your first filename is, for example,
-``N20001231S001.fits``, the output will be ``N20001231S001_bias.fits``. Because
-of that, the base name of the Master Bias file can be different for you.
+Once :meth:`runr()` is finished, we add the master bias to the calibration
+manager (line 37).
 
 
 .. _api_process_flat_files:
 
-Make Master FLAT
+Make Master Flat
 ================
 
-We can now reduce our FLAT files by using the following commands:
+We create the master flat field and add it to the calibration database as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 39
+    :lineno-start: 38
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats)
     reduce_flats.runr()
 
-    calibration_service.add_cal(reduce_flats.output_filenames[0])
-
-
-The code above is equivalent to what we did in the `api_process_bias_files`_: line
-37 creates an instance of the :class:`~recipe_system.reduction.coreReduce.Reduce`
-class, line 38 passes the lists with the flat files to the `reduce_flats.files`
-attribute using the :meth:`~recipe_system.reduction.coreReduce.Reduce.files.extend`
-method and line 39 starts the data reduction.
-
-Once :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` is finished, we add
-master flat file to the calibration manager using the line 41. Here,
-:meth:`~recipe_system.reduction.coreReduce.Reduce.runr` will create a file with
-the ``_flat`` suffix.
+    caldb.add_cal(reduce_flats.output_filenames[0])
 
 
 .. _api_process_fring_frame:
@@ -307,72 +277,29 @@ the ``_flat`` suffix.
 Make Master Fringe Frame
 ========================
 
-.. note:: The dataset used in this tutorial does not require Fringe Correction
-    so you can skip this section if you are following it. Find more information
-    below.
-
-The reduction of some datasets requires a Processed Fringe Frame. The datasets
-that need a Fringe Frame are shown in the appendix
-`Fringe Correction Tables <fringe_correction_tables>`_.
-
-If you find out that your dataset needs Fringe Correction, you can use the
-code block below to create the Processed Fringe Frame:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 44
-
-    reduce_fringe = Reduce()
-    reduce_fringe.files.extend(list_of_science)
-    reduce_fringe.runr()
-
-    calibration_service.add_cal(reduce_fringe.output_filenames[0])
-
-The code above is very similar to the code used for Bias and Flats. The output
-file will have the ``_fringe`` suffix.
+.. warning:: The dataset used in this tutorial does not require fringe
+    correction so we skip this step.  To find out how to produce a master
+    fringe frame, see :ref:`process_fringe_frame` in the
+    :ref:`tips_and_tricks` chapter.
 
 
 .. _api_process_science_files:
 
-Reduce Science files
-====================
+Reduce Science Images
+=====================
 
-Finally, we can use similar commands to create a new pipeline and reduce the
+We use similar statements as before to initiate a new reduction to reduce the
 science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 49
+    :lineno-start: 43
 
     reduce_science = Reduce()
     reduce_science.files.extend(list_of_science)
     reduce_science.runr()
 
-..  warning:: This is a heavy process computational speaking given the stack
-    primitive_. Our team is working on this for better performance.
-
-Again, if you need to change the parameters used in a given primitive_,
-you can change its parameters. This can be done by appending parameters to
-the :meth:`~recipe_system.reduction.coreReduce.Reduce.uparms` using the command
-below:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 52
-
-    reduce_science.uparms.append(("stackFrames:scale", True))
-
-Before you run the pipeline again, you might want to change the suffix of the
-output file. You can do that with:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 53
-
-    reduce_science.suffix = "_scale_stack"
-    reduce_science.runr()
-
-..  warning:: Some primitives use a lot of computer memory and might freeze your
-    computer. Make sure you save all your work before running
-    :meth:`~recipe_system.reduction.coreReduce.Reduce.runr`.
-
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.

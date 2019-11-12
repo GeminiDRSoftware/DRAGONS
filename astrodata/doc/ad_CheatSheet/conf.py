@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Astrodata Cheat Sheet'
-copyright = u'2017, Kathleen Labrie'
+copyright = u'2019, Association of Universities for Research in Astronomy'
 # Note that AURA owns the Copyright, not you.
 
 # The version info for the project you're documenting, acts as replacement for
@@ -69,7 +69,7 @@ release = '2.0.8'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-#today = ''
+today = 'November 2019'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

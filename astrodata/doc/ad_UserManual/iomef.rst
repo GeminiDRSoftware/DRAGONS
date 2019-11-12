@@ -20,10 +20,10 @@ understand that mapping.
 
 **Try it yourself**
 
-Download the data package if you wish to follow along and run the
+Download the data package (:ref:`datapkg`) if you wish to follow along and run the
 examples.  Then ::
 
-    $ cd <path>/dragons_datapkg-v1.0/playground
+    $ cd <path>/ad_usermanual/playground
     $ python
 
 
@@ -116,7 +116,7 @@ table will be packaged within the same AstroData extension as the pixel data.
 The |AstroData| "extension" is the |NDAstroData| object plus any table or other pixel
 array. If the table is not associated with a specific extension and applies
 globally, it will be added to the AstroData object as a global addition. No
-indexing will be required to access it.  For example, below one ``OBJCAT`` is
+indexing will be required to access it.  In the example below, one ``OBJCAT`` is
 associated with each extension, while the ``REFCAT`` has a global scope ::
 
     >>> ad.info()
@@ -176,7 +176,7 @@ which is a form of Python ordered dictionaries. Headers associated with extensio
 are stored with the corresponding |NDAstroData| object. The MEF Primary Header
 Unit (PHU) is stored "globally" in the |AstroData| object. Note that when slicing an |AstroData| object,
 for example copying over just the first extension, the PHU will follow. The
-slice of an |AstroData| object is an |AstroData| object itself.
+slice of an |AstroData| object is an |AstroData| object.
 Headers can be accessed directly, or for some predefined concepts, the use of
 Descriptors is preferred. See the chapters on headers for details.
 
@@ -338,17 +338,20 @@ with the |AstroData| object.
 
 Writing to a new file
 ---------------------
-There are various ways to write define the destination for the new FITS file.
+There are various ways to define the destination for the new FITS file.
 The most common and natural way is ::
 
     >>> ad.write('new154.fits')
 
+    >>> ad.write('new154.fits', overwrite=True)
+
 This will write a FITS file named 'new154.fits' in the current directory.
+With ``overwrite=True``, it will overwrite the file if it already exists.
 A path can be prepended to the filename if the current directory is not
 the destination.
 Note that ``ad.filename`` and ``ad.path`` have not changed, we have just
-written to the new file, the |AstroData| object is in no way associated anymore
-with that file.  ::
+written to the new file, the |AstroData| object is in no way associated
+with that new file.  ::
 
     >>> ad.path
     '../playdata/N20170609S0154.fits'
@@ -440,7 +443,7 @@ object that will be eventually written to disk.  The |AstroData| object
 created also needs to know that it will have to be written using the MEF
 format. This is fortunately handled fairly transparently by |astrodata|.
 
-The keep to associating the FITS data provider to the |AstroData| object
+The key to associating the FITS data provider to the |AstroData| object
 is simply to create the |AstroData| object from :mod:`astropy.io.fits` header
 objects. Those will be recognized by |astrodata| as FITS and the
 constructor for FITS will be used. The user does not need to do anything
@@ -451,6 +454,7 @@ Create a MEF with basic header and data array set to zeros
 
 ::
 
+    >>> import numpy as np
     >>> from astropy.io import fits
 
     >>> phu = fits.PrimaryHDU()
@@ -472,14 +476,15 @@ new ``Astrodata`` object.
 
 Represent a table as a FITS binary table in an ``AstroData`` object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-One first needs to create an table, either an :class:`astropy.table.Table`
+One first needs to create a table, either an :class:`astropy.table.Table`
 or a :class:`~astropy.io.fits.BinTableHDU`. See the |astropy| documentation
 on tables and this manual's :ref:`section <tables>` dedicated to tables for
 more information.
 
 In the first example, we assume that ``my_astropy_table`` is
 a :class:`~astropy.table.Table` ready to be attached to an |AstroData|
-object.
+object.  (Warning: we have not created ``my_astropy_table`` therefore the
+example below will not run, though this is how it would be done.)
 
 ::
 
@@ -491,7 +496,8 @@ object.
 
 
 In the second example, we start with a FITS :class:`~astropy.io.fits.BinTableHDU`
-and attach it to a new |AstroData| object. ::
+and attach it to a new |AstroData| object. (Again, we have not created
+``my_fits_table`` so the example will not run.) ::
 
     >>> phu = fits.PrimaryHDU()
     >>> ad = astrodata.create(phu)

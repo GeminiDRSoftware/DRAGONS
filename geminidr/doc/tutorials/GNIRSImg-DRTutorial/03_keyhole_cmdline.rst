@@ -175,13 +175,18 @@ database.  For any other Gemini facility instrument, they would both be
 retrieved automatically by the calibration manager.  However, GNIRS not being
 an imager, and the keyhole being normally used only for acquisition, it turns
 out that there are no calibration association rules between GNIRS keyhole images
-and darks.  This is recently discovered limitation that we plan to fix in
+and darks.  This is a recently discovered limitation that we plan to fix in
 a future release.  In the meantime, we are not stuck, we can simply specify
 the dark on the command line.  The flat will be retrieved automatically.
 
 ::
 
     reduce @target.lis --user_cal processed_dark:N20120102S0538_dark.fits
+
+The output stack units are in electrons (header keyword BUNIT=electrons).
+The output stack is stored in a multi-extension FITS (MEF) file.  The science
+signal is in the "SCI" extension, the variance is in the "VAR" extension, and
+the data quality plane (mask) is in the "DQ" extension.
 
 Below are a raw image (top) and the final stacked image (bottom).  The stack
 keeps all the pixels and is never cropped to only the common area. Of course

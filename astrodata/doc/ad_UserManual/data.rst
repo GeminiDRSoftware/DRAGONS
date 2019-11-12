@@ -8,13 +8,10 @@ Pixel Data
 
 **Try it yourself**
 
-If you wish to follow along and try the commands yourself, download the
-data package ``dragons_datapkg-v1.0``, go to the ``playground`` directory
-and launch python.
+Download the data package (:ref:`datapkg`) if you wish to follow along and run the
+examples.  Then ::
 
-::
-
-    $ cd <path>/dragons_datapkg-v1.0/playground
+    $ cd <path>/ad_usermanual/playground
     $ python
 
 Then import core astrodata and the Gemini astrodata configurations. ::
@@ -26,7 +23,7 @@ Then import core astrodata and the Gemini astrodata configurations. ::
 Operate on Pixel Data
 =====================
 The pixel data are stored in the ``AstroData`` object as a list of
-``NDAstroData`` objects.  The ``NDAstroData`` is subclass of Astropy's
+``NDAstroData`` objects.  The ``NDAstroData`` is a subclass of Astropy's
 ``NDData`` class which combines in one "package" the pixel values, the
 variance, and the data quality plane or mask.   The data can be retrieved
 as standard NumPy ``ndarray``.
@@ -134,7 +131,7 @@ Python operator syntax.  Here is a little example to illustrate the difference.
 
 ::
 
-    >>> ad.add(5).mult(10).sub(5)
+    >>> ad.add(5).multiply(10).subtract(5)
 
     >>> # means:  ad = ((ad + 5) * 10) - 5
     >>> # NOT: ad = ad + (5 * 10) - 5
@@ -227,12 +224,12 @@ masked.   For example at Gemini here is our bit mapping for bad pixels.
 | Unilluminated |  64   |
 +---------------+-------+
 
-(These definitions are located in `geminidr.lookups.DQ_definitions`.)
+(These definitions are located in ``geminidr.gemini.lookups.DQ_definitions``.)
 
 So a pixel marked 10 in the mask, would be a "non-linear" "cosmic ray".  The
 ``AstroData`` mask are propagated with bitwise-OR operation.  For example, let
 say that we are stacking frames. A pixel is set as bad (value 1)
-in one frame, saturated in another (value 4), fine is all the rest of
+in one frame, saturated in another (value 4), and fine in all the other
 the frames (value 0).  The mask of the resulting stack will be assigned
 a value of 5 for that pixel.
 
@@ -249,12 +246,12 @@ The mask can be accessed as follow::
 
 Display
 =======
-Since the data is stored in the ``AstroData`` object as a nummpy ``ndarray``
+Since the data is stored in the ``AstroData`` object as a numpy ``ndarray``
 any tool that works on ``ndarray`` can be used.  To display to DS9 there
-is the ``imexam`` package.  The ``numdisplay`` is still available but it is
-no longer supported by STScI.  We will show
+is the ``imexam`` package.  The ``numdisplay`` package is still available for
+now but it is no longer supported by STScI.  We will show
 how to use ``imexam`` to display and read the cursor position.  Read the
-documentations on that tool to learn more about what else it has
+documentation on that tool to learn more about what else it has
 to offer.
 
 Displaying with imexam
@@ -284,7 +281,7 @@ Here is an example how to display pixel data to DS9 with ``imexam``.
 Retrieving cursor position with imexam
 --------------------------------------
 
-The function ``numdisplay.readcursor()`` can be used to retrieve cursor
+The function ``readcursor()`` can be used to retrieve cursor
 position in pixel coordinates.  Note that it will **not** respond to
 mouse clicks, **only** keyboard entries are acknowledged.
 
@@ -303,13 +300,13 @@ hit.
     # and display
     >>> ds9 = imexam.connect(list(imexam.list_active_ds9())[0])
     >>> ds9.view(ad[0].data)
-    >>> ds9.scale(zscale)
+    >>> ds9.scale('zscale')
 
 
     >>> cursor_coo = ds9.readcursor()
     >>> print(cursor_coo)
 
-    # To extract only the x,y coordinates  (as strings)
+    # To extract only the x,y coordinates
     >>> (xcoo, ycoo) = cursor_coo[:2]
     >>> print(xcoo, ycoo)
 
@@ -322,14 +319,14 @@ Useful tools from the NumPy, SciPy, and Astropy Packages
 ========================================================
 Like for the Display section, this section is not really specific to
 Astrodata but is rather a quick show-and-tell of a few things that can
-be done on the pixel with the big scientific packages NumPy, SciPy,
+be done on the pixels with the big scientific packages NumPy, SciPy,
 and Astropy.
 
 Those three packages are very large and rich.  They have their own
-extensive documentation and highly recommend the users to learn about what
+extensive documentation and it is highly recommend for the users to learn about what
 they have to offer.  It might save you from re-inventing the wheel.
 
-The pixels, the variance, and the mask are stored as NumPy ``ndarray``s.
+The pixels, the variance, and the mask are stored as NumPy ``ndarray``'s.
 Let us go through some basic examples, just to get a feel for how the
 data in an ``AstroData`` object can be manipulated.
 
@@ -390,6 +387,8 @@ too many to cover here, but here are a couple examples.
 
 ::
 
+    >>> import numpy as np
+
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
     >>> data = ad[0].data
 
@@ -422,8 +421,8 @@ NumPy tools, like in this example::
     >>> ad = astrodata.open('../playdata/N20170609S0154.fits')
     >>> data = ad[0].data
 
-    >> stddev = data.std()
-    >> mean = data.mean()
+    >>> stddev = data.std()
+    >>> mean = data.mean()
 
     >>> clipped_mean = np.ma.masked_outside(data, mean-3*stddev, mean+3*stddev).mean()
 
@@ -444,7 +443,7 @@ how it is done::
 
 Filters with SciPy
 ------------------
-Another common operatino is the filtering of an image, for example convolving
+Another common operation is the filtering of an image, for example convolving
 with a gaussian filter.  The SciPy module ``ndimage.filters`` offers
 several functions for image processing.  See the SciPy documentation for
 more information.
@@ -522,6 +521,7 @@ to include those unilluminated areas.  We would want to mask them out.
 Let us have a look at the mask associated with that image::
 
     >>> ds9.view(ad[0].mask)
+    >>> ds9.scale('zscale')
 
 The bad sections are all white (pixel value > 0).  There are even some
 illuminated pixels that have been marked as bad for a reason or another.
@@ -664,7 +664,7 @@ add a variance plane to our raw data frame.
     >>> mean_overscan = ad[0].data[oversec.y1: oversec.y2, oversec.x1: oversec.x2].mean()
 
     >>> # Subtract the overscan level.  The variance will be propagated.
-    >>> ad[0].sub(mean_overscan)
+    >>> ad[0].subtract(mean_overscan)
 
     >>> # Trim the data to remove the overscan section and keep only
     >>> # the data section.
@@ -748,7 +748,7 @@ Now that is nice but it would be nicer if we could plot the x-axis in units
 of Angstroms instead of pixels.  We use ``astropy.wcs`` to convert the pixels
 into wavelengths.  Now a particularity of ``astropy.wcs`` is that it refers
 to the axes in the "natural" way, (x, y, wlen) contrary to Python's (wlen, y, x).
-It truly requires to pay attention.
+It truly requires you to pay attention.
 
 ::
 
@@ -860,13 +860,6 @@ For those who have used IRAF, ``imexam`` is a well-known tool.  The Python
 course, but it also offers programmatic tools.  One can even control DS9
 from Python.  As for Matplotlib, here we really just scratch the surface of
 what ``imexam`` has to offer.
-
-.. todo::
-    Check imexam again closer to release.  It's full of bugs.  The
-    interactive 'c' and 'l' don't work.  The x and y axis in the contour
-    plot have bogus values.  The image appears to be cropped correctly tough.
-    Again, the contour plot, it should be square if the box is square,
-    currently the aspect ratio is squished.
 
 ::
 

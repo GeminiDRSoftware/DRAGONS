@@ -791,7 +791,7 @@ def _get_qa_band(metric, ad, quant, limit_dict, simple=True):
                     info = '{}-{}'.format(*sorted(limits[i:i+2])) if \
                         i<len(bands)-1 else '{}{}'.format(
                         '<>'.replace(inequality,''), limits[i])
-            if qaband > reqband:
+            if reqband is not None and qaband > reqband:
                 warning = '{} requirement not met'.format(metric.upper())
         else:
             # Assumes the measured value and uncertainty represent a Normal

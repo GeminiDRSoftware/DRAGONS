@@ -35,12 +35,15 @@ def main():
         interval=visualization.ZScaleInterval()
     )
 
+    print(norm.vmin)
+    print(norm.vmax)
     for i in range(len(ad)):
 
         axs[i].imshow(
             # np.ma.masked_where(ad[i].mask > 0, ad[i].data),
             ad[i].data,
-            norm=colors.Normalize(vmin=norm.vmin, vmax=norm.vmax),
+            #norm=colors.Normalize(vmin=norm.vmin, vmax=norm.vmax),
+            norm=colors.Normalize(vmin=750, vmax=900),
             origin="lower",
             cmap=palette,
         )

@@ -20,7 +20,7 @@
 
 .. |showrecipes| raw:: html
 
-    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#show-recipes" target="_blank">showrecipes</a>
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showrecipes" target="_blank">showrecipes</a>
 
 .. |showpars| raw:: html
 

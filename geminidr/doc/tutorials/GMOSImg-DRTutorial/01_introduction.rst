@@ -12,16 +12,15 @@
 Introduction
 ************
 
-This tutorial covers the basics on reducing GMOS_ (Gemini Multi-Object
-Spectrographs) data using DRAGONS_ (Data Reduction for Astronomy from Gemini
-Observatory North and South).
+This tutorial covers the basics of reducing GMOS_ (Gemini Multi-Object
+Spectrographs) data using DRAGONS_.
 
 The next two sections explain what are the required software and the data set
-that we use throughout the tutorial. `Chapter 2: Data Reduction
-<command_line_data_reduction>`_ contains a quick example on how to reduce data
-using the DRAGONS command line tools. `Chapter 3: Reduction with API
-<api_data_reduction>`_ shows how we can reduce the data using DRAGONS' packages
-from within Python.
+that we use throughout the tutorial.
+:ref:`Chapter 2: Data Reduction <command_line_data_reduction>` contains a
+quick example on how to reduce data using the DRAGONS command line tools.
+:ref:`Chapter 3: Reduction with API <api_data_reduction>` shows how we can
+reduce the data using DRAGONS' packages from within Python.
 
 
 .. _requirements:
@@ -35,9 +34,6 @@ on your machine. You can test that by typing the following commands:
 .. code-block:: bash
 
     $ conda activate geminiconda
-
-.. code-block:: bash
-
     $ python -c "import astrodata"
 
 Where ``geminiconda`` is the name of the conda environment where DRAGONS should
@@ -58,17 +54,19 @@ Downloading the tutorial datasets
 =================================
 
 All the data needed to run this tutorial are found in the tutorial's data
-package (KL??? name of the package, with URL). Download it and unpack it
-somewhere convenient.
+package:
 
-.. todo:: add name of and URL to the data package
+    `<http://www.gemini.edu/sciops/data/software/datapkgs/gmosimg_tutorial_datapkg-v1.tar>`_
+
+Download it and unpack it somewhere convenient.
 
 .. highlight:: bash
 
 ::
 
     cd <somewhere convenient>
-    tar xvzf KL???
+    tar xvf gmosimg_tutorial_datapkg-v1.tar
+    bunzip2 gmosimg_tutorial/playdata/*.bz2
 
 The datasets are found in the subdirectory ``gmosimg_tutorial/playdata``, and we
 will work in the subdirectory named ``gmosimg_tutorial/playground``.
@@ -84,18 +82,16 @@ will work in the subdirectory named ``gmosimg_tutorial/playground``.
 
 About the dataset
 =================
+The data used for this tutorial is a dithered sequence on a starry field.
 
 The table below contains a summary of the dataset downloaded in the previous
 section:
 
 +---------------+---------------------+--------------------------------+
-| Science       || N20170525S0116-120 | 300 s, g-band                  |
+| Science       || N20170614S0201-205 || 10 s, i-band                  |
 +---------------+---------------------+--------------------------------+
-| Bias          || N20170527S0528-532 |                                |
+| Bias          || N20170613S0180-184 |                                |
+|               || N20170615S0534-538 |                                |
 +---------------+---------------------+--------------------------------+
-| Twilight Flats|| N20170530S0360     | 256 s, g-band                  |
-|               || N20170530S0363     | 64 s, g-band                   |
-|               || N20170530S0364     | 32 s, g-band                   |
-|               || N20170530S0365     | 16 s, g-band                   |
-|               || N20170530S0371-372 | 1 s, g-band                    |
+| Twilight Flats|| N20170702S0178-182 || 40 to 16 s, i-band            |
 +---------------+---------------------+--------------------------------+

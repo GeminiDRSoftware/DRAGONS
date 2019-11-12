@@ -1,0 +1,19 @@
+See STScI's AURA copyright notice in extern_licenses/numdisplay.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+This is a Gemini fork which includes fixes for Python 3 compatibility.
+
+STScI has archived this project, therefore we cannot submit our fixes
+to them for integration into the primary repository.
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+===================================
+This package has been deprecated!!!
+===================================
+
+For numpy DS9 display functionality please see the Imexam package:
+
+Documentation: http://imexam.readthedocs.io/en/latest/index.html
+Github: https://github.com/spacetelescope/imexam
+

@@ -1,4 +1,4 @@
-.. 04_beyond.rst
+.. 05_issues_and_limitations.rst
 
 .. _reduce: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html
 
@@ -22,9 +22,11 @@ and primitives. If an "Out of memory" crash happens to you, if possible for your
 observation sequence, try to run the pipeline on fewer images at the time,
 like for each dither pattern sequence separately.
 
-.. todo::  We need to show the user how to bring them all back together in a
-    final stack at the end. This means showing what custom recipe to use and how
-    to invoke it.
+Then to align and stack the pieces, run the ``alignAndStack`` recipe:
+
+.. code-block:: bash
+
+    $ reduce @list_of_stacks -r alignAndStack
 
 
 .. _double_messaging:
@@ -43,4 +45,10 @@ screen. We recommend using the DRAGONS logger located in the
     :linenos:
 
     from gempy.utils import logutils
-    logutils.config(file_name='f2_data_reduction.log')
+    logutils.config(file_name='gmos_data_reduction.log')
+
+
+Astropy warnings
+================
+You might see some warning messages from AstroPy that are related to the
+header of the images. It is safe to ignore them.

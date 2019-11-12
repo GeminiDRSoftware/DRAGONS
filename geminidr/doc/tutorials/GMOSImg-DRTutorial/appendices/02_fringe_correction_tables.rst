@@ -1,4 +1,4 @@
-.. appendix.rst
+.. 02_fringe_correction_tables.rst
 
 .. _fringe_correction_tables:
 
@@ -6,10 +6,11 @@
 Fringe Correction Tables
 ************************
 
-Here you will find what are the detector-filter combinations that requires or 
-not a Processed Fringe Frame for the data reduction. Find bellow one table for 
+Here you will find what are the detector-filter combinations that requires a
+Processed Fringe Frame for the data reduction. Below are one table for
 GMOS-N and one table for GMOS-S. Each row of these tables corresponds to one 
-of the detectors used in this instrument. The five columns in the right contains
+of the detectors used in the instrument during its life-time. The five columns
+in the right contains
 the broadband filters used in imaging mode. The intersection of the 
 detector rows with the filter columns contains cell with the following 
 information:
@@ -22,7 +23,8 @@ information:
 
 
 .. table:: GMOS-N Table for Detector/Filter Configurations that require
-    Processed Fringe Frame for data reduction
+    Processed Fringe Frame for data reduction.  Filters bluer than i' do
+    not require fringe correction.
 
     +----------------+-------------------------+-----+-----+-----+-----+-----+
     | GMOS-N         |                         | i'  | CaT | Z   | z'  | Y   |
@@ -38,7 +40,8 @@ More: `GMOS-N Fringe Information <https://www.gemini.edu/sciops/instruments/gmos
 
 
 .. table:: GMOS-S Table for Detector/Filter Configurations that require
-    Processed Fringe Frame for data reduction
+    Processed Fringe Frame for data reduction. Filters bluer than i' do
+    not require fringe correction.
 
     +----------------+---------------------------+-----+-----+-----+-----+-----+
     | GMOS-S         |                           | i'  | CaT | Z   | z'  | Y   |

@@ -1,6 +1,6 @@
 .. 03_api_reduction.rst
 
-.. _caldb: https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#caldb
+.. include:: DRAGONSlinks.txt
 
 .. |github| image:: /_static/img/GitHub-Mark-32px.png
     :scale: 75%
@@ -8,6 +8,7 @@
 
 .. _api_data_reduction:
 
+*******************
 Reduction using API
 *******************
 
@@ -16,41 +17,85 @@ Application Program Interface (API) directly instead of using the command
 line wrappers to reduce your data. In this case, you will need to access
 DRAGONS' tools by importing the appropriate modules and packages.
 
+The dataset
+===========
+If you have not already, download and unpack the tutorial's data package.
+Refer to :ref:`datasetup` for the links and simple instructions.
+
+The dataset specific to this example is described in:
+
+    :ref:`about_data_set`.
+
+Here is a copy of the table for quick reference.
+
++---------------+---------------------+--------------------------------+
+| Science       || S20170505S0095-110 || Kshort-band, on target, 60 s  |
++---------------+---------------------+--------------------------------+
+| Flats         || S20170505S0030-044 || Lamp on, Kshort, for science  |
+|               || S20170505S0060-074 || Lamp off, Kshort, for science |
++---------------+---------------------+--------------------------------+
+| Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
++---------------+---------------------+--------------------------------+
+
+Setting up
+==========
 
 Importing Libraries
 -------------------
 
-Here are all the packages and modules that you will have to import for running
-this tutorial:
+We first import the necessary modules and classes:
 
 .. code-block:: python
     :linenos:
 
+    from __future__ import print_function
+
     import glob
-    import os
 
     from gempy.adlibrary import dataselect
     from recipe_system import cal_service
     from recipe_system.reduction.coreReduce import Reduce
 
 
-The first two packages, :mod:`glob` and :mod:`os`, are Python built-in packages.
-Here, :mod:`os` will be used to perform operations with the files names and
-:mod:`glob` will be used to return a :class:`list` with the input file names.
+Importing ``print_function`` is for compatibility with the Python 2.7 print
+statement. If you are working with Python 3, it is not needed, but importing
+it will not break anything.
 
-Then, we are importing the :mod:`~gempy.adlibrary.dataselect` from the
-:mod:`gempy.adlibrary`. It will be used to select the data in the same way we
-did as in :ref:`create_file_lists` section. The
-:mod:`~recipe_system.cal_service` package will be our interface with the
-local calibration database. Finally, the
-:class:`~recipe_system.reduction.coreReduce.Reduce` class will be
-used to actually run the data reduction pipeline.
+:mod:`glob` is Python built-in packages. It will be used to return a
+:class:`list` with the input file names.
 
 
-The Calibration Service
------------------------
+.. todo @bquint: the gempy auto-api is not being generated anywhere.
 
-Before we start, let's be sure we have properly setup our database. First, check that you have already a ``rsys.cfg`` file inside the
+:mod:`~gempy.adlibrary.dataselect` will be used to create file lists for the
+darks, the flats and the science observations. The
+:mod:`~recipe_system.cal_service` package is our interface with the local
+calibration database. Finally, the
+:class:`~recipe_system.reduction.coreReduce.Reduce` class is used to set up
+and run the data reduction.
+
+
+Setting up the logger
+---------------------
+We recommend using the DRAGONS logger. (See also :ref:`double_messaging`.)
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 8
+
+    from gempy.utils import logutils
+    logutils.config(file_name='gsaoi_data_reduction.log')
+
+
+.. _set_caldb_api:
+
+Setting up the Calibration Service
+----------------------------------
+
+Before we continue, let's be sure we have properly setup our calibration
+database and the calibration association service.
+
+First, check that you have already a ``rsys.cfg`` file inside the
 ``~/.geminidr/``. It should contain:
 
 .. code-block:: none
@@ -60,23 +105,23 @@ Before we start, let's be sure we have properly setup our database. First, check
     database_dir = ${path_to_my_data}/gsaoiimg_tutorial/playground
 
 
-This simply tells the system where to put the calibration database. This
-database will keep track of the processed calibrations as we add these files
+This tells the system where to put the calibration database. This
+database will keep track of the processed calibrations as we add them
 to it.
 
-..  note:: The tilde (``~``) in the path above refers to your home directory.
+.. note:: The tilde (``~``) in the path above refers to your home directory.
     Also, mind the dot in ``.geminidr``.
 
-Then, you can use the following commands to configure the local database and
-initialize it:
+The calibration database is initialized and the calibration service is
+configured as follow:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 7
+    :lineno-start: 10
 
-    calibration_service = cal_service.CalibrationService()
-    calibration_service.config()
-    calibration_service.init()
+    caldb = cal_service.CalibrationService()
+    caldb.config()
+    caldb.init()
 
     cal_service.set_calservice()
 
@@ -84,83 +129,58 @@ The calibration service is now ready to use. If you need more details,
 check the
 `Using the caldb API in the Recipe System User's Manual <https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html#using-the-caldb-api>`_ .
 
-..  todo: calmanager
-..  warning:: The Gemini Local Calibration Manager is not available yet in the
-    Gemini Conda Channel for installation and you might not have it installed.
-    If you get a `NameError: name 'localmanager' when running line 10, you don't
-    the Local Calibration Manager installed. For now, please, contact someone in
-    the Gemini Science User Support Department for more details.
 
+.. _api_create_file_lists:
 
-Create :class:`list` of files
------------------------------
+Create list of files
+====================
 
-Here, again, we have to create lists of files that will be used on each of the
-data reduction step. We can start by creating a :class:`list` will all the file names:
+Next step is to create lists of files that will be used as input to each of the
+data reduction steps. Let us start by creating a :class:`list` of all the
+FITS files in the directory ``../playdata/``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 12
+    :lineno-start: 15
 
     all_files = glob.glob('../playdata/*.fits')
 
-Where the string between parenthesis means that we are selecting every file that
-ends with ``.fits`` and that lives withing the ``../playdata/`` directory. Before
-you carry on, we recommend that you use ``print(all_files)`` to check if they
+Before you carry on, you might want to do ``print(all_files)`` to check if they
 were properly read.
 
 Now we can use the ``all_files`` :class:`list` as an input to
-:func:`~gempy.adlibrary.dataselect.select_data`. Your will may have to add
-a :class:`list` of matching Tags, a :class:`list` of excluding Tags and an expression that has
-to be parsed by :func:`~gempy.adlibrary.dataselect.expr_parser`. These three
-arguments are positional arguments (position matters) and they are separated
-by comma.
+:func:`~gempy.adlibrary.dataselect.select_data`.  The
+``dataselect.select_data()`` function signature is::
 
-As an example, let us can select the files that will be used to create a master
-DARK frame. Remember that **GSAOI data does not require DARK correction**. So
-this step is simply to make the tutorial complete:
+    select_data(inputs, tags=[], xtags=[], expression='True')
 
-.. code-block:: python
-    :linenos:
-    :lineno-start: 13
 
-    darks_150s = dataselect.select_data(
-        all_files,
-        ['GSAOI', 'DARK', 'RAW'],
-        [],
-        dataselect.expr_parser('exposure_time==150')
-    )
-    
+A list for the flats
+--------------------
+Now you must create a list of FLAT images for each filter. The expression
+specifying the filter name is needed only if you have data from multiple
+filters. It is not really needed in this case.
 
-Note the empty :class:`list` ``[]`` in the fourth line. It means that we are not passing
-any argument for the Tags exclusion.
-
-The lists with the FLAT images for ``Kshort`` and ``H`` using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 19
+    :lineno-start: 16
 
     list_of_flats_Ks = dataselect.select_data(
          all_files,
-         ['GSAOI', 'FLAT', 'RAW'],
+         ['FLAT'],
          [],
          dataselect.expr_parser('filter_name=="Kshort"')
     )
 
-    list_of_flats_H = dataselect.select_data(
-        all_files,
-        ['GSAOI', 'FLAT', 'RAW'],
-        [],
-        dataselect.expr_parser(' filter_name=="H" ')
-    )
 
-
-For the standard start selection, we use:
+A list for the standard star
+----------------------------
+For the standard star selection, we use:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 32
+    :lineno-start: 22
 
     list_of_std_stars = dataselect.select_data(
         all_files,
@@ -173,11 +193,14 @@ For the standard start selection, we use:
 Here, we are passing empty lists to the second and the third argument since
 we do not need to use the Tags for selection nor for exclusion.
 
+
+A list for the science data
+---------------------------
 Finally, the science data can be selected using:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 38
+    :lineno-start: 28
 
     list_of_science_images = dataselect.select_data(
         all_files,
@@ -186,136 +209,116 @@ Finally, the science data can be selected using:
         dataselect.expr_parser('(observation_class=="science" and exposure_time==60.)')
     )
 
-
-.. _api_process_dark_files:
-
-Process DARK files
-------------------
-
-Again, accordingly to the `Calibration webpage for GSAOI
-<https://www.gemini.edu/sciops/instruments/gsaoi/calibrations>`_,
-**DARK subtraction is not necessary** since the dark noise level is too low.
-DARK files are only used to generate Bad Pixel Masks (BPM).
-
-If, for any reason, you believe that you really need to have a master DARK file,
-you can create it using the commands below:
-
-.. code-block:: python
-   :linenos:
-   :lineno-start: 44
-
-    reduce_darks = Reduce()
-    reduce_darks.files.extend(darks_150s)
-    reduce_darks.runr()
-
-The first line creates an instance of the
-:class:`~recipe_system.reduction.coreReduce.Reduce` class. It is responsible to
-check on the first image in the input :class:`list` and find what is the appropriate
-Recipe it should apply. The second line passes the :class:`list` of dark frames to the
-:class:`~recipe_system.reduction.coreReduce.Reduce` ``files`` attribute.
-The :meth:`~recipe_system.reduction.coreReduce.Reduce.runr` triggers the
-start of the data reduction.
-
-
-.. _api_create_bpm_files:
-
-Create BPM files
-----------------
-
-The Bad Pixel Mask files can be easily created using the follow commands:
-
-.. code-block:: python
-    :linenos:
-    :lineno-start: 47
-
-    reduce_bpm = Reduce()
-    reduce_bpm.files.extend(list_of_flats_H)
-    reduce_bpm.files.extend(darks_150s)
-    reduce_bpm.recipename = 'makeProcessedBPM'
-    reduce_bpm.runr()
-
-Note that, here, we are setting the recipe name to 'makeProcessedBPM' on
-line 50.
+The exposure time is not really needed in this case since there are only
+60-second frames, but it shows how you could have two selection criteria in
+the expression.
 
 
 .. _api_process_flat_files:
 
-Process FLAT files
-------------------
+Create a Master Flat Field
+==========================
+As explained on the `calibration webpage for GSAOI
+<https://www.gemini.edu/sciops/instruments/gsaoi/calibrations>`_,
+*dark subtraction is not necessary* since the dark noise level is very low.
+Therefore, we can go ahead and start with the master flat.
 
-We can now reduce our FLAT files by using the following commands:
+A GSAOI K-short master flat is created from a series of lamp-on and lamp-off
+exposures. Each flavor is stacked, then the lamp-off stack is subtracted from
+the lamp-on stack and the result normalized.
+
+We create the master flat field and add it to the calibration manager as
+follow:
+
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 52
-
-    bpm_filename = reduce_bpm.output_filenames[0]
+    :lineno-start: 34
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Ks)
-    reduce_flats.uparms = [('addDQ:user_bpm', bpm_filename)]
     reduce_flats.runr()
 
-    calibration_service.add_cal(reduce_flats.output_filenames[0])
+    caldb.add_cal(reduce_flats.output_filenames[0])
 
-On Line 52, we get the first (only) output file from the ``reduce_bpm`` pipeline
-and store it in the ``bpm_filename`` variable. Then, we pass it to the
-``reduce_flats`` pipeline by updating the ``.uparms`` attribute. Remember
-that ``.uparms`` must be a :class:`list` of :class:`Tuples`.
+Once :meth:`runr()` is finished, we add the master flat to the calibration
+manager (line 38).
 
-After the pipeline, we add master flat file to the calibration manager using
-the line 59.
+
+Reduce Standard Star
+====================
+The standard star is reduced essentially the same way as the science
+target (next section). The processed flat field that we added above to
+the local calibration database will be fetched automatically.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 39
+
+    reduce_std = Reduce()
+    reduce_std.files.extend(list_of_std_stars)
+    reduce_std.runr()
+
+For stacking the sky-subtracted standard star images, the easiest way is
+probably to use ``disco_stu``'s command line interface as follow:
+
+::
+
+    $ disco `dataselect *_skySubtracted.fits --expr='observation_class=="partnerCal"'`
+
+If you really want or need to run ``disco_stu``'s API, see the example later
+in this chapter where we do just that for the science frames.
 
 
 .. _api_process_science_files:
 
-Process Science files
----------------------
+Reduce the Science Images
+=========================
+The science observation uses a dither-on-target with offset-to-sky pattern.
+The sky frames from the offset-to-sky position will be automatically detected
+and used for the sky subtraction.
 
-We can use similar commands to create a new pipeline and reduce the science
-data:
+The master flat will be retrieved automatically from the local calibration
+database.
+
+We use similar commands as before to initiate a new reduction to reduce the
+science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 60
+    :lineno-start: 42
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)
-    reduce_target.uparms = [('addDQ:user_bpm', bpm_filename)]
+    reduce_target.uparms.append(('skyCorrect:offset_sky', False))
     reduce_target.runr()
 
 
 .. _api_stack_science_images:
 
-Stack Science reduced images
-----------------------------
-
-.. todo: @bquint make .tar.gz file available for public access and change the url below.
-.. todo:: @bquint make .tar.gz file available for public access and change the url below.
-
-
-Now you will have to stack your images. For that, you must be aware that
+Stack Sky-subtracted Science Images
+===================================
+The final step is to stack the images. For that, you must be aware that
 GSAOI images are highly distorted and that this distortion must be corrected
-before stacking. At this moment, the standard tool for distortion correction
-and image stacking is called ``disco-stu`` and the most recent version is the
-v1.3.4. This package can be found in the link bellow (only available within
-Gemini Internal Network for now and requires login):
+before stacking. The tool for distortion correction and image stacking is
+``disco_stu``.
 
-*  `disco-stu v1.3.4 <https://gitlab.gemini.edu/DRSoftware/disco_stu/repository/v1.3.4/archive.tar.gz>`_
+.. note:: ``disco_stu`` is installed with conda when the standard Gemini
+          software installation instructions are followed. To install after the
+          fact::
 
-.. Warning::
+            conda install disco_stu
 
-  The functionality of ``disco-stu`` is being incorporated withing DRAGONS.
-  Because of that, you might find unexpected results. Specially in very
-  crowded fields where the sky cannot be properly measured. This section
-  will be changed in the future.
+This package was created to be accessed via command line. Because of that,
+the API is not the most polished, and using it requires a fair number of steps.
+**If you can use the command line interface, it is recommended that you do so.**
+If not, then let's get to work.
 
-This package was created to be accessed via command line. Because of that, we
-need a few more steps while running it. First, let's import some libraries:
+First, let's import some libraries:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 64
+    :lineno-start: 45
 
     from collections import namedtuple
 
@@ -328,7 +331,7 @@ This object will hold information about matching the objects between files:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 68
+    :lineno-start: 49
 
     MatchInfo = namedtuple(
         'MatchInfo', [
@@ -342,7 +345,7 @@ We now create objects of ``MatchInfo`` class:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 76
+    :lineno-start: 56
 
     object_match_info = MatchInfo(
         disco_pars.OBJCAT_ALIGN_RADIUS[0],
@@ -358,24 +361,24 @@ We now create objects of ``MatchInfo`` class:
         disco_pars.REFCAT_POLY_DEGREE
     )
 
-Now, we simply call the :func:`~disco_stu.disco.disco` function and pass the
-position arguments.
+Finally, we call the :func:`~disco_stu.disco.disco` function and pass the
+arguments.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 76
+    :lineno-start: 69
 
     disco.disco(
         infiles=reduce_target.output_filenames,
-        output_identifier="my_stacked_image.fits",
+        output_identifier="my_Kshort_stack",
         objmatch_info=object_match_info,
         refmatch_info=reference_match_info,
         pixel_scale=disco_pars.PIXEL_SCALE,
+        skysub=False,
     )
 
 This function has many other parameters that can be used to customize this step
-but further details are out of the scope of this tutorial. Please, refer to the
-`disco-stu GitLab Internal Page <https://gitlab.gemini.edu/DRSoftware/disco_stu>`_
-for the corresponding information.
+but further details are out of the scope of this tutorial.
+
 
 

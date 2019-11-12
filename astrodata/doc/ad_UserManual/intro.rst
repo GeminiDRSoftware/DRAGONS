@@ -8,24 +8,22 @@
 Introduction
 ************
 
-This is the AstroData User's Manual, which covers version 2.0
-(beta) of the DRAGONS Recipe System. The current chapter covers basic concepts
+This is the AstroData User's Manual. AstroData is a DRAGONS package.
+The current chapter covers basic concepts
 like what is the |astrodata| package and how to install it (together with the
 other DRAGONS' packages). :ref:`Chapter 2 <structure>`
 explains with more details what is |AstroData| and how the data is represented
 using it. :ref:`Chapter 3 <iomef>` describes input and output operations and
 how multi-extension (MEF) FITS files are represented. :ref:`Chapter 4 <tags>`
 provides information regarding the |TagSet| class, its usage and a few advanced
-topics. On :ref:`Chapter 5 <headers>` you will find information about the FITS
+topics. In :ref:`Chapter 5 <headers>` you will find information about the FITS
 headers and how to access/modify the metadata. The last two chapters,
-:ref:`Chapter 5 <data>` and :ref:`Chapter 6 <tables>` cover more details about
+:ref:`Chapter 6 <data>` and :ref:`Chapter 7 <tables>` cover more details about
 how to read, manipulate and write pixel data and tables, respectively.
 
 
 If you are looking for a quick reference, please, have a look on the
-`AstroData Cheat Sheet`_. If you are already familiar with |astrodata| and
-are looking forward to use the DRAGONS Recipe System, please check the
-`Recipe System Users Manual`_ and the `Recipe System Programmers Manual`_.
+`AstroData Cheat Sheet`_.
 
 Reference Documents
 ===================
@@ -82,14 +80,15 @@ repository, the tar file or the conda package.
 
 #. Open a bash session.
     Anaconda requires bash. If you are not familiar with bash, note that the
-    shell configuration file is named ``.bash_profile``. During the
-    installation, a PATH setting has been added to your ``.bash_profile`` to
-    add the Anaconda bin directory to the ``PATH``.
+    shell configuration files are named ``.bash_profile`` and ``.bashrc``.
+    During the installation, a PATH setting has been added to your
+    ``.bash_profile`` or ``.bashrc`` to add the Anaconda bin directory to
+    the ``PATH``.
 
 #. Activate Anaconda.
-    Normal installation puts the software in ``~/anaconda/``.::
+    Normal Python 3 installation puts the software in ``~/anaconda3/``.::
 
-    $ source ~/anaconda/bin/activate
+    $ conda init
 
 #. Configure the ``conda`` package manager to look in the AstroConda channel
     hosted by STScI, and in the GEMINI Conda Channel. This is a one-time step.
@@ -103,41 +102,58 @@ repository, the tar file or the conda package.
     To keep things clean, Anaconda offers virtual environments.  Each project
     can use its own environment.  For example, if you do not want to modify
     the software packages needed for previous project, just create a new one
-    for new project.
+    for the new project.
 
     Here we set up an environment where the ``DRAGONS`` dependencies can
     be installed without affecting the rest of the system when not using that
-    virtual environement.  The new virtual environment is here named
+    virtual environement.  The new virtual environment here is named
     ``geminiconda``.  Note that one could set ``python`` to ``3.6`` instead of
     ``2.7``.
     ::
 
-    $ conda create -n geminiconda python=2.7 stsci gemini
+    $ conda create -n geminiconda python=3.6 stsci gemini
 
-.. commented out
-    If you are planning to use the ``recipe_system`` and Gemini data reduction
-    pipeline, please note that there are still IRAF dependencies and you will
-    need to install the IRAF-related conda packages.
-    ::
-
-.. commented out    $ conda create -n geminiconda python=2.7 iraf-all pyraf-all stsci gemini
 
 #. Activate your new virtual environment.
     ::
 
-    $ source activate geminiconda
+    $ conda activate geminiconda
 
 
 Conda installation (recommended)
 --------------------------------
-If the latest ``DRAGONS`` package was present on the AstroConda channel
-when you installed Anaconda and the gemini stack, then you are done.
+
+#. Create an environment.
+    To keep things clean, Anaconda offers virtual environments.  Each project
+    can use its own environment.  For example, if you do not want to modify
+    the software packages needed for previous project, just create a new one
+    for the new project.
+
+    Here we set up an environment where the ``DRAGONS`` dependencies can
+    be installed without affecting the rest of the system when not using that
+    virtual environement.  The new virtual environment here is named
+    ``geminiconda``.  Note that one could set ``python`` to ``3.6`` instead of
+    ``2.7``.
+    ::
+
+    $ conda create -n geminiconda python=3.6 stsci gemini
+
+
+#. Activate your new virtual environment.
+    ::
+
+    $ conda activate geminiconda
+
+
+You are ready to use DRAGONS and AstroData.
+
+----------
 
 To check for newer version::
 
     $ conda search dragons
 
-    The * will show which version is installed if multiple are available.
+    The * will show which version is installed if multiple packages are available.
 
 To update to a newer version::
 
@@ -151,60 +167,22 @@ installation, install it::
 
 Tarball installation
 --------------------
-If the latest stable ``DRAGONS`` is not yet available as a conda package but
-only has tarbal (``tar.gz``), it is still possible to install it in your
-environment, or elsewhere if you do not want to mix things up.
+Tarball are available from the releases on the github repository page,
+https://github.com/GeminiDRSoftware/DRAGONS/releases.
 
+It can be installed with::
 
-(python setup.py install [--prefix=blah])  Waiting on response from James
-(Slack-conda)
+    python setup.py install [--prefix=<your_choice>]
 
 
 Using the latest software from the repository (expert)
 ------------------------------------------------------
 The repository is available on github, on the Gemini Observatory Data
-Reduction Software page, https://github.com/GeminiDRSoftware.   Either git
+Reduction Software page, https://github.com/GeminiDRSoftware/DRAGONS.   Either git
 clone or download the content of ``DRAGONS``.
 
 Once you have the source code, remember to set your ``PYTHONPATH`` to include
 the package's location.
-
-Examples of shell configuration
--------------------------------
-
-For bash users
-++++++++++++++
-Anaconda should have already added itself to the ``PATH`` during installation.
- If you want the ``geminiconda`` environment to load automatically, you can
- add ::
-
-    source activate geminiconda
-
-to your ``.bash_profile``.
-
-For tcsh users
-++++++++++++++
-To use ``astrodata`` and ``DRAGONS`` you will need to use ``bash``. If
-you wish to continue using ``tcsh`` as your default, here are a few things you
-can do to make, when you need it, the switch painless.
-
-In your ``.cshrc``, add an alias to launch bash and source ``.bash_profile`` ::
-
-    alias geminiconda "/bin/bash -l"
-
-Then in your likely very bare ``.bash_profile``, add ::
-
-    source activate geminiconda
-
-The path to Anaconda should have already been set when you installed Anaconda,
-something like ``export PATH="~/anaconda/bin:$PATH"``.
-
-Working from ``tcsh``, when you want to use ``astrodata``, type at the prompt ::
-
-    > geminiconda
-
-and the shell will switch to ``bash`` which will then automatically activate
-the ``geminiconda`` environment.
 
 
 Smoke test the Astrodata installation
@@ -212,7 +190,7 @@ Smoke test the Astrodata installation
 From the configured bash shell::
 
     $ type python
-    python is hashed (<home_path>/anaconda/envs/geminiconda/python)
+    python is hashed (<home_path>/anaconda3/envs/geminiconda/python)
 
     Make sure that python is indeed pointing to the Anaconda environment you
     have just set up.
@@ -226,17 +204,34 @@ From the configured bash shell::
     Expected result: Just a python prompt and no error messages.
 
 
+.. _datapkg:
+
+Try it yourself
+===============
+
+**Try it yourself**
+
+Download the data package if you wish to follow along and run the
+examples.  It is available at:
+
+    `<http://www.gemini.edu/sciops/data/software/datapkgs/ad_usermanual_datapkg-v1.tar>`_
+
+Unpack it::
+
+    $ cd <somewhere_convenient>
+    $ tar xvf ad_usermanual_datapkg-v1.tar
+    $ bunzip2 ad_usermanual/playdata/*.bz2
+
+Then ::
+
+    $ cd ad_usermanual/playground
+    $ python
+
+
 Astrodata Support
 =================
-Astrodata has not been officially released to the public yet.  It is an
-internal project.  Gemini staff should contact members of the Science Users
-Support Department.  Until public release, there is no external supports other
-than for instrument builders.  Instrument teams should reach out to their
-assigned Gemini contact person for data reduction.
 
-.. commented out
-    Astrodata is developed and supported by staff at the Gemini Observatory.
-    Questions about the reduction of Gemini data should be directed to the
-    Gemini Helpdesk system at
-    ``https://www.gemini.edu/sciops/helpdesk/``
-    The github issue tracker can be used to report software bugs in DRAGONS.
+Astrodata is developed and supported by staff at the Gemini Observatory.
+Questions about the reduction of Gemini data should be directed to the
+Gemini Helpdesk system at ``https://www.gemini.edu/sciops/helpdesk/``
+The github issue tracker can be used to report software bugs in DRAGONS.

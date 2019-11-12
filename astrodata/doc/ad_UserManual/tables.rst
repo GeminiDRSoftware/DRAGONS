@@ -7,13 +7,10 @@ Table Data
 **********
 **Try it yourself**
 
-If you wish to follow along and try the commands yourself, download the
-data package ``dragons_datapkg-v1.0``, go to the ``playground`` directory
-and launch python.
+Download the data package (:ref:`datapkg`) if you wish to follow along and run the
+examples.  Then ::
 
-::
-
-    $ cd <path>/dragons_datapkg-v1.0/playground
+    $ cd <path>/ad_usermanual/playground
     $ python
 
 Then import core astrodata and the Gemini astrodata configurations. ::
@@ -191,10 +188,6 @@ To retrieve all the keyword names matching a selection::
 
 Create a Table
 ==============
-
-Show how to create an astropy table.  I probably have something from the old
-manual that I can convert from pyfits to table.  Then, it's the stuff from
-the cheatsheet.
 
 To create a table that can be added to an ``AstroData`` object and eventually
 written to disk as a FITS file, the first step is to create an Astropy

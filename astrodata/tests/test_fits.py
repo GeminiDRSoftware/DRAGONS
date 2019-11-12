@@ -1,7 +1,5 @@
-#!/usr/bin/env python
 import glob
 import os
-import tempfile
 
 import numpy as np
 import pytest
@@ -9,6 +7,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 import astrodata
+from astrodata.testing import download_from_archive
 
 
 def test_file_exists(path_to_inputs):
@@ -329,60 +328,24 @@ def test_update_filename():
     ad.update_filename(suffix='_suffix3', strip=True)
     assert ad.filename == 'file_suffix1_suffix3.fits'
 
-# ============================================================================
-# Deprecated tests
 
-@pytest.mark.xfail(reason="Deprecated methods")
-def test_remove_a_keyword_from_phu_deprecated(self):
-    ad = astrodata.open('N20110826S0336.fits')
-    with pytest.raises(AttributeError):
-        del ad.phu.DETECTOR
-        assert 'DETECTOR' not in ad.phu
-
-    # Regression:
-    # Make sure that references to associated
-    # extension objects are copied across
-    # Trying to access a missing attribute in
-    # the data provider should raise an
-    # AttributeError
-    test_data_name = "N20110826S0336.fits"
-
-
-@pytest.mark.xfail(reason="uses chara")
-def test_raise_attribute_error_when_accessing_missing_extenions(self):
-    ad = from_chara('N20131215S0202_refcatAdded.fits')
-    with pytest.raises(AttributeError) as excinfo:
-        ad.ABC
-
-
-# Some times, internal changes break the writing capability. Make sure that
-# this is the case, always
-@pytest.mark.xfail(reason="uses chara")
-def test_write_without_exceptions():
-    # Use an image that we know contains complex structure
-    ad = from_chara('N20131215S0202_refcatAdded.fits')
-    with tempfile.TemporaryFile() as tf:
-        ad.write(tf)
-
-
-# Access to headers: DEPRECATED METHODS
-# These should fail at some point
-@pytest.mark.xfail(reason="Deprecated methods")
+@pytest.mark.remote_data
 def test_read_a_keyword_from_phu_deprecated():
-    ad = astrodata.open('N20110826S0336.fits')
+    "Test deprecated methods to access headers"
+    ad = astrodata.open(
+        download_from_archive('N20110826S0336.fits', path='GMOS'))
 
     with pytest.raises(AttributeError):
         assert ad.phu.DETECTOR == 'GMOS + Red1'
-
-
-@pytest.mark.xfail(reason="Deprecated methods")
-def test_read_a_keyword_from_hdr_deprecated():
-    ad = astrodata.open('N20110826S0336.fits')
 
     with pytest.raises(AttributeError):
         assert ad.hdr.CCDNAME == [
             'EEV 9273-16-03', 'EEV 9273-20-04', 'EEV 9273-20-03'
         ]
+
+    # and when accessing missing extension
+    with pytest.raises(AttributeError):
+        ad.ABC
 
 
 if __name__ == '__main__':

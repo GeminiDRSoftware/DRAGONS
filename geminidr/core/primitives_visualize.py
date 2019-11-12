@@ -10,6 +10,7 @@ import time
 
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
+from gempy import numdisplay as nd
 
 from gempy.library import transform
 from astropy.modeling import models
@@ -22,10 +23,6 @@ from . import parameters_visualize
 
 from recipe_system.utils.decorators import parameter_override
 
-try:
-    from stsci import numdisplay as nd
-except ImportError:
-    import numdisplay as nd
 
 # ------------------------------------------------------------------------------
 @parameter_override

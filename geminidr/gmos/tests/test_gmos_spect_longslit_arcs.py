@@ -39,13 +39,13 @@ dataset_file_list = [
     "process_arcs/GMOS/N20170627S0116.fits",  # B1200:0.520 HAM
     "process_arcs/GMOS/N20100830S0594.fits",  # R150:0.500 EEV
     "process_arcs/GMOS/N20100702S0321.fits",  # R150:0.700 EEV
-    # "process_arcs/GMOS/N20130606S0291.fits",  # R150:0.550 E2V - todo: Unstable Wavelength Solution
+    # "process_arcs/GMOS/N20130606S0291.fits",  # R150:0.550 E2V - todo: test_determine_distortion fails
     "process_arcs/GMOS/N20130112S0574.fits",  # R150:0.700 E2V
-    # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.61) | `gswavelength` cannot find solution either.
-    "process_arcs/GMOS/N20140408S0218.fits",  # R150:0.700 E2V
-    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.85) | Unstable Wav. Sol. | `gswavelength` cannot find solution either.
+    # 'process_arcs/GMOS/N20130809S0337.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
+    # "process_arcs/GMOS/N20140408S0218.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.51)
+    # 'process_arcs/GMOS/N20180119S0232.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.73)
     # 'process_arcs/GMOS/N20180516S0214.fits',  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
-    "process_arcs/GMOS/N20171007S0439.fits",  # R150:0.650 HAM
+    # "process_arcs/GMOS/N20171007S0439.fits",  # R150:0.650 HAM - todo: breaks test_reduced_arcs_contains_stable_wavelength_solution
     "process_arcs/GMOS/N20171007S0441.fits",  # R150:0.650 HAM
     "process_arcs/GMOS/N20101212S0213.fits",  # R400:0.550 EEV
     "process_arcs/GMOS/N20100202S0214.fits",  # R400:0.700 EEV
@@ -54,14 +54,14 @@ dataset_file_list = [
     "process_arcs/GMOS/N20170108S0210.fits",  # R400:0.660 HAM
     "process_arcs/GMOS/N20171113S0135.fits",  # R400:0.750 HAM
     "process_arcs/GMOS/N20100427S1276.fits",  # R600:0.675 EEV
-    "process_arcs/GMOS/N20180120S0417.fits",  # R600:0.860 HAM
+    "process_arcs/GMOS/N20180120S0417.fits",  # R600:0.860 HAM - todo: RMS > 0.5 (RMS = 0.58)
     "process_arcs/GMOS/N20100212S0143.fits",  # R831:0.450 EEV
     "process_arcs/GMOS/N20100720S0247.fits",  # R831:0.850 EEV
     "process_arcs/GMOS/N20130808S0490.fits",  # R831:0.571 E2V
     "process_arcs/GMOS/N20130830S0291.fits",  # R831:0.845 E2V
     "process_arcs/GMOS/N20170910S0009.fits",  # R831:0.653 HAM
     "process_arcs/GMOS/N20170509S0682.fits",  # R831:0.750 HAM
-    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.646) | `gswavelength` cannot find solution either.
+    # 'process_arcs/GMOS/N20181114S0512.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.52) | `gswavelength` cannot find solution either.
     "process_arcs/GMOS/N20170416S0058.fits",  # R831:0.865 HAM
     "process_arcs/GMOS/N20170416S0081.fits",  # R831:0.865 HAM
     "process_arcs/GMOS/N20180120S0315.fits",  # R831:0.865 HAM
@@ -78,26 +78,26 @@ dataset_file_list = [
     "process_arcs/GMOS/S20130510S0103.fits",  # B1200:0.450 EEV
     "process_arcs/GMOS/S20130629S0002.fits",  # B1200:0.525 EEV
     "process_arcs/GMOS/S20131123S0044.fits",  # B1200:0.595 EEV
-    # 'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM - todo: very weird non-linear plot | non-linear plot using `gswavelength` seems fine.
+    'process_arcs/GMOS/S20170116S0189.fits',  # B1200:0.440 HAM - todo: very weird non-linear plot | non-linear plot using `gswavelength` seems fine.
     "process_arcs/GMOS/S20170103S0149.fits",  # B1200:0.440 HAM
     "process_arcs/GMOS/S20170730S0155.fits",  # B1200:0.440 HAM
     "process_arcs/GMOS/S20171219S0117.fits",  # B1200:0.440 HAM
     "process_arcs/GMOS/S20170908S0189.fits",  # B1200:0.550 HAM
     "process_arcs/GMOS/S20131230S0153.fits",  # R150:0.550 EEV
-    "process_arcs/GMOS/S20130801S0140.fits",  # R150:0.700 EEV
-    "process_arcs/GMOS/S20170430S0060.fits",  # R150:0.717 HAM
-    # "process_arcs/GMOS/S20170430S0063.fits",  # R150:0.727 HAM - todo: TypeError: Lengths of the first three arguments (x,y,w) must be equal
+    # "process_arcs/GMOS/S20130801S0140.fits",  # R150:0.700 EEV - todo: RMS > 0.5 (RMS = 0.69)
+    # "process_arcs/GMOS/S20170430S0060.fits",  # R150:0.717 HAM - todo: RMS > 0.5 (RMS = 0.78)
+    # "process_arcs/GMOS/S20170430S0063.fits",  # R150:0.727 HAM - todo: RMS > 0.5 (RMS = 1.26)
     "process_arcs/GMOS/S20171102S0051.fits",  # R150:0.950 HAM
     "process_arcs/GMOS/S20130114S0100.fits",  # R400:0.620 EEV
     "process_arcs/GMOS/S20130217S0073.fits",  # R400:0.800 EEV
-    "process_arcs/GMOS/S20170108S0046.fits",  # R400:0.550 HAM
+    # "process_arcs/GMOS/S20170108S0046.fits",  # R400:0.550 HAM - todo: RMS > 0.5 (RMS = 0.60)
     "process_arcs/GMOS/S20170129S0125.fits",  # R400:0.685 HAM
     "process_arcs/GMOS/S20170703S0199.fits",  # R400:0.800 HAM
     "process_arcs/GMOS/S20170718S0420.fits",  # R400:0.910 HAM
     # 'process_arcs/GMOS/S20100306S0460.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
     # 'process_arcs/GMOS/S20101218S0139.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
     "process_arcs/GMOS/S20110306S0294.fits",  # R600:0.675 EEV
-    # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: RMS > 0.5 (RMS = 0.508)
+    # 'process_arcs/GMOS/S20110720S0236.fits',  # R600:0.675 EEV - todo: test_determine_distortion fails
     "process_arcs/GMOS/S20101221S0090.fits",  # R600:0.690 EEV
     "process_arcs/GMOS/S20120322S0122.fits",  # R600:0.900 EEV
     "process_arcs/GMOS/S20130803S0011.fits",  # R831:0.576 EEV
@@ -495,6 +495,7 @@ class TestGmosSpectLongslitArcs:
         #     #         ext_ref.FITCOORD['name'], ext_ref.FITCOORD['coefficients'])))
         #
         # del ad_out, ad_ref, p
+
 
 def test_full_frame_distortion_works_on_smaller_region(path_to_inputs):
     """

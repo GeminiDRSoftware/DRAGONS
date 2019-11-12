@@ -7,8 +7,6 @@ from __future__ import print_function
 #                                                             gemini_instruments
 #                                                               texes.adclass.py
 # ------------------------------------------------------------------------------
-__version__      = "0.1 (beta)"
-# ------------------------------------------------------------------------------
 from astrodata import astro_data_tag
 from astrodata import astro_data_descriptor
 from astrodata import returns_list

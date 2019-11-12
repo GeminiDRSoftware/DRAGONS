@@ -1046,6 +1046,7 @@ class Preprocess(PrimitivesBASE):
 
         #print "STARTING", memusage(proc)
 
+        save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
         scale_sky = params["scale_sky"]
         offset_sky = params["offset_sky"]
@@ -1129,6 +1130,9 @@ class Preprocess(PrimitivesBASE):
         # Fill initial list with None where the SKYTABLE produced None
         stacked_skies = [None if tbl is None else 0 for tbl in skytables]
         for i, (ad, skytable) in enumerate(zip(adinputs, skytables)):
+            if skytable is None:
+                log.stdinfo("Cannot subtract sky from {}".format(ad.filename))
+                continue
             if stacked_skies[i] == 0:
                 log.stdinfo("Creating sky frame for {}".format(ad.filename))
                 stacked_sky = self.stackSkyFrames([sky_dict[sky] for sky in
@@ -1137,7 +1141,7 @@ class Preprocess(PrimitivesBASE):
                 if len(stacked_sky) == 1:
                     stacked_sky = stacked_sky[0]
                     # Provide a more intelligent filename
-                    stacked_sky.phu['ORIGNAME'] = ad.phu['ORIGNAME']
+                    stacked_sky.filename = ad.filename
                     stacked_sky.update_filename(suffix="_sky", strip=True)
                 else:
                     log.warning("Problem with stacking the following sky "
@@ -1159,10 +1163,15 @@ class Preprocess(PrimitivesBASE):
                 # If already been sky-subtracted or not yet processed
                 if not skytables[j] or stacked_skies[j] == 0:
                     continue
-                if ad2 not in [sky_dict.get(sky) for skytable in skytables for sky in skytable]:
+
+                # We're iterating over *all* skytables so replace "None"s
+                # with iterable empty lists
+                if ad2 not in [sky_dict.get(sky) for skytable in skytables
+                               for sky in (skytable or [])]:
                     # Sky-subtraction is in place, so we can discard the output
                     self.subtractSky([ad2], sky=stacked_skies[j], scale_sky=scale_sky,
-                                     offset_sky=offset_sky, reset_sky=reset_sky)
+                                     offset_sky=offset_sky, reset_sky=reset_sky,
+                                     save_sky=save_sky)
                     skytables[j] = []
                     # This deletes a reference to the AD sky object
                     stacked_skies[j] = None
@@ -1200,6 +1209,7 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
+        save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
         scale = params["scale_sky"]
         zero = params["offset_sky"]
@@ -1233,8 +1243,9 @@ class Preprocess(PrimitivesBASE):
                         log.fullinfo("Applying {} to EXTVER {} from {} to {}".
                                 format(("scaling" if scale else "zeropoint"),
                                        ext_sky.hdr['EXTVER'], init_bg, final_bg))
-                #ad_sky.update_filename(suffix='_skyim', strip=True)
-                #self.writeOutputs([ad_sky])
+                if save_sky:
+                    #ad_sky.update_filename(suffix='_skyimage', strip=True)
+                    self.writeOutputs([ad_sky])
                 ad.subtract(ad_sky)
                 if reset_sky:
                     new_bg = gt.measure_bg_from_image(ad, value_only=True)

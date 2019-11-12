@@ -26,12 +26,12 @@ dragons_location = '/'.join(geminidr.__file__.split("/")[:-1]) + '/'
 GNIRS = "S20171208S0054.fits"
 GNIRS_SPECT = "N20190206S0279.fits"
 GMOS = 'S20180223S0229.fits'
-GMOS_NS = 'S20170111S0166.fits'
+GMOS_NS = 'S20171116S0078.fits'
 GMOS_SPECT = "N20170529S0168.fits"
 NIRI = "N20190120S0287.fits"
 F2 = "S20190213S0084.fits"
-NIFS = 'N20160727S0077.fits'
-GRACES = 'N20190116G0054i.fits'
+# NIFS = 'N20160727S0077.fits'
+# GRACES = 'N20190116G0054i.fits'
 GSAOI_DARK = 'S20150609S0023.fits'
 GSAOI_IMAGE = 'S20170505S0095.fits'
 GSAOI_FLAT = 'S20170505S0031.fits'
@@ -99,7 +99,7 @@ def test_showprims_on_gmos_spect(path_to_inputs):
     _file = os.path.join(path_to_inputs, 'Gempy', GMOS_SPECT)
     answer = showprims(_file)
 
-    assert "geminidr.gmos.recipes.sq.recipes_LS_SPECT::reduce" in answer
+    assert "geminidr.gmos.recipes.ql.recipes_LS_SPECT::reduce" in answer
 
 
 gmos_ns_answer = [
@@ -119,6 +119,8 @@ def test_showprims_on_gmos_ns(path_to_inputs):
     file_location = os.path.join(path_to_inputs, 'Gempy', GMOS_NS)
     answer = showprims(file_location, 'qa')
 
+    print(answer)
+
     for i in range(len(gmos_ns_answer)):
         assert gmos_ns_answer[i] in answer
 
@@ -127,7 +129,7 @@ def test_showprims_on_gmos_spect_default_mode(path_to_inputs):
     _file = os.path.join(path_to_inputs, 'Gempy', GMOS_SPECT)
     answer = showprims(_file)
 
-    assert "geminidr.gmos.recipes.sq.recipes_LS_SPECT::reduce" in answer
+    assert "geminidr.gmos.recipes.ql.recipes_LS_SPECT::reduce" in answer
 
 
 # # # # # #  GSAOI  # # # # # #

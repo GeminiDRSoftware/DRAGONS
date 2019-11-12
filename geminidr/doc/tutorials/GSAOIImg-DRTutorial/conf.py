@@ -32,7 +32,7 @@ print(' Dragons path: {}\n'.format(dragons_path))
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - GSAOI Data Reduction'
-copyright = 'Gemini Observatory (AURA), 2019'
+copyright = '2019, Association of Universities for Research in Astronomy'
 author = 'Bruno C. Quint'
 
 # The short X.Y version
@@ -79,6 +79,13 @@ master_doc = 'index'
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
 language = None
+
+# There are two options for replacing |today|: either, you set today to some
+# non-false value, then it is used:
+today = 'November 2019'
+# Else, today_fmt is used as the format for a strftime call.
+#today_fmt = '%B %d, %Y'
+
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

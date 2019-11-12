@@ -1,0 +1,35 @@
+.. |caldb| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/caldb.html" target="_blank">caldb</a>
+
+.. |dataselect| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#dataselect" target="_blank">dataselect</a>
+
+.. |descriptors| raw:: html
+
+    <a href="https://astrodata-user-manual.readthedocs.io/en/latest/appendices/appendix_descriptors.html" target="_blank">descriptors</a>
+
+.. |reduce| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html" target="_blank">reduce</a>
+
+.. |showd| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showd" target="_blank">showd</a>
+
+.. |showrecipes| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showrecipes" target="_blank">showrecipes</a>
+
+.. |showpars| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#showpars" target="_blank">showpars</a>
+
+.. |typewalk| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/supptools.html#typewalk" target="_blank">typewalk</a>
+
+.. |atfile| raw:: html
+
+    <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>

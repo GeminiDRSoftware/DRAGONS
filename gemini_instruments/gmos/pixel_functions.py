@@ -6,9 +6,6 @@
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]
-__version_date__ = '$Date$'[7:-2]
-# ------------------------------------------------------------------------------
 # The gemini_data_calculations module contains functions that calculate values
 # from Gemini data, only get_bias_level() needs to be called
 

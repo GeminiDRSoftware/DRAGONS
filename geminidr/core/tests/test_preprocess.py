@@ -126,6 +126,7 @@ def test_apply_dq_plane(astrofaker):
     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
                                        'N20070819S0104_dqPlaneApplied.fits'))
 
+
 @pytest.mark.skip("Review me")
 def test_associateSky():
     filenames = ['N20070819S{:04d}_flatCorrected.fits'.format(i)

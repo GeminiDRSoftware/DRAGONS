@@ -18,17 +18,18 @@ from recipe_system.mappers.recipeMapper import RecipeMapper
 
 def showrecipes(_file):
     """
-    showrecipes takes in a file, and will return all the possible recipes
-    that can be used on the file.
+    Takes in a file, and will return all the possible recipes that can be used
+    on the file.
 
     Parameters
     ----------
-    file - str
+    _file : str
         file name for the fits file
 
-    Returns - str
-        returns  string with all the information provided
+    Returns
     -------
+    str
+        String with all the information provided
     """
     # string that results are appended to
     result = ""
@@ -111,21 +112,22 @@ def showprims(_file, mode='sq', recipe='_default'):
 
     Parameters
     ----------
-    file - str
+    _file : str
         file name for the fits file, useful for the astrodata.tags, which are
         then used to determine what directory to find the recipe in.
-    mode - str
+    mode : str
         either 'qa' or 'sq' for the two modes available. Anything else will
         return an error. mode also needed to navigate to the proper directory
-    recipe - str
+    recipe : str
         name of the recipe. Must be exactly the same as the function
         name/recipe. str + mode find the python file where the recipe exists
         in, the parameter 'recipe' is needed to isolate the exact recipe (if
         there are multiple) that the user wants to see the source code from.
 
-    Returns - str
-        returns  string with all the information provided
+    Returns
     -------
+    str
+        String with all the information provided.
     """
     # string that results are appended to
     result = ""
