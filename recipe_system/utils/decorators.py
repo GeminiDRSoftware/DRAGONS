@@ -168,5 +168,11 @@ def parameter_override(fn):
                 raise
         unset_logging()
         gc.collect()
+        import objgraph
+        print(f'===============\n'
+              f'in memory: '
+              f'{len(objgraph.by_type("NDAstroData"))} NDAstroData '
+              f'{len(objgraph.by_type("ImageHDU"))} ImageHDU '
+              '\n===============\n')
         return ret_value
     return gn
