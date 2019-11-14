@@ -1,0 +1,19 @@
+[run]
+source =
+   astrodata
+   geminidr
+   gemini_instruments
+   gempy
+   recipe_system
+omit =
+   */conftest.py
+   */*tests/*
+
+[report]
+show_missing = false
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def _ipython_key_completions_
+    raise NotImplementedError
+    if __name__ == .__main__.:
