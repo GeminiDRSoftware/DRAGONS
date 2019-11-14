@@ -147,7 +147,6 @@ class Reduce(object):
     def output_filenames(self):
         return self._output_filenames
 
-
     def runr(self):
         """
         Map and run the requested or defaulted recipe.
@@ -176,26 +175,30 @@ class Reduce(object):
 
         rm = RecipeMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.recipename)
-
-        pm = PrimitiveMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
-                             usercals=self.ucals, uparms=self.uparms,
-                             upload=self.upload)
-
         try:
             recipe = rm.get_applicable_recipe()
         except ModeError as err:
             log.warn("WARNING: {}".format(err))
             pass
-        except RecipeNotFound as err:
+        except RecipeNotFound:
             log.warn("No recipe can be found in {} recipe libs.".format(rm.pkg))
             log.warn("Searching primitives ...")
-            pass
+        rm = None
 
+        pm = PrimitiveMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
+                             usercals=self.ucals, uparms=self.uparms,
+                             upload=self.upload)
         try:
             p = pm.get_applicable_primitives()
         except PrimitivesNotFound as err:
             log.error(str(err))
             raise
+        # Clean references to avoid keeping adinputs objects in memory one
+        # there are no more needed. For pm it seems that we need to remove
+        # manually the reference to adinputs.
+        pm.adinputs = None
+        pm = None
+        adinputs = None
 
         # If the RecipeMapper was unable to find a specified user recipe,
         # it is possible that the recipe passed was a primitive name.
@@ -236,9 +239,7 @@ class Reduce(object):
 
         self._write_final(p.streams['main'])
         self._output_filenames = [ad.filename for ad in p.streams['main']]
-        msg = "\nreduce completed successfully."
-        log.stdinfo(str(msg))
-        return
+        log.stdinfo("\nreduce completed successfully.")
 
     # -------------------------------- prive -----------------------------------
     def _check_files(self, ffiles):
