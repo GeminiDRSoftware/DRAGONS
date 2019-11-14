@@ -9,7 +9,7 @@ from copy import deepcopy
 import warnings
 
 from astropy.nddata import NDData
-from astropy.nddata import StdDevUncertainty
+from astropy.nddata import StdDevUncertainty, VarianceUncertainty
 from astropy.nddata.mixins.ndslicing import NDSlicingMixin
 from astropy.nddata.mixins.ndarithmetic import NDArithmeticMixin
 from astropy.io.fits import ImageHDU
@@ -243,21 +243,14 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def _get_uncertainty(self, section=None):
 
         if self._uncertainty is not None:
-
             if is_lazy(self._uncertainty):
-
-                data = self._uncertainty.data if section is None else self._uncertainty[section]
-
-                temp = new_variance_uncertainty_instance(data)
-
                 if section is None:
-                    self.uncertainty = temp
-
-                return temp
-
+                    self.uncertainty = VarianceUncertainty(self._uncertainty.data)
+                    return self.uncertainty
+                else:
+                    return VarianceUncertainty(self._uncertainty[section])
             elif section is not None:
                 return self._uncertainty[section]
-
             else:
                 return self._uncertainty
 
@@ -323,11 +316,11 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         arr = self._get_uncertainty()
 
         if arr is not None:
-            return arr.array ** 2
+            return arr.array
 
     @variance.setter
     def variance(self, value):
-        self.uncertainty = new_variance_uncertainty_instance(value)
+        self.uncertainty = VarianceUncertainty(value)
 
     def set_section(self, section, input):
         """
