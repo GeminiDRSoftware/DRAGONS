@@ -187,6 +187,9 @@ class Spect(PrimitivesBASE):
         max_missed : int
             Maximum number of steps to miss before a line is lost.
 
+        debug: bool
+            plot arc line traces on image display window?
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -207,14 +210,16 @@ class Spect(PrimitivesBASE):
         step = params["step"]
         max_shift = params["max_shift"]
         max_missed = params["max_missed"]
+        debug = params["debug"]
 
         orders = (spectral_order, spatial_order)
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             for ext in ad:
-                self.viewer.display_image(ext, wcs=False)
-                self.viewer.width = 2
+                if debug:
+                    self.viewer.display_image(ext, wcs=False)
+                    self.viewer.width = 2
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
@@ -268,8 +273,8 @@ class Spect(PrimitivesBASE):
                 # The coordinates are always returned as (x-coords, y-coords)
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1-dispaxis,
                         start=start, initial=initial_peaks, width=5, step=step,
-                        nsum=nsum, max_missed=max_missed,
-                        max_shift=max_shift*ybin/xbin, viewer=self.viewer)
+                        nsum=nsum, max_missed=max_missed, max_shift=max_shift*ybin/xbin,
+                        viewer=self.viewer if debug else None)
 
                 ## These coordinates need to be in the reference frame of a
                 ## full-frame unbinned image, so modify the coordinates by
@@ -319,7 +324,8 @@ class Spect(PrimitivesBASE):
                     #mapped_coords = (np.array(model.inverse(xref, yref)).T -
                     #                 np.array([x1, y1])) / np.array([xbin, ybin])
                     mapped_coords = np.array(model.inverse(xref, yref)).T
-                    self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
+                    if debug:
+                        self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
                 columns = []
                 for m in (m_final, m_inverse):
@@ -928,6 +934,9 @@ class Spect(PrimitivesBASE):
             Avoidance region around each source aperture if a sky aperture
             is required.
 
+        debug: bool
+            draw apertures on image display window?
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -940,6 +949,7 @@ class Spect(PrimitivesBASE):
         method = params["method"]
         width = params["width"]
         grow = params["grow"]
+        debug = params["debug"]
 
         colors = ("green", "blue", "red", "yellow", "cyan", "magenta")
         offset_step = 2
@@ -958,7 +968,8 @@ class Spect(PrimitivesBASE):
 
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
-                self.viewer.display_image(ext, wcs=False)
+                if debug:
+                    self.viewer.display_image(ext, wcs=False)
                 if len(ext.shape) == 1:
                     log.warning("{} is already one-dimensional".format(extname))
                     continue
@@ -971,9 +982,13 @@ class Spect(PrimitivesBASE):
                     continue
 
                 num_spec = len(aptable)
+                if num_spec == 0:
+                    log.warning("{} has an empty APERTURE table. Cannot "
+                                "extract spectra.".format(ad.filename))
+                    continue
+
                 log.stdinfo("Extracting {} spectra from {}".format(num_spec,
                                                                    extname))
-
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
                 # Create dict of wavelength keywords to add to new headers
@@ -1015,10 +1030,16 @@ class Spect(PrimitivesBASE):
 
                 for i, aperture in enumerate(apertures):
                     log.stdinfo("    Extracting spectrum from aperture {}".format(i + 1))
+                    if aperture.aper_lower > aperture.aper_upper:
+                        log.warning("Aperture lower limit is greater than upper limit.")
+                        aperture.aper_lower, aperture.aper_upper = aperture.aper_upper, aperture.aper_lower
+                    if aperture.aper_lower > 0:
+                        log.warning("Aperture lower limit is greater than zero.")
+
                     self.viewer.width = 2
                     self.viewer.color = colors[i % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
-                                                method=method, viewer=self.viewer)
+                                                method=method, viewer=self.viewer if debug else None)
 
                     # This whole (rather large) section is an attempt to ensure
                     # that sky apertures don't overlap with source apertures
@@ -1044,7 +1065,7 @@ class Spect(PrimitivesBASE):
                                 sky_spec = sky_aperture.extract(apmask, width=sky_width, dispaxis=dispaxis)
                                 if np.sum(sky_spec.data) == 0:
                                     sky_spectra.append(sky_aperture.extract(ext, width=sky_width,
-                                                                            viewer=self.viewer))
+                                                                            viewer=self.viewer if debug else None))
                                     ok = True
                                 offset += direction * offset_step
 
@@ -1664,7 +1685,7 @@ class Spect(PrimitivesBASE):
                 pixels = np.arange(slitlen)
 
                 # We want to mask pixels in apertures in addition to the mask
-                sky_mask = (np.zeros_like(data, dtype=DQ.datatype)
+                sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
                             if ext.mask is None else ext.mask.copy())
 
                 # If there's an aperture table, go through it row by row,
@@ -1741,6 +1762,9 @@ class Spect(PrimitivesBASE):
         max_shift : float
             Maximum perpendicular shift (in pixels) from pixel to pixel.
 
+        debug: bool
+            draw aperture traces on image display window?
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -1768,6 +1792,7 @@ class Spect(PrimitivesBASE):
         nsum = params["nsum"]
         max_missed = params["max_missed"]
         max_shift = params["max_shift"]
+        debug = params["debug"]
 
         for ad in adinputs:
             for ext in ad:
@@ -1779,8 +1804,9 @@ class Spect(PrimitivesBASE):
                                 "continuing".format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                self.viewer.display_image(ext, wcs=False)
-                self.viewer.width = 2
+                if debug:
+                    self.viewer.display_image(ext, wcs=False)
+                    self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
 
                 # TODO: Do we need to keep track of where the initial
@@ -1791,7 +1817,7 @@ class Spect(PrimitivesBASE):
                 all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
                                                                     start=start, initial=locations, width=5, step=step,
                                                                     nsum=nsum, max_missed=max_missed,
-                                                                    max_shift=max_shift, viewer=self.viewer)
+                                                                    max_shift=max_shift, viewer=self.viewer if debug else None)
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -1817,8 +1843,9 @@ class Spect(PrimitivesBASE):
                                                                sigma_clip, sigma=3)
                     m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
                     plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
-                    self.viewer.polygon(plot_coords, closed=False,
-                                        xfirst=(dispaxis == 1), origin=0)
+                    if debug:
+                        self.viewer.polygon(plot_coords, closed=False,
+                                            xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
 
                     # Recalculate aperture limits after rectification
