@@ -76,6 +76,7 @@ class extract1DSpectraConfig(config.Config):
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, 10, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
+    debug = config.Field("Draw extraction apertures on image display?", bool, False)
 
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)

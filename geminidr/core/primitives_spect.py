@@ -934,6 +934,9 @@ class Spect(PrimitivesBASE):
             Avoidance region around each source aperture if a sky aperture
             is required.
 
+        debug: bool
+            draw apertures on image display window?
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -946,6 +949,7 @@ class Spect(PrimitivesBASE):
         method = params["method"]
         width = params["width"]
         grow = params["grow"]
+        debug = params["debug"]
 
         colors = ("green", "blue", "red", "yellow", "cyan", "magenta")
         offset_step = 2
@@ -964,7 +968,8 @@ class Spect(PrimitivesBASE):
 
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
-                self.viewer.display_image(ext, wcs=False)
+                if debug:
+                    self.viewer.display_image(ext, wcs=False)
                 if len(ext.shape) == 1:
                     log.warning("{} is already one-dimensional".format(extname))
                     continue
@@ -1024,7 +1029,7 @@ class Spect(PrimitivesBASE):
                     self.viewer.width = 2
                     self.viewer.color = colors[i % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
-                                                method=method, viewer=self.viewer)
+                                                method=method, viewer=self.viewer if debug else None)
 
                     # This whole (rather large) section is an attempt to ensure
                     # that sky apertures don't overlap with source apertures
@@ -1050,7 +1055,7 @@ class Spect(PrimitivesBASE):
                                 sky_spec = sky_aperture.extract(apmask, width=sky_width, dispaxis=dispaxis)
                                 if np.sum(sky_spec.data) == 0:
                                     sky_spectra.append(sky_aperture.extract(ext, width=sky_width,
-                                                                            viewer=self.viewer))
+                                                                            viewer=self.viewer if debug else None))
                                     ok = True
                                 offset += direction * offset_step
 
