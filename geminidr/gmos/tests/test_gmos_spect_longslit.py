@@ -43,6 +43,14 @@ from geminidr.gmos import primitives_gmos_spect
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
+try:
+    import astrofaker
+
+    HAS_ASTROFAKER = True
+except ImportError:
+    HAS_ASTROFAKER = False
+
+
 test_cases = [
 
     # GMOS-N B600 at 0.600 um ---
@@ -138,9 +146,24 @@ def test_reduce(path, files, tmp_path_factory):
     # _p.skyCorrectFromSlit()
     # _p.traceApertures()
     # _p.extract1DSpectra()
-    # _p.linearizeSpectra()  # TODO: needed?
+    # _p.linearizeSpectra()
     # _p.calculateSensitivity()
     # _p.writeOutputs()
+
+
+@pytest.mark.skipif("not HAS_ASTROFAKER")
+def test_find_apertures():
+
+    hdu = fits.ImageHDU()
+    hdu.data = np.zeros((200, 100))
+    hdu.data[100] = 10.
+
+    ad = astrofaker.create('GMOS-S')
+    ad.add_extension(hdu, pixel_scale=1.0)
+
+    _p = primitives_gmos_spect.GMOSSpect([ad])
+    _p.findSourceApertures()
+
 
 
 @pytest.fixture(scope='session')
