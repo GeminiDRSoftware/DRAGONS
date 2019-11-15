@@ -35,6 +35,7 @@ import astrodata
 import geminidr
 import numpy as np
 
+from astropy import table
 from astropy.io import fits
 from astrodata import testing
 from gempy.adlibrary import dataselect
@@ -90,6 +91,48 @@ def test_find_apertures():
 
     _p = primitives_gmos_spect.GMOSSpect([ad])
     _p.findSourceApertures()
+
+
+@pytest.mark.skipif("not HAS_ASTROFAKER")
+def test_extract_1d_spectra():
+
+    data = np.zeros((100, 200))
+    data[50] = 10.
+
+    aperture = table.Table(
+        [[1],  # Number
+         [1],  # ndim
+         [0],  # degree
+         [0],  # domain_start
+         [data.shape[1] - 1],  # domain_end
+         [50],  # c0
+         [47],  # aper_lower
+         [53],  # aper_upper
+         ],
+        names=[
+            'number',
+            'ndim',
+            'degree',
+            'domain_start',
+            'domain_end',
+            'c0',
+            'aper_lower',
+            'aper_upper'],
+    )
+
+    hdu = fits.ImageHDU()
+    hdu.header['CCDSUM'] = "1 1"
+    hdu.data = data
+
+    ad = astrofaker.create('GMOS-S')
+    ad.add_extension(hdu, pixel_scale=1.0)
+    ad[0].APERTURE = aperture
+
+    _p = primitives_gmos_spect.GMOSSpect([])
+    ade = _p.extract1DSpectra(ad)[0]
+
+    np.testing.assert_equal(ade[0].shape[0], data.shape[1])
+    np.testing.assert_equal(ade[0].data, data[50])
 
 
 if __name__ == '__main__':
