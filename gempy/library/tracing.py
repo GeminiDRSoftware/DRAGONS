@@ -47,7 +47,7 @@ class Aperture(object):
     def width(self):
         """Aperture width in pixels. Since the model is pixel-based, it makes
         sense for this to be stored in pixels rather than arcseconds."""
-        return self.aper_upper - self.aper_lower
+        return abs(self.aper_upper - self.aper_lower)
 
     @width.setter
     def width(self, value):
@@ -262,6 +262,14 @@ class Aperture(object):
         direction = "row" if dispaxis == 0 else "column"
 
         self.check_domain(npix)
+
+        if self.aper_lower > self.aper_upper:
+            log.warning("Aperture lower limit is greater than upper limit.")
+            aper_lower, aper_upper = aper_upper, aper_lower
+        if self.aper_lower > 0:
+            log.warning("Aperture lower limit is greater than zero.")
+        if self.aper_upper < 0:
+            log.warning("Aperture upper limit is less than zero.")
 
         # make data look like it's dispersed horizontally
         # (this is best for optimal extraction, but not standard)

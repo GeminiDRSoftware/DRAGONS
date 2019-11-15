@@ -1030,12 +1030,6 @@ class Spect(PrimitivesBASE):
 
                 for i, aperture in enumerate(apertures):
                     log.stdinfo("    Extracting spectrum from aperture {}".format(i + 1))
-                    if aperture.aper_lower > aperture.aper_upper:
-                        log.warning("Aperture lower limit is greater than upper limit.")
-                        aperture.aper_lower, aperture.aper_upper = aperture.aper_upper, aperture.aper_lower
-                    if aperture.aper_lower > 0:
-                        log.warning("Aperture lower limit is greater than zero.")
-
                     self.viewer.width = 2
                     self.viewer.color = colors[i % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
