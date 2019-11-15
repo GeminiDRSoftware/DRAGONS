@@ -1664,7 +1664,7 @@ class Spect(PrimitivesBASE):
                 pixels = np.arange(slitlen)
 
                 # We want to mask pixels in apertures in addition to the mask
-                sky_mask = (np.zeros_like(data, dtype=DQ.datatype)
+                sky_mask = (np.zeros_like(ext.data, dtype=DQ.datatype)
                             if ext.mask is None else ext.mask.copy())
 
                 # If there's an aperture table, go through it row by row,
