@@ -39,7 +39,7 @@ from astropy.io import fits
 from astrodata import testing
 from gempy.adlibrary import dataselect
 from gempy.utils import logutils
-from geminidr.core import primitives_spect
+from geminidr.gmos import primitives_gmos_spect
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
@@ -120,11 +120,27 @@ def test_reduce(path, files, tmp_path_factory):
 
     sci_list = dataselect.select_data(files, xtags=['CAL'])
 
-    r = Reduce()
-    r.files.extend(sci_list)
-    r.ucals = normalize_ucals(r.files, cals)
-    r.recipename = 'reduceStandard'
-    r.runr()
+    # Reduce the standard -----------
+    _p = primitives_gmos_spect.GMOSSpect([astrodata.open(f) for f in sci_list])
+
+    _p.prepare()
+    _p.addDQ(static_bpm=None)
+    _p.addVAR(read_noise=True)
+    _p.overscanCorrect()
+    _p.biasCorrect(bias=master_bias)
+    _p.ADUToElectrons()
+    _p.addVAR(poisson_noise=True)
+    _p.flatCorrect(flat=master_flat)
+    _p.distortionCorrect(arc=master_arc)
+    _p.writeOutputs()
+    _p.findSourceApertures(max_apertures=1)
+    _p.writeOutputs()
+    # _p.skyCorrectFromSlit()
+    # _p.traceApertures()
+    # _p.extract1DSpectra()
+    # _p.linearizeSpectra()  # TODO: needed?
+    # _p.calculateSensitivity()
+    # _p.writeOutputs()
 
 
 @pytest.fixture(scope='session')
