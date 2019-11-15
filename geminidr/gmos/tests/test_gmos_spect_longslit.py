@@ -50,7 +50,7 @@ try:
 except ImportError:
     HAS_ASTROFAKER = False
 
-
+# ToDo: These files are not used for now but I am keeping them for future regression tests
 test_cases = [
 
     # GMOS-N B600 at 0.600 um ---
@@ -72,112 +72,24 @@ test_cases = [
         'N20180302S0397.fits',  # Arc
     ]),
 
-    # # GMOS-S R400 at 0.700 um ---
-    # ('GMOS/GS-2017B-LP-14', [
-    #     'S20171014S0223.fits',  # Bias
-    #     'S20171014S0224.fits',  # Bias
-    #     'S20171014S0225.fits',  # Bias
-    #     'S20171014S0226.fits',  # Bias
-    #     'S20171014S0227.fits',  # Bias
-    #     'S20171015S0053.fits',  # Flat
-    #     'S20171016S0008.fits',  # Arc
-    #     'S20171015S0052.fits',  # Spectro-photometric Standard Feige110
-    # ])
-
 ]
-
-
-@pytest.mark.remote_data
-@pytest.mark.parametrize("path, files", test_cases)
-def test_reduce(path, files, tmp_path_factory):
-
-    tmp_path = tmp_path_factory.mktemp('dragons_tests_')
-    tmp_path = tmp_path / path
-    tmp_path.mkdir(parents=True, exist_ok=True)
-    os.chdir(tmp_path)
-
-    logutils.config(mode="standard", file_name=tmp_path / "my_log.log")
-
-    files = [testing.download_from_archive(f, path=path) for f in files]
-
-    bias_list = dataselect.select_data(files, tags=['BIAS'])
-    r = Reduce()
-    r.files.extend(bias_list)
-    r.runr()
-    master_bias = r.output_filenames[0]
-
-    cals = ["processed_bias:{:s}".format(master_bias)]
-
-    flat_list = dataselect.select_data(files, tags=['FLAT'])
-    r = Reduce()
-    r.files.extend(flat_list)
-    r.ucals = normalize_ucals(r.files, cals)
-    r.runr()
-    master_flat = r.output_filenames[0]
-
-    cals.append("processed_flat:{:s}".format(master_flat))
-
-    arc_list = dataselect.select_data(files, tags=['ARC'])
-    r = Reduce()
-    r.files.extend(arc_list)
-    r.ucals = normalize_ucals(r.files, cals)
-    r.runr()
-    master_arc = r.output_filenames[0]
-
-    cals.append("processed_arc:{:s}".format(master_arc))
-
-    sci_list = dataselect.select_data(files, xtags=['CAL'])
-
-    # Reduce the standard -----------
-    _p = primitives_gmos_spect.GMOSSpect([astrodata.open(f) for f in sci_list])
-
-    _p.prepare()
-    _p.addDQ(static_bpm=None)
-    _p.addVAR(read_noise=True)
-    _p.overscanCorrect()
-    _p.biasCorrect(bias=master_bias)
-    _p.ADUToElectrons()
-    _p.addVAR(poisson_noise=True)
-    _p.flatCorrect(flat=master_flat)
-    _p.distortionCorrect(arc=master_arc)
-    _p.writeOutputs()
-    _p.findSourceApertures(max_apertures=1)
-    _p.writeOutputs()
-    # _p.skyCorrectFromSlit()
-    # _p.traceApertures()
-    # _p.extract1DSpectra()
-    # _p.linearizeSpectra()
-    # _p.calculateSensitivity()
-    # _p.writeOutputs()
 
 
 @pytest.mark.skipif("not HAS_ASTROFAKER")
 def test_find_apertures():
 
+    data = np.zeros((100, 200))
+    data[50] = 10.
+
     hdu = fits.ImageHDU()
-    hdu.data = np.zeros((200, 100))
-    hdu.data[100] = 10.
+    hdu.header['CCDSUM'] = "1 1"
+    hdu.data = data
 
     ad = astrofaker.create('GMOS-S')
     ad.add_extension(hdu, pixel_scale=1.0)
 
     _p = primitives_gmos_spect.GMOSSpect([ad])
     _p.findSourceApertures()
-
-
-
-@pytest.fixture(scope='session')
-def path_to_outputs(tmp_path_factory):
-    tmp_path = tmp_path_factory.mktemp('dragons_tests_')
-
-    def _output_dir(path):
-        _dir = tmp_path / path
-        _dir.mkdir(parents=True, exist_ok=True)
-        os.chdir(_dir)
-
-        return _dir
-
-    return _output_dir
 
 
 if __name__ == '__main__':
