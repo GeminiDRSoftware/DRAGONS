@@ -51,7 +51,7 @@ try:
 except ImportError:
     HAS_ASTROFAKER = False
 
-# ToDo: These files are not used for now but I am keeping them for future regression tests
+# ToDo @bquint: These files are not used for now but I am keeping them for future regression tests
 test_cases = [
 
     # GMOS-N B600 at 0.600 um ---
@@ -106,8 +106,8 @@ def test_extract_1d_spectra():
          [0],  # domain_start
          [data.shape[1] - 1],  # domain_end
          [50],  # c0
-         [47],  # aper_lower
-         [53],  # aper_upper
+         [-3],  # aper_lower
+         [3],  # aper_upper
          ],
         names=[
             'number',
@@ -133,6 +133,8 @@ def test_extract_1d_spectra():
 
     np.testing.assert_equal(ade[0].shape[0], data.shape[1])
     np.testing.assert_equal(ade[0].data, data[50])
+
+
 
 
 if __name__ == '__main__':
