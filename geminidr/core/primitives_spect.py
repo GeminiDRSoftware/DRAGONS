@@ -982,9 +982,13 @@ class Spect(PrimitivesBASE):
                     continue
 
                 num_spec = len(aptable)
+                if num_spec == 0:
+                    log.warning("{} has an empty APERTURE table. Cannot "
+                                "extract spectra.".format(ad.filename))
+                    continue
+
                 log.stdinfo("Extracting {} spectra from {}".format(num_spec,
                                                                    extname))
-
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
                 # Create dict of wavelength keywords to add to new headers
@@ -1026,6 +1030,12 @@ class Spect(PrimitivesBASE):
 
                 for i, aperture in enumerate(apertures):
                     log.stdinfo("    Extracting spectrum from aperture {}".format(i + 1))
+                    if aperture.aper_lower > aperture.aper_upper:
+                        log.warning("Aperture lower limit is greater than upper limit.")
+                        aperture.aper_lower, aperture.aper_upper = aperture.aper_upper, aperture.aper_lower
+                    if aperture.aper_lower > 0:
+                        log.warning("Aperture lower limit is greater than zero.")
+
                     self.viewer.width = 2
                     self.viewer.color = colors[i % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
