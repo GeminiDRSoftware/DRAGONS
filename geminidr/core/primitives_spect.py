@@ -187,6 +187,9 @@ class Spect(PrimitivesBASE):
         max_missed : int
             Maximum number of steps to miss before a line is lost.
 
+        debug: bool
+            plot arc line traces on image display window?
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -207,14 +210,16 @@ class Spect(PrimitivesBASE):
         step = params["step"]
         max_shift = params["max_shift"]
         max_missed = params["max_missed"]
+        debug = params["debug"]
 
         orders = (spectral_order, spatial_order)
 
         for ad in adinputs:
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             for ext in ad:
-                self.viewer.display_image(ext, wcs=False)
-                self.viewer.width = 2
+                if debug:
+                    self.viewer.display_image(ext, wcs=False)
+                    self.viewer.width = 2
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
@@ -268,8 +273,8 @@ class Spect(PrimitivesBASE):
                 # The coordinates are always returned as (x-coords, y-coords)
                 ref_coords, in_coords = tracing.trace_lines(ext, axis=1-dispaxis,
                         start=start, initial=initial_peaks, width=5, step=step,
-                        nsum=nsum, max_missed=max_missed,
-                        max_shift=max_shift*ybin/xbin, viewer=self.viewer)
+                        nsum=nsum, max_missed=max_missed, max_shift=max_shift*ybin/xbin,
+                        viewer=self.viewer if debug else None)
 
                 ## These coordinates need to be in the reference frame of a
                 ## full-frame unbinned image, so modify the coordinates by
@@ -319,7 +324,8 @@ class Spect(PrimitivesBASE):
                     #mapped_coords = (np.array(model.inverse(xref, yref)).T -
                     #                 np.array([x1, y1])) / np.array([xbin, ybin])
                     mapped_coords = np.array(model.inverse(xref, yref)).T
-                    self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
+                    if debug:
+                        self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
                 columns = []
                 for m in (m_final, m_inverse):
