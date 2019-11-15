@@ -35,6 +35,22 @@ log = logutils.get_logger(__name__)
 
 ################################################################################
 class Aperture(object):
+    """
+    A class describing an aperture. It has the following attributes:
+
+    model: Model
+        describes the pixel location of the aperture center as a function of
+        pixel in the dispersion direction
+    aper_lower: float
+        location of the lower edge of the aperture relative to the center
+        (i.e., lower edge is at center+aper_lower)
+    aper_upper: float
+        location of the upper edge of the aperture relative to the center
+    _last_extraction: tuple
+        values of (aper_lower, aper_upper) used for the most recent extraction
+    width: float
+        property defining the total aperture width
+    """
     def __init__(self, model, width=None, aper_lower=None, aper_upper=None):
         self.model = model
         if width is None:
@@ -42,6 +58,7 @@ class Aperture(object):
             self.aper_upper = aper_upper
         else:
             self.width = width
+        self._last_extraction = None
 
     @property
     def width(self):
@@ -126,8 +143,8 @@ class Aperture(object):
     def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
         slitlength = data.shape[0]
-        all_x1 = self.center_pixels + aper_lower
-        all_x2 = self.center_pixels + aper_upper
+        all_x1 = self._center_pixels + aper_lower
+        all_x2 = self._center_pixels + aper_upper
 
         ext = NDAstroData(data, mask=mask)
         ext.variance = var
@@ -146,8 +163,8 @@ class Aperture(object):
         slitlength, npix = data.shape
         pixels = np.arange(npix)
 
-        all_x1 = self.center_pixels + aper_lower
-        all_x2 = self.center_pixels + aper_upper
+        all_x1 = self._center_pixels + aper_lower
+        all_x2 = self._center_pixels + aper_upper
         ix1 = max(int(min(all_x1) + 0.5), 0)
         ix2 = min(int(max(all_x2) + 1.5), slitlength)
 
@@ -288,9 +305,9 @@ class Aperture(object):
                 var = var.T
 
         # Avoid having to recalculate them
-        self.center_pixels = self.model(np.arange(npix))
-        all_x1 = self.center_pixels + aper_lower
-        all_x2 = self.center_pixels + aper_upper
+        self._center_pixels = self.model(np.arange(npix))
+        all_x1 = self._center_pixels + aper_lower
+        all_x2 = self._center_pixels + aper_upper
         if viewer is not None:
             # Display extraction edges on viewer, every 10 pixels (for speed)
             pixels = np.arange(npix)
@@ -320,7 +337,8 @@ class Aperture(object):
         extraction_func = getattr(self, "{}_extraction".format(method))
         extraction_func(data, mask, var, aper_lower, aper_upper)
 
-        del self.center_pixels
+        del self._center_pixels
+        self._last_extraction = (aper_lower, aper_upper)
         ndd = NDAstroData(self.data, mask=self.mask)
         ndd.variance = self.var
         try:

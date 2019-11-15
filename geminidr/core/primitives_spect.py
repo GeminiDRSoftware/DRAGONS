@@ -1084,6 +1084,10 @@ class Spect(PrimitivesBASE):
                     center = model_dict['c0']
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
                                 "from {} {}".format(direction, int(center + 0.5)))
+                    ad_spec[-1].hdr['XTRACTLO'] = (aperture._last_extraction[0],
+                                                   'Aperture lower limit')
+                    ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
+                                                   'Aperture upper limit')
 
                     # Delete some header keywords
                     for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
