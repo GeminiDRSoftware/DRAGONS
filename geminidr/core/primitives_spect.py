@@ -1752,6 +1752,9 @@ class Spect(PrimitivesBASE):
         max_shift : float
             Maximum perpendicular shift (in pixels) from pixel to pixel.
 
+        debug: bool
+            draw aperture traces on image display window?
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -1779,6 +1782,7 @@ class Spect(PrimitivesBASE):
         nsum = params["nsum"]
         max_missed = params["max_missed"]
         max_shift = params["max_shift"]
+        debug = params["debug"]
 
         for ad in adinputs:
             for ext in ad:
@@ -1790,8 +1794,9 @@ class Spect(PrimitivesBASE):
                                 "continuing".format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                self.viewer.display_image(ext, wcs=False)
-                self.viewer.width = 2
+                if debug:
+                    self.viewer.display_image(ext, wcs=False)
+                    self.viewer.width = 2
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
 
                 # TODO: Do we need to keep track of where the initial
@@ -1802,7 +1807,7 @@ class Spect(PrimitivesBASE):
                 all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
                                                                     start=start, initial=locations, width=5, step=step,
                                                                     nsum=nsum, max_missed=max_missed,
-                                                                    max_shift=max_shift, viewer=self.viewer)
+                                                                    max_shift=max_shift, viewer=self.viewer if debug else None)
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -1828,8 +1833,9 @@ class Spect(PrimitivesBASE):
                                                                sigma_clip, sigma=3)
                     m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
                     plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
-                    self.viewer.polygon(plot_coords, closed=False,
-                                        xfirst=(dispaxis == 1), origin=0)
+                    if debug:
+                        self.viewer.polygon(plot_coords, closed=False,
+                                            xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
 
                     # Recalculate aperture limits after rectification
