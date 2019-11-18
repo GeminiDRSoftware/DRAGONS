@@ -55,19 +55,3 @@ class Mapper(object):
         self.mode = mode
         self.dotpackage = dotpath(drpkg, ipkg)
         self.recipename = recipename
-
-    @property
-    def upload(self):
-        return self._upload
-
-    @upload.setter
-    def upload(self, upl):
-        if upl is None:
-            self._upload = None
-        elif isinstance(upl, str):
-            self._upload = [seg.lower().strip() for seg in upl.split(',')]
-        elif isinstance(upl, list):
-            self._upload = upl
-        else:
-            raise TypeError("'upload' must be one of None, <str>, or <list>")
-        return
