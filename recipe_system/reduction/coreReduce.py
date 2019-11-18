@@ -202,11 +202,8 @@ class Reduce(object):
                    upload=self.upload)
 
         # Clean references to avoid keeping adinputs objects in memory one
-        # there are no more needed. For pm it seems that we need to remove
-        # manually the reference to adinputs.
-        # pm.adinputs = None
-        # pm = None
-        # adinputs = None
+        # there are no more needed.
+        adinputs = None
 
         # If the RecipeMapper was unable to find a specified user recipe,
         # it is possible that the recipe passed was a primitive name.
