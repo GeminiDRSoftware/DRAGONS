@@ -252,6 +252,14 @@ class CalibrationService(object):
 
         return
 
+    def config_info(self):
+        try:
+            self._config_info(get_calconf())
+        except AttributeError as err:
+            print("No configuration information available.")
+            print("You must configure the CalibrationService with config()")
+            return
+
     def init(self, wipe=True):
         """
         Initialize a calibration database. Callers will usually only want to do
