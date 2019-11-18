@@ -35,23 +35,42 @@ log = logutils.get_logger(__name__)
 
 ################################################################################
 class Aperture(object):
+    """
+    A class describing an aperture. It has the following attributes:
+
+    model: Model
+        describes the pixel location of the aperture center as a function of
+        pixel in the dispersion direction
+    aper_lower: float
+        location of the lower edge of the aperture relative to the center
+        (i.e., lower edge is at center+aper_lower)
+    aper_upper: float
+        location of the upper edge of the aperture relative to the center
+    _last_extraction: tuple
+        values of (aper_lower, aper_upper) used for the most recent extraction
+    width: float
+        property defining the total aperture width
+    """
     def __init__(self, model, width=None, aper_lower=None, aper_upper=None):
         self.model = model
-        if width is not None:
-            aper_lower = aper_upper = 0.5 * width
-        self.aper_lower = aper_lower
-        self.aper_upper = aper_upper
+        if width is None:
+            self.aper_lower = aper_lower
+            self.aper_upper = aper_upper
+        else:
+            self.width = width
+        self._last_extraction = None
 
     @property
     def width(self):
         """Aperture width in pixels. Since the model is pixel-based, it makes
         sense for this to be stored in pixels rather than arcseconds."""
-        return self.aper_lower + self.aper_upper
+        return abs(self.aper_upper - self.aper_lower)
 
     @width.setter
     def width(self, value):
         if value > 0:
-            self.aper_lower = self.aper_upper = 0.5 * value
+            self.aper_upper = 0.5 * value
+            self.aper_lower = -self.aper_upper
         else:
             raise ValueError("Width must be positive ()".format(value))
 
@@ -97,13 +116,14 @@ class Aperture(object):
                  extraction
         """
         if width is not None:
-            aper_lower = aper_upper = 0.5 * width
+            aper_upper = 0.5 * width
+            aper_lower = -aper_upper
         if aper_lower is None:
             aper_lower = self.aper_lower
         if aper_upper is None:
             aper_upper = self.aper_upper
         if grow is not None:
-            aper_lower += grow
+            aper_lower -= grow
             aper_upper += grow
 
         dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -111,7 +131,7 @@ class Aperture(object):
         slitlength = ext.shape[1 - dispaxis]
         self.check_domain(npix)
         center_pixels = self.model(np.arange(npix))
-        x1, x2 = center_pixels - aper_lower, center_pixels + aper_upper
+        x1, x2 = center_pixels + aper_lower, center_pixels + aper_upper
         ix1 = np.where(x1 < -0.5, 0, (x1 + 0.5).astype(int))
         ix2 = np.where(x2 >= slitlength - 0.5, None, (x2 + 1.5).astype(int))
         apmask = np.zeros_like(ext.data if dispaxis == 0 else ext.data.T,
@@ -123,8 +143,8 @@ class Aperture(object):
     def standard_extraction(self, data, mask, var, aper_lower, aper_upper):
         """Uniform extraction across an aperture of width pixels"""
         slitlength = data.shape[0]
-        all_x1 = self.center_pixels - aper_lower
-        all_x2 = self.center_pixels + aper_upper
+        all_x1 = self._center_pixels + aper_lower
+        all_x2 = self._center_pixels + aper_upper
 
         ext = NDAstroData(data, mask=mask)
         ext.variance = var
@@ -143,8 +163,8 @@ class Aperture(object):
         slitlength, npix = data.shape
         pixels = np.arange(npix)
 
-        all_x1 = self.center_pixels - aper_lower
-        all_x2 = self.center_pixels + aper_upper
+        all_x1 = self._center_pixels + aper_lower
+        all_x2 = self._center_pixels + aper_upper
         ix1 = max(int(min(all_x1) + 0.5), 0)
         ix2 = min(int(max(all_x2) + 1.5), slitlength)
 
@@ -245,7 +265,8 @@ class Aperture(object):
         NDAstroData: 1D spectrum
         """
         if width is not None:
-            aper_lower = aper_upper = 0.5 * width
+            aper_upper = 0.5 * width
+            aper_lower = -aper_upper
         if aper_lower is None:
             aper_lower = self.aper_lower
         if aper_upper is None:
@@ -258,6 +279,14 @@ class Aperture(object):
         direction = "row" if dispaxis == 0 else "column"
 
         self.check_domain(npix)
+
+        if self.aper_lower > self.aper_upper:
+            log.warning("Aperture lower limit is greater than upper limit.")
+            aper_lower, aper_upper = aper_upper, aper_lower
+        if self.aper_lower > 0:
+            log.warning("Aperture lower limit is greater than zero.")
+        if self.aper_upper < 0:
+            log.warning("Aperture upper limit is less than zero.")
 
         # make data look like it's dispersed horizontally
         # (this is best for optimal extraction, but not standard)
@@ -276,9 +305,9 @@ class Aperture(object):
                 var = var.T
 
         # Avoid having to recalculate them
-        self.center_pixels = self.model(np.arange(npix))
-        all_x1 = self.center_pixels - aper_lower
-        all_x2 = self.center_pixels + aper_upper
+        self._center_pixels = self.model(np.arange(npix))
+        all_x1 = self._center_pixels + aper_lower
+        all_x2 = self._center_pixels + aper_upper
         if viewer is not None:
             # Display extraction edges on viewer, every 10 pixels (for speed)
             pixels = np.arange(npix)
@@ -308,7 +337,8 @@ class Aperture(object):
         extraction_func = getattr(self, "{}_extraction".format(method))
         extraction_func(data, mask, var, aper_lower, aper_upper)
 
-        del self.center_pixels
+        del self._center_pixels
+        self._last_extraction = (aper_lower, aper_upper)
         ndd = NDAstroData(self.data, mask=self.mask)
         ndd.variance = self.var
         try:
@@ -634,8 +664,8 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     except KeyError:
         method = None
 
-    x = np.arange(len(data))[mask == 0]
-    y = data[mask == 0]
+    x = np.arange(len(data))
+    y = np.ma.masked_array(data, mask=mask)
 
     # Try to better estimate the true noise from the pixel-to-pixel
     # variations (the difference between adjacent pixels will be
@@ -643,14 +673,15 @@ def get_limits(data, mask, variance=None, peaks=[], threshold=0, method=None):
     if variance is None:
         w = np.full_like(y, np.sqrt(2) / sigma_clipped_stats(np.diff(y))[2])
     else:
-        w = np.divide(1.0, np.sqrt(variance[mask == 0]),
-                      out=np.zeros_like(y, dtype=np.float32),
-                      where=variance[mask == 0] > 0)
+        w = divide0(1.0, np.sqrt(variance))
 
     # We need to fit a quartic spline since we want to know its
     # minima (roots of its derivative), and can only find the
     # roots of a cubic spline
-    spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=4)
+    # TODO: Quartic splines look bad with outlier removal
+    #spline = astromodels.UnivariateSplineWithOutlierRemoval(x, y, w=w, k=4)
+    spline = interpolate.UnivariateSpline(x, y, w=w, k=4)
+
     derivative = spline.derivative(n=1)
     extrema = derivative.roots()
     second_derivatives = spline.derivative(n=2)(extrema)

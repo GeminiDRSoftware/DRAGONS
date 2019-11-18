@@ -9,6 +9,7 @@ The default recipe is "reduce".
 """
 recipe_tags = set(['GMOS', 'SPECT', 'NODANDSHUFFLE'])
 
+
 def reduce(p):
     """
     This recipe does a quick reduction of GMOS nod and shuffle data.
@@ -32,5 +33,6 @@ def reduce(p):
     p.measureIQ(display=True)
     p.writeOutputs()
     return
+
 
 _default = reduce

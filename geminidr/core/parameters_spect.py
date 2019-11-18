@@ -40,6 +40,7 @@ class determineDistortionConfig(config.Config):
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
+    debug = config.Field("Display line traces on image display?", bool, False)
 
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
@@ -75,6 +76,7 @@ class extract1DSpectraConfig(config.Config):
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, 10, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
+    debug = config.Field("Draw extraction apertures on image display?", bool, False)
 
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
@@ -112,9 +114,9 @@ class traceAperturesConfig(config.Config):
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
+    debug = config.Field("Draw aperture traces on image display?", bool, False)
 
 class skyCorrectFromSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
     order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
-    width = config.RangeField("Default width for apertures (pixels)", float, 10, min=0, optional=True)
     grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)

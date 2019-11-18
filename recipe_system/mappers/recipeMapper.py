@@ -16,6 +16,7 @@ from ..utils.mapper_utils import dotpath
 from ..utils.mapper_utils import find_user_recipe
 from ..utils.mapper_utils import RECIPEMARKER
 
+
 # ------------------------------------------------------------------------------
 class RecipeMapper(Mapper):
     """
@@ -45,16 +46,12 @@ class RecipeMapper(Mapper):
         """
         Start of the recipe library search cascade.
 
-        Parameters
-        ----------
-        <void>
-
         Returns
         -------
-        <tuple> : (set, <function>)
-                  A tuple including the best tag set match and the recipe function
-                  that best matched.
-
+        TagSet
+            Best matched tagset.
+        function
+            Recipe with the associated best matched TagSet.
         """
         matched_set = (set([]), None)
         for rlib in self._get_tagged_recipes():

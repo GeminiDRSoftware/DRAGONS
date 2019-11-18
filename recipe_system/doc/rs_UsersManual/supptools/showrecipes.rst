@@ -6,7 +6,7 @@ showrecipes
 ===========
 The Recipe System will select the best recipe for your data, which
 can be overriden when necessary.  To see what sequence of primitives a
-recipe will execute or which recipes are availalbe for the dataset, one
+recipe will execute or which recipes are available for the dataset, one
 can use ``showrecipes``.
 
 Show Recipe Content

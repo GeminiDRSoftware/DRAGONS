@@ -109,7 +109,7 @@ class Visualize(PrimitivesBASE):
 
             if remove_bias:
                 if (ad.phu.get('BIASIM') or ad.phu.get('DARKIM') or
-                    any(ad.hdr.get('OVERSCAN'))):
+                    any(ad.hdr.get(self.timestamp_keys["subtractOverscan"]))):
                     log.fullinfo("Bias level has already been removed from "
                                  "data; no approximate correction will be "
                                  "performed")
@@ -526,8 +526,11 @@ class _localNumDisplay(nd.NumDisplay):
                 # Set to red as default
                 mask_colors = [204]*len(masks)
             for i in range(len(masks)):
-                if (masks[i][0].size>0 and masks[i][1].size>0):
-                    bpix[masks[i]] = mask_colors[i]
+                try:
+                    if (masks[i][0].size>0 and masks[i][1].size>0):
+                        bpix[masks[i]] = mask_colors[i]
+                except TypeError:
+                    pass
 
         # Update the WCS to match the frame buffer being used.
         _d.syncWCS(_wcsinfo)
