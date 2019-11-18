@@ -179,7 +179,6 @@ class PlotGmosSpectLongslitArcs:
             os.makedirs(target_dir, exist_ok=True)
             os.rename(tar_name, target_file)
 
-
     def distortion_diagnosis_plots(self):
         """
         Makes the Diagnosis Plots for `determineDistortion` and

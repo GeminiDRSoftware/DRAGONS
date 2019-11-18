@@ -31,7 +31,7 @@ import numpy as np
 
 from astropy import table
 from astropy.io import fits
-from scipy import optimize
+from scipy import ndimage, optimize
 
 from geminidr.core import primitives_spect
 
@@ -82,31 +82,15 @@ def test_QESpline_optimization():
 
 
 @pytest.mark.skipif("not HAS_ASTROFAKER")
-def test_find_apertures():
+@pytest.fixture(scope="module")
+def fake_data():
+
     data = np.zeros((100, 200))
     data[50] = 10.
 
     hdu = fits.ImageHDU()
     hdu.header['CCDSUM'] = "1 1"
     hdu.data = data
-
-    ad = astrofaker.create('GMOS-S')
-    ad.add_extension(hdu, pixel_scale=1.0)
-
-    _p = primitives_spect.Spect([])
-    _p.findSourceApertures(ad)
-
-
-@pytest.mark.skipif("not HAS_ASTROFAKER")
-def test_sky_correct_from_slit():
-    data = np.zeros((100, 200))
-    data[50] = 100.
-
-    n_lines = 50
-    sky_lines = np.random.randint(low=0, high=data.shape[1], size=n_lines)
-    sky_intensity = 30. * np.random.random(size=n_lines)
-
-    data[:, sky_lines] = sky_intensity
 
     aperture = table.Table(
         [[1],  # Number
@@ -129,58 +113,38 @@ def test_sky_correct_from_slit():
             'aper_upper'],
     )
 
-    hdu = fits.ImageHDU()
-    hdu.header['CCDSUM'] = "1 1"
-    hdu.data = data
-
     ad = astrofaker.create('GMOS-S')
     ad.add_extension(hdu, pixel_scale=1.0)
     ad[0].APERTURE = aperture
 
-    _p = primitives_spect.Spect([])
-    ade = _p.skyCorrectFromSlit(ad)[0]
+    return ad
 
 
-@pytest.mark.skipif("not HAS_ASTROFAKER")
-def test_extract_1d_spectra():
+def test_fake_star_has_expected_integrated_flux():
 
-    data = np.zeros((100, 200))
+    data = np.zeros(100)
     data[50] = 10.
+    data = ndimage.gaussian_filter(data, sigma=5)
 
-    aperture = table.Table(
-        [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [data.shape[1] - 1],  # domain_end
-         [50],  # c0
-         [-3],  # aper_lower
-         [3],  # aper_upper
-         ],
-        names=[
-            'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
-            'c0',
-            'aper_lower',
-            'aper_upper'],
-    )
+    np.testing.assert_almost_equal(data.sum(), 10.)
 
-    hdu = fits.ImageHDU()
-    hdu.header['CCDSUM'] = "1 1"
-    hdu.data = data
 
-    ad = astrofaker.create('GMOS-S')
-    ad.add_extension(hdu, pixel_scale=1.0)
-    ad[0].APERTURE = aperture
-
+def test_find_apertures(fake_data):
     _p = primitives_spect.Spect([])
-    ade = _p.extract1DSpectra(ad)[0]
+    _p.findSourceApertures(fake_data)
 
-    np.testing.assert_equal(ade[0].shape[0], data.shape[1])
-    np.testing.assert_equal(ade[0].data, data[50])
+
+def test_sky_correct_from_slit(fake_data):
+    _p = primitives_spect.Spect([])
+    ade = _p.skyCorrectFromSlit(fake_data)[0]
+
+
+def test_extract_1d_spectra(fake_data):
+    _p = primitives_spect.Spect([])
+    ade = _p.extract1DSpectra(fake_data)[0]
+
+    np.testing.assert_equal(ade[0].shape[0], fake_data[0].data.shape[1])
+    np.testing.assert_equal(ade[0].data, fake_data[0].data[50])
 
 
 if __name__ == '__main__':
