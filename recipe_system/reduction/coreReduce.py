@@ -173,7 +173,12 @@ class Reduce(object):
             log.error(str(err))
             raise
 
-        rm = RecipeMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
+        # build mapper inputs, pass no 'ad' objects.
+        # mappers now receive tags and instr pkg name, e.g., 'gmos'
+        datatags = set(list(adinputs[0].tags)[:])
+        instpkg = adinputs[0].instrument(generic=True).lower()
+
+        rm = RecipeMapper(datatags, instpkg, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.recipename)
         try:
             recipe = rm.get_applicable_recipe()
@@ -185,20 +190,23 @@ class Reduce(object):
             log.warn("Searching primitives ...")
         rm = None
 
-        pm = PrimitiveMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
-                             usercals=self.ucals, uparms=self.uparms,
-                             upload=self.upload)
+        # PrimitiveMapper now returns the primitive class, not an instance.
+        pm = PrimitiveMapper(datatags, instpkg, mode=self.mode, drpkg=self.drpkg)
         try:
-            p = pm.get_applicable_primitives()
+            pclass = pm.get_applicable_primitives()
         except PrimitivesNotFound as err:
             log.error(str(err))
             raise
+
+        p = pclass(adinputs, mode=self.mode, ucals=self.ucals, uparms=self.uparms,
+                   upload=self.upload)
+
         # Clean references to avoid keeping adinputs objects in memory one
         # there are no more needed. For pm it seems that we need to remove
         # manually the reference to adinputs.
-        pm.adinputs = None
-        pm = None
-        adinputs = None
+        # pm.adinputs = None
+        # pm = None
+        # adinputs = None
 
         # If the RecipeMapper was unable to find a specified user recipe,
         # it is possible that the recipe passed was a primitive name.

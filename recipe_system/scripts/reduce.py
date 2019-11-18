@@ -21,6 +21,7 @@ from recipe_system.utils.reduce_utils import normalize_args
 from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
 
+from recipe_system.utils.rs_utilities import log_traceback
 
 from recipe_system.cal_service import set_calservice
 from recipe_system.cal_service import localmanager_available
@@ -99,6 +100,7 @@ def main(args):
     except Exception as err:
         log.error("reduce caught an unhandled exception.\n")
         log.error(err)
+        log_traceback(log)
         log.error("\nReduce instance aborted.")
         estat = signal.SIGABRT
 

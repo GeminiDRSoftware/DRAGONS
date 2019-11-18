@@ -24,8 +24,15 @@ class Mapper(object):
     Parameters
     ----------
 
-    adinputs : <list>
-               A list of AstroData objects.
+    dtags : <set>
+            A set of AstroData tags from input dataset. These are decoupled
+            from astrodata objects so as not to introduce 'ad' objects into
+            mapper generators.
+
+    ipkg  : <str>
+            Instrument package name, as returned by,
+
+                ad.instrument(generic=True)
 
     drpkg : <str>
             The data reduction package to map. Default is 'geminidr'.
@@ -42,31 +49,12 @@ class Mapper(object):
            'qa' - Quality Assessment
            'ql' - Quicklook
 
-    usercals : <dict>
-               A dict of user provided calibration files, keyed on cal type.
-               E.g., {'processed_bias': 'foo_bias.fits'}
-
-    uparms : <list>
-             A list of tuples of user parameters like, (parameter, value).
-             Each may have a specified primitive.
-             E.g., [('foo','bar'), ('tileArrays:par1','val1')]
-
-    upload : <list> A list of things to upload. e.g., ['metrics']
-
-
     """
-    def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='_default',
-                 usercals=None, uparms=None, upload=None):
-
-        self.adinputs = adinputs
+    def __init__(self, dtags, ipkg, mode='sq', drpkg='geminidr', recipename='_default'):
+        self.tags = dtags
         self.mode = mode
-        self.pkg = adinputs[0].instrument(generic=True).lower()
-        self.dotpackage = dotpath(drpkg, self.pkg)
+        self.dotpackage = dotpath(drpkg, ipkg)
         self.recipename = recipename
-        self.tags = adinputs[0].tags
-        self.usercals = usercals if usercals else {}
-        self.userparams = dictify(uparms)
-        self._upload = upload
 
     @property
     def upload(self):

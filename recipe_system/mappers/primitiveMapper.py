@@ -32,13 +32,11 @@ class PrimitiveMapper(Mapper):
 
     """
     def get_applicable_primitives(self):
-        tag_match, primitive_actual = self._retrieve_primitive_set()
-        if primitive_actual is None:
+        tag_match, primitive_class = self._retrieve_primitive_set()
+        if primitive_class is None:
             raise PrimitivesNotFound("No qualified primitive set could be found")
 
-        return primitive_actual(self.adinputs, mode=self.mode,
-                                ucals=self.usercals, uparms=self.userparams,
-                                upload=self.upload)
+        return primitive_class
 
     # --------------------------------------------------------------------------
     # Primtive search cascade
