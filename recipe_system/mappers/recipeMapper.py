@@ -23,10 +23,11 @@ class RecipeMapper(Mapper):
     Retrieve the appropriate recipe for a dataset, using all defined defaults:
 
     >>> ad = astrodata.open(<fitsfile>)
-    >>> adinputs = [ad]
-    >>> rm = RecipeMapper(adinputs)
+    >>> dtags = set(list(ad.tags)[:])
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> rm = RecipeMapper(dtags, instpkg)
     >>> recipe = rm.get_applicable_recipe()
-    >>> recipe.__name__ 
+    >>> recipe.__name__
     'qaReduce'
 
     """

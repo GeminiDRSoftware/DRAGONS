@@ -24,10 +24,11 @@ class PrimitiveMapper(Mapper):
     defined defaults:
 
     >>> ad = astrodata.open(<fitsfile>)
-    >>> adinputs = [ad]
-    >>> pm = PrimitiveMapper(adinputs)
-    >>> p = pm.get_applicable_primitives()
-    >>> p.__class__
+    >>> dtags = set(list(ad.tags)[:])
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> pm = PrimitiveMapper(dtags, instpkg)
+    >>> pclass = pm.get_applicable_primitives()
+    >>> pclass
     <class 'primitives_IMAGE.PrimitivesIMAGE'>
 
     """

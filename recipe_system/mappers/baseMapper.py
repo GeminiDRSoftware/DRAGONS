@@ -12,9 +12,12 @@ from ..utils.mapper_utils import dotpath
 class Mapper(object):
     """
     This is the base class for classes
-    :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
+
+    :class:`recipeMapper.RecipeMapper`
+
     and
-    :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`.
+
+    :class:`primitiveMapper.PrimitiveMapper`.
 
     It provides initialization only.
 
@@ -30,9 +33,9 @@ class Mapper(object):
             mapper generators.
 
     ipkg  : <str>
-            Instrument package name, as returned by,
+            Instrument package name, lower case, as returned by,
 
-                ad.instrument(generic=True)
+                ad.instrument(generic=True).lower()
 
     drpkg : <str>
             The data reduction package to map. Default is 'geminidr'.
