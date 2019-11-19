@@ -94,7 +94,7 @@ class RecipeMapper(Mapper):
         pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
             if ispkg and pkgname == recipedir:
-                break 
+                break
             else:
                 continue
 

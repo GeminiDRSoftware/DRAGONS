@@ -5,10 +5,11 @@
 # ------------------------------------------------------------------------------
 from builtins import object
 
-from ..utils.mapper_utils import dictify
 from ..utils.mapper_utils import dotpath
 
 # ------------------------------------------------------------------------------
+
+
 class Mapper(object):
     """
     This is the base class for classes
@@ -53,6 +54,7 @@ class Mapper(object):
            'ql' - Quicklook
 
     """
+
     def __init__(self, dtags, ipkg, mode='sq', drpkg='geminidr', recipename='_default'):
         self.tags = dtags
         self.mode = mode

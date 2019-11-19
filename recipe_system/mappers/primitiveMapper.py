@@ -85,7 +85,7 @@ class PrimitiveMapper(Mapper):
             for atrname in dir(lmod):
                 if atrname.startswith('_'):        # no prive, no magic
                     continue
-                
+
                 atr = getattr(lmod, atrname)
                 if isclass(atr) and hasattr(atr, 'tagset'):
                     yield atr
