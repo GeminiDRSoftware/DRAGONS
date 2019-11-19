@@ -1,6 +1,6 @@
 """
-This module provides decorator functions for implementing the (somewhat TBD) 
-parameter override policy of the prototype primitive classes. This implementation 
+This module provides decorator functions for implementing the (somewhat TBD)
+parameter override policy of the prototype primitive classes. This implementation
 is subject to any change in policy.
 
 Currently, the policy defines an order of parameter precedence:
@@ -14,7 +14,7 @@ Currently, the policy defines an order of parameter precedence:
    parameter, as in `reject_method=jilt`, then any primitive with that parameter
    will receive that parameter value.
 2. *recipe parameters* -- as passed on a recipe function call, like
-   `recipe_name(par1=val1)`. These will be overridden by same named user 
+   `recipe_name(par1=val1)`. These will be overridden by same named user
    parameters.
 3. *default parameters* -- The default parameter sets as defined in package
    parameter files. These will be overridden by recipe parameters and then
@@ -22,13 +22,13 @@ Currently, the policy defines an order of parameter precedence:
 
 This policy is implemented in the decorator function,
 
-    parameter_override 
+    parameter_override
 
-This is the primitive decorator and should be the only one decorating a 
+This is the primitive decorator and should be the only one decorating a
 primitive class.
 
 This decorator is fully enhanced by the make_class_wrapper decorator, which
-maps the parameter_override decorator function to all public methods on 
+maps the parameter_override decorator function to all public methods on
 the decorated class.
 
 E.g.,::
@@ -57,9 +57,9 @@ log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 def userpar_override(pname, args, upars):
     """
-    Implement user parameter overrides. In this implementation, user 
-    parameters *always* take precedence. Any user parameters passed to the 
-    Primitive class constructor, usually via -p on the 'reduce' command 
+    Implement user parameter overrides. In this implementation, user
+    parameters *always* take precedence. Any user parameters passed to the
+    Primitive class constructor, usually via -p on the 'reduce' command
     line, *must* override any specified recipe parameters.
 
     Note: user parameters may be primitive-specific, i.e. passed as
@@ -168,11 +168,5 @@ def parameter_override(fn):
                 raise
         unset_logging()
         gc.collect()
-        import objgraph
-        print(f'===============\n'
-              f'in memory: '
-              f'{len(objgraph.by_type("NDAstroData"))} NDAstroData '
-              f'{len(objgraph.by_type("ImageHDU"))} ImageHDU '
-              '\n===============\n')
         return ret_value
     return gn

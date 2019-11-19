@@ -10,37 +10,19 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 
 from gempy.utils import logutils
 
-import datetime, psutil, objgraph
-
-
-class MemoryLogger:
-    def __init__(self, filename):
-        self.filename = filename
-        self.process = psutil.Process()
-        self.log(f'start {datetime.datetime.now()}')
-
-    def log(self, msg):
-        nfitsfiles = len([f for f in self.process.open_files() if
-                          f.path.endswith('fits')])
-        mem = self.process.memory_info().rss / 1024**2
-        refs = {name: len(objgraph.by_type(name)) for name in
-                ('ImageHDU', 'NDAstroData', 'HDUList')}
-
-        with open(self.filename, 'a') as f:
-            f.write(f'{mem:.1f} : {msg}, {refs}, {nfitsfiles} FITS\n')
 
 # These tests need refactoring to reduce the replication of API boilerplate
 
 # noinspection PyPep8Naming
 @pytest.mark.integtest
 def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
+    objgraph = pytest.importorskip("objgraph")
+
     logutils.config(file_name='gmos_test_reduce_image_GN_HAM_2x2_z.log')
-    mem = MemoryLogger('gmos_test_reduce_image_GN_HAM_2x2_z_mem.log')
 
     calib_files = []
 
     raw_subdir = 'GMOS/GN-2017B-LP-15'
-
     all_files = sorted(glob.glob(
         os.path.join(path_to_inputs, raw_subdir, '*.fits')))
     assert len(all_files) > 1
@@ -57,7 +39,6 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
 
     def reduce(filelist, saveto=None, label='', calib_files=None,
                recipename=None):
-        mem.log(f'start {label}')
         red = Reduce()
         assert len(red.files) == 0
         red.files.extend(filelist)
@@ -69,7 +50,9 @@ def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
         red.runr()
         if saveto:
             calib_files.append(f'{saveto}:{red.output_filenames[0]}')
-        mem.log(f'{label} done')
+
+        # check that we are not leaking objects
+        assert len(objgraph.by_type('NDAstroData')) == 0
 
     reduce(list_of_bias, saveto='processed_bias', label='bias',
            calib_files=calib_files)
