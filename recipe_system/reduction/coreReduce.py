@@ -187,6 +187,8 @@ class Reduce(object):
             log.warn("WARNING: {}".format(err))
             pass
         except RecipeNotFound as err:
+            log.warn("No recipe can be found in {} recipe libs.".format(rm.pkg))
+            log.warn("Searching primitives ...")
             pass
 
         try:
@@ -199,13 +201,17 @@ class Reduce(object):
         # it is possible that the recipe passed was a primitive name.
         # Here we examine the primitive set to see if this recipe is actually
         # a primitive name.
+        norec_msg = "{} recipes do not define a '{}' recipe for these data."
+        if recipe is None and self.recipename is '_default':
+            raise RecipeNotFound(norec_msg.format(rm.pkg.upper(), rm.mode))
+
         if recipe is None:
             try:
                 primitive_as_recipe = getattr(p, self.recipename)
             except AttributeError as err:
                 err = "Recipe {} Not Found".format(self.recipename)
                 log.error(str(err))
-                raise
+                raise RecipeNotFound("No primitive named {}".format(self.recipename))
 
             pname = primitive_as_recipe.__name__
             log.stdinfo("Found '{}' as a primitive.".format(pname))
