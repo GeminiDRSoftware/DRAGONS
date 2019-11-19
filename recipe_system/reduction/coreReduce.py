@@ -234,7 +234,7 @@ class Reduce(object):
             self._logheader(recipe)
             try:
                 recipe(p)
-            except Exception as err:
+            except Exception:
                 log.error("Reduce received an unhandled exception. Aborting ...")
                 log_traceback(log)
                 log.stdinfo("Writing final outputs ...")

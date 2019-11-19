@@ -79,7 +79,7 @@ class RecipeMapper(Mapper):
     def _get_tagged_recipes(self):
         try:
             loaded_pkg = import_module(self.dotpackage)
-        except:
+        except Exception:
             yield None
             return
         for rmod, ispkg in self._generate_recipe_modules(loaded_pkg):

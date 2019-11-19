@@ -192,8 +192,6 @@ def showprims(_file, mode='sq', recipe='_default'):
             result += ("Recipe not provided, default recipe ({}) will "
                        "be used.\n".format(mapper_recipe.__name__))
 
-        dragons_location = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
-
     result += ("Input file: " + os.path.abspath(ad.path))
     result += ("\nInput tags: {}".format(list(tags)))
     result += ("\nInput mode: " + str(mode.lower()))

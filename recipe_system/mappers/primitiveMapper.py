@@ -76,7 +76,7 @@ class PrimitiveMapper(Mapper):
     def _get_tagged_primitives(self):
         try:
             loaded_pkg = import_module(self.dotpackage)
-        except ModuleNotFoundError as err:
+        except ModuleNotFoundError:
             log_traceback(log)
             yield None
             return
