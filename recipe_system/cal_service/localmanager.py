@@ -37,12 +37,14 @@ log = logutils.get_logger(__name__)
 # SQLAlchemy complains about SQLite details. We can't do anything about the
 # data types involved, because the ORM files are meant for PostgreSQL.
 # The queries work, though, so we just ignore the warnings
-warnings.filterwarnings('ignore',
-    "Dialect sqlite\+pysqlite does \*not\* support Decimal objects natively, "
-    "and SQLAlchemy must convert from floating point - rounding errors and "
-    "other issues may occur. Please consider storing Decimal numbers as "
-    "strings or integers on this platform for lossless storage\.",
-    SAWarning, r'^sqlalchemy\.sql\.sqltypes$')
+warnings.filterwarnings(
+    'ignore',
+    r"Dialect sqlite\+pysqlite does \*not\* support Decimal objects natively, "
+    r"and SQLAlchemy must convert from floating point - rounding errors and "
+    r"other issues may occur. Please consider storing Decimal numbers as "
+    r"strings or integers on this platform for lossless storage\.",
+    SAWarning, r'^sqlalchemy\.sql\.sqltypes$'
+)
 
 extra_descript = {
     'GMOS_NODANDSHUFFLE': 'nodandshuffle',
