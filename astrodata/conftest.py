@@ -11,12 +11,17 @@ path_to_inputs = testing.path_to_inputs
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--dragons-remote-data",
-        action="store_true",
-        default=False,
-        help="run only tests marked with `dragons_remote_data`"
-    )
+
+    try:
+        parser.addoption(
+            "--dragons-remote-data",
+            action="store_true",
+            default=False,
+            help="run only tests marked with `dragons_remote_data`"
+        )
+    # This file is imported several times and might bring conflict
+    except ValueError:
+        pass
 
 
 def pytest_configure(config):
