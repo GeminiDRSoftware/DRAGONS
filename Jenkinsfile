@@ -89,7 +89,7 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest --basetemp=/data/jenkins/dragons/outputs -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
+                    coverage run -m pytest --remote-data=any --basetemp=/data/jenkins/dragons/outputs -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
                     '''
 
             }
@@ -103,7 +103,7 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest --basetemp=/data/jenkins/dragons/outputs -m gmosls --junit-xml ./reports/gmoslstests_results.xml
+                    coverage run -m pytest --remote-data=any --basetemp=/data/jenkins/dragons/outputs -m gmosls --junit-xml ./reports/gmoslstests_results.xml
                     '''
 
                 echo "Reporting coverage"
@@ -130,7 +130,7 @@ pipeline {
                 echo "Integration tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest --basetemp=/data/jenkins/dragons/outputs -m integtest --junit-xml ./reports/integration_results.xml
+                    coverage run -m pytest --remote-data=any --basetemp=/data/jenkins/dragons/outputs -m integtest --junit-xml ./reports/integration_results.xml
                     '''
             }
 
