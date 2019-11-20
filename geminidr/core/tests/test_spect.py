@@ -35,13 +35,6 @@ from scipy import ndimage, optimize
 
 from geminidr.core import primitives_spect
 
-try:
-    import astrofaker
-
-    HAS_ASTROFAKER = True
-except ImportError:
-    HAS_ASTROFAKER = False
-
 
 # noinspection PyPep8Naming
 def test_QESpline_optimization():
@@ -81,9 +74,10 @@ def test_QESpline_optimization():
     np.testing.assert_allclose(real_coeffs, 1./result.x, atol=0.01)
 
 
-@pytest.mark.skipif("not HAS_ASTROFAKER")
 @pytest.fixture(scope="module")
 def fake_data():
+
+    astrofaker = pytest.importorskip("astrofaker")
 
     data = np.zeros((100, 200))
     data[50] = 10.
@@ -118,6 +112,7 @@ def fake_data():
     ad[0].APERTURE = aperture
 
     return ad
+
 
 
 def test_fake_star_has_expected_integrated_flux():
