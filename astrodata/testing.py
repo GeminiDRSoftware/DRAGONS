@@ -10,10 +10,9 @@ import warnings
 from astropy.utils.data import download_file
 
 URL = 'https://archive.gemini.edu/file/'
-DEFAULT_CACHE_DIRECTORY = '~/.geminidr/cache'
 
 
-def download_from_archive(filename, path=None):
+def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
     """Download file from the archive and store it in the local cache.
 
     Parameters
@@ -23,11 +22,22 @@ def download_from_archive(filename, path=None):
     path : str
         By default the file is stored at the root of the cache directory, but
         using ``path`` allows to specify a sub-directory.
-
+    env_var: strs
+        Environment variable containing the path to the cache directory.
     """
     # Find cache path and make sure it exists
-    cache_path = os.getenv('DRAGONS_TEST_INPUTS', DEFAULT_CACHE_DIRECTORY)
+    cache_path = os.getenv(env_var)
+
+    if cache_path is None:
+        raise ValueError('Environment variable not set: {:s}'.format(env_var))
+
+    elif not os.access(cache_path, os.W_OK):
+        raise IOError('Could not access the path stored inside ${:s}. Make '
+                      'sure the following path exists and that you have write '
+                      'permissions in it: {:s}'.format(env_var, cache_path))
+
     cache_path = os.path.expanduser(cache_path)
+
     if path is not None:
         cache_path = os.path.join(cache_path, path)
     os.makedirs(cache_path, exist_ok=True)
