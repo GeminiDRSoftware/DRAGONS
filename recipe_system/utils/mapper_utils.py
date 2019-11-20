@@ -5,7 +5,6 @@
 Utility functions for Mappers.
 
     find_user_recipe  -- searches for a user specified recipe, if any.
-    dictify()         -- list of user parameters -> dictionary
     dotpath()         -- build a python import path for dr packages.
 
 """
@@ -16,6 +15,8 @@ from importlib import import_module
 # ------------------------------------------------------------------------------
 RECIPEMARKER = 'recipes'
 # ------------------------------------------------------------------------------
+
+
 def find_user_recipe(dashr):
     """
     Function receives the value of the reduce [-r, --recipe] flag, if passed.
@@ -58,26 +59,6 @@ def find_user_recipe(dashr):
 
     return recipefn
 
-def dictify(parset):
-    """
-    Converts a list of tuples, nominally a set of user parameters passed via
-    the 'reduce' command line, into a dictionary directly usable by a primitive
-    class.
-
-    :parameter parset: A list of user parameters tuples,
-                       e.g., [('foo', 'bar'), ('foobar', 'bat')]
-    :type parset: <list>
-
-    :returns: A dictionary of those tuples as key=val pairs,
-              e.g., {'foo': 'bar', 'foobar': 'bat'}
-    :rtype: <dict>
-
-    """
-    pardict = {}
-    if parset:
-        for pset in parset:
-            pardict[pset[0]] = pset[1]
-    return pardict
 
 def dotpath(*args):
     """

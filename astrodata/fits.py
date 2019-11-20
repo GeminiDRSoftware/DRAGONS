@@ -3,9 +3,8 @@ from __future__ import print_function
 from future.utils import PY3
 
 from builtins import object
-from abc import abstractmethod
 from copy import deepcopy
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 import os
 import re
 from functools import partial, wraps
@@ -26,7 +25,7 @@ from .nddata import NDAstroData as NDDataObject, new_variance_uncertainty_instan
 
 import astropy
 from astropy.io import fits
-from astropy.io.fits import HDUList, Header, DELAYED
+from astropy.io.fits import HDUList, DELAYED
 from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
 from astropy.io.fits import Column, FITS_rec
 from astropy.io.fits.hdu.table import _TableBaseHDU
@@ -214,20 +213,23 @@ def table_to_bintablehdu(table, extname=None):
 
     return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
 
+
 header_type_map = {
-        'bool': 'L',
-        'int8': 'B',
-        'int16': 'I',
-        'int32': 'J',
-        'int64': 'K',
-        'uint8': 'B',
-        'uint16': 'I',
-        'uint32': 'J',
-        'uint64': 'K',
-        'float32': 'E',
-        'float64': 'D',
-        'complex64': 'C',
-        'complex128': 'M'}
+    'bool': 'L',
+    'int8': 'B',
+    'int16': 'I',
+    'int32': 'J',
+    'int64': 'K',
+    'uint8': 'B',
+    'uint16': 'I',
+    'uint32': 'J',
+    'uint64': 'K',
+    'float32': 'E',
+    'float64': 'D',
+    'complex64': 'C',
+    'complex128': 'M'
+}
+
 
 def header_for_table(table):
     columns = []
@@ -1453,7 +1455,8 @@ class FitsLoader(object):
         provider = self._cls()
 
         if isinstance(source, (str if PY3 else basestring)):
-            hdulist = fits.open(source, memmap=True, do_not_scale_image_data=True, mode='readonly')
+            hdulist = fits.open(source, memmap=True,
+                                do_not_scale_image_data=True, mode='readonly')
             provider.path = source
         else:
             hdulist = source
@@ -1711,7 +1714,6 @@ class AstroDataFits(AstroData):
         # Cope with prefix or suffix as None
         self.filename = (prefix or '') + root + (suffix or '') + filetype
         return
-
 
     @astro_data_descriptor
     def instrument(self):

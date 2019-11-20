@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-=
+# -*- coding: utf-8 -*-=
 import os
 import sys
 import re
@@ -43,13 +43,17 @@ def showrecipes(_file):
                    "the format and directory.")
         raise
 
+    # New Mapper interface now requires a tag set and instrument name.
+    # We decoupled the tags from 'ad'.
+    dtags = set(list(ad.tags)[:])
+    instpkg = ad.instrument(generic=True).lower()
+
     all_recipies = []
     functions_list = []
     for mode in ['sq', 'qa', 'ql']:
 
         try:
-
-            rm = RecipeMapper([ad], mode)
+            rm = RecipeMapper(dtags, instpkg, mode=mode)
             recipe = rm.get_applicable_recipe()
 
         except RecipeNotFound:
@@ -145,9 +149,13 @@ def showprims(_file, mode='sq', recipe='_default'):
               "the format and directory:", sys.exc_info()[0])
         raise
 
+    # New Mapper interface now requires a tag set and instrument name.
+    # We decoupled the tags from 'ad'.
+    dtags = set(list(ad.tags)[:])
+    instpkg = ad.instrument(generic=True).lower()
     try:
 
-        rm = RecipeMapper([ad], mode, recipename=recipe)
+        rm = RecipeMapper(dtags, instpkg, mode=mode, recipename=recipe)
         mapper_recipe = rm.get_applicable_recipe()
 
     except RecipeNotFound:
@@ -183,8 +191,6 @@ def showprims(_file, mode='sq', recipe='_default'):
         if recipe == '_default':
             result += ("Recipe not provided, default recipe ({}) will "
                        "be used.\n".format(mapper_recipe.__name__))
-
-        dragons_location = '/'.join(geminidr.__file__.split("/")[:-2]) + '/'
 
     result += ("Input file: " + os.path.abspath(ad.path))
     result += ("\nInput tags: {}".format(list(tags)))

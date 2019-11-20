@@ -5,16 +5,20 @@
 # ------------------------------------------------------------------------------
 from builtins import object
 
-from ..utils.mapper_utils import dictify
 from ..utils.mapper_utils import dotpath
 
 # ------------------------------------------------------------------------------
+
+
 class Mapper(object):
     """
     This is the base class for classes
-    :class:`~recipe_system.mappers.recipeMapper.RecipeMapper`
+
+    :class:`recipeMapper.RecipeMapper`
+
     and
-    :class:`~recipe_system.mappers.primitiveMapper.PrimitiveMapper`.
+
+    :class:`primitiveMapper.PrimitiveMapper`.
 
     It provides initialization only.
 
@@ -24,8 +28,15 @@ class Mapper(object):
     Parameters
     ----------
 
-    adinputs : <list>
-               A list of AstroData objects.
+    dtags : <set>
+            A set of AstroData tags from input dataset. These are decoupled
+            from astrodata objects so as not to introduce 'ad' objects into
+            mapper generators.
+
+    ipkg  : <str>
+            Instrument package name, lower case, as returned by,
+
+                ad.instrument(generic=True).lower()
 
     drpkg : <str>
             The data reduction package to map. Default is 'geminidr'.
@@ -42,44 +53,10 @@ class Mapper(object):
            'qa' - Quality Assessment
            'ql' - Quicklook
 
-    usercals : <dict>
-               A dict of user provided calibration files, keyed on cal type.
-               E.g., {'processed_bias': 'foo_bias.fits'}
-
-    uparms : <list>
-             A list of tuples of user parameters like, (parameter, value).
-             Each may have a specified primitive.
-             E.g., [('foo','bar'), ('tileArrays:par1','val1')]
-
-    upload : <list> A list of things to upload. e.g., ['metrics']
-
-
     """
-    def __init__(self, adinputs, mode='sq', drpkg='geminidr', recipename='_default',
-                 usercals=None, uparms=None, upload=None):
 
-        self.adinputs = adinputs
+    def __init__(self, dtags, ipkg, mode='sq', drpkg='geminidr', recipename='_default'):
+        self.tags = dtags
         self.mode = mode
-        self.pkg = adinputs[0].instrument(generic=True).lower()
-        self.dotpackage = dotpath(drpkg, self.pkg)
+        self.dotpackage = dotpath(drpkg, ipkg)
         self.recipename = recipename
-        self.tags = adinputs[0].tags
-        self.usercals = usercals if usercals else {}
-        self.userparams = dictify(uparms)
-        self._upload = upload
-
-    @property
-    def upload(self):
-        return self._upload
-
-    @upload.setter
-    def upload(self, upl):
-        if upl is None:
-            self._upload = None
-        elif isinstance(upl, str):
-            self._upload = [seg.lower().strip() for seg in upl.split(',')]
-        elif isinstance(upl, list):
-            self._upload = upl
-        else:
-            raise TypeError("'upload' must be one of None, <str>, or <list>")
-        return
