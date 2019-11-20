@@ -329,7 +329,7 @@ def test_update_filename():
     assert ad.filename == 'file_suffix1_suffix3.fits'
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_phu_deprecated():
     "Test deprecated methods to access headers"
     ad = astrodata.open(
