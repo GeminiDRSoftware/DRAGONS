@@ -30,7 +30,7 @@ from .callStack import getCallStack, getStackFrame
 __all__ = ["DictField"]
 
 
-class Dict(collections.MutableMapping):
+class Dict(collections.abc.MutableMapping):
     """
     Config-Internal mapping container
     Emulates a dict, but adds validation and provenance.
