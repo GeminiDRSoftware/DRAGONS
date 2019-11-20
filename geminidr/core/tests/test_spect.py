@@ -26,14 +26,15 @@ Notes
     `model_to_dict()` and `dict_to_model()` functions that convert the Model
     instance to a dict create/require this.
 """
-import pytest
 import numpy as np
-
+import pytest
 from astropy import table
 from astropy.io import fits
 from scipy import ndimage, optimize
 
 from geminidr.core import primitives_spect
+
+astrofaker = pytest.importorskip("astrofaker")
 
 
 # noinspection PyPep8Naming
@@ -59,7 +60,7 @@ def test_QESpline_optimization():
     masked_data = np.ma.masked_where(data == 0, data)
     xpix = np.arange(len(data))
     weights = np.where(data > 0, 1., 0.)
-    boundaries = (data_length, 2*data_length+gap)
+    boundaries = (data_length, 2 * data_length + gap)
 
     coeffs = np.ones((2,))
     order = 10
@@ -71,14 +72,11 @@ def test_QESpline_optimization():
         method='Nelder-Mead'
     )
 
-    np.testing.assert_allclose(real_coeffs, 1./result.x, atol=0.01)
+    np.testing.assert_allclose(real_coeffs, 1. / result.x, atol=0.01)
 
 
 @pytest.fixture(scope="module")
 def fake_data():
-
-    astrofaker = pytest.importorskip("astrofaker")
-
     data = np.zeros((100, 200))
     data[50] = 10.
 
@@ -114,9 +112,7 @@ def fake_data():
     return ad
 
 
-
 def test_fake_star_has_expected_integrated_flux():
-
     data = np.zeros(100)
     data[50] = 10.
     data = ndimage.gaussian_filter(data, sigma=5)
