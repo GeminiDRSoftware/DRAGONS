@@ -29,4 +29,5 @@ def pytest_collection_modifyitems(config, items):
     if not config.getoption("--dragons-remote-data"):
         skip_dragons_remote_data = pytest.mark.skip(reason="need --dragons-remote-data to run")
         for item in items:
-            item.add_marker(skip_dragons_remote_data)
+            if "dragons_remote_data" in item.keywords:
+                item.add_marker(skip_dragons_remote_data)
