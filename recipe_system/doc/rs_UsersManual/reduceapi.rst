@@ -199,7 +199,7 @@ upload              <type 'list' of 'str'>     None
 
     Here's how to use ``normalize_ucals``::
 
-        from recipe_system.utils.recipe_utils import normalize_ucals
+        from recipe_system.utils.reduce_utils import normalize_ucals
 
         mycalibrations = ['processed_bias:/path/master_bias.fits',
                           'processed_flat:/path/master_Bflat.fits']
