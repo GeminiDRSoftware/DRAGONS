@@ -97,12 +97,12 @@ class SExtractorETI(ETI):
                 for ext in ad:
                     ext.OBJCAT, objmask = objdata[i]
                     if self._getmask:
-                        ext.OBJMASK = fits.open(objmask)[0].data
+                        ext.OBJMASK = fits.getdata(objmask, ext=0)
                     i += 1
             except TypeError:
                 ad.OBJCAT, objmask = objdata[i]
                 if self._getmask:
-                    ad.OBJMASK = fits.open(objmask)[0].data
+                    ad.OBJMASK = fits.getdata(objmask, ext=0)
         self.clean()
         return self.inputs
 
