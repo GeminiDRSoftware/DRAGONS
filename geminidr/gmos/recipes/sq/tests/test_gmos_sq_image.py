@@ -15,9 +15,8 @@ from gempy.utils import logutils
 
 # noinspection PyPep8Naming
 @pytest.mark.integtest
-def test_reduce_image_GN_HAM_2x2_z(path_to_inputs, tmpdir):
+def test_reduce_image_GN_HAM_2x2_z(path_to_inputs):
     objgraph = pytest.importorskip("objgraph")
-    tmpdir.chdir()
 
     logutils.config(file_name='gmos_test_reduce_image_GN_HAM_2x2_z.log')
 
