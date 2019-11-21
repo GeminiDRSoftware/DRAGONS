@@ -30,6 +30,7 @@ import numpy as np
 import pytest
 from astropy import table
 from astropy.io import fits
+from astropy.modeling import models
 from scipy import ndimage, optimize
 
 from geminidr.core import primitives_spect
@@ -123,6 +124,68 @@ def test_fake_star_has_expected_integrated_flux():
 def test_find_apertures(fake_data):
     _p = primitives_spect.Spect([])
     _p.findSourceApertures(fake_data)
+
+
+def test_trace_apertures():
+    # Config ---
+    width = 400
+    height = 200
+    trace_model_parameters = {'c0': height // 2, 'c1': 5.0, 'c2': -0.5, 'c3': 0.5}
+
+    # Generate fake point source ---
+    trace_model = models.Chebyshev1D(4, domain=[0, width - 1], **trace_model_parameters)
+
+    rows = np.arange(height)
+    cols = np.arange(width)
+
+    gaussian_model = models.Gaussian1D(stddev=5, amplitude=1)
+
+    data = np.zeros((height, width))
+
+    def gaussian(index):
+        gaussian_model.mean = trace_model(index)
+        return gaussian_model(rows)
+
+    for col in cols:
+        data[:, col] = gaussian(col)
+
+    # Convert to astrodata ---
+    hdu = fits.ImageHDU()
+    hdu.header['CCDSUM'] = "1 1"
+    hdu.data = data
+
+    aperture = table.Table([[1],  # Number
+                            [1],  # ndim
+                            [2],  # degree
+                            [0],  # domain_start
+                            [data.shape[1] - 1],  # domain_end
+                            [data.shape[0] // 2],  # c0
+                            [-10],  # aper_lower
+                            [10],  # aper_upper
+                            ],
+                           names=[
+                               'number',
+                               'ndim',
+                               'degree',
+                               'domain_start',
+                               'domain_end',
+                               'c0',
+                               'aper_lower',
+                               'aper_upper'],
+                           )
+
+    ad = astrofaker.create('GMOS-S')
+    ad.add_extension(hdu, pixel_scale=1.0)
+    ad[0].APERTURE = aperture
+
+    _p = primitives_spect.Spect([])
+    ad_out = _p.traceApertures(ad, trace_order=4)
+
+    keys = ['c0', 'c1', 'c2', 'c3']
+    for ext in ad_out:
+        desired = np.array([trace_model_parameters[k] for k in keys])
+        actual = np.array([ext.APERTURE[0][k] for k in keys])
+        np.testing.assert_allclose(desired, actual, atol=0.05)
 
 
 def test_sky_correct_from_slit(fake_data):
