@@ -3,7 +3,7 @@ The geminidr package provides the base classes for all parameter and primitive
 classes in the geminidr package.
 
 This module provides the caches library to primitives, but currently, only
-Bookkeeping uses the cache directly (addToList). 
+Bookkeeping uses the cache directly (addToList).
 
 This module now provides the Calibrations class, formerly part of cal_service.
 Calibrations() also uses the caches functions, which are now directly available
@@ -197,15 +197,17 @@ class PrimitivesBASE(object):
         self.params           = {}
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
-        self.user_params      = uparms if uparms else {}
+        self.user_params      = dict(uparms) if uparms else {}
         self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
+
         # Prepend paths to SExtractor input files now
-        self.sx_dict.update({k:
-                os.path.join(os.path.dirname(sextractor_dict.__file__), v)
-                for k,v in self.sx_dict.items()})
+        self.sx_dict.update({
+            k: os.path.join(os.path.dirname(sextractor_dict.__file__), v)
+            for k, v in self.sx_dict.items()
+        })
 
         self.cachedict        = set_caches()
         self.calibrations     = Calibrations(calindfile, user_cals=ucals)
