@@ -14,7 +14,7 @@ import os
 import pytest
 
 import astrodata
-from geminidr.core.test import ad_compare
+from geminidr.core.tests import ad_compare
 from geminidr.niri.primitives_niri_image import NIRIImage
 from gempy.utils import logutils
 
