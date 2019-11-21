@@ -121,6 +121,7 @@ def test_fake_star_has_expected_integrated_flux():
     np.testing.assert_almost_equal(data.sum(), 10.)
 
 
+@pytest.mark.xfail(reason="The fake data needs a DQ plane")
 def test_find_apertures(fake_data):
     _p = primitives_spect.Spect([])
     _p.findSourceApertures(fake_data)
