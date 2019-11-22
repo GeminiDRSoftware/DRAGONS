@@ -44,7 +44,7 @@ class ConfigurableWrapper(object):
         return self._target(*args, **kwargs)
 
 
-class Registry(collections.Mapping):
+class Registry(collections.abc.Mapping):
     """A base class for global registries, mapping names to configurables.
 
     There are no hard requirements on configurable, but they typically create an algorithm
@@ -126,7 +126,7 @@ class Registry(collections.Mapping):
         return RegistryField(doc, self, default, optional, multi)
 
 
-class RegistryAdaptor(collections.Mapping):
+class RegistryAdaptor(collections.abc.Mapping):
     """Private class that makes a Registry behave like the thing a ConfigChoiceField expects."""
 
     def __init__(self, registry):

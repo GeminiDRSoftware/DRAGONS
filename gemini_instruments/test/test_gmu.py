@@ -43,11 +43,11 @@ class TestGMU:
 
     def test_removeComponentID1(self):
         value = 'H_G0999'
-        assert ('H', gmu.removeComponentID(value))
+        assert 'H' == gmu.removeComponentID(value)
 
     def test_removeComponentID2(self):
         value = 'H'
-        assert ('H', gmu.removeComponentID(value))
+        assert 'H' == gmu.removeComponentID(value)
 
     def test_sectionStrToIntList(self):
         section = '[1:2,3:4]'
