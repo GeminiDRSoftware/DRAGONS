@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 from builtins import object
 
-import imp
+import future.utils
 import os
 from os.path import abspath, basename, dirname, isdir
 
@@ -27,8 +27,12 @@ from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 
 from gempy.utils import logutils
-# ------------------------------------------------------------------------------
-from recipe_system import __version__
+
+if future.utils.PY2:
+    from imp import reload
+else:
+    from importlib import reload
+
 # ------------------------------------------------------------------------------
 __all__ = ['LocalManager', 'LocalManagerError']
 # ------------------------------------------------------------------------------
@@ -106,12 +110,12 @@ class LocalManager(object):
         # databases on the fly, and we're reusing its infrastructure.
         #
         # This will have to do for the time being
-        imp.reload(orm)
-        imp.reload(file)
-        imp.reload(preview)
-        imp.reload(diskfile)
-        imp.reload(createtables)
-        imp.reload(dbtools)
+        reload(orm)
+        reload(file)
+        reload(preview)
+        reload(diskfile)
+        reload(createtables)
+        reload(dbtools)
 
         self.session = orm.sessionfactory()
 
