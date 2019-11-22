@@ -87,7 +87,7 @@ class Resample(PrimitivesBASE):
             raise IOError("All input images must have only one extension.")
 
         attributes = [attr for attr in ('data', 'mask', 'variance', 'OBJMASK')
-                      if all(hasattr(ad, attr) for ad in adinputs)]
+                      if all(hasattr(ad[0], attr) for ad in adinputs)]
 
         # Clean data en masse (improves logging by showing a single call)
         if clean_data:

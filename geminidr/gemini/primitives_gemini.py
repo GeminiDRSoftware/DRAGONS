@@ -165,4 +165,3 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
-

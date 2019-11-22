@@ -23,10 +23,11 @@ class RecipeMapper(Mapper):
     Retrieve the appropriate recipe for a dataset, using all defined defaults:
 
     >>> ad = astrodata.open(<fitsfile>)
-    >>> adinputs = [ad]
-    >>> rm = RecipeMapper(adinputs)
+    >>> dtags = set(list(ad.tags)[:])
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> rm = RecipeMapper(dtags, instpkg)
     >>> recipe = rm.get_applicable_recipe()
-    >>> recipe.__name__ 
+    >>> recipe.__name__
     'qaReduce'
 
     """
@@ -78,7 +79,7 @@ class RecipeMapper(Mapper):
     def _get_tagged_recipes(self):
         try:
             loaded_pkg = import_module(self.dotpackage)
-        except:
+        except Exception:
             yield None
             return
         for rmod, ispkg in self._generate_recipe_modules(loaded_pkg):
@@ -93,7 +94,7 @@ class RecipeMapper(Mapper):
         pkg_importer = pkgutil.ImpImporter(ppath)
         for pkgname, ispkg in pkg_importer.iter_modules():
             if ispkg and pkgname == recipedir:
-                break 
+                break
             else:
                 continue
 

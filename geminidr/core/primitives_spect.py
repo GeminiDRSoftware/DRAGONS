@@ -822,8 +822,9 @@ class Spect(PrimitivesBASE):
                                      "KDFit model order {} KDsigma = {}".format(ord, kdsigma))
 
                     match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
-                    m_final._constraints['bounds'] = {p: (None, None)
-                                                      for p in m_final.param_names}
+                    for p in m_final.param_names:
+                        getattr(m_final, p).bounds = (None, None)
+
                     m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                                                        model=m_final, match_radius=match_radius,
                                                                        sigma_clip=3)
@@ -833,8 +834,9 @@ class Spect(PrimitivesBASE):
                     yplot += 1
 
                 # Remove bounds from the model
-                m_final._constraints['bounds'] = {p: (None, None)
-                                                  for p in m_final.param_names}
+                for p in m_final.param_names:
+                    getattr(m_final, p).bounds = (None, None)
+
                 match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
@@ -1030,12 +1032,6 @@ class Spect(PrimitivesBASE):
 
                 for i, aperture in enumerate(apertures):
                     log.stdinfo("    Extracting spectrum from aperture {}".format(i + 1))
-                    if aperture.aper_lower > aperture.aper_upper:
-                        log.warning("Aperture lower limit is greater than upper limit.")
-                        aperture.aper_lower, aperture.aper_upper = aperture.aper_upper, aperture.aper_lower
-                    if aperture.aper_lower > 0:
-                        log.warning("Aperture lower limit is greater than zero.")
-
                     self.viewer.width = 2
                     self.viewer.color = colors[i % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
@@ -1090,6 +1086,10 @@ class Spect(PrimitivesBASE):
                     center = model_dict['c0']
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
                                 "from {} {}".format(direction, int(center + 0.5)))
+                    ad_spec[-1].hdr['XTRACTLO'] = (aperture._last_extraction[0],
+                                                   'Aperture lower limit')
+                    ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
+                                                   'Aperture upper limit')
 
                     # Delete some header keywords
                     for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):

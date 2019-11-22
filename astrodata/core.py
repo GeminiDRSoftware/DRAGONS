@@ -634,8 +634,8 @@ class AstroData(object):
         try:
             return getattr(self._dataprov, attribute)
         except AttributeError:
-            clsname = self.__class__.__name__
-            raise AttributeError("{!r} object has no attribute {!r}".format(clsname, attribute))
+            raise AttributeError("{!r} object has no attribute {!r}"
+                                 .format(self.__class__.__name__, attribute))
 
     def __setattr__(self, attribute, value):
         """
@@ -667,7 +667,7 @@ class AstroData(object):
 
     def __delattr__(self, attribute):
         """
-        Implements attribute removal. If `self` represents a single slice, the 
+        Implements attribute removal. If `self` represents a single slice, the
         """
         try:
             try:
@@ -937,12 +937,12 @@ class AstroData(object):
         It will be applied to the mask and variance of each extension, too, if
         they exist.
 
-        This is a convenience method, which is equivalent to:
+        This is a convenience method, which is equivalent to::
 
             for ext in ad:
-                ad.ext.data = operator(ad.ext.data, \*args, \**kwargs)
-                ad.ext.mask = operator(ad.ext.mask, \*args, \**kwargs) if ad.ext.mask is not None else None
-                ad.ext.variance = operator(ad.ext.variance, \*args, \**kwargs) if ad.ext.variance is not None else None
+                ad.ext.data = operator(ad.ext.data, *args, **kwargs)
+                ad.ext.mask = operator(ad.ext.mask, *args, **kwargs) if ad.ext.mask is not None else None
+                ad.ext.variance = operator(ad.ext.variance, *args, **kwargs) if ad.ext.variance is not None else None
 
         with the additional advantage that it will work on single slices, too.
 
@@ -976,7 +976,7 @@ class AstroData(object):
         Sets the .data, and optionally .mask and .variance attributes of a
         single-extension AstroData slice. This function will optionally
         check whether these attributes have the same shape.
-        
+
         Parameters
         ----------
         data : ndarray

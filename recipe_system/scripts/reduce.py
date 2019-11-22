@@ -6,20 +6,22 @@
 # ------------------------------------------------------------------------------
 from __future__ import print_function
 # ---------------------------- Package Import ----------------------------------
-import os
 import sys
 import signal
-import traceback
 
 from gempy.utils import logutils
 
 from recipe_system import __version__ as rs_version
 from recipe_system.reduction.coreReduce import Reduce
 
+from recipe_system.utils.errors import RecipeNotFound
+
 from recipe_system.utils.reduce_utils import buildParser
 from recipe_system.utils.reduce_utils import normalize_args
 from recipe_system.utils.reduce_utils import normalize_upload
 from recipe_system.utils.reduce_utils import show_parser_options
+
+from recipe_system.utils.rs_utilities import log_traceback
 
 from recipe_system.cal_service import set_calservice
 from recipe_system.cal_service import localmanager_available
@@ -28,25 +30,25 @@ def main(args):
     """
     'main' is called with a Namespace 'args' parameter, or an object that
     presents an equivalent interface.
-    
+
     Eg.,
-    
+
     Get "args' from the defined reduce parser:
-    
+
     >>> args = buildParser(version).parse_args()
     >>> import reduce_alpha
     >>> reduce_alpha.main(args)
-    
+
     In the above example, 'args' is
 
     -- argparse Namespace instance
-    
+
     Use of the reduce_utils function buildParser will get the caller a fully
     defined reduce Namespace instance, values for which can be then be adjusted
     as desired.
-    
+
     Eg.,
-    
+
     buildParser:
     -----------
     >>> args = buildParser(version).parse_args()
@@ -55,10 +57,10 @@ def main(args):
     >>> args.files
     []
     >>> args.files.append('some_fits_file.fits')
-    
+
     Once 'args' attributes have been appropriately set, the caller then simply
     calls main():
-    
+
     >>> reduce_alpha.main(args)
 
     :parameter args: argparse Namespace object
@@ -68,7 +70,6 @@ def main(args):
     :rtype:  <int>
 
     """
-    global log
     estat = 0
     log = logutils.get_logger(__name__)
     try:
@@ -93,9 +94,13 @@ def main(args):
     except KeyboardInterrupt:
         log.error("Caught KeyboardInterrupt (^C) signal")
         estat = signal.SIGINT
+    except RecipeNotFound as err:
+        log.error(str(err))
+        estat = signal.SIGABRT
     except Exception as err:
         log.error("reduce caught an unhandled exception.\n")
         log.error(err)
+        log_traceback(log)
         log.error("\nReduce instance aborted.")
         estat = signal.SIGABRT
 
@@ -111,7 +116,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Deal with argparse structures that are different than optparse
-    # Normalizing argument types should happen before 'args' is passed to Reduce.
+    # Normalizing argument types should happen before 'args' is passed to
+    # Reduce.
     args = normalize_args(args)
     args.upload = normalize_upload(args.upload)
 

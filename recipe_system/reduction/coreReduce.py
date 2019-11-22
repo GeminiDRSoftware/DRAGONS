@@ -147,7 +147,6 @@ class Reduce(object):
     def output_filenames(self):
         return self._output_filenames
 
-
     def runr(self):
         """
         Map and run the requested or defaulted recipe.
@@ -174,38 +173,53 @@ class Reduce(object):
             log.error(str(err))
             raise
 
-        rm = RecipeMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
+        # build mapper inputs, pass no 'ad' objects.
+        # mappers now receive tags and instr pkg name, e.g., 'gmos'
+        datatags = set(list(adinputs[0].tags)[:])
+        instpkg = adinputs[0].instrument(generic=True).lower()
+
+        rm = RecipeMapper(datatags, instpkg, mode=self.mode, drpkg=self.drpkg,
                           recipename=self.recipename)
-
-        pm = PrimitiveMapper(adinputs, mode=self.mode, drpkg=self.drpkg,
-                             usercals=self.ucals, uparms=self.uparms,
-                             upload=self.upload)
-
         try:
             recipe = rm.get_applicable_recipe()
         except ModeError as err:
             log.warn("WARNING: {}".format(err))
             pass
-        except RecipeNotFound as err:
-            pass
+        except RecipeNotFound:
+            log.warn("No recipe can be found in {} recipe libs.".format(rm.pkg))
+            log.warn("Searching primitives ...")
+        rm = None
 
+        # PrimitiveMapper now returns the primitive class, not an instance.
+        pm = PrimitiveMapper(datatags, instpkg, mode=self.mode, drpkg=self.drpkg)
         try:
-            p = pm.get_applicable_primitives()
+            pclass = pm.get_applicable_primitives()
         except PrimitivesNotFound as err:
             log.error(str(err))
             raise
+
+        p = pclass(adinputs, mode=self.mode, ucals=self.ucals, uparms=self.uparms,
+                   upload=self.upload)
+
+        # Clean references to avoid keeping adinputs objects in memory one
+        # there are no more needed.
+        adinputs = None
 
         # If the RecipeMapper was unable to find a specified user recipe,
         # it is possible that the recipe passed was a primitive name.
         # Here we examine the primitive set to see if this recipe is actually
         # a primitive name.
+        norec_msg = "{} recipes do not define a '{}' recipe for these data."
+        if recipe is None and self.recipename is '_default':
+            raise RecipeNotFound(norec_msg.format(rm.pkg.upper(), rm.mode))
+
         if recipe is None:
             try:
                 primitive_as_recipe = getattr(p, self.recipename)
             except AttributeError as err:
                 err = "Recipe {} Not Found".format(self.recipename)
                 log.error(str(err))
-                raise
+                raise RecipeNotFound("No primitive named {}".format(self.recipename))
 
             pname = primitive_as_recipe.__name__
             log.stdinfo("Found '{}' as a primitive.".format(pname))
@@ -220,7 +234,7 @@ class Reduce(object):
             self._logheader(recipe)
             try:
                 recipe(p)
-            except Exception as err:
+            except Exception:
                 log.error("Reduce received an unhandled exception. Aborting ...")
                 log_traceback(log)
                 log.stdinfo("Writing final outputs ...")
@@ -230,9 +244,7 @@ class Reduce(object):
 
         self._write_final(p.streams['main'])
         self._output_filenames = [ad.filename for ad in p.streams['main']]
-        msg = "\nreduce completed successfully."
-        log.stdinfo(str(msg))
-        return
+        log.stdinfo("\nreduce completed successfully.")
 
     # -------------------------------- prive -----------------------------------
     def _check_files(self, ffiles):
