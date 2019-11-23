@@ -53,6 +53,9 @@ def compat_with_iraf_GMOS(ad, verbose):
         if verbose:
             print("Add GMOSAIC to PHU")
         ad.phu.set('GMOSAIC', "Compatibility", "For IRAF compatibility")
+        if verbose:
+            print("Copy WCS to PHU")
+        _copy_wcs_to_phu(ad)
 
     return
 
@@ -94,3 +97,22 @@ def _get_gmos_obsmode(ad):
 
     return obsmode
 
+def _copy_wcs_to_phu(ad):
+    """
+    MOS mask IRAF tasks expect the WCS to be in the PHU.  IRAF's gmosaic copies
+    the WCS to the PHU.
+    """
+
+    ad.phu.set('CTYPE1', ad[0].hdr['CTYPE1'], 'For IRAF compatibility')
+    ad.phu.set('CRPIX1', ad[0].hdr['CRPIX1'], 'For IRAF compatibility')
+    ad.phu.set('CRVAL1', ad[0].hdr['CRVAL1'], 'For IRAF compatibility')
+    ad.phu.set('CTYPE2', ad[0].hdr['CTYPE2'], 'For IRAF compatibility')
+    ad.phu.set('CRPIX2', ad[0].hdr['CRPIX2'], 'For IRAF compatibility')
+    ad.phu.set('CRVAL2', ad[0].hdr['CRVAL2'], 'For IRAF compatibility')
+    ad.phu.set('CD1_1', ad[0].hdr['CD1_1'], 'For IRAF compatibility')
+    ad.phu.set('CD1_2', ad[0].hdr['CD1_2'], 'For IRAF compatibility')
+    ad.phu.set('CD2_1', ad[0].hdr['CD2_1'], 'For IRAF compatibility')
+    ad.phu.set('CD2_2', ad[0].hdr['CD2_2'], 'For IRAF compatibility')
+    ad.phu.set('EQUINOX', ad[0].hdr['EQUINOX'], 'For IRAF compatibility')
+
+    return
