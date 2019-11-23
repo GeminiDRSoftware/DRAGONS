@@ -30,9 +30,12 @@ def buildArgs():
 
 def get_pars(filename):
     ad = astrodata.open(filename)
-    pm = primitiveMapper.PrimitiveMapper([ad])
-    p = pm.get_applicable_primitives()
-    return p.params, ad.tags
+    dtags = set(list(ad.tags)[:])
+    instpkg = ad.instrument(generic=True).lower()
+    pm = primitiveMapper.PrimitiveMapper(dtags, instpkg)
+    pclass = pm.get_applicable_primitives()
+    p = pclass([ad])
+    return p.params, dtags
 
 def showpars(pobj, primname, tags):
     for i in dir(pobj):

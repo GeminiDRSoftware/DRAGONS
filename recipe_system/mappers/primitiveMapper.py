@@ -24,21 +24,20 @@ class PrimitiveMapper(Mapper):
     defined defaults:
 
     >>> ad = astrodata.open(<fitsfile>)
-    >>> adinputs = [ad]
-    >>> pm = PrimitiveMapper(adinputs)
-    >>> p = pm.get_applicable_primitives()
-    >>> p.__class__
+    >>> dtags = set(list(ad.tags)[:])
+    >>> instpkg = ad.instrument(generic=True).lower()
+    >>> pm = PrimitiveMapper(dtags, instpkg)
+    >>> pclass = pm.get_applicable_primitives()
+    >>> pclass
     <class 'primitives_IMAGE.PrimitivesIMAGE'>
 
     """
     def get_applicable_primitives(self):
-        tag_match, primitive_actual = self._retrieve_primitive_set()
-        if primitive_actual is None:
+        tag_match, primitive_class = self._retrieve_primitive_set()
+        if primitive_class is None:
             raise PrimitivesNotFound("No qualified primitive set could be found")
 
-        return primitive_actual(self.adinputs, mode=self.mode,
-                                ucals=self.usercals, uparms=self.userparams,
-                                upload=self.upload)
+        return primitive_class
 
     # --------------------------------------------------------------------------
     # Primtive search cascade
@@ -77,7 +76,7 @@ class PrimitiveMapper(Mapper):
     def _get_tagged_primitives(self):
         try:
             loaded_pkg = import_module(self.dotpackage)
-        except ModuleNotFoundError as err:
+        except ModuleNotFoundError:
             log_traceback(log)
             yield None
             return
@@ -86,7 +85,7 @@ class PrimitiveMapper(Mapper):
             for atrname in dir(lmod):
                 if atrname.startswith('_'):        # no prive, no magic
                     continue
-                
+
                 atr = getattr(lmod, atrname)
                 if isclass(atr) and hasattr(atr, 'tagset'):
                     yield atr

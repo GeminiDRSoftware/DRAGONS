@@ -822,8 +822,9 @@ class Spect(PrimitivesBASE):
                                      "KDFit model order {} KDsigma = {}".format(ord, kdsigma))
 
                     match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
-                    m_final._constraints['bounds'] = {p: (None, None)
-                                                      for p in m_final.param_names}
+                    for p in m_final.param_names:
+                        getattr(m_final, p).bounds = (None, None)
+
                     m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                                                        model=m_final, match_radius=match_radius,
                                                                        sigma_clip=3)
@@ -833,8 +834,9 @@ class Spect(PrimitivesBASE):
                     yplot += 1
 
                 # Remove bounds from the model
-                m_final._constraints['bounds'] = {p: (None, None)
-                                                  for p in m_final.param_names}
+                for p in m_final.param_names:
+                    getattr(m_final, p).bounds = (None, None)
+
                 match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
