@@ -186,7 +186,7 @@ class Reduce(object):
             log.warn("WARNING: {}".format(err))
             pass
         except RecipeNotFound:
-            log.warn("No recipe can be found in {} recipe libs.".format(rm.pkg))
+            log.warn("No recipe can be found in {} recipe libs.".format(instpkg))
             log.warn("Searching primitives ...")
         rm = None
 
