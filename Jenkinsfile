@@ -32,6 +32,7 @@ pipeline {
         PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
         CONDA_ENV_FILE = ".jenkins/conda_py3env_stable.yml"
         CONDA_ENV_NAME = "py3_stable"
+        PYTEST_ARGS = "--remote-data=any --basetemp=/data/jenkins/dragons/outputs"
     }
 
     stages {
@@ -89,7 +90,7 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest --basetemp=/data/jenkins/dragons/outputs -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
+                    coverage run -m pytest ${PYTEST_ARGS} -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
                     '''
 
             }
@@ -103,7 +104,7 @@ pipeline {
                 echo "Running tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest --basetemp=/data/jenkins/dragons/outputs -m gmosls --junit-xml ./reports/gmoslstests_results.xml
+                    coverage run -m pytest ${PYTEST_ARGS} -m gmosls --junit-xml ./reports/gmoslstests_results.xml
                     '''
 
                 echo "Reporting coverage"
@@ -130,7 +131,7 @@ pipeline {
                 echo "Integration tests"
                 sh  '''
                     source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest --basetemp=/data/jenkins/dragons/outputs -m integtest --junit-xml ./reports/integration_results.xml
+                    coverage run -m pytest ${PYTEST_ARGS} -m integtest --junit-xml ./reports/integration_results.xml
                     '''
             }
 

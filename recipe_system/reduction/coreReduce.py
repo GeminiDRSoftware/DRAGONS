@@ -183,11 +183,11 @@ class Reduce(object):
         try:
             recipe = rm.get_applicable_recipe()
         except ModeError as err:
-            log.warn("WARNING: {}".format(err))
+            log.warning("WARNING: {}".format(err))
             pass
         except RecipeNotFound:
-            log.warn("No recipe can be found in {} recipe libs.".format(rm.pkg))
-            log.warn("Searching primitives ...")
+            log.warning("No recipe can be found in {} recipe libs.".format(instpkg))
+            log.warning("Searching primitives ...")
         rm = None
 
         # PrimitiveMapper now returns the primitive class, not an instance.
@@ -211,7 +211,7 @@ class Reduce(object):
         # a primitive name.
         norec_msg = "{} recipes do not define a '{}' recipe for these data."
         if recipe is None and self.recipename is '_default':
-            raise RecipeNotFound(norec_msg.format(rm.pkg.upper(), rm.mode))
+            raise RecipeNotFound(norec_msg.format(instpkg.upper(), self.mode))
 
         if recipe is None:
             try:
@@ -281,7 +281,7 @@ class Reduce(object):
         try:
             assert bad_files
             err = "\n\t".join(bad_files)
-            log.warn("Files not found or cannot be loaded:\n\t%s" % err)
+            log.warning("Files not found or cannot be loaded:\n\t%s" % err)
             try:
                 assert input_files
                 found = "\n\t".join(input_files)

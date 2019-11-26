@@ -76,7 +76,7 @@ def parse_percentile(string):
 
     # Is it a xx-percentile string?
     try:
-        m = re.match("^(\d\d)-percentile$", string)
+        m = re.match(r"^(\d\d)-percentile$", string)
     except TypeError:
         return None
 

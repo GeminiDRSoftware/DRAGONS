@@ -34,6 +34,7 @@ gemini_keyword_names = dict(
     amp_read_area = 'AMPROA',
     ao_fold = 'AOFOLD',
     ao_seeing = 'AOSEEING',
+    aperture_number = 'APERTURE',
     array_name = 'ARRAYNAM',
     array_section = 'ARRAYSEC',
     azimuth = 'AZIMUTH',

@@ -22,10 +22,14 @@ An instance of `ConfigObject`, `globalConf`, is initialized when first loading
 this module, and it should be used as the only interface to the config system.
 
 """
+import future.utils
 import os
-import types
-from configparser import SafeConfigParser
 from collections import defaultdict
+
+if future.utils.PY2:
+    from configparser import SafeConfigParser as ConfigParser
+else:
+    from configparser import ConfigParser
 
 DEFAULT_DIRECTORY = '~/.geminidr'
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
@@ -33,7 +37,7 @@ STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 class ConfigObject(object):
     """
-    Generalized wrapper on SafeConfigParser.
+    Generalized wrapper on ConfigParser.
 
     This class is used for reading, parsing, and updating configurations for
     DRAGONS calibration service.
@@ -138,7 +142,7 @@ class ConfigObject(object):
                         current_section_conf[key] = value
                 self._sections[section] = Section(current_section_conf)
 
-        cp = SafeConfigParser()
+        cp = ConfigParser()
         cp.read(list(map(os.path.expanduser, filenames)))
         translate = Converter(self._conv.copy(), cp)
 
@@ -236,7 +240,7 @@ class Converter(object):
             E.g., {('calibs', 'standalone'): bool}
 
         cp: <obj>
-            An instance of SafeConfigParser.
+            An instance of ConfigParser.
 
         """
         self._trans = dict(conv_dict)

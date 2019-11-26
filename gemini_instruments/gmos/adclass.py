@@ -228,7 +228,7 @@ class AstroDataGmos(AstroDataGemini):
         except KeyError:
             central_wavelength = self.phu.get('GRWLEN', -1)
 
-        if central_wavelength < 0.0:
+        if central_wavelength <= 0.0:
             return None
         else:
             return gmu.convert_units('nanometers', central_wavelength,
