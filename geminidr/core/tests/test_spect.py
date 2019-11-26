@@ -256,7 +256,9 @@ def test_sky_correct_from_slit():
 
     source_intensity = 1.
     source_position = height // 2
-    source_fwhm = 5
+
+    # Test works when object size is 5% of spatial dimension.
+    source_fwhm = 0.05 * height
 
     n_sky_lines = 500
     max_sky_intensity = 0.5
@@ -284,53 +286,46 @@ def test_sky_correct_from_slit():
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
-# def test_extract_1d_spectra():
-#     # Input Parameters ----------------
-#     width = 200
-#     height = 100
-#
-#     # Boilerplate code ----------------
-#     aperture = table.Table(
-#         [[1],  # Number
-#          [1],  # ndim
-#          [0],  # degree
-#          [0],  # domain_start
-#          [width - 1],  # domain_end
-#          [height//2],  # c0
-#          [-3],  # aper_lower
-#          [3],  # aper_upper
-#          ],
-#         names=[
-#             'number',
-#             'ndim',
-#             'degree',
-#             'domain_start',
-#             'domain_end',
-#             'c0',
-#             'aper_lower',
-#             'aper_upper'],
-#     )
-#
-#     print("\n\n", aperture, "\n\n")
-#
-#     ad = create_zero_filled_fake_astrodata(width, height)
-#
-#     assert isinstance(ad, astrodata.AstroData)
-#
-#     ad[0].data[height//2] = 1.
-#     ad[0].APERTURE = aperture
-#
-#     # # Running the test ----------------
-#     _p = primitives_spect.Spect([])
-#
-#     # todo: if input is a single astrodata,
-#     #  should not the output have the same format?
-#     ad_out = _p.extract1DSpectra()
-    #
-    # print(ad_out.info())
-    # np.testing.assert_equal(ad_out[0].shape[0], ad[0].data.shape[1])
-    # np.testing.assert_equal(ad_out[0].data, fake_data[0].data[50])
+def test_extract_1d_spectra():
+    # Input Parameters ----------------
+    width = 200
+    height = 100
 
+    # Boilerplate code ----------------
+    aperture = table.Table(
+        [[1],  # Number
+         [1],  # ndim
+         [0],  # degree
+         [0],  # domain_start
+         [width - 1],  # domain_end
+         [height//2],  # c0
+         [-3],  # aper_lower
+         [3],  # aper_upper
+         ],
+        names=[
+            'number',
+            'ndim',
+            'degree',
+            'domain_start',
+            'domain_end',
+            'c0',
+            'aper_lower',
+            'aper_upper'],
+    )
+
+    ad = create_zero_filled_fake_astrodata(width, height)
+    ad[0].data[:, height//2] = 1
+    ad[0].APERTURE = aperture
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # todo: if input is a single astrodata,
+    #  should not the output have the same format?
+    ad_out = _p.extract1DSpectra(ad)
+
+    # np.testing.assert_equal(ad_out[0].shape[0], ad[0].data.shape[1])
+    # np.testing.assert_equal(ad_out[0].data, ad[0].data[50])
 
 if __name__ == '__main__':
     pytest.main()
