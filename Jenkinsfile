@@ -75,7 +75,7 @@ pipeline {
 
             steps {
                 echo "Running tests"
-                sh 'tox -e py36-unit -v -- --junit-xml ./reports/unittests_results.xml'
+                sh 'tox -e py36-unit -v -- --junit-xml reports/unittests_results.xml'
             }
 
         }
@@ -84,13 +84,10 @@ pipeline {
 
             steps {
                 echo "Running tests"
-                sh 'tox -e py36-gmosls -v -- --junit-xml ./reports/unittests_results.xml'
+                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
 
-                // echo "Reporting coverage"
-                // sh  '''
-                //     source activate ${CONDA_ENV_NAME}
-                //     python -m coverage xml -o ./reports/coverage.xml
-                //     '''
+                echo "Reporting coverage"
+                sh 'tox -e covreport -- xml -o reports/coverage.xml'
             }
             post {
                 always {
@@ -108,7 +105,7 @@ pipeline {
             // }
             steps {
                 echo "Integration tests"
-                sh 'tox -e py36-integ -v -- --junit-xml ./reports/integration_results.xml'
+                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
             }
 
         }
