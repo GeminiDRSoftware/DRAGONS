@@ -57,7 +57,7 @@ class SkyLines:
 
     """
 
-    def __init__(self, n_lines, max_position, max_value):
+    def __init__(self, n_lines, max_position, max_value=1.):
         self.positions = np.random.randint(low=0, high=max_position, size=n_lines)
         self.intensities = np.random.random(size=n_lines) * max_value
 
@@ -91,22 +91,22 @@ class SkyLines:
         return sky_data
 
 
-def create_zero_filled_fake_astrodata(shape):
+def create_zero_filled_fake_astrodata(height, width):
     """
     Helper function to generate a fake astrodata object filled with zeros.
 
     Parameters
     ----------
-    shape : list of ints
-        Shape of the output 2D array [height, width].
+    height : int
+        Output 2D array's number of rows.
+    width : int
+        Output 2D array's number of columns.
 
     Returns
     -------
     astrodata
         Single-extension zero filled object.
     """
-    height, width = shape
-
     data = np.zeros((height, width))
 
     hdu = fits.ImageHDU()
@@ -164,6 +164,52 @@ def fake_point_source(height, width, model_parameters, fwhm=5):
     return source
 
 
+def get_aperture_table(height, width, center=None):
+    """
+
+    Parameters
+    ----------
+    height : int
+        Output 2D array's number of rows.
+    width : int
+        Output 2D array's number of columns.
+    center : None or int
+        Center of the aperture. If None, defaults to the half of the height.
+
+    Returns
+    -------
+    astropy.table.Table
+        Aperture table containing the parameters needed to build a Chebyshev1D
+        model (number, ndim, degree, domain_start, domain_end, aper_lower,
+        aper_uper, c0, c1, c...)
+
+    """
+    center = height // 2 if center is None else center
+
+    aperture = table.Table(
+        [[1],  # Number
+         [1],  # ndim
+         [0],  # degree
+         [0],  # domain_start
+         [width - 1],  # domain_end
+         [center],  # c0
+         [-3],  # aper_lower
+         [3],  # aper_upper
+         ],
+        names=[
+            'number',
+            'ndim',
+            'degree',
+            'domain_start',
+            'domain_end',
+            'c0',
+            'aper_lower',
+            'aper_upper'],
+    )
+
+    return aperture
+
+
 # noinspection PyPep8Naming
 def test_QESpline_optimization():
     """
@@ -215,29 +261,9 @@ def test_trace_apertures():
     trace_model_parameters = {'c0': height // 2, 'c1': 5.0, 'c2': -0.5, 'c3': 0.5}
 
     # Boilerplate code ----------------
-    aperture = table.Table([[1],  # Number
-                            [1],  # ndim
-                            [2],  # degree
-                            [0],  # domain_start
-                            [width - 1],  # domain_end
-                            [height // 2],  # c0
-                            [-10],  # aper_lower
-                            [10],  # aper_upper
-                            ],
-                           names=[
-                               'number',
-                               'ndim',
-                               'degree',
-                               'domain_start',
-                               'domain_end',
-                               'c0',
-                               'aper_lower',
-                               'aper_upper'],
-                           )
-
-    ad = create_zero_filled_fake_astrodata([height, width])
+    ad = create_zero_filled_fake_astrodata(height, width)
     ad[0].data += fake_point_source(height, width, trace_model_parameters)
-    ad[0].APERTURE = aperture
+    ad[0].APERTURE = get_aperture_table(height, width)
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
@@ -246,7 +272,7 @@ def test_trace_apertures():
     keys = trace_model_parameters.keys()
 
     desired = np.array([trace_model_parameters[k] for k in keys])
-    actual = np.array([ad[0].APERTURE[0][k] for k in keys])
+    actual = np.array([ad_out[0].APERTURE[0][k] for k in keys])
     np.testing.assert_allclose(desired, actual, atol=0.05)
 
 
@@ -255,23 +281,76 @@ def test_sky_correct_from_slit():
     width = 200
     height = 100
 
-    # Test works when object size is 5% of spatial dimension.
-    source_fwhm = 0.05 * height
-
     n_sky_lines = 500
-    max_sky_intensity = 1.
 
     # Simulate Data -------------------
     np.random.seed(0)
 
     source_model_parameters = {'c0': height // 2, 'c1': 0.0}
-    source = fake_point_source(height, width, source_model_parameters, fwhm=source_fwhm)
 
-    sky = SkyLines(n_sky_lines, width - 1, max_sky_intensity)
+    source = fake_point_source(
+        height, width, source_model_parameters, fwhm=0.05 * height)
 
-    ad = create_zero_filled_fake_astrodata([height, width])
+    sky = SkyLines(n_sky_lines, width - 1)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
     ad[0].data += source
     ad[0].data += sky(ad[0].data, axis=1)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # ToDo @csimpson: Is it modifying the input ad?
+    ad_out = _p.skyCorrectFromSlit(deepcopy(ad))
+
+    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+
+
+def test_sky_correct_from_slit_with_aperture_table():
+    # Input Parameters ----------------
+    width = 200
+    height = 100
+
+    # Simulate Data -------------------
+    np.random.seed(0)
+
+    source_model_parameters = {'c0': height // 2, 'c1': 0.0}
+
+    source = fake_point_source(
+        height, width, source_model_parameters, fwhm=0.08 * height)
+
+    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data += source
+    ad[0].data += sky(ad[0].data, axis=1)
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # ToDo @csimpson: Is it modifying the input ad?
+    ad_out = _p.skyCorrectFromSlit(deepcopy(ad))
+
+    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
+
+
+def test_sky_correct_from_slit_with_multiple_sources():
+    width = 200
+    height = 100
+    np.random.seed(0)
+
+    source = \
+        fake_point_source(height, width, {'c0': height // 2, 'c1': 0.0}, fwhm=0.05 * height) + \
+        fake_point_source(height, width, {'c0': 7 * height // 16, 'c1': 0.0}, fwhm=0.05 * height)
+
+    sky = SkyLines(n_lines=width // 2, max_position=width - 1)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data += source
+    ad[0].data += sky(ad[0].data, axis=1)
+    ad[0].APERTURE = get_aperture_table(height, width, center=height // 2)
+    ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, 7 * height // 16, -3, 3])
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
@@ -288,30 +367,9 @@ def test_extract_1d_spectra():
     height = 100
 
     # Boilerplate code ----------------
-    aperture = table.Table(
-        [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [width - 1],  # domain_end
-         [height // 2],  # c0
-         [-3],  # aper_lower
-         [3],  # aper_upper
-         ],
-        names=[
-            'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
-            'c0',
-            'aper_lower',
-            'aper_upper'],
-    )
-
-    ad = create_zero_filled_fake_astrodata([height, width])
+    ad = create_zero_filled_fake_astrodata(height, width)
     ad[0].data[height // 2] = 1
-    ad[0].APERTURE = aperture
+    ad[0].APERTURE = get_aperture_table(height, width)
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
@@ -321,7 +379,7 @@ def test_extract_1d_spectra():
     ad_out = _p.extract1DSpectra(ad)[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
-    np.testing.assert_allclose(ad_out[0].data, ad[0].data[height//2], atol=1e-3)
+    np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
 
 
 if __name__ == '__main__':
