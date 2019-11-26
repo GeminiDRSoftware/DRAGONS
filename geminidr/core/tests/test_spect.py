@@ -91,22 +91,22 @@ class SkyLines:
         return sky_data
 
 
-def create_zero_filled_fake_astrodata(width, height):
+def create_zero_filled_fake_astrodata(shape):
     """
     Helper function to generate a fake astrodata object filled with zeros.
 
     Parameters
     ----------
-    width : int
-        Number of columns.
-    height : int
-        Number of rows.
+    shape : list of ints
+        Shape of the output 2D array [height, width].
 
     Returns
     -------
     astrodata
         Single-extension zero filled object.
     """
+    height, width = shape
+
     data = np.zeros((height, width))
 
     hdu = fits.ImageHDU()
@@ -119,7 +119,7 @@ def create_zero_filled_fake_astrodata(width, height):
     return ad
 
 
-def fake_point_source(shape, model_parameters):
+def fake_point_source(shape, model_parameters, fwhm=5):
     """
     Generates a 2D array with a fake point source with constant intensity in the
     spectral dimension and a gaussian distribution in the spatial dimension. The
@@ -133,6 +133,8 @@ def fake_point_source(shape, model_parameters):
     model_parameters : dict
         Model parameters with keys defined as 'c0', 'c1', ..., 'c{n-1}', where
         'n' is the Chebyshev1D order.
+    fwhm : float
+        Full-width at half-maximum of the gaussian profile.
 
     Returns
     -------
@@ -145,21 +147,21 @@ def fake_point_source(shape, model_parameters):
     trace_model = models.Chebyshev1D(
         order, domain=[0, width - 1], **model_parameters)
 
-    rows = np.arange(height)
-    cols = np.arange(width)
+    x = np.arange(width)
+    y = trace_model(x)
+    n = y.size
 
-    gaussian_model = models.Gaussian1D(stddev=5, amplitude=1)
+    gaussian_model = models.Gaussian1D(
+        mean=y,
+        amplitude=[1] * n,
+        stddev=[fwhm / (2. * np.sqrt(2 * np.log(2)))] * n,
+        n_models=n
+    )
 
-    _temp = np.zeros((height, width))
+    rows, _ = np.mgrid[:height, :width]
+    source = gaussian_model(rows, model_set_axis=1)
 
-    def gaussian(index):
-        gaussian_model.mean = trace_model(index)
-        return gaussian_model(rows)
-
-    for col in cols:
-        _temp[:, col] = gaussian(col)
-
-    return _temp
+    return source
 
 
 # noinspection PyPep8Naming
@@ -233,7 +235,7 @@ def test_trace_apertures():
                                'aper_upper'],
                            )
 
-    ad = create_zero_filled_fake_astrodata(width, height)
+    ad = create_zero_filled_fake_astrodata([height, width])
     ad[0].data += fake_point_source(ad.shape[0], trace_model_parameters)
     ad[0].APERTURE = aperture
 
@@ -260,7 +262,7 @@ def test_sky_correct_from_slit():
     source_fwhm = 0.05 * height
 
     n_sky_lines = 500
-    max_sky_intensity = 0.5
+    max_sky_intensity = 1.
 
     # Simulate Data -------------------
     np.random.seed(0)
@@ -272,7 +274,7 @@ def test_sky_correct_from_slit():
     source = gaussian(np.arange(height))[:, np.newaxis].repeat(width, axis=1)
     sky = SkyLines(n_sky_lines, width - 1, max_sky_intensity)
 
-    ad = create_zero_filled_fake_astrodata(width, height)
+    ad = create_zero_filled_fake_astrodata([height, width])
     ad[0].data += source
     ad[0].data += sky(ad[0].data, axis=1)
 
@@ -282,7 +284,7 @@ def test_sky_correct_from_slit():
     # ToDo @csimpson: Is it modifying the input ad?
     ad_out = _p.skyCorrectFromSlit(deepcopy(ad))
 
-    np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
+    np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
 
 
 def test_extract_1d_spectra():
@@ -312,7 +314,7 @@ def test_extract_1d_spectra():
             'aper_upper'],
     )
 
-    ad = create_zero_filled_fake_astrodata(width, height)
+    ad = create_zero_filled_fake_astrodata([height, width])
     ad[0].data[height // 2] = 1
     ad[0].APERTURE = aperture
 
