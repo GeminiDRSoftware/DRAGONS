@@ -120,6 +120,49 @@ def create_zero_filled_fake_astrodata(width, height):
     return ad
 
 
+def fake_point_source(shape, model_parameters):
+    """
+    Generates a 2D array with a fake point source with constant intensity in the
+    spectral dimension and a gaussian distribution in the spatial dimension. The
+    center of the gaussian changes depends on the Chebyshev1D model defined
+    by the input parameters.
+
+    Parameters
+    ----------
+    shape : list of ints
+        Shape of the output 2D array [height, width].
+    model_parameters : dict
+        Model parameters with keys defined as 'c0', 'c1', ..., 'c{n-1}', where
+        'n' is the Chebyshev1D order.
+
+    Returns
+    -------
+    np.ndarray
+        2D array with a fake point source
+    """
+    height, width = shape
+    order = len(model_parameters)
+
+    trace_model = models.Chebyshev1D(
+        order, domain=[0, width - 1], **model_parameters)
+
+    rows = np.arange(height)
+    cols = np.arange(width)
+
+    gaussian_model = models.Gaussian1D(stddev=5, amplitude=1)
+
+    _temp = np.zeros((height, width))
+
+    def gaussian(index):
+        gaussian_model.mean = trace_model(index)
+        return gaussian_model(rows)
+
+    for col in cols:
+        _temp[:, col] = gaussian(col)
+
+    return _temp
+
+
 # noinspection PyPep8Naming
 def test_QESpline_optimization():
     """
@@ -165,39 +208,18 @@ def test_find_apertures():
 
 
 def test_trace_apertures():
-    # Config ---
+    # Input parameters ----------------
     width = 400
     height = 200
     trace_model_parameters = {'c0': height // 2, 'c1': 5.0, 'c2': -0.5, 'c3': 0.5}
 
-    # Generate fake point source ---
-    trace_model = models.Chebyshev1D(4, domain=[0, width - 1], **trace_model_parameters)
-
-    rows = np.arange(height)
-    cols = np.arange(width)
-
-    gaussian_model = models.Gaussian1D(stddev=5, amplitude=1)
-
-    data = np.zeros((height, width))
-
-    def gaussian(index):
-        gaussian_model.mean = trace_model(index)
-        return gaussian_model(rows)
-
-    for col in cols:
-        data[:, col] = gaussian(col)
-
-    # Convert to astrodata ---
-    hdu = fits.ImageHDU()
-    hdu.header['CCDSUM'] = "1 1"
-    hdu.data = data
-
+    # Boilerplate code ----------------
     aperture = table.Table([[1],  # Number
                             [1],  # ndim
                             [2],  # degree
                             [0],  # domain_start
-                            [data.shape[1] - 1],  # domain_end
-                            [data.shape[0] // 2],  # c0
+                            [width - 1],  # domain_end
+                            [height // 2],  # c0
                             [-10],  # aper_lower
                             [10],  # aper_upper
                             ],
@@ -212,18 +234,19 @@ def test_trace_apertures():
                                'aper_upper'],
                            )
 
-    ad = astrofaker.create('GMOS-S')
-    ad.add_extension(hdu, pixel_scale=1.0)
+    ad = create_zero_filled_fake_astrodata(width, height)
+    ad[0].data += fake_point_source(ad.shape[0], trace_model_parameters)
     ad[0].APERTURE = aperture
 
+    # Running the test ----------------
     _p = primitives_spect.Spect([])
-    ad_out = _p.traceApertures(ad, trace_order=4)
+    ad_out = _p.traceApertures(ad, trace_order=len(trace_model_parameters))
 
-    keys = ['c0', 'c1', 'c2', 'c3']
-    for ext in ad_out:
-        desired = np.array([trace_model_parameters[k] for k in keys])
-        actual = np.array([ext.APERTURE[0][k] for k in keys])
-        np.testing.assert_allclose(desired, actual, atol=0.05)
+    keys = trace_model_parameters.keys()
+
+    desired = np.array([trace_model_parameters[k] for k in keys])
+    actual = np.array([ad[0].APERTURE[0][k] for k in keys])
+    np.testing.assert_allclose(desired, actual, atol=0.05)
 
 
 def test_sky_correct_from_slit():
@@ -261,48 +284,48 @@ def test_sky_correct_from_slit():
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
-def test_extract_1d_spectra(fake_data):
-    # Input Parameters ----------------
-    width = 200
-    height = 100
-
-    # Boilerplate code ----------------
-    aperture = table.Table(
-        [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [width - 1],  # domain_end
-         [height//2],  # c0
-         [-3],  # aper_lower
-         [3],  # aper_upper
-         ],
-        names=[
-            'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
-            'c0',
-            'aper_lower',
-            'aper_upper'],
-    )
-
-    print("\n\n", aperture, "\n\n")
-
-    ad = create_zero_filled_fake_astrodata(width, height)
-
-    assert isinstance(ad, astrodata.AstroData)
-
-    ad[0].data[height//2] = 1.
-    ad[0].APERTURE = aperture
-
-    # # Running the test ----------------
-    _p = primitives_spect.Spect([])
-
-    # todo: if input is a single astrodata,
-    #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra(fake_data)
+# def test_extract_1d_spectra():
+#     # Input Parameters ----------------
+#     width = 200
+#     height = 100
+#
+#     # Boilerplate code ----------------
+#     aperture = table.Table(
+#         [[1],  # Number
+#          [1],  # ndim
+#          [0],  # degree
+#          [0],  # domain_start
+#          [width - 1],  # domain_end
+#          [height//2],  # c0
+#          [-3],  # aper_lower
+#          [3],  # aper_upper
+#          ],
+#         names=[
+#             'number',
+#             'ndim',
+#             'degree',
+#             'domain_start',
+#             'domain_end',
+#             'c0',
+#             'aper_lower',
+#             'aper_upper'],
+#     )
+#
+#     print("\n\n", aperture, "\n\n")
+#
+#     ad = create_zero_filled_fake_astrodata(width, height)
+#
+#     assert isinstance(ad, astrodata.AstroData)
+#
+#     ad[0].data[height//2] = 1.
+#     ad[0].APERTURE = aperture
+#
+#     # # Running the test ----------------
+#     _p = primitives_spect.Spect([])
+#
+#     # todo: if input is a single astrodata,
+#     #  should not the output have the same format?
+#     ad_out = _p.extract1DSpectra()
     #
     # print(ad_out.info())
     # np.testing.assert_equal(ad_out[0].shape[0], ad[0].data.shape[1])
