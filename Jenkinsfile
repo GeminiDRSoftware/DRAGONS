@@ -55,8 +55,7 @@ pipeline {
                 branch 'master'
             }
             steps {
-                sh '.jenkins/code_metrics/pylint.sh'
-                sh '.jenkins/code_metrics/pydocstring.sh'
+                sh 'tox -e check'
             }
             post {
                 success {
