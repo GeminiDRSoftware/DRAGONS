@@ -26,13 +26,16 @@ Notes
     `model_to_dict()` and `dict_to_model()` functions that convert the Model
     instance to a dict create/require this.
 """
+from copy import deepcopy
 import numpy as np
 import pytest
+
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
-from copy import deepcopy
 from scipy import optimize
+
+import astrodata
 
 from geminidr.core import primitives_spect
 
@@ -155,47 +158,10 @@ def test_QESpline_optimization():
     np.testing.assert_allclose(real_coeffs, 1. / result.x, atol=0.01)
 
 
-@pytest.fixture(scope="module")
-def fake_data():
-    data = np.zeros((100, 200))
-    data[50] = 10.
-
-    hdu = fits.ImageHDU()
-    hdu.header['CCDSUM'] = "1 1"
-    hdu.data = data
-
-    aperture = table.Table(
-        [[1],  # Number
-         [1],  # ndim
-         [0],  # degree
-         [0],  # domain_start
-         [data.shape[1] - 1],  # domain_end
-         [50],  # c0
-         [-3],  # aper_lower
-         [3],  # aper_upper
-         ],
-        names=[
-            'number',
-            'ndim',
-            'degree',
-            'domain_start',
-            'domain_end',
-            'c0',
-            'aper_lower',
-            'aper_upper'],
-    )
-
-    ad = astrofaker.create('GMOS-S')
-    ad.add_extension(hdu, pixel_scale=1.0)
-    ad[0].APERTURE = aperture
-
-    return ad
-
-
 @pytest.mark.xfail(reason="The fake data needs a DQ plane")
-def test_find_apertures(fake_data):
+def test_find_apertures():
     _p = primitives_spect.Spect([])
-    _p.findSourceApertures(fake_data)
+    _p.findSourceApertures()
 
 
 def test_trace_apertures():
@@ -261,7 +227,6 @@ def test_trace_apertures():
 
 
 def test_sky_correct_from_slit():
-
     # Input Parameters ----------------
     width = 200
     height = 100
@@ -296,24 +261,52 @@ def test_sky_correct_from_slit():
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
-# def test_extract_1d_spectra():
-#
-#     width = 200
-#     height = 100
-#
-#     ad = create_zero_filled_fake_astrodata(width, height)
-#     ad[0].data[height//2, :] = 1.
-#
-#     _p = primitives_spect.Spect([])
-#
-#     # todo: if input is a single astrodata,
-#     #  should not the output have the same format?
-#     ad_out = _p.extract1DSpectra(adinputs=[ad])
-#
-#     print(ad_out.info())
-#
-#     # np.testing.assert_equal(ad_out[0].shape[0], ad[0].data.shape[1])
-#     # np.testing.assert_equal(ad_out[0].data, fake_data[0].data[50])
+def test_extract_1d_spectra(fake_data):
+    # Input Parameters ----------------
+    width = 200
+    height = 100
+
+    # Boilerplate code ----------------
+    aperture = table.Table(
+        [[1],  # Number
+         [1],  # ndim
+         [0],  # degree
+         [0],  # domain_start
+         [width - 1],  # domain_end
+         [height//2],  # c0
+         [-3],  # aper_lower
+         [3],  # aper_upper
+         ],
+        names=[
+            'number',
+            'ndim',
+            'degree',
+            'domain_start',
+            'domain_end',
+            'c0',
+            'aper_lower',
+            'aper_upper'],
+    )
+
+    print("\n\n", aperture, "\n\n")
+
+    ad = create_zero_filled_fake_astrodata(width, height)
+
+    assert isinstance(ad, astrodata.AstroData)
+
+    ad[0].data[height//2] = 1.
+    ad[0].APERTURE = aperture
+
+    # # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # todo: if input is a single astrodata,
+    #  should not the output have the same format?
+    ad_out = _p.extract1DSpectra(fake_data)
+    #
+    # print(ad_out.info())
+    # np.testing.assert_equal(ad_out[0].shape[0], ad[0].data.shape[1])
+    # np.testing.assert_equal(ad_out[0].data, fake_data[0].data[50])
 
 
 if __name__ == '__main__':
