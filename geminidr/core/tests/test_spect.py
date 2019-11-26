@@ -27,16 +27,15 @@ Notes
     instance to a dict create/require this.
 """
 from copy import deepcopy
+
 import numpy as np
 import pytest
-
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
 
 import astrodata
-
 from geminidr.core import primitives_spect
 
 astrofaker = pytest.importorskip("astrofaker")
@@ -298,7 +297,7 @@ def test_extract_1d_spectra():
          [0],  # degree
          [0],  # domain_start
          [width - 1],  # domain_end
-         [height//2],  # c0
+         [height // 2],  # c0
          [-3],  # aper_lower
          [3],  # aper_upper
          ],
@@ -314,7 +313,7 @@ def test_extract_1d_spectra():
     )
 
     ad = create_zero_filled_fake_astrodata(width, height)
-    ad[0].data[:, height//2] = 1
+    ad[0].data[height // 2] = 1
     ad[0].APERTURE = aperture
 
     # Running the test ----------------
@@ -322,10 +321,11 @@ def test_extract_1d_spectra():
 
     # todo: if input is a single astrodata,
     #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra(ad)
+    ad_out = _p.extract1DSpectra(ad)[0]
 
-    # np.testing.assert_equal(ad_out[0].shape[0], ad[0].data.shape[1])
-    # np.testing.assert_equal(ad_out[0].data, ad[0].data[50])
+    np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
+    np.testing.assert_allclose(ad_out[0].data, ad[0].data[height//2], atol=1e-3)
+
 
 if __name__ == '__main__':
     pytest.main()
