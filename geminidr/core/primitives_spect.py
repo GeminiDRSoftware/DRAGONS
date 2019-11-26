@@ -58,6 +58,7 @@ class Spect(PrimitivesBASE):
 
     def calculateSensitivity(self, adinputs=None, **params):
         """
+        ???
 
         Parameters
         ----------
@@ -1995,11 +1996,11 @@ class Spect(PrimitivesBASE):
                                   * u.Unit("erg cm-2 s-1") / u.Hz)
         return spec_table
 
-#-----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
 def _average_along_slit(ext, center=None, nsum=None):
     """
-    Calculated the average of long the slit and its pixel-by-pixel variance.
+    Calculates the average of long the slit and its pixel-by-pixel variance.
 
     Parameters
     ----------
@@ -2039,6 +2040,7 @@ def _average_along_slit(ext, center=None, nsum=None):
     data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
     return data, mask, variance, extract_slice
+
 
 def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
