@@ -119,7 +119,7 @@ def create_zero_filled_fake_astrodata(shape):
     return ad
 
 
-def fake_point_source(shape, model_parameters, fwhm=5):
+def fake_point_source(height, width, model_parameters, fwhm=5):
     """
     Generates a 2D array with a fake point source with constant intensity in the
     spectral dimension and a gaussian distribution in the spatial dimension. The
@@ -128,8 +128,10 @@ def fake_point_source(shape, model_parameters, fwhm=5):
 
     Parameters
     ----------
-    shape : list of ints
-        Shape of the output 2D array [height, width].
+    height : int
+        Output 2D array's number of rows.
+    width : int
+        Output 2D array's number of columns.
     model_parameters : dict
         Model parameters with keys defined as 'c0', 'c1', ..., 'c{n-1}', where
         'n' is the Chebyshev1D order.
@@ -141,7 +143,6 @@ def fake_point_source(shape, model_parameters, fwhm=5):
     np.ndarray
         2D array with a fake point source
     """
-    height, width = shape
     order = len(model_parameters)
 
     trace_model = models.Chebyshev1D(
@@ -158,8 +159,7 @@ def fake_point_source(shape, model_parameters, fwhm=5):
         n_models=n
     )
 
-    rows, _ = np.mgrid[:height, :width]
-    source = gaussian_model(rows, model_set_axis=1)
+    source = gaussian_model(np.arange(height), model_set_axis=False).T
 
     return source
 
@@ -236,7 +236,7 @@ def test_trace_apertures():
                            )
 
     ad = create_zero_filled_fake_astrodata([height, width])
-    ad[0].data += fake_point_source(ad.shape[0], trace_model_parameters)
+    ad[0].data += fake_point_source(height, width, trace_model_parameters)
     ad[0].APERTURE = aperture
 
     # Running the test ----------------
@@ -255,9 +255,6 @@ def test_sky_correct_from_slit():
     width = 200
     height = 100
 
-    source_intensity = 1.
-    source_position = height // 2
-
     # Test works when object size is 5% of spatial dimension.
     source_fwhm = 0.05 * height
 
@@ -267,11 +264,9 @@ def test_sky_correct_from_slit():
     # Simulate Data -------------------
     np.random.seed(0)
 
-    gaussian = models.Gaussian1D(mean=source_position,
-                                 stddev=source_fwhm / (2 * np.sqrt(2 * np.log(2))),
-                                 amplitude=source_intensity)
+    source_model_parameters = {'c0': height // 2, 'c1': 0.0}
+    source = fake_point_source(height, width, source_model_parameters, fwhm=source_fwhm)
 
-    source = gaussian(np.arange(height))[:, np.newaxis].repeat(width, axis=1)
     sky = SkyLines(n_sky_lines, width - 1, max_sky_intensity)
 
     ad = create_zero_filled_fake_astrodata([height, width])
