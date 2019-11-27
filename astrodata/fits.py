@@ -798,10 +798,9 @@ class FitsProvider(DataProvider):
 
     def _pixel_info(self, indices):
         for idx, obj in ((n, self._nddata[k]) for (n, k) in enumerate(indices)):
-            header = obj.meta['header']
             other_objects = []
             uncer = obj.uncertainty
-            fixed = (('variance', None if uncer is None else uncer.as_variance()), ('mask', obj.mask))
+            fixed = (('variance', None if uncer is None else uncer), ('mask', obj.mask))
             for name, other in fixed + tuple(sorted(obj.meta['other'].items())):
                 if other is not None:
                     if isinstance(other, Table):
