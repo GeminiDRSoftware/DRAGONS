@@ -309,7 +309,7 @@ def test_trace_apertures():
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
-    ad_out = _p.traceApertures(ad, trace_order=len(trace_model_parameters))
+    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters)+1)[0]
 
     keys = trace_model_parameters.keys()
 
@@ -343,7 +343,7 @@ def test_sky_correct_from_slit():
     _p = primitives_spect.Spect([])
 
     # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit(deepcopy(ad))
+    ad_out = _p.skyCorrectFromSlit([deepcopy(ad)])[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
 
@@ -372,7 +372,7 @@ def test_sky_correct_from_slit_with_aperture_table():
     _p = primitives_spect.Spect([])
 
     # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit(deepcopy(ad))
+    ad_out = _p.skyCorrectFromSlit([deepcopy(ad)])[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
 
@@ -404,7 +404,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
     _p = primitives_spect.Spect([])
 
     # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit(deepcopy(ad))
+    ad_out = _p.skyCorrectFromSlit([deepcopy(ad)])[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
 
@@ -424,7 +424,7 @@ def test_extract_1d_spectra():
 
     # todo: if input is a single astrodata,
     #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra(ad)[0]
+    ad_out = _p.extract1DSpectra([ad])[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
@@ -449,7 +449,7 @@ def test_extract_1d_spectra_with_sky_lines():
 
     # todo: if input is a single astrodata,
     #  should not the output have the same format?
-    ad_out = _p.extract1DSpectra(ad)[0]
+    ad_out = _p.extract1DSpectra([ad])[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
     np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
