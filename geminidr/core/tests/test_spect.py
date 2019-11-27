@@ -26,8 +26,6 @@ Notes
     `model_to_dict()` and `dict_to_model()` functions that convert the Model
     instance to a dict create/require this.
 """
-from copy import deepcopy
-
 import numpy as np
 import pytest
 from astropy import table
@@ -343,7 +341,7 @@ def test_sky_correct_from_slit():
     _p = primitives_spect.Spect([])
 
     # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([deepcopy(ad)])[0]
+    ad_out = _p.skyCorrectFromSlit([ad])[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
 
@@ -372,7 +370,7 @@ def test_sky_correct_from_slit_with_aperture_table():
     _p = primitives_spect.Spect([])
 
     # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([deepcopy(ad)])[0]
+    ad_out = _p.skyCorrectFromSlit([ad])[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
 
@@ -404,7 +402,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
     _p = primitives_spect.Spect([])
 
     # ToDo @csimpson: Is it modifying the input ad?
-    ad_out = _p.skyCorrectFromSlit([deepcopy(ad)])[0]
+    ad_out = _p.skyCorrectFromSlit([ad])[0]
 
     np.testing.assert_allclose(ad_out[0].data, source, atol=0.00625)
 
