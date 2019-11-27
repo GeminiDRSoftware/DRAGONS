@@ -440,7 +440,7 @@ def test_extract_1d_spectra_with_sky_lines():
     sky = np.repeat(sky[np.newaxis, :], height, axis=0)
 
     ad = create_zero_filled_fake_astrodata(height, width)
-    ad[0].data = sky
+    ad[0].data += sky
     ad[0].data[height // 2] = 1.
     ad[0].APERTURE = get_aperture_table(height, width)
 
