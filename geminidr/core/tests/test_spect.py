@@ -119,7 +119,7 @@ def create_zero_filled_fake_astrodata(height, width):
     return ad
 
 
-def fake_point_source(height, width, model_parameters, fwhm=5):
+def fake_point_source_spatial_profile(height, width, model_parameters, fwhm=5):
     """
     Generates a 2D array with a fake point source with constant intensity in the
     spectral dimension and a gaussian distribution in the spatial dimension. The
@@ -143,7 +143,7 @@ def fake_point_source(height, width, model_parameters, fwhm=5):
     np.ndarray
         2D array with a fake point source
     """
-    order = len(model_parameters)
+    order = len(model_parameters) + 1
 
     trace_model = models.Chebyshev1D(
         order, domain=[0, width - 1], **model_parameters)
@@ -262,7 +262,7 @@ def test_trace_apertures():
 
     # Boilerplate code ----------------
     ad = create_zero_filled_fake_astrodata(height, width)
-    ad[0].data += fake_point_source(height, width, trace_model_parameters)
+    ad[0].data += fake_point_source_spatial_profile(height, width, trace_model_parameters)
     ad[0].APERTURE = get_aperture_table(height, width)
 
     # Running the test ----------------
@@ -288,7 +288,7 @@ def test_sky_correct_from_slit():
 
     source_model_parameters = {'c0': height // 2, 'c1': 0.0}
 
-    source = fake_point_source(
+    source = fake_point_source_spatial_profile(
         height, width, source_model_parameters, fwhm=0.05 * height)
 
     sky = SkyLines(n_sky_lines, width - 1)
@@ -316,7 +316,7 @@ def test_sky_correct_from_slit_with_aperture_table():
 
     source_model_parameters = {'c0': height // 2, 'c1': 0.0}
 
-    source = fake_point_source(
+    source = fake_point_source_spatial_profile(
         height, width, source_model_parameters, fwhm=0.08 * height)
 
     sky = SkyLines(n_lines=width // 2, max_position=width - 1)
@@ -345,8 +345,8 @@ def test_sky_correct_from_slit_with_multiple_sources():
     fwhm = 0.05 * height
 
     source = (
-        fake_point_source(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
-        fake_point_source(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
+            fake_point_source_spatial_profile(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
+            fake_point_source_spatial_profile(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
     )
 
     sky = SkyLines(n_lines=width // 2, max_position=width - 1)
