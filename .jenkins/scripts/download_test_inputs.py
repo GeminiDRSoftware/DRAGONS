@@ -63,7 +63,7 @@ def _get_dragons_input_test_path():
 
     except KeyError:
 
-        print('\n This script needs the environment variable TEST_PATH'
+        print('\n This script needs the environment variable DRAGONS_TEST_INPUTS'
               '\n Please, add is using the following command: '
               '\n     $ export DRAGONS_TEST_INPUTS="/my/test/path/"'
               '\n and run again. Leaving now.'
