@@ -164,6 +164,48 @@ def fake_point_source_spatial_profile(height, width, model_parameters, fwhm=5):
     return source
 
 
+def fake_emission_line_spectrum(size, n_lines, max_intensity=1, fwhm=2):
+    """
+    Generates a 1D array with the a fake emission-line spectrum using lines at 
+    random positions and with random intensities.
+
+    Parameters
+    ----------
+    size : int 
+        Output array's size.
+    n_lines : int
+        Number of sky lines.
+    max_intensity : float
+        Maximum sky line intensity (default=1).
+    fwhm : float
+        Lines width in pixels (default=2).
+
+    Returns
+    -------
+    np.ndarray
+        Modeled emission-line spectrum
+    """
+
+    lines_positions = np.random.randint(low=0, high=size - 1, size=n_lines)
+    lines_intensities = np.random.rand(n_lines) * max_intensity
+
+    stddev = [fwhm / (2. * np.sqrt(2. * np.log(2.)))] * n_lines
+
+    print(len(lines_positions), len(lines_intensities), len(stddev))
+
+    model = models.Gaussian1D(
+        amplitude=lines_intensities,
+        mean=lines_positions,
+        stddev=stddev,
+        n_models=n_lines
+    )
+
+    source = model(np.arange(size), model_set_axis=False)
+    source = source.sum(axis=0)
+
+    return source
+
+
 def get_aperture_table(height, width, center=None):
     """
 
@@ -356,7 +398,7 @@ def test_sky_correct_from_slit_with_multiple_sources():
     ad[0].data += source
     ad[0].data += sky(ad[0].data, axis=1)
     ad[0].APERTURE = get_aperture_table(height, width, center=height // 2)
-    ad[0].APERTURE.add_row([1, 1, 0, 0, width-1, y1, -3, 3])
+    ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, y1, -3, 3])
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
@@ -375,6 +417,31 @@ def test_extract_1d_spectra():
     # Boilerplate code ----------------
     ad = create_zero_filled_fake_astrodata(height, width)
     ad[0].data[height // 2] = 1
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    _p = primitives_spect.Spect([])
+
+    # todo: if input is a single astrodata,
+    #  should not the output have the same format?
+    ad_out = _p.extract1DSpectra(ad)[0]
+
+    np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
+    np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
+
+
+def test_extract_1d_spectra_with_sky_lines():
+    # Input Parameters ----------------
+    width = 600
+    height = 300
+
+    # Boilerplate code ----------------
+    sky = fake_emission_line_spectrum(width, n_lines=5, max_intensity=10, fwhm=2.)
+    sky = np.repeat(sky[np.newaxis, :], height, axis=0)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    ad[0].data = sky
+    ad[0].data[height // 2] = 1.
     ad[0].APERTURE = get_aperture_table(height, width)
 
     # Running the test ----------------
