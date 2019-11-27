@@ -340,17 +340,23 @@ def test_sky_correct_from_slit_with_multiple_sources():
     height = 100
     np.random.seed(0)
 
-    source = \
-        fake_point_source(height, width, {'c0': height // 2, 'c1': 0.0}, fwhm=0.05 * height) + \
-        fake_point_source(height, width, {'c0': 7 * height // 16, 'c1': 0.0}, fwhm=0.05 * height)
+    y0 = height // 2
+    y1 = 7 * height // 16
+    fwhm = 0.05 * height
+
+    source = (
+        fake_point_source(height, width, {'c0': y0, 'c1': 0.0}, fwhm=fwhm) +
+        fake_point_source(height, width, {'c0': y1, 'c1': 0.0}, fwhm=fwhm)
+    )
 
     sky = SkyLines(n_lines=width // 2, max_position=width - 1)
 
     ad = create_zero_filled_fake_astrodata(height, width)
+
     ad[0].data += source
     ad[0].data += sky(ad[0].data, axis=1)
     ad[0].APERTURE = get_aperture_table(height, width, center=height // 2)
-    ad[0].APERTURE.add_row([1, 1, 0, 0, width - 1, 7 * height // 16, -3, 3])
+    ad[0].APERTURE.add_row([1, 1, 0, 0, width-1, y1, -3, 3])
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
