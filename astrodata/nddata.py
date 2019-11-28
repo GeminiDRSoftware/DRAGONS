@@ -5,16 +5,33 @@ implementing windowing and on-the-fly data scaling.
 
 from __future__ import (absolute_import, division, print_function)
 
+import warnings
 from copy import deepcopy
 
-from astropy.nddata import NDData, VarianceUncertainty
+from astropy.nddata import NDData
 from astropy.nddata.mixins.ndslicing import NDSlicingMixin
 from astropy.nddata.mixins.ndarithmetic import NDArithmeticMixin
 from astropy.io.fits import ImageHDU
 
 import numpy as np
 
+try:
+    from astropy.nddata import VarianceUncertainty
+except ImportError:
+    from .nduncertainty import VarianceUncertainty
+
 __all__ = ['NDAstroData']
+
+
+class ADVarianceUncertainty(VarianceUncertainty):
+    def __init__(self, array=None, copy=True, unit=None):
+        if np.any(array < 0):
+            warnings.warn("Negative variance values found. Setting to zero.",
+                          RuntimeWarning)
+            array = np.where(array >= 0., array, 0.)
+
+        super(VarianceUncertainty, self).__init__(array=array, copy=copy,
+                                                  unit=unit)
 
 
 class FakeArray(object):
@@ -209,10 +226,10 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         if self._uncertainty is not None:
             if is_lazy(self._uncertainty):
                 if section is None:
-                    self.uncertainty = VarianceUncertainty(self._uncertainty.data)
+                    self.uncertainty = ADVarianceUncertainty(self._uncertainty.data)
                     return self.uncertainty
                 else:
-                    return VarianceUncertainty(self._uncertainty[section])
+                    return ADVarianceUncertainty(self._uncertainty[section])
             elif section is not None:
                 return self._uncertainty[section]
             else:
@@ -284,7 +301,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @variance.setter
     def variance(self, value):
-        self.uncertainty = VarianceUncertainty(value)
+        self.uncertainty = ADVarianceUncertainty(value)
 
     def set_section(self, section, input):
         """

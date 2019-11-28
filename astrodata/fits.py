@@ -23,7 +23,7 @@ except ImportError:
     from itertools import izip_longest as zip_longest, product as cart_product
 
 from .core import AstroData, DataProvider, astro_data_descriptor
-from .nddata import NDAstroData as NDDataObject
+from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
 
 import astropy
 from astropy.io import fits
@@ -35,7 +35,7 @@ from astropy import units as u
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
-from astropy.nddata import NDData, VarianceUncertainty
+from astropy.nddata import NDData
 from astropy.table import Table
 import numpy as np
 
@@ -538,7 +538,7 @@ class FitsProviderProxy(DataProvider):
         if value is None:
             nd.uncertainty = None
         else:
-            nd.uncertainty = VarianceUncertainty(value)
+            nd.uncertainty = ADVarianceUncertainty(value)
 
     @property
     def nddata(self):
@@ -1171,7 +1171,7 @@ class FitsProvider(DataProvider):
                 add_to.mask = data
                 ret = data
             elif name == 'VAR':
-                std_un = VarianceUncertainty(data)
+                std_un = ADVarianceUncertainty(data)
                 std_un.parent_nddata = add_to
                 add_to.uncertainty = std_un
                 ret = std_un
@@ -1554,7 +1554,7 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
         dtype = sequence[0].window[:1,:1].data.dtype
 
     result = NDDataObject(np.empty(shape, dtype=dtype),
-                          uncertainty=(VarianceUncertainty(np.zeros(shape, dtype=dtype))
+                          uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
                                        if with_uncertainty else None),
                           mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
                           meta=sequence[0].meta)
