@@ -102,9 +102,6 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(ad_in)
     Make sure that the WAVECAL model was fitted with an RMS smaller
     than 0.5.
     """
-    assert isinstance(ad_in, astrodata.AstroData)
-    assert "mosaic" in ad_in.filename
-
     _p = primitives_gmos_spect.GMOSSpect([])
 
     ad_out = _p.determineWavelengthSolution([ad_in])
