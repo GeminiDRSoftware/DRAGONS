@@ -21,6 +21,12 @@ def pytest_addoption(parser):
             default=False,
             help="run only tests marked with `dragons_remote_data`"
         )
+        parser.addoption(
+            "--force-preprocess-data",
+            action="store_true",
+            default=False,
+            help="Force preprocessing data as part of the tests."
+        )
     # This file is imported several times and might bring conflict
     except ValueError:
         pass
@@ -30,6 +36,9 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "dragons_remote_data: tests with this "
                                        "mark will download a large volume of "
                                        "data and run")
+    config.addinivalue_line("markers", "preprocessed_data: tests with this "
+                                       "download anr preprocess the data if it "
+                                       "does not exist in the cache folder.")
 
 
 def pytest_collection_modifyitems(config, items):

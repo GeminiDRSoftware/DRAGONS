@@ -126,7 +126,7 @@ def assert_wavelength_solutions_are_close(ad, ad_ref):
         assert_allclose(wcal.parameters, wcal_ref.parameters)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def path_to_inputs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_INPUTS that
@@ -161,7 +161,7 @@ def path_to_inputs():
     return path
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def path_to_refs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_REFS that
@@ -194,7 +194,7 @@ def path_to_refs():
     return path
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def path_to_outputs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_OUTPUTS
