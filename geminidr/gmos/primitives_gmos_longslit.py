@@ -6,6 +6,7 @@
 import numpy as np
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
+from gempy.library import astromodels
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
@@ -91,3 +92,77 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
 
         return adinputs
 
+    def normalizeFlat(self, adinputs=None, **params):
+        """
+        This primitive normalizes a GMOS Longslit spectroscopic flatfield
+        in a manner similar to that performed by gsflat in Gemini-IRAF.
+        A cubic spline is fitted along the dispersion direction of each
+        row, separately for each CCD.
+
+        As this primitive is GMOS-specific, we know the dispersion direction
+        will be along the rows, and there will be 3 CCDs.
+
+        For Hamamatsu CCDs, the 21 unbinned columns at each CCD edge are
+        masked out, following the procedure in gsflat.
+        TODO: Should we add these in the BPM?
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        spectral_order: int/str
+            order of fit in spectral direction
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        spectral_order = params["spectral_order"]
+
+        # Parameter validation should ensure we get an int or a list of 3 ints
+        try:
+            orders = [int(x) for x in spectral_order]
+        except TypeError:
+            orders = [spectral_order] * 3
+
+        for ad in adinputs:
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            array_info = gt.array_information(ad)
+            is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
+            ad_tiled = self.tileArrays([ad], tile_all=False)[0]
+            for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
+                # If the entire row is unilluminated, we want to fit
+                # the pixels but still keep the edges masked
+                try:
+                    ext.mask ^= (np.bitwise_and.reduce(ext.mask, axis=1) & DQ.unilluminated)[:, None]
+                except TypeError:  # ext.mask is None
+                    pass
+                else:
+                    if is_hamamatsu:
+                        ext.mask[:, :21 // xbin] = 1
+                        ext.mask[:, -21 // xbin:] = 1
+                fitted_data = np.empty_like(ext.data)
+                pixels = np.arange(ext.shape[1])
+
+                for i, row in enumerate(ext.nddata):
+                    masked_data = np.ma.masked_array(row.data, mask=row.mask)
+                    weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
+                    spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
+                                                    order=order, w=weights)
+                    fitted_data[i] = spline(pixels)
+                ext.divide(fitted_data)
+
+                # Split the normalized flat back into the separate extensions
+                tiled_detsec = ext.detector_section()
+                for i in indices:
+                    detsec = ad[i].detector_section()
+                    slice_ = (slice((detsec.y1 - tiled_detsec.y1) // ybin, (detsec.y2 - tiled_detsec.y1) // ybin),
+                              slice((detsec.x1 - tiled_detsec.x1) // xbin, (detsec.x2 - tiled_detsec.x1) // xbin))
+                    ad[i].data = np.nan_to_num(ext.data[slice_])
+                    ad[i].variance = np.nan_to_num(ext.variance[slice_])
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
