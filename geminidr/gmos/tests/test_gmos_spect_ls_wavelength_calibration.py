@@ -132,6 +132,9 @@ def ad(request, path_to_inputs, tmp_path_factory):
     path_to_inputs : fixture
         Custom fixture defined in `astrodata.testing` containing the path to the
         cached input files.
+    tmp_path_factory : fixture
+        PyTest's built-in session-scoped fixture that creates a temporary
+        directory. It can be set using `--basetemp=mydir` command line argument.
 
     Returns
     -------
@@ -151,12 +154,12 @@ def ad(request, path_to_inputs, tmp_path_factory):
     p.viewer = geminidr.dormantViewer(p, None)
 
     if os.path.exists(fname):
-        print("\n Loading existing input file: {:s}\n".format(fname))
+        print("\n\n Loading existing input file:\n  {:s}\n".format(fname))
         _ad = astrodata.open(fname)
 
     elif force_preprocess:
 
-        print("\n Pre-processing input file: {:s}\n".format(fname))
+        print("\n\n Pre-processing input file:\n  {:s}\n".format(fname))
         subpath, basename = os.path.split(request.param)
         basename, extension = os.path.splitext(basename)
         basename = basename.split('_')[0] + extension
@@ -171,13 +174,21 @@ def ad(request, path_to_inputs, tmp_path_factory):
 
     ad_out = p.determineWavelengthSolution([_ad])[0]
 
-    # output_dir = tmp_path_factory.getbasetemp()
-    # output_dir.mkdirs(os.path.basename(request.param), exist_ok=True)
-    # os.chdir(output_dir)
-    #
-    # ad_out.write()
+    tests_failed_before_module = request.session.testsfailed
 
-    return ad_out
+    yield ad_out
+
+    if request.session.testsfailed > tests_failed_before_module:
+
+        tmp_path = tmp_path_factory.getbasetemp()
+
+        _dir = tmp_path / os.path.dirname(request.param)
+        _dir.mkdir(parents=True, exist_ok=True)
+
+        fname_out = _dir / ad_out.filename
+        ad_out.write(filename=fname_out)
+
+    del ad_out
 
 
 @pytest.fixture(scope="module")
@@ -256,10 +267,10 @@ def setup_log(tmp_path_factory):
         PyTest's built-in session-scoped fixture that creates a temporary
         directory. It can be set using `--basetemp=mydir` command line argument.
     """
-    output_dir = tmp_path_factory.getbasetemp()
+    tmp_path = tmp_path_factory.getbasetemp()
 
     log_file = os.path.join(
-        output_dir,
+        tmp_path,
         "{}.log".format(os.path.splitext(os.path.basename(__file__))[0]),
     )
 
