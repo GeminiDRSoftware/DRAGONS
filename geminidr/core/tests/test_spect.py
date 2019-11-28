@@ -307,7 +307,7 @@ def test_trace_apertures():
 
     # Running the test ----------------
     _p = primitives_spect.Spect([])
-    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters)+1)[0]
+    ad_out = _p.traceApertures([ad], trace_order=len(trace_model_parameters) + 1)[0]
 
     keys = trace_model_parameters.keys()
 
@@ -432,14 +432,16 @@ def test_extract_1d_spectra_with_sky_lines():
     # Input Parameters ----------------
     width = 600
     height = 300
+    source_intensity = 1
 
     # Boilerplate code ----------------
-    sky = fake_emission_line_spectrum(width, n_lines=5, max_intensity=10, fwhm=2.)
+    np.random.seed(0)
+    sky = fake_emission_line_spectrum(width, n_lines=20, max_intensity=1, fwhm=2.)
     sky = np.repeat(sky[np.newaxis, :], height, axis=0)
 
     ad = create_zero_filled_fake_astrodata(height, width)
     ad[0].data += sky
-    ad[0].data[height // 2] = 1.
+    ad[0].data[height // 2] += source_intensity
     ad[0].APERTURE = get_aperture_table(height, width)
 
     # Running the test ----------------
@@ -450,7 +452,7 @@ def test_extract_1d_spectra_with_sky_lines():
     ad_out = _p.extract1DSpectra([ad])[0]
 
     np.testing.assert_equal(ad_out[0].shape[0], ad[0].shape[1])
-    np.testing.assert_allclose(ad_out[0].data, ad[0].data[height // 2], atol=1e-3)
+    np.testing.assert_allclose(ad_out[0].data, source_intensity, atol=1e-3)
 
 
 if __name__ == '__main__':
