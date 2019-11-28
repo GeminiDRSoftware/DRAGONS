@@ -16,19 +16,27 @@ from astropy.io.fits import ImageHDU
 import numpy as np
 
 try:
-    from astropy.nddata import VarianceUncertainty
+    from astropy.nddata import (VarianceUncertainty, NDUncertainty,
+                                IncompatibleUncertaintiesException)
 except ImportError:
-    from .nduncertainty import VarianceUncertainty
+    from .nduncertainty import (VarianceUncertainty, NDUncertainty,
+                                IncompatibleUncertaintiesException)
 
 __all__ = ['NDAstroData']
 
 
 class ADVarianceUncertainty(VarianceUncertainty):
     def __init__(self, array=None, copy=True, unit=None):
-        if np.any(array < 0):
-            warnings.warn("Negative variance values found. Setting to zero.",
-                          RuntimeWarning)
-            array = np.where(array >= 0., array, 0.)
+        if array is not None:
+            if isinstance(array, NDUncertainty):
+                if array.uncertainty_type != self.uncertainty_type:
+                    raise IncompatibleUncertaintiesException
+                array = array.array
+
+            if array is not None and np.any(array < 0):
+                warnings.warn("Negative variance values found. Setting "
+                              "to zero.", RuntimeWarning)
+                array = np.where(array >= 0., array, 0.)
 
         super(VarianceUncertainty, self).__init__(array=array, copy=copy,
                                                   unit=unit)
