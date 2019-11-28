@@ -303,8 +303,11 @@ class Standardize(PrimitivesBASE):
 
         Parameters
         ----------
+        adinputs : None or list
+            Input files that will be prepared. If `None`, it runs on the
+            list of AstroData objects in the main stream.
         suffix: str
-            suffix to be added to output files
+            Suffix to be added to output files (Default: "_prepared").
         """
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
