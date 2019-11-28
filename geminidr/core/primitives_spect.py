@@ -555,44 +555,20 @@ class Spect(PrimitivesBASE):
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
-        This primitive determines the wavelength solution for an ARC and
-        stores it as an attached `.WAVECAL` table.
+        Determines the wavelength solution for an ARC and stores it as an
+        attached `.WAVECAL` :class:`~astropy.table.Table`.
 
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
-        matched to an arc line list, using the `KDTreeFitter`.
+        matched to an arc line list, using :class:`~gempy.library.matching.KDTreeFitter`.
 
-        For each `AstroData` object and for each extension within it, this
-        primitive contains the following bigger steps:
+        The `.WAVECAL` table contains four columns:
+            ["name", "coefficients", "peaks", "wavelengths"]
 
-        - Read Arc Lines;
-
-        - Extract 1D spectrum;
-
-        - Mask data skipping non-linear or saturated lines;
-
-        - Use known central wavelength to calculate wavelength range and
-          dispersion;
-
-        - Estimate line widths to be used on peak detection;
-
-        - Detect peaks using Continuous Wavelet Transform;
-
-        - Create weight dictionary with different types of weights
-          (intensity/flux);
-
-        - Create iteration sequence with different weights methods;
-
-        - Create 0th iteration using a 1D Chebyshev model;
-
-        - Fit iteration using `KDTreeFitter`;
-
-        - Matching using `Chebyshev1DMatchBox`;
-
-        - Convert model into dictionary and, then, into a Table;
-
-        - Store solution as a Table.
-
+        The `name` and the `coefficients` columns contain information to
+        re-create an Chebyshev1D object. The `peaks` column contains the position
+        of the lines that were matched to the cathalog, and the `wavelengths`
+        column contains the wavelengths that were matched to that line.
 
         Parameters
         ----------
@@ -600,32 +576,35 @@ class Spect(PrimitivesBASE):
         adinputs : list of :class:`~astrodata.AstroData`
              Mosaicked Arc data as 2D spectral images or 1D spectra.
 
-        suffix : str
-            Suffix to be added to output files.
+        suffix : str, optional
+            Suffix to be added to output files
+            (default: "_wavelengthSolutionDetermined").
 
-        center : int or None
+        center : None or int, optional
             Central row/column for 1D extraction (None => use middle).
 
-        nsum : int
-            Number of rows/columns to average.
+        nsum : int, optional
+            Number of rows/columns to average (default: 10).
 
-        order : int
-            Order of Chebyshev fitting function.
+        order : int, optional
+            Order of Chebyshev fitting function (default: 2).
 
-        min_snr : float
-            Minimum S/N ratio in line peak to be used in fitting.
+        min_snr : float, optional
+            Minimum S/N ratio in line peak to be used in fitting (default: 10).
 
-        fwidth : float
-            Expected width of arc lines in pixels.
+        fwidth : None or float, optional
+            Expected width of arc lines in pixels. The default is None. In this
+            case, `fwidth` is determined using `tracing.estimate_peak_width`.
 
-        linelist : str or None
-            Name of file containing arc lines.
+        linelist : None or str, optional
+            Name of file containing arc lines. If None, then a default look-up
+            table will be used.
 
         weighting : {'none', 'natural', 'relative'}
             How to weight the detected peaks.
 
         nbright : int
-            Number of brightest lines to cull before fitting.
+            Number of brightest lines to cull before fitting (default: 0).
 
         Returns
         -------
