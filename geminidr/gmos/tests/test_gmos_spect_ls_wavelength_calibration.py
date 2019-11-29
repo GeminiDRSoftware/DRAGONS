@@ -114,7 +114,7 @@ reference_files = [
 
 
 @pytest.fixture(scope="module")
-def ad(request, path_to_inputs, tmp_path_factory):
+def ad(request, path_to_inputs, path_to_outputs):
     """
     Loads existing input FITS files as AstroData objects, runs the
     `determineWavelengthSolution` on it and return the output object with a
@@ -135,9 +135,9 @@ def ad(request, path_to_inputs, tmp_path_factory):
     path_to_inputs : fixture
         Custom fixture defined in `astrodata.testing` containing the path to the
         cached input files.
-    tmp_path_factory : fixture
-        PyTest's built-in session-scoped fixture that creates a temporary
-        directory. It can be set using `--basetemp=mydir` command line argument.
+    path_to_outputs : fixture
+        Custom fixture defined in `astrodata.testing` containing the path to the
+        output folder.
 
     Returns
     -------
@@ -183,12 +183,10 @@ def ad(request, path_to_inputs, tmp_path_factory):
 
     if request.session.testsfailed > tests_failed_before_module:
 
-        tmp_path = tmp_path_factory.getbasetemp()
+        _dir = os.path.join(path_to_outputs, os.path.dirname(request.param))
+        os.makedirs(_dir, exist_ok=True)
 
-        _dir = tmp_path / os.path.dirname(request.param)
-        _dir.mkdir(parents=True, exist_ok=True)
-
-        fname_out = _dir / ad_out.filename
+        fname_out = os.path.join(_dir, ad_out.filename)
         ad_out.write(filename=fname_out)
 
     del ad_out

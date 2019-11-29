@@ -4,9 +4,11 @@ Fixtures to be used in tests in DRAGONS
 """
 
 import os
-import pytest
 import shutil
 import warnings
+from pathlib import Path
+
+import pytest
 from astropy.utils.data import download_file
 
 URL = 'https://archive.gemini.edu/file/'
@@ -67,7 +69,6 @@ def assert_have_same_distortion(ad, ad_ref):
     from numpy.testing import assert_allclose
 
     for ext, ext_ref in zip(ad, ad_ref):
-
         distortion = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
         distortion = dict_to_chebyshev(distortion)
 
@@ -113,7 +114,6 @@ def assert_wavelength_solutions_are_close(ad, ad_ref):
     from numpy.testing import assert_allclose
 
     for ext, ext_ref in zip(ad, ad_ref):
-
         assert hasattr(ext, "WAVECAL")
         wcal = dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
         wcal = dict_to_chebyshev(wcal)
@@ -195,7 +195,7 @@ def path_to_refs():
 
 
 @pytest.fixture(scope='session')
-def path_to_outputs():
+def path_to_outputs(request, tmp_path_factory):
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_OUTPUTS
     where output data will be stored during the tests.
@@ -209,20 +209,26 @@ def path_to_outputs():
 
     Returns
     -------
-        str : path to the output data
+    :class:`~pathlib.Path`
+        Path to the output data.
     """
-    try:
-        path = os.path.expanduser(os.environ['DRAGONS_TEST_OUTPUTS'])
-    except KeyError:
-        warnings.warn("Could not find environment variable: $DRAGONS_TEST_OUTPUTS"
-                      "\n Using current working directory")
-        path = os.getcwd()
+    cache_path = os.getenv('DRAGONS_TEST_OUTPUTS')
+
+    if request.config.getoption('--basetemp'):
+        path = tmp_path_factory.mktemp('dragons_tests_')
+
+    elif cache_path:
+        path = Path(os.path.expanduser(cache_path))
+
+    else:
+        warnings.warn(
+            "Could not find environment variable: $DRAGONS_TEST_OUTPUTS"
+            "\n Using current working directory")
+        path = Path(os.getcwd())
 
     if not os.path.exists(path):
-        warnings.warn(
-            "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
-            "{}".format(path) +
-            "\n Using current working directory")
-        path = os.getcwd()
+        raise IOError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
+                      "{}".format(path) +
+                      "\n Using current working directory")
 
     return path
