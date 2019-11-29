@@ -39,13 +39,13 @@ input_files = [
     # "process_arcs/GMOS/N20170627S0116_mosaic.fits",  # B1200:0.520 HAM
     # "process_arcs/GMOS/N20100830S0594_mosaic.fits",  # R150:0.500 EEV
     # "process_arcs/GMOS/N20100702S0321_mosaic.fits",  # R150:0.700 EEV
-    # # "process_arcs/GMOS/N20130606S0291_mosaic.fits",  # R150:0.550 E2V - todo: test_determine_distortion fails
+    # "process_arcs/GMOS/N20130606S0291_mosaic.fits",  # R150:0.550 E2V - todo: test_determine_distortion fails
     # "process_arcs/GMOS/N20130112S0574_mosaic.fits",  # R150:0.700 E2V
-    # # 'process_arcs/GMOS/N20130809S0337_mosaic.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
-    # # "process_arcs/GMOS/N20140408S0218_mosaic.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.51)
-    # # 'process_arcs/GMOS/N20180119S0232_mosaic.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.73)
-    # # 'process_arcs/GMOS/N20180516S0214_mosaic.fits',  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
-    # # "process_arcs/GMOS/N20171007S0439_mosaic.fits",  # R150:0.650 HAM - todo: breaks test_reduced_arcs_contains_stable_wavelength_solution
+    # 'process_arcs/GMOS/N20130809S0337_mosaic.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
+    # "process_arcs/GMOS/N20140408S0218_mosaic.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.51)
+    # 'process_arcs/GMOS/N20180119S0232_mosaic.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.73)
+    # 'process_arcs/GMOS/N20180516S0214_mosaic.fits',  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
+    # "process_arcs/GMOS/N20171007S0439_mosaic.fits",  # R150:0.650 HAM - todo: breaks test_reduced_arcs_contains_stable_wavelength_solution
     # "process_arcs/GMOS/N20171007S0441_mosaic.fits",  # R150:0.650 HAM
     # "process_arcs/GMOS/N20101212S0213_mosaic.fits",  # R400:0.550 EEV
     # "process_arcs/GMOS/N20100202S0214_mosaic.fits",  # R400:0.700 EEV
@@ -61,12 +61,12 @@ input_files = [
     # "process_arcs/GMOS/N20130830S0291_mosaic.fits",  # R831:0.845 E2V
     # "process_arcs/GMOS/N20170910S0009_mosaic.fits",  # R831:0.653 HAM
     # "process_arcs/GMOS/N20170509S0682_mosaic.fits",  # R831:0.750 HAM
-    # # 'process_arcs/GMOS/N20181114S0512_mosaic.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.52) | `gswavelength` cannot find solution either.
+    # 'process_arcs/GMOS/N20181114S0512_mosaic.fits',  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.52) | `gswavelength` cannot find solution either.
     # "process_arcs/GMOS/N20170416S0058_mosaic.fits",  # R831:0.865 HAM
     # "process_arcs/GMOS/N20170416S0081_mosaic.fits",  # R831:0.865 HAM
     # "process_arcs/GMOS/N20180120S0315_mosaic.fits",  # R831:0.865 HAM
     # # # Process Arcs: GMOS-S ---
-    # # 'process_arcs/GMOS/S20130218S0126_mosaic.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution() | `gswavelength` cannot find solution either.
+    # 'process_arcs/GMOS/S20130218S0126_mosaic.fits',  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution() | `gswavelength` cannot find solution either.
     # "process_arcs/GMOS/S20130111S0278_mosaic.fits",  # B600:0.520 EEV
     # "process_arcs/GMOS/S20130114S0120_mosaic.fits",  # B600:0.500 EEV
     # "process_arcs/GMOS/S20130216S0243_mosaic.fits",  # B600:0.480 EEV
@@ -84,20 +84,20 @@ input_files = [
     # "process_arcs/GMOS/S20171219S0117_mosaic.fits",  # B1200:0.440 HAM
     # "process_arcs/GMOS/S20170908S0189_mosaic.fits",  # B1200:0.550 HAM
     # "process_arcs/GMOS/S20131230S0153_mosaic.fits",  # R150:0.550 EEV
-    # # "process_arcs/GMOS/S20130801S0140_mosaic.fits",  # R150:0.700 EEV - todo: RMS > 0.5 (RMS = 0.69)
-    # # "process_arcs/GMOS/S20170430S0060_mosaic.fits",  # R150:0.717 HAM - todo: RMS > 0.5 (RMS = 0.78)
-    # # "process_arcs/GMOS/S20170430S0063_mosaic.fits",  # R150:0.727 HAM - todo: RMS > 0.5 (RMS = 1.26)
+    # "process_arcs/GMOS/S20130801S0140_mosaic.fits",  # R150:0.700 EEV - todo: RMS > 0.5 (RMS = 0.69)
+    # "process_arcs/GMOS/S20170430S0060_mosaic.fits",  # R150:0.717 HAM - todo: RMS > 0.5 (RMS = 0.78)
+    # "process_arcs/GMOS/S20170430S0063_mosaic.fits",  # R150:0.727 HAM - todo: RMS > 0.5 (RMS = 1.26)
     # "process_arcs/GMOS/S20171102S0051_mosaic.fits",  # R150:0.950 HAM
     # "process_arcs/GMOS/S20130114S0100_mosaic.fits",  # R400:0.620 EEV
     # "process_arcs/GMOS/S20130217S0073_mosaic.fits",  # R400:0.800 EEV
-    # # "process_arcs/GMOS/S20170108S0046_mosaic.fits",  # R400:0.550 HAM - todo: RMS > 0.5 (RMS = 0.60)
+    # "process_arcs/GMOS/S20170108S0046_mosaic.fits",  # R400:0.550 HAM - todo: RMS > 0.5 (RMS = 0.60)
     # "process_arcs/GMOS/S20170129S0125_mosaic.fits",  # R400:0.685 HAM
     # "process_arcs/GMOS/S20170703S0199_mosaic.fits",  # R400:0.800 HAM
     # "process_arcs/GMOS/S20170718S0420_mosaic.fits",  # R400:0.910 HAM
-    # # 'process_arcs/GMOS/S20100306S0460_mosaic.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
-    # # 'process_arcs/GMOS/S20101218S0139_mosaic.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    # 'process_arcs/GMOS/S20100306S0460_mosaic.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    # 'process_arcs/GMOS/S20101218S0139_mosaic.fits',  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
     # "process_arcs/GMOS/S20110306S0294_mosaic.fits",  # R600:0.675 EEV
-    # # 'process_arcs/GMOS/S20110720S0236_mosaic.fits',  # R600:0.675 EEV - todo: test_determine_distortion fails
+    # 'process_arcs/GMOS/S20110720S0236_mosaic.fits',  # R600:0.675 EEV - todo: test_determine_distortion fails
     # "process_arcs/GMOS/S20101221S0090_mosaic.fits",  # R600:0.690 EEV
     # "process_arcs/GMOS/S20120322S0122_mosaic.fits",  # R600:0.900 EEV
     # "process_arcs/GMOS/S20130803S0011_mosaic.fits",  # R831:0.576 EEV
@@ -116,7 +116,10 @@ reference_files = [
 @pytest.fixture(scope="module")
 def ad(request, path_to_inputs, tmp_path_factory):
     """
-    Loads existing input FITS files as AstroData objects.
+    Loads existing input FITS files as AstroData objects, runs the
+    `determineWavelengthSolution` on it and return the output object with a
+    `.WAVECAL` table. This makes tests more efficient because the primitive is
+    run only once, instead of x n_tests.
 
     If the input file does not exist, this fixture raises a IOError.
 
@@ -208,6 +211,12 @@ def ad_ref(request, path_to_refs):
     -------
     AstroData
         Object containing Wavelength Solution table.
+
+    Raises
+    ------
+    IOError
+        If the reference file does not exist. It should be created and verified
+        manually.
     """
     fname = os.path.join(path_to_refs, request.param)
 
@@ -217,7 +226,7 @@ def ad_ref(request, path_to_refs):
     return astrodata.open(fname)
 
 
-def preprocess_data(ad, working_dir):
+def preprocess_data(ad, path):
     """
     Recipe used to generate input data for Wavelength Calibration tests. It is
     called only if the input data do not exist and if `--force-preprocess-data`
@@ -227,7 +236,7 @@ def preprocess_data(ad, working_dir):
     ----------
     ad : AstroData
         Input raw arc data loaded as AstroData.
-    working_dir : str
+    path : str
         Path that points to where the input data is cached.
 
     Returns
@@ -237,10 +246,6 @@ def preprocess_data(ad, working_dir):
     """
     _p = primitives_gmos_spect.GMOSSpect([ad])
 
-    # Does DRAGONS have a better way to write files to another output folder?
-    cwd = os.getcwd()
-    os.chdir(working_dir)
-
     _p.prepare()
     _p.addDQ(static_bpm=None)
     _p.addVAR(read_noise=True)
@@ -248,10 +253,9 @@ def preprocess_data(ad, working_dir):
     _p.ADUToElectrons()
     _p.addVAR(poisson_noise=True)
     _p.mosaicDetectors()
-    _p.makeIRAFCompatible()
-    ad = _p.writeOutputs()[0]
+    ad = _p.makeIRAFCompatible()[0]
 
-    os.chdir(cwd)
+    _p.writeOutputs(outfilename=os.path.join(path, ad.filename))
 
     return ad
 
