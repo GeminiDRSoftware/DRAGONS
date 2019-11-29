@@ -225,6 +225,8 @@ def path_to_outputs(request, tmp_path_factory):
             "Could not find environment variable: $DRAGONS_TEST_OUTPUTS"
             "\n Using current working directory")
         path = Path(os.getcwd())
+        path = path / "dragons_tests"
+        path.mkdir(exist_ok=True, parents=True)
 
     if not os.path.exists(path):
         raise IOError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "

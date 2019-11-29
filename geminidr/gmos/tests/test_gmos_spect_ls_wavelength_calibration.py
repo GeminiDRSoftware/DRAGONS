@@ -4,10 +4,8 @@ Tests related to GMOS Long-slit Spectroscopy Arc primitives.
 
 Notes
 -----
-
-    - The `indirect` argument on `@pytest.mark.parametrize` fixture forces the
-      `ad_in` to be called.
-
+- The `indirect` argument on `@pytest.mark.parametrize` fixture forces the
+  `ad` and `ad_ref` fixtures to be called and the AstroData object returned.
 """
 import os
 
@@ -26,7 +24,7 @@ from gempy.utils import logutils
 
 input_files = [
     # Process Arcs: GMOS-N ---
-    "process_arcs/GMOS/N20100115S0346_mosaic.fits",  # B600:0.500 EEV
+    # "process_arcs/GMOS/N20100115S0346_mosaic.fits",  # B600:0.500 EEV
     # "process_arcs/GMOS/N20130112S0390_mosaic.fits",  # B600:0.500 E2V
     # "process_arcs/GMOS/N20170609S0173_mosaic.fits",  # B600:0.500 HAM
     # "process_arcs/GMOS/N20170403S0452_mosaic.fits",  # B600:0.590 HAM Full Frame 1x1
@@ -41,7 +39,7 @@ input_files = [
     # "process_arcs/GMOS/N20100702S0321_mosaic.fits",  # R150:0.700 EEV
     # "process_arcs/GMOS/N20130606S0291_mosaic.fits",  # R150:0.550 E2V - todo: test_determine_distortion fails
     # "process_arcs/GMOS/N20130112S0574_mosaic.fits",  # R150:0.700 E2V
-    # 'process_arcs/GMOS/N20130809S0337_mosaic.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
+    'process_arcs/GMOS/N20130809S0337_mosaic.fits',  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
     # "process_arcs/GMOS/N20140408S0218_mosaic.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.51)
     # 'process_arcs/GMOS/N20180119S0232_mosaic.fits',  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.73)
     # 'process_arcs/GMOS/N20180516S0214_mosaic.fits',  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
@@ -183,11 +181,12 @@ def ad(request, path_to_inputs, path_to_outputs):
 
     if request.session.testsfailed > tests_failed_before_module:
 
-        _dir = os.path.join(path_to_outputs, os.path.dirname(request.param))
-        os.makedirs(_dir, exist_ok=True)
+        _dir = path_to_outputs / os.path.dirname(request.param)
+        _dir.mkdir(parents=True, exist_ok=True)
 
-        fname_out = os.path.join(_dir, ad_out.filename)
+        fname_out = _dir / ad_out.filename
         ad_out.write(filename=fname_out)
+        print('\n Saved file to:\n  {}\n'.format(fname_out))
 
     del ad_out
 
@@ -259,22 +258,18 @@ def preprocess_data(ad, path):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_log(tmp_path_factory):
+def setup_log(path_to_outputs):
     """
     Fixture that setups DRAGONS' logging system to avoid duplicated outputs.
 
     Parameters
     ----------
-    tmp_path_factory : fixture
-        PyTest's built-in session-scoped fixture that creates a temporary
-        directory. It can be set using `--basetemp=mydir` command line argument.
+    path_to_outputs : fixture
+        Custom fixture defined in `astrodata.testing` containing the path to the
+        output folder.
     """
-    tmp_path = tmp_path_factory.getbasetemp()
-
-    log_file = os.path.join(
-        tmp_path,
-        "{}.log".format(os.path.splitext(os.path.basename(__file__))[0]),
-    )
+    log_file = "{}.log".format(os.path.splitext(os.path.basename(__file__))[0])
+    log_file = path_to_outputs / log_file
 
     logutils.config(mode="standard", file_name=log_file)
 
