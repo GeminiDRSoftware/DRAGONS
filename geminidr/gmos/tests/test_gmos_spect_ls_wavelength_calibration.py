@@ -187,7 +187,7 @@ def ad(request, path_to_inputs, path_to_outputs):
 
     if request.session.testsfailed > tests_failed_before_module:
         fname_out = _dir / ad_out.filename
-        ad_out.write(filename=fname_out)
+        ad_out.write(filename=fname_out, overwrite=True)
         print('\n Saved file to:\n  {}\n'.format(fname_out))
 
     del ad_out
