@@ -131,7 +131,7 @@ class PlotGmosSpectLongslitArcs:
         Path to where the plots will be saved.
     """
 
-    def __init__(self, ad, output_folder, ref_folder):
+    def __init__(self, ad, output_folder, ref_folder=None):
 
         filename = ad.filename
         self.ad = ad

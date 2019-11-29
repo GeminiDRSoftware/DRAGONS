@@ -197,36 +197,27 @@ def path_to_refs():
 @pytest.fixture(scope='session')
 def path_to_outputs(request, tmp_path_factory):
     """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST_OUTPUTS
-    where output data will be stored during the tests.
+    PyTest fixture that creates a temporary folder to save tests ouputs.
 
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, it also marks the
-    test to be skipped.
-
-    The skip reason changes depending on which situation causes it to be skipped.
+    This output folder can be override via $DRAGONS_TEST_OUTPUTS environment
+    variable or via `--basetemp` argument.
 
     Returns
     -------
     :class:`~pathlib.Path`
         Path to the output data.
+
+    Raises
+    ------
+    IOError
+        If output path does not exits.
     """
-    cache_path = os.getenv('DRAGONS_TEST_OUTPUTS')
+    path = tmp_path_factory.mktemp('dragons_tests')
 
-    if request.config.getoption('--basetemp'):
-        path = tmp_path_factory.mktemp('dragons_tests_')
+    if os.getenv('DRAGONS_TEST_OUTPUTS'):
+        path = Path(os.path.expanduser(os.getenv('DRAGONS_TEST_OUTPUTS')))
 
-    elif cache_path:
-        path = Path(os.path.expanduser(cache_path))
-
-    else:
-        warnings.warn(
-            "Could not find environment variable: $DRAGONS_TEST_OUTPUTS"
-            "\n Using current working directory")
-        path = Path(os.getcwd())
-        path = path / "dragons_tests"
-        path.mkdir(exist_ok=True, parents=True)
+    path.mkdir(exist_ok=True, parents=True)
 
     if not os.path.exists(path):
         raise IOError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
