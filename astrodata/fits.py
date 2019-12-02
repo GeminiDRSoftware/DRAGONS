@@ -372,8 +372,7 @@ def wcs_to_asdftablehdu(wcs, extver=None):
 
 def asdftablehdu_to_wcs(hdu):
     """
-    Recreate a gWCS object from its serialization in a FITS TableHDU (ASCII)
-    extension.
+    Recreate a gWCS object from its serialization in a FITS table extension.
 
     Returns None (issuing a warning) if the extension cannot be parsed, so
     the rest of the file can still be read.
@@ -381,7 +380,7 @@ def asdftablehdu_to_wcs(hdu):
 
     ver = hdu.header.get('EXTVER', -1)
 
-    if isinstance(hdu, TableHDU):
+    if isinstance(hdu, (TableHDU, BinTableHDU)):
         try:
             colarr = hdu.data['gWCS']
         except KeyError:
