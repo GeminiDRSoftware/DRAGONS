@@ -51,7 +51,7 @@ input_files = [
     "process_arcs/GMOS/N20170108S0210_mosaic.fits",  # R400:0.660 HAM
     "process_arcs/GMOS/N20171113S0135_mosaic.fits",  # R400:0.750 HAM
     "process_arcs/GMOS/N20100427S1276_mosaic.fits",  # R600:0.675 EEV
-    "process_arcs/GMOS/N20180120S0417_mosaic.fits",  # R600:0.860 HAM - todo: RMS > 0.5 (RMS = 0.58)
+    # "process_arcs/GMOS/N20180120S0417_mosaic.fits",  # R600:0.860 HAM - todo: RMS > 0.5 (RMS = 0.58)
     "process_arcs/GMOS/N20100212S0143_mosaic.fits",  # R831:0.450 EEV
     "process_arcs/GMOS/N20100720S0247_mosaic.fits",  # R831:0.850 EEV
     "process_arcs/GMOS/N20130808S0490_mosaic.fits",  # R831:0.571 E2V
