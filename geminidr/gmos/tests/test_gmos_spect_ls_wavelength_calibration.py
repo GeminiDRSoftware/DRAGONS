@@ -180,13 +180,13 @@ def ad(request, path_to_inputs, path_to_outputs):
 
     yield ad_out
 
-    _dir = path_to_outputs / os.path.dirname(request.param)
-    _dir.mkdir(parents=True, exist_ok=True)
+    _dir = os.path.join(path_to_outputs, os.path.dirname(request.param))
+    os.makedirs(_dir, exist_ok=True)
 
     do_plots(ad_out, _dir)
 
     if request.session.testsfailed > tests_failed_before_module:
-        fname_out = _dir / ad_out.filename
+        fname_out = os.path.join(_dir, ad_out.filename)
         ad_out.write(filename=fname_out, overwrite=True)
         print('\n Saved file to:\n  {}\n'.format(fname_out))
 
@@ -289,7 +289,7 @@ def setup_log(path_to_outputs):
         output folder.
     """
     log_file = "{}.log".format(os.path.splitext(os.path.basename(__file__))[0])
-    log_file = path_to_outputs / log_file
+    log_file = os.path.join(path_to_outputs, log_file)
 
     logutils.config(mode="standard", file_name=log_file)
 
