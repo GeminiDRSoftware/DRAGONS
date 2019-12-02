@@ -5,7 +5,6 @@ Fixtures to be used in tests in DRAGONS
 
 import os
 import shutil
-import warnings
 from pathlib import Path
 
 import pytest
@@ -178,24 +177,21 @@ def path_to_refs():
     -------
         str : path to the reference data
     """
-    try:
-        path = os.path.expanduser(os.environ['DRAGONS_TEST_REFS'])
-    except KeyError:
-        pytest.skip(
-            "Could not find environment variable: $DRAGONS_TEST_REFS")
+    path = os.path.expanduser(os.getenv('DRAGONS_TEST_REFS')).strip()
 
-    # noinspection PyUnboundLocalVariable
+    if not path:
+        raise ValueError("Could not find environment variable: \n"
+                         "  $DRAGONS_TEST_REFS")
+
     if not os.path.exists(path):
-        pytest.skip(
-            "Could not access path stored in $DRAGONS_TEST_REFS: "
-            "{}".format(path)
-        )
+        raise IOError("Could not access path stored in $DRAGONS_TEST_REFS: \n"
+                      "  {}".format(path))
 
     return path
 
 
 @pytest.fixture(scope='session')
-def path_to_outputs(request, tmp_path_factory):
+def path_to_outputs(tmp_path_factory):
     """
     PyTest fixture that creates a temporary folder to save tests ouputs.
 
@@ -204,7 +200,7 @@ def path_to_outputs(request, tmp_path_factory):
 
     Returns
     -------
-    :class:`~pathlib.Path`
+    str
         Path to the output data.
 
     Raises
@@ -224,4 +220,4 @@ def path_to_outputs(request, tmp_path_factory):
                       "{}".format(path) +
                       "\n Using current working directory")
 
-    return path
+    return str(path)  # todo: should astrodata be compatible with pathlib?
