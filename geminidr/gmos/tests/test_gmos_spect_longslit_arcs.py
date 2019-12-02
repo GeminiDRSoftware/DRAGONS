@@ -219,6 +219,7 @@ class ConfigTest:
         return _p
 
 
+@pytest.mark.skip(reason="WIP: refactoring tests to become independent")
 @pytest.mark.gmosls
 class TestGmosSpectLongslitArcs:
     """
