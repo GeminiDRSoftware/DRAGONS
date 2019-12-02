@@ -51,7 +51,7 @@ input_files = [
     "process_arcs/GMOS/N20170108S0210_mosaic.fits",  # R400:0.660 HAM
     "process_arcs/GMOS/N20171113S0135_mosaic.fits",  # R400:0.750 HAM
     "process_arcs/GMOS/N20100427S1276_mosaic.fits",  # R600:0.675 EEV
-    "process_arcs/GMOS/N20180120S0417_mosaic.fits",  # R600:0.860 HAM
+    "process_arcs/GMOS/N20180120S0417_mosaic.fits",  # R600:0.860 HAM - todo: RMS > 0.5 (RMS = 0.58)
     "process_arcs/GMOS/N20100212S0143_mosaic.fits",  # R831:0.450 EEV
     "process_arcs/GMOS/N20100720S0247_mosaic.fits",  # R831:0.850 EEV
     "process_arcs/GMOS/N20130808S0490_mosaic.fits",  # R831:0.571 E2V
@@ -80,7 +80,7 @@ input_files = [
     "process_arcs/GMOS/S20170730S0155_mosaic.fits",  # B1200:0.440 HAM
     "process_arcs/GMOS/S20171219S0117_mosaic.fits",  # B1200:0.440 HAM
     "process_arcs/GMOS/S20170908S0189_mosaic.fits",  # B1200:0.550 HAM
-    "process_arcs/GMOS/S20131230S0153_mosaic.fits",  # R150:0.550 EEV - todo: wavelength solution not stable
+    # "process_arcs/GMOS/S20131230S0153_mosaic.fits",  # R150:0.550 EEV - todo: wavelength solution not stable
     # "process_arcs/GMOS/S20130801S0140_mosaic.fits",  # R150:0.700 EEV - todo: RMS > 0.5 (RMS = 0.69)
     # "process_arcs/GMOS/S20170430S0060_mosaic.fits",  # R150:0.717 HAM - todo: RMS > 0.5 (RMS = 0.78)
     # "process_arcs/GMOS/S20170430S0063_mosaic.fits",  # R150:0.727 HAM - todo: RMS > 0.5 (RMS = 1.26)
