@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
 Plots related to GMOS Long-slit Spectroscopy Arc primitives.
+
+todo @bquint: Needs clean up. Since I started to refactor the tests for GMOS LS
+ arcs, this could be much simpler.
 """
 
 import glob
