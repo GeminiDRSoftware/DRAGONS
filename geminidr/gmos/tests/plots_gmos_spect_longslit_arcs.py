@@ -28,6 +28,8 @@ from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
 from gempy.library import transform
 
+plt.ioff()
+
 
 def generate_fake_data(shape, dispersion_axis, n_lines=100):
     """
