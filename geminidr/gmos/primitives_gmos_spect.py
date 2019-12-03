@@ -256,7 +256,7 @@ class GMOSSpect(Spect, GMOS):
                             log.warning(msg)
                     log.fullinfo("Mean relative QE of EXTVER {} is {:.5f}".
                                  format(ext.hdr['EXTVER'], qe_correction.mean()))
-                    ext.divide(qe_correction)  # Apparently!
+                    ext.multiply(qe_correction)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
