@@ -1238,9 +1238,11 @@ class Spect(PrimitivesBASE):
                 for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix-1], c0=loc)
                     model_dict = astromodels.chebyshev_to_dict(cheb)
-                    model_dict['aper_lower'] = limits[0] - loc
-                    model_dict['aper_upper'] = limits[1] - loc
+                    lower, upper = limits - loc
+                    model_dict['aper_lower'] = lower
+                    model_dict['aper_upper'] = upper
                     all_model_dicts.append(model_dict)
+                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
 
                 aptable = Table([np.arange(len(locations))+1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
