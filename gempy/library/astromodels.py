@@ -162,7 +162,7 @@ class Rotate2D(FittableModel):
 
 
 class UnivariateSplineWithOutlierRemoval(object):
-    def __new__(self, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
+    def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=False, outlier_func=sigma_clip,
                 niter=3, grow=0, **outlier_kwargs):
         """
@@ -211,11 +211,11 @@ class UnivariateSplineWithOutlierRemoval(object):
         spline_kwargs = {'bbox': bbox, 'k': k, 'ext': ext,
                          'check_finite': check_finite}
         if order is None:
-            cls = UnivariateSpline
+            cls_ = UnivariateSpline
             spline_args = ()
             spline_kwargs['s'] = s
         elif s is None:
-            cls = LSQUnivariateSpline
+            cls_ = LSQUnivariateSpline
         else:
             raise ValueError("Both t and s have been specified")
 
@@ -247,7 +247,7 @@ class UnivariateSplineWithOutlierRemoval(object):
                 spline_args = (knots,)
 
             # Create appropriate spline object using current mask
-            instance = object.__new__(cls)
+            instance = object.__new__(cls_)
             try:
                 instance.__init__(x[~full_mask], y[~full_mask],
                                   *spline_args, w=None if w is None else w[~full_mask], **spline_kwargs)
