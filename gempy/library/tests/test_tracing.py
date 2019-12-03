@@ -63,6 +63,28 @@ def test_find_peaks():
     np.testing.assert_allclose(peaks_detected, peaks, atol=0.5)
 
 
+@pytest.mark.parametrize("noise", np.arange(0, 0.5, 0.1))
+def test_find_peaks_with_noise(noise):
+    x = np.arange(0, 3200)
+    y = np.zeros_like(x, dtype=float)
+    n_peaks = 20
+
+    stddev = 4.
+    peaks = np.linspace(
+        x.min() + 0.05 * x.ptp(), x.max() - 0.05 * x.ptp(), n_peaks)
+
+    for x0 in peaks:
+        g = models.Gaussian1D(mean=x0, stddev=stddev)
+        y += g(x)
+
+    np.random.seed(0)
+    y += (np.random.random(x.size) - 0.5) * noise
+
+    peaks_detected, _ = tracing.find_peaks(y, np.ones_like(y) * stddev)
+
+    np.testing.assert_allclose(peaks_detected, peaks, atol=1)
+
+
 def test_find_peaks_raises_typeerror_if_mask_is_wrong_type():
     x = np.arange(0, 3200)
 
