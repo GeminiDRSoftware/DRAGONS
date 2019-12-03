@@ -55,7 +55,7 @@ class SelectionSet(collections.abc.MutableSet):
                         # invoke __getitem__ to ensure it's present
                         self._dict.__getitem__(v, at=at)
             except TypeError:
-                msg = "Value %s is of incorrect type %s. Sequence type expected"(value, _typeStr(value))
+                msg = "Value %s is of incorrect type %s. Sequence type expected" % (value, _typeStr(value))
                 raise FieldValidationError(self._field, self._config, msg)
             self._set = set(value)
         else:
