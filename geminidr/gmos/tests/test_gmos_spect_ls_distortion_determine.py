@@ -8,98 +8,99 @@ Notes
   `ad` and `ad_ref` fixtures to be called and the AstroData object returned.
 """
 import os
+from warnings import warn
 
 import numpy as np
 import pytest
+from astropy.modeling import models
+
 import astrodata
 import geminidr
-
 from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
-from warnings import warn
 
 input_files = [
     # Process Arcs: GMOS-N ---
     "process_arcs/GMOS/N20100115S0346_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
-    # "process_arcs/GMOS/N20130112S0390_wavelengthSolutionDetermined.fits",  # B600:0.500 E2V
-    # "process_arcs/GMOS/N20170609S0173_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM
-    # "process_arcs/GMOS/N20170403S0452_wavelengthSolutionDetermined.fits",  # B600:0.590 HAM Full Frame 1x1
-    # "process_arcs/GMOS/N20170415S0255_wavelengthSolutionDetermined.fits",  # B600:0.590 HAM Central Spectrum 1x1
-    # "process_arcs/GMOS/N20171016S0010_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
-    # "process_arcs/GMOS/N20171016S0127_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
+    "process_arcs/GMOS/N20130112S0390_wavelengthSolutionDetermined.fits",  # B600:0.500 E2V
+    "process_arcs/GMOS/N20170609S0173_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM
+    "process_arcs/GMOS/N20170403S0452_wavelengthSolutionDetermined.fits",  # B600:0.590 HAM Full Frame 1x1
+    "process_arcs/GMOS/N20170415S0255_wavelengthSolutionDetermined.fits",  # B600:0.590 HAM Central Spectrum 1x1
+    "process_arcs/GMOS/N20171016S0010_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
+    "process_arcs/GMOS/N20171016S0127_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
     # "process_arcs/GMOS/N20100307S0236_wavelengthSolutionDetermined.fits",  # B1200:0.445 EEV
-    # "process_arcs/GMOS/N20130628S0290_wavelengthSolutionDetermined.fits",  # B1200:0.420 E2V
-    # "process_arcs/GMOS/N20170904S0078_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
-    # "process_arcs/GMOS/N20170627S0116_wavelengthSolutionDetermined.fits",  # B1200:0.520 HAM
-    # # "process_arcs/GMOS/N20100830S0594_wavelengthSolutionDetermined.fits",  # R150:0.500 EEV - todo: wavelength solution not stable
-    # "process_arcs/GMOS/N20100702S0321_wavelengthSolutionDetermined.fits",  # R150:0.700 EEV
-    # "process_arcs/GMOS/N20130606S0291_wavelengthSolutionDetermined.fits",  # R150:0.550 E2V
-    # "process_arcs/GMOS/N20130112S0574_wavelengthSolutionDetermined.fits",  # R150:0.700 E2V
-    # # "process_arcs/GMOS/N20130809S0337_wavelengthSolutionDetermined.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
-    # # "process_arcs/GMOS/N20140408S0218_wavelengthSolutionDetermined.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.51)
-    # # "process_arcs/GMOS/N20180119S0232_wavelengthSolutionDetermined.fits",  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.73)
-    # # "process_arcs/GMOS/N20180516S0214_wavelengthSolutionDetermined.fits",  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
+    "process_arcs/GMOS/N20130628S0290_wavelengthSolutionDetermined.fits",  # B1200:0.420 E2V
+    "process_arcs/GMOS/N20170904S0078_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/N20170627S0116_wavelengthSolutionDetermined.fits",  # B1200:0.520 HAM
+    # "process_arcs/GMOS/N20100830S0594_wavelengthSolutionDetermined.fits",  # R150:0.500 EEV - todo: wavelength solution not stable
+    "process_arcs/GMOS/N20100702S0321_wavelengthSolutionDetermined.fits",  # R150:0.700 EEV
+    "process_arcs/GMOS/N20130606S0291_wavelengthSolutionDetermined.fits",  # R150:0.550 E2V
+    "process_arcs/GMOS/N20130112S0574_wavelengthSolutionDetermined.fits",  # R150:0.700 E2V
+    # "process_arcs/GMOS/N20130809S0337_wavelengthSolutionDetermined.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.59)
+    # "process_arcs/GMOS/N20140408S0218_wavelengthSolutionDetermined.fits",  # R150:0.700 E2V - todo: RMS > 0.5 (RMS = 0.51)
+    # "process_arcs/GMOS/N20180119S0232_wavelengthSolutionDetermined.fits",  # R150:0.520 HAM - todo: RMS > 0.5 (RMS = 0.73)
+    # "process_arcs/GMOS/N20180516S0214_wavelengthSolutionDetermined.fits",  # R150:0.610 HAM ROI="Central Spectrum", bin=2x2 - todo: fails test_distortion_model_is_the_same
     # "process_arcs/GMOS/N20171007S0439_wavelengthSolutionDetermined.fits",  # R150:0.650 HAM
     # "process_arcs/GMOS/N20171007S0441_wavelengthSolutionDetermined.fits",  # R150:0.650 HAM
     # "process_arcs/GMOS/N20101212S0213_wavelengthSolutionDetermined.fits",  # R400:0.550 EEV
-    # "process_arcs/GMOS/N20100202S0214_wavelengthSolutionDetermined.fits",  # R400:0.700 EEV
-    # "process_arcs/GMOS/N20130106S0194_wavelengthSolutionDetermined.fits",  # R400:0.500 E2V
-    # "process_arcs/GMOS/N20130422S0217_wavelengthSolutionDetermined.fits",  # R400:0.700 E2V
-    # "process_arcs/GMOS/N20170108S0210_wavelengthSolutionDetermined.fits",  # R400:0.660 HAM
-    # "process_arcs/GMOS/N20171113S0135_wavelengthSolutionDetermined.fits",  # R400:0.750 HAM
-    # "process_arcs/GMOS/N20100427S1276_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV
-    # "process_arcs/GMOS/N20180120S0417_wavelengthSolutionDetermined.fits",  # R600:0.860 HAM
-    # "process_arcs/GMOS/N20100212S0143_wavelengthSolutionDetermined.fits",  # R831:0.450 EEV
-    # "process_arcs/GMOS/N20100720S0247_wavelengthSolutionDetermined.fits",  # R831:0.850 EEV
-    # "process_arcs/GMOS/N20130808S0490_wavelengthSolutionDetermined.fits",  # R831:0.571 E2V
-    # "process_arcs/GMOS/N20130830S0291_wavelengthSolutionDetermined.fits",  # R831:0.845 E2V
-    # "process_arcs/GMOS/N20170910S0009_wavelengthSolutionDetermined.fits",  # R831:0.653 HAM
-    # "process_arcs/GMOS/N20170509S0682_wavelengthSolutionDetermined.fits",  # R831:0.750 HAM
-    # # "process_arcs/GMOS/N20181114S0512_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.52) | `gswavelength` cannot find solution either.
-    # "process_arcs/GMOS/N20170416S0058_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
-    # "process_arcs/GMOS/N20170416S0081_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
-    # "process_arcs/GMOS/N20180120S0315_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
-    # # # Process Arcs: GMOS-S ---
-    # # "process_arcs/GMOS/S20130218S0126_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution() | `gswavelength` cannot find solution either.
-    # "process_arcs/GMOS/S20130111S0278_wavelengthSolutionDetermined.fits",  # B600:0.520 EEV
-    # "process_arcs/GMOS/S20130114S0120_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
-    # "process_arcs/GMOS/S20130216S0243_wavelengthSolutionDetermined.fits",  # B600:0.480 EEV
-    # "process_arcs/GMOS/S20130608S0182_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
-    # "process_arcs/GMOS/S20131105S0105_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
-    # "process_arcs/GMOS/S20140504S0008_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
-    # "process_arcs/GMOS/S20170103S0152_wavelengthSolutionDetermined.fits",  # B600:0.600 HAM
-    # "process_arcs/GMOS/S20170108S0085_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM
-    # "process_arcs/GMOS/S20130510S0103_wavelengthSolutionDetermined.fits",  # B1200:0.450 EEV
-    # "process_arcs/GMOS/S20130629S0002_wavelengthSolutionDetermined.fits",  # B1200:0.525 EEV
-    # "process_arcs/GMOS/S20131123S0044_wavelengthSolutionDetermined.fits",  # B1200:0.595 EEV
-    # "process_arcs/GMOS/S20170116S0189_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM - todo: very weird non-linear plot | non-linear plot using `gswavelength` seems fine.
-    # "process_arcs/GMOS/S20170103S0149_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
-    # "process_arcs/GMOS/S20170730S0155_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
-    # "process_arcs/GMOS/S20171219S0117_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
-    # "process_arcs/GMOS/S20170908S0189_wavelengthSolutionDetermined.fits",  # B1200:0.550 HAM
-    # "process_arcs/GMOS/S20131230S0153_wavelengthSolutionDetermined.fits",  # R150:0.550 EEV - todo: wavelength solution not stable
-    # # "process_arcs/GMOS/S20130801S0140_wavelengthSolutionDetermined.fits",  # R150:0.700 EEV - todo: RMS > 0.5 (RMS = 0.69)
-    # # "process_arcs/GMOS/S20170430S0060_wavelengthSolutionDetermined.fits",  # R150:0.717 HAM - todo: RMS > 0.5 (RMS = 0.78)
-    # # "process_arcs/GMOS/S20170430S0063_wavelengthSolutionDetermined.fits",  # R150:0.727 HAM - todo: RMS > 0.5 (RMS = 1.26)
-    # "process_arcs/GMOS/S20171102S0051_wavelengthSolutionDetermined.fits",  # R150:0.950 HAM
-    # "process_arcs/GMOS/S20130114S0100_wavelengthSolutionDetermined.fits",  # R400:0.620 EEV
-    # "process_arcs/GMOS/S20130217S0073_wavelengthSolutionDetermined.fits",  # R400:0.800 EEV
-    # # "process_arcs/GMOS/S20170108S0046_wavelengthSolutionDetermined.fits",  # R400:0.550 HAM - todo: RMS > 0.5 (RMS = 0.60)
-    # "process_arcs/GMOS/S20170129S0125_wavelengthSolutionDetermined.fits",  # R400:0.685 HAM
-    # "process_arcs/GMOS/S20170703S0199_wavelengthSolutionDetermined.fits",  # R400:0.800 HAM
-    # "process_arcs/GMOS/S20170718S0420_wavelengthSolutionDetermined.fits",  # R400:0.910 HAM
-    # # "process_arcs/GMOS/S20100306S0460_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
-    # # "process_arcs/GMOS/S20101218S0139_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
-    # "process_arcs/GMOS/S20110306S0294_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV
-    # "process_arcs/GMOS/S20110720S0236_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV
-    # "process_arcs/GMOS/S20101221S0090_wavelengthSolutionDetermined.fits",  # R600:0.690 EEV
-    # "process_arcs/GMOS/S20120322S0122_wavelengthSolutionDetermined.fits",  # R600:0.900 EEV
-    # "process_arcs/GMOS/S20130803S0011_wavelengthSolutionDetermined.fits",  # R831:0.576 EEV
-    # "process_arcs/GMOS/S20130414S0040_wavelengthSolutionDetermined.fits",  # R831:0.845 EEV
-    # "process_arcs/GMOS/S20170214S0059_wavelengthSolutionDetermined.fits",  # R831:0.440 HAM
-    # "process_arcs/GMOS/S20170703S0204_wavelengthSolutionDetermined.fits",  # R831:0.600 HAM
-    # "process_arcs/GMOS/S20171018S0048_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
+    "process_arcs/GMOS/N20100202S0214_wavelengthSolutionDetermined.fits",  # R400:0.700 EEV
+    "process_arcs/GMOS/N20130106S0194_wavelengthSolutionDetermined.fits",  # R400:0.500 E2V
+    "process_arcs/GMOS/N20130422S0217_wavelengthSolutionDetermined.fits",  # R400:0.700 E2V
+    "process_arcs/GMOS/N20170108S0210_wavelengthSolutionDetermined.fits",  # R400:0.660 HAM
+    "process_arcs/GMOS/N20171113S0135_wavelengthSolutionDetermined.fits",  # R400:0.750 HAM
+    "process_arcs/GMOS/N20100427S1276_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV
+    "process_arcs/GMOS/N20180120S0417_wavelengthSolutionDetermined.fits",  # R600:0.860 HAM
+    "process_arcs/GMOS/N20100212S0143_wavelengthSolutionDetermined.fits",  # R831:0.450 EEV
+    "process_arcs/GMOS/N20100720S0247_wavelengthSolutionDetermined.fits",  # R831:0.850 EEV
+    "process_arcs/GMOS/N20130808S0490_wavelengthSolutionDetermined.fits",  # R831:0.571 E2V
+    "process_arcs/GMOS/N20130830S0291_wavelengthSolutionDetermined.fits",  # R831:0.845 E2V
+    "process_arcs/GMOS/N20170910S0009_wavelengthSolutionDetermined.fits",  # R831:0.653 HAM
+    "process_arcs/GMOS/N20170509S0682_wavelengthSolutionDetermined.fits",  # R831:0.750 HAM
+    # "process_arcs/GMOS/N20181114S0512_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM - todo: RMS > 0.5 (RMS = 0.52) | `gswavelength` cannot find solution either.
+    "process_arcs/GMOS/N20170416S0058_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
+    "process_arcs/GMOS/N20170416S0081_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
+    "process_arcs/GMOS/N20180120S0315_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
+    # # Process Arcs: GMOS-S ---
+    # "process_arcs/GMOS/S20130218S0126_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV - todo: breaks p.determineWavelengthSolution() | `gswavelength` cannot find solution either.
+    "process_arcs/GMOS/S20130111S0278_wavelengthSolutionDetermined.fits",  # B600:0.520 EEV
+    "process_arcs/GMOS/S20130114S0120_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20130216S0243_wavelengthSolutionDetermined.fits",  # B600:0.480 EEV
+    "process_arcs/GMOS/S20130608S0182_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20131105S0105_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20140504S0008_wavelengthSolutionDetermined.fits",  # B600:0.500 EEV
+    "process_arcs/GMOS/S20170103S0152_wavelengthSolutionDetermined.fits",  # B600:0.600 HAM
+    "process_arcs/GMOS/S20170108S0085_wavelengthSolutionDetermined.fits",  # B600:0.500 HAM
+    "process_arcs/GMOS/S20130510S0103_wavelengthSolutionDetermined.fits",  # B1200:0.450 EEV
+    "process_arcs/GMOS/S20130629S0002_wavelengthSolutionDetermined.fits",  # B1200:0.525 EEV
+    "process_arcs/GMOS/S20131123S0044_wavelengthSolutionDetermined.fits",  # B1200:0.595 EEV
+    "process_arcs/GMOS/S20170116S0189_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM - todo: very weird non-linear plot | non-linear plot using `gswavelength` seems fine.
+    "process_arcs/GMOS/S20170103S0149_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/S20170730S0155_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/S20171219S0117_wavelengthSolutionDetermined.fits",  # B1200:0.440 HAM
+    "process_arcs/GMOS/S20170908S0189_wavelengthSolutionDetermined.fits",  # B1200:0.550 HAM
+    "process_arcs/GMOS/S20131230S0153_wavelengthSolutionDetermined.fits",  # R150:0.550 EEV - todo: wavelength solution not stable
+    # "process_arcs/GMOS/S20130801S0140_wavelengthSolutionDetermined.fits",  # R150:0.700 EEV - todo: RMS > 0.5 (RMS = 0.69)
+    # "process_arcs/GMOS/S20170430S0060_wavelengthSolutionDetermined.fits",  # R150:0.717 HAM - todo: RMS > 0.5 (RMS = 0.78)
+    # "process_arcs/GMOS/S20170430S0063_wavelengthSolutionDetermined.fits",  # R150:0.727 HAM - todo: RMS > 0.5 (RMS = 1.26)
+    "process_arcs/GMOS/S20171102S0051_wavelengthSolutionDetermined.fits",  # R150:0.950 HAM
+    "process_arcs/GMOS/S20130114S0100_wavelengthSolutionDetermined.fits",  # R400:0.620 EEV
+    "process_arcs/GMOS/S20130217S0073_wavelengthSolutionDetermined.fits",  # R400:0.800 EEV
+    # "process_arcs/GMOS/S20170108S0046_wavelengthSolutionDetermined.fits",  # R400:0.550 HAM - todo: RMS > 0.5 (RMS = 0.60)
+    "process_arcs/GMOS/S20170129S0125_wavelengthSolutionDetermined.fits",  # R400:0.685 HAM
+    "process_arcs/GMOS/S20170703S0199_wavelengthSolutionDetermined.fits",  # R400:0.800 HAM
+    "process_arcs/GMOS/S20170718S0420_wavelengthSolutionDetermined.fits",  # R400:0.910 HAM
+    # "process_arcs/GMOS/S20100306S0460_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    # "process_arcs/GMOS/S20101218S0139_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV - todo: breaks p.determineWavelengthSolution
+    "process_arcs/GMOS/S20110306S0294_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV
+    "process_arcs/GMOS/S20110720S0236_wavelengthSolutionDetermined.fits",  # R600:0.675 EEV
+    "process_arcs/GMOS/S20101221S0090_wavelengthSolutionDetermined.fits",  # R600:0.690 EEV
+    "process_arcs/GMOS/S20120322S0122_wavelengthSolutionDetermined.fits",  # R600:0.900 EEV
+    "process_arcs/GMOS/S20130803S0011_wavelengthSolutionDetermined.fits",  # R831:0.576 EEV
+    "process_arcs/GMOS/S20130414S0040_wavelengthSolutionDetermined.fits",  # R831:0.845 EEV
+    "process_arcs/GMOS/S20170214S0059_wavelengthSolutionDetermined.fits",  # R831:0.440 HAM
+    "process_arcs/GMOS/S20170703S0204_wavelengthSolutionDetermined.fits",  # R831:0.600 HAM
+    "process_arcs/GMOS/S20171018S0048_wavelengthSolutionDetermined.fits",  # R831:0.865 HAM
 ]
 
 reference_files = [
@@ -189,7 +190,7 @@ def ad(request, path_to_inputs, path_to_outputs, path_to_refs):
     do_plots(ad_out, _dir, _ref_dir)
 
     if request.session.testsfailed > tests_failed_before_module:
-        fname_out = _dir / ad_out.filename
+        fname_out = os.path.join(_dir, ad_out.filename)
         ad_out.write(filename=fname_out, overwrite=True)
         print('\n Saved file to:\n  {}\n'.format(fname_out))
 
@@ -305,14 +306,102 @@ def setup_log(path_to_outputs):
     logutils.config(mode="standard", file_name=log_file)
 
 
+def table_to_model(table, dispaxis):
+    """
+    Converts a FITCOORD table to an AstroPy's Model.
+
+    Parameters
+    ----------
+    table : Table
+        Input AstroPy table with a representation of the Chebyshev2D model. See
+        Notes.
+    dispaxis : {0, 1}
+        As the name says, the direction of the dispersion axis (0 = along rows,
+        1 = along columns).
+
+    Returns
+    -------
+    Model
+        Compount 2D Model with Chebyshev2D in the dispersion direction.
+
+    Notes
+    -----
+    The FITCOORD table must have the following format:
+
+        =============== ================ ============== ======================
+        name            coefficients     inv_name       inv_coefficients
+        --------------- ---------------- -------------- ----------------------
+        ndim            (int as float)   ndim           (int as float)
+        x_degree        (int as float)   x_degree       (int as float)
+        y_degree        (int as float)   y_degree       (int as float)
+        x_domain_start  (int as float)   x_domain_start (int as float)
+        x_domain_end    (int as float)   x_domain_end   (int as float)
+        y_domain_start  (int as float)   y_domain_start (int as float)
+        y_domain_end    (int as float)   y_domain_end   (int as float)
+        c0_0            (float)          c0_0           (float)
+        c1_0            (float)          c1_0           (float)
+        ...             ...              ...            ...
+        =============== ================ ============== ======================
+    """
+    x_deg = int(table['coefficients'][1])
+    y_deg = int(table['coefficients'][2])
+    x_domain = [int(table['coefficients'][3]), int(table['coefficients'][4])]
+    y_domain = [int(table['coefficients'][5]), int(table['coefficients'][6])]
+
+    c = dict(zip(table['name'][7:], table['coefficients'][7:]))
+    c_inv = dict(zip(table['inv_name'][7:], table['inv_coefficients'][7:]))
+
+    model = models.Chebyshev2D(
+        x_degree=x_deg, y_degree=y_deg, x_domain=x_domain, y_domain=y_domain, **c)
+
+    model_inverse = models.Chebyshev2D(
+        x_degree=x_deg, y_degree=y_deg, x_domain=x_domain, y_domain=y_domain, **c_inv)
+
+    if dispaxis == 1:
+        model_2d = models.Mapping((0, 1, 1)) | (model & models.Identity(1))
+        model_2d.inverse = models.Mapping((0, 1, 1)) | (model_inverse & models.Identity(1))
+    else:
+        model_2d = models.Mapping((0, 0, 1)) | (models.Identity(1) & model)
+        model_2d.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & model_inverse)
+
+    return model_2d
+
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
-def test_determine_distortion(ad, ad_ref):
+def test_determine_distortion_comparing_models_coefficients(ad, ad_ref):
     """
     Runs the `determineDistorion` primitive on a preprocessed data and compare
     its model with the one in the reference file.
     """
-    coeffs_out = np.ma.masked_invalid(ad[0].FITCOORD["coefficients"])
-    coeffs_ref = np.ma.masked_invalid(ad_ref[0].FITCOORD["coefficients"])
+    table = ad[0].FITCOORD
+    table_ref = ad_ref[0].FITCOORD
 
-    np.testing.assert_allclose(coeffs_out, coeffs_ref, atol=0.1)
+    np.testing.assert_allclose(
+        table['coefficients'], table_ref['coefficients'], rtol=0.1)
+
+    np.testing.assert_allclose(
+        table['inv_coefficients'], table_ref['inv_coefficients'], rtol=0.1)
+
+
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
+def test_determine_distortion_comparing_modeled_arrays(ad, ad_ref):
+    """
+    Runs the `determineDistorion` primitive on a preprocessed data and compare
+    its model with the one in the reference file. The distortion model needs to
+    be reconstructed because different coefficients might return same results.
+    """
+    table = ad[0].FITCOORD
+    table_ref = ad_ref[0].FITCOORD
+    dispaxis = ad[0].dispersion_axis()
+
+    model = table_to_model(table, dispaxis)
+    model_ref = table_to_model(table_ref, dispaxis)
+
+    X, Y = np.mgrid[0:ad[0].shape[0], 0:ad[0].shape[1]]
+
+    out = np.ma.masked_invalid(model(X, Y))
+    ref = np.ma.masked_invalid(model_ref(X, Y))
+
+    np.testing.assert_allclose(out, ref, atol=0.5)

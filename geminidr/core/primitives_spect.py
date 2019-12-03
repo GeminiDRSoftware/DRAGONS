@@ -155,6 +155,24 @@ class Spect(PrimitivesBASE):
         fitted coordinates in the dispersion direction. The distortion map does
         not change the coordinates in the spatial direction.
 
+        The Chebyshev2D model is stored as a Table object in the `.FITCOORD`
+        plane with the following format:
+
+        =============== ================ ============== ======================
+        name            coefficients     inv_name       inv_coefficients
+        --------------- ---------------- -------------- ----------------------
+        ndim            (int as float)   ndim           (int as float)
+        x_degree        (int as float)   x_degree       (int as float)
+        y_degree        (int as float)   y_degree       (int as float)
+        x_domain_start  (int as float)   x_domain_start (int as float)
+        x_domain_end    (int as float)   x_domain_end   (int as float)
+        y_domain_start  (int as float)   y_domain_start (int as float)
+        y_domain_end    (int as float)   y_domain_end   (int as float)
+        c0_0            (float)          c0_0           (float)
+        c1_0            (float)          c1_0           (float)
+        ...             ...              ...            ...
+        =============== ================ ============== ======================
+
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
