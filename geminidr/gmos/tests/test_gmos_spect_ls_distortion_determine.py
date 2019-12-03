@@ -18,6 +18,7 @@ import astrodata
 import geminidr
 from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
+from gempy.library import astromodels
 from gempy.utils import logutils
 
 input_files = [
@@ -306,67 +307,6 @@ def setup_log(path_to_outputs):
     logutils.config(mode="standard", file_name=log_file)
 
 
-def table_to_model(table, dispaxis):
-    """
-    Converts a FITCOORD table to an AstroPy's Model.
-
-    Parameters
-    ----------
-    table : Table
-        Input AstroPy table with a representation of the Chebyshev2D model. See
-        Notes.
-    dispaxis : {0, 1}
-        As the name says, the direction of the dispersion axis (0 = along rows,
-        1 = along columns).
-
-    Returns
-    -------
-    Model
-        Compount 2D Model with Chebyshev2D in the dispersion direction.
-
-    Notes
-    -----
-    The FITCOORD table must have the following format:
-
-        =============== ================ ============== ======================
-        name            coefficients     inv_name       inv_coefficients
-        --------------- ---------------- -------------- ----------------------
-        ndim            (int as float)   ndim           (int as float)
-        x_degree        (int as float)   x_degree       (int as float)
-        y_degree        (int as float)   y_degree       (int as float)
-        x_domain_start  (int as float)   x_domain_start (int as float)
-        x_domain_end    (int as float)   x_domain_end   (int as float)
-        y_domain_start  (int as float)   y_domain_start (int as float)
-        y_domain_end    (int as float)   y_domain_end   (int as float)
-        c0_0            (float)          c0_0           (float)
-        c1_0            (float)          c1_0           (float)
-        ...             ...              ...            ...
-        =============== ================ ============== ======================
-    """
-    x_deg = int(table['coefficients'][1])
-    y_deg = int(table['coefficients'][2])
-    x_domain = [int(table['coefficients'][3]), int(table['coefficients'][4])]
-    y_domain = [int(table['coefficients'][5]), int(table['coefficients'][6])]
-
-    c = dict(zip(table['name'][7:], table['coefficients'][7:]))
-    c_inv = dict(zip(table['inv_name'][7:], table['inv_coefficients'][7:]))
-
-    model = models.Chebyshev2D(
-        x_degree=x_deg, y_degree=y_deg, x_domain=x_domain, y_domain=y_domain, **c)
-
-    model_inverse = models.Chebyshev2D(
-        x_degree=x_deg, y_degree=y_deg, x_domain=x_domain, y_domain=y_domain, **c_inv)
-
-    if dispaxis == 1:
-        model_2d = models.Mapping((0, 1, 1)) | (model & models.Identity(1))
-        model_2d.inverse = models.Mapping((0, 1, 1)) | (model_inverse & models.Identity(1))
-    else:
-        model_2d = models.Mapping((0, 0, 1)) | (models.Identity(1) & model)
-        model_2d.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & model_inverse)
-
-    return model_2d
-
-
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
 def test_determine_distortion_comparing_models_coefficients(ad, ad_ref):
@@ -374,14 +314,12 @@ def test_determine_distortion_comparing_models_coefficients(ad, ad_ref):
     Runs the `determineDistorion` primitive on a preprocessed data and compare
     its model with the one in the reference file.
     """
-    table = ad[0].FITCOORD
-    table_ref = ad_ref[0].FITCOORD
+    assert ad.filename == ad_ref.filename
 
-    np.testing.assert_allclose(
-        table['coefficients'], table_ref['coefficients'], rtol=0.1)
+    c = np.ma.masked_invalid(ad[0].FITCOORD["coefficients"])
+    c_ref = np.ma.masked_invalid(ad_ref[0].FITCOORD["coefficients"])
 
-    np.testing.assert_allclose(
-        table['inv_coefficients'], table_ref['inv_coefficients'], rtol=0.1)
+    np.testing.assert_allclose(c, c_ref, atol=2)
 
 
 @pytest.mark.preprocessed_data
@@ -392,16 +330,16 @@ def test_determine_distortion_comparing_modeled_arrays(ad, ad_ref):
     its model with the one in the reference file. The distortion model needs to
     be reconstructed because different coefficients might return same results.
     """
+    assert ad.filename == ad_ref.filename
+
     table = ad[0].FITCOORD
-    table_ref = ad_ref[0].FITCOORD
-    dispaxis = ad[0].dispersion_axis()
+    model_dict = dict(zip(table['name'], table['coefficients']))
+    model = astromodels.dict_to_chebyshev(model_dict)
 
-    model = table_to_model(table, dispaxis)
-    model_ref = table_to_model(table_ref, dispaxis)
+    ref_table = ad_ref[0].FITCOORD
+    ref_model_dict = dict(zip(ref_table['name'], ref_table['coefficients']))
+    ref_model = astromodels.dict_to_chebyshev(ref_model_dict)
 
-    X, Y = np.mgrid[0:ad[0].shape[0], 0:ad[0].shape[1]]
+    X, Y = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
 
-    out = np.ma.masked_invalid(model(X, Y))
-    ref = np.ma.masked_invalid(model_ref(X, Y))
-
-    np.testing.assert_allclose(out, ref, atol=0.5)
+    np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=1)
