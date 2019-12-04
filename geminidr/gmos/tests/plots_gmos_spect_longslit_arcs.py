@@ -263,7 +263,10 @@ class PlotGmosSpectLongslitArcs:
 
     def plot_lines(self, ext_num, data, peaks, model):
         """
-        Plots and saves the wavelength calibration model residuals for diagnosis.
+        Plots the spectrum with the normalized data, the reference lines and
+        the matched lines. The reference lines are obtained from the default
+        look-up table. The matched lines are calculated using the `peaks`
+        applied to the `model`.
 
         Parameters
         ----------
