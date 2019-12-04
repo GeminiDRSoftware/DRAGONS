@@ -361,7 +361,7 @@ def wcs_to_asdftablehdu(wcs, extver=None):
             # Generate the YAML, dumping any binary arrays as text:
             af.write_to(fd, all_array_storage='inline')
         fd.seek(0)
-        wcslines = fd.read().decode().splitlines()
+        wcslines = fd.read().decode('ascii').splitlines()
 
     # Construct the FITS ASCII table extension:
     fmt = 'A{0}'.format(max(len(line) for line in wcslines))
@@ -392,7 +392,7 @@ def asdftablehdu_to_wcs(hdu):
         wcstext = os.linesep.join(colarr)
 
         # Convert the stored text to a Bytes file object that ASDF can open:
-        with BytesIO(wcstext.encode()) as fd:
+        with BytesIO(wcstext.encode('ascii')) as fd:
 
             # Try to extract a 'wcs' entry from the YAML:
             try:
