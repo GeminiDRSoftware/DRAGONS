@@ -51,7 +51,7 @@ input_files = [
     "process_arcs/GMOS/N20170108S0210_mosaic.fits",  # R400:0.660 HAM
     "process_arcs/GMOS/N20171113S0135_mosaic.fits",  # R400:0.750 HAM
     "process_arcs/GMOS/N20100427S1276_mosaic.fits",  # R600:0.675 EEV
-    # "process_arcs/GMOS/N20180120S0417_mosaic.fits",  # R600:0.860 HAM - todo: RMS > 0.5 (RMS = 0.58)
+    "process_arcs/GMOS/N20180120S0417_mosaic.fits",  # R600:0.860 HAM - todo: RMS > 0.5 (RMS = 0.58)
     "process_arcs/GMOS/N20100212S0143_mosaic.fits",  # R831:0.450 EEV
     "process_arcs/GMOS/N20100720S0247_mosaic.fits",  # R831:0.850 EEV
     "process_arcs/GMOS/N20130808S0490_mosaic.fits",  # R831:0.571 E2V
@@ -174,7 +174,17 @@ def ad(request, path_to_inputs, path_to_outputs):
     else:
         raise IOError("Cannot find input file:\n {:s}".format(fname))
 
-    ad_out = p.determineWavelengthSolution([_ad])[0]
+    ad_out = p.determineWavelengthSolution(
+        [_ad],
+        center=None,
+        nsum=10,
+        order=2,
+        min_snr=10.,
+        fwidth=2.,
+        linelist=None,
+        weighting='natural',
+        nbright=0
+    )[0]
 
     tests_failed_before_module = request.session.testsfailed
 
