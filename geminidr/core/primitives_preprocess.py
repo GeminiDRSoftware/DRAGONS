@@ -608,6 +608,7 @@ class Preprocess(PrimitivesBASE):
             except KeyError:
                 pass
             else:
+                log.fullinfo("Copying {} keyword from flatfield".format(qecorr_key))
                 ad.phu.set(qecorr_key, qecorr_value, flat.phu.comments[qecorr_key])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
