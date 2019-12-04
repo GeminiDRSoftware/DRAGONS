@@ -618,11 +618,14 @@ class Spect(PrimitivesBASE):
             Name of file containing arc lines. If None, then a default look-up
             table will be used.
 
-        weighting : {'none', 'natural', 'relative'}
+        weighting : {'natural', 'relative', 'none'}
             How to weight the detected peaks.
 
         nbright : int
             Number of brightest lines to cull before fitting (default: 0).
+
+        plot : bool
+            Enable plots for debugging.
 
         Returns
         -------
