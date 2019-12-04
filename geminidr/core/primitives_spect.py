@@ -1487,9 +1487,7 @@ class Spect(PrimitivesBASE):
                 # over features. We avoid this by subsampling back to the
                 # original pixel scale (approximately).
                 input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = abs(dw / input_dw)
-                if subsample > 1.1:
-                    subsample = int(subsample + 0.5)
+                subsample = int(np.ceil(abs(dw / input_dw) - 0.1))
 
                 dg = transform.DataGroup([ext], [t])
                 dg.output_shape = (npix,)
