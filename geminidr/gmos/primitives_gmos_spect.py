@@ -77,9 +77,8 @@ def qeModel(ext):
                 use_coeffs = coeffs[k]
         coeffs = use_coeffs
 
-    model = models.Polynomial1D(degree=len(coeffs)-1)
-    for i, c in enumerate(coeffs):
-        setattr(model, 'c{}'.format(i), c)
+    model_params = {'c{}'.format(i): c for i, c in enumerate(coeffs)}
+    model = models.Polynomial1D(degree=len(coeffs)-1, **model_params)
     return model
 
 # ------------------------------------------------------------------------------
@@ -131,15 +130,14 @@ class GMOSSpect(Spect, GMOS):
                             "already been processed by applyQECorrection".
                             format(ad.filename))
                 continue
-            if 'FLAT' not in ad.tags:
-                log.warning("{} is not a FLAT so should not be processed by "
-                            "applyQECorrection".format(ad.filename))
-                continue
 
             if 'e2v' in ad.detector_name(pretty=True):
                 log.warning("{} has the e2v CCDs, so no QE correction "
                             "is necessary".format(ad.filename))
                 continue
+
+            # Determines whether to multiply or divide by QE correction
+            is_flat = 'FLAT' in ad.tags
 
             # If the arc's binning doesn't match, we may still be able to
             # fall back to the approximate solution
@@ -256,7 +254,10 @@ class GMOSSpect(Spect, GMOS):
                             log.warning(msg)
                     log.fullinfo("Mean relative QE of EXTVER {} is {:.5f}".
                                  format(ext.hdr['EXTVER'], qe_correction.mean()))
-                    ext.divide(qe_correction)  # Apparently!
+                    if is_flat:
+                        ext.multiply(qe_correction)
+                    else:
+                        ext.divide(qe_correction)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
