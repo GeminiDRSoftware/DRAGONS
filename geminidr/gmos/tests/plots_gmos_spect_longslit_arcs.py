@@ -579,8 +579,13 @@ class PlotGmosSpectLongslitArcs:
                 dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
             )
 
-            mask = np.round(np.average(ext.mask, axis=0)).astype(int)
-            data = np.ma.masked_where(mask > 0, np.median(ext.data, axis=0))
+            middle = ext.data.shape[0] // 2
+            sum_size = 10
+            r1 = middle - sum_size // 2
+            r2 = middle + sum_size // 2
+
+            mask = np.round(np.average(ext.mask[r1:r2], axis=0)).astype(int)
+            data = np.ma.masked_where(mask > 0, np.sum(ext.data[r1:r2], axis=0))
             data = (data - data.min()) / data.ptp()
 
             self.plot_lines(ext_num, data, peaks, wavecal_model)
