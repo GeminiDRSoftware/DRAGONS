@@ -208,7 +208,7 @@ def path_to_outputs(tmp_path_factory):
     IOError
         If output path does not exits.
     """
-    path = tmp_path_factory.mktemp('dragons_tests')
+    path = tmp_path_factory.mktemp('dragons_tests', numbered=False)
 
     if os.getenv('DRAGONS_TEST_OUTPUTS'):
         path = Path(os.path.expanduser(os.getenv('DRAGONS_TEST_OUTPUTS')))
