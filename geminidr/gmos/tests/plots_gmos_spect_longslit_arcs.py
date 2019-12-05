@@ -308,7 +308,7 @@ class PlotGmosSpectLongslitArcs:
         ax.set_ylabel("Normalized intensity")
         ax.set_title(
             "Wavelength Calibrated Spectrum for\n"
-            "{:s} obtained with {:s} at {:.0f}".format(
+            "{:s}\n obtained with {:s} at {:.0f} nm".format(
                 self.name, self.grating, self.central_wavelength
             )
         )
@@ -318,7 +318,7 @@ class PlotGmosSpectLongslitArcs:
 
         fig_name = os.path.join(
             self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}.png".format(
+            "{:s}_{:d}_{:s}_{:.0f}.svg".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
         )
@@ -374,7 +374,7 @@ class PlotGmosSpectLongslitArcs:
 
         fig_name = os.path.join(
             self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
+            "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.svg".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
         )
@@ -419,7 +419,7 @@ class PlotGmosSpectLongslitArcs:
 
         fig_name = os.path.join(
             self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}_residuals.png".format(
+            "{:s}_{:d}_{:s}_{:.0f}_residuals.svg".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
         )
@@ -485,7 +485,7 @@ class PlotGmosSpectLongslitArcs:
 
             fig_name = os.path.join(
                 self.output_folder,
-                "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
+                "{:s}_{:d}_{:s}_{:.0f}_distDiff.svg".format(
                     name, num, self.grating, self.central_wavelength
                 ),
             )
@@ -553,7 +553,7 @@ class PlotGmosSpectLongslitArcs:
 
             fig_name = os.path.join(
                 self.output_folder,
-                "{:s}_{:d}_{:s}_{:.0f}_distMap.png".format(
+                "{:s}_{:d}_{:s}_{:.0f}_distMap.svg".format(
                     fname, num, self.grating, self.central_wavelength
                 ),
             )
@@ -580,7 +580,7 @@ class PlotGmosSpectLongslitArcs:
             )
 
             mask = np.round(np.average(ext.mask, axis=0)).astype(int)
-            data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
+            data = np.ma.masked_where(mask > 0, np.median(ext.data, axis=0))
             data = (data - data.min()) / data.ptp()
 
             self.plot_lines(ext_num, data, peaks, wavecal_model)
