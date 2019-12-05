@@ -613,8 +613,10 @@ class Spect(PrimitivesBASE):
             Minimum S/N ratio in line peak to be used in fitting (default: 10).
 
         fwidth : None or float, optional
-            Expected width of arc lines in pixels. The default is None. In this
-            case, `fwidth` is determined using `tracing.estimate_peak_width`.
+            Expected width of arc lines in pixels. It tells how far the
+            KDTreeFitter should look for when matching detected peaks with
+            reference arcs lines. If None (the default), `fwidth` is
+            determined using `tracing.estimate_peak_width`.
 
         linelist : None or str, optional
             Name of file containing arc lines. If None, then a default look-up
