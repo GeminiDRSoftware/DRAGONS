@@ -16,7 +16,8 @@ from astropy.io.fits import ImageHDU
 
 import numpy as np
 
-from gwcs.wcs import WCS
+from astropy.wcs import WCS
+from gwcs.wcs import WCS as gWCS
 
 __all__ = ['NDAstroData']
 
@@ -381,8 +382,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @wcs.setter
     def wcs(self, value):
-        allowed = (WCS,)
-        if not isinstance(value, allowed):
-            raise TypeError("wcs value must be instance of: {}"\
-                             .format([c.__name__ for c in allowed]))
+        if value is not None and not isinstance(value, (WCS, gWCS)):
+            raise TypeError("wcs value must be None or a WCS object")
         self._wcs = value
