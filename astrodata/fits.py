@@ -38,7 +38,6 @@ from astropy.nddata import NDData
 from astropy.table import Table
 import numpy as np
 
-import asdf
 from gwcs.wcs import WCS
 
 INTEGER_TYPES = (int, np.integer)
@@ -345,6 +344,7 @@ def wcs_to_asdftablehdu(wcs, extver=None):
     happen), a binary table representation will be used as a fallback.
     """
 
+    import asdf
     import jsonschema
 
     # Create a small ASDF file in memory containing the WCS object
@@ -397,6 +397,8 @@ def asdftablehdu_to_wcs(hdu):
     Returns None (issuing a warning) if the extension cannot be parsed, so
     the rest of the file can still be read.
     """
+
+    import asdf
 
     ver = hdu.header.get('EXTVER', -1)
 
