@@ -27,6 +27,12 @@ def pytest_addoption(parser):
             default=False,
             help="Force preprocessing data as part of the tests."
         )
+        parser.addoption(
+            "--do-plots",
+            action="store_true",
+            default=False,
+            help="Plot results of each test after running them."
+        )
     # This file is imported several times and might bring conflict
     except ValueError:
         pass
