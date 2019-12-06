@@ -383,6 +383,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def wcs(self, value):
         allowed = (WCS,)
         if not isinstance(value, allowed):
-            raise ValueError("wcs value must be instance of: {}"\
+            raise TypeError("wcs value must be instance of: {}"\
                              .format([c.__name__ for c in allowed]))
         self._wcs = value
