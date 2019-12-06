@@ -340,6 +340,9 @@ def wcs_to_asdftablehdu(wcs, extver=None):
 
     The ASCII table is actually a mini ASDF file. The constituent AstroPy
     models must have associated ASDF "tags" that specify how to serialize them.
+
+    In the event that serialization as pure ASCII fails (this should not
+    happen), a binary table representation will be used as a fallback.
     """
 
     import jsonschema
@@ -354,19 +357,36 @@ def wcs_to_asdftablehdu(wcs, extver=None):
         raise TypeError("Cannot serialize model(s) for 'WCS' extension {}"\
                         .format(extver or ''))
 
-    # ASDF can only dump a YAML to a binary file object, so do that and read
-    # the text back from it for storage in a FITS extension:
+    # ASDF can only dump YAML to a binary file object, so do that and read
+    # the contents back from it for storage in a FITS extension:
     with BytesIO() as fd:
         with af:
             # Generate the YAML, dumping any binary arrays as text:
             af.write_to(fd, all_array_storage='inline')
         fd.seek(0)
-        wcslines = fd.read().decode('ascii').splitlines()
+        wcsbuf = fd.read()
 
-    # Construct the FITS ASCII table extension:
-    fmt = 'A{0}'.format(max(len(line) for line in wcslines))
-    col = Column(name='gWCS', format=fmt, array=wcslines, ascii=True)
-    hdu = TableHDU.from_columns([col], name='WCS', ver=extver)
+    # Convert the bytes to readable lines of text for storage (falling back to
+    # saving as binary in the unexpected event that this is not possible):
+    try:
+        wcsbuf = wcsbuf.decode('ascii').splitlines()
+    except UnicodeDecodeError:
+        # This should not happen, but if the ASDF contains binary data in
+        # spite of the 'inline' option above, we have to dump the bytes to
+        # a non-human-readable binary table rather than an ASCII one:
+        LOGGER.warning("Could not convert WCS {} ASDF to ASCII; saving table "
+                       "as binary".format(extver or ''))
+        hduclass = BinTableHDU
+        fmt = 'B'
+        wcsbuf = np.frombuffer(wcsbuf, dtype=np.uint8)
+    else:
+        hduclass = TableHDU
+        fmt = 'A{0}'.format(max(len(line) for line in wcsbuf))
+
+    # Construct the FITS table extension:
+    col = Column(name='gWCS', format=fmt, array=wcsbuf,
+                 ascii= hduclass is TableHDU)
+    hdu = hduclass.from_columns([col], name='WCS', ver=extver)
 
     return hdu
 
@@ -388,11 +408,24 @@ def asdftablehdu_to_wcs(hdu):
                            "column".format(ver))
             return
 
-        # Convert lines of ASDF text stored as table rows back into a string:
-        wcstext = os.linesep.join(colarr)
+        # If this table column contains text strings as expected, join the rows
+        # as separate lines of a string buffer and encode the resulting YAML as
+        # bytes that ASDF can parse. If AstroData has produced another format,
+        # it will be a binary dump due to the unexpected presence of non-ASCII
+        # data, in which case we just extract unmodified bytes from the table.
+        if colarr.dtype.kind in ('U', 'S'):
+            sep = os.linesep
+            # Not sure whether io.fits ever produces 'S' on Py 3, but just in
+            # case: join lines as str & avoid a TypeError with unicode linesep;
+            # could also use astype('U') but it assumes an encoding implicitly.
+            if colarr.dtype.kind == 'S' and not isinstance(sep, bytes):
+                colarr = np.vectorize(lambda b: b.decode('ascii'))(colarr)
+            wcsbuf = sep.join(colarr).encode('ascii')
+        else:
+            wcsbuf = colarr.tobytes()
 
         # Convert the stored text to a Bytes file object that ASDF can open:
-        with BytesIO(wcstext.encode('ascii')) as fd:
+        with BytesIO(wcsbuf) as fd:
 
             # Try to extract a 'wcs' entry from the YAML:
             try:
@@ -412,7 +445,7 @@ def asdftablehdu_to_wcs(hdu):
                         return
 
     else:
-        LOGGER.warning("Ignoring non-ASCII-table 'WCS' extension {}"\
+        LOGGER.warning("Ignoring non-FITS-table 'WCS' extension {}"\
                        .format(ver))
         return
 
