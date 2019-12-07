@@ -4,6 +4,8 @@
 #                                                      primitives_standardize.py
 # ------------------------------------------------------------------------------
 import os
+from datetime import datetime
+
 import numpy as np
 from importlib import import_module
 from scipy.ndimage import measurements
@@ -15,6 +17,8 @@ from gempy.utils import logutils
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
+from recipe_system.utils.md5 import md5sum
+from recipe_system.utils.provenance import add_provenance
 from . import parameters_standardize
 
 from recipe_system.utils.decorators import parameter_override
@@ -308,6 +312,9 @@ class Standardize(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
+
+        provenance_timestamp = datetime.now()
+
         timestamp_key = self.timestamp_keys["prepare"]
         sfx = params["suffix"]
         for primitive in ('validateData', 'standardizeStructure',

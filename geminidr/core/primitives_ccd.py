@@ -3,6 +3,8 @@
 #
 #                                                              primitives_ccd.py
 # ------------------------------------------------------------------------------
+from datetime import datetime
+
 import numpy as np
 
 from astropy.modeling import models, fitting
@@ -11,6 +13,8 @@ from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
+from recipe_system.utils.md5 import md5sum
+from recipe_system.utils.provenance import add_provenance
 from . import parameters_ccd
 
 from recipe_system.utils.decorators import parameter_override
@@ -92,6 +96,8 @@ class CCD(PrimitivesBASE):
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
+
+            timestamp = datetime.now()
         return adinputs
 
     def overscanCorrect(self, adinputs=None, **params):

@@ -47,6 +47,7 @@ import traceback
 from collections import Iterable
 from datetime import datetime
 from time import strptime
+import inspect
 
 import astropy
 import psutil
@@ -54,10 +55,17 @@ from functools import wraps
 from copy import copy, deepcopy
 
 import astrodata
+import geminidr
 from astrodata import AstroData, AstroDataFits
 from astropy.table import Table, Column
+
 from gempy.utils import logutils
 import numpy as np
+
+from recipe_system.reduction.coreReduce import Reduce
+from recipe_system.utils.md5 import md5sum
+from recipe_system.utils.provenance import add_provenance, get_provenance, get_provenance_history, \
+    add_provenance_history
 
 
 def memusage():
@@ -119,72 +127,6 @@ def zeroset():
     return
 
 
-# TODO pull these from FitsStorage?
-def md5sum_size_fp(fobj):
-    """
-    Generates the md5sum and size of the data returned by the file-like object fobj, returns
-    a tuple containing the hex string md5 and the size in bytes.
-    f must be open. It will not be closed. We will read from it until we encounter EOF.
-    No seeks will be done, fobj will be left at eof
-    """
-    # This is the block size by which we read chunks from the file, in bytes
-    block = 1000000 # 1 MB
-
-    hashobj = hashlib.md5()
-
-    size = 0
-
-    while True:
-        data = fobj.read(block)
-        if not data:
-            break
-        size += len(data)
-        hashobj.update(data)
-
-    return hashobj.hexdigest(), size
-
-
-def md5sum(filename):
-    """
-    Generates the md5sum of the data in filename, returns the hex string.
-    """
-
-    with open(filename, 'rb') as filep:
-        (md5, size) = md5sum_size_fp(filep)
-        return md5
-
-
-def ensure_provenance_extensions(ad):
-    log.debug("Not a FITS AstroData, we don't store provenance")
-
-
-def add_provenance(ad, timestamp, filename, md5, primitive):
-    if isinstance(ad, AstroDataFits):
-        if timestamp is None:
-            timestamp_str = ""
-        else:
-            timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        if md5 is None:
-            md5 = ""
-
-        if 'GEM_PROVENANCE' not in ad:
-            timestamp_data = np.array([timestamp_str])
-            filename_data = np.array([filename])
-            md5_data = np.array([md5])
-            primitive_data = np.array([primitive])
-            my_astropy_table = Table([timestamp_data, filename_data, md5_data, primitive_data],
-                                     names=('timestamp', 'filename', 'md5', 'primitive'),
-                                     dtype=('S20', 'S128', 'S128', 'S128'))
-            ad.append(my_astropy_table, name='GEM_PROVENANCE')
-            pass
-        else:
-            provenance = ad.GEM_PROVENANCE
-            provenance.add_row((timestamp_str, filename, md5, primitive))
-            pass
-    else:
-        log.warn("Not a FITS AstroData, add provenance does nothing")
-
-
 def __stringify_list__(obj):
     if obj is None:
         return ""
@@ -203,76 +145,6 @@ def __stringify_list__(obj):
         return obj
 
 
-def add_provenance_history(ad, timestamp_start, timestamp_end, primitive, args):
-    if isinstance(ad, AstroDataFits):
-        timestamp_start_str = ""
-        if timestamp_start is not None:
-            timestamp_start_str = timestamp_start.strftime("%Y-%m-%d %H:%M:%S")
-        timestamp_end_str = ""
-        if timestamp_end is not None:
-            timestamp_end_str = timestamp_end.strftime("%Y-%m-%d %H:%M:%S")
-        if 'GEM_PROVENANCE_HISTORY' not in ad:
-            timestamp_start_data = np.array([timestamp_start_str])
-            timestamp_end_data = np.array([timestamp_end_str])
-            primitive_data = np.array([primitive])
-            args_data = np.array([args])
-
-            my_astropy_table = Table([timestamp_start_data, timestamp_end_data, primitive_data, args_data],
-                                     names=('timestamp_start', 'timestamp_end', 'primitive', 'args'),
-                                     dtype=('S20', 'S20', 'S128', 'S128'))
-            # astrodata.add_header_to_table(my_astropy_table)
-            ad.append(my_astropy_table, name='GEM_PROVENANCE_HISTORY', header=astropy.io.fits.Header())
-        else:
-            history = ad.GEM_PROVENANCE_HISTORY
-            history.add_row((timestamp_start_str, timestamp_end_str, primitive, args))
-    else:
-        log.warn("Not a FITS AstroData, add provenance history does nothing")
-
-
-def get_provenance(ad):
-    retval = list()
-    if isinstance(ad, AstroDataFits):
-        if 'GEM_PROVENANCE' in ad:
-            provenance = ad.GEM_PROVENANCE
-            pass
-            for row in provenance:
-                timestamp = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
-                filename = row[1]
-                md5 = row[2]
-                primitive = row[3]
-                retval.append({"timestamp": timestamp, "filename": filename, "md5": md5, "primitive": primitive})
-    return retval
-
-
-def get_provenance_history(ad):
-    retval = list()
-    if isinstance(ad, AstroDataFits):
-        if 'GEM_PROVENANCE_HISTORY' in ad:
-            provenance_history = ad.GEM_PROVENANCE_HISTORY
-            for row in provenance_history:
-                timestamp_start = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
-                timestamp_end = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S")
-                primitive = row[2]
-                args = row[3]
-                retval.append({"timestamp_start": timestamp_start, "timestamp_end": timestamp_end,
-                               "primitive": primitive, "args": args})
-    return retval
-
-
-def clear_provenance_extension(ad):
-    if isinstance(ad, AstroDataFits):
-        if 'GEM_PROVENANCE' in ad:
-            provenance = ad.GEM_PROVENANCE
-            print("%d" % len(provenance))
-            pass
-
-
-def clear_provenance_history_extension(ad):
-    if isinstance(ad, AstroDataFits):
-        if 'GEM_PROVENANCE_HISTORY' in ad:
-            pass
-
-
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
     @wraps(wrapped)
@@ -286,95 +158,158 @@ def make_class_wrapper(wrapped):
     return class_wrapper
 
 
-def _get_input_info(adinputs):
-    input_filenames = list()
+def _get_provenance_inputs(adinputs):
+    """
+    gets the input information for a future call to store provenance history.
+
+    The AstroData inputs can change during the call to a primitive.  We use this
+    helper function to extract the 'before' state of things so that we can accurately
+    record provenance history.  After the primitive returns, we have the AstroData
+    objects into which we'll want to record this information.
+    """
+    retval = list()
     for ad in adinputs:
         if ad.filename:
             origname = ad.filename
             if isinstance(ad, AstroDataFits):
                 if "ORIGNAME" in ad.phu:
                     origname = ad.phu["ORIGNAME"]
-                    log.warn("ENHANCING PROVENANCE using origname from header of %s" % origname)
-            input_filenames.append((ad.filename, ad.path, origname,
-                                    get_provenance(ad), get_provenance_history(ad)))
-    return input_filenames
+            if ad.path:
+                md5 = md5sum(ad.path)
+            else:
+                md5 = ""
+            retval.append({"filename": ad.filename,
+                           "md5": md5,
+                           "origname": origname,
+                           "provenance": get_provenance(ad),
+                           "provenance_history": get_provenance_history(ad)})
+    return retval
 
 
-def _capture_provenance(input_filenames, ret_value, timestamp_start, fn, args):
+def _provenance_exists(existing_provenance, filename, md5, primitive):
+    if existing_provenance is None:
+        return False
+    for e in existing_provenance:
+        if e["filename"] == filename and e["md5"] == md5 and e["primitive"] == primitive:
+            return True
+    return False
+
+
+def _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, args):
     try:
         timestamp = datetime.now()
         for ad in ret_value:
-            ensure_provenance_extensions(ad)
+            existing_provenance = get_provenance(ad)
+
             # If we have matching inputs, or if we are a consolidated output with one matching input,
             # we want to pull in the source provenance
             if isinstance(ad, AstroDataFits) and 'GEM_PROVENANCE' not in ad:
                 if len(ret_value) > 1:
-                    for filename, path, orig_filename, provenance, provenance_history in input_filenames:
+                    for provenance_input in provenance_inputs:
+                        provenance = provenance_input["provenance"]
+                        provenance_history = provenance_input["provenance_history"]
+
                         output_origname = ad.filename
                         if isinstance(ad, AstroDataFits):
                             if "ORIGNAME" in ad.phu:
                                 output_origname = ad.phu["ORIGNAME"]
-                        if orig_filename == output_origname:
-                            # clear_provenance_extension(ad)
+                        if provenance_input["origname"] == output_origname:
                             # matching input, copy provenance
-                            log.warn("ENHANCING PROVENANCE saw a matching input: %s" % orig_filename)
                             for prov in provenance:
-                                log.warn("ENHANCING PROVENANCE saw %s" % prov)
-                                add_provenance(ad, prov['timestamp'], prov['filename'], prov['md5'],
-                                               prov['primitive'])
+                                if not _provenance_exists(existing_provenance, prov['filename'],
+                                                          prov['md5'], prov['primitive']):
+                                    add_provenance(ad, prov['timestamp'], prov['filename'], prov['md5'],
+                                                   prov['primitive'])
+                                    existing_provenance.append(
+                                        {
+                                            "filename": prov["filename"],
+                                            "md5": prov["md5"],
+                                            "primitive": prov["primitive"]
+                                        }
+                                    )
                             for ph in provenance_history:
-                                log.warn("ENHANCING PROVENANCE saw history %s" % ph)
                                 add_provenance_history(ad, ph['timestamp_start'], ph['timestamp_end'],
                                                        ph['primitive'], ph['args'])
                 else:
-                    if len(input_filenames) > 0:
-                        filename, path, orig_filename, provenance, provenance_history = input_filenames[0]
+                    if len(provenance_inputs) > 0:
+                        provenance_input = provenance_inputs[0]
+                        orig_filename = provenance_input["origname"]
+
                         output_origname = ad.filename
                         if isinstance(ad, AstroDataFits):
                             if "ORIGNAME" in ad.phu:
                                 output_origname = ad.phu["ORIGNAME"]
                         if orig_filename == output_origname:
-                            # clear_provenance_history_extension(ad)
-                            log.warn("ENHANCING PROVENANCE multi->single saw a matching input: %s"
-                                     % orig_filename)
                             # if the first input of a M->1 primitive matches our output, pull in all
                             # the input provenance data
-                            for filename, path, orig_filename, provenance, provenance_history in input_filenames:
+                            for provenance_input in provenance_inputs:
+                                orig_filename = provenance_input["origname"]
+                                provenance = provenance_input["provenance"]
+                                provenance_history = provenance_input["provenance_history"]
                                 for prov in provenance:
-                                    log.warn("ENHANCING PROVENANCE saw %s" % prov)
-                                    add_provenance(ad, prov['timestamp'], prov['filename'], prov['md5'],
-                                                   prov['primitive'])
+                                    if not _provenance_exists(existing_provenance, prov['filename'],
+                                                              prov['md5'], prov['primitive']):
+                                        add_provenance(ad, prov['timestamp'], prov['filename'], prov['md5'],
+                                                       prov['primitive'])
+                                        existing_provenance.append(
+                                            {
+                                                "filename": prov["filename"],
+                                                "md5": prov["md5"],
+                                                "primitive": prov["primitive"]
+                                            }
+                                        )
                                 for ph in provenance_history:
-                                    log.warn("ENHANCING PROVENANCE saw history %s" % ph)
                                     add_provenance_history(ad, ph['timestamp_start'], ph['timestamp_end'],
                                                            ph['primitive'], ph['args'])
-            for filename, path, orig_filename, provenance, provenance_history in input_filenames:
-                if path:
-                    try:
-                        md5 = md5sum(path)
-                    except Exception as e:
-                        log.warn("Unable to compute md5 for file, "
-                                 "not storing md5 in provenance: %s" % e)
-                        md5 = None
-                else:
-                    md5 = None
+            for provenance_input in provenance_inputs:
+                orig_filename = provenance_input["origname"]
+                filename = provenance_input["filename"]
+                md5 = provenance_input["md5"]
+
                 output_origname = ad.filename
                 if isinstance(ad, AstroDataFits):
                     if "ORIGNAME" in ad.phu:
                         output_origname = ad.phu["ORIGNAME"]
                 if len(ret_value) == 1 or orig_filename == output_origname:
-                    add_provenance(ad, timestamp, filename, md5, fn.__name__)
+                    # TODO if top-level primitive call
+                    if top_level:
+                        if not _provenance_exists(existing_provenance, filename,
+                                                  md5, fn.__name__):
+                            add_provenance(ad, timestamp, filename, md5, fn.__name__)
+                            existing_provenance.append(
+                                {
+                                    "filename": filename,
+                                    "md5": md5,
+                                    "primitive": fn.__name__
+                                }
+                            )
                     add_provenance_history(ad, timestamp_start, timestamp, fn.__name__, args)
     except Exception as e:
         # we don't want provenance failures to prevent data reduction
         log.warn("Unable to save provenance information, continuing on: %s" % e)
         traceback.print_exc()
 
+
+def __top_level_primitive():
+    for trace in inspect.stack():
+        if "self" in trace[0].f_locals:
+            inst = trace[0].f_locals["self"]
+            if isinstance(inst, geminidr.PrimitivesBASE):
+                return False
+    # if we encounter no primitives above this decorator, then this is a top level primitive call
+    return True
+
+
 @make_class_wrapper
 def parameter_override(fn):
     @wraps(fn)
     def gn(pobj, *args, **kwargs):
         pname = fn.__name__
+
+        try:
+            top_level = __top_level_primitive()
+        except Exception as e:
+            top_level = False
 
         # for provenance information
         stringified_args = "%s" % kwargs
@@ -411,9 +346,9 @@ def parameter_override(fn):
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])
             try:
-                input_filenames = _get_input_info(adinputs)
+                provenance_inputs = _get_provenance_inputs(adinputs)
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-                _capture_provenance(input_filenames, ret_value, timestamp_start, fn, stringified_args)
+                _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise
@@ -425,9 +360,9 @@ def parameter_override(fn):
             try:
                 if isinstance(adinputs, AstroData):
                     raise TypeError("Single AstroData instance passed to primitive, should be a list")
-                input_filenames = _get_input_info(adinputs)
+                provenance_inputs = _get_provenance_inputs(adinputs)
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-                _capture_provenance(input_filenames, ret_value, timestamp_start, fn, stringified_args)
+                _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise
