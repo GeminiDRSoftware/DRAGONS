@@ -773,8 +773,8 @@ class Spect(PrimitivesBASE):
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
-                                tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order+1)))
+                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping')) +
+                                tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
 
                 # Now make repeated fits, increasing the polynomial order
                 for item in sequence:
@@ -837,7 +837,7 @@ class Spect(PrimitivesBASE):
                 for p in m_final.param_names:
                     getattr(m_final, p).bounds = (None, None)
 
-                match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
+                match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                 model=m_final, match_radius=match_radius, sigma_clip=3)
