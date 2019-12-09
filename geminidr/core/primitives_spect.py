@@ -1491,6 +1491,7 @@ class Spect(PrimitivesBASE):
 
                 dg = transform.DataGroup([ext], [t])
                 dg.output_shape = (npix,)
+                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
                 output_dict = dg.transform(attributes=attributes, subsample=subsample,
                                            conserve=conserve)
                 for key, value in output_dict.items():
