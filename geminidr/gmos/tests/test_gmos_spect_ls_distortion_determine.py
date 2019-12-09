@@ -12,7 +12,6 @@ from warnings import warn
 
 import numpy as np
 import pytest
-from astropy.modeling import models
 
 import astrodata
 import geminidr
@@ -20,7 +19,6 @@ from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
 from gempy.utils import logutils
-from scipy import ndimage
 
 
 input_files = [
