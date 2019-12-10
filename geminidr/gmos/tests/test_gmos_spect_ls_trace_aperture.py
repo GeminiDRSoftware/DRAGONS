@@ -104,7 +104,7 @@ def ad(request, path_to_inputs, path_to_outputs):
         _ad = preprocess_data(_ad, path_to_inputs, ap_center)
 
     else:
-        raise IOError("Cannot find input file:\n {:s}".format(fname))
+        raise IOError("Cannot find input file:\n {:s}".format(full_fname))
 
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
