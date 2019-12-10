@@ -65,7 +65,7 @@ import numpy as np
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.md5 import md5sum
 from recipe_system.utils.provenance import add_provenance, get_provenance, get_provenance_history, \
-    add_provenance_history
+    add_provenance_history, top_level_primitive
 
 
 def memusage():
@@ -195,11 +195,33 @@ def _provenance_exists(existing_provenance, filename, md5, primitive):
     return False
 
 
+def _check_clone_provenance(ad_inputs, ad_outputs):
+    if len(ad_outputs) == 1:
+        for ad_input in ad_inputs:
+            if ad_input != ad_outputs[0]:
+                provenance = get_provenance(ad_input)
+                for prov in provenance:
+                    add_provenance(ad_outputs[0], prov["timestamp"], prov["filename"], prov["md5"], prov["primitive"])
+    else:
+        for ad_input, ad_output in zip(ad_inputs, ad_outputs):
+            if ad_input != ad_output:
+                # new file generated, need top copy over provenance
+                provenance = get_provenance(ad_input)
+                for prov in provenance:
+                    add_provenance(ad_output, prov["timestamp"], prov["filename"], prov["md5"], prov["primitive"])
+
+
 def _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, args):
     try:
         timestamp = datetime.now()
         for ad in ret_value:
             existing_provenance = get_provenance(ad)
+            log.warn("PROVENANCE: File: %s" % ad.filename)
+            if existing_provenance is None or len(existing_provenance) == 0:
+                log.warn("  None")
+            else:
+                for p in existing_provenance:
+                    log.warn("  %s" % p)
 
             # If we have matching inputs, or if we are a consolidated output with one matching input,
             # we want to pull in the source provenance
@@ -290,16 +312,6 @@ def _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start
         traceback.print_exc()
 
 
-def __top_level_primitive():
-    for trace in inspect.stack():
-        if "self" in trace[0].f_locals:
-            inst = trace[0].f_locals["self"]
-            if isinstance(inst, geminidr.PrimitivesBASE):
-                return False
-    # if we encounter no primitives above this decorator, then this is a top level primitive call
-    return True
-
-
 @make_class_wrapper
 def parameter_override(fn):
     @wraps(fn)
@@ -307,7 +319,7 @@ def parameter_override(fn):
         pname = fn.__name__
 
         try:
-            top_level = __top_level_primitive()
+            top_level = top_level_primitive(True)
         except Exception as e:
             top_level = False
 
@@ -348,6 +360,7 @@ def parameter_override(fn):
             try:
                 provenance_inputs = _get_provenance_inputs(adinputs)
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                _check_clone_provenance(adinputs, ret_value)
                 _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
@@ -362,6 +375,7 @@ def parameter_override(fn):
                     raise TypeError("Single AstroData instance passed to primitive, should be a list")
                 provenance_inputs = _get_provenance_inputs(adinputs)
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                _check_clone_provenance(adinputs, ret_value)
                 _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()

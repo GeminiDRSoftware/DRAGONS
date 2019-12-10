@@ -1,9 +1,11 @@
+import inspect
 import traceback
 from datetime import datetime
 
 import astropy
 from astropy.table import Table
 
+import geminidr
 from astrodata import AstroDataFits
 import numpy as np
 
@@ -11,6 +13,37 @@ from gempy.utils import logutils
 from recipe_system.utils.md5 import md5sum
 
 log = logutils.get_logger(__name__)
+
+
+class Provenance:
+    def __init__(self, timestamp, filename, md5, primitive):
+        self.timestamp = timestamp
+        self.filename = filename
+        self.md5 = md5
+        self.primitive = primitive
+
+
+def top_level_primitive(called_from_decorator=False):
+    """ Check if we are a 'top-level' primitive.
+
+    Returns true if this primitive was called directly or from a recipe, rather
+    than being invoked by another primitive.
+    """
+    # if we were called from a decorator, we flag that we already "saw" our own
+    # method since it's not in the stack
+    if called_from_decorator:
+        saw_primitive = True
+    else:
+        saw_primitive = False
+    for trace in inspect.stack():
+        if "self" in trace[0].f_locals:
+            inst = trace[0].f_locals["self"]
+            if isinstance(inst, geminidr.PrimitivesBASE):
+                if saw_primitive:
+                    return False
+                saw_primitive = True
+    # if we encounter no primitives above this decorator, then this is a top level primitive call
+    return True
 
 
 def get_provenance(ad):
@@ -51,13 +84,22 @@ def get_provenance_history(ad):
 
 def add_provenance(ad, timestamp, filename, md5, primitive):
     try:
+        if md5 is None or md5 == '':
+            # not a real input, we can ignore this one
+            return
         if isinstance(ad, AstroDataFits):
+            # TODO make this efficient
+            existing_provenance = get_provenance(ad)
+            for existing_prov in existing_provenance:
+                if existing_prov['filename'] == filename and \
+                        existing_prov['md5'] == md5 and \
+                        existing_prov['primitive'] == primitive:
+                    # nothing needed, we already have it
+                    return
             if timestamp is None:
                 timestamp_str = ""
             else:
                 timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")
-            if md5 is None:
-                md5 = ""
 
             if 'GEM_PROVENANCE' not in ad:
                 timestamp_data = np.array([timestamp_str])
@@ -77,6 +119,7 @@ def add_provenance(ad, timestamp, filename, md5, primitive):
             log.warn("Not a FITS AstroData, add provenance does nothing")
     except Exception as e:
         pass
+
 
 def add_provenance_history(ad, timestamp_start, timestamp_end, primitive, args):
     if isinstance(ad, AstroDataFits):
