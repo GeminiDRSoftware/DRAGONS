@@ -17,7 +17,17 @@ from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 
-test_datasets = [
+
+trace_apertures_parameters = {
+    "trace_order": 2,
+    "nsum": 20,
+    "step": 10,
+    "max_shift": 0.09,
+    "max_missed": 5,
+    "debug": False
+}
+
+input_datasets = [
     # Input Filename                                Aperture Center
     ("N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720
     ("N20180509S0010_mosaicWithApertureTable.fits", 259),  # R400 900
@@ -32,7 +42,7 @@ test_datasets = [
 
 ref_datasets = [
     "_".join(f[0].split("_")[:-1]) + "_aperturesTraced.fits"
-    for f in test_datasets
+    for f in input_datasets
 ]
 
 
@@ -99,15 +109,7 @@ def ad(request, path_to_inputs, path_to_outputs):
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
 
-    ad_out = p.traceApertures(
-        [_ad],
-        trace_order=2,
-        nsum=20,
-        step=10,
-        max_shift=0.09,
-        max_missed=5,
-        debug=False,
-    )[0]
+    ad_out = p.traceApertures([_ad], **trace_apertures_parameters)[0]
 
     tests_failed_before_module = request.session.testsfailed
 
@@ -203,7 +205,7 @@ def setup_log(path_to_outputs):
 
 
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, ad_ref", zip(test_datasets, ref_datasets), indirect=True)
+@pytest.mark.parametrize("ad, ad_ref", zip(input_datasets, ref_datasets), indirect=True)
 def test_trace_apertures_is_stable(ad, ad_ref):
 
     keys = ad[0].APERTURE.colnames
