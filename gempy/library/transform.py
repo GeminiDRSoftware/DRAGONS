@@ -919,6 +919,18 @@ class DataGroup(object):
             raise ValueError("Number of shifts has wrong dimensionality")
         self.origin = tuple(orig + shift for orig, shift in zip(self.origin, args))
 
+    def reset_origin(self):
+        """
+        This method appends Shifts to the transforms so that the origin
+        becomes (0,0). The origin is then set to None.
+        """
+        if self.origin is None:
+            raise ValueError("Origin has not been set")
+        for t in self.transforms:
+            t.append(reduce(Model.__and__,
+                            [models.Shift(-offset) for offset in self.origin[::-1]]))
+        self.origin = None
+
     def transform(self, attributes=['data'], order=1, subsample=1,
                   threshold=0.01, conserve=False, parallel=False):
         """

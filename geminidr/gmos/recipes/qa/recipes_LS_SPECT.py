@@ -34,6 +34,7 @@ def reduce(p):
     p.measureIQ(display=True)
     p.extract1DSpectra()
     p.linearizeSpectra()
+    #p.plotSpectra()
     p.writeOutputs()
 
 
