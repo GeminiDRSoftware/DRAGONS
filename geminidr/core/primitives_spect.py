@@ -1531,10 +1531,10 @@ class Spect(PrimitivesBASE):
         extensions and their shape) as the input frame.
 
         TODO: There is an issue here because the spline knots are equally
-        spaced but their separation should be much larger than any data-free
-        inter-chip gap, so this effectively sets a maxmimum spline order
-        which might not be very high. Can/should we set the spline knots only
-        within each chip?
+              spaced but their separation should be much larger than any data-free
+              inter-chip gap, so this effectively sets a maxmimum spline order
+              which might not be very high. Can/should we set the spline knots only
+              within each chip?
 
         Parameters
         ----------
