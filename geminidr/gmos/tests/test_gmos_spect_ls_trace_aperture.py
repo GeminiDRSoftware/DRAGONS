@@ -165,8 +165,8 @@ def preprocess_data(ad, path, center):
          [0],  # domain_start
          [width - 1],  # domain_end
          [center],  # c0
-         [-10],  # aper_lower
-         [10],  # aper_upper
+         [-5],  # aper_lower
+         [5],  # aper_upper
          ],
         names=[
             'number',
