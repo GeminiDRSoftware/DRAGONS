@@ -12,6 +12,7 @@ from astropy import table
 
 import astrodata
 import geminidr
+import numpy as np
 from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
@@ -205,4 +206,5 @@ def setup_log(path_to_outputs):
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(test_datasets, ref_datasets), indirect=True)
 def test_extract_1d_spectra_is_stable(ad, ad_ref):
-    assert True
+    assert ad[0].data.ndim == 1
+    np.testing.assert_allclose(ad[0].data, ad_ref[0].data, atol=1e-3)
