@@ -12,6 +12,7 @@ from astropy import table
 
 import astrodata
 import geminidr
+import numpy as np
 from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
@@ -29,12 +30,19 @@ test_datasets = [
     ("N20190427S0141_mosaicWithApertureTable.fits", 264),  # R150 660
 ]
 
+ref_datasets = [
+    "_".join(f[0].split("_")[:-1]) + "_aperturesTraced.fits"
+    for f in test_datasets
+]
+
 
 @pytest.fixture(scope='module')
-def ad_factory(request, path_to_inputs, path_to_outputs, path_to_refs):
+def ad(request, path_to_inputs, path_to_outputs):
     """
-    Returns an function that can be used to load an existing input file or to
-    create it if needed.
+    Loads existing input FITS files as AstroData objects, runs the
+    `traceApertures` primitive on it, and return the output object containing
+    a `.APERTURE` table. This makes tests more efficient because the primitive
+    is run only once, instead of N x Numbes of tests.
 
     If the input file does not exist, this fixture raises a IOError.
 
@@ -53,9 +61,6 @@ def ad_factory(request, path_to_inputs, path_to_outputs, path_to_refs):
     path_to_outputs : fixture
         Custom fixture defined in `astrodata.testing` containing the path to the
         output folder.
-    path_to_refs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        cached reference files.
 
     Returns
     -------
@@ -68,38 +73,88 @@ def ad_factory(request, path_to_inputs, path_to_outputs, path_to_refs):
         If the input file does not exist and if --force-preprocess-data is False.
     """
     force_preprocess = request.config.getoption("--force-preprocess-data")
+    fname, ap_center = request.param
+
+    full_fname = os.path.join(path_to_inputs, request.param[0])
+
+    if os.path.exists(full_fname):
+        print("\n Loading existing input file:\n  {:s}\n".format(full_fname))
+        _ad = astrodata.open(full_fname)
+
+    elif force_preprocess:
+
+        print("\n Pre-processing input file:\n  {:s}\n".format(full_fname))
+        subpath, basename = os.path.split(full_fname)
+        basename, extension = os.path.splitext(basename)
+        basename = basename.split('_')[0] + extension
+
+        raw_fname = testing.download_from_archive(basename, path=subpath)
+
+        _ad = astrodata.open(raw_fname)
+        _ad = preprocess_data(_ad, path_to_inputs, ap_center)
+
+    else:
+        raise IOError("Cannot find input file:\n {:s}".format(fname))
 
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
 
-    def _astrodata_factory(filename, center):
+    ad_out = p.traceApertures(
+        [_ad],
+        trace_order=2,
+        nsum=20,
+        step=10,
+        max_shift=0.09,
+        max_missed=5,
+        debug=False,
+    )[0]
 
-        fname = os.path.join(path_to_inputs, filename)
+    tests_failed_before_module = request.session.testsfailed
 
-        print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
+    yield ad_out
 
-        if os.path.exists(fname):
-            print("\n Loading existing input file:\n  {:s}\n".format(fname))
-            _ad = astrodata.open(fname)
+    if request.session.testsfailed > tests_failed_before_module:
 
-        elif force_preprocess:
+        _dir = os.path.join(path_to_outputs, os.path.dirname(fname))
+        os.makedirs(_dir, exist_ok=True)
 
-            print("\n Pre-processing input file:\n  {:s}\n".format(fname))
-            subpath, basename = os.path.split(fname)
-            basename, extension = os.path.splitext(basename)
-            basename = basename.split('_')[0] + extension
+        fname_out = os.path.join(_dir, ad_out.filename)
+        ad_out.write(filename=fname_out, overwrite=True)
+        print('\n Saved file to:\n  {}\n'.format(fname_out))
 
-            raw_fname = testing.download_from_archive(basename, path=subpath)
+    del ad_out
 
-            _ad = astrodata.open(raw_fname)
-            _ad = preprocess_data(_ad, path_to_inputs, center)
 
-        else:
-            raise IOError("Cannot find input file:\n {:s}".format(fname))
+@pytest.fixture(scope='module')
+def ad_ref(request, path_to_refs):
+    """
+    Loads existing reference FITS files as AstroData objects.
 
-        return _ad
+    Parameters
+    ----------
+    request : fixture
+        PyTest's built-in fixture with information about the test itself.
+    path_to_refs : fixture
+        Custom fixture defined in `astrodata.testing` containing the path to the
+        cached reference files.
 
-    return _astrodata_factory
+    Returns
+    -------
+    AstroData
+        Object containing Wavelength Solution table.
+
+    Raises
+    ------
+    IOError
+        If the reference file does not exist. It should be created and verified
+        manually.
+    """
+    fname = os.path.join(path_to_refs, request.param)
+
+    if not os.path.exists(fname):
+        raise IOError(" Cannot find reference file:\n {:s}".format(fname))
+
+    return astrodata.open(fname)
 
 
 def preprocess_data(ad, path, center):
@@ -179,17 +234,13 @@ def setup_log(path_to_outputs):
     logutils.config(mode="standard", file_name=log_file)
 
 
-@pytest.mark.parametrize("input_fname, ap_center", test_datasets)
-def test_can_run_trace_standard_star_aperture(ad_factory, input_fname, ap_center):
-    ad = ad_factory(input_fname, ap_center)
-    p = primitives_gmos_spect.GMOSSpect([])
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad, ad_ref", zip(test_datasets, ref_datasets), indirect=True)
+def test_trace_apertures_is_stable(ad, ad_ref):
 
-    p.traceApertures(
-        [ad],
-        trace_order=2,
-        nsum=20,
-        step=10,
-        max_shift=0.09,
-        max_missed=5,
-        debug=False,
-    )
+    keys = ad[0].APERTURE.colnames
+
+    desired = np.array([ad_ref[0].APERTURE[k] for k in keys])
+    actual = np.array([ad[0].APERTURE[k] for k in keys])
+    np.testing.assert_allclose(desired, actual, atol=0.05)
+
