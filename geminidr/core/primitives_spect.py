@@ -1225,7 +1225,7 @@ class Spect(PrimitivesBASE):
                 #                                                 rejector="sigclip", combiner="wtmean")
 
                 # TODO: find_peaks might not be best considering we have no
-                # idea whether sources will be extended or not
+                #   idea whether sources will be extended or not
                 widths = np.arange(5, 30)
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
                                                     variance=prof_var, reject_bad=False,
@@ -1735,7 +1735,6 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
 
     def traceApertures(self, adinputs=None, **params):
         """
