@@ -17,15 +17,16 @@ from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 
 test_datasets = [
-    ("N20180508S0021_mosaicWithApertureTable.fits", 244, -10, 10),  # B600 720
-    ("N20180509S0010_mosaicWithApertureTable.fits", 259, -10, 10),  # R400 900
-    ("N20180516S0081_mosaicWithApertureTable.fits", 255, -10, 10),  # R600 860
-    ("N20190201S0163_mosaicWithApertureTable.fits", 255, -10, 10),  # B600 530
-    ("N20190313S0114_mosaicWithApertureTable.fits", 254, -10, 10),  # B600 482
-    ("N20190427S0123_mosaicWithApertureTable.fits", 260, -10, 10),  # R400 525
-    ("N20190427S0126_mosaicWithApertureTable.fits", 259, -10, 10),  # R400 625
-    ("N20190427S0127_mosaicWithApertureTable.fits", 258, -10, 10),  # R400 725
-    ("N20190427S0141_mosaicWithApertureTable.fits", 264, -10, 10),  # R150 660
+    # Input Filename                                Aperture Center
+    ("N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720
+    ("N20180509S0010_mosaicWithApertureTable.fits", 259),  # R400 900
+    ("N20180516S0081_mosaicWithApertureTable.fits", 255),  # R600 860
+    ("N20190201S0163_mosaicWithApertureTable.fits", 255),  # B600 530
+    ("N20190313S0114_mosaicWithApertureTable.fits", 254),  # B600 482
+    ("N20190427S0123_mosaicWithApertureTable.fits", 260),  # R400 525
+    ("N20190427S0126_mosaicWithApertureTable.fits", 259),  # R400 625
+    ("N20190427S0127_mosaicWithApertureTable.fits", 258),  # R400 725
+    ("N20190427S0141_mosaicWithApertureTable.fits", 264),  # R150 660
 ]
 
 
@@ -71,7 +72,7 @@ def ad_factory(request, path_to_inputs, path_to_outputs, path_to_refs):
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
 
-    def _astrodata_factory(filename, center, lower, upper):
+    def _astrodata_factory(filename, center):
 
         fname = os.path.join(path_to_inputs, filename)
 
@@ -91,7 +92,7 @@ def ad_factory(request, path_to_inputs, path_to_outputs, path_to_refs):
             raw_fname = testing.download_from_archive(basename, path=subpath)
 
             _ad = astrodata.open(raw_fname)
-            _ad = preprocess_data(_ad, path_to_inputs, center, lower, upper)
+            _ad = preprocess_data(_ad, path_to_inputs, center)
 
         else:
             raise IOError("Cannot find input file:\n {:s}".format(fname))
@@ -101,7 +102,7 @@ def ad_factory(request, path_to_inputs, path_to_outputs, path_to_refs):
     return _astrodata_factory
 
 
-def preprocess_data(ad, path, center, lower, upper):
+def preprocess_data(ad, path, center):
     """
     Recipe used to generate input data for Wavelength Calibration tests. It is
     called only if the input data do not exist and if `--force-preprocess-data`
@@ -115,10 +116,6 @@ def preprocess_data(ad, path, center, lower, upper):
         Path that points to where the input data is cached.
     center : int
         Aperture center.
-    lower : int
-        Relative lower aperture limit.
-    upper : int
-        Relative upper aperture limit.
 
     Returns
     -------
@@ -145,8 +142,8 @@ def preprocess_data(ad, path, center, lower, upper):
          [0],  # domain_start
          [width - 1],  # domain_end
          [center],  # c0
-         [lower],  # aper_lower
-         [upper],  # aper_upper
+         [-10],  # aper_lower
+         [10],  # aper_upper
          ],
         names=[
             'number',
@@ -182,9 +179,9 @@ def setup_log(path_to_outputs):
     logutils.config(mode="standard", file_name=log_file)
 
 
-@pytest.mark.parametrize("input_fname, ap_center, ap_lower, ap_upper", test_datasets)
-def test_can_run_trace_standard_star_aperture(ad_factory, input_fname, ap_center, ap_lower, ap_upper):
-    ad = ad_factory(input_fname, ap_center, ap_lower, ap_upper)
+@pytest.mark.parametrize("input_fname, ap_center", test_datasets)
+def test_can_run_trace_standard_star_aperture(ad_factory, input_fname, ap_center):
+    ad = ad_factory(input_fname, ap_center)
     p = primitives_gmos_spect.GMOSSpect([])
 
     p.traceApertures(
