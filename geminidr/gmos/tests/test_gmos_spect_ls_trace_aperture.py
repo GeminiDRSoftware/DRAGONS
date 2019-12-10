@@ -208,9 +208,16 @@ def setup_log(path_to_outputs):
 @pytest.mark.parametrize("ad, ad_ref", zip(input_datasets, ref_datasets), indirect=True)
 def test_trace_apertures_is_stable(ad, ad_ref):
 
+    input_table = ad[0].APERTURE
+    reference_table = ad_ref[0].APERTURE
+
+    assert input_table['aper_lower'][0] <= 0
+    assert input_table['aper_upper'][0] >= 0
+
     keys = ad[0].APERTURE.colnames
 
-    desired = np.array([ad_ref[0].APERTURE[k] for k in keys])
-    actual = np.array([ad[0].APERTURE[k] for k in keys])
+    actual = np.array([input_table[k] for k in keys])
+    desired = np.array([reference_table[k] for k in keys])
+
     np.testing.assert_allclose(desired, actual, atol=0.05)
 
