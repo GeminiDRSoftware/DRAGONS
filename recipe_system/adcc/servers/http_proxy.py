@@ -329,6 +329,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         msg_form  = '"%s" %s %s'
         info_code = 203
         fail_code = 416
+        bad_connect_code = 503
         size = "-"
         verbosity = self.informers["verbose"]
 
@@ -352,16 +353,20 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.log_message(msg_form, "No extant events.", info_code, size)
             self.log_message(msg_form, reqmsg+"@fitsstore", info_code, size)
 
-            events.event_list = fstore_get(current_op_timestamp())
-            self.log_message(msg_form,"Received "+str(len(events.event_list))+" events.",
-                             info_code, size)
+            try:
+                events.event_list = fstore_get(current_op_timestamp())
+                self.log_message(msg_form,"Received "+str(len(events.event_list))+" events.",
+                                 info_code, size)
 
-            tdic = events.get_list()
-            tdic.insert(0, {"msgtype": "cmdqueue.request","timestamp": time.time()})
-            tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
-            self.wfile.write(
-                bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+                tdic = events.get_list()
+                tdic.insert(0, {"msgtype": "cmdqueue.request","timestamp": time.time()})
+                tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
+                self.wfile.write(
+                    bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
                 )
+            except urllib.error.URLError:
+                self.log_message(msg_form, "Cannot connect to Fitsstore.", bad_connect_code, size)
+                pass
 
         # Handle current nighttime requests ...
         elif stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
@@ -382,20 +387,23 @@ class ADCCHandler(BaseHTTPRequestHandler):
             if verbosity:
                 self.log_message(msg_form, "Requested metrics on ... " +
                                  stamp_to_opday(fromtime), info_code, size)
+            try:
+                tdic = fstore_get(fromtime)
+                if verbosity:
+                    self.log_message(msg_form, "Received " + str(len(tdic)) +
+                                     " events from fitsstore.", info_code, size)
 
-            tdic = fstore_get(fromtime)
-            if verbosity:
-                self.log_message(msg_form, "Received " + str(len(tdic)) +
-                                    " events from fitsstore.", info_code, size)
-
-            # Append the last timestamp from the event_list. This is done
-            # to trigger the client to pinging the adcc from the last
-            # recorded event.
-            tdic.insert(0, {"msgtype": "cmdqueue.request", "timestamp": time.time()})
-            tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
-            self.wfile.write(
-                bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
-            )
+                # Append the last timestamp from the event_list. This is done
+                # to trigger the client to pinging the adcc from the last
+                # recorded event.
+                tdic.insert(0, {"msgtype": "cmdqueue.request", "timestamp": time.time()})
+                tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
+                self.wfile.write(
+                    bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+                )
+            except urllib.error.URLError:
+                self.log_message(msg_form, "Cannot connect to Fitsstore.", bad_connect_code, size)
+                pass
 
         # Cannot handle the future ...
         else:
