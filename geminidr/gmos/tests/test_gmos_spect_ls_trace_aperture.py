@@ -29,15 +29,15 @@ trace_apertures_parameters = {
 
 input_datasets = [
     # Input Filename                                Aperture Center
-    ("N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720
-    ("N20180509S0010_mosaicWithApertureTable.fits", 259),  # R400 900
-    ("N20180516S0081_mosaicWithApertureTable.fits", 255),  # R600 860
-    ("N20190201S0163_mosaicWithApertureTable.fits", 255),  # B600 530
-    ("N20190313S0114_mosaicWithApertureTable.fits", 254),  # B600 482
-    ("N20190427S0123_mosaicWithApertureTable.fits", 260),  # R400 525
-    ("N20190427S0126_mosaicWithApertureTable.fits", 259),  # R400 625
-    ("N20190427S0127_mosaicWithApertureTable.fits", 258),  # R400 725
-    ("N20190427S0141_mosaicWithApertureTable.fits", 264),  # R150 660
+    ("process_arcs/GMOS/N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720
+    ("process_arcs/GMOS/N20180509S0010_mosaicWithApertureTable.fits", 259),  # R400 900
+    ("process_arcs/GMOS/N20180516S0081_mosaicWithApertureTable.fits", 255),  # R600 860
+    ("process_arcs/GMOS/N20190201S0163_mosaicWithApertureTable.fits", 255),  # B600 530
+    ("process_arcs/GMOS/N20190313S0114_mosaicWithApertureTable.fits", 254),  # B600 482
+    ("process_arcs/GMOS/N20190427S0123_mosaicWithApertureTable.fits", 260),  # R400 525
+    ("process_arcs/GMOS/N20190427S0126_mosaicWithApertureTable.fits", 259),  # R400 625
+    ("process_arcs/GMOS/N20190427S0127_mosaicWithApertureTable.fits", 258),  # R400 725
+    ("process_arcs/GMOS/N20190427S0141_mosaicWithApertureTable.fits", 264),  # R150 660
 ]
 
 ref_datasets = [
@@ -101,7 +101,7 @@ def ad(request, path_to_inputs, path_to_outputs):
         raw_fname = testing.download_from_archive(basename, path=subpath)
 
         _ad = astrodata.open(raw_fname)
-        _ad = preprocess_data(_ad, path_to_inputs, ap_center)
+        _ad = preprocess_data(_ad, subpath, ap_center)
 
     else:
         raise IOError("Cannot find input file:\n {:s}".format(full_fname))
@@ -167,8 +167,8 @@ def preprocess_data(ad, path, center):
          [0],  # domain_start
          [width - 1],  # domain_end
          [center],  # c0
-         [-5],  # aper_lower
-         [5],  # aper_upper
+         [-10],  # aper_lower
+         [10],  # aper_upper
          ],
         names=[
             'number',
