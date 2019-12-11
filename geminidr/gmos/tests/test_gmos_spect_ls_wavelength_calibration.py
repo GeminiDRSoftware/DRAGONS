@@ -41,6 +41,16 @@ from gempy.library import astromodels
 from gempy.utils import logutils
 from .plots_gmos_spect_longslit_arcs import PlotGmosSpectLongslitArcs
 
+# Test parameters --------------------------------------------------------------
+determine_wavelength_solution_parameters = {
+    'center': None,
+    'nsum': 10,
+    'linelist': None,
+    'weighting': 'natural',
+    'nbright': 0
+}
+
+
 input_files = [
     # Process Arcs: GMOS-N ---
     # (Input File, fwidth, order, min_snr)
@@ -131,13 +141,16 @@ reference_files = [
 ]
 
 
+# Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope="module")
-def ad(request, path_to_inputs, path_to_outputs):
+def ad(request, ad_factory, path_to_outputs):
     """
     Loads existing input FITS files as AstroData objects, runs the
     `determineWavelengthSolution` on it and return the output object with a
-    `.WAVECAL` table. This makes tests more efficient because the primitive is
-    run only once, instead of x n_tests.
+    `.WAVECAL` table.
+
+    This makes tests more efficient because the primitive is run only once,
+    instead of x n_tests.
 
     If the input file does not exist, this fixture raises a IOError.
 
@@ -150,9 +163,9 @@ def ad(request, path_to_inputs, path_to_outputs):
     ----------
     request : fixture
         PyTest's built-in fixture with information about the test itself.
-    path_to_inputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        cached input files.
+    ad_factory : fixture
+        Custom fixture defined in the `conftest.py` file that loads cached data,
+        or download and/or process it if needed.
     path_to_outputs : fixture
         Custom fixture defined in `astrodata.testing` containing the path to the
         output folder.
@@ -161,62 +174,25 @@ def ad(request, path_to_inputs, path_to_outputs):
     -------
     AstroData
         Object containing Wavelength Solution table.
-
-    Raises
-    ------
-    IOError
-        If the input file does not exist and if --force-preprocess-data is False.
     """
-    force_preprocess = request.config.getoption("--force-preprocess-data")
-
-    filename = request.param[0]
-    fwidth = request.param[1]
-    order = request.param[2]
-    min_snr = request.param[3]
-
-    fname = os.path.join(path_to_inputs, filename)
+    fname, fwidth, order, min_snr = request.param
 
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
 
     print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
 
-    if os.path.exists(fname):
-        print("\n Loading existing input file:\n  {:s}\n".format(fname))
-        _ad = astrodata.open(fname)
-
-    elif force_preprocess:
-
-        print("\n\n Pre-processing input file:\n  {:s}\n".format(fname))
-        subpath, basename = os.path.split(filename)
-        basename, extension = os.path.splitext(basename)
-        basename = basename.split('_')[0] + extension
-
-        raw_fname = testing.download_from_archive(basename, path=subpath)
-
-        _ad = astrodata.open(raw_fname)
-        _ad = preprocess_data(_ad, os.path.join(path_to_inputs, subpath))
-
-    else:
-        raise IOError("Cannot find input file:\n {:s}".format(fname))
+    _ad = ad_factory(fname, preprocess_recipe)
 
     ad_out = p.determineWavelengthSolution(
-        [_ad],
-        center=None,
-        nsum=10,
-        order=order,
-        min_snr=min_snr,
-        fwidth=fwidth,
-        linelist=None,
-        weighting='natural',
-        nbright=0
-    )[0]
+        [_ad], order=order, min_snr=min_snr, fwidth=fwidth,
+        **determine_wavelength_solution_parameters)[0]
 
     tests_failed_before_module = request.session.testsfailed
 
     yield ad_out
 
-    _dir = os.path.join(path_to_outputs, os.path.dirname(filename))
+    _dir = os.path.join(path_to_outputs, os.path.dirname(fname))
     os.makedirs(_dir, exist_ok=True)
 
     if request.config.getoption("--do-plots"):
@@ -248,7 +224,7 @@ def do_plots(ad, output_dir):
         warn("Could not generate plots")
 
 
-def preprocess_data(ad, path):
+def preprocess_recipe(ad, path):
     """
     Recipe used to generate input data for Wavelength Calibration tests. It is
     called only if the input data do not exist and if `--force-preprocess-data`
@@ -298,7 +274,7 @@ def setup_log(path_to_outputs):
 
     logutils.config(mode="standard", file_name=log_file)
 
-
+# Tests Definitions ------------------------------------------------------------
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", input_files, indirect=True)
 def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(ad):

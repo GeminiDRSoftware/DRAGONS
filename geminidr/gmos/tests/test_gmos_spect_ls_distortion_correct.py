@@ -20,6 +20,7 @@ from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 
 
+# Test parameters --------------------------------------------------------------
 input_files = [
     # Process Arcs: GMOS-N ---
     # (Input File, fwidth, order, min_snr)
@@ -110,13 +111,16 @@ reference_files = [
 ]
 
 
+# Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope="module")
-def ad(request, path_to_inputs, path_to_outputs, path_to_refs):
+def ad(request, ad_factory, path_to_outputs, path_to_refs):
     """
     Loads existing input FITS files as AstroData objects, runs the
     `distortionCorrect` primitive on it, and return the output object free of
-    distortion. This makes tests more efficient because the primitive is
-    run only once, instead of N x Numbes of tests.
+    distortion.
+
+    This makes tests more efficient because the primitive is run only once,
+    instead of N x Numbes of tests.
 
     If the input file does not exist, this fixture raises a IOError.
 
@@ -129,9 +133,9 @@ def ad(request, path_to_inputs, path_to_outputs, path_to_refs):
     ----------
     request : fixture
         PyTest's built-in fixture with information about the test itself.
-    path_to_inputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        cached input files.
+    ad_factory : fixture
+        Custom fixture defined in the `conftest.py` file that loads cached data,
+        or download and/or process it if needed.
     path_to_outputs : fixture
         Custom fixture defined in `astrodata.testing` containing the path to the
         output folder.
@@ -149,47 +153,25 @@ def ad(request, path_to_inputs, path_to_outputs, path_to_refs):
     IOError
         If the input file does not exist and if --force-preprocess-data is False.
     """
-    force_preprocess = request.config.getoption("--force-preprocess-data")
-
-    fname = os.path.join(path_to_inputs, request.param)
+    fname = request.param
 
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
 
     print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
 
-    if os.path.exists(fname):
-        print("\n Loading existing input file:\n  {:s}\n".format(fname))
-        _ad = astrodata.open(fname)
-
-    elif force_preprocess:
-
-        print("\n\n Pre-processing input file:\n  {:s}\n".format(fname))
-        subpath, basename = os.path.split(request.param)
-        basename, extension = os.path.splitext(basename)
-        basename = basename.split('_')[0] + extension
-
-        raw_fname = testing.download_from_archive(basename, path=subpath)
-
-        _ad = astrodata.open(raw_fname)
-        _ad = preprocess_data(_ad, os.path.join(path_to_inputs, subpath))
-
-    else:
-        raise IOError("Cannot find input file:\n {:s}".format(fname))
-
+    _ad = ad_factory(fname, preprocess_recipe)
     ad_out = p.distortionCorrect([_ad], arc=_ad, order=3, subsample=1)[0]
 
     tests_failed_before_module = request.session.testsfailed
-
     yield ad_out
 
     _dir = os.path.join(path_to_outputs, os.path.dirname(request.param))
     _ref_dir = os.path.join(path_to_refs, os.path.dirname(request.param))
-
     os.makedirs(_dir, exist_ok=True)
 
-    # if request.config.getoption("--do-plots"):
-    #     do_plots(ad_out, _dir, _ref_dir)
+    if request.config.getoption("--do-plots"):
+        do_plots(ad_out, _dir, _ref_dir)
 
     if request.session.testsfailed > tests_failed_before_module:
         fname_out = os.path.join(_dir, ad_out.filename)
@@ -223,7 +205,7 @@ def do_plots(ad, output_path, reference_path):
     p.close_all()
 
 
-def preprocess_data(ad, path):
+def preprocess_recipe(ad, path):
     """
     Recipe used to generate input data for `distortionCorrect` tests. It is
     called only if the input data do not exist and if `--force-preprocess-data`
@@ -278,6 +260,7 @@ def setup_log(path_to_outputs):
     logutils.config(mode="standard", file_name=log_file)
 
 
+# Tests Definitions ------------------------------------------------------------
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
 def test_distortion_correct_is_stable(ad, ad_ref):

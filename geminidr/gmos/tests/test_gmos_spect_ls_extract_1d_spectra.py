@@ -18,6 +18,7 @@ from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 from .test_gmos_spect_ls_trace_aperture import trace_apertures_parameters
 
+# Test parameters --------------------------------------------------------------
 extract_1d_spectra_parameters = {
     "method": "standard",
     "width": None,
@@ -44,6 +45,7 @@ ref_datasets = [
 ]
 
 
+# Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='module')
 def ad(request, path_to_inputs, path_to_outputs):
     """
@@ -203,6 +205,7 @@ def setup_log(path_to_outputs):
     logutils.config(mode="standard", file_name=log_file)
 
 
+# Tests Definitions ------------------------------------------------------------
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(test_datasets, ref_datasets), indirect=True)
 def test_extract_1d_spectra_is_stable(ad, ad_ref):
