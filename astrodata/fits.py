@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+from datetime import datetime
+
 from future.utils import PY3
 
 from builtins import object
@@ -20,7 +22,7 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest, product as cart_product
 
-from .core import AstroData, DataProvider, astro_data_descriptor
+from .core import AstroData, DataProvider, astro_data_descriptor, Provenance
 from .nddata import NDAstroData as NDDataObject, new_variance_uncertainty_instance
 
 import astropy

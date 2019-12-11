@@ -6,6 +6,7 @@
 """
 
 __all__ = ['AstroData', 'AstroDataError', 'TagSet', 'NDAstroData',
+           'Provenance', 'ProvenanceHistory',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
            'open', 'create', '__version__', 'version']
 

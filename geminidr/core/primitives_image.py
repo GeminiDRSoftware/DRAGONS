@@ -9,11 +9,11 @@ import numpy as np
 from copy import deepcopy
 from scipy.ndimage import binary_dilation
 
+from astrodata import Provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.utils.md5 import md5sum
-from recipe_system.utils.provenance import add_provenance
 
 from .primitives_preprocess import Preprocess
 from .primitives_register import Register
@@ -166,7 +166,7 @@ class Image(Preprocess, Register, Resample):
             ad.phu.set("FRINGEIM", fringe.filename, self.keyword_comments["FRINGEIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
-            add_provenance(ad, datetime.now(), fringe.filename, md5sum(fringe.filename), "fringeCorrect")
+            ad.add_provenance(Provenance(datetime.now(), fringe.filename, md5sum(fringe.filename), "fringeCorrect"))
         return adinputs
 
     def makeFringeForQA(self, adinputs=None, **params):

@@ -42,30 +42,18 @@ E.g.,::
 
 """
 import gc
-import hashlib
 import traceback
 from collections import Iterable
 from datetime import datetime
-from time import strptime
-import inspect
 
-import astropy
 import psutil
 from functools import wraps
 from copy import copy, deepcopy
 
-import astrodata
-import geminidr
-from astrodata import AstroData, AstroDataFits
-from astropy.table import Table, Column
+from astrodata import AstroData, ProvenanceHistory
 
 from gempy.utils import logutils
-import numpy as np
-
-from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.md5 import md5sum
-from recipe_system.utils.provenance import add_provenance, get_provenance, get_provenance_history, \
-    add_provenance_history, top_level_primitive
 
 
 def memusage():
@@ -170,142 +158,65 @@ def _get_provenance_inputs(adinputs):
     retval = list()
     for ad in adinputs:
         if ad.filename:
-            origname = ad.filename
-            if isinstance(ad, AstroDataFits):
-                if "ORIGNAME" in ad.phu:
-                    origname = ad.phu["ORIGNAME"]
             if ad.path:
                 md5 = md5sum(ad.path)
             else:
                 md5 = ""
             retval.append({"filename": ad.filename,
                            "md5": md5,
-                           "origname": origname,
-                           "provenance": get_provenance(ad),
-                           "provenance_history": get_provenance_history(ad)})
+                           "provenance": ad.provenance,
+                           "provenance_history": ad.provenance_history})
     return retval
 
 
-def _provenance_exists(existing_provenance, filename, md5, primitive):
-    if existing_provenance is None:
-        return False
-    for e in existing_provenance:
-        if e["filename"] == filename and e["md5"] == md5 and e["primitive"] == primitive:
-            return True
-    return False
+def _clone_provenance(provenance_input, ad):
+    # set will be faster for checking contents
+    existing_provenance = set(ad.provenance)
+
+    provenance = provenance_input["provenance"]
+
+    for prov in provenance:
+        if prov not in existing_provenance:
+            ad.add_provenance(prov)
+            existing_provenance.add(prov)
 
 
-def _check_clone_provenance(ad_inputs, ad_outputs):
-    if len(ad_outputs) == 1:
-        for ad_input in ad_inputs:
-            if ad_input != ad_outputs[0]:
-                provenance = get_provenance(ad_input)
-                for prov in provenance:
-                    add_provenance(ad_outputs[0], prov["timestamp"], prov["filename"], prov["md5"], prov["primitive"])
-    else:
-        for ad_input, ad_output in zip(ad_inputs, ad_outputs):
-            if ad_input != ad_output:
-                # new file generated, need top copy over provenance
-                provenance = get_provenance(ad_input)
-                for prov in provenance:
-                    add_provenance(ad_output, prov["timestamp"], prov["filename"], prov["md5"], prov["primitive"])
+def _clone_history(provenance_input, ad):
+    # set will be faster for checking contents
+    existing_history = set(ad.provenance_history)
+
+    provenance_history = provenance_input["provenance_history"]
+    for ph in provenance_history:
+        if ph not in existing_history:
+            ad.add_provenance_history(ph)
+            existing_history.add(ph)
 
 
-def _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, args):
+def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args):
     try:
         timestamp = datetime.now()
-        for ad in ret_value:
-            existing_provenance = get_provenance(ad)
-            log.warn("PROVENANCE: File: %s" % ad.filename)
-            if existing_provenance is None or len(existing_provenance) == 0:
-                log.warn("  None")
-            else:
-                for p in existing_provenance:
-                    log.warn("  %s" % p)
-
-            # If we have matching inputs, or if we are a consolidated output with one matching input,
-            # we want to pull in the source provenance
-            if isinstance(ad, AstroDataFits) and 'GEM_PROVENANCE' not in ad:
-                if len(ret_value) > 1:
-                    for provenance_input in provenance_inputs:
-                        provenance = provenance_input["provenance"]
-                        provenance_history = provenance_input["provenance_history"]
-
-                        output_origname = ad.filename
-                        if isinstance(ad, AstroDataFits):
-                            if "ORIGNAME" in ad.phu:
-                                output_origname = ad.phu["ORIGNAME"]
-                        if provenance_input["origname"] == output_origname:
-                            # matching input, copy provenance
-                            for prov in provenance:
-                                if not _provenance_exists(existing_provenance, prov['filename'],
-                                                          prov['md5'], prov['primitive']):
-                                    add_provenance(ad, prov['timestamp'], prov['filename'], prov['md5'],
-                                                   prov['primitive'])
-                                    existing_provenance.append(
-                                        {
-                                            "filename": prov["filename"],
-                                            "md5": prov["md5"],
-                                            "primitive": prov["primitive"]
-                                        }
-                                    )
-                            for ph in provenance_history:
-                                add_provenance_history(ad, ph['timestamp_start'], ph['timestamp_end'],
-                                                       ph['primitive'], ph['args'])
+        if len(provenance_inputs) == len(ret_value):
+            for provenance_input, ad in zip(provenance_inputs, ret_value):
+                _clone_provenance(provenance_input, ad)
+                if not ad.provenance_history:
+                    # if our output has no history, it's fresh and we want
+                    # to copy in the history from the input
+                    _clone_history(provenance_input, ad)
+        else:
+            for ad in ret_value:
+                # if our output has no history, it's fresh and we want
+                # to copy in the history from the inputs
+                if ad.provenance_history:
+                    clone_history = False
                 else:
-                    if len(provenance_inputs) > 0:
-                        provenance_input = provenance_inputs[0]
-                        orig_filename = provenance_input["origname"]
+                    clone_history = True
+                for provenance_input in provenance_inputs:
+                    _clone_provenance(provenance_input, ad)
+                    if clone_history:
+                        _clone_history(provenance_input, ad)
 
-                        output_origname = ad.filename
-                        if isinstance(ad, AstroDataFits):
-                            if "ORIGNAME" in ad.phu:
-                                output_origname = ad.phu["ORIGNAME"]
-                        if orig_filename == output_origname:
-                            # if the first input of a M->1 primitive matches our output, pull in all
-                            # the input provenance data
-                            for provenance_input in provenance_inputs:
-                                orig_filename = provenance_input["origname"]
-                                provenance = provenance_input["provenance"]
-                                provenance_history = provenance_input["provenance_history"]
-                                for prov in provenance:
-                                    if not _provenance_exists(existing_provenance, prov['filename'],
-                                                              prov['md5'], prov['primitive']):
-                                        add_provenance(ad, prov['timestamp'], prov['filename'], prov['md5'],
-                                                       prov['primitive'])
-                                        existing_provenance.append(
-                                            {
-                                                "filename": prov["filename"],
-                                                "md5": prov["md5"],
-                                                "primitive": prov["primitive"]
-                                            }
-                                        )
-                                for ph in provenance_history:
-                                    add_provenance_history(ad, ph['timestamp_start'], ph['timestamp_end'],
-                                                           ph['primitive'], ph['args'])
-            for provenance_input in provenance_inputs:
-                orig_filename = provenance_input["origname"]
-                filename = provenance_input["filename"]
-                md5 = provenance_input["md5"]
-
-                output_origname = ad.filename
-                if isinstance(ad, AstroDataFits):
-                    if "ORIGNAME" in ad.phu:
-                        output_origname = ad.phu["ORIGNAME"]
-                if len(ret_value) == 1 or orig_filename == output_origname:
-                    # TODO if top-level primitive call
-                    if top_level:
-                        if not _provenance_exists(existing_provenance, filename,
-                                                  md5, fn.__name__):
-                            add_provenance(ad, timestamp, filename, md5, fn.__name__)
-                            existing_provenance.append(
-                                {
-                                    "filename": filename,
-                                    "md5": md5,
-                                    "primitive": fn.__name__
-                                }
-                            )
-                    add_provenance_history(ad, timestamp_start, timestamp, fn.__name__, args)
+        for ad in ret_value:
+            ad.add_provenance_history(ProvenanceHistory(timestamp_start, timestamp, fn.__name__, args))
     except Exception as e:
         # we don't want provenance failures to prevent data reduction
         log.warn("Unable to save provenance information, continuing on: %s" % e)
@@ -317,11 +228,6 @@ def parameter_override(fn):
     @wraps(fn)
     def gn(pobj, *args, **kwargs):
         pname = fn.__name__
-
-        try:
-            top_level = top_level_primitive(True)
-        except Exception as e:
-            top_level = False
 
         # for provenance information
         stringified_args = "%s" % kwargs
@@ -360,8 +266,7 @@ def parameter_override(fn):
             try:
                 provenance_inputs = _get_provenance_inputs(adinputs)
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-                _check_clone_provenance(adinputs, ret_value)
-                _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
+                _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise
@@ -375,8 +280,7 @@ def parameter_override(fn):
                     raise TypeError("Single AstroData instance passed to primitive, should be a list")
                 provenance_inputs = _get_provenance_inputs(adinputs)
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-                _check_clone_provenance(adinputs, ret_value)
-                _capture_provenance(top_level, provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
+                _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise

@@ -7,7 +7,6 @@ import numpy as np
 from os import path
 
 from gempy.gemini import gemini_tools as gt
-from recipe_system.utils.provenance import add_provenance
 
 from ..core import NearIR
 from ..gemini.primitives_gemini import Gemini
