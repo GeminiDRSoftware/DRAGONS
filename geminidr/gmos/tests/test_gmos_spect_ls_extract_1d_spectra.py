@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-Regression tests for GMOS LS extraction1D. These tests run on real data to ensure
-that the output is always the same. Further investigation is needed to check if
-these outputs are scientifically relevant.
+Regression tests for GMOS LS `extract1DSpectra`. These tests run on real data to
+ensure that the output is always the same. Further investigation is needed to
+check if these outputs are scientifically relevant.
 """
 
 import os
