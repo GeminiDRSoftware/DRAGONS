@@ -85,9 +85,9 @@ class Photometry(PrimitivesBASE):
                 dec = ad.wcs_dec()
                 if type(ra) is not float:
                     raise ValueError("wcs_ra descriptor did not return a float.")
-                if type(ra) is not float:
+                if type(dec) is not float:
                     raise ValueError("wcs_dec descriptor did not return a float.")
-            except:
+            except Exception:
                 if "qa" in self.mode:
                     log.warning("No RA/Dec in header of {}; cannot find "
                                 "reference sources".format(ad.filename))
@@ -96,13 +96,12 @@ class Photometry(PrimitivesBASE):
                     raise
 
             log.fullinfo("Querying {} for reference catalog".format(source))
-            import warnings
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 refcat = get_fits_table(source, ra, dec, radius)
 
             if refcat is None:
-               log.stdinfo("No reference catalog sources found for {}".
+                log.stdinfo("No reference catalog sources found for {}".
                             format(ad.filename))
             else:
                 log.stdinfo("Found {} reference catalog sources for {}".
