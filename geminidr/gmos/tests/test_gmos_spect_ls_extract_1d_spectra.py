@@ -47,7 +47,7 @@ ref_datasets = [
 
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='module')
-def ad(request, path_to_inputs, path_to_outputs):
+def ad(request, ad_factory, path_to_outputs):
     """
     Loads existing input FITS files as AstroData objects, runs the
     `extract1DSpectra` primitive on it, and return the output object containing
@@ -65,9 +65,9 @@ def ad(request, path_to_inputs, path_to_outputs):
     ----------
     request : fixture
         PyTest's built-in fixture with information about the test itself.
-    path_to_inputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        cached input files.
+    ad_factory : fixture
+        Custom fixture defined in the `conftest.py` file that loads cached data,
+        or download and/or process it if needed.
     path_to_outputs : fixture
         Custom fixture defined in `astrodata.testing` containing the path to the
         output folder.
@@ -82,37 +82,15 @@ def ad(request, path_to_inputs, path_to_outputs):
     IOError
         If the input file does not exist and if --force-preprocess-data is False.
     """
-    force_preprocess = request.config.getoption("--force-preprocess-data")
     fname, ap_center = request.param
-
-    full_fname = os.path.join(path_to_inputs, request.param[0])
-
-    if os.path.exists(full_fname):
-        print("\n Loading existing input file:\n  {:s}\n".format(full_fname))
-        _ad = astrodata.open(full_fname)
-
-    elif force_preprocess:
-
-        print("\n Pre-processing input file:\n  {:s}\n".format(full_fname))
-        subpath, basename = os.path.split(full_fname)
-        basename, extension = os.path.splitext(basename)
-        basename = basename.split('_')[0] + extension
-
-        raw_fname = testing.download_from_archive(basename, path=subpath)
-
-        _ad = astrodata.open(raw_fname)
-        _ad = preprocess_data(_ad, subpath, ap_center)
-
-    else:
-        raise IOError("Cannot find input file:\n {:s}".format(full_fname))
 
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
 
+    _ad = ad_factory(fname, preprocess_recipe, **{'center': ap_center})
     ad_out = p.extract1DSpectra([_ad], **extract_1d_spectra_parameters)[0]
 
     tests_failed_before_module = request.session.testsfailed
-
     yield ad_out
 
     if request.session.testsfailed > tests_failed_before_module:
@@ -126,7 +104,7 @@ def ad(request, path_to_inputs, path_to_outputs):
     del ad_out
 
 
-def preprocess_data(ad, path, center):
+def preprocess_recipe(ad, path, center):
     """
     Recipe used to generate input data for Wavelength Calibration tests. It is
     called only if the input data do not exist and if `--force-preprocess-data`

@@ -274,6 +274,7 @@ def setup_log(path_to_outputs):
 
     logutils.config(mode="standard", file_name=log_file)
 
+
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", input_files, indirect=True)
