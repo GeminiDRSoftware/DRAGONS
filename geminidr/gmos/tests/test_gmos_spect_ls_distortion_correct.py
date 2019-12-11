@@ -207,9 +207,7 @@ def do_plots(ad, output_path, reference_path):
 
 def preprocess_recipe(ad, path):
     """
-    Recipe used to generate input data for `distortionCorrect` tests. It is
-    called only if the input data do not exist and if `--force-preprocess-data`
-    is used in the command line.
+    Recipe used to generate input data for `distortionCorrect` tests.
 
     Parameters
     ----------

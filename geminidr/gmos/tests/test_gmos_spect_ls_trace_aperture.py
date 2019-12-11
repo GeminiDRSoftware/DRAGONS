@@ -105,9 +105,7 @@ def ad(request, ad_factory, path_to_outputs):
 
 def preprocess_recipe(ad, path, center):
     """
-    Recipe used to generate input data for Wavelength Calibration tests. It is
-    called only if the input data do not exist and if `--force-preprocess-data`
-    is used in the command line.
+    Recipe used to generate input data for `traceAperture` tests.
 
     Parameters
     ----------
