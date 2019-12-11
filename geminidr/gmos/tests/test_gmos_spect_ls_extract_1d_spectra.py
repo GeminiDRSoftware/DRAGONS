@@ -152,7 +152,7 @@ def preprocess_data(ad, path, center):
     _p.overscanCorrect()
     _p.ADUToElectrons()
     _p.addVAR(poisson_noise=True)
-    _p.mosaicDetectors(suffix="_aperturesTraced")
+    _p.mosaicDetectors()
     _ad = _p.makeIRAFCompatible()[0]
 
     width = _ad[0].shape[1]
