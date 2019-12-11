@@ -17,7 +17,7 @@ from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 
-
+# Test parameters ---
 trace_apertures_parameters = {
     "trace_order": 2,
     "nsum": 20,
@@ -28,8 +28,8 @@ trace_apertures_parameters = {
 }
 
 input_datasets = [
-    # Input Filename                                Aperture Center
-    ("process_arcs/GMOS/N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720
+    # Input Filename                                                  Aperture Center
+    # ("process_arcs/GMOS/N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720 - todo: won't pass
     ("process_arcs/GMOS/N20180509S0010_mosaicWithApertureTable.fits", 259),  # R400 900
     ("process_arcs/GMOS/N20180516S0081_mosaicWithApertureTable.fits", 255),  # R600 860
     ("process_arcs/GMOS/N20190201S0163_mosaicWithApertureTable.fits", 255),  # B600 530

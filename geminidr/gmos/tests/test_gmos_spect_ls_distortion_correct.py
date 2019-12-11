@@ -12,15 +12,12 @@ from warnings import warn
 
 import numpy as np
 import pytest
-from astropy.modeling import models
 
 import astrodata
 import geminidr
 from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
-from gempy.library import astromodels
 from gempy.utils import logutils
-from scipy import ndimage
 
 
 input_files = [
@@ -180,12 +177,7 @@ def ad(request, path_to_inputs, path_to_outputs, path_to_refs):
     else:
         raise IOError("Cannot find input file:\n {:s}".format(fname))
 
-    ad_out = p.distortionCorrect(
-        [_ad],
-        arc=_ad,
-        order=3,
-        subsample=1,
-    )[0]
+    ad_out = p.distortionCorrect([_ad], arc=_ad, order=3, subsample=1)[0]
 
     tests_failed_before_module = request.session.testsfailed
 
@@ -205,38 +197,6 @@ def ad(request, path_to_inputs, path_to_outputs, path_to_refs):
         print('\n Saved file to:\n  {}\n'.format(fname_out))
 
     del ad_out
-
-
-@pytest.fixture(scope="module")
-def ad_ref(request, path_to_refs):
-    """
-    Loads existing reference FITS files as AstroData objects.
-
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-    path_to_refs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        cached reference files.
-
-    Returns
-    -------
-    AstroData
-        Object containing Wavelength Solution table.
-
-    Raises
-    ------
-    IOError
-        If the reference file does not exist. It should be created and verified
-        manually.
-    """
-    fname = os.path.join(path_to_refs, request.param)
-
-    if not os.path.exists(fname):
-        raise IOError(" Cannot find reference file:\n {:s}".format(fname))
-
-    return astrodata.open(fname)
 
 
 def do_plots(ad, output_path, reference_path):

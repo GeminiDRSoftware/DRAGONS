@@ -230,38 +230,6 @@ def ad(request, path_to_inputs, path_to_outputs):
     del ad_out
 
 
-@pytest.fixture(scope="module")
-def ad_ref(request, path_to_refs):
-    """
-    Loads existing reference FITS files as AstroData objects.
-
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-    path_to_refs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        cached reference files.
-
-    Returns
-    -------
-    AstroData
-        Object containing Wavelength Solution table.
-
-    Raises
-    ------
-    IOError
-        If the reference file does not exist. It should be created and verified
-        manually.
-    """
-    fname = os.path.join(path_to_refs, request.param)
-
-    if not os.path.exists(fname):
-        IOError(" Cannot find reference file:\n {:s}".format(fname))
-
-    return astrodata.open(fname)
-
-
 def do_plots(ad, output_dir):
     """
     Generate diagnostic plots.
