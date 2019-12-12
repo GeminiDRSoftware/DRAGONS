@@ -770,7 +770,7 @@ class AstroData(object):
         copy *= oper
         return copy
 
-    def __div__(self, oper):
+    def __truediv__(self, oper):
         """
         Implements the binary arithmetic operation `/` with `AstroData` as the left operand.
 

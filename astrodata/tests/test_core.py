@@ -74,14 +74,16 @@ def test_attributes(ad1):
 @pytest.mark.parametrize('op, res', [(operator.add, 3),
                                      (operator.sub, -1),
                                      (operator.mul, 2),
-                                     (operator.divide, 0.5)])
+                                     (operator.truediv, 0.5)])
 def test_can_add_two_astrodata_objects(op, res, ad1, ad2):
-    result = op(ad1, ad2)
-    assert_array_equal(result.data, res)
-    assert isinstance(result, astrodata.AstroData)
-    assert len(result) == 1
-    assert isinstance(result[0].data, np.ndarray)
-    assert isinstance(result[0].hdr, fits.Header)
+
+    for data in (ad2, ad2.data):
+        result = op(ad1, data)
+        assert_array_equal(result.data, res)
+        assert isinstance(result, astrodata.AstroData)
+        assert len(result) == 1
+        assert isinstance(result[0].data, np.ndarray)
+        assert isinstance(result[0].hdr, fits.Header)
 
 
 @pytest.mark.parametrize('op, arg, res', [('add', 100, 101),
