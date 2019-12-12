@@ -109,7 +109,7 @@ def ad(request, ad_factory, path_to_outputs):
 
 def preprocess_arc_recipe(ad, path):
     """
-    Recipe used to generate input data for `distortionCorrect` tests.
+    Recipe used to generate arc data for `extract1DSpectra` tests.
 
     Parameters
     ----------

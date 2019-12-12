@@ -18,15 +18,6 @@ from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
 
 # Test parameters --------------------------------------------------------------
-trace_apertures_parameters = {
-    "trace_order": 2,
-    "nsum": 20,
-    "step": 10,
-    "max_shift": 0.09,
-    "max_missed": 5,
-    "debug": False
-}
-
 input_datasets = [
     # Input Filename                                                  Aperture Center
     # ("process_arcs/GMOS/N20180508S0021_mosaicWithApertureTable.fits", 244),  # B600 720 - todo: won't pass
@@ -87,7 +78,8 @@ def ad(request, ad_factory, path_to_outputs):
     print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
 
     _ad = ad_factory(fname, preprocess_recipe, **{'center': ap_center})
-    ad_out = p.traceApertures([_ad], **trace_apertures_parameters)[0]
+    ad_out = p.traceApertures([_ad], trace_order=2, nsum=20, step=10,
+                              max_shift=0.09, max_missed=5, debug=False)[0]
 
     tests_failed_before_module = request.session.testsfailed
     yield ad_out
