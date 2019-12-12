@@ -156,7 +156,7 @@ def ad(request, ad_factory, path_to_outputs, path_to_refs):
 
     print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
 
-    _ad = ad_factory(fname, preprocess_data)
+    _ad = ad_factory(fname, preprocess_recipe)
     ad_out = p.determineDistortion(
         [_ad], spatial_order=3, spectral_order=4, id_only=False, min_snr=5.,
         fwidth=None, nsum=10, max_shift=0.05, max_missed=5)[0]
