@@ -34,3 +34,4 @@ conda update --quiet conda
 conda config --add channels http://ssb.stsci.edu/astroconda
 conda config --add channels http://astroconda.gemini.edu/public/noarch
 conda env list
+pip install tox tox-conda

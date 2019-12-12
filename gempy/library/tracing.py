@@ -280,12 +280,12 @@ class Aperture(object):
 
         self.check_domain(npix)
 
-        if self.aper_lower > self.aper_upper:
+        if aper_lower > aper_upper:
             log.warning("Aperture lower limit is greater than upper limit.")
             aper_lower, aper_upper = aper_upper, aper_lower
-        if self.aper_lower > 0:
+        if aper_lower > 0:
             log.warning("Aperture lower limit is greater than zero.")
-        if self.aper_upper < 0:
+        if aper_upper < 0:
             log.warning("Aperture upper limit is less than zero.")
 
         # make data look like it's dispersed horizontally

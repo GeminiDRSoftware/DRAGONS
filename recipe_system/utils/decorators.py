@@ -57,6 +57,7 @@ from recipe_system.utils.md5 import md5sum
 
 
 def memusage():
+    import psutil
     proc = psutil.Process()
     return '{:9.3f}'.format(float(proc.memory_info().rss) / 1e6)
 # ------------------------------------------------------------------------------

@@ -2,6 +2,8 @@ astropy
 astroquery
 cython
 future
+imexam
+matplotlib
 numpy
 python-dateutil
 pytest
