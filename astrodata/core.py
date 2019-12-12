@@ -15,6 +15,7 @@ from functools import wraps
 import inspect
 from collections import namedtuple
 from copy import deepcopy
+import json
 
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
@@ -1098,100 +1099,124 @@ class AstroData(object):
 
     @property
     def provenance(self):
+        """
+        get full set of `Provenance` records on this object.
+
+        Returns
+        --------
+        list of `Provenance` records
+        """
         retval = list()
-        try:
-            if hasattr(self._dataprov, 'GEM_PROVENANCE'):
-                provenance = self._dataprov.GEM_PROVENANCE
-                for row in provenance:
-                    timestamp = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                    filename = row[1]
-                    md5 = row[2]
-                    primitive = row[3]
-                    retval.append(Provenance(timestamp, filename, md5, primitive))
-        except Exception as e:
-            pass
+        if hasattr(self._dataprov, 'GEM_PROVENANCE'):
+            provenance = self._dataprov.GEM_PROVENANCE
+            for row in provenance:
+                timestamp = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                filename = row[1]
+                md5 = row[2]
+                primitive = row[3]
+                retval.append(Provenance(timestamp, filename, md5, primitive))
         return retval
 
     def add_provenance(self, value):
-        try:
-            if value.md5 is None or value.md5 == '':
-                # not a real input, we can ignore this one
-                return
-            # TODO make this efficient
-            existing_provenance = self.provenance
-            for existing_prov in existing_provenance:
-                if existing_prov.filename == value.filename and \
-                        existing_prov.md5 == value.md5 and \
-                        existing_prov.provenance_added_by == value.provenance_added_by:
-                    # nothing needed, we already have it
-                    return
-            if value.timestamp is None:
-                timestamp_str = ""
-            else:
-                timestamp_str = value.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")
+        """
+        Add the given `Provenance` entry to the full set of provenance records on this object.
 
-            if not hasattr(self._dataprov, 'GEM_PROVENANCE'):
-                timestamp_data = np.array([timestamp_str])
-                filename_data = np.array([value.filename])
-                md5_data = np.array([value.md5])
-                provenance_added_by_data = np.array([value.provenance_added_by])
-                my_astropy_table = Table([timestamp_data, filename_data, md5_data, provenance_added_by_data],
-                                         names=('timestamp', 'filename', 'md5', 'provenance_added_by'),
-                                         dtype=('S28', 'S128', 'S128', 'S128'))
-                self.append(my_astropy_table, name='GEM_PROVENANCE')
-                pass
-            else:
-                provenance = self._dataprov.GEM_PROVENANCE
-                provenance.add_row((timestamp_str, value.filename, value.md5, value.provenance_added_by))
-                pass
-        except Exception as e:
+        Provenance is not added if the incoming md5 is None or ''.  These indicate source data
+        for the provenance that are not on disk, so not useful as provenance.
+
+        Args
+        -----
+        value : `Provenance` to add
+
+        Returns
+        --------
+        none
+        """
+        if value.md5 is None or value.md5 == '':
+            # not a real input, we can ignore this one
+            return
+        # TODO make this efficient
+        existing_provenance = self.provenance
+        for existing_prov in existing_provenance:
+            if existing_prov.filename == value.filename and \
+                    existing_prov.md5 == value.md5 and \
+                    existing_prov.provenance_added_by == value.provenance_added_by:
+                # nothing needed, we already have it
+                return
+        if value.timestamp is None:
+            timestamp_str = ""
+        else:
+            timestamp_str = value.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+        if not hasattr(self._dataprov, 'GEM_PROVENANCE'):
+            timestamp_data = np.array([timestamp_str])
+            filename_data = np.array([value.filename])
+            md5_data = np.array([value.md5])
+            provenance_added_by_data = np.array([value.provenance_added_by])
+            my_astropy_table = Table([timestamp_data, filename_data, md5_data, provenance_added_by_data],
+                                     names=('timestamp', 'filename', 'md5', 'provenance_added_by'),
+                                     dtype=('S28', 'S128', 'S128', 'S128'))
+            self.append(my_astropy_table, name='GEM_PROVENANCE')
+            pass
+        else:
+            provenance = self._dataprov.GEM_PROVENANCE
+            provenance.add_row((timestamp_str, value.filename, value.md5, value.provenance_added_by))
             pass
 
     @property
     def provenance_history(self):
+        """
+        get the full set of `ProvenanceHistory` records for this object.
+
+        Returns
+        --------
+        list of `ProvenanceHistory` records
+        """
+
         retval = list()
-        try:
-            if hasattr(self._dataprov, 'GEM_PROVENANCE_HISTORY'):
-                provenance_history = self._dataprov.GEM_PROVENANCE_HISTORY
-                for row in provenance_history:
-                    if row[0] == "":
-                        timestamp_start = None
-                    else:
-                        timestamp_start = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                    if row[1] == "":
-                        timestamp_stop = None
-                    else:
-                        timestamp_stop = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S.%f")
-                    primitive = row[2]
-                    args = row[3]
-                    retval.append(ProvenanceHistory(timestamp_start, timestamp_stop, primitive, args))
-        except Exception as e:
-            pass
+        if hasattr(self._dataprov, 'GEM_PROVENANCE_HISTORY'):
+            provenance_history = self._dataprov.GEM_PROVENANCE_HISTORY
+            if provenance_history:
+                row = provenance_history[0]
+                history = row[0]
+                jobjects = json.loads(history)
+                for jobj in jobjects:
+                    timestamp_start = datetime.strptime(jobj["timestamp_start"], "%Y-%m-%d %H:%M:%S.%f")
+                    timestamp_stop = datetime.strptime(jobj["timestamp_stop"], "%Y-%m-%d %H:%M:%S.%f")
+                    primitive = jobj["primitive"]
+                    args = jobj["args"]
+                    ph = ProvenanceHistory(timestamp_start, timestamp_stop, primitive, args)
+                    retval.append(ph)
         return retval
 
     def add_provenance_history(self, value):
-        try:
-            if value.timestamp_start is None:
-                timestamp_start_str = ""
-            else:
-                timestamp_start_str = value.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f")
-            if value.timestamp_stop is None:
-                timestamp_stop_str = ""
-            else:
-                timestamp_stop_str = value.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f")
-            if not hasattr(self._dataprov, 'GEM_PROVENANCE_HISTORY'):
-                timestamp_start_data = np.array([timestamp_start_str])
-                timestamp_stop_data = np.array([timestamp_stop_str])
-                primitive_data = np.array([value.primitive])
-                args_data = np.array([value.args])
-                my_astropy_table = Table([timestamp_start_data, timestamp_stop_data, primitive_data, args_data],
-                                         names=('timestamp_start', 'timestamp_stop', 'primitive', 'args'),
-                                         dtype=('S28', 'S128', 'S128', 'S128'))
-                self.append(my_astropy_table, name='GEM_PROVENANCE_HISTORY')
-                pass
-            else:
-                provenance_history = self._dataprov.GEM_PROVENANCE_HISTORY
-                provenance_history.add_row((timestamp_start_str, timestamp_stop_str, value.primitive, value.args))
-                pass
-        except Exception as e:
-            pass
+        """
+        Add the given ProvenanceHistory entry to the full set of history records on this object.
+
+        Args
+        -----
+        value : `ProvenanceHistory` to add
+
+        Returns
+        --------
+        none
+        """
+        existing_history = self.provenance_history
+        if value in existing_history:
+            # nothing to do
+            return
+        encodeable = list()
+        for ph in existing_history:
+            encodeable.append({"timestamp_start": ph.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                               "timestamp_stop": ph.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                               "primitive": ph.primitive,
+                               "args": ph.args})
+        encodeable.append({"timestamp_start": value.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                               "timestamp_stop": value.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                               "primitive": value.primitive,
+                               "args": value.args})
+        history_str = json.dumps(encodeable).encode('utf8')
+        colsize = len(history_str) + 1
+        dtype = ("S%d" % colsize)
+        table = Table(np.array([history_str, ]), names=('history', ), dtype=(dtype,))
+        self.append(table, name='GEM_PROVENANCE_HISTORY')

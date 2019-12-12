@@ -486,7 +486,7 @@ class Preprocess(PrimitivesBASE):
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-            ad.add_provenance(Provenance(datetime.datetime.now(), dark.filename, md5sum(dark.filename), "darkCorrect"))
+            ad.add_provenance(Provenance(datetime.datetime.now(), dark.filename, md5sum(dark.path), "darkCorrect"))
         return adinputs
 
     def dilateObjectMask(self, adinputs=None, suffix=None, dilation=1, repeat=False):

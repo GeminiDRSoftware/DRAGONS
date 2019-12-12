@@ -115,24 +115,6 @@ def zeroset():
     return
 
 
-def __stringify_list__(obj):
-    if obj is None:
-        return ""
-    if isinstance(obj, AstroData):
-        if 'filename' in obj:
-            return obj.filename
-        else:
-            return "(internal data)"
-    elif isinstance(obj, Iterable):
-        # NOTE: generator will not work for string format, needs a list
-        retval = list()
-        for el in obj:
-            retval.append(__stringify_list__(el))
-        return "%s" % retval
-    else:
-        return obj
-
-
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
     @wraps(wrapped)
@@ -154,6 +136,17 @@ def _get_provenance_inputs(adinputs):
     helper function to extract the 'before' state of things so that we can accurately
     record provenance history.  After the primitive returns, we have the AstroData
     objects into which we'll want to record this information.
+
+
+    Args
+    -----
+    adinputs : list of incoming `AstroData` objects
+        We expect to be called before the primitive executes, since we want to capture the
+        state of the adinputs before they may be modified.
+
+    Returns
+    --------
+    list of dictionaries with the filename, md5, provenance and provenance_history data from the inputs
     """
     retval = list()
     for ad in adinputs:
@@ -170,6 +163,25 @@ def _get_provenance_inputs(adinputs):
 
 
 def _clone_provenance(provenance_input, ad):
+    """
+    For a single input's provenance, copy it into the output
+    `AstroData` object as appropriate.
+
+    This takes a dictionary with a source filename, md5 and both it's
+    original provenance and provenance_history information.  It duplicates
+    the provenance data into the outgoing `AstroData` ad object.
+
+    Args
+    -----
+    provenance_input : dictionary with provenance data from a single input.
+        We only care about the `provenance` element, which holds a list of `Provenance` data
+    ad : outgoing `AstroData` object to add provenance data to
+
+    Returns
+    --------
+    none
+
+    """
     # set will be faster for checking contents
     existing_provenance = set(ad.provenance)
 
@@ -182,6 +194,24 @@ def _clone_provenance(provenance_input, ad):
 
 
 def _clone_history(provenance_input, ad):
+    """
+    For a single input's provenance history, copy it into the output
+    `AstroData` object as appropriate.
+
+    This takes a dictionary with a source filename, md5 and both it's
+    original provenance and provenance_history information.  It duplicates
+    the provenance data into the outgoing `AstroData` ad object.
+
+    Args
+    -----
+    provenance_input : dictionary with provenance data from a single input.
+        We only care about the `provenance_history` element, which holds a list of `ProvenanceHistory` data
+    ad : outgoing `AstroData` object to add provenance data to
+
+    Returns
+    --------
+    none
+    """
     # set will be faster for checking contents
     existing_history = set(ad.provenance_history)
 
@@ -193,6 +223,31 @@ def _clone_history(provenance_input, ad):
 
 
 def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args):
+    """
+    Add the given provenance data to the outgoing `AstroData` objects in ret_value,
+    with an additional provenance entry for the current operation.
+
+    This is a fairly specific function that does a couple of things.  First, it will
+    iterate over collected provenance and history data in provenance_inputs and add
+    them as appropriate to the outgoing `AstroData` in ret_value.  Second, it takes
+    the current operation, expressed in timestamp_start, fn and args, and adds that
+    to the outgoing ret_value objects' provenance as well.
+
+    Args
+    -----
+    provenance_inputs : `ProvenanceHistory` to add
+        This is an array of dictionaries.  There is one dictionary per original incoming
+        `AstroData` object.  Each dictionary contains the filename, md5 and the
+        provenance and provenance_history of that `AstroData` prior to execution of
+        the primitive.
+    ret_value : outgoing list of `AstroData` data
+    fn : name of the function (primitive) being executed
+    args : arguments that are being passed to the primitive
+
+    Returns
+    --------
+    none
+    """
     try:
         timestamp = datetime.now()
         if len(provenance_inputs) == len(ret_value):

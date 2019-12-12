@@ -25,7 +25,7 @@ def tests_add_get_provenance():
 
     ad.add_provenance(Provenance(timestamp, filename, md5, provenance_added_by))
 
-    provenance = ad.get_provenance()
+    provenance = ad.provenance
 
     assert(len(provenance) == 1)
 
@@ -46,7 +46,7 @@ def tests_add_get_provenance_history():
 
     ad.add_provenance_history(ProvenanceHistory(timestamp_start, timestamp_end, primitive, args))
 
-    provenance_history = ad.get_provenance_history()
+    provenance_history = ad.provenance_history
 
     assert(len(provenance_history) == 1)
 
