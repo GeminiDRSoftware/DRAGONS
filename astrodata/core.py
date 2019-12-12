@@ -1176,20 +1176,47 @@ class AstroData(object):
         retval = list()
         if hasattr(self._dataprov, 'GEM_PROVENANCE_HISTORY'):
             provenance_history = self._dataprov.GEM_PROVENANCE_HISTORY
-            if provenance_history:
-                row = provenance_history[0]
-                history = row[0]
-                jobjects = json.loads(history)
-                for jobj in jobjects:
-                    timestamp_start = datetime.strptime(jobj["timestamp_start"], "%Y-%m-%d %H:%M:%S.%f")
-                    timestamp_stop = datetime.strptime(jobj["timestamp_stop"], "%Y-%m-%d %H:%M:%S.%f")
-                    primitive = jobj["primitive"]
-                    args = jobj["args"]
-                    ph = ProvenanceHistory(timestamp_start, timestamp_stop, primitive, args)
-                    retval.append(ph)
+            for row in provenance_history:
+                timestamp_start = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                timestamp_stop = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S.%f")
+                primitive = row[2]
+                args = row[3]
+                ph = ProvenanceHistory(timestamp_start, timestamp_stop, primitive, args)
+                retval.append(ph)
         return retval
 
     def add_provenance_history(self, value):
+        """
+        Add the given ProvenanceHistory entry to the full set of history records on this object.
+
+        Args
+        -----
+        value : `ProvenanceHistory` to add
+
+        Returns
+        --------
+        none
+        """
+        existing_history = self.provenance_history
+        if value in existing_history:
+            # nothing to do
+            return
+        new_history = list()
+        new_history.extend(existing_history)
+        new_history.append(value)
+        colsize = max(len(ph.args) for ph in new_history) + 1
+        timestamp_start = np.array([ph.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in new_history])
+        timestamp_stop = np.array([ph.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in new_history])
+        primitive = np.array([ph.primitive for ph in new_history])
+        args = np.array([ph.args for ph in new_history])
+        dtype = ("S28", "S28", "S128", "S%d" % colsize)
+        table = Table([timestamp_start, timestamp_stop, primitive, args],
+                      names=('timestamp_start', 'timestamp_stop',
+                             'primitive', 'args'),
+                      dtype=dtype)
+        self.append(table, name='GEM_PROVENANCE_HISTORY')
+
+    def add_provenance_history_json_blob_version(self, value):
         """
         Add the given ProvenanceHistory entry to the full set of history records on this object.
 
