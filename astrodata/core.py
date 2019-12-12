@@ -1215,35 +1215,3 @@ class AstroData(object):
                              'primitive', 'args'),
                       dtype=dtype)
         self.append(table, name='GEM_PROVENANCE_HISTORY')
-
-    def add_provenance_history_json_blob_version(self, value):
-        """
-        Add the given ProvenanceHistory entry to the full set of history records on this object.
-
-        Args
-        -----
-        value : `ProvenanceHistory` to add
-
-        Returns
-        --------
-        none
-        """
-        existing_history = self.provenance_history
-        if value in existing_history:
-            # nothing to do
-            return
-        encodeable = list()
-        for ph in existing_history:
-            encodeable.append({"timestamp_start": ph.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                               "timestamp_stop": ph.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                               "primitive": ph.primitive,
-                               "args": ph.args})
-        encodeable.append({"timestamp_start": value.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                               "timestamp_stop": value.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                               "primitive": value.primitive,
-                               "args": value.args})
-        history_str = json.dumps(encodeable).encode('utf8')
-        colsize = len(history_str) + 1
-        dtype = ("S%d" % colsize)
-        table = Table(np.array([history_str, ]), names=('history', ), dtype=(dtype,))
-        self.append(table, name='GEM_PROVENANCE_HISTORY')
