@@ -7,34 +7,36 @@ check if these outputs are scientifically relevant.
 
 import os
 
+import numpy as np
 import pytest
 from astropy import table
 
-import astrodata
 import geminidr
-import numpy as np
-from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.utils import logutils
-from .test_gmos_spect_ls_trace_aperture import trace_apertures_parameters
+
 
 # Test parameters --------------------------------------------------------------
-sky_correct_from_slit_parameters = {
-    'order': 5,
-    'grow': 0
-}
-
 test_datasets = [
     # Input Filename
-    ("process_arcs/GMOS/N20180508S0021_aperturesTraced.fits", 244),  # B600 720
-    ("process_arcs/GMOS/N20180509S0010_aperturesTraced.fits", 259),  # R400 900
-    ("process_arcs/GMOS/N20180516S0081_aperturesTraced.fits", 255),  # R600 860
-    ("process_arcs/GMOS/N20190201S0163_aperturesTraced.fits", 255),  # B600 530
-    ("process_arcs/GMOS/N20190313S0114_aperturesTraced.fits", 254),  # B600 482
-    ("process_arcs/GMOS/N20190427S0123_aperturesTraced.fits", 260),  # R400 525
-    ("process_arcs/GMOS/N20190427S0126_aperturesTraced.fits", 259),  # R400 625
-    ("process_arcs/GMOS/N20190427S0127_aperturesTraced.fits", 258),  # R400 725
-    ("process_arcs/GMOS/N20190427S0141_aperturesTraced.fits", 264),  # R150 660
+    ("process_arcs/GMOS/N20180508S0021_aperturesTraced.fits",
+     "process_arcs/GMOS/N20180615S0409_distortionDetermined.fits", 244),  # B600 720
+    ("process_arcs/GMOS/N20180509S0010_aperturesTraced.fits",
+     "process_arcs/GMOS/N20180509S0080_distortionDetermined.fits", 259),  # R400 900
+    ("process_arcs/GMOS/N20180516S0081_aperturesTraced.fits",
+     "process_arcs/GMOS/N20180516S0214_distortionDetermined.fits", 255),  # R600 860
+    # ("process_arcs/GMOS/N20190201S0163_aperturesTraced.fits",
+    #  "process_arcs/GMOS/N20190201S0176_distortionDetermined.fits", 255),  # B600 530
+    ("process_arcs/GMOS/N20190313S0114_aperturesTraced.fits",
+     "process_arcs/GMOS/N20190313S0132_distortionDetermined.fits", 254),  # B600 482
+    ("process_arcs/GMOS/N20190427S0123_aperturesTraced.fits",
+     "process_arcs/GMOS/N20190427S0266_distortionDetermined.fits", 260),  # R400 525
+    ("process_arcs/GMOS/N20190427S0126_aperturesTraced.fits",
+     "process_arcs/GMOS/N20190427S0267_distortionDetermined.fits", 259),  # R400 625
+    ("process_arcs/GMOS/N20190427S0127_aperturesTraced.fits",
+     "process_arcs/GMOS/N20190427S0268_distortionDetermined.fits", 258),  # R400 725
+    ("process_arcs/GMOS/N20190427S0141_aperturesTraced.fits",
+     "process_arcs/GMOS/N20190427S0270_distortionDetermined.fits", 264),  # R150 660
 ]
 
 ref_datasets = [
@@ -75,13 +77,17 @@ def ad(request, ad_factory, path_to_outputs):
     AstroData
         Object containing Wavelength Solution table.
     """
-    fname, ap_center = request.param
+    fname, arc_name, ap_center = request.param
 
     p = primitives_gmos_spect.GMOSSpect([])
     p.viewer = geminidr.dormantViewer(p, None)
 
-    _ad = ad_factory(fname, preprocess_recipe, **{'center': ap_center})
-    ad_out = p.skyCorrectFromSlit([_ad], **sky_correct_from_slit_parameters)[0]
+    print('\n\n Running test inside folder:\n  {}'.format(path_to_outputs))
+
+    arc_ad = ad_factory(arc_name, preprocess_arc_recipe)
+
+    _ad = ad_factory(fname, preprocess_recipe, center=ap_center, arc=arc_ad)
+    ad_out = p.skyCorrectFromSlit([_ad], order=5, grow=0)[0]
 
     tests_failed_before_module = request.session.testsfailed
 
@@ -98,9 +104,9 @@ def ad(request, ad_factory, path_to_outputs):
     del ad_out
 
 
-def preprocess_recipe(ad, path, center):
+def preprocess_arc_recipe(ad, path):
     """
-    Recipe used to generate input data for `skyCorrectFromSlit` tests.
+    Recipe used to generate input data for `distortionCorrect` tests.
 
     Parameters
     ----------
@@ -108,8 +114,6 @@ def preprocess_recipe(ad, path, center):
         Input raw arc data loaded as AstroData.
     path : str
         Path that points to where the input data is cached.
-    center : int
-        Aperture center.
 
     Returns
     -------
@@ -125,6 +129,47 @@ def preprocess_recipe(ad, path, center):
     _p.ADUToElectrons()
     _p.addVAR(poisson_noise=True)
     _p.mosaicDetectors()
+    _p.makeIRAFCompatible()
+
+    ad = _p.determineDistortion(
+        spatial_order=3, spectral_order=4, id_only=False, min_snr=5.,
+        fwidth=None, nsum=10, max_shift=0.05, max_missed=5)[0]
+
+    _p.writeOutputs(outfilename=os.path.join(path, ad.filename))
+
+    return ad
+
+
+def preprocess_recipe(ad, path, center, arc):
+    """
+    Recipe used to generate input data for `skyCorrectFromSlit` tests.
+
+    Parameters
+    ----------
+    ad : AstroData
+        Input raw data loaded as AstroData.
+    path : str
+        Path that points to where the input data is cached.
+    center : int
+        Aperture center.
+    arc : AstroData
+        Distortion corrected arc loaded as AstroData.
+
+    Returns
+    -------
+    AstroData
+        Pre-processed arc data.
+    """
+    _p = primitives_gmos_spect.GMOSSpect([ad])
+
+    _p.prepare()
+    _p.addDQ(static_bpm=None)
+    _p.addVAR(read_noise=True)
+    _p.overscanCorrect()
+    _p.ADUToElectrons()
+    _p.addVAR(poisson_noise=True)
+    _p.mosaicDetectors()
+    _p.distortionCorrect(arc=arc)
     _ad = _p.makeIRAFCompatible()[0]
 
     width = _ad[0].shape[1]
@@ -152,7 +197,9 @@ def preprocess_recipe(ad, path, center):
 
     _ad[0].APERTURE = aperture
 
-    ad = _p.traceApertures([_ad], **trace_apertures_parameters)[0]
+    ad = _p.traceApertures(
+        [_ad], trace_order=2, nsum=20, step=10, max_shift=0.09, max_missed=5)[0]
+
     ad.write(os.path.join(path, ad.filename))
 
     return ad
