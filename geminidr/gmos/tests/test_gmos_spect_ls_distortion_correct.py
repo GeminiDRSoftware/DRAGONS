@@ -277,7 +277,7 @@ def test_distortion_correct_is_stable(ad, ad_ref):
 
 @pytest.mark.remote_data
 @pytest.mark.parametrize("fname", input_files)
-def test_full_frame_distortion_works_on_smaller_region(fname):
+def test_full_frame_distortion_works_on_smaller_region(fname, path_to_inputs):
     """
     Takes a full-frame arc and self-distortion-corrects it. It then fakes
     subregions of this and corrects those using the full-frame distortion to
@@ -292,7 +292,7 @@ def test_full_frame_distortion_works_on_smaller_region(fname):
 
     raw_fname = testing.download_from_archive(basename, path=subpath)
 
-    _ad = astrodata.open(raw_fname)
+    _ad = astrodata.open(os.path.join(path_to_inputs, subpath, raw_fname))
 
     NSUB = 4  # we're going to take combos of horizontal quadrants
     completed_binnings = []
