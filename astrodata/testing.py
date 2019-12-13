@@ -24,6 +24,10 @@ def download_from_archive(filename, path=None):
         By default the file is stored at the root of the cache directory, but
         using ``path`` allows to specify a sub-directory.
 
+    Returns
+    -------
+    str
+        Name of the cached file with the path added to it.
     """
     # Find cache path and make sure it exists
     cache_path = os.getenv('DRAGONS_TEST_INPUTS', DEFAULT_CACHE_DIRECTORY)
