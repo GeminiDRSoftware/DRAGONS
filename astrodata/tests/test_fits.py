@@ -10,18 +10,18 @@ import astrodata
 from astrodata.testing import download_from_archive
 
 test_files = [
-    "S20170103S0032.fits",
-    "N20190116G0054i.fits",
-    "N20190206S0279.fits",
-    "N20170529S0168.fits",
-    "S20180223S0229.fits",
-    "N20160727S0077.fits",
-    "N20190120S0287.fits",
-    "S20190213S0084.fits",
-    "S20171116S0078.fits",
-    "S20150609S0023.fits",
-    "S20170505S0095.fits",
-    "S20170505S0031.fits",
+    "N20160727S0077.fits",  # NIFS DARK
+    "N20170529S0168.fits",  # GMOS-N SPECT
+    "N20190116G0054i.fits",  # GRACES SPECT
+    "N20190120S0287.fits",  # NIRI IMAGE
+    "N20190206S0279.fits",  # GNIRS SPECT XD
+    "S20150609S0023.fits",  # GSAOI DARK
+    "S20170103S0032.fits",  # F2 IMAGE
+    "S20170505S0031.fits",  # GSAOI FLAT
+    "S20170505S0095.fits",  # GSAOI IMAGE
+    "S20171116S0078.fits",  # GMOS-S MOS NS
+    "S20180223S0229.fits",  # GMOS IFU ACQUISITION
+    "S20190213S0084.fits",  # F2 IMAGE
 ]
 
 
