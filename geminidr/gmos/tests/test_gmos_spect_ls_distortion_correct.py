@@ -343,14 +343,12 @@ def test_full_frame_distortion_works_on_smaller_region(fname):
         # larger one to look for a match
         ny, nx = ad2[0].shape
         xsizediff = ad_out[0].shape[1] - nx
-        ok = False
+
         for xoffset in range(xsizediff + 1):
-            # Confirm that all unmasked pixels are similar
-            diff = (np.ma.masked_array(ad2[0].data, mask=ad2[0].mask) -
-                    ad_out[0].data[y1b:y1b + ny, xoffset:xoffset + nx])
-            if np.logical_and(abs(diff) > 0.01, ~diff.mask).sum() == 0:
-                ok = True
-                break
-        assert ok, "Problem with {} {}:{}".format(ad.filename, start, end)
+            np.testing.assert_allclose(
+                np.ma.masked_array(ad2[0].data, mask=ad2[0].mask),
+                ad_out[0].data[y1b:y1b + ny, xoffset:xoffset + nx],
+                atol=0.01,
+                err_msg="Problem with {} {}:{}".format(ad.filename, start, end))
 
         completed_binnings.append((xbin, ybin))
