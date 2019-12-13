@@ -244,7 +244,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     header.add_comment('Source catalog derived from the {} catalog'.
                        format(catalog))
     header.add_comment('Source catalog fetched from server at {}'.format(url))
-    header.add_comment('Delivered Table name from serer:  {}'.
+    header.add_comment('Delivered Table name from server:  {}'.
                        format(table.name))
     for col in range(len(cols)):
         header.add_comment('UCD for field {} is {}'.format(
