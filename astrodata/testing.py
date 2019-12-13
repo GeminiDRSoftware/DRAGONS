@@ -11,6 +11,7 @@ import pytest
 from astropy.utils.data import download_file
 
 URL = 'https://archive.gemini.edu/file/'
+DEFAULT_CACHE_DIRECTORY = '~/.geminidr/cache'
 
 
 def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
@@ -25,6 +26,11 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
         using ``path`` allows to specify a sub-directory.
     env_var: strs
         Environment variable containing the path to the cache directory.
+
+    Returns
+    -------
+    str
+        Name of the cached file with the path added to it.
     """
     # Find cache path and make sure it exists
     cache_path = os.getenv(env_var)
