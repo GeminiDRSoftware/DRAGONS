@@ -16,7 +16,8 @@ import pytest
 import astrodata
 import geminidr
 from astrodata import testing
-from geminidr.gmos import primitives_gmos_spect
+from copy import deepcopy
+from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.utils import logutils
 
 
@@ -272,3 +273,83 @@ def test_distortion_correct_is_stable(ad, ad_ref):
     ref_data = np.ma.masked_invalid(ad_ref[0].data)
 
     np.testing.assert_allclose(data, ref_data, atol=1)
+
+
+@pytest.mark.remote_data
+@pytest.mark.parametrize("fname", input_files)
+def test_full_frame_distortion_works_on_smaller_region(fname):
+    """
+    Takes a full-frame arc and self-distortion-corrects it. It then fakes
+    subregions of this and corrects those using the full-frame distortion to
+    confirm that the result is the same as the appropriate region of the
+    distortion-corrected full-frame image. There's no need to do this more
+    than once for a given binning, so we loop within the function, keeping
+    track of binnings we've already processed.
+    """
+    subpath, basename = os.path.split(fname)
+    basename, extension = os.path.splitext(basename)
+    basename = basename.split('_')[0] + extension
+
+    fname = testing.download_from_archive(basename, path=subpath)
+    _ad = astrodata.open(fname)
+
+    NSUB = 4  # we're going to take combos of horizontal quadrants
+    completed_binnings = []
+
+    xbin, ybin = _ad.detector_x_bin(), _ad.detector_y_bin()
+
+    if _ad.detector_roi_setting() != "Full Fame" or (xbin, ybin) in completed_binnings:
+        return
+
+    p = primitives_gmos_longslit.GMOSLongslit([_ad])
+    p.viewer.viewer_name = None
+    p.prepare()
+    p.addDQ(static_bpm=None)
+    p.overscanCorrect()
+    p.ADUToElectrons()
+    p.mosaicDetectors(outstream='mosaic')
+    # Speed things up a bit with a larger step
+    p.determineDistortion(stream='mosaic', step=48 // ybin)
+
+    ad_out = p.distortionCorrect(
+        [deepcopy(_ad)], arc=p.streams['mosaic'][0], order=1)[0]
+
+    for start in range(NSUB):
+        for end in range(start + 1, NSUB + 1):
+            ad_copy = deepcopy(_ad)
+            y1b = start * _ad[0].shape[0] // NSUB
+            y2b = end * _ad[0].shape[0] // NSUB
+            y1, y2 = y1b * ybin, y2b * ybin  # unbinned pixels
+
+            # Fake the section header keywords and set the SCI and DQ
+            # to the appropriate sub-region
+            for ext in ad_copy:
+                arrsec = ext.array_section()
+                detsec = ext.detector_section()
+                ext.hdr['CCDSEC'] = '[{}:{},{}:{}]'.format(arrsec.x1 + 1,
+                                                           arrsec.x2, y1 + 1, y2)
+                ext.hdr['DETSEC'] = '[{}:{},{}:{}]'.format(detsec.x1 + 1,
+                                                           detsec.x2, y1 + 1, y2)
+                ext.data = ext.data[y1b:y2b]
+                ext.mask = ext.mask[y1b:y2b]
+                ext.hdr['DATASEC'] = '[1:{},1:{}]'.format(ext.shape[1], y2b - y1b)
+            ad2 = p.distortionCorrect([ad_copy], arc=p.streams['mosaic'][0],
+                                      order=1)[0]
+
+        # It's GMOS LS so the offset between this AD and the full-frame
+        # will be the same as the DETSEC offset, but the width may be
+        # smaller so we need to shuffle the smaller image within the
+        # larger one to look for a match
+        ny, nx = ad2[0].shape
+        xsizediff = ad_out[0].shape[1] - nx
+        ok = False
+        for xoffset in range(xsizediff + 1):
+            # Confirm that all unmasked pixels are similar
+            diff = (np.ma.masked_array(ad2[0].data, mask=ad2[0].mask) -
+                    ad_out[0].data[y1b:y1b + ny, xoffset:xoffset + nx])
+            if np.logical_and(abs(diff) > 0.01, ~diff.mask).sum() == 0:
+                ok = True
+                break
+        assert ok, "Problem with {} {}:{}".format(ad.filename, start, end)
+
+        completed_binnings.append((xbin, ybin))
