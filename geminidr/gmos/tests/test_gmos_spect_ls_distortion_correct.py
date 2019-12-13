@@ -290,8 +290,9 @@ def test_full_frame_distortion_works_on_smaller_region(fname):
     basename, extension = os.path.splitext(basename)
     basename = basename.split('_')[0] + extension
 
-    fname = testing.download_from_archive(basename, path=subpath)
-    _ad = astrodata.open(fname)
+    raw_fname = testing.download_from_archive(basename, path=subpath)
+
+    _ad = astrodata.open(raw_fname)
 
     NSUB = 4  # we're going to take combos of horizontal quadrants
     completed_binnings = []
