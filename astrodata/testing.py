@@ -55,6 +55,9 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
         tmp_path = download_file(URL + filename, cache=False)
         shutil.move(tmp_path, local_path)
 
+        # `download_file` ignores Access Control List - fixing it
+        os.chmod(local_path, 0o664)
+
     return local_path
 
 
