@@ -145,7 +145,8 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
                     'hmag', 'hmag_err', 'kmag', 'kmag_err'],
         'gmos': ['name', 'raj2000', 'dej2000', 'umag', 'umag_err',
                  'gmag', 'gmag_err', 'rmag', 'rmag_err', 'imag',
-                 'imag_err', 'zmag', 'zmag_err']
+                 'imag_err', 'zmag', 'zmag_err'],
+        'gaia': ['name', 'raj2000', 'dej2000', 'gmag', 'bpmag', 'rpmag']
     }
 
     # This defines the column name mapping for each catalog server to our
@@ -180,7 +181,19 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
                      'imag_err', 'zmag', 'zmag_err'],
         'gmos_cpo': ['name', 'raj2000', 'dej2000', 'umag', 'umag_err',
                      'gmag', 'gmag_err', 'rmag', 'rmag_err', 'imag',
-                     'imag_err', 'zmag', 'zmag_err']
+                     'imag_err', 'zmag', 'zmag_err'],
+        'gaia_mko': [
+            # Reference epoch to which the astrometric source parameters are
+            # referred, expressed as a Julian Year in TCB. At DR2 this
+            # reference epoch is always J2015.5 but in future releases this
+            # will be different and not necessarily the same for all sources.
+            'designation',
+            'ra',   # right ascension in ICRS at the reference epoch ref_epoch
+            'dec',  # declination in ICRS at the reference epoch ref_epoch
+            'phot_g_mean_mag',   # Mean magnitude in the G band.
+            'phot_bp_mean_mag',  # Mean magnitude in the integrated BP band.
+            'phot_rp_mean_mag'   # Mean magnitude in the integrated RP band.
+        ]
     }
 
     # OK, do the query

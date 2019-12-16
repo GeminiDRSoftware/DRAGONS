@@ -6,11 +6,14 @@ class addReferenceCatalogConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_refcatAdded", optional=True)
     radius = config.RangeField("Search radius (degrees)", float, 0.067, min=0.)
     source = config.ChoiceField("Name of catalog to search", str,
-                                allowed = {"gmos": "Gemini optical catalog",
-                                           "2mass": "2MASS Infrared catalog",
-                                           "sdss9": "SDSS DR9 optical catalog",
-                                           "ukidss9": "UKIDSS DR9 infrared catalog"},
-                                default = "gmos", optional=False)
+                                allowed={
+                                    "gmos": "Gemini optical catalog",
+                                    "2mass": "2MASS Infrared catalog",
+                                    "sdss9": "SDSS DR9 optical catalog",
+                                    "ukidss9": "UKIDSS DR9 infrared catalog",
+                                    "gaia": "GAIA DR2 catalog",
+                                },
+                                default="gmos", optional=False)
 
 class detectSourcesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sourcesDetected", optional=True)
