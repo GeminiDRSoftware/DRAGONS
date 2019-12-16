@@ -18,7 +18,6 @@ dependencies:
   - sextractor >=2.8.6
   - sphinx_rtd_theme
   - sqlalchemy >=1.0
-  - stsci.numdisplay >=1.6
   - astropy::astroquery >=0.3.5
   - astropy::imexam <=0.8.1
   - astropy::photutils
