@@ -41,7 +41,7 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
 
     Parameters
     ----------
-    catalog: str [sdss9 | 2mass | ukidss9 | gmos]
+    catalog: str [sdss9 | 2mass | ukidss9 | gmos | gaia]
         name of catalog to search
     ra: float
         right ascension of search center, decimal degrees
@@ -65,6 +65,7 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
         '2mass': ['2mass_mko', '2mass_vizier'],
         'ukidss9': ['ukidss9_mko', 'ukidss9_cpo'],
         'gmos': ['gmos_mko', 'gmos_cpo'],
+        'gaia': ['gaia_mko'],
     }
 
     # Check catalog given is valid
@@ -127,6 +128,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
             "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=ukidss&",
         'gmos_mko': "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
         'gmos_cpo': "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
+        'gaia_mko': "http://mkocatalog-lv2/cgi-bin/conesearch.py?CATALOG=gaia2&",
     }
 
     # This defines the column names *we* will use for that catalog.
