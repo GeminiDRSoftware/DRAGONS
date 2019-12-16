@@ -156,20 +156,23 @@ class Stack(PrimitivesBASE):
         if len({ext.nddata.shape for ad in adinputs for ext in ad}) > 1:
             raise OSError("Not all inputs images have the same shape")
 
-        # Determine the average gain from the input AstroData objects and
-        # add in quadrature the read noise
+        # We will determine the average gain from the input AstroData
+        # objects and add in quadrature the read noise
         gains = [ad.gain() for ad in adinputs]
         read_noises = [ad.read_noise() for ad in adinputs]
 
-        assert all(gain is not None for gain in gains), "Gain problem"
-        assert all(rn is not None for rn in read_noises), "RN problem"
+        # Determine whether we can construct these averages
+        process_gain = all(g is not None for gain in gains for g in gain)
+        process_rn = all(rn is not None for read_noise in read_noises for rn in read_noise)
 
         # Compute gain and read noise of final stacked images
         nexts = len(gains[0])
-        gain_list = [np.mean([gain[i] for gain in gains])
-                     for i in range(nexts)]
-        read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
-                           for i in range(nexts)]
+        if process_gain:
+            gain_list = [np.mean([gain[i] for gain in gains])
+                         for i in range(nexts)]
+        if process_rn:
+            read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
+                                         for i in range(nexts)]
 
         num_img = len(adinputs)
         num_ext = len(adinputs[0])
@@ -314,12 +317,15 @@ class Stack(PrimitivesBASE):
 
         # Set GAIN to the average of input gains. Set the RDNOISE to the
         # sum in quadrature of the input read noises.
-        for ext, gain, rn in zip(ad_out, gain_list, read_noise_list):
-            ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
-            ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
-        # Stick the first extension's values in the PHU
-        ad_out.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
-        ad_out.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
+        if process_gain:
+            for ext, gain in zip(ad_out, gain_list):
+                ext.hdr.set('GAIN', gain, self.keyword_comments['GAIN'])
+            ad_out.phu.set('GAIN', gain_list[0], self.keyword_comments['GAIN'])
+
+        if process_rn:
+            for ext, rn in zip(ad_out, read_noise_list):
+                ext.hdr.set('RDNOISE', rn, self.keyword_comments['RDNOISE'])
+            ad_out.phu.set('RDNOISE', read_noise_list[0], self.keyword_comments['RDNOISE'])
 
         # Add suffix to datalabel to distinguish from the reference frame
         ad_out.phu.set('DATALAB', "{}{}".format(ad_out.data_label(), sfx),
