@@ -19,16 +19,19 @@ import numpy as np
 import math
 from collections import OrderedDict
 
+import astropy
 from astropy.modeling import models, fitting, FittableModel, Parameter
-from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline
 from astropy.stats import sigma_clip
+from astropy.utils import minversion
+from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline
 
-from datetime import datetime
 from .nddops import NDStacker
 
+ASTROPY_LT_40 = not minversion(astropy, '4.0')
 
 # -----------------------------------------------------------------------------
 # NEW MODEL CLASSES
+
 
 class Pix2Sky(FittableModel):
     """
@@ -50,6 +53,19 @@ class Pix2Sky(FittableModel):
     origin: int (0 or 1)
         value for WCS origin parameter
     """
+
+    if ASTROPY_LT_40:
+        inputs = ('x', 'y')
+        outputs = ('x', 'y')
+    else:
+        n_inputs = 2
+        n_outputs = 2
+
+    x_offset = Parameter()
+    y_offset = Parameter()
+    factor = Parameter()
+    angle = Parameter()
+
     def __init__(self, wcs, x_offset=0.0, y_offset=0.0, factor=1.0,
                  angle=0.0, origin=1, **kwargs):
         self._wcs = wcs.deepcopy()
@@ -57,13 +73,6 @@ class Pix2Sky(FittableModel):
         self._origin = origin
         super(Pix2Sky, self).__init__(x_offset, y_offset, factor, angle,
                                       **kwargs)
-
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
-    x_offset = Parameter()
-    y_offset = Parameter()
-    factor = Parameter()
-    angle = Parameter()
 
     def evaluate(self, x, y, x_offset, y_offset, factor, angle):
         # x_offset and y_offset are actually arrays in the Model
@@ -97,8 +106,14 @@ class Pix2Sky(FittableModel):
 
 class Shift2D(FittableModel):
     """2D translation"""
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
+
+    if ASTROPY_LT_40:
+        inputs = ('x', 'y')
+        outputs = ('x', 'y')
+    else:
+        n_inputs = 2
+        n_outputs = 2
+
     x_offset = Parameter(default=0.0)
     y_offset = Parameter(default=0.0)
 
@@ -116,12 +131,18 @@ class Shift2D(FittableModel):
 
 class Scale2D(FittableModel):
     """2D scaling"""
+
+    if ASTROPY_LT_40:
+        inputs = ('x', 'y')
+        outputs = ('x', 'y')
+    else:
+        n_inputs = 2
+        n_outputs = 2
+
+    factor = Parameter(default=1.0)
+
     def __init__(self, factor=1.0, **kwargs):
         super(Scale2D, self).__init__(factor, **kwargs)
-
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
-    factor = Parameter(default=1.0)
 
     @property
     def inverse(self):
@@ -136,12 +157,18 @@ class Scale2D(FittableModel):
 
 class Rotate2D(FittableModel):
     """Rotation; Rotation2D isn't fittable"""
+
+    if ASTROPY_LT_40:
+        inputs = ('x', 'y')
+        outputs = ('x', 'y')
+    else:
+        n_inputs = 2
+        n_outputs = 2
+
+    angle = Parameter(default=0.0, getter=np.rad2deg, setter=np.deg2rad)
+
     def __init__(self, angle=0.0, **kwargs):
         super(Rotate2D, self).__init__(angle, **kwargs)
-
-    inputs = ('x', 'y')
-    outputs = ('x', 'y')
-    angle = Parameter(default=0.0, getter=np.rad2deg, setter=np.deg2rad)
 
     @property
     def inverse(self):
