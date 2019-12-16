@@ -21,10 +21,12 @@ from importlib import import_module
 
 from functools import wraps
 
+import astropy
 from astropy import stats
 from astropy.wcs import WCS
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
+from astropy.utils import minversion
 
 from scipy.special import erf
 
@@ -36,6 +38,15 @@ import astrodata
 from collections import namedtuple
 ArrayInfo = namedtuple("ArrayInfo", "detector_shape origins array_shapes "
                                     "extensions")
+
+if minversion(astropy, '3.1'):
+    sigma_clip = stats.sigma_clip
+else:
+    def sigma_clip(*args, **kwargs):
+        if 'maxiters' in kwargs:
+            kwargs['iters'] = kwargs.pop('maxiters')
+        return stats.sigma_clip(*args, **kwargs)
+
 
 @models.custom_model
 def CumGauss1D(x, mean=0.0, stddev=1.0):
@@ -83,7 +94,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sx_dict=None):
     except AssertionError:
         log.error("TypeError: A SExtractor dictionary was not received.")
         raise TypeError("Require SExtractor parameter dictionary.")
-    
+
     adoutput = []
     # Parse sextractor parameters for the list of expected columns
     expected_columns = parse_sextractor_param(sx_dict['dq', 'param'])
@@ -288,7 +299,7 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
     """
     This function will check if the inputs match.  It will check the filter,
     binning and shape/size of the every SCI frames in the inputs.
-    
+
     There must be a matching number of inputs for 1 and 2.
 
     Parameters
@@ -324,12 +335,12 @@ def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
         # Now check each extension
         for ext1, ext2 in zip(ad1, ad2):
             log.fullinfo('Checking EXTVER {}'.format(ext1.hdr['EXTVER']))
-            
+
             # Check shape/size
             if ext1.data.shape != ext2.data.shape:
                 log.error('Extensions have different shapes')
                 raise ValueError('Extensions have different shape')
-            
+
             # Check binning
             if (ext1.detector_x_bin() != ext2.detector_x_bin() or
                         ext1.detector_y_bin() != ext2.detector_y_bin()):
@@ -417,11 +428,11 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
 
     if result:
         log.debug('  Configurations match')
-    
+
     return result
 
 @handle_single_adinput
-def clip_auxiliary_data(adinput=None, aux=None, aux_type=None, 
+def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         return_dtype=None):
     """
     This function clips auxiliary data like calibration files or BPMs
@@ -602,7 +613,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     return aux_output_list
 
 @handle_single_adinput
-def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None, 
+def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                         return_dtype=None):
     """
     This function clips auxiliary data like calibration files or BPMs
@@ -784,7 +795,7 @@ def clip_sources(ad):
     ----------
     ad: AstroData
         image with attached OBJCAT
-    
+
     Returns
     -------
     list of Tables
@@ -864,7 +875,7 @@ def clip_sources(ad):
 
         # Clip outliers in FWHM - single 2-sigma clip if more than 3 sources.
         if len(table) >= 3:
-            table = table[~stats.sigma_clip(table['fwhm_arcsec'], sigma=2, iters=1).mask]
+            table = table[~sigma_clip(table['fwhm_arcsec'], sigma=2, maxiters=1).mask]
 
         good_sources.append(table)
 
@@ -873,7 +884,7 @@ def clip_sources(ad):
 @handle_single_adinput
 def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     """
-    This function replaces position, object, and program information 
+    This function replaces position, object, and program information
     in the headers of processed calibration files that are generated
     from science frames, eg. fringe frames, maybe sky frames too.
     It is called, for example, from the storeProcessedFringe primitive.
@@ -901,7 +912,7 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     except AssertionError:
         log.error("TypeError: keyword comments dict was not received.")
         raise TypeError("keyword comments dict required")
-    
+
     if caltype is None:
         raise ValueError("Caltype should not be None")
 
@@ -1035,7 +1046,7 @@ def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
         raise ValueError("Empty input list received")
 
     adoutput_list = []
-    
+
     for ad in adinput:
         # Add the appropriate time stamps to the PHU
         if timestamp_key is not None:
@@ -1051,7 +1062,7 @@ def fit_continuum(ad):
     """
     This function fits Gaussians to the spectral continuum, a bit like
     clip_sources for spectra
-    
+
     Parameters
     ----------
     ad: AstroData
@@ -1066,10 +1077,10 @@ def fit_continuum(ad):
     import warnings
 
     good_sources = []
-    
+
     # Get the pixel scale
     pixel_scale = ad.pixel_scale()
-    
+
     # Set full aperture to 4 arcsec
     ybox = int(2.0 / pixel_scale)
 
@@ -1123,12 +1134,12 @@ def fit_continuum(ad):
                             format(ad.filename))
                 centers = [np.argmax(signal)]
                 half_widths = [ybox]
-        
+
         fwhm_list = []
         y_list = []
         x_list = []
         weight_list = []
-                
+
         for center,hwidth in zip(centers,half_widths):
             if center+hwidth>data.shape[0]:
                 #print 'too high'
@@ -1136,23 +1147,23 @@ def fit_continuum(ad):
             if center-hwidth<0:
                 #print 'too low'
                 continue
-            
+
             # Don't think it needs to do an overall check for each object
             #bg_mean = np.mean([data[center - ybox - bgbox:center-ybox],
             #                   data[center + ybox:center + ybox + bgbox]], dtype=np.float64)
             #ctr_mean = np.mean(data[center,dqdata[center]==0], dtype=np.float64)
             #ctr_std = np.std(data[center,dqdata[center]==0])
-    
+
             #print 'mean ctr',ctr_mean,ctr_std
             #print 'mean bg',bg_mean
-    
+
             #if ctr_mean < s2n_bg * bg_mean:
             #    print 'too faint'
             #    continue
             #if ctr_mean < s2n_self * ctr_std:
             #    print 'too noisy'
             #    continue
-            
+
             for i in range(xbox, data.shape[1]-xbox, xbox):
                 databox = data[center-hwidth-1:center+hwidth,i-xbox:i+xbox]
                 if dqdata is None:
@@ -1170,7 +1181,7 @@ def fit_continuum(ad):
                     continue
                 col = np.sum(databox, axis=1) / dqcol
                 maxflux = np.max(abs(col))
-                
+
                 # Crude SNR test; is target bright enough in this wavelength range?
                 if np.percentile(col,90)*xbox < np.mean(databox[dqbox==0]) \
                             + 10*np.sqrt(np.median(varbox)):
@@ -1186,20 +1197,20 @@ def fit_continuum(ad):
                 spectrum = databox[np.argmax(col),:]
                 if np.percentile(spectrum,20) < 2*np.sqrt(np.median(varbox)):
                     continue
-                
+
                 if 'NODANDSHUFFLE' in tags:
                     # N&S; background should be close to zero
                     bg = models.Const1D(0.)
-                    # Fix background=0 if slit is in region where sky-subtraction will occur 
+                    # Fix background=0 if slit is in region where sky-subtraction will occur
                     if center > ad.shuffle_pixels() // ad.detector_y_bin():
                             bg.amplitude.fixed = True
                 else:
                     # Not N&S; background estimated from image
                     bg = models.Const1D(
                             amplitude=np.median([data[center-ybox-bgbox:center-ybox],
-                            data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]], 
+                            data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]],
                             dtype=np.float64))
-                g_init = models.Gaussian1D(amplitude=maxflux, mean=np.argmax(col), 
+                g_init = models.Gaussian1D(amplitude=maxflux, mean=np.argmax(col),
                             stddev=init_width) + models.Gaussian1D(amplitude=-maxflux,
                                 mean=np.argmin(col), stddev=init_width) + bg
                 # Set one profile to be +ve, one -ve, and widths equal
@@ -1210,7 +1221,7 @@ def fit_continuum(ad):
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
                     g = fit_g(g_init, np.arange(len(col)), col)
-                
+
                 #print g
                 #x = np.arange(len(col))
                 #plt.plot(x, col)
@@ -1246,7 +1257,7 @@ def fit_continuum(ad):
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~stats.sigma_clip(table['fwhm_arcsec']).mask]
+            table = table[~sigma_clip(table['fwhm_arcsec']).mask]
 
         good_sources.append(table)
     return good_sources
@@ -1355,12 +1366,12 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
 
     # Get the current time to use for the time of last modification
     tlm = datetime.now().isoformat()[0:-7]
-    
+
     # Construct the default comment
     if comment is None:
         comment = "UT time stamp for {}".format(primname if primname
                                                 else keyword)
-    
+
     # The GEM-TLM keyword will always be added or updated
     keyword_dict = {"GEM-TLM": "UT last modification with GEMINI",
                     keyword: comment}
@@ -1439,7 +1450,7 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
                 bg, bg_std = g.mean.value, abs(g.stddev.value)
             else:
                 # Sigma-clipping will screw up the stats of course!
-                bg_data = stats.sigma_clip(bg_data, sigma=2.0, iters=2)
+                bg_data = sigma_clip(bg_data, sigma=2.0, maxiters=2)
                 bg_data = bg_data.data[~bg_data.mask]
                 bg = np.median(bg_data)
                 bg_std = np.std(bg_data)
@@ -1510,7 +1521,7 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False, separate_ext=True):
                 bg_data = bg_data[flags==0]
                 # Sigma-clip, and only give results if enough objects are left
                 if len(bg_data) > min_ok:
-                    clipped_data = stats.sigma_clip(bg_data, sigma=3.0, iters=1)
+                    clipped_data = sigma_clip(bg_data, sigma=3.0, maxiters=1)
                     if np.sum(~clipped_data.mask) > min_ok:
                         bg = np.mean(clipped_data)
                         bg_std = np.std(clipped_data)
@@ -1837,7 +1848,7 @@ class ExposureGroup(object):
             (currently may not be empty)
         :type adinputs: list of AstroData instances
 
-        :param pkg: Package name of the 
+        :param pkg: Package name of the
 
         :param frac_FOV: proportion by which to scale the area in which
             points are considered to be within the same field, for tweaking
@@ -1917,7 +1928,7 @@ class ExposureGroup(object):
         Add one or more new points to the group.
 
         :param adinputs: A list of AstroData instances to add to the group
-            membership. 
+            membership.
         :type adinputs: AstroData, list of AstroData instances
         """
         if not isinstance(adinput, list):
@@ -2047,7 +2058,7 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     :type frac_slit: float
 
     :returns: Whether or not the pointing falls within the field (after
-      adjusting for frac_FOV & frac_slit). 
+      adjusting for frac_FOV & frac_slit).
     :rtype: boolean
 
     """
@@ -2117,10 +2128,10 @@ def get_offset_dict(adinput=None):
     What's currently Gemini-specific is that POFFSET & QOFFSET header keywords
     are used; this could be abstracted via a descriptor once we decide how to
     do so generically (accounting for the need to know slit axes sometimes).
-    
+
     :param adinputs: the AstroData objects
     :type adinput: list of AstroData
-    
+
     :rtype: dictionary
     :return: a dictionary whose keys are the AstroData instances and whose
         values are tuples of (POFFSET, QOFFSET).

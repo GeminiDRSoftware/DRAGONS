@@ -153,21 +153,37 @@ def fstore_get(timestamp):
     N.B. A timestamp that evaluates to False (0, None) will request everything
     from fitsstore. This could be huge. Be careful passing no timestamp!
 
-    parameters: <float>, time in epoch seconds
-    return:     <list>,  list of dicts (json) of qametrics
+    Parameters
+    ----------
+    timestamp : <float>, Time in epoch seconds
+
+    Return
+    ------
+    qa_data : <list>,  List of dicts (json) of qametrics
 
     """
+    FAILMSG = "Cannot connect to fitsstore."
+    qa_data =[]
     # Get the fitsstore query url from calurl_dict
     fitsstore_qa = calurl_dict.calurl_dict['QAQUERYURL']
     if not timestamp:
-        furl         = os.path.join(fitsstore_qa)
-        store_handle = urllib.request.urlopen(furl)
-        qa_data      = json.loads(store_handle.read())
+        furl = os.path.join(fitsstore_qa)
+        try:
+            store_handle = urllib.request.urlopen(furl)
+            qa_data = json.loads(store_handle.read())
+        except urllib.error.URLError:
+            self.log_message(msg_form, FAILMSG, bad_connect_code, size)
+            pass
     else:
-        date_query    = stamp_to_opday(timestamp)
-        furl          = os.path.join(fitsstore_qa, date_query)
-        store_handle  = urllib.request.urlopen(furl)
-        qa_data       = json.loads(store_handle.read())
+        date_query = stamp_to_opday(timestamp)
+        furl = os.path.join(fitsstore_qa, date_query)
+        try:
+            store_handle = urllib.request.urlopen(furl)
+            qa_data = json.loads(store_handle.read())
+        except urllib.error.URLError:
+            self.log_message(msg_form, FAILMSG, bad_connect_code, size)
+            pass
+
     return qa_data
 
 # ------------------------------------------------------------------------------
@@ -326,9 +342,11 @@ class ADCCHandler(BaseHTTPRequestHandler):
         """Handle HTTP client GET requests on service: cmdqueue.json
         """
         reqmsg = "Requesting current OP day events "
+        rmsg = "Received {} events."
         msg_form  = '"%s" %s %s'
         info_code = 203
         fail_code = 416
+        bad_connect_code = 503
         size = "-"
         verbosity = self.informers["verbose"]
 
@@ -353,15 +371,14 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.log_message(msg_form, reqmsg+"@fitsstore", info_code, size)
 
             events.event_list = fstore_get(current_op_timestamp())
-            self.log_message(msg_form,"Received "+str(len(events.event_list))+" events.",
+            self.log_message(msg_form, rmsg.format(str(len(events.event_list))),
                              info_code, size)
-
             tdic = events.get_list()
             tdic.insert(0, {"msgtype": "cmdqueue.request","timestamp": time.time()})
             tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
             self.wfile.write(
                 bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
-                )
+            )
 
         # Handle current nighttime requests ...
         elif stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
@@ -382,11 +399,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
             if verbosity:
                 self.log_message(msg_form, "Requested metrics on ... " +
                                  stamp_to_opday(fromtime), info_code, size)
-
             tdic = fstore_get(fromtime)
             if verbosity:
                 self.log_message(msg_form, "Received " + str(len(tdic)) +
-                                    " events from fitsstore.", info_code, size)
+                                 " events from fitsstore.", info_code, size)
 
             # Append the last timestamp from the event_list. This is done
             # to trigger the client to pinging the adcc from the last
