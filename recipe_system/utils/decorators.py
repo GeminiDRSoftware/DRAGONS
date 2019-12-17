@@ -42,6 +42,7 @@ E.g.,::
 
 """
 import gc
+import inspect
 import traceback
 from collections import Iterable
 from datetime import datetime
@@ -50,6 +51,7 @@ import psutil
 from functools import wraps
 from copy import copy, deepcopy
 
+import geminidr
 from astrodata import AstroData, ProvenanceHistory
 
 from gempy.utils import logutils
@@ -223,6 +225,21 @@ def _clone_history(provenance_input, ad):
             existing_history.add(ph)
 
 
+def __top_level_primitive__():
+    """ Check if we are at the top-level, not being called from another primitive.
+    
+    We only want to capture provenance history when we are passing through the
+    uppermost primitive calls.  These are the calls that get made from the recipe.
+    """
+    for trace in inspect.stack():
+        if "self" in trace[0].f_locals:
+            inst = trace[0].f_locals["self"]
+            if isinstance(inst, geminidr.PrimitivesBASE):
+                return False
+    # if we encounter no primitives above this decorator, then this is a top level primitive call
+    return True
+
+
 def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args):
     """
     Add the given provenance data to the outgoing `AstroData` objects in ret_value,
@@ -249,6 +266,10 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     --------
     none
     """
+    if not __top_level_primitive__():
+        # We're inside a primitive being called from another, we want to omit this
+        # from the provenance.  Only the recipe calls are relevant.
+        return
     try:
         timestamp = datetime.now()
         if len(provenance_inputs) == len(ret_value):
@@ -321,7 +342,9 @@ def parameter_override(fn):
                 adinputs = pobj.streams.get(instream, [])
             try:
                 provenance_inputs = _get_provenance_inputs(adinputs)
-                ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                fnargs = dict(config.items())
+                stringified_args = "%s" % fnargs
+                ret_value = fn(pobj, adinputs=adinputs, **fnargs)
                 _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()

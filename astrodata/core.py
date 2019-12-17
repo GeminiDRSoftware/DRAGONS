@@ -15,7 +15,6 @@ from functools import wraps
 import inspect
 from collections import namedtuple
 from copy import deepcopy
-import json
 
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
@@ -1135,7 +1134,6 @@ class AstroData(object):
         if value.md5 is None or value.md5 == '':
             # not a real input, we can ignore this one
             return
-        # TODO make this efficient
         existing_provenance = self.provenance
         for existing_prov in existing_provenance:
             if existing_prov.filename == value.filename and \
@@ -1197,18 +1195,16 @@ class AstroData(object):
         --------
         none
         """
-        existing_history = self.provenance_history
-        if value in existing_history:
+        history = self.provenance_history
+        if value in history:
             # nothing to do
             return
-        new_history = list()
-        new_history.extend(existing_history)
-        new_history.append(value)
-        colsize = max(len(ph.args) for ph in new_history) + 1
-        timestamp_start = np.array([ph.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in new_history])
-        timestamp_stop = np.array([ph.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in new_history])
-        primitive = np.array([ph.primitive for ph in new_history])
-        args = np.array([ph.args for ph in new_history])
+        history.append(value)
+        colsize = max(len(ph.args) for ph in history) + 1
+        timestamp_start = np.array([ph.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in history])
+        timestamp_stop = np.array([ph.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in history])
+        primitive = np.array([ph.primitive for ph in history])
+        args = np.array([ph.args for ph in history])
         dtype = ("S28", "S28", "S128", "S%d" % colsize)
         table = Table([timestamp_start, timestamp_stop, primitive, args],
                       names=('timestamp_start', 'timestamp_stop',
