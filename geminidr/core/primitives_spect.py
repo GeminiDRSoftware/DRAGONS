@@ -798,7 +798,7 @@ class Spect(PrimitivesBASE):
                     # Set some bounds; this may need to be abstracted for
                     # different instruments? TODO
                     dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
-                    c0_unc = 0.05 * cenwave
+                    c0_unc = 0.02 * cenwave
                     m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
                     c1_unc = 0.005 * abs(m_init.c1)
                     m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
@@ -2032,7 +2032,7 @@ def _average_along_slit(ext, center=None, nsum=None):
 
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
 
     return data, mask, variance, extract_slice
 
