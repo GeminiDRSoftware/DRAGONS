@@ -21,6 +21,7 @@ from . import parameters_gmos_spect
 
 from astropy.modeling import models
 from astropy import units as u
+from scipy.interpolate import UnivariateSpline
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -37,49 +38,68 @@ def qeModel(ext):
     -------
     astropy.modeling.models.Model: the model to convert wavelengths
     """
+    # All coefficients are for nm (not AA as in G-IRAF)
     qeData = {
         # GMOS-N EEV CCD1 and 3
-        "EEV_9273-16-03": [9.883090E-1, -1.390254E-6,  5.282149E-9, -6.847360E-13],
-        "EEV_9273-20-03": [9.699E-1, 1.330E-5, -2.082E-9, 1.206E-13],
+        "EEV_9273-16-03": [9.883090E-1, -1.390254E-5,  5.282149E-7, -6.847360E-10],
+        "EEV_9273-20-03": [9.699E-1, 1.330E-4, -2.082E-7, 1.206E-10],
         # GMOS-N Hamamatsu CCD1 and 3
-        "BI13-20-4k-1": [-2.45481760e+03, 3.24130657e+00, -1.87380500e-03,
-                         6.23494400e-07, -1.31713482e-10, 1.83308885e-14,
-                         -1.68145852e-18, 9.80603592e-23, -3.30016761e-27,
-                         4.88466076e-32],
-        "BI13-18-4k-2": [3.48333720e+03, -5.27904605e+00, 3.48210500e-03,
-                         -1.31286828e-06, 3.12154994e-10, -4.85949692e-14,
-                         4.95886638e-18, -3.20198283e-22, 1.18833302e-26,
-                         -1.93303639e-31],
+        "BI13-20-4k-1": {"order": 3,
+                         "knots": [358.0, 432.0, 476.0, 520.0, 602.0, 640.0, 678.0, 752.0, 914.0, 1002.0, 1040.0, 1076.0],
+                         "coeffs": [0.02206208508099143, 0.2834094598715138, 0.07132646057310524, -0.01980030661665999,
+                                    -0.05201598712929662, -0.06777120754328926, -0.012413172958416104, -0.015591358664326838,
+                                    0.03433933272643748, 0.04127142803163095, 0.06235368833554948, -0.008691968589858072,
+                                    0.06049075935311075, 0.0484080146014316]},
+        "BI13-18-4k-2": {"order": 3,
+                         "knots": [358.0, 380.0, 428.0, 468.0, 576.0, 648.0, 798.0, 932.0, 966.0, 994.0, 1010.0, 1028.0, 1044.0, 1076.0],
+                         "coeffs": [0.014629039930259876, 0.10133317072093591, 0.2384728514854233, 0.0778544705196136,
+                                    -0.06232251896695778, -0.0671226704286497, 0.0017962888751030116, 0.02399802448657926,
+                                    0.06062000896013293, 0.04661836594286457, 0.05694058456700794, 0.020108979328507717,
+                                    0.00719658389760285, 0.029938578274652766, 0.05265151968369216, 0.04654560999567498]},
         # GMOS-S EEV CCD1 and 3
-        "EEV_2037-06-03": {"1900-01-01": [2.8197, -8.101e-4, 1.147e-7, -5.270e-12],
-                           "2006-08-31": [2.225037, -4.441856E-4, 5.216792E-8, -1.977506E-12]},
-        "EEV_8261-07-04": {"1900-01-01": [1.3771, -1.863e-4, 2.559e-8, -1.0289e-12],
-                           "2006-08-31": [8.694583E-1, 1.021462E-4, -2.396927E-8, 1.670948E-12]},
+        "EEV_2037-06-03": {"1900-01-01": [2.8197, -8.101e-3, 1.147e-5, -5.270e-9],
+                           "2006-08-31": [2.225037, -4.441856E-3, 5.216792E-6, -1.977506E-9]},
+        "EEV_8261-07-04": {"1900-01-01": [1.3771, -1.863e-3, 2.559e-6, -1.0289e-9],
+                           "2006-08-31": [8.694583E-1, 1.021462E-3, -2.396927E-6, 1.670948E-9]},
         # GMOS-S Hamamatsu CCD1 and 3
-        "BI5-36-4k-2": [-6.00810046e+02,  6.74834788e-01, -3.26251680e-04,
-                        8.87677395e-08, -1.48699188e-11, 1.57120033e-15,
-                        -1.02326999e-19, 3.75794380e-24, -5.96238257e-29],
-        "BI12-34-4k-1": [7.44793105e+02, -1.22941630e+00, 8.83657074e-04,
-                         -3.62949805e-07, 9.40246850e-11, -1.59549327e-14,
-                         1.77557909e-18, -1.25086490e-22, 5.06582071e-27,
-                         -8.99166534e-32]
+        "BI5-36-4k-2": [-6.00810046e+02,  6.74834788e+00, -3.26251680e-02,
+                        8.87677395e-05, -1.48699188e-07, 1.57120033e-10,
+                        -1.02326999e-13, 3.75794380e-17, -5.96238257e-21],
+        "BI12-34-4k-1": [7.44793105e+02, -1.22941630e+01, 8.83657074e-02,
+                         -3.62949805e-04, 9.40246850e-07, -1.59549327e-09,
+                         1.77557909e-12, -1.25086490e-15, 5.06582071e-19,
+                         -8.99166534e-23]
      }
 
     array_name = ext.array_name().split(',')[0]
     try:
-        coeffs = qeData[array_name]
+        data = qeData[array_name]
     except KeyError:
         return None
-    if isinstance(coeffs, dict):
-        obs_date = ext.ut_date()
-        for k in sorted(coeffs):
-            if obs_date >= datetime.strptime(k, "%Y-%m-%d"):
-                use_coeffs = coeffs[k]
-        coeffs = use_coeffs
 
-    model_params = {'c{}'.format(i): c for i, c in enumerate(coeffs)}
-    model = models.Polynomial1D(degree=len(coeffs)-1, **model_params)
-    return model
+    # Deal with date-dependent changes
+    if isinstance(data, dict) and 'knots' not in data:
+        obs_date = ext.ut_date()
+        for k in sorted(data):
+            if obs_date >= datetime.strptime(k, "%Y-%m-%d"):
+                use_data = data[k]
+        data = use_data
+
+    # data is either a dict defining a spline that defines log10(QE)
+    # or a list of polynomial coefficients that define QE
+    if 'knots' in data:
+        # Duplicate the knots at either end for the correct format
+        order = data["order"]
+        knots = data["knots"]
+        knots[0:0] = [knots[0]] * order
+        knots.extend(knots[-1:] * order)
+        coeffs = data["coeffs"] + [0] * (order+1)
+        spline = UnivariateSpline._from_tck((knots, coeffs, order))
+        return lambda x: 10 ** spline(x)
+    else:
+        model_params = {'c{}'.format(i): c for i, c in enumerate(data)}
+        model = models.Polynomial1D(degree=len(data)-1, **model_params)
+        return model
 
 # ------------------------------------------------------------------------------
 @parameter_override
@@ -245,19 +265,21 @@ class GMOSSpect(Spect, GMOS):
                     # Some unit-based stuff here to prepare for gWCS
                     waves = wave_model(xnew) * u.nm
                     try:
-                        qe_correction = qeModel(ext)((waves / u.AA).to(u.dimensionless_unscaled).value)
+                        qe_correction = qeModel(ext)((waves / u.nm).to(u.dimensionless_unscaled).value)
                     except TypeError:  # qeModel() returns None
                         msg = "No QE correction found for {}:{}".format(ad.filename, ext.hdr['EXTVER'])
                         if 'sq' in self.mode:
                             raise ValueError(msg)
                         else:
                             log.warning(msg)
+                    #qe_correction[qe_correction < 0] = 0
                     log.fullinfo("Mean relative QE of EXTVER {} is {:.5f}".
                                  format(ext.hdr['EXTVER'], qe_correction.mean()))
-                    if is_flat:
-                        ext.multiply(qe_correction)
-                    else:
-                        ext.divide(qe_correction)
+                    if not is_flat:
+                        qe_correction = 1. / qe_correction
+                    qe_correction[qe_correction < 0] = 0
+                    qe_correction[qe_correction > 10] = 0
+                    ext.multiply(qe_correction)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
