@@ -16,7 +16,6 @@ def makeProcessedFlat(p):
     p.addVAR(poisson_noise=True)
     p.stackFrames()
     p.normalizeFlat()
-    p.applyQECorrection()
     p.thresholdFlatfield()
     p.makeIRAFCompatible()
     p.storeProcessedFlat()

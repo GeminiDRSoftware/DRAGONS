@@ -778,8 +778,8 @@ class Spect(PrimitivesBASE):
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
-                                tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order+1)))
+                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping')) +
+                                tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
 
                 # Now make repeated fits, increasing the polynomial order
                 for item in sequence:
@@ -803,7 +803,7 @@ class Spect(PrimitivesBASE):
                     # Set some bounds; this may need to be abstracted for
                     # different instruments? TODO
                     dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
-                    c0_unc = 0.05 * cenwave
+                    c0_unc = 0.02 * cenwave
                     m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
                     c1_unc = 0.005 * abs(m_init.c1)
                     m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
@@ -842,7 +842,7 @@ class Spect(PrimitivesBASE):
                 for p in m_final.param_names:
                     getattr(m_final, p).bounds = (None, None)
 
-                match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
+                match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                 model=m_final, match_radius=match_radius, sigma_clip=3)
@@ -1243,9 +1243,11 @@ class Spect(PrimitivesBASE):
                 for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix-1], c0=loc)
                     model_dict = astromodels.chebyshev_to_dict(cheb)
-                    model_dict['aper_lower'] = limits[0] - loc
-                    model_dict['aper_upper'] = limits[1] - loc
+                    lower, upper = limits - loc
+                    model_dict['aper_lower'] = lower
+                    model_dict['aper_upper'] = upper
                     all_model_dicts.append(model_dict)
+                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
 
                 aptable = Table([np.arange(len(locations))+1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
@@ -1490,12 +1492,11 @@ class Spect(PrimitivesBASE):
                 # over features. We avoid this by subsampling back to the
                 # original pixel scale (approximately).
                 input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = abs(dw / input_dw)
-                if subsample > 1.1:
-                    subsample = int(subsample + 0.5)
+                subsample = int(np.ceil(abs(dw / input_dw) - 0.1))
 
                 dg = transform.DataGroup([ext], [t])
                 dg.output_shape = (npix,)
+                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
                 output_dict = dg.transform(attributes=attributes, subsample=subsample,
                                            conserve=conserve)
                 for key, value in output_dict.items():
@@ -2035,7 +2036,7 @@ def _average_along_slit(ext, center=None, nsum=None):
 
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
 
     return data, mask, variance, extract_slice
 
