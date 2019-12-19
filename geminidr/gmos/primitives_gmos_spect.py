@@ -3,11 +3,19 @@
 #
 #                                                        primtives_gmos_spect.py
 # ------------------------------------------------------------------------------
-import numpy as np
-
-from importlib import import_module
 import os
+
+import numpy as np
+from importlib import import_module
 from datetime import datetime
+
+from astropy.modeling import models
+from astropy import units as u
+from scipy.interpolate import UnivariateSpline
+
+from geminidr.core import Spect
+from .primitives_gmos import GMOS
+from . import parameters_gmos_spect
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.lookups import geometry_conf as geotable
@@ -15,19 +23,22 @@ from geminidr.gmos.lookups import geometry_conf as geotable
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, transform
 
-from geminidr.core import Spect
-from .primitives_gmos import GMOS
-from . import parameters_gmos_spect
-
-from astropy.modeling import models
-from astropy import units as u
-from scipy.interpolate import UnivariateSpline
-
 from recipe_system.utils.decorators import parameter_override
 
 # Put this here for now!
 def qeModel(ext):
     """
+    This function returns a callable object that returns the QE of a CCD
+    (relative to CCD2) as a function of wavelength(s) in nm. The QE data is
+    provided as a dict, keyed by the array_name() descriptor of the CCD.
+    The value is either a list (interpreted as polynomial coefficients) or a
+    dict describing a spline.
+
+    NB. Spline objects defined in the dict return the decimal logarithm of
+    the relative QE, while polynomials simply return the relative QE.
+
+    In addition, if the model changes, the value can be a dict keyed by the
+    earliest UT date at which each model should be applied.
 
     Parameters
     ----------
@@ -36,9 +47,12 @@ def qeModel(ext):
 
     Returns
     -------
-    astropy.modeling.models.Model: the model to convert wavelengths
+    callable: a function to convert wavelengths in nm to relative QE
     """
     # All coefficients are for nm (not AA as in G-IRAF)
+    # Polynomials are simply a list, splines are a dict
+    # In addition, an entry can be a dict with keys corresponding to the
+    # earliest da
     qeData = {
         # GMOS-N EEV CCD1 and 3
         "EEV_9273-16-03": [9.883090E-1, -1.390254E-5,  5.282149E-7, -6.847360E-10],
