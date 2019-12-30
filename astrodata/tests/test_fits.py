@@ -1,4 +1,3 @@
-import glob
 import os
 
 import numpy as np
@@ -25,7 +24,7 @@ test_files = [
 ]
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_ad_basics(input_file):
     fname = download_from_archive(input_file)
@@ -42,7 +41,7 @@ def test_ad_basics(input_file):
         assert ext.hdr['EXTVER'] == md[1]
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_can_add_and_del_extension(input_file):
     fname = download_from_archive(input_file)
@@ -57,7 +56,7 @@ def test_can_add_and_del_extension(input_file):
     assert len(ad) == original_size
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_slice(input_file):
     fname = download_from_archive(input_file)
@@ -97,7 +96,7 @@ def test_slice(input_file):
     assert ad.data[-1] is ad[-1].data
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_phu():
     fname = download_from_archive(test_files[0])
     ad = astrodata.open(fname)
@@ -119,7 +118,7 @@ def test_phu():
         assert 'DETECTOR' not in ad.phu
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_writes_to_new_fits(tmpdir):
     fname = download_from_archive(test_files[0])
     ad = astrodata.open(fname)
@@ -176,7 +175,7 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     assert len(adnew.BOB) == 10
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_set_a_keyword_on_phu_deprecated(input_file):
     fname = download_from_archive(input_file)
@@ -201,7 +200,7 @@ def test_set_a_keyword_on_phu_deprecated(input_file):
 # Regression:
 # Make sure that references to associated
 # extension objects are copied across
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_do_arith_and_retain_features(input_file):
     fname = download_from_archive(input_file)
@@ -249,7 +248,7 @@ def test_update_filename():
     assert ad.filename == 'file_suffix1_suffix3.fits'
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_phu_deprecated():
     "Test deprecated methods to access headers"
     ad = astrodata.open(
