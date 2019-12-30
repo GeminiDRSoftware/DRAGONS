@@ -817,7 +817,7 @@ class Spect(PrimitivesBASE):
                     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=3, method=method)
                     m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines,
                                      in_weights=in_weights[peaks_to_fit],
-                                     ref_weights=None if weight_type is 'none' else arc_weights)
+                                     ref_weights=None if weight_type == 'none' else arc_weights)
                     #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
                     #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
 
