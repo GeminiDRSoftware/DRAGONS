@@ -101,8 +101,10 @@ def test_phu():
     fname = download_from_archive(test_files[0])
     ad = astrodata.open(fname)
 
-    assert ad.descriptors == ('instrument', 'object', 'telescope')
-    assert ad.tags == set()
+    # The result of this depends if gemini_instruments was imported or not
+    # assert ad.descriptors == ('instrument', 'object', 'telescope')
+    # assert ad.tags == set()
+
     assert ad.instrument() == 'NIFS'
     assert ad.object() == 'Dark'
     assert ad.telescope() == 'Gemini-North'
