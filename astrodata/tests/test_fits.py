@@ -25,7 +25,7 @@ test_files = [
 ]
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_file_exists(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -33,7 +33,7 @@ def test_file_exists(input_file, path_to_inputs):
         "File does not exists: {:s}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_can_open_fits_file(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -43,7 +43,7 @@ def test_can_open_fits_file(input_file, path_to_inputs):
         "Could not open file: {:s}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_basename_is_properly_set(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -55,7 +55,7 @@ def test_basename_is_properly_set(input_file, path_to_inputs):
         "{:s}".format(basename)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_can_add_and_del_extension(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -75,7 +75,7 @@ def test_can_add_and_del_extension(input_file, path_to_inputs):
         "Could not remove extension from ad: {:s}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_extension_data_is_an_array(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -86,7 +86,7 @@ def test_extension_data_is_an_array(input_file, path_to_inputs):
             np.ndarray, fname, type(ad[0].data))
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_iterate_over_extensions(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -101,7 +101,7 @@ def test_iterate_over_extensions(input_file, path_to_inputs):
             "Mismatching EXTVER for file {:s}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_slice_multiple(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -122,7 +122,7 @@ def test_slice_multiple(input_file, path_to_inputs):
                 "Test failed for file: {:s}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_slice_single(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -149,7 +149,7 @@ def test_slice_single(input_file, path_to_inputs):
             "Mismatching EXTVER for file {:s}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_iterate_over_single_slice(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -162,7 +162,7 @@ def test_iterate_over_single_slice(input_file, path_to_inputs):
             "Assertion failed for file: {}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_slice_negative(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -172,7 +172,7 @@ def test_slice_negative(input_file, path_to_inputs):
         "Assertion failed for file: {}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_set_a_keyword_on_phu(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -188,7 +188,7 @@ def test_set_a_keyword_on_phu(input_file, path_to_inputs):
         "Assertion failed for file: {}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_remove_a_keyword_from_phu(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -200,7 +200,7 @@ def test_remove_a_keyword_from_phu(input_file, path_to_inputs):
             "Assertion failed for file: {}".format(fname)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_writes_to_new_fits(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -217,7 +217,7 @@ def test_writes_to_new_fits(input_file, path_to_inputs):
     os.remove(test_file_location)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_can_overwrite_existing_file(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -279,7 +279,7 @@ def test_can_append_table_and_access_data():
     print(ad.info())
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_set_a_keyword_on_phu_deprecated(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -306,7 +306,7 @@ def test_set_a_keyword_on_phu_deprecated(input_file, path_to_inputs):
 # Regression:
 # Make sure that references to associated
 # extension objects are copied across
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_file", test_files)
 def test_do_arith_and_retain_features(input_file, path_to_inputs):
     fname = download_from_archive(input_file, path=path_to_inputs)
@@ -356,7 +356,7 @@ def test_update_filename():
     assert ad.filename == 'file_suffix1_suffix3.fits'
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_phu_deprecated():
     "Test deprecated methods to access headers"
     ad = astrodata.open(
