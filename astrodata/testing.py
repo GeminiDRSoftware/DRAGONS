@@ -11,7 +11,6 @@ import pytest
 from astropy.utils.data import download_file
 
 URL = 'https://archive.gemini.edu/file/'
-DEFAULT_CACHE_DIRECTORY = '~/.geminidr/cache'
 
 
 def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
