@@ -18,6 +18,9 @@ __all__ = ['NDAstroData']
 
 
 class ADVarianceUncertainty(VarianceUncertainty):
+    """
+    Subclass VarianceUncertainty to check for negative values.
+    """
     @VarianceUncertainty.array.setter
     def array(self, value):
         if value is not None and np.any(value < 0):
