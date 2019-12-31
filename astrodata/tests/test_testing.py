@@ -23,8 +23,12 @@ def test_download_from_archive_raises_IOError_if_path_is_not_accessible():
 
 @pytest.mark.dragons_remote_data
 def test_download_from_archive():
-    fname = testing.download_from_archive('N20180304S0126.fits')
+    fname = testing.download_from_archive('N20170529S0168.fits')
+    assert os.path.exists(fname)
+    # make sure that download_from_archive works when the file does not exists
     os.remove(fname)
+    fname = testing.download_from_archive('N20170529S0168.fits')
+    assert os.path.exists(fname)
 
 
 if __name__ == '__main__':
