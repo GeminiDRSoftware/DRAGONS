@@ -67,7 +67,7 @@ def test_expr_parser_can_parse_for_filter_name():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 
@@ -105,7 +105,7 @@ def test_expr_parser_can_parse_for_exposure_time():
         assert used_operator is not None
 
         # If operator is not '==', then original codified expression is returned
-        if used_operator is not "=":
+        if used_operator != "=":
             expected = descriptor + used_operator + descriptor_answer
 
         else:
@@ -144,7 +144,7 @@ def test_expr_parser_can_parse_for_ut_datetime():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 
@@ -184,7 +184,7 @@ def test_expr_parser_can_parse_for_ut_date():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 
@@ -228,7 +228,7 @@ def test_expr_parser_can_parse_for_ut_time_or_local_time():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 

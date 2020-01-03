@@ -275,7 +275,7 @@ def test_distortion_correct_is_stable(ad, ad_ref):
     np.testing.assert_allclose(data, ref_data, atol=1)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("fname", input_files)
 def test_full_frame_distortion_works_on_smaller_region(fname, path_to_inputs):
     """

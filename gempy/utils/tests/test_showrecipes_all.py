@@ -18,7 +18,7 @@ GSAOI_IMAGE = 'S20170505S0095.fits'
 GSAOI_FLAT = 'S20170505S0031.fits'
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gnirs():
     file_location = download_from_archive(GNIRS)
 
@@ -37,7 +37,7 @@ def test_showrecipes_on_gnirs():
         assert expected_answers[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gnirs_spect():
     file_location = download_from_archive(GNIRS_SPECT)
 
@@ -53,7 +53,7 @@ def test_showrecipes_on_gnirs_spect():
         assert gnirs_spect_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gmos():
     file_location = download_from_archive(GMOS)
 
@@ -75,7 +75,7 @@ def test_showrecipes_on_gmos():
         assert gmos_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gmos_ns():
     file_location = download_from_archive(GMOS_NS)
 
@@ -92,7 +92,7 @@ def test_showrecipes_on_gmos_ns():
         assert gmos_ns_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gmos_spect():
     file_location = download_from_archive(GMOS_SPECT)
 
@@ -108,7 +108,7 @@ def test_showrecipes_on_gmos_spect():
         assert gmos_spect_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gsaoi_dark():
     file_location = download_from_archive(GSAOI_DARK)
 
@@ -125,7 +125,7 @@ def test_showrecipes_on_gsaoi_dark():
         assert gsaoi_dark_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gsaoi_image():
     file_location = download_from_archive(GSAOI_IMAGE)
 
@@ -142,7 +142,7 @@ def test_showrecipes_on_gsaoi_image():
         assert gsaoi_image_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_gsaoi_flat():
     file_location = download_from_archive(GSAOI_FLAT)
 
@@ -160,7 +160,7 @@ def test_showrecipes_on_gsaoi_flat():
         assert gsaoi_flat_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_niri():
     file_location = download_from_archive(NIRI)
 
@@ -180,7 +180,7 @@ def test_showrecipes_on_niri():
         assert niri_answer[i] in answer
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showrecipes_on_f2():
     file_location = download_from_archive(F2)
 
