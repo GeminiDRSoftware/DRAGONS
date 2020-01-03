@@ -3,11 +3,13 @@ import os
 
 import numpy as np
 import pytest
+from astropy import units as u
 from astropy.io import fits
 from astropy.table import Table
+from astropy.modeling import models
 
 import astrodata
-from astrodata.testing import download_from_archive
+from astrodata.testing import download_from_archive, compare_models
 
 
 def test_file_exists(path_to_inputs):
@@ -346,6 +348,100 @@ def test_read_a_keyword_from_phu_deprecated():
     # and when accessing missing extension
     with pytest.raises(AttributeError):
         ad.ABC
+
+
+def test_round_trip_gwcs():
+    """
+    Add a 2-step gWCS instance to NDAstroData, save to disk, reload & compare.
+    """
+
+    from gwcs import coordinate_frames as cf
+    from gwcs import WCS
+
+    arr = np.zeros((10, 10), dtype=np.float32)
+    ad1 = astrodata.create(fits.PrimaryHDU(), [fits.ImageHDU(arr, name='SCI')])
+
+    # Transformation from detector pixels to pixels in some reference row,
+    # removing relative distortions in wavelength:
+    det_frame = cf.Frame2D(name='det_mosaic', axes_names=('x', 'y'),
+                           unit=(u.pix, u.pix))
+    dref_frame = cf.Frame2D(name='dist_ref_row', axes_names=('xref', 'y'),
+                            unit=(u.pix, u.pix))
+
+    # A made-up example model that looks vaguely like some real distortions:
+    fdist = models.Chebyshev2D(2, 2,
+                               c0_0=4.81125, c1_0=5.43375, c0_1=-0.135,
+                               c1_1=-0.405, c0_2=0.30375, c1_2=0.91125,
+                               x_domain=(0., 9.), y_domain=(0., 9.))
+
+    # This is not an accurate inverse, but will do for this test:
+    idist = models.Chebyshev2D(2, 2,
+                               c0_0=4.89062675, c1_0=5.68581232,
+                               c2_0=-0.00590263, c0_1=0.11755526,
+                               c1_1=0.35652358, c2_1=-0.01193828,
+                               c0_2=-0.29996306, c1_2=-0.91823397,
+                               c2_2=0.02390594,
+                               x_domain=(-1.5, 12.), y_domain=(0., 9.))
+
+    # The resulting 2D co-ordinate mapping from detector to ref row pixels:
+    distrans = models.Mapping((0, 1, 1)) | (fdist & models.Identity(1))
+    distrans.inverse = models.Mapping((0, 1, 1)) | (idist & models.Identity(1))
+
+    # Transformation from reference row pixels to linear, row-stacked spectra:
+    spec_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
+                                  axes_names='lambda', name='wavelength')
+    row_frame = cf.CoordinateFrame(1, 'SPATIAL', axes_order=(1,), unit=u.pix,
+                                   axes_names='y', name='row')
+    rss_frame = cf.CompositeFrame([spec_frame, row_frame])
+
+    # Toy wavelength model & approximate inverse:
+    fwcal = models.Chebyshev1D(2, c0=500.075, c1=0.05, c2=0.001, domain=(0, 9))
+    iwcal = models.Chebyshev1D(2, c0=4.59006292, c1=4.49601817, c2=-0.08989608,
+                               domain=(500.026, 500.126))
+
+    # The resulting 2D co-ordinate mapping from ref pixels to wavelength:
+    wavtrans = fwcal & models.Identity(1)
+    wavtrans.inverse = iwcal & models.Identity(1)
+
+    # The complete WCS chain for these 2 transformation steps:
+    ad1[0].nddata.wcs = WCS([(det_frame, distrans),
+                             (dref_frame, wavtrans),
+                             (rss_frame, None)
+                            ])
+
+    # Save & re-load the AstroData instance with its new WCS attribute:
+    ad1.write('round_trip_gwcs.fits')
+    ad2 = astrodata.open('round_trip_gwcs.fits')
+
+    wcs1 = ad1[0].nddata.wcs
+    wcs2 = ad2[0].nddata.wcs
+
+    # # Temporary workaround for issue #9809, to ensure the test is correct:
+    # wcs2.forward_transform[1].x_domain = (0, 9)
+    # wcs2.forward_transform[1].y_domain = (0, 9)
+    # wcs2.forward_transform[3].domain = (0, 9)
+    # wcs2.backward_transform[0].domain = (500.026, 500.126)
+    # wcs2.backward_transform[3].x_domain = (-1.5, 12.)
+    # wcs2.backward_transform[3].y_domain = (0, 9)
+
+    # Did we actually get a gWCS instance back?
+    assert isinstance(wcs2, WCS)
+
+    # Do the transforms have the same number of submodels, with the same types,
+    # degrees, domains & parameters? Here the inverse gets checked redundantly
+    # as both backward_transform and forward_transform.inverse, but it would be
+    # convoluted to ensure that both are correct otherwise (since the transforms
+    # get regenerated as new compound models each time they are accessed).
+    compare_models(wcs1.forward_transform, wcs2.forward_transform)
+    compare_models(wcs1.backward_transform, wcs2.backward_transform)
+
+    # Also compare a few transformed values, as the "proof of the pudding":
+    y, x = np.mgrid[0:9:2, 0:9:2]
+    np.testing.assert_allclose(wcs1(x, y), wcs2(x, y), rtol=1e-7, atol=0.)
+
+    y, w = np.mgrid[0:9:2, 500.025:500.12:0.0225]
+    np.testing.assert_allclose(wcs1.invert(w, y), wcs2.invert(w, y),
+                               rtol=1e-7, atol=0.)
 
 
 if __name__ == '__main__':
