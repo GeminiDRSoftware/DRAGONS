@@ -198,27 +198,42 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     # Need verb=3 to get the right cols from vizier
 
     try:
-        from astropy.vo.client.conesearch import conesearch as vo_conesearch
-        from astropy.vo.client.vos_catalog import VOSError
-    except ImportError:
-        from astroquery.vo_conesearch.conesearch import conesearch as vo_conesearch
+        from astroquery.vo_conesearch import conf
+        from astroquery.vo_conesearch.conesearch import conesearch
         from astroquery.vo_conesearch.exceptions import VOSError
+    except ImportError:
+        # conesearch was deprecated in astropy 2.0 and removed in 3.0, and
+        # moved to astroquery 0.3.5
+        from astropy.vo.client.conesearch import conesearch
+        from astropy.vo.client.vos_catalog import VOSError
 
     # The following phrase is implemented to handle differing function
     # signatures and return behaviours of vo conesearch function. Under
     # astropy, conesearch throws a VOSError exception on no results. Which
     # seems a bit extreme. See the import phrase at top.
     try:
-        table = vo_conesearch((ra, dec), sr, verb=3, catalog_db=url,
-                              pedantic=False, verbose=False)
+        try:
+            # astroquery 0.4 removed the pedantic keyword in favor of the
+            # config item, and switched to returning an astropy table by
+            # default (hence return_astropy_table=False below).
+            # Another change is that conesearch returns None and issue of
+            # NoResultsWarning if no results are found, instead of raising
+            # a VOSError.
+            # https://github.com/astropy/astroquery/pull/1528
+            with conf.set_temp('pedantic', True):
+                table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
+                                   return_astropy_table=False, verbose=False)
+        except TypeError:
+            table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
+                               pedantic=False, verbose=False)
     except VOSError:
         log.stdinfo("VO conesearch produced no results")
-        return None
+        return
 
     # Did we get any results?
-    if(table.is_empty() or len(table.array) == 0):
+    if(table is None or table.is_empty() or len(table.array) == 0):
         log.stdinfo("No results returned")
-        return None
+        return
 
     # It turns out to be not viable to use UCDs to select the columns,
     # even for the id, ra, and dec. Even with vizier. <sigh>
