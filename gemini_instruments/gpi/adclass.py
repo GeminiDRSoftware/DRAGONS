@@ -89,7 +89,7 @@ class AstroDataGpi(AstroDataGemini):
             If True, removes the component ID and returns only the name of
             the filter.
         pretty : bool
-            Strips the component ID and 'IFSFILT\_' prefix.
+            Strips the component ID and ``IFSFILT_`` prefix.
 
         Returns
         -------

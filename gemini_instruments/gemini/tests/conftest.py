@@ -3,8 +3,6 @@ import os
 
 import pytest
 
-from astrodata.testing import path_to_inputs
-
 
 @pytest.fixture
 def gemini_files(path_to_inputs):

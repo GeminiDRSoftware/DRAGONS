@@ -58,6 +58,7 @@ class Spect(PrimitivesBASE):
 
     def calculateSensitivity(self, adinputs=None, **params):
         """
+        ???
 
         Parameters
         ----------
@@ -153,6 +154,24 @@ class Spect(PrimitivesBASE):
         dispersion direction. Then it fits a 2D Chebyshev polynomial to the
         fitted coordinates in the dispersion direction. The distortion map does
         not change the coordinates in the spatial direction.
+
+        The Chebyshev2D model is stored as a Table object in the `.FITCOORD`
+        plane with the following format:
+
+        =============== ================ ============== ======================
+        name            coefficients     inv_name       inv_coefficients
+        --------------- ---------------- -------------- ----------------------
+        ndim            (int as float)   ndim           (int as float)
+        x_degree        (int as float)   x_degree       (int as float)
+        y_degree        (int as float)   y_degree       (int as float)
+        x_domain_start  (int as float)   x_domain_start (int as float)
+        x_domain_end    (int as float)   x_domain_end   (int as float)
+        y_domain_start  (int as float)   y_domain_start (int as float)
+        y_domain_end    (int as float)   y_domain_end   (int as float)
+        c0_0            (float)          c0_0           (float)
+        c1_0            (float)          c1_0           (float)
+        ...             ...              ...            ...
+        =============== ================ ============== ======================
 
         Parameters
         ----------
@@ -554,44 +573,22 @@ class Spect(PrimitivesBASE):
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
-        This primitive determines the wavelength solution for an ARC and
-        stores it as an attached `.WAVECAL` table.
+        Determines the wavelength solution for an ARC and stores it as an
+        attached `.WAVECAL` :class:`~astropy.table.Table`.
 
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
-        matched to an arc line list, using the `KDTreeFitter`.
+        matched to an arc line list, using :class:`~gempy.library.matching.KDTreeFitter`.
+        This class has a strong dependency with the fwith parameter and works better
+        if a good inicial value is providen.
 
-        For each `AstroData` object and for each extension within it, this
-        primitive contains the following bigger steps:
+        The `.WAVECAL` table contains four columns:
+            ["name", "coefficients", "peaks", "wavelengths"]
 
-        - Read Arc Lines;
-
-        - Extract 1D spectrum;
-
-        - Mask data skipping non-linear or saturated lines;
-
-        - Use known central wavelength to calculate wavelength range and
-          dispersion;
-
-        - Estimate line widths to be used on peak detection;
-
-        - Detect peaks using Continuous Wavelet Transform;
-
-        - Create weight dictionary with different types of weights
-          (intensity/flux);
-
-        - Create iteration sequence with different weights methods;
-
-        - Create 0th iteration using a 1D Chebyshev model;
-
-        - Fit iteration using `KDTreeFitter`;
-
-        - Matching using `Chebyshev1DMatchBox`;
-
-        - Convert model into dictionary and, then, into a Table;
-
-        - Store solution as a Table.
-
+        The `name` and the `coefficients` columns contain information to
+        re-create an Chebyshev1D object. The `peaks` column contains the position
+        of the lines that were matched to the cathalog, and the `wavelengths`
+        column contains the wavelengths that were matched to that line.
 
         Parameters
         ----------
@@ -599,32 +596,40 @@ class Spect(PrimitivesBASE):
         adinputs : list of :class:`~astrodata.AstroData`
              Mosaicked Arc data as 2D spectral images or 1D spectra.
 
-        suffix : str
-            Suffix to be added to output files.
+        suffix : str, optional
+            Suffix to be added to output files
+            (default: "_wavelengthSolutionDetermined").
 
-        center : int or None
+        center : None or int, optional
             Central row/column for 1D extraction (None => use middle).
 
-        nsum : int
-            Number of rows/columns to average.
+        nsum : int, optional
+            Number of rows/columns to average (default: 10).
 
-        order : int
-            Order of Chebyshev fitting function.
+        order : int, optional
+            Order of Chebyshev fitting function (default: 2).
 
-        min_snr : float
-            Minimum S/N ratio in line peak to be used in fitting.
+        min_snr : float, optional
+            Minimum S/N ratio in line peak to be used in fitting (default: 10).
 
-        fwidth : float
-            Expected width of arc lines in pixels.
+        fwidth : None or float, optional
+            Expected width of arc lines in pixels. It tells how far the
+            KDTreeFitter should look for when matching detected peaks with
+            reference arcs lines. If None (the default), `fwidth` is
+            determined using `tracing.estimate_peak_width`.
 
-        linelist : str or None
-            Name of file containing arc lines.
+        linelist : None or str, optional
+            Name of file containing arc lines. If None, then a default look-up
+            table will be used.
 
-        weighting : {'none', 'natural', 'relative'}
+        weighting : {'natural', 'relative', 'none'}
             How to weight the detected peaks.
 
         nbright : int
-            Number of brightest lines to cull before fitting.
+            Number of brightest lines to cull before fitting (default: 0).
+
+        plot : bool
+            Enable plots for debugging.
 
         Returns
         -------
@@ -773,8 +778,8 @@ class Spect(PrimitivesBASE):
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
-                                tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order+1)))
+                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping')) +
+                                tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
 
                 # Now make repeated fits, increasing the polynomial order
                 for item in sequence:
@@ -798,7 +803,7 @@ class Spect(PrimitivesBASE):
                     # Set some bounds; this may need to be abstracted for
                     # different instruments? TODO
                     dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
-                    c0_unc = 0.05 * cenwave
+                    c0_unc = 0.02 * cenwave
                     m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
                     c1_unc = 0.005 * abs(m_init.c1)
                     m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
@@ -812,7 +817,7 @@ class Spect(PrimitivesBASE):
                     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=3, method=method)
                     m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines,
                                      in_weights=in_weights[peaks_to_fit],
-                                     ref_weights=None if weight_type is 'none' else arc_weights)
+                                     ref_weights=None if weight_type == 'none' else arc_weights)
                     #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
                     #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
 
@@ -837,7 +842,7 @@ class Spect(PrimitivesBASE):
                 for p in m_final.param_names:
                     getattr(m_final, p).bounds = (None, None)
 
-                match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
+                match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                 model=m_final, match_radius=match_radius, sigma_clip=3)
@@ -1083,6 +1088,7 @@ class Spect(PrimitivesBASE):
                         ad_spec[-1].WAVECAL = ext.WAVECAL
                     except AttributeError:  # That's OK, there wasn't one
                         pass
+                    ad_spec[-1].hdr[ad._keyword_for('aperture_number')] = model_dict['number']
                     center = model_dict['c0']
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
                                 "from {} {}".format(direction, int(center + 0.5)))
@@ -1219,7 +1225,7 @@ class Spect(PrimitivesBASE):
                 #                                                 rejector="sigclip", combiner="wtmean")
 
                 # TODO: find_peaks might not be best considering we have no
-                # idea whether sources will be extended or not
+                #   idea whether sources will be extended or not
                 widths = np.arange(5, 30)
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
                                                     variance=prof_var, reject_bad=False,
@@ -1237,9 +1243,11 @@ class Spect(PrimitivesBASE):
                 for loc, limits in zip(locations, all_limits):
                     cheb = models.Chebyshev1D(degree=0, domain=[0, npix-1], c0=loc)
                     model_dict = astromodels.chebyshev_to_dict(cheb)
-                    model_dict['aper_lower'] = limits[0] - loc
-                    model_dict['aper_upper'] = limits[1] - loc
+                    lower, upper = limits - loc
+                    model_dict['aper_lower'] = lower
+                    model_dict['aper_upper'] = upper
                     all_model_dicts.append(model_dict)
+                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
 
                 aptable = Table([np.arange(len(locations))+1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
@@ -1484,12 +1492,11 @@ class Spect(PrimitivesBASE):
                 # over features. We avoid this by subsampling back to the
                 # original pixel scale (approximately).
                 input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = abs(dw / input_dw)
-                if subsample > 1.1:
-                    subsample = int(subsample + 0.5)
+                subsample = int(np.ceil(abs(dw / input_dw) - 0.1))
 
                 dg = transform.DataGroup([ext], [t])
                 dg.output_shape = (npix,)
+                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
                 output_dict = dg.transform(attributes=attributes, subsample=subsample,
                                            conserve=conserve)
                 for key, value in output_dict.items():
@@ -1523,12 +1530,6 @@ class Spect(PrimitivesBASE):
         is evaluated for each pixel in each unmosaicked detector, so that
         the resultant flatfield always has the same format (i.e., number of
         extensions and their shape) as the input frame.
-
-        TODO: There is an issue here because the spline knots are equally
-        spaced but their separation should be much larger than any data-free
-        inter-chip gap, so this effectively sets a maxmimum spline order
-        which might not be very high. Can/should we set the spline knots only
-        within each chip?
 
         Parameters
         ----------
@@ -1729,7 +1730,6 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
 
     def traceApertures(self, adinputs=None, **params):
         """
@@ -1995,11 +1995,11 @@ class Spect(PrimitivesBASE):
                                   * u.Unit("erg cm-2 s-1") / u.Hz)
         return spec_table
 
-#-----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
 def _average_along_slit(ext, center=None, nsum=None):
     """
-    Calculated the average of long the slit and its pixel-by-pixel variance.
+    Calculates the average of long the slit and its pixel-by-pixel variance.
 
     Parameters
     ----------
@@ -2036,9 +2036,10 @@ def _average_along_slit(ext, center=None, nsum=None):
 
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
 
     return data, mask, variance, extract_slice
+
 
 def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     """

@@ -228,7 +228,7 @@ class AstroDataGmos(AstroDataGemini):
         except KeyError:
             central_wavelength = self.phu.get('GRWLEN', -1)
 
-        if central_wavelength < 0.0:
+        if central_wavelength <= 0.0:
             return None
         else:
             return gmu.convert_units('nanometers', central_wavelength,
@@ -433,7 +433,7 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in meters per binned pixel as a list (one value per
         extension) or a float if used on a single-extension slice.  It is
         possible to control the units of wavelength using the input arguments.
 

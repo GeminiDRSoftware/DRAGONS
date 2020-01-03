@@ -280,12 +280,12 @@ class Aperture(object):
 
         self.check_domain(npix)
 
-        if self.aper_lower > self.aper_upper:
+        if aper_lower > aper_upper:
             log.warning("Aperture lower limit is greater than upper limit.")
             aper_lower, aper_upper = aper_upper, aper_lower
-        if self.aper_lower > 0:
+        if aper_lower > 0:
             log.warning("Aperture lower limit is greater than zero.")
-        if self.aper_upper < 0:
+        if aper_upper < 0:
             log.warning("Aperture upper limit is less than zero.")
 
         # make data look like it's dispersed horizontally
@@ -424,7 +424,7 @@ def find_peaks(data, widths, mask=None, variance=None, min_snr=1, min_frac=0.25,
 
     Returns
     -------
-    2D array: peak wavelengths and SNRs
+    2D array: peak pixels and SNRs
     """
     mask = mask if mask is not None else np.zeros_like(data, dtype=np.uint16)
 

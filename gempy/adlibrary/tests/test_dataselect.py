@@ -5,28 +5,26 @@ import pytest
 import os
 
 from gempy.adlibrary import dataselect
-from recipe_system.reduction.coreReduce import Reduce
-
 from gempy.utils import logutils
 
 logutils.config(file_name='dummy.log')
 
-
 try:
     path = os.environ['TEST_PATH']
 except KeyError:
-    pytest.skip("Could not find environment variable: $TEST_PATH")
+    pytestmark = pytest.mark.skip(
+        "Could not find environment variable: $TEST_PATH")
+else:
+    if not os.path.exists(path):
+        pytestmark = pytest.mark.skip(
+            "Could not find path stored in $TEST_PATH: {}".format(path))
 
-if not os.path.exists(path):
-    pytest.skip("Could not find path stored in $TEST_PATH: {}".format(path))
+    # Returns list of all files in the TEST_PATH directory
+    F2_reduce = glob.glob(os.path.join(path, "F2/test_reduce/", "*fits"))
 
-
-# Returns list of all files in the TEST_PATH directory
-F2_reduce = glob.glob(os.path.join(path, "F2/test_reduce/", "*fits"))
-
-# Separates the directory from the list, helps cleanup code
-fits_files = [_file.split('/')[-1] for _file in F2_reduce]
-assert len(fits_files) > 1
+    # Separates the directory from the list, helps cleanup code
+    fits_files = [_file.split('/')[-1] for _file in F2_reduce]
+    assert len(fits_files) > 1
 
 
 def test_isclose_returns_proper_values_with_edgecases():
@@ -69,7 +67,7 @@ def test_expr_parser_can_parse_for_filter_name():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 
@@ -107,7 +105,7 @@ def test_expr_parser_can_parse_for_exposure_time():
         assert used_operator is not None
 
         # If operator is not '==', then original codified expression is returned
-        if used_operator is not "=":
+        if used_operator != "=":
             expected = descriptor + used_operator + descriptor_answer
 
         else:
@@ -146,7 +144,7 @@ def test_expr_parser_can_parse_for_ut_datetime():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 
@@ -186,7 +184,7 @@ def test_expr_parser_can_parse_for_ut_date():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 
@@ -230,7 +228,7 @@ def test_expr_parser_can_parse_for_ut_time_or_local_time():
                 descriptor_answer = value.split(operator)[-1]
                 used_operator = operator
 
-                if operator is "=":
+                if operator == "=":
                     # = -> == from testing to asserting in string
                     used_operator = "=="
 

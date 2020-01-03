@@ -35,10 +35,6 @@ class standardizeHeadersConfig(standardizeObservatoryHeadersConfig, standardizeI
 
 class standardizeStructureConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_structureStandardized", optional=True)
-    attach_mdf = config.Field("Attach MDF to spectroscopic data?", bool, True)
-
-    def setDefaults(self):
-        self.suffix = "_structureStandardized"
 
 class validateDataConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dataValidated", optional=True)

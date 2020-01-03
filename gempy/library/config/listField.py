@@ -32,7 +32,7 @@ from .callStack import getCallStack, getStackFrame
 __all__ = ["ListField"]
 
 
-class List(collections.MutableSequence):
+class List(collections.abc.MutableSequence):
     def __init__(self, config, field, value, at, label, setHistory=True):
         self._field = field
         self._config = config
@@ -161,7 +161,7 @@ class ListField(Field):
     then minLength
     If maxLength is not None, then instances of the field must be no longer
     than maxLength
-    
+
     If single is True, a single object of dtype rather than a list is OK
 
     Additionally users can provide two check functions:

@@ -2,8 +2,13 @@ astropy
 astroquery
 cython
 future
+ginga
+imexam
+matplotlib
 numpy
+photutils
 python-dateutil
 pytest
 scipy
+specutils
 sqlalchemy

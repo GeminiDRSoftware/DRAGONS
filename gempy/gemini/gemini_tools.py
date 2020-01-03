@@ -1526,15 +1526,19 @@ def parse_sextractor_param(param_file):
     list
         names of all the columns in the SExtractor output catalog
     """
+    regexp = re.compile('(.*)\(\d+\)')
     columns = []
     fp = open(param_file)
     for line in fp:
         fields = line.split()
-        if len(fields)==0:
+        if len(fields) == 0:
             continue
         if fields[0].startswith("#"):
             continue
-        name = fields[0]
+        try:  # Turn FLUX_APER(n) -> FLUX_APER
+            name = regexp.match(fields[0]).group(1)
+        except AttributeError:
+            name = fields[0]
         columns.append(name)
     return columns
 

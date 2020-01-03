@@ -12,7 +12,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : :class:`geminidr.core.primitives_gmos_longslit.GMOSLongslit`
+    p : :class:`geminidr.gmos.primitives_gmos_longslit.GMOSLongslit`
 
     """
     p.prepare()
@@ -23,7 +23,9 @@ def reduce(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
+    p.applyQECorrection()
     p.distortionCorrect()
+    p.writeOutputs()
     p.findSourceApertures()
     p.skyCorrectFromSlit()
     p.traceApertures()
@@ -31,13 +33,14 @@ def reduce(p):
     p.linearizeSpectra()
     p.writeOutputs()
 
+
 def reduceStandard(p):
     """
     todo: add docstring
 
     Parameters
     ----------
-    p : :class:`geminidr.core.primitives_gmos_longslit.GMOSLongslit`
+    p : :class:`geminidr.gmos.primitives_gmos_longslit.GMOSLongslit`
 
     """
     p.prepare()
@@ -48,6 +51,7 @@ def reduceStandard(p):
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.flatCorrect()
+    p.applyQECorrection()
     p.distortionCorrect()
     p.findSourceApertures(max_apertures=1)
     p.skyCorrectFromSlit()
@@ -56,5 +60,6 @@ def reduceStandard(p):
     p.linearizeSpectra()  # TODO: needed?
     p.calculateSensitivity()
     p.writeOutputs()
+
 
 _default = reduce

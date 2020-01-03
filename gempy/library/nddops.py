@@ -605,25 +605,18 @@ def sum1d(ndd, x1, x2, proportional_variance=True):
     """
     x1 = max(x1, -0.5)
     x2 = min(x2, ndd.shape[0]-0.5)
-    ix1 = int(x1 + 0.5)
-    ix2 = int(x2 + 0.5)
-    fx1 = x1 - ix1 + 0.5
+    ix1 = int(np.floor(x1 + 0.5))
+    ix2 = int(np.ceil(x2 - 0.5))
+    fx1 = ix1 - x1 + 0.5
     fx2 = x2 - ix2 + 0.5
     mask = var = None
 
-    data = fx1*ndd.data[ix1] + ndd.data[ix1:ix2].sum()
+    data = fx1*ndd.data[ix1] + ndd.data[ix1+1:ix2].sum() + fx2*ndd.data[ix2]
     if ndd.mask is not None:
-        mask = np.bitwise_or.reduce(ndd.mask[ix1:ix2])
+        mask = np.bitwise_or.reduce(ndd.mask[ix1:ix2+1])
     if ndd.variance is not None:
-        var = (fx1 if proportional_variance else fx1*fx1)*ndd.variance[ix1] + ndd.variance[ix1:ix2].sum()
-
-    # If end is right on a pixel boundary, fx2=0 and ix2=ndd.shape,
-    # so IndexError will occur
-    if fx2 > 0:
-        data += fx2*ndd.data[ix2]
-        if mask is not None:
-            mask |= ndd.mask[ix2]
-        if var is not None:
-            var += (fx2 if proportional_variance else fx2*fx2)*ndd.variance[ix2]
+        var = ((fx1 if proportional_variance else fx1*fx1)*ndd.variance[ix1] +
+               ndd.variance[ix1:ix2].sum() +
+               (fx2 if proportional_variance else fx2*fx2)*ndd.variance[ix2])
 
     return NDD(data, mask, var)

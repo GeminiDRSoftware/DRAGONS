@@ -1,6 +1,6 @@
 import re
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime  # leave it in.  It is used by the exec.
 
 import astrodata
 import gemini_instruments
@@ -44,10 +44,10 @@ def expr_parser(expression, strict=False):
 
     """
 
-    adexpr = re.sub('([_A-z]\w*)([!=<>]+\S+)', r'ad.\1()\2', expression)
+    adexpr = re.sub(r'([_A-z]\w*)([!=<>]+\S+)', r'ad.\1()\2', expression)
     codified_expression = deepcopy(adexpr)
 
-    for strfound in re.finditer('(ad.)([_A-z]\w*)([\(\)]+)([!=<>]+)(\S+)',
+    for strfound in re.finditer(r'(ad.)([_A-z]\w*)([\(\)]+)([!=<>]+)(\S+)',
                                 adexpr):
         descriptor = strfound.groups()[1]
         operator = strfound.groups()[3]

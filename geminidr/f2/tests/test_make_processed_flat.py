@@ -8,7 +8,7 @@ from astrodata.testing import download_from_archive
 from geminidr.f2.primitives_f2_image import F2Image
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_make_processed_flat():
     flat_files = [
         'S20131126S1111.fits',

@@ -4,16 +4,16 @@ Fixtures to be used in tests in DRAGONS
 """
 
 import os
-import pytest
 import shutil
-import warnings
+from pathlib import Path
+
+import pytest
 from astropy.utils.data import download_file
 
 URL = 'https://archive.gemini.edu/file/'
-DEFAULT_CACHE_DIRECTORY = '~/.geminidr/cache'
 
 
-def download_from_archive(filename, path=None):
+def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
     """Download file from the archive and store it in the local cache.
 
     Parameters
@@ -23,11 +23,27 @@ def download_from_archive(filename, path=None):
     path : str
         By default the file is stored at the root of the cache directory, but
         using ``path`` allows to specify a sub-directory.
+    env_var: strs
+        Environment variable containing the path to the cache directory.
 
+    Returns
+    -------
+    str
+        Name of the cached file with the path added to it.
     """
     # Find cache path and make sure it exists
-    cache_path = os.getenv('DRAGONS_TEST_INPUTS', DEFAULT_CACHE_DIRECTORY)
+    cache_path = os.getenv(env_var)
+
+    if cache_path is None:
+        raise ValueError('Environment variable not set: {:s}'.format(env_var))
+
+    elif not os.access(cache_path, os.W_OK):
+        raise IOError('Could not access the path stored inside ${:s}. Make '
+                      'sure the following path exists and that you have write '
+                      'permissions in it: {:s}'.format(env_var, cache_path))
+
     cache_path = os.path.expanduser(cache_path)
+
     if path is not None:
         cache_path = os.path.join(cache_path, path)
     os.makedirs(cache_path, exist_ok=True)
@@ -37,6 +53,9 @@ def download_from_archive(filename, path=None):
     if not os.path.exists(local_path):
         tmp_path = download_file(URL + filename, cache=False)
         shutil.move(tmp_path, local_path)
+
+        # `download_file` ignores Access Control List - fixing it
+        os.chmod(local_path, 0o664)
 
     return local_path
 
@@ -57,7 +76,6 @@ def assert_have_same_distortion(ad, ad_ref):
     from numpy.testing import assert_allclose
 
     for ext, ext_ref in zip(ad, ad_ref):
-
         distortion = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
         distortion = dict_to_chebyshev(distortion)
 
@@ -103,7 +121,6 @@ def assert_wavelength_solutions_are_close(ad, ad_ref):
     from numpy.testing import assert_allclose
 
     for ext, ext_ref in zip(ad, ad_ref):
-
         assert hasattr(ext, "WAVECAL")
         wcal = dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
         wcal = dict_to_chebyshev(wcal)
@@ -197,7 +214,7 @@ def compare_models(model1, model2, rtol=1e-7, atol=0., check_inverse=True):
                        check_inverse=False)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def path_to_inputs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_INPUTS that
@@ -232,7 +249,7 @@ def path_to_inputs():
     return path
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def path_to_refs():
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST_REFS that
@@ -249,51 +266,47 @@ def path_to_refs():
     -------
         str : path to the reference data
     """
-    try:
-        path = os.path.expanduser(os.environ['DRAGONS_TEST_REFS'])
-    except KeyError:
-        pytest.skip(
-            "Could not find environment variable: $DRAGONS_TEST_REFS")
+    path = os.path.expanduser(os.getenv('DRAGONS_TEST_REFS')).strip()
 
-    # noinspection PyUnboundLocalVariable
+    if not path:
+        raise ValueError("Could not find environment variable: \n"
+                         "  $DRAGONS_TEST_REFS")
+
     if not os.path.exists(path):
-        pytest.skip(
-            "Could not access path stored in $DRAGONS_TEST_REFS: "
-            "{}".format(path)
-        )
+        raise IOError("Could not access path stored in $DRAGONS_TEST_REFS: \n"
+                      "  {}".format(path))
 
     return path
 
 
-@pytest.fixture(scope='module')
-def path_to_outputs():
+@pytest.fixture(scope='session')
+def path_to_outputs(tmp_path_factory):
     """
-    PyTest fixture that reads the environment variable $DRAGONS_TEST_OUTPUTS
-    where output data will be stored during the tests.
+    PyTest fixture that creates a temporary folder to save tests ouputs.
 
-    If the environment variable does not exist, it marks the test to be skipped.
-
-    If the environment variable exists but it not accessible, it also marks the
-    test to be skipped.
-
-    The skip reason changes depending on which situation causes it to be skipped.
+    This output folder can be override via $DRAGONS_TEST_OUTPUTS environment
+    variable or via `--basetemp` argument.
 
     Returns
     -------
-        str : path to the output data
+    str
+        Path to the output data.
+
+    Raises
+    ------
+    IOError
+        If output path does not exits.
     """
-    try:
-        path = os.path.expanduser(os.environ['DRAGONS_TEST_OUTPUTS'])
-    except KeyError:
-        warnings.warn("Could not find environment variable: $DRAGONS_TEST_OUTPUTS"
-                      "\n Using current working directory")
-        path = os.getcwd()
+    path = tmp_path_factory.mktemp('dragons_tests', numbered=False)
+
+    if os.getenv('DRAGONS_TEST_OUTPUTS'):
+        path = Path(os.path.expanduser(os.getenv('DRAGONS_TEST_OUTPUTS')))
+
+    path.mkdir(exist_ok=True, parents=True)
 
     if not os.path.exists(path):
-        warnings.warn(
-            "Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
-            "{}".format(path) +
-            "\n Using current working directory")
-        path = os.getcwd()
+        raise IOError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
+                      "{}".format(path) +
+                      "\n Using current working directory")
 
-    return path
+    return str(path)  # todo: should astrodata be compatible with pathlib?

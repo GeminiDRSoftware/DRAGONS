@@ -127,14 +127,14 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
     Implements ``NDData`` with all Mixins, plus some ``AstroData`` specifics.
 
-    This class implements an ``NDData``-like container that supports reading and
-    writing as implemented in the ``astropy.io.registry`` and also slicing
+    This class implements an ``NDData``-like container that supports reading
+    and writing as implemented in the ``astropy.io.registry`` and also slicing
     (indexing) and simple arithmetics (add, subtract, divide and multiply).
 
     A very important difference between ``NDAstroData`` and ``NDData`` is that
-    the former attempts to load all its data lazily. There are also some important
-    differences in the interface (eg. ``.data`` lets you reset its contents after
-    initialization).
+    the former attempts to load all its data lazily. There are also some
+    important differences in the interface (eg. ``.data`` lets you reset its
+    contents after initialization).
 
     Documentation is provided where our class differs.
 
@@ -149,36 +149,35 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     The mixins allow operation that are not possible with ``NDData`` or
     ``NDDataBase``, i.e. simple arithmetics::
 
-        >>> from astropy.nddata import NDAstroData, StdDevUncertainty
-        >>> import numpy as np
-
-        >>> data = np.ones((3,3), dtype=np.float)
-        >>> ndd1 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
-        >>> ndd2 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
-
-        >>> ndd3 = ndd1.add(ndd2)
-        >>> ndd3.data
-        array([[ 2.,  2.,  2.],
-               [ 2.,  2.,  2.],
-               [ 2.,  2.,  2.]])
-        >>> ndd3.uncertainty.array
-        array([[ 1.41421356,  1.41421356,  1.41421356],
-               [ 1.41421356,  1.41421356,  1.41421356],
-               [ 1.41421356,  1.41421356,  1.41421356]])
+    >>> from astropy.nddata import StdDevUncertainty
+    >>> import numpy as np
+    >>> data = np.ones((3,3), dtype=np.float)
+    >>> ndd1 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
+    >>> ndd2 = NDAstroData(data, uncertainty=StdDevUncertainty(data))
+    >>> ndd3 = ndd1.add(ndd2)
+    >>> ndd3.data
+    array([[2., 2., 2.],
+           [2., 2., 2.],
+           [2., 2., 2.]])
+    >>> ndd3.uncertainty.array
+    array([[1.41421356, 1.41421356, 1.41421356],
+           [1.41421356, 1.41421356, 1.41421356],
+           [1.41421356, 1.41421356, 1.41421356]])
 
     see ``NDArithmeticMixin`` for a complete list of all supported arithmetic
     operations.
 
     But also slicing (indexing) is possible::
 
-        >>> ndd4 = ndd3[1,:]
-        >>> ndd4.data
-        array([ 2.,  2.,  2.])
-        >>> ndd4.uncertainty.array
-        array([ 1.41421356,  1.41421356,  1.41421356])
+    >>> ndd4 = ndd3[1,:]
+    >>> ndd4.data
+    array([2., 2., 2.])
+    >>> ndd4.uncertainty.array
+    array([1.41421356, 1.41421356, 1.41421356])
 
-    See ``NDSlicingMixin`` for a description how slicing works (which attributes)
-    are sliced.
+    See ``NDSlicingMixin`` for a description how slicing works (which
+    attributes) are sliced.
+
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
                  meta=None, unit=None, copy=False, window=None):
@@ -231,7 +230,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         Examples
         ---------
 
-        >>> ad[0].nddata.window[100:200, 100:200]
+        >>> ad[0].nddata.window[100:200, 100:200]  # doctest: +SKIP
         <NDWindowingAstrodata .....>
 
         """
@@ -351,8 +350,9 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         Examples
         ---------
 
-        >>> sec = NDData(np.zeros((100,100)))
-        >>> ad[0].nddata.set_section((slice(None,100),slice(None,100)), sec)
+        >>> sec = NDData(np.zeros((100,100)))  # doctest: +SKIP
+        >>> ad[0].nddata.set_section((slice(None,100),slice(None,100)), sec)  # doctest: +SKIP
+
         """
         self.data[section] = input.data
         if self.uncertainty is not None:

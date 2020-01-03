@@ -1,5 +1,7 @@
 import os
+import pytest
 
+from astrodata.testing import download_from_archive
 from gempy.utils.showrecipes import showrecipes
 
 GNIRS = "S20171208S0054.fits"
@@ -16,8 +18,9 @@ GSAOI_IMAGE = 'S20170505S0095.fits'
 GSAOI_FLAT = 'S20170505S0031.fits'
 
 
-def test_showrecipes_on_gnirs(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy/', GNIRS)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gnirs():
+    file_location = download_from_archive(GNIRS)
 
     expected_answers = [
         "Input file: {}".format(file_location),
@@ -34,8 +37,9 @@ def test_showrecipes_on_gnirs(path_to_inputs):
         assert expected_answers[i] in answer
 
 
-def test_showrecipes_on_gnirs_spect(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy', GNIRS_SPECT)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gnirs_spect():
+    file_location = download_from_archive(GNIRS_SPECT)
 
     gnirs_spect_answer = [
         "Input file: {}".format(file_location),
@@ -49,8 +53,9 @@ def test_showrecipes_on_gnirs_spect(path_to_inputs):
         assert gnirs_spect_answer[i] in answer
 
 
-def test_showrecipes_on_gmos(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy', GMOS)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gmos():
+    file_location = download_from_archive(GMOS)
 
     gmos_answer = [
         "Input file: {}".format(file_location),
@@ -70,8 +75,9 @@ def test_showrecipes_on_gmos(path_to_inputs):
         assert gmos_answer[i] in answer
 
 
-def test_showrecipes_on_gmos_ns(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy', GMOS_NS)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gmos_ns():
+    file_location = download_from_archive(GMOS_NS)
 
     gmos_ns_answer = [
         "Input file: {}".format(file_location),
@@ -86,8 +92,9 @@ def test_showrecipes_on_gmos_ns(path_to_inputs):
         assert gmos_ns_answer[i] in answer
 
 
-def test_showrecipes_on_gmos_spect(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy', GMOS_SPECT)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gmos_spect():
+    file_location = download_from_archive(GMOS_SPECT)
 
     gmos_spect_answer = [
         "Input file: {}".format(file_location),
@@ -101,8 +108,9 @@ def test_showrecipes_on_gmos_spect(path_to_inputs):
         assert gmos_spect_answer[i] in answer
 
 
-def test_showrecipes_on_gsaoi_dark(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy', GSAOI_DARK)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gsaoi_dark():
+    file_location = download_from_archive(GSAOI_DARK)
 
     gsaoi_dark_answer = [
         "Input file: {}".format(file_location),
@@ -117,8 +125,9 @@ def test_showrecipes_on_gsaoi_dark(path_to_inputs):
         assert gsaoi_dark_answer[i] in answer
 
 
-def test_showrecipes_on_gsaoi_image(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy', GSAOI_IMAGE)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gsaoi_image():
+    file_location = download_from_archive(GSAOI_IMAGE)
 
     gsaoi_image_answer = [
         "Input file: {}".format(file_location),
@@ -133,8 +142,9 @@ def test_showrecipes_on_gsaoi_image(path_to_inputs):
         assert gsaoi_image_answer[i] in answer
 
 
-def test_showrecipes_on_gsaoi_flat(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy/', GSAOI_FLAT)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_gsaoi_flat():
+    file_location = download_from_archive(GSAOI_FLAT)
 
     gsaoi_flat_answer = [
         "Input file: {}".format(file_location),
@@ -150,8 +160,9 @@ def test_showrecipes_on_gsaoi_flat(path_to_inputs):
         assert gsaoi_flat_answer[i] in answer
 
 
-def test_showrecipes_on_niri(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy/', NIRI)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_niri():
+    file_location = download_from_archive(NIRI)
 
     niri_answer = [
         "Input file: {}".format(file_location),
@@ -169,8 +180,9 @@ def test_showrecipes_on_niri(path_to_inputs):
         assert niri_answer[i] in answer
 
 
-def test_showrecipes_on_f2(path_to_inputs):
-    file_location = os.path.join(path_to_inputs, 'Gempy', F2)
+@pytest.mark.dragons_remote_data
+def test_showrecipes_on_f2():
+    file_location = download_from_archive(F2)
 
     f2_answer = [
         "Input file: {}".format(file_location),
