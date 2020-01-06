@@ -198,7 +198,6 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     # Need verb=3 to get the right cols from vizier
 
     try:
-        from astroquery.vo_conesearch import conf
         from astroquery.vo_conesearch.conesearch import conesearch
         from astroquery.vo_conesearch.exceptions import VOSError
     except ImportError:
@@ -220,9 +219,8 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
             # NoResultsWarning if no results are found, instead of raising
             # a VOSError.
             # https://github.com/astropy/astroquery/pull/1528
-            with conf.set_temp('pedantic', True):
-                table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
-                                   return_astropy_table=False, verbose=False)
+            table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
+                               return_astropy_table=False, verbose=False)
         except TypeError:
             table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
                                pedantic=False, verbose=False)
