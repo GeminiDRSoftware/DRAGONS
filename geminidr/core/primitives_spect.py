@@ -2036,7 +2036,10 @@ def _average_along_slit(ext, center=None, nsum=None):
 
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
+
+    # ToDo: Set variance=None to check tests.
+    #  Remember to rollback to variance=variance
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
 
     return data, mask, variance, extract_slice
 
