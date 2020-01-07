@@ -1,16 +1,10 @@
-
-
-try:
-    from builtins import object
-    from future.utils import with_metaclass
-except ImportError:
-    raise ImportError("AstroData requires the 'future' package for Python 2/3 compatibility")
-
-from abc import ABCMeta, abstractmethod, abstractproperty
-from functools import wraps
 import inspect
+from abc import ABCMeta, abstractmethod, abstractproperty
+from builtins import object
 from collections import namedtuple
 from copy import deepcopy
+from functools import wraps
+from future.utils import with_metaclass
 
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
@@ -45,11 +39,12 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     Examples
     ---------
     >>> TagSet()
-    TagSet(add=set([]), remove=set([]), blocked_by=set([]), blocks=set([]), if_present=set([]))
-    >>> TagSet(set(['BIAS', 'CAL']))
-    TagSet(add=set(['BIAS', 'CAL']), remove=set([]), blocked_by=set([]), blocks=set([]), if_present=set([]))
-    >>> TagSet(remove=set(['BIAS', 'CAL']))
-    TagSet(add=set([]), remove=set(['BIAS', 'CAL']), blocked_by=set([]), blocks=set([]), if_present=set([]))
+    TagSet(add=set(), remove=set(), blocked_by=set(), blocks=set(), if_present=set())
+    >>> TagSet({'BIAS', 'CAL'})
+    TagSet(add={'BIAS', 'CAL'}, remove=set(), blocked_by=set(), blocks=set(), if_present=set())
+    >>> TagSet(remove={'BIAS', 'CAL'})
+    TagSet(add=set(), remove={'BIAS', 'CAL'}, blocked_by=set(), blocks=set(), if_present=set())
+
     """
     def __new__(cls, add=None, remove=None, blocked_by=None, blocks=None, if_present=None):
         return super(TagSet, cls).__new__(cls, add or set(),
@@ -277,10 +272,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         IndexError
             If an index is out of range
 
-        Examples
-        ---------
-        >>> single = provider[0]
-        >>> multiple = provider[:5]
         """
         pass
 
@@ -382,10 +373,9 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         Examples
         ---------
-        >>> ad[0].exposed
+        >>> ad[0].exposed  # doctest: +SKIP
         set(['OBJMASK', 'OBJCAT'])
-        >>> ad[0].OBJCAT
-        ...
+
         """
         return ()
 
@@ -590,10 +580,6 @@ class AstroData(object):
         IndexError
             If an index is out of range
 
-        Examples
-        ---------
-        >>> single = ad[0]
-        >>> multiple = ad[:5]
         """
         return self.__class__(self._dataprov[slicing])
 
@@ -770,7 +756,7 @@ class AstroData(object):
         copy *= oper
         return copy
 
-    def __div__(self, oper):
+    def __truediv__(self, oper):
         """
         Implements the binary arithmetic operation `/` with `AstroData` as the left operand.
 
@@ -961,7 +947,8 @@ class AstroData(object):
         Examples
         ---------
         >>> import numpy as np
-        >>> ad.operate(np.squeeze)
+        >>> ad.operate(np.squeeze)  # doctest: +SKIP
+
         """
         # Ensure we can iterate, even on a single slice
         for ext in [self] if self.is_single else self:

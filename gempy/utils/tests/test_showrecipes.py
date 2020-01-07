@@ -116,7 +116,7 @@ TESTS = {
 }
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("name", TESTS)
 def test_showprims(name):
     filename, mode, recipe, expected = TESTS[name]
@@ -127,7 +127,7 @@ def test_showprims(name):
 
 
 # # # # # #  GNIRS  # # # # # #
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showprims_on_gnirs_spect():
     try:
         file_location = download_from_archive(GNIRS_SPECT)
@@ -138,7 +138,7 @@ def test_showprims_on_gnirs_spect():
 
 
 # # # # # #  GMOS  # # # # # #
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showprims_on_gmos_spect():
     file_location = download_from_archive(GMOS_SPECT)
     answer = showprims(file_location)
@@ -146,7 +146,7 @@ def test_showprims_on_gmos_spect():
 
 
 # # # # # #  GSAOI  # # # # # #
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_showprims_on_gsaoi_dark_qa_mode():
     try:
         file_location = download_from_archive(GSAOI_DARK)

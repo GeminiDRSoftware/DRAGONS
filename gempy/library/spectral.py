@@ -76,6 +76,7 @@ class Spek1D(Spectrum1D, NDAstroData):
                 wcs = spectrum.wcs  # from an NDData-like object
 
         super().__init__(flux=flux, spectral_axis=spectral_axis, wcs=wcs, **kwargs)
+        self.filename = getattr(spectrum, 'filename', None)
 
 
     def _get_pixel_limits(self, subregion, constrain=True):

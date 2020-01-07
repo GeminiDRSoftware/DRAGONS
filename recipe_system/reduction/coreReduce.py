@@ -210,7 +210,7 @@ class Reduce(object):
         # Here we examine the primitive set to see if this recipe is actually
         # a primitive name.
         norec_msg = "{} recipes do not define a '{}' recipe for these data."
-        if recipe is None and self.recipename is '_default':
+        if recipe is None and self.recipename == '_default':
             raise RecipeNotFound(norec_msg.format(instpkg.upper(), self.mode))
 
         if recipe is None:
