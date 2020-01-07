@@ -14,6 +14,7 @@ timestamp_keys = {
     "ADUToElectrons": "ADUTOELE",
     "resampleToCommonFrame": "ALIGN",
     "applyDQPlane": "APLDQPLN",
+    "applyQECorrection": "QECORR",
     "associateSky": "ASSOCSKY",
     "attachWavelengthSolution": "ATTWVSOL",
     "biasCorrect": "BIASCORR",

@@ -281,7 +281,7 @@ class PrimitivesBASE(object):
                         for field in new_cls():
                             if field in self.params[k]:
                                 self.params[k]._history[field] = []
-                                self.params[k]._fields[field] = deepcopy(new_cls._fields[field])
+                            self.params[k]._fields[field] = deepcopy(new_cls._fields[field])
                         # Call inherited setDefaults from configs with the same name
                         # but simply copy parameter values from others
                         #if cls.__name__ == k+'Config':

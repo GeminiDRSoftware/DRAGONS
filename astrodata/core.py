@@ -1,4 +1,8 @@
+from datetime import datetime
 
+from astropy.table import Table
+
+import numpy as np
 
 try:
     from builtins import object
@@ -161,6 +165,57 @@ def astro_data_tag(fn):
 
 class AstroDataError(Exception):
     pass
+
+
+class Provenance(object):
+    def __init__(self, timestamp, filename, md5, provenance_added_by):
+        self.timestamp = timestamp
+        self.filename = filename
+        self.md5 = md5
+        self.provenance_added_by = provenance_added_by
+
+    def __repr__(self):
+        timestamp_str = self.timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')
+        return '{"timestamp": "%s", "filename": "%s", "md5": "%s", "provenance_added_by": "%s"}' \
+            % (timestamp_str, self.filename, self.md5, self.provenance_added_by)
+
+    def __eq__(self, other):
+        if isinstance(other, Provenance):
+            if other.timestamp == self.timestamp \
+                and other.filename == self.filename \
+                and other.md5 == self.md5 \
+                and other.provenance_added_by == self.provenance_added_by:
+                    return True
+        return False
+
+    def __hash__(self):
+        return self.timestamp.__hash__()
+
+
+class ProvenanceHistory(object):
+    def __init__(self, timestamp_start, timestamp_stop, primitive, args):
+        self.timestamp_start = timestamp_start
+        self.timestamp_stop = timestamp_stop
+        self.primitive = primitive
+        self.args = args
+
+    def __repr__(self):
+        timestamp_start_str = self.timestamp_start.strftime('%Y-%m-%d %H:%M:%S.%f')
+        timestamp_stop_str = self.timestamp_stop.strftime('%Y-%m-%d %H:%M:%S.%f')
+        return '{"timestamp_start": "%s", "timestamp_stop": "%s", "primitive": "%s", "args": "%s"}' \
+            % (timestamp_start_str, timestamp_stop_str, self.primitive, self.args)
+
+    def __eq__(self, other):
+        if isinstance(other, ProvenanceHistory):
+            if other.timestamp_start == self.timestamp_start \
+                and other.timestamp_stop == self.timestamp_stop \
+                and other.primitive == self.primitive \
+                and other.args == self.args:
+                return True
+        return False
+
+    def __hash__(self):
+        return self.timestamp_start.__hash__()
 
 
 class DataProvider(with_metaclass(ABCMeta, object)):
@@ -436,6 +491,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         operating with the data
         """
         pass
+
 
 # NOTE: This is not being used at all. Maybe it would be better to remove it altogether for the time
 #       being, and reimplement it if it's ever needed
@@ -1039,3 +1095,119 @@ class AstroData(object):
                 raise TypeError("Attempt to set variance inappropriately")
         else:
             self.variance = variance
+
+    @property
+    def provenance(self):
+        """
+        get full set of `Provenance` records on this object.
+
+        Returns
+        --------
+        list of `Provenance` records
+        """
+        retval = list()
+        if hasattr(self._dataprov, 'GEM_PROVENANCE'):
+            provenance = self._dataprov.GEM_PROVENANCE
+            for row in provenance:
+                timestamp = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                filename = row[1]
+                md5 = row[2]
+                primitive = row[3]
+                retval.append(Provenance(timestamp, filename, md5, primitive))
+        return retval
+
+    def add_provenance(self, value):
+        """
+        Add the given `Provenance` entry to the full set of provenance records on this object.
+
+        Provenance is not added if the incoming md5 is None or ''.  These indicate source data
+        for the provenance that are not on disk, so not useful as provenance.
+
+        Args
+        -----
+        value : `Provenance` to add
+
+        Returns
+        --------
+        none
+        """
+        if value.md5 is None or value.md5 == '':
+            # not a real input, we can ignore this one
+            return
+        existing_provenance = self.provenance
+        for existing_prov in existing_provenance:
+            if existing_prov.filename == value.filename and \
+                    existing_prov.md5 == value.md5 and \
+                    existing_prov.provenance_added_by == value.provenance_added_by:
+                # nothing needed, we already have it
+                return
+        if value.timestamp is None:
+            timestamp_str = ""
+        else:
+            timestamp_str = value.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+        if not hasattr(self._dataprov, 'GEM_PROVENANCE'):
+            timestamp_data = np.array([timestamp_str])
+            filename_data = np.array([value.filename])
+            md5_data = np.array([value.md5])
+            provenance_added_by_data = np.array([value.provenance_added_by])
+            my_astropy_table = Table([timestamp_data, filename_data, md5_data, provenance_added_by_data],
+                                     names=('timestamp', 'filename', 'md5', 'provenance_added_by'),
+                                     dtype=('S28', 'S128', 'S128', 'S128'))
+            self.append(my_astropy_table, name='GEM_PROVENANCE')
+            pass
+        else:
+            provenance = self._dataprov.GEM_PROVENANCE
+            provenance.add_row((timestamp_str, value.filename, value.md5, value.provenance_added_by))
+            pass
+
+    @property
+    def provenance_history(self):
+        """
+        get the full set of `ProvenanceHistory` records for this object.
+
+        Returns
+        --------
+        list of `ProvenanceHistory` records
+        """
+
+        retval = list()
+        if hasattr(self._dataprov, 'GEM_PROVENANCE_HISTORY'):
+            provenance_history = self._dataprov.GEM_PROVENANCE_HISTORY
+            for row in provenance_history:
+                timestamp_start = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                timestamp_stop = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S.%f")
+                primitive = row[2]
+                args = row[3]
+                ph = ProvenanceHistory(timestamp_start, timestamp_stop, primitive, args)
+                retval.append(ph)
+        return retval
+
+    def add_provenance_history(self, value):
+        """
+        Add the given ProvenanceHistory entry to the full set of history records on this object.
+
+        Args
+        -----
+        value : `ProvenanceHistory` to add
+
+        Returns
+        --------
+        none
+        """
+        history = self.provenance_history
+        if value in history:
+            # nothing to do
+            return
+        history.append(value)
+        colsize = max(len(ph.args) for ph in history) + 1
+        timestamp_start = np.array([ph.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in history])
+        timestamp_stop = np.array([ph.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in history])
+        primitive = np.array([ph.primitive for ph in history])
+        args = np.array([ph.args for ph in history])
+        dtype = ("S28", "S28", "S128", "S%d" % colsize)
+        table = Table([timestamp_start, timestamp_stop, primitive, args],
+                      names=('timestamp_start', 'timestamp_stop',
+                             'primitive', 'args'),
+                      dtype=dtype)
+        self.append(table, name='GEM_PROVENANCE_HISTORY')
