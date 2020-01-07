@@ -123,7 +123,7 @@ description and discussion of certain non-trivial options is presented. ::
   --suffix SUFFIX       Add 'suffix' to filenames at end of reduction; strip
                         all other suffixes marked by '_'.
   --upload UPLOAD       Send these pipeline products to fitsstore. Default is
-                        None. Eg., --upload metrics calibs
+                        None. Eg., --upload metrics calibs quicklook
   --user_cal USER_CAL   Specify user supplied calibrations for calibration
                         types. Eg., --user_cal gsTest_arc.fits .
 

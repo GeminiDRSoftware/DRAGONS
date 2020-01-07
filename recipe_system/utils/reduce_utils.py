@@ -152,7 +152,7 @@ def buildParser(version):
                         action=UnitaryArgumentAction, nargs="*",
                         help="Send these pipeline products to fitsstore."
                         "Default is None."
-                        "Eg., --upload metrics calibs")
+                        "Eg., --upload metrics calibs quicklook")
 
     parser.add_argument("--user_cal", dest='user_cal', default=None,
                         nargs="*", action=CalibrationAction,

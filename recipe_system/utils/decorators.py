@@ -153,7 +153,7 @@ def parameter_override(fn):
                 adinputs = pobj.streams.get(instream, [])
             try:
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-            except Exception:
+            except Exception as e:
                 zeroset()
                 raise
             # And place the outputs in the appropriate stream

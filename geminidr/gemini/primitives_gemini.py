@@ -3,6 +3,7 @@
 #
 #                                                           primitives_gemini.py
 # ------------------------------------------------------------------------------
+from geminidr.core.primitives_upload import Upload
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess
@@ -14,7 +15,7 @@ from . import parameters_gemini
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
+class Gemini(Standardize, Bookkeeping, Upload, Preprocess, Visualize, Stack, QA,
              CalibDB):
     """
     This is the class containing the generic Gemini primitives.

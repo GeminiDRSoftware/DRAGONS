@@ -31,6 +31,7 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
     p.stackFrames(zero=True)
+    p.uploadFiles()
     return
 
 
