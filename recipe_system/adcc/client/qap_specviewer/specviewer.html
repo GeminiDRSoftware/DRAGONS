@@ -2,20 +2,20 @@
 <html>
 
   <head>
-    
+
     <meta charset="UTF-8">
     <title>DRAGONS - QAP SpecViewer</title>
-    
+
     <link href="/qap/js/jqplot/jquery.jqplot.min.css" rel="stylesheet">
     <link href="/qap/js/jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom.css" rel="stylesheet">
-    <link href="/qap/css/nighttime_metrics.css" rel="stylesheet">
+    <link href="/qap/css/specviwer.css" rel="stylesheet">
 
     <script type="text/javascript" src="/qap/jquery.js"></script>
-    
-    <!-- 
-      Many of the jqplot scripts were modified to better support desired features.  
+
+    <!--
+      Many of the jqplot scripts were modified to better support desired features.
       Update jqplot with extreme caution.  See ////FIX comments in code for locations
-      and explanations of changes made. 
+      and explanations of changes made.
     -->
     <script type="text/javascript" src="/qap/js/jqplot/jquery.jqplot.js"></script>
     <script type="text/javascript" src="/qap/js/jqplot/plugins/jqplot.canvasTextRenderer.min.js"></script>
@@ -26,15 +26,11 @@
     <script type="text/javascript" src="/qap/js/jqplot/plugins/jqplot.enhancedLegendRenderer.js"></script>
     <script type="text/javascript" src="/qap/js/jqplot/plugins/jqplot.highlighter.js"></script>
     <script type="text/javascript" src="/qap/js/jqplot/plugins/jqplot.canvasOverlay.js"></script>
-    
+
     <script type="text/javascript" src="/qap/js/jquery-ui/js/jquery-ui-1.8.20.custom.min.js"></script>
-    
-    <script type="text/javascript" src="/qap/js/cmdpump.js"></script>
-    <script type="text/javascript" src="/qap/js/viewport.js"></script>
-    <script type="text/javascript" src="/qap/js/metricsdatabase.js"></script>
-    
+
     <script type="text/javascript" src="/qap/js/spec_viewer.js"></script>
-    
+
     <script type="text/javascript" id="start_spec_viewer">
       $(document).ready(function() {
         var element = $("main");
@@ -44,23 +40,24 @@
     </script>
 
   </head>
-  
+
 
   <body>
-    
-    <h1>DRAGONS - QAP SpectrumViewer</h1>
+
     <div class="wrapper">
-      
-      <div class="header"></div>
-      
+
+      <div class="header">
+        <h1>DRAGONS - QAP SpectrumViewer</h1>
+      </div>
+
       <div class="content">
         <div id="main"></div>
       </div>
-      
+
       <div class="footer"></div>
-      
+
     </div>
-      
+
   </body>
 
 </html>
