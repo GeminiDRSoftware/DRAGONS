@@ -392,6 +392,31 @@ class Visualize(PrimitivesBASE):
             adoutputs.append(ad_out)
         return adoutputs
 
+    def plotSpectraForQA(self, adinputs=None):
+        """
+        Reads extracted spectra from
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+             Input data containing extracted spectra.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Data used for plotting.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        for ad in adinputs:
+            for ext in ad:
+                pass
+
+        return adinputs
+
+
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
