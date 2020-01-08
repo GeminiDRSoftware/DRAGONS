@@ -1,19 +1,45 @@
 body {
   background-color: #F2F2F2;
   color: black;
-  font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
+  font: normal normal 14px Verdana, Geneva, Arial, Helvetica, sans-serif;
   margin: 10px;
   padding: 0;
 }
 
-div.header {
-  width: 100%;
+/* Style the tab */
+.tab {
+  overflow: hidden;
+  border: 0px;
+  background-color: #f1f1f1;
 }
 
-div.content {
-  width: 100%;
+/* Style the buttons inside the tab */
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: 1px solid #ccc;
+  border-radius: 5px 5px 0px 0px;
+  border-bottom: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  font-size: 17px;
 }
 
-div.footer {
-  width: 100%;
+/* Change background color of buttons on hover */
+.tab button:hover {
+  background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+  background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
 }

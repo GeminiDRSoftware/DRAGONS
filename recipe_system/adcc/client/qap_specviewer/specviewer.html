@@ -7,6 +7,8 @@
     <title>DRAGONS - QAP SpecViewer</title>
 
     <link href="css/specviewer.css" rel="stylesheet">
+
+    <script type="text/javascript" src="jquery.js"></script>
     <script type="text/javascript" src="js/specviewer.js"></script>
 
   </head>
@@ -15,18 +17,47 @@
   <body>
 
     <div class="wrapper">
-
-      <div class="header">
-        <h1>DRAGONS - QAP SpectrumViewer</h1>
+      <div class="tab">
+        <button class='tablinks' onclick="openAperture(event, 'Aperture1')">Aperture 1</button>
+        <button class='tablinks' onclick="openAperture(event, 'Aperture2')">Aperture 2</button>
+        <button class='tablinks' onclick="openAperture(event, 'Aperture3')">Aperture 3</button>
       </div>
 
-      <div class="content">
-        <div id="main"></div>
+      <div id="Aperture1" class="tabcontent">
+
+        <p>
+          <div class="apertureInfo">
+            <span class="apertureDefinition">
+              <b>Aperture definition: </b> 515 px (-5, +10)
+            </span>
+            <span class="dispersion" style="padding-left: 68px">
+              <b>Dispersion: </b> 0.15 nm/px
+            </span>
+          </div>
+        </p>
+
       </div>
 
-      <div class="footer"></div>
+      <div id="Aperture2" class="tabcontent">
+        <h3>Aperture 2</h3>
+        <p> This is where the plots for Aperture 2 will be </p>
+      </div>
+
+      <div id="Aperture3" class="tabcontent">
+        <h3>Aperture 3</h3>
+        <p> This is where the plots for Aperture 3 will be </p>
+      </div>
 
     </div>
+
+    <script>
+      $('document').ready(
+        function () {
+          var buttons = document.getElementsByClassName('tablinks')
+          buttons[0].click()
+        }
+      )
+    </script>
 
   </body>
 
