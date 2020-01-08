@@ -5,3 +5,15 @@ body {
   margin: 10px;
   padding: 0;
 }
+
+div.header {
+  width: 100%;
+}
+
+div.content {
+  width: 100%;
+}
+
+div.footer {
+  width: 100%;
+}
