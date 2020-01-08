@@ -842,7 +842,10 @@ class Spect(PrimitivesBASE):
                 for p in m_final.param_names:
                     getattr(m_final, p).bounds = (None, None)
 
-                match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
+                # ToDo - Remove line below and uncomment the following if
+                #  confirmed when tests are passing
+                match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
+                # match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                 model=m_final, match_radius=match_radius, sigma_clip=3)
