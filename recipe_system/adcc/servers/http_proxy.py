@@ -190,7 +190,7 @@ def fstore_get(timestamp):
             store_handle = urllib.request.urlopen(furl)
             qa_data  = json.loads(store_handle.read())
         except Exception:
-            self.log_message(msg_form, FAILMSG, no_access_code, size)
+            print(msg_form %(FAILMSG, no_access_code, size))
             pass
     else:
         date_query = stamp_to_opday(timestamp)
@@ -199,7 +199,7 @@ def fstore_get(timestamp):
             store_handle = urllib.request.urlopen(furl)
             qa_data = json.loads(store_handle.read())
         except Exception:
-            self.log_message(msg_form, FAILMSG, no_access_code, size)
+            print(msg_form %(FAILMSG, no_access_code, size))
             pass
 
     return qa_data
@@ -385,7 +385,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
             events.event_list = fstore_get(current_op_timestamp())
             tdic = events.get_list()
-            self.log_message(msg_form,RECMSG.format(len(tdic)),info_code, size)
+            self.log_message(msg_form, RECMSG.format(len(tdic)),info_code, size)
             tdic.insert(0, {"msgtype": "cmdqueue.request","timestamp": time.time()})
             tdic.append({"msgtype": "cmdqueue.request", "timestamp": time.time()})
             self.wfile.write(
