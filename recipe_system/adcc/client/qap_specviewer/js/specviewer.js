@@ -50,8 +50,11 @@ SpecViewer.prototype = {
     $.ajax({
       type: "GET",
       url: "/specframe.json",
-      success: function(data) {
+      success: function(jsonData) {
+        'use restrict';
+        var data = JSON.parse(jsonData);
         console.log(data);
+        console.log(data.apertures);
       }, // end success
       error: function() {
         console.log('Could not receive json file');

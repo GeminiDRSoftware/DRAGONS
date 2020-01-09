@@ -54,14 +54,13 @@ def rqsite():
 @app.route('/specframe.json')
 def specframe():
 
-    my_dict = {
-        "number_of_apertures": 3,
-        "filename": "N20001231S001_suffix.fits",
-        "programId": "GX-2000C-Q-001",
-    }
+    filename = "data.json"
+
+    with open(filename, 'r') as json_file:
+        data = json.load(json_file)
 
     try:
-        return jsonify(json.dumps(my_dict))
+        return jsonify(json.dumps(data))
     except Exception as e:
         print(str(e))
         return jsonify(str(e))
