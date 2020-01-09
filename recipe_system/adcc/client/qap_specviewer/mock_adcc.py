@@ -14,6 +14,7 @@ import json
 import os
 
 from flask import Flask, send_from_directory, jsonify
+
 from recipe_system.adcc.servers import http_proxy
 
 app = Flask(__name__,
@@ -53,7 +54,6 @@ def rqsite():
 
 @app.route('/specframe.json')
 def specframe():
-
     filename = "data.json"
 
     with open(filename, 'r') as json_file:

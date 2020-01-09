@@ -10,11 +10,20 @@
  * @param element
  * @param id
  */
-function SpecViewer(element, id) {
+function SpecViewer(parentElement, id) {
   'use strict';
 
-  this.element = element;
+  // Creating empty object
+  this.element = parentElement;
   this.id = id;
+  console.log(" Creating new object with id: ", id)
+
+  // Add a DIV containiner inside the parentElement with proper id
+  var placeholder = document.createElement("DIV");
+  placeholder.setAttribute('id', id);
+
+  var specViewerParent = this.element.get(0);
+  specViewerParent.appendChild(placeholder)
 
   // Placeholders for different elements
   this.apertureInfo = null;
@@ -47,6 +56,9 @@ SpecViewer.prototype = {
     'use restrict';
     console.log('Calling "load" function')
 
+    // Reference to self to use in functions inside load
+    var sViewer = this;
+
     $.ajax({
       type: "GET",
       url: "/specframe.json",
@@ -55,12 +67,39 @@ SpecViewer.prototype = {
         var data = JSON.parse(jsonData);
         console.log(data);
         console.log(data.apertures);
+
+        addAperturesTabs(sViewer.id, data.apertures);
+
       }, // end success
       error: function() {
         console.log('Could not receive json file');
       } // end error
     }); // end ajax
   }, // end load
+
+}
+
+/**
+ * Add navigation tabs based on how many apertures there is inside the
+ * JSON file.
+ *
+ * @param parentId
+ * @param numberOfApertures
+ */
+function addAperturesTabs(parentId, numberOfApertures) {
+  'use restrict';
+
+  console.log(" Adding buttons to element with ID: ", parentId)
+
+  // var tab = document.createElement("BUTTON");
+  // var tabLabel = document.createTextNode("Aperture X");
+  //
+  // tab.setAttribute('class', 'tablinks');
+  // tab.setAttribute('onclick', function() {console.log('Button clicked!')})
+  // tab.appendChild(tabLabel)
+  //
+  // var parent = document.getElementById(parentId)
+  // parent.appendChild(tab)
 
 }
 
