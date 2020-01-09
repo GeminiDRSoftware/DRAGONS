@@ -1,23 +1,40 @@
 <!DOCTYPE html>
 <html>
 
-  <head>
+<head>
 
-    <meta charset="UTF-8">
-    <title>DRAGONS - QAP SpecViewer</title>
+  <meta charset="UTF-8">
+  <title>DRAGONS - QAP SpecViewer</title>
 
-    <link href="css/specviewer.css" rel="stylesheet">
+  <link href="css/specviewer.css" rel="stylesheet">
 
-    <script type="text/javascript" src="jquery.js"></script>
-    <script type="text/javascript" src="js/specviewer.js"></script>
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="js/specviewer.js"></script>
 
-  </head>
+  <script>
+    /* Initialize SpecViewer */
+    $('document').ready(
+      function() {
+        var element = $('#main')
+        var id = 'specViewer'
+        var sViewer = new SpecViewer(element, id)
+      }
+    )
+  </script>
+
+</head>
 
 
-  <body>
+<body>
 
-    <div class="wrapper">
-      <div class="tab">
+  <div class="wrapper">
+    <div class="header"></div>
+    <div id="content">
+      <div id="main"></div>
+    </div>
+    <div class="footer">
+
+      <!-- <div class="tab" id="navigationTab">
         <button class='tablinks' onclick="openAperture(event, 'Aperture1')">Aperture 1</button>
         <button class='tablinks' onclick="openAperture(event, 'Aperture2')">Aperture 2</button>
         <button class='tablinks' onclick="openAperture(event, 'Aperture3')">Aperture 3</button>
@@ -25,16 +42,30 @@
 
       <div id="Aperture1" class="tabcontent">
 
-        <p>
           <div class="apertureInfo">
-            <span class="apertureDefinition">
-              <b>Aperture definition: </b> 515 px (-5, +10)
-            </span>
-            <span class="dispersion" style="padding-left: 68px">
-              <b>Dispersion: </b> 0.15 nm/px
-            </span>
+              <span class="apertureDefinition">
+                <b>Aperture definition: </b> 515 px (-5, +10)
+              </span>
+              <span class="dispersion" style="padding-left: 68px">
+                <b>Dispersion: </b> 0.15 nm/px
+              </span>
           </div>
-        </p>
+
+          <div class="frameInfo">
+            Latest frame - N20001231_suffix.fits - GX-2000A-Q-001
+          </div>
+
+          <div class="framePlot">
+            <p> --- here goes the plot --- </p>
+          </div>
+
+          <div class="frameInfo">
+            Stack - N20001231_suffix.fits - GX-2000A-Q-001
+          </div>
+
+          <div class="stackPlot">
+            <p> --- here goes the stack plot --- </p>
+          </div>
 
       </div>
 
@@ -48,17 +79,8 @@
         <p> This is where the plots for Aperture 3 will be </p>
       </div>
 
-    </div>
+    </div> -->
 
-    <script>
-      $('document').ready(
-        function () {
-          var buttons = document.getElementsByClassName('tablinks')
-          buttons[0].click()
-        }
-      )
-    </script>
-
-  </body>
+</body>
 
 </html>
