@@ -25,10 +25,10 @@ function SpecViewer(element, id) {
 
   // Placeholders for data information
   this.nApertures = 0;
-  this.apertureDefinition = [];
-  this.dispersion = [];
   this.filename = null;
   this.programId = null;
+  this.apertureDefinition = [];
+  this.dispersion = [];
   this.frameWavelength = [];
   this.frameIntensity = [];
   this.frameVariance = [];

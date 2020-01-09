@@ -55,7 +55,9 @@ def rqsite():
 def specframe():
 
     my_dict = {
-        "my_key": "my_value",
+        "number_of_apertures": 3,
+        "filename": "N20001231S001_suffix.fits",
+        "programId": "GX-2000C-Q-001",
     }
 
     try:
