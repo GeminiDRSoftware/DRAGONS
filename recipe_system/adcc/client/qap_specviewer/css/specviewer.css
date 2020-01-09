@@ -2,8 +2,7 @@ body {
   background-color: #F2F2F2;
   color: black;
   font: normal normal 14px Verdana, Geneva, Arial, Helvetica, sans-serif;
-  margin: 10px;
-  padding: 0;
+  padding: 10px;
 }
 
 /* Style the tab */
@@ -17,9 +16,7 @@ body {
 .tab button {
   background-color: inherit;
   float: left;
-  border: 1px solid #ccc;
-  border-radius: 5px 5px 0px 0px;
-  border-bottom: none;
+  border: none;
   outline: none;
   cursor: pointer;
   padding: 14px 16px;
@@ -40,6 +37,22 @@ body {
 /* Style the tab content */
 .tabcontent {
   display: none;
-  padding: 6px 12px;
+  padding: 0px;
   border: 1px solid #ccc;
+}
+
+/* Style the apertureInfo bar */
+.apertureInfo {
+  width: inherit;
+  background-color: #yellow;
+  border: none;
+  padding: 12px 12px;
+}
+
+/* Style the frameInfo bar */
+.frameInfo {
+  width: inherit;
+  background-color: #ccc;
+  border: none;
+  padding: 12px 12px;
 }
