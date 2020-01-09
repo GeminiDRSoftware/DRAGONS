@@ -23,12 +23,15 @@ function SpecViewer(element, id) {
   this.stackInfo = null;
   this.stackPlot = null;
 
-  // Placeholders for server information
-  this.site = null;
-  this.tzName = null;
-  this.serverNow = null;
-  this.utcOffset = null;
-  this.tzOffset = null;
+  // Placeholders for data information
+  this.nApertures = 0;
+  this.apertureDefinition = [];
+  this.dispersion = [];
+  this.filename = null;
+  this.programId = null;
+  this.frameWavelength = [];
+  this.frameIntensity = [];
+  this.frameVariance = [];
 
   // Create page
   this.load()
