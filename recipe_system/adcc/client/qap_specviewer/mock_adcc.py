@@ -10,22 +10,20 @@ is using to design frontend/backend.
 Remember to run it from the same folder where it lives since it relies on
 relative path. This is a temporary solution.
 """
-
+import json
 import os
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
+from recipe_system.adcc.servers import http_proxy
 
-app = Flask(__name__, static_folder=os.path.dirname(__file__))
+app = Flask(__name__,
+            static_folder=os.path.dirname(__file__),
+            static_url_path='')
 
 
 @app.route('/')
 def root():
     return app.send_static_file("index.html")
-
-
-@app.route('/specviewer/')
-def specviewer():
-    return app.send_static_file("specviewer.html")
 
 
 @app.route('/css/<path:path>')
@@ -36,6 +34,35 @@ def send_css(path):
 @app.route('/js/<path:path>')
 def send_js(path):
     return send_from_directory('js', path)
+
+
+@app.route('/<path:path>')
+def get_file(path):
+    return app.send_static_file(path)
+
+
+@app.route('/specviewer/')
+def specviewer():
+    return app.send_static_file("specviewer.html")
+
+
+@app.route('/rqsite.json')
+def rqsite():
+    return http_proxy.server_time()
+
+
+@app.route('/specframe.json')
+def specframe():
+
+    my_dict = {
+        "my_key": "my_value",
+    }
+
+    try:
+        return jsonify(json.dumps(my_dict))
+    except Exception as e:
+        print(str(e))
+        return jsonify(str(e))
 
 
 if __name__ == '__main__':

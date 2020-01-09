@@ -5,83 +5,70 @@
  */
 
 /**
+ * Main component for SpecViewer.
  *
  * @param element
  * @param id
  */
-function SpectrumViewer (element, id) {
-  'use strict'
+function SpecViewer(element, id) {
+  'use strict';
 
-  this.element = element
-  this.id = id
-} // end SpectrumViewer
+  this.element = element;
+  this.id = id;
 
-SpectrumViewer.prototype = {
+  // Placeholders for different elements
+  this.apertureInfo = null;
+  this.frameInfo = null;
+  this.framePlot = null;
+  this.stackInfo = null;
+  this.stackPlot = null;
 
-  constructor: SpectrumViewer,
+  // Placeholders for server information
+  this.site = null;
+  this.tzName = null;
+  this.serverNow = null;
+  this.utcOffset = null;
+  this.tzOffset = null;
 
-  load: function () {
-    'use strict'
-    var sViewer = this
+  // Create page
+  this.load()
 
-    /*
+} // end SpecViewer
+
+
+SpecViewer.prototype = {
+
+  constructor: SpecViewer,
+
+  load: function() {
+    'use restrict';
+    console.log('Calling "load" function')
+
     $.ajax({
-      type: 'GET',
-      url: '/rqsite.json',
-      success: function (data) {
-        sViewer.site = data.local_site
-        sViewer.tzname = data.tzname
-        sViewer.utc_offset = data.utc_offset
-
-        // Translate utc_now into a JS data
-        var ymdHms = data.utc_now.split(' ')
-        var ymd = ymdHms[0]
-        var hms = ymdHms[1]
-
-        var yearMonthDay = ymd.split('-')
-        var year = yearMonthDay[0]
-        var month = yearMonthDay[1]
-        var day = yearMonthDay[2]
-
-        var hourMinuteSecond = hms.split(':')
-        var hour = hourMinuteSecond[0]
-        var minute = hourMinuteSecond[1]
-        var second = hourMinuteSecond[2]
-        var fraction = (parseFloat(second) - parseInt(second, 10)) * 1000
-
-        second = parseInt(second, 10)
-
-        var localDate =
-          new Date(Date.UTC(year, month - 1, day, hour, minute, second, fraction))
-
-        // Add in the UT offset
-        sViewer.server_now =
-          Date(localDate.setHours(localDate.getHours() + sViewer.utc_offset))
-
-        // Keep track of the difference between local time and server time
-        var localTimezone = localDate.getTimezoneOffset() / 60
-        sViewer.tz_offset = sViewer.utc_offset - localTimezone
-        sViewer.init()
+      type: "GET",
+      url: "/specframe.json",
+      success: function(data) {
+        console.log(data);
       }, // end success
-      error: function () {
-        sViewer.site = undefined
-        sViewer.tzname = 'LT'
-        sViewer.server_now = new Date()
-        sViewer.utc_offset = sViewer.server_now.getTimezoneOffset() / 60
-        sViewer.tz_offset = 0
-        sViewer.init()
+      error: function() {
+        console.log('Could not receive json file');
       } // end error
-    }) // end ajax
-    */
+    }); // end ajax
   }, // end load
-
-  init: function () {
-
-  }
 
 }
 
-function openAperture (evt, apertureId) {
+
+/**
+ * This function handles the onclick event for the tab buttons at the top of
+ * the main page. It starts hiding every `tabcontent` element, then cleaning
+ * up the `active` class name from every `tablinks` element and, finally,
+ * adds back the `active` class name to the events owner.
+ *
+ * @parameter evt
+ * @parameter apertureId
+ */
+function openAperture(evt, apertureId) {
   var i, tabcontent, tablinks
   tabcontent = document.getElementsByClassName('tabcontent')
   for (i = 0; i < tabcontent.length; i++) {
