@@ -64,6 +64,9 @@ target/
 .pydevproject
 .settings
 
+# JSDev
+**/node_modules/
+
 # PyCharm
 .idea
 .pycharm-bash
