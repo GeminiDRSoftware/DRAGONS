@@ -14,12 +14,14 @@ body {
 
 /* Style the buttons inside the tab */
 .tab button {
-  background-color: inherit;
+  background-color: #ccc;
   float: left;
-  border: none;
+  border: 1px solid #bbb;
+  border-bottom: none;
+  border-radius: 15px 15px 0px 0px;
   outline: none;
   cursor: pointer;
-  padding: 14px 16px;
+  padding: 10px 16px;
   transition: 0.3s;
   font-size: 17px;
 }
@@ -31,7 +33,7 @@ body {
 
 /* Create an active/current tablink class */
 .tab button.active {
-  background-color: #ccc;
+  background-color: #f1f1f1;
 }
 
 /* Style the tab content */
@@ -51,6 +53,14 @@ body {
 
 /* Style the frameInfo bar */
 .frameInfo {
+  width: inherit;
+  background-color: #ccc;
+  border: none;
+  padding: 12px 12px;
+}
+
+/* Style the frameInfo bar */
+.stackInfo {
   width: inherit;
   background-color: #ccc;
   border: none;
