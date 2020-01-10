@@ -106,13 +106,6 @@ for f in ('ichar.dat', 'imtoolrc', 'README'):
     PACKAGE_DATA['gempy'].append(os.path.join('numdisplay', f))
 PACKAGE_DATA['gempy'].append(os.path.join('library', 'config', 'README'))
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# For packaging, need to add tests and docs
-#    (also see the 'sdist' section in the
-#     old setup.py.  handles symlinks)
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-DATA_FILES = []
-
 # SCRIPTS
 RS_SCRIPTS = [os.path.join('recipe_system', 'scripts', 'adcc'),
               os.path.join('recipe_system', 'scripts', 'caldb'),
@@ -167,7 +160,6 @@ setup(name='dragons',
       maintainer='Science User Support Department',
       packages=PACKAGES,
       package_data=PACKAGE_DATA,
-      data_files=DATA_FILES,
       scripts=SCRIPTS,
       ext_modules=EXTENSIONS,
       classifiers=[
