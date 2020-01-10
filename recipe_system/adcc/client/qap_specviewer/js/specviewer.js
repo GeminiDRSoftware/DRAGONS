@@ -16,7 +16,7 @@ function SpecViewer(parentElement, id) {
   // Creating empty object
   this.element = parentElement;
   this.id = id;
-  console.log(" Creating new object with id: ", id)
+  console.log("Creating new object with id: ", id)
 
   // Add a DIV containiner inside the parentElement with proper id
   var placeholder = document.createElement("DIV");
@@ -65,10 +65,12 @@ SpecViewer.prototype = {
       success: function(jsonData) {
         'use restrict';
         var data = JSON.parse(jsonData);
-        console.log(data);
-        console.log(data.apertures);
+        console.log("JSON data received: ", data);
+        console.log("Apertures received: ", data.apertures);
+        console.log("Number of apertures received: ", data.apertures.length);
 
-        addAperturesTabs(sViewer.id, data.apertures);
+        addNavigationTab(sViewer.id, data.apertures.length);
+        addTabs(sViewer.id, data);
 
       }, // end success
       error: function() {
@@ -84,23 +86,79 @@ SpecViewer.prototype = {
  * JSON file.
  *
  * @param parentId
+ * @type parentId string
+ *
  * @param numberOfApertures
+ * @type number
  */
-function addAperturesTabs(parentId, numberOfApertures) {
+function addNavigationTab(parentId, numberOfApertures) {
   'use restrict';
+  console.log(`Adding ${numberOfApertures} buttons to element with ID: `, parentId);
 
-  console.log(" Adding buttons to element with ID: ", parentId)
+  // Create navigation tab container
+  var navigationTab = document.createElement("DIV");
+  navigationTab.className = "tab";
+  navigationTab.id = "navigationTab";
 
-  // var tab = document.createElement("BUTTON");
-  // var tabLabel = document.createTextNode("Aperture X");
-  //
-  // tab.setAttribute('class', 'tablinks');
-  // tab.setAttribute('onclick', function() {console.log('Button clicked!')})
-  // tab.appendChild(tabLabel)
-  //
-  // var parent = document.getElementById(parentId)
-  // parent.appendChild(tab)
+  // Add navigation tab to the parent element
+  var parent = document.getElementById(parentId);
+  parent.appendChild(navigationTab);
 
+  // Create buttons and add them to the navigation tab
+  for (var i = 0; i < 3; i++) {
+    console.log(`Create button for Aperture${i + 1}`);
+    var tabLink = document.createElement("BUTTON");
+    tabLink.className = "tablinks";
+    tabLink.innerHTML = `Aperture ${i + 1}`;
+
+    // Workaround using Immediately-Invoked Function Expressions
+    tabLink.onclick = (function(apertureIndex){
+      return function() {
+        apertureId = `Aperture${apertureIndex}`;
+        openAperture(event, apertureId);
+      }
+    })(i + 1);
+
+    navigationTab.appendChild(tabLink);
+  }
+}
+
+
+/**
+ * Add tabs containing plots and information on each aperture.
+ *
+ * @param parentId
+ * @type parentId string
+ *
+ * @param data
+ * @type data object
+ */
+function addTabs(parentId, data){
+  'use restrict';
+  var parent = document.getElementById(parentId);
+
+  for (var i = 0; i < data.apertures.length; i++) {
+
+    var aperture = data.apertures[i];
+    console.log(`Aperture ${i + 1} definition`, aperture);
+
+    var tab = document.createElement("DIV");
+    tab.id = `Aperture${i + 1}`;
+    tab.className = "tabcontent";
+    parent.appendChild(tab);
+
+    var apertureInfo = document.createElement("DIV");
+    apertureInfo.className = "apertureInfo";
+    tab.appendChild(apertureInfo)
+
+    var apertureDefinition = document.createElement("SPAN");
+    apertureDefinition.className = "apertureDefinition";
+    apertureDefinition.innerHTML =
+      `<b>Aperture definition: </b> ${aperture.center} px ` +
+      `(${aperture.lower}, ${aperture.upper})`;
+    apertureInfo.appendChild(apertureDefinition);
+
+  }
 }
 
 
@@ -114,17 +172,19 @@ function addAperturesTabs(parentId, numberOfApertures) {
  * @parameter apertureId
  */
 function openAperture(evt, apertureId) {
-  var i, tabcontent, tablinks
-  tabcontent = document.getElementsByClassName('tabcontent')
-  for (i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = 'none'
+
+  console.log(`Pressed button related to ${apertureId}`);
+
+  var tabcontent = document.getElementsByClassName('tabcontent');
+  for (var i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = 'none';
   }
-  tablinks = document.getElementsByClassName('tablinks')
-  for (i = 0; i < tablinks.length; i++) {
+
+  var tablinks = document.getElementsByClassName('tablinks')
+  for (var i = 0; i < tablinks.length; i++) {
     tablinks[i].className = tablinks[i].className.replace(' active', '')
   }
+
   document.getElementById(apertureId).style.display = 'block'
   evt.currentTarget.className += ' active'
-
-  console.log(evt.currentTarget)
 }
