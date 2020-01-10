@@ -152,11 +152,36 @@ function addTabs(parentId, data){
     tab.appendChild(apertureInfo)
 
     var apertureDefinition = document.createElement("SPAN");
-    apertureDefinition.className = "apertureDefinition";
     apertureDefinition.innerHTML =
-      `<b>Aperture definition: </b> ${aperture.center} px ` +
+      `<b>Aperture definition:</b> ${aperture.center} px ` +
       `(${aperture.lower}, ${aperture.upper})`;
     apertureInfo.appendChild(apertureDefinition);
+
+    var dispersion = document.createElement("SPAN");
+    dispersion.style.paddingLeft = "68px"
+    dispersion.innerHTML =
+      `<b>Dispersion:</b> ${aperture.dispersion} nm/px`
+    apertureInfo.appendChild(dispersion);
+
+    var lastFrameInfo = document.createElement("DIV");
+    lastFrameInfo.className = "frameInfo";
+    lastFrameInfo.innerHTML =
+      `Last frame - ${data.filename} - ${data.programId}`;
+    tab.appendChild(lastFrameInfo);
+
+    var lastFramePlot = document.createElement("DIV");
+    lastFramePlot.className = "framePlot";
+    tab.appendChild(lastFramePlot);
+
+    var stackFrameInfo = document.createElement("DIV");
+    stackFrameInfo.className = "stackInfo";
+    stackFrameInfo.innerHTML =
+      `Stack frame - ${data.filename} - ${data.programId}`;
+    tab.appendChild(stackFrameInfo);
+
+    var stackFramePlot = document.createElement("DIV");
+    stackFramePlot.className = "stackPlot";
+    tab.appendChild(stackFramePlot);
 
   }
 }
