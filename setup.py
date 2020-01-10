@@ -16,11 +16,9 @@ Usage:
 """
 
 import os
-import os.path
 import re
 
-from setuptools import setup
-from setuptools.extension import Extension
+from setuptools import setup, find_packages, Extension
 
 from astrodata._version import version
 
@@ -33,101 +31,7 @@ else:
 
 PACKAGENAME = 'dragons'
 
-# PACKAGES and PACKAGE_DIRS
-ASTRODATA_MODULES = ['astrodata']
-
-GEMINI_INST_MODULES = ['gemini_instruments',
-                       'gemini_instruments.bhros',
-                       'gemini_instruments.cirpass',
-                       'gemini_instruments.f2',
-                       'gemini_instruments.flamingos',
-                       'gemini_instruments.gemini',
-                       'gemini_instruments.gmos',
-                       'gemini_instruments.gnirs',
-                       'gemini_instruments.gpi',
-                       'gemini_instruments.graces',
-                       'gemini_instruments.gsaoi',
-                       'gemini_instruments.hokupaa_quirc',
-                       'gemini_instruments.hrwfs',
-                       'gemini_instruments.igrins',
-                       'gemini_instruments.michelle',
-                       'gemini_instruments.nici',
-                       'gemini_instruments.nifs',
-                       'gemini_instruments.niri',
-                       'gemini_instruments.oscir',
-                       'gemini_instruments.phoenix',
-                       'gemini_instruments.skycam',
-                       'gemini_instruments.texes',
-                       'gemini_instruments.trecs',
-                       ]
-
-GEMINIDR_MODULES = ['geminidr',
-                    'geminidr.core',
-                    'geminidr.f2',
-                    'geminidr.f2.lookups',
-                    'geminidr.f2.recipes',
-                    'geminidr.f2.recipes.qa',
-                    'geminidr.f2.recipes.ql',
-                    'geminidr.f2.recipes.sq',
-                    'geminidr.gemini',
-                    'geminidr.gemini.lookups',
-                    'geminidr.gemini.lookups.source_detection',
-                    'geminidr.gmos',
-                    'geminidr.gmos.lookups',
-                    'geminidr.gmos.recipes',
-                    'geminidr.gmos.recipes.qa',
-                    'geminidr.gmos.recipes.ql',
-                    'geminidr.gmos.recipes.sq',
-                    'geminidr.gnirs',
-                    'geminidr.gnirs.lookups',
-                    'geminidr.gnirs.recipes',
-                    'geminidr.gnirs.recipes.qa',
-                    'geminidr.gnirs.recipes.ql',
-                    'geminidr.gnirs.recipes.sq',
-                    'geminidr.gsaoi',
-                    'geminidr.gsaoi.lookups',
-                    'geminidr.gsaoi.recipes',
-                    'geminidr.gsaoi.recipes.qa',
-                    'geminidr.gsaoi.recipes.ql',
-                    'geminidr.gsaoi.recipes.sq',
-                    'geminidr.niri',
-                    'geminidr.niri.lookups',
-                    'geminidr.niri.recipes',
-                    'geminidr.niri.recipes.qa',
-                    'geminidr.niri.recipes.ql',
-                    'geminidr.niri.recipes.sq',
-                    ]
-
-GEMPY_MODULES = ['gempy',
-                 'gempy.adlibrary',
-                 'gempy.display',
-                 'gempy.eti_core',
-                 'gempy.gemini',
-                 'gempy.gemini.eti',
-                 'gempy.numdisplay',  # not really needed for some reason
-                 'gempy.library',
-                 'gempy.library.config',
-                 'gempy.utils',
-                 ]
-
-RS_MODULES = ['recipe_system',
-              'recipe_system.adcc',
-              'recipe_system.adcc.servers',
-              'recipe_system.cal_service',
-              'recipe_system.mappers',
-              'recipe_system.reduction',
-              'recipe_system.utils',
-              ]
-
-SUBMODULES = []
-SUBMODULES.extend(ASTRODATA_MODULES)
-SUBMODULES.extend(GEMINI_INST_MODULES)
-SUBMODULES.extend(GEMINIDR_MODULES)
-SUBMODULES.extend(GEMPY_MODULES)
-SUBMODULES.extend(RS_MODULES)
-
-PACKAGES = []
-PACKAGES.extend(SUBMODULES)
+PACKAGES = find_packages('.', exclude=['*tests'])
 PACKAGE_DIRS = {}
 PACKAGE_DIRS[''] = '.'
 
