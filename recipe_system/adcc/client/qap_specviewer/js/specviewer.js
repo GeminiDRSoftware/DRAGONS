@@ -71,6 +71,10 @@ SpecViewer.prototype = {
 
         addNavigationTab(sViewer.id, data.apertures.length);
         addTabs(sViewer.id, data);
+        addPlots(sViewer.id, data);
+
+        // Add click event to show first aperture
+        $(".tablinks")[0].click()
 
       }, // end success
       error: function() {
@@ -121,6 +125,7 @@ function addNavigationTab(parentId, numberOfApertures) {
 
     navigationTab.appendChild(tabLink);
   }
+
 }
 
 
@@ -184,6 +189,22 @@ function addTabs(parentId, data){
     tab.appendChild(stackFramePlot);
 
   }
+}
+
+/**
+ * Add plots to the existing HTML elements.
+ *
+ */
+function addPlots(parentId, data) {
+  'use restrict';
+
+  var parent = document.getElementById(parentId);
+
+  for (var i=0; i < data.apertures.length; i++){
+    console.log("Add plot for aperture ", i);
+
+  }
+
 }
 
 
