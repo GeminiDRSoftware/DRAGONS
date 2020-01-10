@@ -32,8 +32,6 @@ else:
 PACKAGENAME = 'dragons'
 
 PACKAGES = find_packages('.', exclude=['*tests'])
-PACKAGE_DIRS = {}
-PACKAGE_DIRS[''] = '.'
 
 # PACKAGE_DATA
 PACKAGE_DATA = {}
@@ -168,7 +166,6 @@ setup(name='dragons',
       url='http://www.gemini.edu',
       maintainer='Science User Support Department',
       packages=PACKAGES,
-      package_dir=PACKAGE_DIRS,
       package_data=PACKAGE_DATA,
       data_files=DATA_FILES,
       scripts=SCRIPTS,
