@@ -8,6 +8,7 @@
   <title>DRAGONS - QAP SpecViewer</title>
 
   <link rel="stylesheet" href="/js/jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom.css">
+  <link rel="stylesheet" href="/css/specviewer.css">
 
   <script src="/js/jquery.js"></script>
   <script src="/js/jquery-ui/js/jquery-ui-1.8.20.custom.min.js"></script>
@@ -16,21 +17,6 @@
   <script type="text/javascript" src="../js/specviewer.js"></script>
 
   <script>
-
-    // $(document).ready(
-    //   function() {
-    //     $( "#tabs" ).tabs({
-    //       beforeLoad: function( event, ui ) {
-    //         ui.jqXHR.fail(function() {
-    //         ui.panel.html(
-    //           "Couldn't load this tab. We'll try to fix this as soon as possible. " +
-    //           "If this wouldn't be a demo." );
-    //         });
-    //       }
-    //     });
-    //   }
-    );
-
     /* Initialize SpecViewer */
     $(document).ready(
       function() {
@@ -39,9 +25,7 @@
         var sViewer = new SpecViewer(element, id)
       }
     );
-
   </script>
-
 
 </head>
 
@@ -56,23 +40,7 @@
 
     <div id="content">
       <div id="main">
-
-        <!-- <div id="tabs">
-          <ul>
-            <li><a href="#tabs-1">Tab 1</a></li>
-            <li><a href="#tabs-2">Tab 2</a></li>
-          </ul>
-
-          <div id="tabs-1">
-            <p>Tab 1</p>
-          </div>
-
-          <div id="tabs-2">
-            <p>Tab 2</p>
-          </div>
-
-        </div> -->
-
+        <!-- Placeholder for specViewer -->
       </div>
     </div>
 
