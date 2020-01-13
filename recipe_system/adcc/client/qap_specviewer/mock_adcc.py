@@ -37,6 +37,11 @@ def send_js(path):
     return send_from_directory('js', path)
 
 
+@app.route('/qap/js/<path:path>')
+def send_js_from_adcc_faceplate(path):
+    return send_from_directory('../adcc_faceplate/js/', path)
+
+
 @app.route('/<path:path>')
 def get_file(path):
     return app.send_static_file(path)

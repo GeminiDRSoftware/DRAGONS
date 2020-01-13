@@ -71,10 +71,13 @@ SpecViewer.prototype = {
 
         addNavigationTab(sViewer.id, data.apertures.length);
         addTabs(sViewer.id, data);
-        addPlots(sViewer.id, data);
+        // addPlots(sViewer.id, data);
 
         // Add click event to show first aperture
-        $(".tablinks")[0].click()
+        // $(".tablinks")[0].click()
+
+        // Call function to activate the tabs
+         $( `#${sViewer.id}` ).tabs( "refresh" );
 
       }, // end success
       error: function() {
@@ -99,31 +102,21 @@ function addNavigationTab(parentId, numberOfApertures) {
   'use restrict';
   console.log(`Adding ${numberOfApertures} buttons to element with ID: `, parentId);
 
-  // Create navigation tab container
-  var navigationTab = document.createElement("DIV");
-  navigationTab.className = "tab";
-  navigationTab.id = "navigationTab";
+  // Add navigation tab container
+  var parent = $( `#${parentId}` );
+  $( '<div class="tab" id="navigationTab"></div>' ).appendTo(parent);
 
-  // Add navigation tab to the parent element
-  var parent = document.getElementById(parentId);
-  parent.appendChild(navigationTab);
+  var navigationTab = $('#navigationTab');
+  navigationTab.tabs();
+
+  // Create empty list of tabs
+  $( '<ul></ul>' ).appendTo(navigationTab);
+  var listOfTabs = $('#navigationTab ul');
 
   // Create buttons and add them to the navigation tab
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < numberOfApertures; i++) {
     console.log(`Create button for Aperture${i + 1}`);
-    var tabLink = document.createElement("BUTTON");
-    tabLink.className = "tablinks";
-    tabLink.innerHTML = `Aperture ${i + 1}`;
-
-    // Workaround using Immediately-Invoked Function Expressions
-    tabLink.onclick = (function(apertureIndex){
-      return function() {
-        apertureId = `Aperture${apertureIndex}`;
-        openAperture(event, apertureId);
-      }
-    })(i + 1);
-
-    navigationTab.appendChild(tabLink);
+    listOfTabs.append(`<li><a href="#aperture${i + 1}">Aperture ${i + 1}</a></li>`)
   }
 
 }
@@ -140,53 +133,50 @@ function addNavigationTab(parentId, numberOfApertures) {
  */
 function addTabs(parentId, data){
   'use restrict';
-  var parent = document.getElementById(parentId);
+  var parent = $( `#${parentId}` );
 
   for (var i = 0; i < data.apertures.length; i++) {
 
     var aperture = data.apertures[i];
     console.log(`Aperture ${i + 1} definition`, aperture);
 
-    var tab = document.createElement("DIV");
-    tab.id = `Aperture${i + 1}`;
-    tab.className = "tabcontent";
-    parent.appendChild(tab);
+    parent.append(
+      `<div id="aperture${i + 1}" class="tabcontent"> </div>`
+    );
 
-    var apertureInfo = document.createElement("DIV");
-    apertureInfo.className = "apertureInfo";
-    tab.appendChild(apertureInfo)
+    $(`#aperture${i + 1}`).append(
+      '<div class="apertureInfo">' +
+      '  <span>' +
+      `    <b>Aperture definition:</b> ${aperture.center} (${aperture.lower}, ${aperture.upper})` +
+      '  </span>' +
+      '</div>'
+    );
 
-    var apertureDefinition = document.createElement("SPAN");
-    apertureDefinition.innerHTML =
-      `<b>Aperture definition:</b> ${aperture.center} px ` +
-      `(${aperture.lower}, ${aperture.upper})`;
-    apertureInfo.appendChild(apertureDefinition);
-
-    var dispersion = document.createElement("SPAN");
-    dispersion.style.paddingLeft = "68px"
-    dispersion.innerHTML =
-      `<b>Dispersion:</b> ${aperture.dispersion} nm/px`
-    apertureInfo.appendChild(dispersion);
-
-    var lastFrameInfo = document.createElement("DIV");
-    lastFrameInfo.className = "frameInfo";
-    lastFrameInfo.innerHTML =
-      `Last frame - ${data.filename} - ${data.programId}`;
-    tab.appendChild(lastFrameInfo);
-
-    var lastFramePlot = document.createElement("DIV");
-    lastFramePlot.className = "framePlot";
-    tab.appendChild(lastFramePlot);
-
-    var stackFrameInfo = document.createElement("DIV");
-    stackFrameInfo.className = "stackInfo";
-    stackFrameInfo.innerHTML =
-      `Stack frame - ${data.filename} - ${data.programId}`;
-    tab.appendChild(stackFrameInfo);
-
-    var stackFramePlot = document.createElement("DIV");
-    stackFramePlot.className = "stackPlot";
-    tab.appendChild(stackFramePlot);
+    // var dispersion = document.createElement("SPAN");
+    // dispersion.style.paddingLeft = "68px"
+    // dispersion.innerHTML =
+    //   `<b>Dispersion:</b> ${aperture.dispersion} nm/px`
+    // apertureInfo.appendChild(dispersion);
+    //
+    // var lastFrameInfo = document.createElement("DIV");
+    // lastFrameInfo.className = "frameInfo";
+    // lastFrameInfo.innerHTML =
+    //   `Last frame - ${data.filename} - ${data.programId}`;
+    // tab.appendChild(lastFrameInfo);
+    //
+    // var lastFramePlot = document.createElement("DIV");
+    // lastFramePlot.className = "framePlot";
+    // tab.appendChild(lastFramePlot);
+    //
+    // var stackFrameInfo = document.createElement("DIV");
+    // stackFrameInfo.className = "stackInfo";
+    // stackFrameInfo.innerHTML =
+    //   `Stack frame - ${data.filename} - ${data.programId}`;
+    // tab.appendChild(stackFrameInfo);
+    //
+    // var stackFramePlot = document.createElement("DIV");
+    // stackFramePlot.className = "stackPlot";
+    // tab.appendChild(stackFramePlot);
 
   }
 }
@@ -198,10 +188,29 @@ function addTabs(parentId, data){
 function addPlots(parentId, data) {
   'use restrict';
 
-  var parent = document.getElementById(parentId);
+  var tabcontent = document.getElementsByClassName('tabcontent');
 
   for (var i=0; i < data.apertures.length; i++){
     console.log("Add plot for aperture ", i);
+
+    var wavelength = data.apertures[i].wavelength;
+    var intensity = data.apertures[i].intensity;
+    var variance = data.apertures[i].variance;
+
+    var framePlotArea = tabcontent[i].getElementsByClassName('framePlot')[0];
+    framePlotArea.id = `framePlotArea${i+1}`;
+    console.log(framePlotArea);
+
+    var stackPlotArea = tabcontent[i].getElementsByClassName('stackPlot')[0];
+    stackPlotArea.id = `stackPlotArea${i+1}`;
+
+    var cosPoints = [];
+    for (var i=0; i<2*Math.PI; i+=0.1){
+      cosPoints.push([i, Math.cos(i)]);
+    }
+
+    var framePlot = $.jqplot (framePlotArea.id, [cosPoints]);
+    // var stackPlot = $.jqplot (stackPlotArea.id, [[3,7,9,1,5,3,8,2,5]]);
 
   }
 
