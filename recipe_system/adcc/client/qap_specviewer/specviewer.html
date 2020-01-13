@@ -17,33 +17,29 @@
 
   <script>
 
-    $(document).ready(
-      function() {
-        $( "#tabs" ).tabs({
-          beforeLoad: function( event, ui ) {
-            ui.jqXHR.fail(function() {
-            ui.panel.html(
-              "Couldn't load this tab. We'll try to fix this as soon as possible. " +
-              "If this wouldn't be a demo." );
-            });
-          }
-        });
-      }
+    // $(document).ready(
+    //   function() {
+    //     $( "#tabs" ).tabs({
+    //       beforeLoad: function( event, ui ) {
+    //         ui.jqXHR.fail(function() {
+    //         ui.panel.html(
+    //           "Couldn't load this tab. We'll try to fix this as soon as possible. " +
+    //           "If this wouldn't be a demo." );
+    //         });
+    //       }
+    //     });
+    //   }
     );
 
     /* Initialize SpecViewer */
-    // $('document').ready(
-    //   function() {
-    //     var element = $('#main')
-    //     var id = 'specViewer'
-    //     var sViewer = new SpecViewer(element, id)
-    // }
-    // )
-    // $( function() {
-    //   var element = $('#main');
-    //   var id = 'specViewer';
-    //   var sViewer = new SpecViewer(element, id);
-    // });
+    $(document).ready(
+      function() {
+        var element = $('#main')
+        var id = 'specViewer'
+        var sViewer = new SpecViewer(element, id)
+      }
+    );
+
   </script>
 
 
@@ -52,37 +48,39 @@
 
 <body>
 
-  <div id="tabs">
-    <ul>
-      <li><a href="#tabs-1">Tab 1</a></li>
-      <li><a href="#tabs-2">Tab 2</a></li>
-    </ul>
+  <div class="wrapper">
 
-    <div id="tabs-1">
-      <p>Tab 1</p>
+    <div class="header">
+      <h1> QAP SpecViewer </h1>
     </div>
 
-    <div id="tabs-2">
-      <p>Tab 2</p>
+    <div id="content">
+      <div id="main">
+
+        <!-- <div id="tabs">
+          <ul>
+            <li><a href="#tabs-1">Tab 1</a></li>
+            <li><a href="#tabs-2">Tab 2</a></li>
+          </ul>
+
+          <div id="tabs-1">
+            <p>Tab 1</p>
+          </div>
+
+          <div id="tabs-2">
+            <p>Tab 2</p>
+          </div>
+
+        </div> -->
+
+      </div>
+    </div>
+
+    <div class="footer">
+      Add info about QAP SpecViewer
     </div>
 
   </div>
-
-  <!-- <div class="wrapper"> -->
-
-    <!-- <div class="header"> -->
-      <!-- Add header here -->
-    <!-- </div> -->
-
-    <!-- <div id="content"> -->
-      <!-- <div id="main"> -->
-        <!-- Add content here -->
-      <!-- </div>
-    </div> -->
-
-    <!-- <div class="footer"> -->
-      <!-- Add footer here -->
-    <!-- </div> -->
 
 </body>
 
