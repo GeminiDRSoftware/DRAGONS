@@ -65,7 +65,7 @@ SpecViewer.prototype = {
 
         addNavigationTab(sViewer.id, data.apertures.length);
         addTabs(sViewer.id, data);
-        // addPlots(sViewer.id, data);
+        addPlots(sViewer.id, data);
 
         // Call function to activate the tabs
         $(`#${sViewer.id}`).tabs();
@@ -165,6 +165,14 @@ function addPlots(parentId, data) {
   'use restrict';
 
   var tabcontent = document.getElementsByClassName('tabcontent');
+  var plotArray = [];
+
+  var l1 = [18, 36, 14, 11];
+  var l2 = [[2, 14], [7, 2], [8,5]];
+  var l3 = [4, 7, 9, 2, 11, 5, 9, 13, 8, 7];
+  var l4 = [['peech',3], ['cabbage', 2], ['bean', 4], ['orange', 5]];
+
+  var plots = new Array();
 
   for (var i = 0; i < data.apertures.length; i++) {
     console.log("Add plot for aperture ", i);
@@ -174,21 +182,21 @@ function addPlots(parentId, data) {
     var variance = data.apertures[i].variance;
 
     var framePlotArea = tabcontent[i].getElementsByClassName('framePlot')[0];
-    framePlotArea.id = `framePlotArea${i+1}`;
-    console.log(framePlotArea);
+    framePlotArea.id = `framePlotArea${i}`;
 
-    var stackPlotArea = tabcontent[i].getElementsByClassName('stackPlot')[0];
-    stackPlotArea.id = `stackPlotArea${i+1}`;
-
-    var cosPoints = [];
-    for (var i = 0; i < 2 * Math.PI; i += 0.1) {
-      cosPoints.push([i, Math.cos(i)]);
-    }
-
-    var framePlot = $.jqplot(framePlotArea.id, [cosPoints]);
-    // var stackPlot = $.jqplot (stackPlotArea.id, [[3,7,9,1,5,3,8,2,5]]);
+    plots[i] = $.jqplot(framePlotArea.id, [wavelength, intensity, variance],  {
+      title: `Aperture ${i}`,
+      lengend:{show:true},
+      series:[{},{yaxis:'y2axis'}, {yaxis:'y3axis'}],
+      cursor:{show:true, zoom:true},
+      axesDefaults:{useSeriesColor:true, rendererOptions: { alignTicks: true}}
+    });
 
   }
+
+  $(`#${parentId}`).bind('tabsshow', function(event, ui) {
+    plots[ui.index].replot();
+  });
 
 }
 
