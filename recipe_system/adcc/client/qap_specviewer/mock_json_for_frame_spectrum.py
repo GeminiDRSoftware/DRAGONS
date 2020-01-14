@@ -35,7 +35,7 @@ def main():
         variance = np.sqrt(intensity)
         wavelength = np.arange(image_width) * dispersion + 4000.
 
-        frame = {
+        aperture = {
             "center": center,
             "lower": lower,
             "upper": upper,
@@ -45,17 +45,6 @@ def main():
             "variance": list(variance),
         }
 
-        stack = {
-            "center": center,
-            "lower": lower,
-            "upper": upper,
-            "dispersion": dispersion,
-            "wavelength": list(wavelength),
-            "intensity": list(intensity),
-            "variance": list(variance / 10),
-        }
-
-        aperture = dict(frame=frame, stack=stack)
         apertures.append(aperture)
 
     # Create dict with all the data
