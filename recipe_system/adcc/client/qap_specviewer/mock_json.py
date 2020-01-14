@@ -25,7 +25,7 @@ def main():
     # Create aperture data
     apertures = []
     for i in range(3):
-        center = np.random.randint(100, image_height-100)
+        center = np.random.randint(100, image_height - 100)
         lower = np.random.randint(-15, -1)
         upper = np.random.randint(1, 15)
         dispersion = 0.15
@@ -35,17 +35,28 @@ def main():
         variance = np.sqrt(intensity)
         wavelength = np.arange(image_width) * dispersion + 4000.
 
-        apertures.append(
-            {
-                "center": center,
-                "lower": lower,
-                "upper": upper,
-                "dispersion": dispersion,
-                "wavelength": list(wavelength),
-                "intensity": list(intensity),
-                "variance": list(variance),
-             }
-        )
+        frame = {
+            "center": center,
+            "lower": lower,
+            "upper": upper,
+            "dispersion": dispersion,
+            "wavelength": list(wavelength),
+            "intensity": list(intensity),
+            "variance": list(variance),
+        }
+
+        stack = {
+            "center": center,
+            "lower": lower,
+            "upper": upper,
+            "dispersion": dispersion,
+            "wavelength": list(wavelength),
+            "intensity": list(intensity),
+            "variance": list(variance / 10),
+        }
+
+        aperture = dict(frame=frame, stack=stack)
+        apertures.append(aperture)
 
     # Create dict with all the data
     data = dict(filename="N20001231S001_suffix.fits", programId="GX-2000C-Q-001")
