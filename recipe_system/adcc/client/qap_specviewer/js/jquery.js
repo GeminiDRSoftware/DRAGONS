@@ -1,1 +1,0 @@
-../../adcc_faceplate/jquery.js
