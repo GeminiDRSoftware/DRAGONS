@@ -1,7 +1,7 @@
 {
   "name": "dragons-qap-specviewer",
-  "version": "2.1.x",
-  "description": "DRAGONS' QAP Spectrum Viewer",
+  "version": "0.0.1",
+  "description": "DRAGONS: QAP Spectrum Viewer",
   "standard": {
     "globals": [
       "$"
