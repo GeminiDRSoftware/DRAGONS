@@ -359,6 +359,10 @@ def test_round_trip_gwcs():
     compare_models(wcs1.forward_transform, wcs2.forward_transform)
     compare_models(wcs1.backward_transform, wcs2.backward_transform)
 
+    # Do the instances have matching co-ordinate frames?
+    for f in wcs1.available_frames:
+        assert repr(getattr(wcs1, f)) == repr(getattr(wcs2, f))
+
     # Also compare a few transformed values, as the "proof of the pudding":
     y, x = np.mgrid[0:9:2, 0:9:2]
     np.testing.assert_allclose(wcs1(x, y), wcs2(x, y), rtol=1e-7, atol=0.)
