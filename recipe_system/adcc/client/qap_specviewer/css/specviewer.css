@@ -1,68 +1,39 @@
 body {
   background-color: #F2F2F2;
   color: black;
-  font: normal normal 14px Verdana, Geneva, Arial, Helvetica, sans-serif;
+  font: normal normal 16px Verdana, Geneva, Arial, Helvetica, sans-serif;
   padding: 10px;
 }
 
-/* Style the tab */
-.tab {
-  overflow: hidden;
-  border: 0px;
-  background-color: #f1f1f1;
-}
-
-/* Style the buttons inside the tab */
-.tab button {
-  background-color: #ccc;
-  float: left;
-  border: 1px solid #bbb;
-  border-bottom: none;
-  border-radius: 15px 15px 0px 0px;
-  outline: none;
-  cursor: pointer;
-  padding: 10px 16px;
-  transition: 0.3s;
-  font-size: 17px;
-}
-
-/* Change background color of buttons on hover */
-.tab button:hover {
-  background-color: #ddd;
-}
-
-/* Create an active/current tablink class */
-.tab button.active {
-  background-color: #f1f1f1;
-}
-
-/* Style the tab content */
-.tabcontent {
-  display: none;
-  padding: 0px;
-  border: 1px solid #ccc;
-}
-
-/* Style the apertureInfo bar */
 .apertureInfo {
-  width: inherit;
-  background-color: #yellow;
-  border: none;
-  padding: 12px 12px;
+  padding: 10px 15px;
 }
 
-/* Style the frameInfo bar */
 .frameInfo {
-  width: inherit;
   background-color: #ccc;
-  border: none;
-  padding: 12px 12px;
+  border-radius: 5px;
+  padding: 10px 15px;
 }
 
-/* Style the frameInfo bar */
+.framePlot {
+  padding: 10px 0px;
+}
+
 .stackInfo {
-  width: inherit;
   background-color: #ccc;
-  border: none;
-  padding: 12px 12px;
+  border-radius: 5px;
+  padding: 10px 15px;
+}
+
+.jqplot-xaxis-label {
+  padding: 0px;
+}
+
+.jqplot-yaxis-label {
+  padding: 3px;
+  transform: rotate(-90deg)
+}
+
+.jqplot-grid-canvas {
+  width: auto;
 }

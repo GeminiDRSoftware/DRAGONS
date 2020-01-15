@@ -11,18 +11,21 @@
   <script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
 
   <!-- JQuery-UI -->
-  <link rel="stylesheet" href="/js/jquery-ui-1.12.1/jquery-ui.css">
-  <script type="text/javascript" src="/js/jquery-ui-1.12.1/jquery-ui.js"></script>
+  <link rel="stylesheet" href="/js/jquery-ui-1.12.1/jquery-ui.min.css">
+  <script type="text/javascript" src="/js/jquery-ui-1.12.1/jquery-ui.min.js"></script>
 
   <!-- JQPlot -->
   <link rel="stylesheet" href="/js/jqplot.1.0.9/jquery.jqplot.min.css">
   <script type="text/javascript" src="/js/jqplot.1.0.9/jquery.jqplot.min.js"></script>
+  <script type="text/javascript" src="/js/jqplot.1.0.9/plugins/jqplot.canvasTextRenderer.js"></script>
+  <script type="text/javascript" src="/js/jqplot.1.0.9/plugins/jqplot.canvasAxisLabelRenderer.js"></script>
 
   <!-- QAP SpecViewer is mostly defined in JS -->
   <script type="text/javascript" src="/js/specviewer.js"></script>
-
-  <script>
-    /* Initialize SpecViewer */
+  <link rel="stylesheet" href="/css/specviewer.css">
+  
+  <!-- Initialize SpecViewer -->
+  <script>    
     $(document).ready(
       function() {
         $.jqplot.config.enablePlugins = false;
@@ -33,7 +36,7 @@
       }
     );
   </script>
-
+  
 </head>
 
 
