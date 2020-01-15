@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pytest
+import astropy
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import Table
@@ -271,6 +272,8 @@ def test_read_a_keyword_from_phu_deprecated():
         ad.ABC
 
 
+@pytest.mark.xfail(not astropy.utils.minversion(astropy, '4.0.1'),
+                   reason='requires astropy >=4.0.1 for correct serialization')
 def test_round_trip_gwcs():
     """
     Add a 2-step gWCS instance to NDAstroData, save to disk, reload & compare.
