@@ -16,24 +16,9 @@ function SpecViewer(parentElement, id) {
   // Creating empty object
   this.parent = parentElement;
   this.id = id;
-  console.log("Creating new object with id: ", id)
 
   // Placeholders for different elements
-  this.apertureInfo = null;
-  this.frameInfo = null;
-  this.framePlot = null;
-  this.stackInfo = null;
-  this.stackPlot = null;
-
-  // Placeholders for data information
-  this.nApertures = 0;
-  this.filename = null;
-  this.programId = null;
-  this.apertureDefinition = [];
-  this.dispersion = [];
-  this.frameWavelength = [];
-  this.frameIntensity = [];
-  this.frameVariance = [];
+  this.framePlots = [];
 
   /* Create empty page */
   parentElement.append(`<div id="${id}"><ul></ul></div>`);
@@ -46,9 +31,130 @@ SpecViewer.prototype = {
 
   constructor: SpecViewer,
 
+  /**
+   * Add navigation tabs based on how many apertures there is inside the
+   * JSON file.
+   *
+   * @param parentId
+   * @type parentId string
+   *
+   * @param numberOfApertures
+   * @type number
+   */
+  addNavigationTab: function (parentId, numberOfApertures) {
+    'use restrict';
+
+    /* Add navigation tab container */
+    var listOfTabs = $(`#${parentId} ul`);
+
+    /* Create buttons and add them to the navigation tab */
+    for (var i = 0; i < numberOfApertures; i++) {
+      listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
+    };
+  },
+
+  /**
+   * Add plots to the existing HTML elements.
+   */
+  addPlots: function (parentId, data) {
+    'use restrict';
+
+
+    for (var i = 0; i < data.apertures.length; i++) {
+
+      var wavelength = data.apertures[i].wavelength;
+      var intensity = data.apertures[i].intensity;
+      var variance = data.apertures[i].variance;
+
+      intensity = buildSeries(wavelength, intensity);
+      variance = buildSeries(wavelength, variance);
+
+      this.framePlots[i] = $.jqplot(
+        `framePlot-${i}`, [intensity, variance], $.extend(plotOptions, {
+          title: `Aperture ${i} - Last Frame`,
+        }));
+
+    }
+
+    // Resize plots on load
+    this.framePlots.map(function(p) {
+      console.log(p);
+      p.replot( { resetAxes: true } );
+    });
+
+    // Resize plots on window resize
+    $(window).resize(function() {
+      this.framePlots.map(function(p) {
+        p.replot( { resetAxes: true } );
+      });
+    });
+
+    // Display plots on tab change
+    $(`#${parentId}`).bind('tabsshow', function(event, ui) {
+      this.framePlots[ui.index].replot();
+    });
+
+  },
+
+  /**
+   * Add tabs containing plots and information on each aperture.
+   *
+   * @param parentId
+   * @type parentId string
+   *
+   * @param data
+   * @type data object
+   */
+  addTabs: function (parentId, data) {
+
+    'use restrict';
+    var parent = $(`#${parentId}`);
+
+    for (var i = 0; i < data.apertures.length; i++) {
+
+      var aperture = data.apertures[i];
+
+      const apertureTabContent = `
+        <div id="aperture${i}" class="tabcontent">
+
+          <div class="apertureInfo">
+            <span>
+              <b>Aperture definition:</b>
+              ${aperture.center} (${aperture.lower}, ${aperture.upper})
+            </span>
+            <span style="padding-left: 10%">
+              <b>Dispersion:</b> ${aperture.dispersion} nm/px
+            </span>
+          </div>
+
+          <div class="frameInfo">
+            Latest frame - ${data.filename} - ${data.programId}
+          </div>
+
+          <div class="framePlot" id="framePlot-${i}">
+          </div>
+
+          <div class="stackInfo">
+            Stack frame - ${data.filename} - ${data.programId}
+          </div>
+
+          <div class="stackPlot">
+          </div>
+
+        </div>
+      `;
+
+      parent.append(apertureTabContent)
+    }; // end for
+
+  }, // end addTabs
+
+
+  /**
+   * Query server for JSON file and start to populate page.
+   */
   loadData: function() {
     'use restrict';
-    console.log('Calling "load" function')
 
     // Reference to self to use in functions inside load
     var sViewer = this;
@@ -59,16 +165,17 @@ SpecViewer.prototype = {
       success: function(jsonData) {
         'use restrict';
         var data = JSON.parse(jsonData);
-        console.log("JSON data received: ", data);
-        console.log("Apertures received: ", data.apertures);
-        console.log("Number of apertures received: ", data.apertures.length);
-
-        addNavigationTab(sViewer.id, data.apertures.length);
-        addTabs(sViewer.id, data);
-        addPlots(sViewer.id, data);
 
         // Call function to activate the tabs
         $(`#${sViewer.id}`).tabs();
+
+        sViewer.addNavigationTab(sViewer.id, data.apertures.length);
+        sViewer.addTabs(sViewer.id, data);
+        sViewer.addPlots(sViewer.id, data);
+
+        // Call function to activate the tabs
+        $(`#${sViewer.id}`).tabs( "refresh" );
+        $(`#${sViewer.id}`).tabs({ active: 0 });
 
       }, // end success
       error: function() {
@@ -77,153 +184,58 @@ SpecViewer.prototype = {
     }); // end ajax
   }, // end load
 
+}; // end prototype
 
-}
-
-/**
- * Add navigation tabs based on how many apertures there is inside the
- * JSON file.
- *
- * @param parentId
- * @type parentId string
- *
- * @param numberOfApertures
- * @type number
- */
-function addNavigationTab(parentId, numberOfApertures) {
-  'use restrict';
-  console.log(`Adding ${numberOfApertures} buttons to element with ID: `, parentId);
-
-  /* Add navigation tab container */
-  var listOfTabs = $(`#${parentId} ul`);
-
-  // Create buttons and add them to the navigation tab
-  for (var i = 0; i < numberOfApertures; i++) {
-    console.log(`Create button for Aperture${i}`);
-    listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`)
-  }
-
-}
 
 /**
- * Add tabs containing plots and information on each aperture.
+ * Read two arrays and convert then into a single [x, y] array to be used in
+ * plots.
  *
- * @param parentId
- * @type parentId string
+ * @param  {array} x One dimensional array with the X coordinates.
+ * @param  {array} y One dimensional array with the Y coordinates.
  *
- * @param data
- * @type data object
+ * @return {array} One dimensional arrays containing [x, y] points
  */
-function addTabs(parentId, data) {
-  'use restrict';
-  var parent = $(`#${parentId}`);
-
-  for (var i = 0; i < data.apertures.length; i++) {
-
-    var aperture = data.apertures[i];
-    console.log(`Aperture ${i} definition`, aperture);
-
-    parent.append(
-      `<div id="aperture${i}" class="tabcontent"> </div>`
-    );
-
-    $(`#aperture${i}`).append(
-      '<div class="apertureInfo">' +
-      '  <span>' +
-      `    <b>Aperture definition:</b> ${aperture.center} (${aperture.lower}, ${aperture.upper})` +
-      '  </span>' +
-      '  <span style="padding-left: 10%">' +
-      `    <b>Dispersion:</b> ${aperture.dispersion} nm/px` +
-      '  </span>' +
-      '</div>'
-    );
-
-    $(`#aperture${i}`).append(
-      '<div class="frameInfo">' +
-      `  Stack frame - ${data.filename} - ${data.programId}` +
-      '</div>'
-    );
-
-    $(`#aperture${i}`).append('<div class="framePlot"></div>');
-
-    $(`#aperture${i}`).append(
-      '<div class="stackInfo">' +
-      `  Last frame - ${data.filename} - ${data.programId}` +
-      '</div>'
-    );
-
-    $(`#aperture${i}`).append('<div class="stackPlot"></div>');
-
+function buildSeries(x, y) {
+  var temp = []
+  for (var i = 0; i < x.length; i++) {
+    temp.push([x[i], y[i]]);
   }
-}
-
-/**
- * Add plots to the existing HTML elements.
- *
- */
-function addPlots(parentId, data) {
-  'use restrict';
-
-  var tabcontent = document.getElementsByClassName('tabcontent');
-  var plotArray = [];
-
-  var l1 = [18, 36, 14, 11];
-  var l2 = [[2, 14], [7, 2], [8,5]];
-  var l3 = [4, 7, 9, 2, 11, 5, 9, 13, 8, 7];
-  var l4 = [['peech',3], ['cabbage', 2], ['bean', 4], ['orange', 5]];
-
-  var plots = new Array();
-
-  for (var i = 0; i < data.apertures.length; i++) {
-    console.log("Add plot for aperture ", i);
-
-    var wavelength = data.apertures[i].wavelength;
-    var intensity = data.apertures[i].intensity;
-    var variance = data.apertures[i].variance;
-
-    var framePlotArea = tabcontent[i].getElementsByClassName('framePlot')[0];
-    framePlotArea.id = `framePlotArea${i}`;
-
-    plots[i] = $.jqplot(framePlotArea.id, [wavelength, intensity, variance],  {
-      title: `Aperture ${i}`,
-      lengend:{show:true},
-      series:[{},{yaxis:'y2axis'}, {yaxis:'y3axis'}],
-      cursor:{show:true, zoom:true},
-      axesDefaults:{useSeriesColor:true, rendererOptions: { alignTicks: true}}
-    });
-
-  }
-
-  $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-    plots[ui.index].replot();
-  });
-
+  return temp
 }
 
 
 /**
- * This function handles the onclick event for the tab buttons at the top of
- * the main page. It starts hiding every `tabcontent` element, then cleaning
- * up the `active` class name from every `tablinks` element and, finally,
- * adds back the `active` class name to the events owner.
- *
- * @parameter evt
- * @parameter apertureId
+ * Options to be used by the plots
  */
-function openAperture(evt, apertureId) {
+plotOptions = {
 
-  console.log(`Pressed button related to ${apertureId}`);
+  axesDefaults: {
+    alignTicks: true,
+  },
 
-  var tabcontent = document.getElementsByClassName('tabcontent');
-  for (var i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = 'none';
+  axes: {
+    xaxis: {
+      label: "Wavelength [\u212B]", // escaped Angstrom symbol
+      pad: 1.01,
+    },
+    yaxis: {
+      label: "Flux [???]",
+    },
+  },
+
+  seriesDefaults : {
+    lineWidth: 1,
+    markerOptions: { size: 1 },
+  },
+
+  series: [
+    {color: '#1f77b4', label: 'Intensity', },
+    {color: '#ff7f0e', label: 'Variance'},
+  ],
+
+  grid: {
+    background: 'white',
   }
 
-  var tablinks = document.getElementsByClassName('tablinks')
-  for (var i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(' active', '')
-  }
-
-  document.getElementById(apertureId).style.display = 'block'
-  evt.currentTarget.className += ' active'
 }
