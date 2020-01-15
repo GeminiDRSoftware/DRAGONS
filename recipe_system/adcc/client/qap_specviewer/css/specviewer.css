@@ -5,6 +5,13 @@ body {
   padding: 10px;
 }
 
+.loading {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 10%;
+}
+
 .apertureInfo {
   padding: 10px 15px;
 }
@@ -13,16 +20,25 @@ body {
   background-color: #ccc;
   border-radius: 5px;
   padding: 10px 15px;
+  margin-bottom: 10px;
 }
 
 .framePlot {
   padding: 10px 0px;
+  width: inherit;
 }
 
 .stackInfo {
   background-color: #ccc;
   border-radius: 5px;
   padding: 10px 15px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.stackPlot {
+  padding: 10px 0px;
+  width: inherit;
 }
 
 .jqplot-xaxis-label {

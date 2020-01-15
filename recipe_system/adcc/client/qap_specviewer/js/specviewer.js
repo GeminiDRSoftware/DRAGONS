@@ -41,7 +41,7 @@ SpecViewer.prototype = {
    * @param numberOfApertures
    * @type number
    */
-  addNavigationTab: function (parentId, numberOfApertures) {
+  addNavigationTab: function(parentId, numberOfApertures) {
     'use restrict';
 
     /* Add navigation tab container */
@@ -56,42 +56,64 @@ SpecViewer.prototype = {
   /**
    * Add plots to the existing HTML elements.
    */
-  addPlots: function (parentId, data) {
+  addPlots: function(parentId, data) {
     'use restrict';
 
+    var plots = [];
+    var stackPlots = []
 
     for (var i = 0; i < data.apertures.length; i++) {
 
-      var wavelength = data.apertures[i].wavelength;
-      var intensity = data.apertures[i].intensity;
-      var variance = data.apertures[i].variance;
+      // Adding plot for frame
+      var intensity = buildSeries(
+        data.apertures[i].wavelength, data.apertures[i].intensity);
 
-      intensity = buildSeries(wavelength, intensity);
-      variance = buildSeries(wavelength, variance);
+      var variance = buildSeries(
+        data.apertures[i].wavelength, data.apertures[i].variance);
 
-      this.framePlots[i] = $.jqplot(
+      plots[i] = $.jqplot(
         `framePlot-${i}`, [intensity, variance], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
 
-    }
+      // Adding plots for stack
+      var intensity = buildSeries(
+        data.stackApertures[i].wavelength, data.stackApertures[i].intensity);
 
-    // Resize plots on load
-    this.framePlots.map(function(p) {
-      console.log(p);
-      p.replot( { resetAxes: true } );
-    });
+      var variance = buildSeries(
+        data.stackApertures[i].wavelength, data.stackApertures[i].variance);
+
+      stackPlots[i] = $.jqplot(
+        `stackPlot-${i}`, [intensity, variance], $.extend(plotOptions, {
+          title: `Aperture ${i} - Stack Frame`,
+        }));
+
+    }
 
     // Resize plots on window resize
     $(window).resize(function() {
-      this.framePlots.map(function(p) {
-        p.replot( { resetAxes: true } );
+      plots.map(function(p) {
+        p.replot({
+          resetAxes: true
+        });
+      });
+    });
+
+    $(window).resize(function() {
+      stackPlots.map(function(p) {
+        p.replot({
+          resetAxes: true
+        });
       });
     });
 
     // Display plots on tab change
     $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-      this.framePlots[ui.index].replot();
+      plots[ui.index].replot();
+    });
+
+    $(`#${parentId}`).bind('tabsshow', function(event, ui) {
+      stackPlots[ui.index].replot();
     });
 
   },
@@ -105,7 +127,7 @@ SpecViewer.prototype = {
    * @param data
    * @type data object
    */
-  addTabs: function (parentId, data) {
+  addTabs: function(parentId, data) {
 
     'use restrict';
     var parent = $(`#${parentId}`);
@@ -138,7 +160,7 @@ SpecViewer.prototype = {
             Stack frame - ${data.filename} - ${data.programId}
           </div>
 
-          <div class="stackPlot">
+          <div class="stackPlot" id="stackPlot-${i}">
           </div>
 
         </div>
@@ -174,8 +196,13 @@ SpecViewer.prototype = {
         sViewer.addPlots(sViewer.id, data);
 
         // Call function to activate the tabs
-        $(`#${sViewer.id}`).tabs( "refresh" );
-        $(`#${sViewer.id}`).tabs({ active: 0 });
+        $(`#${sViewer.id}`).tabs("refresh");
+        $(`#${sViewer.id}`).tabs({
+          active: 0
+        });
+
+        /* Remove loading GIF */
+        $( '.loading' ).remove();
 
       }, // end success
       error: function() {
@@ -224,18 +251,42 @@ plotOptions = {
     },
   },
 
-  seriesDefaults : {
+  seriesDefaults: {
     lineWidth: 1,
-    markerOptions: { size: 1 },
+    markerOptions: {
+      size: 1
+    },
+    renderer: $.jqplot.LineRenderer,
   },
 
-  series: [
-    {color: '#1f77b4', label: 'Intensity', },
-    {color: '#ff7f0e', label: 'Variance'},
+  series: [{
+      color: '#1f77b4',
+      label: 'Intensity',
+    },
+    {
+      color: '#ff7f0e',
+      label: 'Variance'
+    },
   ],
 
   grid: {
     background: 'white',
-  }
+    drawBorder: false,
+    shadow: false,
+  },
+
+  legend: {
+    show: true,
+    location: 'nw'
+  },
+
+  cursor: {
+    show: true,
+    zoom: true,
+    constrainOutsideZoom: false,
+    looseZoom: true,
+    showTooltip: false,
+    useAxesFormatters: false
+  },
 
 }

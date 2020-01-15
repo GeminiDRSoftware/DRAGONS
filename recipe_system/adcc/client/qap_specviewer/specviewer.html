@@ -19,13 +19,17 @@
   <script type="text/javascript" src="/js/jqplot.1.0.9/jquery.jqplot.min.js"></script>
   <script type="text/javascript" src="/js/jqplot.1.0.9/plugins/jqplot.canvasTextRenderer.js"></script>
   <script type="text/javascript" src="/js/jqplot.1.0.9/plugins/jqplot.canvasAxisLabelRenderer.js"></script>
+  <script type="text/javascript" src="/js/jqplot.1.0.9/plugins/jqplot.canvasAxisTickRenderer.js"></script>
+  <script type="text/javascript" src="/js/jqplot.1.0.9/plugins/jqplot.cursor.js"></script>
+  <script type="text/javascript" src="/js/jqplot.1.0.9/plugins/jqplot.enhancedLegendRenderer.js"></script>
+
 
   <!-- QAP SpecViewer is mostly defined in JS -->
   <script type="text/javascript" src="/js/specviewer.js"></script>
   <link rel="stylesheet" href="/css/specviewer.css">
-  
+
   <!-- Initialize SpecViewer -->
-  <script>    
+  <script>
     $(document).ready(
       function() {
         $.jqplot.config.enablePlugins = false;
@@ -36,7 +40,7 @@
       }
     );
   </script>
-  
+
 </head>
 
 
@@ -50,7 +54,7 @@
 
     <div id="content">
       <div id="main">
-        <!-- Placeholder for specViewer -->
+         <img class="loading" src="/images/Spin-1s-231px.gif">
       </div>
     </div>
 
