@@ -13,14 +13,14 @@ import imexam
 try:
     from .ginga_viewer import gingaViewer
     have_ginga = True
-except ImportError:
+except (ImportError, AttributeError):
     have_ginga = False
 
 try:
     import xpa
     have_xpa = True
     from .ds9_viewer import ds9Viewer
-except ImportError:
+except (ImportError, AttributeError):
     have_xpa = False
 
 
