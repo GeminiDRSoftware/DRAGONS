@@ -10,32 +10,45 @@ development.
 import json
 
 import numpy as np
+from scipy.ndimage import gaussian_filter1d
 
 
 def main():
     # Create fake source
     np.random.seed(0)
 
-    image_width = 4000
-    image_height = 2000
+    width = 4000
+    height = 2000
 
-    obj_max_weight = 300.
-    obj_continnum = 300. + 0.01 * np.arange(image_width)
+    min_wavelength = 4000.
+    max_wavelength = 7000.
+
+    obj_max_weight = 3000.
+    obj_continnum = 300. + 0.01 * np.arange(width)
+    noise = 30
+    dispersion = 0.12  # nm / px
 
     # Create aperture data
     apertures = []
+    stack_apertures = []
+
     for i in range(3):
-        center = np.random.randint(100, image_height - 100)
+        center = np.random.randint(100, height - 100)
         lower = np.random.randint(-15, -1)
         upper = np.random.randint(1, 15)
-        dispersion = 0.15
+
         intensity = create_1d_spectrum(
-            image_width,
-            int(0.1 * image_width), obj_max_weight) + obj_continnum
-        variance = np.sqrt(intensity)
-        wavelength = np.arange(image_width) * dispersion + 4000.
+            width,
+            int(0.01 * width), obj_max_weight) + obj_continnum
+        intensity = gaussian_filter1d(intensity, 5)
+
+        variance = 0.1 * (np.random.poisson(intensity) +
+           noise * (np.random.rand(width) - 0.5))
+
+        wavelength = min_wavelength + np.arange(width) * dispersion * 10
 
         aperture = {
+            "apertureId": i,
             "center": center,
             "lower": lower,
             "upper": upper,
@@ -45,11 +58,21 @@ def main():
             "variance": list(variance),
         }
 
+        stack_aperture = {
+            "wavelength": list(wavelength),
+            "intensity": list(intensity),
+            "variance": list(variance / 10),
+        }
+
         apertures.append(aperture)
+        stack_apertures.append(stack_aperture)
 
     # Create dict with all the data
-    data = dict(filename="N20001231S001_suffix.fits", programId="GX-2000C-Q-001")
-    data["apertures"] = apertures
+    data = {"msgtype": "specviewer",
+            "filename": "N20001231S001_suffix.fits",
+            "programId": "GX-2000C-Q-001",
+            "apertures": apertures,
+            "stackApertures": stack_apertures}
 
     filename = "data.json"
     with open(filename, 'w') as json_file:
