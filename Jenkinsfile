@@ -15,7 +15,7 @@
 pipeline {
 
     agent {
-        label 'bquint-ld1'
+        label 'master'
     }
 
     triggers {
@@ -30,9 +30,9 @@ pipeline {
 
     environment {
         PATH = "$JENKINS_HOME/anaconda3/bin:$PATH"
-        CONDA_ENV_FILE = ".jenkins/conda_py3env_stable.yml"
-        CONDA_ENV_NAME = "py3_stable"
-        PYTEST_ARGS = "--remote-data=any --basetemp=/data/jenkins/dragons/outputs"
+        // CONDA_ENV_FILE = ".jenkins/conda_py3env_stable.yml"
+        // CONDA_ENV_NAME = "py3_stable"
+        // PYTEST_ARGS = "--remote-data=any --basetemp=/data/jenkins/dragons/outputs"
     }
 
     stages {
@@ -42,17 +42,9 @@ pipeline {
             steps{
                 sendNotifications 'STARTED'
                 checkout scm
-                sh 'rm -rf ./plots; mkdir -p ./plots'
-                sh 'rm -rf ./reports; mkdir -p ./reports'
+                sh 'git clean -fxd'
+                sh 'mkdir plots reports'
                 sh '.jenkins/scripts/download_and_install_anaconda.sh'
-                sh '.jenkins/scripts/create_conda_environment.sh'
-                sh '.jenkins/scripts/install_missing_packages.sh'
-                sh '.jenkins/scripts/install_dragons.sh'
-                sh '''source activate ${CONDA_ENV_NAME}
-                      python .jenkins/scripts/download_test_inputs.py .jenkins/test_files.txt || echo 0
-                      '''
-                sh '.jenkins/scripts/test_environment.sh'
-                sh 'conda list -n ${CONDA_ENV_NAME}'
             }
 
         }
@@ -63,8 +55,7 @@ pipeline {
                 branch 'master'
             }
             steps {
-                sh '.jenkins/code_metrics/pylint.sh'
-                sh '.jenkins/code_metrics/pydocstring.sh'
+                sh 'tox -e check'
             }
             post {
                 success {
@@ -83,16 +74,8 @@ pipeline {
         stage('Unit tests') {
 
             steps {
-
-                echo "ensure cleaning __pycache__"
-                sh  'find . | grep -E "(__pycache__|\\.pyc|\\.pyo$)" | xargs rm -rfv'
-
                 echo "Running tests"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest ${PYTEST_ARGS} -m "not integtest and not gmosls" --junit-xml ./reports/unittests_results.xml
-                    '''
-
+                sh 'tox -e py36-unit -v -- --junit-xml reports/unittests_results.xml'
             }
 
         }
@@ -100,18 +83,11 @@ pipeline {
         stage('GMOS LS Tests') {
 
             steps {
-
                 echo "Running tests"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest ${PYTEST_ARGS} -m gmosls --junit-xml ./reports/gmoslstests_results.xml
-                    '''
+                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
 
                 echo "Reporting coverage"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    python -m coverage xml -o ./reports/coverage.xml
-                    '''
+                sh 'tox -e covreport -- xml -o reports/coverage.xml'
             }
             post {
                 always {
@@ -124,15 +100,12 @@ pipeline {
 
         stage('Integration tests') {
 
-            when {
-                branch 'master'
-            }
+            // when {
+            //     branch 'master'
+            // }
             steps {
                 echo "Integration tests"
-                sh  '''
-                    source activate ${CONDA_ENV_NAME}
-                    coverage run -m pytest ${PYTEST_ARGS} -m integtest --junit-xml ./reports/integration_results.xml
-                    '''
+                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
             }
 
         }

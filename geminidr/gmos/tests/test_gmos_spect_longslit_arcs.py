@@ -3,26 +3,23 @@
 Tests related to GMOS Long-slit Spectroscopy Arc primitives.
 """
 import os
-
-import numpy as np
 from copy import deepcopy
 
+import numpy as np
 # noinspection PyPackageRequirements
 import pytest
 
-# noinspection PyPackageRequirements
-from astropy.modeling import models
-from scipy import ndimage
-
 import astrodata
-
 # noinspection PyUnresolvedReferences
 import gemini_instruments
 import geminidr
+from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from gempy.library import astromodels
 from gempy.utils import logutils
+
+# noinspection PyPackageRequirements
 
 dataset_file_list = [
     # Process Arcs: GMOS-N ---
@@ -206,7 +203,6 @@ class ConfigTest:
 
     @staticmethod
     def reduce(filename):
-
         _p = primitives_gmos_spect.GMOSSpect([astrodata.open(filename)])
         _p.viewer = geminidr.dormantViewer(_p, None)
 
@@ -223,6 +219,7 @@ class ConfigTest:
         return _p
 
 
+@pytest.mark.skip(reason="WIP: refactoring tests to become independent")
 @pytest.mark.gmosls
 class TestGmosSpectLongslitArcs:
     """
@@ -346,7 +343,6 @@ class TestGmosSpectLongslitArcs:
 
         # Compare them ---
         for ext_out, ext_ref in zip(ad_out, ad_ref):
-
             coeffs_out = np.ma.masked_invalid(ext_out.FITCOORD["coefficients"])
             coeffs_ref = np.ma.masked_invalid(ext_ref.FITCOORD["coefficients"])
 
@@ -390,7 +386,7 @@ class TestGmosSpectLongslitArcs:
         )
 
         for ext_out, ext_ref in zip(
-            ad_out_corrected_with_out, ad_out_corrected_with_ref
+                ad_out_corrected_with_out, ad_out_corrected_with_ref
         ):
             np.testing.assert_allclose(ext_out.data, ext_ref.data)
 
@@ -444,6 +440,7 @@ class TestGmosSpectLongslitArcs:
         """
         # Process the output file ---
         basename, ext = os.path.splitext(config.filename)
+
         basename, _ = basename.split("_")[0], basename.split("_")[1:]
 
         arc_basename = "{:s}_{:s}{:s}".format(basename, "distortionDetermined", ext)
@@ -454,19 +451,17 @@ class TestGmosSpectLongslitArcs:
             pytest.skip("Arc file not found: {}".format(arc_name))
 
         ad_out = config.ad
-
         p = primitives_gmos_spect.GMOSSpect([])
-        ad_out = p.distortionCorrect(adinputs=[ad_out], arc=arc_name)[0]
 
+        ad_out = p.distortionCorrect(adinputs=[ad_out], arc=arc_name)[0]
         filename = ad_out.filename
+
         ad_out = p.determineDistortion(adinputs=[ad_out])[0]
 
         for ext in ad_out:
             assert hasattr(ext, "FITCOORD")
 
         ad_out.write(filename=filename, overwrite=True)
-
-        os.rename(filename, os.path.join(config.output_dir, filename))
 
         # assert False
 
@@ -478,12 +473,13 @@ class TestGmosSpectLongslitArcs:
         #
         # ad_ref = astrodata.open(reference)
 
+        os.rename(filename, os.path.join(config.output_dir, filename))
         # Evaluate them ---
+
         for ext in ad_out:
             coefficients = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
 
             # print(coefficients)
-
         # for ext_out, ext_ref in zip(ad_out, ad_ref):
         #
         #     model_out = astromodels.dict_to_chebyshev(
@@ -494,75 +490,6 @@ class TestGmosSpectLongslitArcs:
         #     #     dict(zip(
         #     #         ext_ref.FITCOORD['name'], ext_ref.FITCOORD['coefficients'])))
         #
-        # del ad_out, ad_ref, p
 
 
-def test_full_frame_distortion_works_on_smaller_region(path_to_inputs):
-    """
-    Takes a full-frame arc and self-distortion-corrects it. It then fakes
-    subregions of this and corrects those using the full-frame distortion to
-    confirm that the result is the same as the appropriate region of the
-    distortion-corrected full-frame image. There's no need to do this more
-    than once for a given binning, so we loop within the function, keeping
-    track of binnings we've already processed.
-    """
-    NSUB = 4  # we're going to take combos of horizontal quadrants
-    completed_binnings = []
-
-    for filename in dataset_file_list:
-        ad = astrodata.open(os.path.join(path_to_inputs, filename))
-        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-        if (ad.detector_roi_setting() != "Full Fame" or
-                (xbin, ybin) in completed_binnings):
-            continue
-        p = GMOSLongslit([ad])
-        p.viewer.viewer_name = None
-        p.prepare()
-        p.addDQ(static_bpm=None)
-        p.overscanCorrect()
-        p.ADUToElectrons()
-        p.mosaicDetectors(outstream='mosaic')
-        # Speed things up a bit with a larger step
-        p.determineDistortion(stream='mosaic', step=48 // ybin)
-        ad_out = p.distortionCorrect([deepcopy(ad)], arc=p.streams['mosaic'][0],
-                                     order=1)[0]
-
-        for start in range(NSUB):
-            for end in range(start+1, NSUB+1):
-                ad_copy = deepcopy(ad)
-                y1b = start * ad[0].shape[0] // NSUB
-                y2b = end * ad[0].shape[0] // NSUB
-                y1, y2 = y1b * ybin, y2b * ybin  # unbinned pixels
-
-                # Fake the section header keywords and set the SCI and DQ
-                # to the appropriate sub-region
-                for ext in ad_copy:
-                    arrsec = ext.array_section()
-                    detsec = ext.detector_section()
-                    ext.hdr['CCDSEC'] = '[{}:{},{}:{}]'.format(arrsec.x1+1,
-                                                               arrsec.x2, y1+1, y2)
-                    ext.hdr['DETSEC'] = '[{}:{},{}:{}]'.format(detsec.x1+1,
-                                                               detsec.x2, y1+1, y2)
-                    ext.data = ext.data[y1b:y2b]
-                    ext.mask = ext.mask[y1b:y2b]
-                    ext.hdr['DATASEC'] = '[1:{},1:{}]'.format(ext.shape[1], y2b-y1b)
-                ad2 = p.distortionCorrect([ad_copy], arc=p.streams['mosaic'][0],
-                                          order=1)[0]
-
-                # It's GMOS LS so the offset between this AD and the full-frame
-                # will be the same as the DETSEC offset, but the width may be
-                # smaller so we need to shuffle the smaller image within the
-                # larger one to look for a match
-                ny, nx = ad2[0].shape
-                xsizediff = ad_out[0].shape[1] - nx
-                ok = False
-                for xoffset in range(xsizediff+1):
-                    # Confirm that all unmasked pixels are similar
-                    diff = (np.ma.masked_array(ad2[0].data, mask=ad2[0].mask) -
-                            ad_out[0].data[y1b:y1b+ny, xoffset:xoffset+nx])
-                    if np.logical_and(abs(diff) > 0.01, ~diff.mask).sum() == 0:
-                        ok = True
-                        break
-                assert ok, "Problem with {} {}:{}".format(ad.filename, start, end)
-
-        completed_binnings.append((xbin, ybin))
+# del ad_out, ad_ref, p

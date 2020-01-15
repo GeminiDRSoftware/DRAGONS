@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
 Plots related to GMOS Long-slit Spectroscopy Arc primitives.
+
+todo @bquint: Needs clean up. Since I started to refactor the tests for GMOS LS
+ arcs, this could be much simpler.
 """
 
 import glob
@@ -24,6 +27,8 @@ import gemini_instruments
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
 from gempy.library import transform
+
+plt.ioff()
 
 
 def generate_fake_data(shape, dispersion_axis, n_lines=100):
@@ -131,7 +136,7 @@ class PlotGmosSpectLongslitArcs:
         Path to where the plots will be saved.
     """
 
-    def __init__(self, ad, output_folder, ref_folder):
+    def __init__(self, ad, output_folder, ref_folder=None):
 
         filename = ad.filename
         self.ad = ad
@@ -178,7 +183,6 @@ class PlotGmosSpectLongslitArcs:
 
             os.makedirs(target_dir, exist_ok=True)
             os.rename(tar_name, target_file)
-
 
     def distortion_diagnosis_plots(self):
         """
@@ -259,7 +263,10 @@ class PlotGmosSpectLongslitArcs:
 
     def plot_lines(self, ext_num, data, peaks, model):
         """
-        Plots and saves the wavelength calibration model residuals for diagnosis.
+        Plots the spectrum with the normalized data, the reference lines and
+        the matched lines. The reference lines are obtained from the default
+        look-up table. The matched lines are calculated using the `peaks`
+        applied to the `model`.
 
         Parameters
         ----------
@@ -301,7 +308,7 @@ class PlotGmosSpectLongslitArcs:
         ax.set_ylabel("Normalized intensity")
         ax.set_title(
             "Wavelength Calibrated Spectrum for\n"
-            "{:s} obtained with {:s} at {:.0f}".format(
+            "{:s}\n obtained with {:s} at {:.0f} nm".format(
                 self.name, self.grating, self.central_wavelength
             )
         )
@@ -311,7 +318,7 @@ class PlotGmosSpectLongslitArcs:
 
         fig_name = os.path.join(
             self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}.png".format(
+            "{:s}_{:d}_{:s}_{:.0f}.svg".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
         )
@@ -367,7 +374,7 @@ class PlotGmosSpectLongslitArcs:
 
         fig_name = os.path.join(
             self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.png".format(
+            "{:s}_{:d}_{:s}_{:.0f}_non_linear_comps.svg".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
         )
@@ -412,7 +419,7 @@ class PlotGmosSpectLongslitArcs:
 
         fig_name = os.path.join(
             self.output_folder,
-            "{:s}_{:d}_{:s}_{:.0f}_residuals.png".format(
+            "{:s}_{:d}_{:s}_{:.0f}_residuals.svg".format(
                 self.name, ext_num, self.grating, self.central_wavelength
             ),
         )
@@ -478,7 +485,7 @@ class PlotGmosSpectLongslitArcs:
 
             fig_name = os.path.join(
                 self.output_folder,
-                "{:s}_{:d}_{:s}_{:.0f}_distDiff.png".format(
+                "{:s}_{:d}_{:s}_{:.0f}_distDiff.svg".format(
                     name, num, self.grating, self.central_wavelength
                 ),
             )
@@ -546,7 +553,7 @@ class PlotGmosSpectLongslitArcs:
 
             fig_name = os.path.join(
                 self.output_folder,
-                "{:s}_{:d}_{:s}_{:.0f}_distMap.png".format(
+                "{:s}_{:d}_{:s}_{:.0f}_distMap.svg".format(
                     fname, num, self.grating, self.central_wavelength
                 ),
             )
@@ -572,8 +579,13 @@ class PlotGmosSpectLongslitArcs:
                 dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
             )
 
-            mask = np.round(np.average(ext.mask, axis=0)).astype(int)
-            data = np.ma.masked_where(mask > 0, np.average(ext.data, axis=0))
+            middle = ext.data.shape[0] // 2
+            sum_size = 10
+            r1 = middle - sum_size // 2
+            r2 = middle + sum_size // 2
+
+            mask = np.round(np.average(ext.mask[r1:r2], axis=0)).astype(int)
+            data = np.ma.masked_where(mask > 0, np.sum(ext.data[r1:r2], axis=0))
             data = (data - data.min()) / data.ptp()
 
             self.plot_lines(ext_num, data, peaks, wavecal_model)
