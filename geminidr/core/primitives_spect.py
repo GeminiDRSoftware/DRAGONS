@@ -772,11 +772,14 @@ class Spect(PrimitivesBASE):
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    # FixMe - changed line below to inspect failing tests
-                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
-                                tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order + 1)))
-                    # sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping')) +
-                    #             tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
+
+                    # FixMe: toggle commented lines bellow to make tests pass
+
+                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping')) +
+                                tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
+
+                    # sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
+                    #             tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order + 1)))
 
                 # Now make repeated fits, increasing the polynomial order
                 for item in sequence:
@@ -801,9 +804,9 @@ class Spect(PrimitivesBASE):
                     # different instruments? TODO
                     dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
 
-                    # FixMe - changed line below to inspect failing tests
-                    c0_unc = 0.05 * cenwave
-                    # c0_unc = 0.02 * cenwave
+                    # FixMe: "0.02 * cenwave" makes tests for determineWavelengthSolution
+                    #  fail. Use "0.05 * cenwave" to make them pass.
+                    c0_unc = 0.02 * cenwave
 
                     m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
                     c1_unc = 0.005 * abs(m_init.c1)
@@ -843,10 +846,10 @@ class Spect(PrimitivesBASE):
                 for p in m_final.param_names:
                     getattr(m_final, p).bounds = (None, None)
 
-                # ToDo - Remove line below and uncomment the following if
-                #  confirmed when tests are passing
-                match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
-                # match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
+                # FixMe: using "4 * fwidth" breaks tests in test_gmos_spect_ls_wavelength_calibration.
+                #   Use "2 * fwidth" to make them pass.
+                match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
+
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                                                    model=m_final, match_radius=match_radius,
@@ -2046,9 +2049,9 @@ def _average_along_slit(ext, center=None, nsum=None):
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
 
-    # ToDo: Set variance=None to check tests.
-    #  Remember to rollback to variance=variance
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+    # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
+    #  Use "variance=None" to make them pass again.
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
 
     return data, mask, variance, extract_slice
 
