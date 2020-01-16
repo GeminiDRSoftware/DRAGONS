@@ -7,21 +7,21 @@
 /**
  * Main component for SpecViewer.
  *
- * @param element
- * @param id
+ * @param {JQuery Object} parentElement - element that will hold SpecViewer.
+ * @param {string} id - name of the ID of the SpecViewer div container.
  */
 function SpecViewer(parentElement, id) {
   'use strict';
 
   // Creating empty object
-  this.parent = parentElement;
+  this.parentElement = parentElement;
   this.id = id;
 
   // Placeholders for different elements
   this.framePlots = [];
 
   /* Create empty page */
-  parentElement.append(`<div id="${id}"><ul></ul></div>`);
+  this.parentElement.append(`<div id="${id}"><ul></ul></div>`);
   this.loadData();
 
 } // end SpecViewer
@@ -72,7 +72,7 @@ SpecViewer.prototype = {
         data.apertures[i].wavelength, data.apertures[i].variance);
 
       plots[i] = $.jqplot(
-        `framePlot-${i}`, [intensity, variance], $.extend(plotOptions, {
+        `framePlot${i}`, [intensity, variance], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
 
@@ -84,36 +84,35 @@ SpecViewer.prototype = {
         data.stackApertures[i].wavelength, data.stackApertures[i].variance);
 
       stackPlots[i] = $.jqplot(
-        `stackPlot-${i}`, [intensity, variance], $.extend(plotOptions, {
+        `stackPlot${i}`, [intensity, variance], $.extend(plotOptions, {
           title: `Aperture ${i} - Stack Frame`,
         }));
 
     }
 
-    // Resize plots on window resize
-    $(window).resize(function() {
-      plots.map(function(p) {
-        p.replot({
-          resetAxes: true
-        });
-      });
-    });
+    /* Define plot resizing behaviour */
+    function resizePlots () {
 
-    $(window).resize(function() {
-      stackPlots.map(function(p) {
-        p.replot({
-          resetAxes: true
-        });
-      });
-    });
+      try {
+        plots.map(function(p) { p.replot({ resetAxes: true }); });
+      } catch(err) {
+        // FixMe - Handle this error properly
+      }
+
+      try {
+        stackPlots.map(function(p) { p.replot({ resetAxes: true }); });
+      } catch(err) {
+        // FixMe - Handle this error properly
+      }
+
+    }
+
+    // /* Resize plots on window resize */
+    $(window).resize( resizePlots );
 
     // Display plots on tab change
     $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-      plots[ui.index].replot();
-    });
-
-    $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-      stackPlots[ui.index].replot();
+      plots[ui.index].replot( { resetAxes: true } );
     });
 
   },
@@ -150,17 +149,24 @@ SpecViewer.prototype = {
           </div>
 
           <div class="frameInfo">
-            Latest frame - ${data.filename} - ${data.programId}
+            <span>
+              Latest frame - ${data.filename} - ${data.programId}
+            </span>
+            <span>
+              <button id="resetZoomFramePlot${i}" class="ui-button ui-widget ui-corner-all">
+                <img src="/images/zoom_reset_48px.svg"></img>
+              </button>
+            </span>
           </div>
 
-          <div class="framePlot" id="framePlot-${i}">
+          <div class="framePlot" id="framePlot${i}">
           </div>
 
           <div class="stackInfo">
             Stack frame - ${data.filename} - ${data.programId}
           </div>
 
-          <div class="stackPlot" id="stackPlot-${i}">
+          <div class="stackPlot" id="stackPlot${i}">
           </div>
 
         </div>
@@ -244,10 +250,11 @@ plotOptions = {
   axes: {
     xaxis: {
       label: "Wavelength [\u212B]", // escaped Angstrom symbol
-      pad: 1.01,
+      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
     },
     yaxis: {
       label: "Flux [???]",
+      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
     },
   },
 

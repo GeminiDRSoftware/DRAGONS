@@ -32,11 +32,12 @@
   <script>
     $(document).ready(
       function() {
-        $.jqplot.config.enablePlugins = false;
+        $.jqplot._noToImageButton = true;  // No idea why
+        $.jqplot.config.enablePlugins = false;  // No idea why
 
-        var element = $('#main')
-        var id = 'specViewer'
-        var sViewer = new SpecViewer(element, id)
+        var element = $('#main');
+        var id = 'specViewer';
+        var sViewer = new SpecViewer(element, id);
       }
     );
   </script>
