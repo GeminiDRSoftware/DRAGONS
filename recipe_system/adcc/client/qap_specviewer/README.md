@@ -27,10 +27,11 @@ SpecViewer. Because of that, a mock server was created to handle them.
 
 This mock server uses [flask v1.1.1](http://flask.palletsprojects.com/en/1.1.x/) 
 which can be installed via `conda` or via `pip` commands. Once you have it, 
-you can run the server using the two command lines below: 
+you can run the server using the command lines below: 
 
 ```shell script
   $ export FLASK_APP=${DRAGONS_REPO}/recipe_system/adcc/client/qap_specviewer/mock_adcc.py
+  $ cd ${DRAGONS_REPO}/recipe_system/adcc/client/qap_specviewer/
   $ flask run  
 ```
 
