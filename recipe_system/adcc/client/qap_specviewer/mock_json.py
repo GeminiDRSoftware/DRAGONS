@@ -8,7 +8,7 @@ development.
 """
 
 import json
-
+import os
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
@@ -74,7 +74,7 @@ def main():
             "apertures": apertures,
             "stackApertures": stack_apertures}
 
-    filename = "data.json"
+    filename = os.path.join(os.path.dirname(__file__), "data.json")
     with open(filename, 'w') as json_file:
         json.dump(data, json_file)
 
