@@ -3,6 +3,8 @@
  * Quality Assessment Pipeline - Spectrum Viewer
  *
  */
+const specViewerJsonName = "/specframe.json";
+
 
 /**
  * Main component for SpecViewer.
@@ -23,6 +25,8 @@ function SpecViewer(parentElement, id) {
   /* Create empty page */
   this.parentElement.append(`<div id="${id}"><ul></ul></div>`);
   this.loadData();
+
+  this.specPump = new SpectroPump();
 
 } // end SpecViewer
 
@@ -91,32 +95,40 @@ SpecViewer.prototype = {
     }
 
     /* Resize plots on window resize */
-    $(window).resize( function () {
+    $(window).resize(function() {
 
       try {
-        plots.map(function(p) { p.replot({ resetAxes: true }); });
-      } catch(err) {
+        plots.map(function(p) {
+          p.replot({
+            resetAxes: true
+          });
+        });
+      } catch (err) {
         // FixMe - Handle this error properly
       }
 
       try {
-        stackPlots.map(function(p) { p.replot({ resetAxes: true }); });
-      } catch(err) {
+        stackPlots.map(function(p) {
+          p.replot({
+            resetAxes: true
+          });
+        });
+      } catch (err) {
         // FixMe - Handle this error properly
       }
 
     });
 
     /* Add button for reset zoom */
-    plots.map( function(p, i) {
-      $( `#resetZoomFramePlot${i}` ).click( function () {
+    plots.map(function(p, i) {
+      $(`#resetZoomFramePlot${i}`).click(function() {
         console.log(`Reset zoom of frame plot #${i}.`);
         p.resetZoom();
       });
     });
 
-    stackPlots.map( function(p, i) {
-      $( `#resetZoomStackPlot${i}` ).click( function () {
+    stackPlots.map(function(p, i) {
+      $(`#resetZoomStackPlot${i}`).click(function() {
         console.log(`Reset zoom of stack plot #${i}.`);
         p.resetZoom();
       });
@@ -124,7 +136,9 @@ SpecViewer.prototype = {
 
     // Display plots on tab change
     $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-      plots[ui.index].replot( { resetAxes: true } );
+      plots[ui.index].replot({
+        resetAxes: true
+      });
     });
 
   },
@@ -231,7 +245,7 @@ SpecViewer.prototype = {
         });
 
         /* Remove loading GIF */
-        $( '.loading' ).remove();
+        $('.loading').remove();
 
       }, // end success
       error: function() {
