@@ -32,8 +32,12 @@
   <script>
     $(document).ready(
       function() {
-        $.jqplot._noToImageButton = true;  // No idea why
-        $.jqplot.config.enablePlugins = false;  // No idea why
+
+        // Enable plugins like cursor and highlighter by default.
+        $.jqplot.config.enablePlugins = true;
+
+        // For these examples, don't show the to image button.
+        $.jqplot._noToImageButton = true;
 
         var element = $('#main');
         var id = 'specViewer';

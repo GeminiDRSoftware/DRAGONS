@@ -90,8 +90,8 @@ SpecViewer.prototype = {
 
     }
 
-    /* Define plot resizing behaviour */
-    function resizePlots () {
+    /* Resize plots on window resize */
+    $(window).resize( function () {
 
       try {
         plots.map(function(p) { p.replot({ resetAxes: true }); });
@@ -105,10 +105,22 @@ SpecViewer.prototype = {
         // FixMe - Handle this error properly
       }
 
-    }
+    });
 
-    // /* Resize plots on window resize */
-    $(window).resize( resizePlots );
+    /* Add button for reset zoom */
+    plots.map( function(p, i) {
+      $( `#resetZoomFramePlot${i}` ).click( function () {
+        console.log(`Reset zoom of frame plot #${i}.`);
+        p.resetZoom();
+      });
+    });
+
+    stackPlots.map( function(p, i) {
+      $( `#resetZoomStackPlot${i}` ).click( function () {
+        console.log(`Reset zoom of stack plot #${i}.`);
+        p.resetZoom();
+      });
+    });
 
     // Display plots on tab change
     $(`#${parentId}`).bind('tabsshow', function(event, ui) {
@@ -299,12 +311,13 @@ plotOptions = {
   },
 
   cursor: {
-    show: true,
-    zoom: true,
     constrainOutsideZoom: false,
     looseZoom: true,
-    showTooltip: false,
-    useAxesFormatters: false
+    show: true,
+    showTooltip: true,
+    showTooltipOutsideZoom: true,
+    useAxesFormatters: true,
+    zoom: true,
   },
 
 }
