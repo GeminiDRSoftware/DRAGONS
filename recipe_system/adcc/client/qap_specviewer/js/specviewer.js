@@ -149,21 +149,32 @@ SpecViewer.prototype = {
           </div>
 
           <div class="frameInfo">
-            <span>
-              Latest frame - ${data.filename} - ${data.programId}
-            </span>
-            <span>
-              <button id="resetZoomFramePlot${i}" class="ui-button ui-widget ui-corner-all">
-                <img src="/images/zoom_reset_48px.svg"></img>
-              </button>
-            </span>
+            <div class="d-table w-100">
+              <p class="d-table-cell">
+                Latest frame - ${data.filename} - ${data.programId}
+              </p>
+              <div class="d-table-cell tar">
+                <button class="ui-button ui-widget ui-corner-all" id="resetZoomFramePlot${i}" title="Reset zoom">
+                  <img class="zoom-reset" src="/images/zoom_reset_48px.svg"></img>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="framePlot" id="framePlot${i}">
           </div>
 
           <div class="stackInfo">
-            Stack frame - ${data.filename} - ${data.programId}
+            <div class="d-table w-100">
+              <p class="d-table-cell">
+                Stack frame - ${data.filename} - ${data.programId}
+              </p>
+              <div class="d-table-cell tar">
+                <button id="resetZoomStackPlot${i}" class="ui-button ui-widget ui-corner-all" title="Reset zoom">
+                    <img class="zoom-reset" src="/images/zoom_reset_48px.svg"></img>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="stackPlot" id="stackPlot${i}">
