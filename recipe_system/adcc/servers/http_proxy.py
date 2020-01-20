@@ -488,8 +488,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
         Handle HTTP client GET requests on service: specqueue.json
 
         """
-        adccpath = '/Users/kanderso/Gemini/GitHub/DRAGONS/recipe_system/adcc'
-        jfile = adccpath +'/client/qap_specviewer/data.json'
+        ############ TEMP ############
+        jfile = os.environ['SPECDATA']
+        ##############################
 
         specdic = list()
         verbosity = self.informers["verbose"]
