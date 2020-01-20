@@ -54,7 +54,8 @@ SpecViewer.prototype = {
     /* Create buttons and add them to the navigation tab */
     for (var i = 0; i < numberOfApertures; i++) {
       listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
-    };
+    }
+
   },
 
   /**
@@ -64,15 +65,18 @@ SpecViewer.prototype = {
     'use restrict';
 
     var plots = [];
-    var stackPlots = []
+    var stackPlots = [];
+
+    var intensity = null;
+    var variance = null;
 
     for (var i = 0; i < data.apertures.length; i++) {
 
       // Adding plot for frame
-      var intensity = buildSeries(
+      intensity = buildSeries(
         data.apertures[i].wavelength, data.apertures[i].intensity);
 
-      var variance = buildSeries(
+      variance = buildSeries(
         data.apertures[i].wavelength, data.apertures[i].variance);
 
       plots[i] = $.jqplot(
@@ -81,10 +85,10 @@ SpecViewer.prototype = {
         }));
 
       // Adding plots for stack
-      var intensity = buildSeries(
+      intensity = buildSeries(
         data.stackApertures[i].wavelength, data.stackApertures[i].intensity);
 
-      var variance = buildSeries(
+      variance = buildSeries(
         data.stackApertures[i].wavelength, data.stackApertures[i].variance);
 
       stackPlots[i] = $.jqplot(
@@ -209,8 +213,8 @@ SpecViewer.prototype = {
         </div>
       `;
 
-      parent.append(apertureTabContent)
-    }; // end for
+      parent.append(apertureTabContent);
+    } // end for
 
   }, // end addTabs
 
@@ -228,7 +232,7 @@ SpecViewer.prototype = {
       type: "GET",
       url: "/specqueue.json",
       success: function(jsonData) {
-        'use restrict';
+
           var data = JSON.parse(JSON.stringify(jsonData));
 
         // Call function to activate the tabs
@@ -267,11 +271,11 @@ SpecViewer.prototype = {
  * @return {array} One dimensional arrays containing [x, y] points
  */
 function buildSeries(x, y) {
-  var temp = []
+  var temp = [];
   for (var i = 0; i < x.length; i++) {
     temp.push([x[i], y[i]]);
   }
-  return temp
+  return temp;
 }
 
 
@@ -334,4 +338,4 @@ plotOptions = {
     zoom: true,
   },
 
-}
+};
