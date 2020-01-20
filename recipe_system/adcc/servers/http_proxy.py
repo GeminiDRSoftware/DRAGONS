@@ -26,11 +26,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from recipe_system.cal_service import calurl_dict
 # ------------------------------------------------------------------------------
-#
-# Global bits for logging
+# HTTP messaging, Global bits for logging
 REQMSG = "Requesting current OP day events "
 RECMSG = "Received {} events."
 FAILMSG = "Failed to access Fitsstore. No metrics available."
+ILLREQ =  "Illegal request: No 'timestamp' parameter."
 msg_form  = '"%s" %s %s'
 info_code = 203
 fail_code = 416
@@ -185,24 +185,24 @@ def fstore_get(timestamp):
 
     # Get the fitsstore query url from calurl_dict
     fitsstore_qa = calurl_dict.calurl_dict['QAQUERYURL']
-    if not timestamp:
-        try:
-            store_handle = urllib.request.urlopen(furl)
-            qa_data  = json.loads(store_handle.read())
-        except Exception:
-            print(msg_form %(FAILMSG, no_access_code, size))
-            pass
-    else:
-        date_query = stamp_to_opday(timestamp)
-        furl = os.path.join(fitsstore_qa, date_query)
-        try:
-            store_handle = urllib.request.urlopen(furl)
-            qa_data = json.loads(store_handle.read())
-        except Exception:
-            print(msg_form %(FAILMSG, no_access_code, size))
-            pass
+    date_query = stamp_to_opday(timestamp)
+    furl = os.path.join(fitsstore_qa, date_query)
+
+    try:
+        store_handle = urllib.request.urlopen(furl)
+        qa_data = json.loads(store_handle.read())
+    except Exception:
+        print(msg_form %(FAILMSG, no_access_code, size))
+        pass
 
     return qa_data
+
+def specview_get(jfile):
+    # hack to just open the test data file, data.json
+    with open(jfile, 'r') as json_file:
+        jdata = json.load(json_file)
+
+    return jdata
 
 # ------------------------------------------------------------------------------
 class ADCCHandler(BaseHTTPRequestHandler):
@@ -212,6 +212,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
     """
     events = None
     informers  = None
+    spec_events = None
 
     def address_string(self):
         host, port = self.client_address[:2]
@@ -243,6 +244,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
         """
         events = self.informers["events"]
+        spec_events = self.informers["spec_events"]
         self.informers["verbose"] = True
         dark_theme = self.informers['dark']
         parms = parsepath(self.path)
@@ -250,13 +252,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
             # First test for an html request on the QAP nighttime_metrics page.
             # I.e.  <localhost>:<port>/qap/nighttime_metrics.html
             if self.path.startswith("/qap"):
-                if ".." in self.path:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/html')
-                    self.end_headers()
-                    data = "<b>bad path error</b>"
-                    self.wfile.write(bytes(data.encode('utf-8')))
-
                 dirname = os.path.dirname(__file__)
                 if dark_theme:
                     joinlist = [dirname, "../client/adcc_faceplate_dark/"]
@@ -298,6 +293,49 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self._handle_cmdqueue_json(events, parms)
 
             # ------------------------------------------------------------------
+            # HTTP client GET requests on quicklook (/qlook) service.
+            if parms["path"].startswith("/qlook"):
+                dirname = os.path.dirname(__file__)
+                joinlist = [dirname, "../client/qap_specviewer/"]
+
+                # Split out any parameters in the URL
+                self.path = self.path.split("?")[0]
+
+                #append any further directory info.
+                joinlist.append(self.path[7:])
+                fname = os.path.join(*joinlist)
+                self.log_message('{} {} {}'.format("Loading "+joinlist[1]+
+                                            os.path.basename(fname), 203, '-'))
+                #try:
+                with open(fname, 'rb') as f:
+                    data = f.read()
+                #except IOError:
+                    #data = bytes("<b>NO SUCH RESOURCE AVAILABLE</b>".encode('utf-8'))
+
+                self.send_response(200)
+                if  self.path.endswith(".js"):
+                    self.send_header('Content-type', 'text/javascript')
+                elif self.path.endswith(".css"):
+                    self.send_header("Content-type", "text/css")
+                elif fname.endswith(".png"):
+                    self.send_header('Content-type', "image/png")
+                elif fname.endswith(".gif"):
+                    self.send_header('Content-type', "image/gif")
+                else:
+                    self.send_header('Content-type', 'text/html')
+
+                self.end_headers()
+                self.wfile.write(data)
+
+                return
+
+            # ------------------------------------------------------------------
+            # GET requests on the specviewer service.
+            if parms["path"].startswith("/specqueue.json"):
+                self._handle_specqueue_json(spec_events, parms)
+                return
+
+            # ------------------------------------------------------------------
             # Server time
             # Queried by metrics client
             elif parms["path"].startswith("/rqsite.json"):
@@ -336,13 +374,21 @@ class ADCCHandler(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
+        """
+        Here, HTTP POST requests are farmed out to either metrics events on the
+        event_report/ service, or to spec_events on the spec_report/ service.
+
+
+        """
         info_code = 203
         size = "-"
         events = self.informers["events"]
+        spec_events = self.informers["spec_events"]
         parms  = parsepath(self.path)
         vlen   = int(self.headers["Content-Length"])
         pdict  = self.rfile.read(vlen)
 
+        # for QAP metrics ...
         if parms["path"].startswith("/event_report"):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -352,10 +398,18 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.log_message('"%s" %s %s', "Appended event", info_code, size)
             self.log_message('"%s" %s %s', repr(aevent), info_code, size)
 
+        elif parms["path"].startswith("/spec_report"):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            aevent = json.loads(pdict)
+            spec_events.append_event(aevent)
+            self.log_message('"%s" %s %s', "Appended event", info_code, size)
+            self.log_message('"%s" %s %s', repr(aevent), info_code, size)
+
         return
     # -------------------------------------------------------------------------
     # privitized handling cmdqueue.json requests
-
     def _handle_cmdqueue_json(self, events, parms):
         """
         Handle HTTP client GET requests on service: cmdqueue.json
@@ -370,15 +424,12 @@ class ADCCHandler(BaseHTTPRequestHandler):
         # N.B. A timestamp of zero will request *everything* from fitsstore
         # This could be huge. Be careful passing GET request on cmdqueue.json
         # with no timestamp.
-
-        if "timestamp" in parms:
+        try:
             fromtime = float(parms["timestamp"][0])
-        else:
-            fromtime = 0
+        except KeyError:
+            self.log_message(msg_form, ILLREQ, info_code, size)
 
-        # event_list = [] implies a new adcc. Request current op day
-        # metrics from fitsstore.
-
+        # event_list = [] implies new adcc. Request current OP day from fitsstore.
         if not events.event_list:
             self.log_message(msg_form, "No extant events.", info_code, size)
             self.log_message(msg_form, REQMSG+"@fitsstore", info_code, size)
@@ -427,6 +478,42 @@ class ADCCHandler(BaseHTTPRequestHandler):
         else:
             self.log_message(msg_form, "Invalid timestamp received.",fail_code, size)
             self.log_message(msg_form, "Future events not known.", fail_code, size)
+
+        return
+
+    # -------------------------------------------------------------------------
+    # privitized handling specview.json requests
+    def _handle_specqueue_json(self, events, parms):
+        """
+        Handle HTTP client GET requests on service: specqueue.json
+
+        """
+        adccpath = '/Users/kanderso/Gemini/GitHub/DRAGONS/recipe_system/adcc'
+        jfile = adccpath +'/client/qap_specviewer/data.json'
+
+        specdic = list()
+        verbosity = self.informers["verbose"]
+        self.send_response(200)
+        self.send_header('Content-type', "application/json")
+        self.end_headers()
+
+        spec_events = specview_get(jfile)
+        specdic.append(spec_events)
+        specdic.insert(0, {"msgtype": "specqueue.request", "timestamp": time.time()})
+        specdic.append({"msgtype": "specqueue.request", "timestamp": time.time()})
+        self.wfile.write(
+            bytes(json.dumps(spec_events, sort_keys=True, indent=4).encode('utf-8'))
+        )
+
+        # TODO: hook up the specqueue pump, which will deposit spec events on this list.
+        # if not spec_events.event_list:
+        #     self.log_message(msg_form, "No quicklook spectra.", info_code, size)
+
+        #     tdic = spec_events.get_list()
+        #     tdic.insert(0, {"msgtype":"specview.request","timestamp": time.time()})
+        #     self.wfile.write(
+        #         bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+        #         )
 
         return
 

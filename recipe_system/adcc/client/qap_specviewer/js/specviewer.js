@@ -181,7 +181,7 @@ SpecViewer.prototype = {
               </p>
               <div class="d-table-cell tar">
                 <button class="ui-button ui-widget ui-corner-all" id="resetZoomFramePlot${i}" title="Reset zoom">
-                  <img class="zoom-reset" src="/images/zoom_reset_48px.svg"></img>
+                  <img class="zoom-reset" src="images/zoom_reset_48px.svg"></img>
                 </button>
               </div>
             </div>
@@ -197,7 +197,7 @@ SpecViewer.prototype = {
               </p>
               <div class="d-table-cell tar">
                 <button id="resetZoomStackPlot${i}" class="ui-button ui-widget ui-corner-all" title="Reset zoom">
-                    <img class="zoom-reset" src="/images/zoom_reset_48px.svg"></img>
+                    <img class="zoom-reset" src="images/zoom_reset_48px.svg"></img>
                 </button>
               </div>
             </div>
@@ -226,10 +226,10 @@ SpecViewer.prototype = {
 
     $.ajax({
       type: "GET",
-      url: "/specframe.json",
+      url: "/specqueue.json",
       success: function(jsonData) {
         'use restrict';
-        var data = JSON.parse(jsonData);
+          var data = JSON.parse(JSON.stringify(jsonData));
 
         // Call function to activate the tabs
         $(`#${sViewer.id}`).tabs();
