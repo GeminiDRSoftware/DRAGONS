@@ -19,7 +19,8 @@ from recipe_system.adcc.servers import http_proxy
 
 app = Flask(__name__,
             static_folder=os.path.dirname(__file__),
-            static_url_path='')
+            static_url_path='',
+            root_path=os.path.dirname(__file__))
 
 
 @app.route('/')
