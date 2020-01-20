@@ -15,7 +15,10 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
-   sodipodi:docname="zoom_reset_48px.svg">
+   sodipodi:docname="zoom_reset_48px.svg"
+   inkscape:export-filename="/home/bquint/Repos/DRAGONS/recipe_system/adcc/client/qap_specviewer/images/zoom_reset_48px.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -58,7 +61,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
