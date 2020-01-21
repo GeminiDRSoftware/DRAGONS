@@ -14,8 +14,10 @@ relative path. This is a temporary solution.
 import os
 
 from flask import Flask, send_from_directory
+from .mock_qlook import qlook
 
 app = Flask(__name__, static_folder=os.path.dirname(__file__))
+app.register_blueprint(qlook, url_prefix='/qlook')
 
 
 @app.route('/')
