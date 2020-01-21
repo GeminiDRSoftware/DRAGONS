@@ -102,6 +102,22 @@ SpecViewer.prototype = {
 
     }
 
+    // Save plots references in the object itself
+    this.framePlots = framePlots;
+    this.stackPlots = stackPlots;
+    
+    // Add select tab handler
+    var selectTab = function(e, tab) {
+      console.log("Selected tab ", tab.newTab.index())
+      sViewer.resizeFramePlots(tab.newTab.index());
+      sViewer.resizeStackPlots(tab.newTab.index());
+    }
+
+    // Call function to activate the tabs
+    $( `#${parentId}` ).tabs('refresh');
+    $( `#${parentId}` ).tabs('option', 'active', 0);    
+    $( `#${parentId}` ).tabs( {'activate': selectTab} );
+
     // Allow plot area to be resized
     $('.ui-widget-content.resizable:has(.framePlot)').map(
       function onResizeFrameStop(index, element) {
@@ -122,7 +138,7 @@ SpecViewer.prototype = {
 
       });
 
-    $('.ui-widget-content.resizable:has(.stackPlot)').map(
+        $('.ui-widget-content.resizable:has(.stackPlot)').map(
       function onResizeStackStop(index, element) {
 
         $(element).resizable({
@@ -143,26 +159,9 @@ SpecViewer.prototype = {
 
     // Resize plot area on window resize
     $(window).resize(function onWindowResize() {
-
-      try {
-        framePlots.map(function(p) {
-          p.replot({
-            resetAxes: true
-          });
-        });
-      } catch (err) {
-        // FixMe - Handle this error properly
-      }
-
-      try {
-        stackPlots.map(function(p) {
-          p.replot({
-            resetAxes: true
-          });
-        });
-      } catch (err) {
-        // FixMe - Handle this error properly
-      }
+      var activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
+      sViewer.resizeFramePlots(activeTabIndex);
+      sViewer.resizeStackPlots(activeTabIndex);
 
     });
 
@@ -180,19 +179,50 @@ SpecViewer.prototype = {
         p.resetZoom();
       });
     });
+    
+  },
 
-    // Display plots on tab change
-    $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-      framePlots[ui.index].replot({
-        resetAxes: true
-      });
-      stackPlots[ui.index].replot({
-        resetAxes: true
-      });
-    });
+  /**
+   * Resizes frame plots on different situations, like window resizing or 
+   * when changing tabs.
+   * 
+   * @param activeTabIndex {number} 
+   */
+  resizeFramePlots: function (activeTabIndex) {
 
-    this.framePlots = framePlots;
-    this.stackPlots = stackPlots;
+    console.log(`Resizing frame plot ${activeTabIndex}`);
+
+    $(`framePlot${activeTabIndex}`).height(
+      $(`framePlot${activeTabIndex}-resizable`).height() * 0.96
+    );
+    
+    $(`framePlot${activeTabIndex}`).width(
+      $(`framePlot${activeTabIndex}-resizable`).width() * 0.96
+    );
+    
+    this.framePlots[activeTabIndex].replot({ resetAxes: true });
+
+  },
+  
+  /**
+   * Resizes frame plots on different situations, like window resizing or 
+   * when changing tabs.
+   * 
+   * @param activeTabIndex {number} 
+   */
+  resizeStackPlots: function (activeTabIndex) {
+
+    console.log(`Resizing stack plot ${activeTabIndex}`);
+
+    $(`stackPlot${activeTabIndex}`).height(
+      $(`stackPlot${activeTabIndex}-resizable`).height() * 0.96
+    );
+    
+    $(`stackPlot${activeTabIndex}`).width(
+      $(`stackPlot${activeTabIndex}-resizable`).width() * 0.96
+    );
+    
+    this.stackPlots[activeTabIndex].replot({ resetAxes: true });
 
   },
 
@@ -294,11 +324,6 @@ SpecViewer.prototype = {
         sViewer.addNavigationTab(sViewer.id, data.apertures.length);
         sViewer.addTabs(sViewer.id, data);
         sViewer.addPlots(sViewer.id, data);
-
-        // Call function to activate the tabs
-        $(`#${sViewer.id}`).tabs('refresh');
-        $(`#${sViewer.id}`).tabs('option', 'active', 0);
-
 
         /* Remove loading GIF */
         $('.loading').remove();
