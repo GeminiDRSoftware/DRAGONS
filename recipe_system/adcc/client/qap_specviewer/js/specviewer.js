@@ -65,6 +65,8 @@ SpecViewer.prototype = {
   addPlots: function(parentId, data) {
     'use restrict';
 
+    var sViewer = this;
+
     var intensity = null;
     var variance = null;
 
@@ -100,33 +102,37 @@ SpecViewer.prototype = {
     }
 
     // Allow plot area to be resized
-    $( '.ui-widget-content.resizable' ).map( function(index, element) {
+    $( '.ui-widget-content.resizable:has(.framePlot)' ).map(
+      function onResizeFrameStop (index, element) {
 
-      $( element ).resizable({delay:20, helper:'ui-resizable-helper'});
+        $( element ).resizable({delay:20, helper:'ui-resizable-helper'});
 
-      $( element ).bind('resizestop', function(event, ui) {
-        $( `framePlot${index}` ).height( $( element ).height()*0.96 );
-        $( `framePlot${index}` ).width( $( element ).width()*0.96 );
+        $( element ).bind('resizestop', function resizeFramePlot (event, ui) {
+          $( `framePlot${index}` ).height( $( element ).height()*0.96 );
+          $( `framePlot${index}` ).width( $( element ).width()*0.96 );
 
-        // pass in resetAxes: true option to get rid of old ticks and axis
-        // properties which should be recomputed based on new plot size.
-        fPlots[index].replot( { resetAxes:true } );
-      });
+          fPlots[index].replot( { resetAxes:true } );
+        });
 
     });
 
-    // Resize plot area on window resize 
-    // $(window).resize(function() {
-    //
-    //   try {
-    //     plots.map(function(p) {
-    //       p.replot({
-    //         resetAxes: true
-    //       });
-    //     });
-    //   } catch (err) {
-    //     // FixMe - Handle this error properly
-    //   }
+    $( '.ui-widget-content.resizable:has(.stackPlot)' ).map(
+      function onResizeStackStop (index, element) {
+
+        $( element ).resizable({delay:20, helper:'ui-resizable-helper'});
+
+        $( element ).bind('resizestop', function resizeStackPlot (event, ui) {
+          $( `stackPlot${index}` ).height( $( element ).height()*0.96 );
+          $( `stackPlot${index}` ).width( $( element ).width()*0.96 );
+
+          sPlots[index].replot( { resetAxes:true } );
+        });
+
+    });
+
+    // Resize plot area on window resize
+    $(window).resize(function onWindowResize () { });
+
     //
     //   try {
     //     stackPlots.map(function(p) {
@@ -138,7 +144,7 @@ SpecViewer.prototype = {
     //     // FixMe - Handle this error properly
     //   }
     //
-    // });
+
 
     // Add button for reset zoom
     fPlots.map(function(p, i) {
@@ -228,7 +234,9 @@ SpecViewer.prototype = {
             </div>
           </div>
 
-          <div class="stackPlot" id="stackPlot${i}">
+          <div id="stackPlot${i}-resizable" class="ui-widget-content resizable">
+            <div class="stackPlot" id="stackPlot${i}">
+            </div>
           </div>
 
         </div>
@@ -268,6 +276,7 @@ SpecViewer.prototype = {
         $(`#${sViewer.id}`).tabs({
           active: 0
         });
+        sViewer.activeTabIndex = 0;
 
         /* Remove loading GIF */
         $('.loading').remove();
