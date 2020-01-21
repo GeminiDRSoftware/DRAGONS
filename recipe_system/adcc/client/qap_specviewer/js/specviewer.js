@@ -20,6 +20,7 @@ function SpecViewer(parentElement, id) {
   this.id = id;
 
   // Placeholders for different elements
+  this.activeTab = null;
   this.framePlots = [];
   this.stackPlots = [];
 
@@ -70,8 +71,8 @@ SpecViewer.prototype = {
     var intensity = null;
     var variance = null;
 
-    var fPlots = [];
-    var sPlots = [];
+    var framePlots = [];
+    var stackPlots = [];
 
     for (var i = 0; i < data.apertures.length; i++) {
 
@@ -82,7 +83,7 @@ SpecViewer.prototype = {
       variance = buildSeries(
         data.apertures[i].wavelength, data.apertures[i].variance);
 
-      fPlots[i] = $.jqplot(
+      framePlots[i] = $.jqplot(
         `framePlot${i}`, [intensity, variance], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
@@ -94,7 +95,7 @@ SpecViewer.prototype = {
       variance = buildSeries(
         data.stackApertures[i].wavelength, data.stackApertures[i].variance);
 
-      sPlots[i] = $.jqplot(
+      stackPlots[i] = $.jqplot(
         `stackPlot${i}`, [intensity, variance], $.extend(plotOptions, {
           title: `Aperture ${i} - Stack Frame`,
         }));
@@ -102,59 +103,78 @@ SpecViewer.prototype = {
     }
 
     // Allow plot area to be resized
-    $( '.ui-widget-content.resizable:has(.framePlot)' ).map(
-      function onResizeFrameStop (index, element) {
+    $('.ui-widget-content.resizable:has(.framePlot)').map(
+      function onResizeFrameStop(index, element) {
 
-        $( element ).resizable({delay:20, helper:'ui-resizable-helper'});
-
-        $( element ).bind('resizestop', function resizeFramePlot (event, ui) {
-          $( `framePlot${index}` ).height( $( element ).height()*0.96 );
-          $( `framePlot${index}` ).width( $( element ).width()*0.96 );
-
-          fPlots[index].replot( { resetAxes:true } );
+        $(element).resizable({
+          delay: 20,
+          helper: 'ui-resizable-helper'
         });
 
-    });
+        $(element).bind('resizestop', function resizeFramePlot(event, ui) {
+          $(`framePlot${index}`).height($(element).height() * 0.96);
+          $(`framePlot${index}`).width($(element).width() * 0.96);
 
-    $( '.ui-widget-content.resizable:has(.stackPlot)' ).map(
-      function onResizeStackStop (index, element) {
-
-        $( element ).resizable({delay:20, helper:'ui-resizable-helper'});
-
-        $( element ).bind('resizestop', function resizeStackPlot (event, ui) {
-          $( `stackPlot${index}` ).height( $( element ).height()*0.96 );
-          $( `stackPlot${index}` ).width( $( element ).width()*0.96 );
-
-          sPlots[index].replot( { resetAxes:true } );
+          framePlots[index].replot({
+            resetAxes: true
+          });
         });
 
-    });
+      });
+
+    $('.ui-widget-content.resizable:has(.stackPlot)').map(
+      function onResizeStackStop(index, element) {
+
+        $(element).resizable({
+          delay: 20,
+          helper: 'ui-resizable-helper'
+        });
+
+        $(element).bind('resizestop', function resizeStackPlot(event, ui) {
+          $(`stackPlot${index}`).height($(element).height() * 0.96);
+          $(`stackPlot${index}`).width($(element).width() * 0.96);
+
+          stackPlots[index].replot({
+            resetAxes: true
+          });
+        });
+
+      });
 
     // Resize plot area on window resize
-    $(window).resize(function onWindowResize () { });
+    $(window).resize(function onWindowResize() {
 
-    //
-    //   try {
-    //     stackPlots.map(function(p) {
-    //       p.replot({
-    //         resetAxes: true
-    //       });
-    //     });
-    //   } catch (err) {
-    //     // FixMe - Handle this error properly
-    //   }
-    //
+      try {
+        framePlots.map(function(p) {
+          p.replot({
+            resetAxes: true
+          });
+        });
+      } catch (err) {
+        // FixMe - Handle this error properly
+      }
 
+      try {
+        stackPlots.map(function(p) {
+          p.replot({
+            resetAxes: true
+          });
+        });
+      } catch (err) {
+        // FixMe - Handle this error properly
+      }
+
+    });
 
     // Add button for reset zoom
-    fPlots.map(function(p, i) {
+    framePlots.map(function(p, i) {
       $(`#resetZoomFramePlot${i}`).click(function() {
         console.log(`Reset zoom of frame plot #${i}.`);
         p.resetZoom();
       });
     });
 
-    sPlots.map(function(p, i) {
+    stackPlots.map(function(p, i) {
       $(`#resetZoomStackPlot${i}`).click(function() {
         console.log(`Reset zoom of stack plot #${i}.`);
         p.resetZoom();
@@ -163,12 +183,16 @@ SpecViewer.prototype = {
 
     // Display plots on tab change
     $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-      fPlots[ui.index].replot({ resetAxes: true });
-      sPlots[ui.index].replot({ resetAxes: true });
+      framePlots[ui.index].replot({
+        resetAxes: true
+      });
+      stackPlots[ui.index].replot({
+        resetAxes: true
+      });
     });
 
-    this.framePlots = fPlots;
-    this.stackPlots = sPlots;
+    this.framePlots = framePlots;
+    this.stackPlots = stackPlots;
 
   },
 
@@ -262,7 +286,7 @@ SpecViewer.prototype = {
       url: "/specqueue.json",
       success: function(jsonData) {
 
-          var data = JSON.parse(JSON.stringify(jsonData));
+        var data = JSON.parse(JSON.stringify(jsonData));
 
         // Call function to activate the tabs
         $(`#${sViewer.id}`).tabs();
@@ -272,11 +296,9 @@ SpecViewer.prototype = {
         sViewer.addPlots(sViewer.id, data);
 
         // Call function to activate the tabs
-        $(`#${sViewer.id}`).tabs("refresh");
-        $(`#${sViewer.id}`).tabs({
-          active: 0
-        });
-        sViewer.activeTabIndex = 0;
+        $(`#${sViewer.id}`).tabs('refresh');
+        $(`#${sViewer.id}`).tabs('option', 'active', 0);
+
 
         /* Remove loading GIF */
         $('.loading').remove();
