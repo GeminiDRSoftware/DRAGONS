@@ -29,9 +29,7 @@ body {
 }
 
 .framePlot, .stackPlot {
-  height: 330px;
   padding: 10px 15px;
-  width: inherit;
 }
 
 .stackInfo {
@@ -68,4 +66,13 @@ body {
 
 .tar {
   text-align: right;
+}
+
+.ui-resizable-helper {
+  border: 2px solid gray;
+}
+
+.resizable {
+  padding: 10px 30px 10px 10px;
+  border-radius: 5px;
 }

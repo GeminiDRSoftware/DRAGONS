@@ -21,6 +21,7 @@ function SpecViewer(parentElement, id) {
 
   // Placeholders for different elements
   this.framePlots = [];
+  this.stackPlots = [];
 
   /* Create empty page */
   this.parentElement.append(`<div id="${id}"><ul></ul></div>`);
@@ -64,11 +65,11 @@ SpecViewer.prototype = {
   addPlots: function(parentId, data) {
     'use restrict';
 
-    var plots = [];
-    var stackPlots = [];
-
     var intensity = null;
     var variance = null;
+
+    var fPlots = [];
+    var sPlots = [];
 
     for (var i = 0; i < data.apertures.length; i++) {
 
@@ -79,7 +80,7 @@ SpecViewer.prototype = {
       variance = buildSeries(
         data.apertures[i].wavelength, data.apertures[i].variance);
 
-      plots[i] = $.jqplot(
+      fPlots[i] = $.jqplot(
         `framePlot${i}`, [intensity, variance], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
@@ -91,47 +92,63 @@ SpecViewer.prototype = {
       variance = buildSeries(
         data.stackApertures[i].wavelength, data.stackApertures[i].variance);
 
-      stackPlots[i] = $.jqplot(
+      sPlots[i] = $.jqplot(
         `stackPlot${i}`, [intensity, variance], $.extend(plotOptions, {
           title: `Aperture ${i} - Stack Frame`,
         }));
 
     }
 
-    /* Resize plots on window resize */
-    $(window).resize(function() {
+    // Allow plot area to be resized
+    $( '.ui-widget-content.resizable' ).map( function(index, element) {
 
-      try {
-        plots.map(function(p) {
-          p.replot({
-            resetAxes: true
-          });
-        });
-      } catch (err) {
-        // FixMe - Handle this error properly
-      }
+      $( element ).resizable({delay:20, helper:'ui-resizable-helper'});
 
-      try {
-        stackPlots.map(function(p) {
-          p.replot({
-            resetAxes: true
-          });
-        });
-      } catch (err) {
-        // FixMe - Handle this error properly
-      }
+      $( element ).bind('resizestop', function(event, ui) {
+        $( `framePlot${index}` ).height( $( element ).height()*0.96 );
+        $( `framePlot${index}` ).width( $( element ).width()*0.96 );
+
+        // pass in resetAxes: true option to get rid of old ticks and axis
+        // properties which should be recomputed based on new plot size.
+        fPlots[index].replot( { resetAxes:true } );
+      });
 
     });
 
-    /* Add button for reset zoom */
-    plots.map(function(p, i) {
+    // Resize plot area on window resize 
+    // $(window).resize(function() {
+    //
+    //   try {
+    //     plots.map(function(p) {
+    //       p.replot({
+    //         resetAxes: true
+    //       });
+    //     });
+    //   } catch (err) {
+    //     // FixMe - Handle this error properly
+    //   }
+    //
+    //   try {
+    //     stackPlots.map(function(p) {
+    //       p.replot({
+    //         resetAxes: true
+    //       });
+    //     });
+    //   } catch (err) {
+    //     // FixMe - Handle this error properly
+    //   }
+    //
+    // });
+
+    // Add button for reset zoom
+    fPlots.map(function(p, i) {
       $(`#resetZoomFramePlot${i}`).click(function() {
         console.log(`Reset zoom of frame plot #${i}.`);
         p.resetZoom();
       });
     });
 
-    stackPlots.map(function(p, i) {
+    sPlots.map(function(p, i) {
       $(`#resetZoomStackPlot${i}`).click(function() {
         console.log(`Reset zoom of stack plot #${i}.`);
         p.resetZoom();
@@ -140,10 +157,12 @@ SpecViewer.prototype = {
 
     // Display plots on tab change
     $(`#${parentId}`).bind('tabsshow', function(event, ui) {
-      plots[ui.index].replot({
-        resetAxes: true
-      });
+      fPlots[ui.index].replot({ resetAxes: true });
+      sPlots[ui.index].replot({ resetAxes: true });
     });
+
+    this.framePlots = fPlots;
+    this.stackPlots = sPlots;
 
   },
 
@@ -191,7 +210,9 @@ SpecViewer.prototype = {
             </div>
           </div>
 
-          <div class="framePlot" id="framePlot${i}">
+          <div id="framePlot${i}-resizable" class="ui-widget-content resizable">
+            <div class="framePlot" id="framePlot${i}">
+            </div>
           </div>
 
           <div class="stackInfo">
