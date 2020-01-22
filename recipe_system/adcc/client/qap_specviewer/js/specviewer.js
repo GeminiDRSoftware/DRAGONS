@@ -264,7 +264,7 @@ SpecViewer.prototype = {
               </p>
               <div class="d-table-cell tar">
                 <button class="ui-button ui-widget ui-corner-all" id="resetZoomFramePlot${i}" title="Reset zoom">
-                  <img class="zoom-reset" src="images/zoom_reset_48px.png"></img>
+                  <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
                 </button>
               </div>
             </div>
@@ -282,7 +282,7 @@ SpecViewer.prototype = {
               </p>
               <div class="d-table-cell tar">
                 <button id="resetZoomStackPlot${i}" class="ui-button ui-widget ui-corner-all" title="Reset zoom">
-                    <img class="zoom-reset" src="images/zoom_reset_48px.png"></img>
+                    <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
                 </button>
               </div>
             </div>

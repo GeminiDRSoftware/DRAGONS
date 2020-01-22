@@ -74,14 +74,12 @@ def specframe():
     if path_to_data is None:
         abort(500, description="Environment variable not defined: SPEC_DATA")
 
-    filename = "data.json"
-    filename = os.path.join(path_to_data, filename)
-
-    with open(filename, 'r') as json_file:
-        data = json.load(json_file)
+    with open(path_to_data, 'r') as json_file:
+        jdata = json.load(json_file)
 
     try:
-        return jsonify(json.dumps(data))
+        # return jsonify(json.dumps(jdata))
+        return jdata
     except Exception as e:
         print(str(e))
         return jsonify(str(e))
