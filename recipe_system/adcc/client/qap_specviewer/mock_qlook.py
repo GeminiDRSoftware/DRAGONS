@@ -35,6 +35,11 @@ def specviewer():
     return qlook.send_static_file("specviewer.html")
 
 
+@qlook.route('/specviewer/react/')
+def specviewer_with_react():
+    return qlook.send_static_file("specviewer_with_react.html")
+
+
 @qlook.route('/css/<path:path>')
 def send_css(path):
     return send_from_directory('css', path)

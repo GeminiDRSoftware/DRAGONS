@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QAP SpecViewer</title>
+  <link rel="shortcut icon" href="favicon.ico" />
+  <!-- JQuery -->
+  <script type="text/javascript" src="/qlook/js/jquery-3.4.1.min.js"></script>
+
+  <!-- JQuery-UI -->
+  <link rel="stylesheet" href="/qlook/js/jquery-ui-1.12.1/jquery-ui.min.css">
+  <script type="text/javascript" src="/qlook/js/jquery-ui-1.12.1/jquery-ui.min.js"></script>
+
+  <!-- JQPlot -->
+  <link rel="stylesheet" href="/qlook/js/jqplot.1.0.9/jquery.jqplot.min.css">
+  <script type="text/javascript" src="/qlook/js/jqplot.1.0.9/jquery.jqplot.min.js"></script>
+  <script type="text/javascript" src="/qlook/js/jqplot.1.0.9/plugins/jqplot.canvasTextRenderer.js"></script>
+  <script type="text/javascript" src="/qlook/js/jqplot.1.0.9/plugins/jqplot.canvasAxisLabelRenderer.js"></script>
+  <script type="text/javascript" src="/qlook/js/jqplot.1.0.9/plugins/jqplot.canvasAxisTickRenderer.js"></script>
+  <script type="text/javascript" src="/qlook/js/jqplot.1.0.9/plugins/jqplot.cursor.js"></script>
+  <script type="text/javascript" src="/qlook/js/jqplot.1.0.9/plugins/jqplot.enhancedLegendRenderer.js"></script>
+
+  <!-- QAP SpecViewer is mostly defined in JS -->
+  <script type="text/javascript" src="/qlook/js/spectro_pump.js"></script>
+  <script type="text/javascript" src="/qlook/js/specviewer.js"></script>
+  <link rel="stylesheet" href="/qlook/css/specviewer.css">
+
+  <!-- Initialize SpecViewer -->
+  <script>
+    $(document).ready(
+      function() {
+
+        // Enable plugins like cursor and highlighter by default.
+        $.jqplot.config.enablePlugins = true;
+
+        // For these examples, don't show the to image button.
+        $.jqplot._noToImageButton = true;
+
+        var element = $('#main');
+        var id = 'specViewer';
+        var sViewer = new SpecViewer(element, id);
+      }
+    );
+  </script>
+
+</head>
+
+
+<body>
+
+  <div class="wrapper">
+
+    <div class="header">
+      <h2> QAP SpecViewer </h2>
+    </div>
+
+    <div id="content">
+      <div id="main">
+         <img class="loading" src="/qlook/images/Spin-1s-231px.gif">
+      </div>
+    </div>
+
+    <div class="footer">
+      Add info about QAP SpecViewer
+    </div>
+
+  </div>
+
+</body>
+
+</html>
