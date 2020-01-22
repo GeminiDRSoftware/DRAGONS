@@ -387,6 +387,7 @@ plotOptions = {
     markerOptions: {
       size: 1
     },
+    shadow: false,
     renderer: $.jqplot.LineRenderer,
   },
 
