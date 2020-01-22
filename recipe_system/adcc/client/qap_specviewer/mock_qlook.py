@@ -11,10 +11,9 @@ Remember to run it from the same folder where it lives since it relies on
 relative path. This is a temporary solution.
 """
 import os
-import json
 
-from flask import (Blueprint, abort, jsonify, redirect, send_from_directory,
-                   url_for, render_template)
+
+from flask import Blueprint, redirect, send_from_directory, url_for
 
 from recipe_system.adcc.servers import http_proxy
 
@@ -59,29 +58,3 @@ def favicon():
 @qlook.route('/rqsite.json')
 def rqsite():
     return http_proxy.server_time()
-
-
-@qlook.errorhandler(500)
-def server_error(e):
-    return render_template("500.html", error=str(e)), 500
-
-
-@qlook.route('/specqueue.json')
-def specframe():
-
-    path_to_data = os.getenv('SPEC_DATA')
-
-    if path_to_data is None:
-        abort(500, description="Environment variable not defined: SPEC_DATA")
-
-    with open(path_to_data, 'r') as json_file:
-        jdata = json.load(json_file)
-
-    try:
-        # return jsonify(json.dumps(jdata))
-        return jdata
-    except Exception as e:
-        print(str(e))
-        return jsonify(str(e))
-
-

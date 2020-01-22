@@ -76,6 +76,10 @@ body {
   border: 2px solid gray;
 }
 
+#specViewer {
+  transition: all .5s linear;
+}
+
 .resizable {
   padding: 10px 30px 10px 10px;
   border-radius: 5px;

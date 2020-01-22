@@ -3,7 +3,7 @@
  * Quality Assessment Pipeline - Spectrum Viewer
  *
  */
-const specViewerJsonName = "/qlook/specqueue.json";
+const specViewerJsonName = "/specqueue.json";
 
 
 /**
