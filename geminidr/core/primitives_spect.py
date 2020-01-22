@@ -1599,10 +1599,9 @@ class Spect(PrimitivesBASE):
         if len(set(len(ad) for ad in adinputs)) > 1:
             raise ValueError('inputs must have the same number of spectra')
 
-        # There are either 1 or 4 Nones, due to validation
+        # If only one variable is missing we compute it from the others
         nparams = sum(x is not None for x in (w1, w2, dw, npix))
         if nparams == 3:
-            # Work out the missing variable from the others
             if npix is None:
                 npix = int(np.ceil((w2 - w1) / dw)) + 1
                 w2 = w1 + (npix - 1) * dw
@@ -1613,9 +1612,8 @@ class Spect(PrimitivesBASE):
             else:
                 dw = (w2 - w1) / (npix - 1)
 
-        # linearize spectra only if the grid parameters are specified
-        linearize = npix is not None or dw is not None
-
+        # Gather information from all the spectra (Chebyshev1D model,
+        # w1, w2, dw, npix)
         models = []
         for ad in adinputs:
             admodels = []
@@ -1628,6 +1626,9 @@ class Spect(PrimitivesBASE):
                                      .format(extname))
                 admodels.append(info)
             models.append(admodels)
+
+        # linearize spectra only if the grid parameters are specified
+        linearize = npix is not None or dw is not None
 
         n_ad = len(adinputs)
         n_ext = len(adinputs[0])
@@ -1642,27 +1643,25 @@ class Spect(PrimitivesBASE):
                     func = min if trim_data else max
                     w2_ext = func(models[i][iext]['w2'] for i in range(n_ad))
                 if linearize:
-                    if npix_ext is None:
+                    if npix is None and dw is None:
+                        # if both are missing, use the reference spectra
+                        npix = models[0][iext]['npix']
+                        dw = models[0][iext]['dw']
+                    elif npix_ext is None:
                         npix_ext = int(np.ceil((w2_ext - w1_ext) / dw_ext)) + 1
-                    else:
+                    elif dw_ext is None:
                         dw_ext = (w2_ext - w1_ext) / (npix_ext - 1)
 
-            for ad in adinputs:
+            for i, ad in enumerate(adinputs):
                 ext = ad[iext]
-                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
-
+                cheb = models[i][iext]['cheb']
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
-                try:
-                    cheb = _read_chebyshev_model(ext)
-                except ValueError:
-                    log.warning("{} has no WAVECAL. Cannot linearize."
-                                .format(extname))
-                    continue
 
                 log.stdinfo(
-                    "Linearizing {}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
-                    .format(extname, w1_ext, w2_ext, dw_ext, npix_ext))
+                    "Linearizing {}:{}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
+                    .format(ad.filename, ext.hdr['EXTVER'], w1_ext, w2_ext,
+                            dw_ext, npix_ext))
 
                 cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
                 t = transform.Transform(cheb)
