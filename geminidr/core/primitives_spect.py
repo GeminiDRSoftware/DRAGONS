@@ -1593,7 +1593,7 @@ class Spect(PrimitivesBASE):
         dw = params["dw"]
         npix = params["npix"]
         conserve = params["conserve"]
-        trim = params["trim"]
+        trim_data = params["trim_data"]
 
         # Check that all ad objects have the same number of spectra
         if len(set(len(ad) for ad in adinputs)) > 1:
@@ -1636,10 +1636,10 @@ class Spect(PrimitivesBASE):
             w1_ext, w2_ext, dw_ext, npix_ext = w1, w2, dw, npix
             if nparams < 3:
                 if w1_ext is None:
-                    func = max if trim else min
+                    func = max if trim_data else min
                     w1_ext = func(models[i][iext]['w1'] for i in range(n_ad))
                 if w2_ext is None:
-                    func = min if trim else max
+                    func = min if trim_data else max
                     w2_ext = func(models[i][iext]['w2'] for i in range(n_ad))
                 if linearize:
                     if npix_ext is None:
