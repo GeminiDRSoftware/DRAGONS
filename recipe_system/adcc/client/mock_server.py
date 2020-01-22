@@ -26,13 +26,18 @@ except ModuleNotFoundError:
     exit(1)
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='./', template_folder="./qap_specviewer/templates/")
 app.register_blueprint(qlook, url_prefix='/qlook')
 
 
 @app.route('/')
 def index():
     return app.send_static_file("index.html")
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory("images", "dragons_favicon.ico")
 
 
 @app.route('/specqueue.json')
@@ -47,7 +52,6 @@ def specframe():
         jdata = json.load(json_file)
 
     try:
-        # return jsonify(json.dumps(jdata))
         return jdata
     except Exception as e:
         print(str(e))
@@ -57,7 +61,6 @@ def specframe():
 @qlook.errorhandler(500)
 def server_error(e):
     return render_template("500.html", error=str(e)), 500
-
 
 
 if __name__ == '__main__':

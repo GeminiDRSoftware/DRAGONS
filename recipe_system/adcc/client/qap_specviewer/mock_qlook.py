@@ -11,8 +11,6 @@ Remember to run it from the same folder where it lives since it relies on
 relative path. This is a temporary solution.
 """
 import os
-
-
 from flask import Blueprint, redirect, send_from_directory, url_for
 
 from recipe_system.adcc.servers import http_proxy
@@ -20,8 +18,7 @@ from recipe_system.adcc.servers import http_proxy
 qlook = Blueprint(
     'qlook',
     __name__,
-    static_folder=os.path.dirname(__file__),
-    static_url_path='',
+    static_folder='',
     template_folder='./templates/')
 
 
@@ -35,28 +32,25 @@ def specviewer():
     return qlook.send_static_file("specviewer.html")
 
 
-@qlook.route('/specviewer/react/')
-def specviewer_with_react():
-    return qlook.send_static_file("specviewer_with_react.html")
-
-
 @qlook.route('/css/<path:path>')
 def send_css(path):
-    return send_from_directory('css', path)
+    # return send_from_directory('css', path)  # Todo - Understand why it fails
+    return qlook.send_static_file("css/{}".format(path))
 
 
 @qlook.route('/images/<path:path>')
 def send_images(path):
-    return send_from_directory('images', path)
+    # return send_from_directory('images', path)  # Todo - Understand why it fails
+    return qlook.send_static_file("images/{}".format(path))
 
 
 @qlook.route('/js/<path:path>')
 def send_js(path):
-    return send_from_directory('js', path)
+    # return send_from_directory('/specviewer/js', path)  # Todo - Understand why it fails
+    return qlook.send_static_file("js/{}".format(path))
 
 
 @qlook.route('/specviewer/favicon.ico')
-@qlook.route('/specviewer/react/favicon.ico')
 def favicon():
     return qlook.send_static_file("images/dragons_favicon.ico")
 
