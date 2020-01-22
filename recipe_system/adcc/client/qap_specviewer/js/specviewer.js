@@ -3,7 +3,7 @@
  * Quality Assessment Pipeline - Spectrum Viewer
  *
  */
-const specViewerJsonName = "/specframe.json";
+const specViewerJsonName = "/qlook/specqueue.json";
 
 
 /**
@@ -313,7 +313,7 @@ SpecViewer.prototype = {
 
     $.ajax({
       type: "GET",
-      url: "/specqueue.json",
+      url: specViewerJsonName,
       success: function(jsonData) {
 
         var data = JSON.parse(JSON.stringify(jsonData));
@@ -325,12 +325,18 @@ SpecViewer.prototype = {
         sViewer.addTabs(sViewer.id, data);
         sViewer.addPlots(sViewer.id, data);
 
-        /* Remove loading GIF */
+        // Remove loading GIF
         $('.loading').remove();
 
       }, // end success
-      error: function() {
+      error: function(e) {
+
         console.log('Could not receive json file');
+        $( `#${sViewer.id}` ).html(e.responseText);
+
+        // Remove loading GIF
+        $('.loading').remove();
+
       } // end error
     }); // end ajax
   }, // end load

@@ -5,6 +5,10 @@ body {
   padding: 10px;
 }
 
+.footer {
+  margin: 10px 0px 10px 0px;
+}
+
 .ui-tabs .ui-tabs-panel {
   width: inherit;
 }

@@ -13,7 +13,8 @@ relative path. This is a temporary solution.
 import os
 import json
 
-from flask import Blueprint, jsonify, redirect, send_from_directory, url_for
+from flask import (Blueprint, abort, jsonify, redirect, send_from_directory,
+                   url_for, render_template)
 
 from recipe_system.adcc.servers import http_proxy
 
@@ -21,7 +22,8 @@ qlook = Blueprint(
     'qlook',
     __name__,
     static_folder=os.path.dirname(__file__),
-    static_url_path='')
+    static_url_path='',
+    template_folder='./templates/')
 
 
 @qlook.route('/')
@@ -49,14 +51,31 @@ def send_js(path):
     return send_from_directory('js', path)
 
 
+@qlook.route('/specviewer/favicon.ico')
+def favicon():
+    return qlook.send_static_file("images/dragons_favicon.ico")
+
+
 @qlook.route('/rqsite.json')
 def rqsite():
     return http_proxy.server_time()
 
 
-@qlook.route('/specframe.json')
+@qlook.errorhandler(500)
+def server_error(e):
+    return render_template("500.html", error=str(e)), 500
+
+
+@qlook.route('/specqueue.json')
 def specframe():
+
+    path_to_data = os.getenv('SPEC_DATA')
+
+    if path_to_data is None:
+        abort(500, description="Environment variable not defined: SPEC_DATA")
+
     filename = "data.json"
+    filename = os.path.join(path_to_data, filename)
 
     with open(filename, 'r') as json_file:
         data = json.load(json_file)
@@ -66,3 +85,5 @@ def specframe():
     except Exception as e:
         print(str(e))
         return jsonify(str(e))
+
+

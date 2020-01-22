@@ -14,7 +14,17 @@ relative path. This is a temporary solution.
 import os
 
 from flask import Flask, send_from_directory
-from .mock_qlook import qlook
+
+try:
+    from .mock_qlook import qlook
+except ModuleNotFoundError:
+    from sys import exit
+    print(' Start Flask server using the following steps: \n'
+          ' $ export FLASK_APP={path to this file}\n'
+          ' $ export FLASK_ENV=development\n'
+          ' $ flask run')
+    exit(1)
+
 
 app = Flask(__name__, static_folder=os.path.dirname(__file__))
 app.register_blueprint(qlook, url_prefix='/qlook')
