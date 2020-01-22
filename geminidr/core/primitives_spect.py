@@ -1552,6 +1552,152 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+    def resampleToCommonFrame(self, adinputs=None, **params):
+        """
+        Transforms 1D spectra so that the relationship between them and their
+        respective wavelength calibration is linear.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 1D spectra. Each extension must have a
+            `.WAVECAL` table.
+        suffix : str
+            Suffix to be added to output files.
+        w1 : float
+            Wavelength of first pixel (nm). See Notes below.
+        w2 : float
+            Wavelength of last pixel (nm). See Notes below.
+        dw : float
+            Dispersion (nm/pixel). See Notes below.
+        npix : int
+            Number of pixels in output spectrum. See Notes below.
+        conserve : bool
+            Conserve flux (rather than interpolate)?
+
+        Notes
+        -----
+        Exactly 0 or 3 of (w1, w2, dw, npix) must be specified.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Linearized 1D spectra.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        w1 = params["w1"]
+        w2 = params["w2"]
+        dw = params["dw"]
+        npix = params["npix"]
+        conserve = params["conserve"]
+        trim = params["trim"]
+
+        # Check that all ad objects have the same number of spectra
+        if len(set(len(ad) for ad in adinputs)) > 1:
+            raise ValueError('inputs must have the same number of spectra')
+
+        # There are either 1 or 4 Nones, due to validation
+        nparams = sum(x is not None for x in (w1, w2, dw, npix))
+        if nparams == 3:
+            # Work out the missing variable from the others
+            if npix is None:
+                npix = int(np.ceil((w2 - w1) / dw)) + 1
+                w2 = w1 + (npix - 1) * dw
+            elif w1 is None:
+                w1 = w2 - (npix - 1) * dw
+            elif w2 is None:
+                w2 = w1 + (npix - 1) * dw
+            else:
+                dw = (w2 - w1) / (npix - 1)
+
+        # linearize spectra only if the grid parameters are specified
+        linearize = npix is not None or dw is not None
+
+        models = []
+        for ad in adinputs:
+            admodels = []
+            for ext in ad:
+                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                try:
+                    info = _extract_model_info(ext, extname)
+                except ValueError:
+                    raise ValueError("{} has no WAVECAL. Cannot linearize."
+                                     .format(extname))
+                admodels.append(info)
+            models.append(admodels)
+
+        n_ad = len(adinputs)
+        n_ext = len(adinputs[0])
+
+        for iext in range(n_ext):
+            w1_ext, w2_ext, dw_ext, npix_ext = w1, w2, dw, npix
+            if nparams < 3:
+                if w1_ext is None:
+                    func = max if trim else min
+                    w1_ext = func(models[i][iext]['w1'] for i in range(n_ad))
+                if w2_ext is None:
+                    func = min if trim else max
+                    w2_ext = func(models[i][iext]['w2'] for i in range(n_ad))
+                if linearize:
+                    if npix_ext is None:
+                        npix_ext = int(np.ceil((w2_ext - w1_ext) / dw_ext)) + 1
+                    else:
+                        dw_ext = (w2_ext - w1_ext) / (npix_ext - 1)
+
+            for ad in adinputs:
+                ext = ad[iext]
+                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+
+                attributes = [attr for attr in ('data', 'mask', 'variance')
+                              if getattr(ext, attr) is not None]
+                try:
+                    cheb = _read_chebyshev_model(ext)
+                except ValueError:
+                    log.warning("{} has no WAVECAL. Cannot linearize."
+                                .format(extname))
+                    continue
+
+                log.stdinfo(
+                    "Linearizing {}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
+                    .format(extname, w1_ext, w2_ext, dw_ext, npix_ext))
+
+                cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
+                t = transform.Transform(cheb)
+
+                # Linearization (and inverse)
+                t.append(models.Shift(-w1))
+                t.append(models.Scale(1. / dw))
+
+                # If we resample to a coarser pixel scale, we may interpolate
+                # over features. We avoid this by subsampling back to the
+                # original pixel scale (approximately).
+                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
+                subsample = int(np.ceil(abs(dw / input_dw) - 0.1))
+
+                dg = transform.DataGroup([ext], [t])
+                dg.output_shape = (npix,)
+                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
+                output_dict = dg.transform(attributes=attributes, subsample=subsample,
+                                           conserve=conserve)
+                for key, value in output_dict.items():
+                    setattr(ext, key, value)
+
+                ext.hdr["CRPIX1"] = 1.
+                ext.hdr["CRVAL1"] = w1
+                ext.hdr["CDELT1"] = dw
+                ext.hdr["CD1_1"] = dw
+                ext.hdr["CUNIT1"] = "nanometer"
+
+        for ad in adinputs:
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
     def normalizeFlat(self, adinputs=None, **params):
         """
         This primitive normalizes a spectroscopic flatfield, by fitting
@@ -2105,6 +2251,25 @@ def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     return list(None if arg is None
                 else arg.T[section] if transpose else arg[section] for arg in args)
+
+
+def _read_chebyshev_model(ext):
+    try:
+        wavecal = dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
+    except (AttributeError, KeyError):
+        raise ValueError('missing cheb model')
+    else:
+        cheb = astromodels.dict_to_chebyshev(wavecal)
+    return cheb
+
+
+def _extract_model_info(ext, extname):
+    cheb = _read_chebyshev_model(ext)
+    npix = ext.data.size
+    limits = cheb([0, npix - 1])
+    w1, w2 = min(limits), max(limits)
+    dw = (w2 - w1) / (npix - 1)
+    return {'cheb': cheb, 'w1': w1, 'w2': w2, 'npix': npix, 'dw': dw}
 
 
 def QESpline(coeffs, xpix, data, weights, boundaries, order):
