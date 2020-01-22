@@ -26,7 +26,7 @@ except ModuleNotFoundError:
     exit(1)
 
 
-app = Flask(__name__, static_folder=os.path.dirname(__file__))
+app = Flask(__name__)
 app.register_blueprint(qlook, url_prefix='/qlook')
 
 
