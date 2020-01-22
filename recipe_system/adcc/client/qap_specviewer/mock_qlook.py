@@ -56,6 +56,7 @@ def send_js(path):
 
 
 @qlook.route('/specviewer/favicon.ico')
+@qlook.route('/specviewer/react/favicon.ico')
 def favicon():
     return qlook.send_static_file("images/dragons_favicon.ico")
 

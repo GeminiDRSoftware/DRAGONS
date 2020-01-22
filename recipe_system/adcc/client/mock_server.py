@@ -16,7 +16,7 @@ import os
 from flask import Flask, abort, jsonify, render_template, send_from_directory
 
 try:
-    from .mock_qlook import qlook
+    from .qap_specviewer.mock_qlook import qlook
 except ModuleNotFoundError:
     from sys import exit
     print(' Start Flask server using the following steps: \n'
@@ -33,11 +33,6 @@ app.register_blueprint(qlook, url_prefix='/qlook')
 @app.route('/')
 def index():
     return app.send_static_file("index.html")
-
-
-@app.route('/css/<path:path>')
-def css(path):
-    return send_from_directory("css", path)
 
 
 @app.route('/specqueue.json')
