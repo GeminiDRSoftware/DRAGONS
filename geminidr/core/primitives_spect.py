@@ -1614,18 +1614,18 @@ class Spect(PrimitivesBASE):
 
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix)
-        models = []
+        info = []
         for ad in adinputs:
-            admodels = []
+            adinfo = []
             for ext in ad:
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 try:
-                    info = _extract_model_info(ext, extname)
+                    model_info = _extract_model_info(ext, extname)
                 except ValueError:
                     raise ValueError("{} has no WAVECAL. Cannot linearize."
                                      .format(extname))
-                admodels.append(info)
-            models.append(admodels)
+                adinfo.append(model_info)
+            info.append(adinfo)
 
         # linearize spectra only if the grid parameters are specified
         linearize = npix is not None or dw is not None
@@ -1638,15 +1638,15 @@ class Spect(PrimitivesBASE):
             if nparams < 3:
                 if w1_ext is None:
                     func = max if trim_data else min
-                    w1_ext = func(models[i][iext]['w1'] for i in range(n_ad))
+                    w1_ext = func(info[i][iext]['w1'] for i in range(n_ad))
                 if w2_ext is None:
                     func = min if trim_data else max
-                    w2_ext = func(models[i][iext]['w2'] for i in range(n_ad))
+                    w2_ext = func(info[i][iext]['w2'] for i in range(n_ad))
                 if linearize:
-                    if npix is None and dw is None:
+                    if npix_ext is None and dw_ext is None:
                         # if both are missing, use the reference spectra
-                        npix = models[0][iext]['npix']
-                        dw = models[0][iext]['dw']
+                        npix_ext = info[0][iext]['npix']
+                        dw_ext = info[0][iext]['dw']
                     elif npix_ext is None:
                         npix_ext = int(np.ceil((w2_ext - w1_ext) / dw_ext)) + 1
                     elif dw_ext is None:
@@ -1654,40 +1654,47 @@ class Spect(PrimitivesBASE):
 
             for i, ad in enumerate(adinputs):
                 ext = ad[iext]
-                cheb = models[i][iext]['cheb']
-                attributes = [attr for attr in ('data', 'mask', 'variance')
-                              if getattr(ext, attr) is not None]
+                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                cheb = info[i][iext]['cheb']
 
-                log.stdinfo(
-                    "Linearizing {}:{}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
-                    .format(ad.filename, ext.hdr['EXTVER'], w1_ext, w2_ext,
-                            dw_ext, npix_ext))
-
-                cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
                 t = transform.Transform(cheb)
 
                 # Linearization (and inverse)
-                t.append(models.Shift(-w1))
-                t.append(models.Scale(1. / dw))
+                if linearize:
+                    log.stdinfo("Resampling and linearizing {}: w1={:.3f} "
+                                "w2={:.3f} dw={:.3f} npix={}".format(
+                                    extname, w1_ext, w2_ext, dw_ext, npix_ext))
 
-                # If we resample to a coarser pixel scale, we may interpolate
-                # over features. We avoid this by subsampling back to the
-                # original pixel scale (approximately).
-                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = int(np.ceil(abs(dw / input_dw) - 0.1))
+                    t.append(models.Shift(-w1_ext))
+                    t.append(models.Scale(1. / dw_ext))
+
+                    # If we resample to a coarser pixel scale, we may
+                    # interpolate over features. We avoid this by subsampling
+                    # back to the original pixel scale (approximately).
+                    input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
+                    subsample = int(np.ceil(abs(dw_ext / input_dw) - 0.1))
+                else:
+                    log.stdinfo("Linearizing {}: w1={:.3f} w2={:.3f}"
+                                .format(extname, w1_ext, w2_ext))
+                    t.append(info[0][iext]['cheb'].inverse)
+                    subsample = False
+
+                attributes = [attr for attr in ('data', 'mask', 'variance')
+                              if getattr(ext, attr) is not None]
 
                 dg = transform.DataGroup([ext], [t])
-                dg.output_shape = (npix,)
+                dg.output_shape = (npix_ext, )
                 dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
-                output_dict = dg.transform(attributes=attributes, subsample=subsample,
+                output_dict = dg.transform(attributes=attributes,
+                                           subsample=subsample,
                                            conserve=conserve)
                 for key, value in output_dict.items():
                     setattr(ext, key, value)
 
                 ext.hdr["CRPIX1"] = 1.
-                ext.hdr["CRVAL1"] = w1
-                ext.hdr["CDELT1"] = dw
-                ext.hdr["CD1_1"] = dw
+                ext.hdr["CRVAL1"] = w1_ext
+                ext.hdr["CDELT1"] = dw_ext
+                ext.hdr["CD1_1"] = dw_ext
                 ext.hdr["CUNIT1"] = "nanometer"
 
         for ad in adinputs:
@@ -2264,6 +2271,7 @@ def _read_chebyshev_model(ext):
 
 def _extract_model_info(ext, extname):
     cheb = _read_chebyshev_model(ext)
+    cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
     npix = ext.data.size
     limits = cheb([0, npix - 1])
     w1, w2 = min(limits), max(limits)
