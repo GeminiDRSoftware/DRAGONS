@@ -85,8 +85,12 @@ body {
   border-radius: 5px;
 }
 
-.app-info-field:hover {
-  background-color: #ddd;
+.app-info-field {
   border-radius: 5px;
   padding: 2px;
+  cursor: default;
+}
+
+.app-info-field:hover {
+  background-color: #ddd;
 }
