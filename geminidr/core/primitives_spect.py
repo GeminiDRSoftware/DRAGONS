@@ -1554,8 +1554,9 @@ class Spect(PrimitivesBASE):
 
     def resampleToCommonFrame(self, adinputs=None, **params):
         """
-        Transforms 1D spectra so that the relationship between them and their
-        respective wavelength calibration is linear.
+        Resample 1D spectra on a common frame, and optionally transform them
+        so that the relationship between them and their respective wavelength
+        calibration is linear.
 
         Parameters
         ----------
@@ -1574,10 +1575,16 @@ class Spect(PrimitivesBASE):
             Number of pixels in output spectrum. See Notes below.
         conserve : bool
             Conserve flux (rather than interpolate)?
+        trim_data : bool
+            Trim spectra to size of reference spectra?
 
         Notes
         -----
-        Exactly 0 or 3 of (w1, w2, dw, npix) must be specified.
+        If ``w1`` or ``w2`` are not specified, they are computed from the
+        individual spectra: if ``trim_data`` is True, this is the intersection
+        of the spectra ranges, otherwise this is the union of all ranges,
+
+        If ``dw`` or ``npix`` are specified, the spectra are linearized.
 
         Returns
         -------
@@ -1629,6 +1636,9 @@ class Spect(PrimitivesBASE):
 
         # linearize spectra only if the grid parameters are specified
         linearize = npix is not None or dw is not None
+
+        if trim_data:
+            log.fullinfo("Trimming data to size of reference spectra")
 
         n_ad = len(adinputs)
         n_ext = len(adinputs[0])
