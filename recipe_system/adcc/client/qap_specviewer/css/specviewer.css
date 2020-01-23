@@ -5,23 +5,31 @@ body {
   padding: 10px;
 }
 
-.footer {
-  margin: 10px 0px 10px 0px;
-}
-
-.ui-tabs .ui-tabs-panel {
-  width: inherit;
-}
-
-.loading {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 10%;
-}
-
 .apertureInfo {
   padding: 10px 15px;
+}
+
+.app-info-field {
+  transition: all .25s linear;
+  border-radius: 5px;
+  padding: 2px;
+  cursor: default;
+}
+
+.app-info-field:hover {
+  background-color: #ddd;
+}
+
+.d-table {
+  display: table;
+}
+
+.d-table-cell {
+  display: table-cell;
+}
+
+.footer {
+  margin: 10px 0px 10px 0px;
 }
 
 .frameInfo {
@@ -32,8 +40,21 @@ body {
   width: inherit;
 }
 
-.framePlot, .stackPlot {
+.framePlot,
+.stackPlot {
   padding: 10px 15px;
+}
+
+.loading {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 10%;
+}
+
+.resizable {
+  padding: 10px 30px 10px 10px;
+  border-radius: 5px;
 }
 
 .stackInfo {
@@ -44,6 +65,10 @@ body {
   margin-top: 10px;
 }
 
+.tar {
+  text-align: right;
+}
+
 .ui-button {
   border-radius: 5px;
   height: 32px;
@@ -51,46 +76,23 @@ body {
   padding: 4px;
 }
 
-.zoom-reset {
-  width: 100%;
-  height: 100%;
+.ui-resizable-helper {
+  border: 2px solid gray;
 }
 
-.d-table {
-  display:table;
-}
-
-.d-table-cell {
-  display:table-cell;
+.ui-tabs .ui-tabs-panel {
+  width: inherit;
 }
 
 .w-100 {
   width: 100%;
 }
 
-.tar {
-  text-align: right;
-}
-
-.ui-resizable-helper {
-  border: 2px solid gray;
+.zoom-reset {
+  width: 100%;
+  height: 100%;
 }
 
 #specViewer {
   transition: all .5s linear;
-}
-
-.resizable {
-  padding: 10px 30px 10px 10px;
-  border-radius: 5px;
-}
-
-.app-info-field {
-  border-radius: 5px;
-  padding: 2px;
-  cursor: default;
-}
-
-.app-info-field:hover {
-  background-color: #ddd;
 }
