@@ -18,7 +18,6 @@ from flask import Flask, abort, jsonify, render_template, send_from_directory
 
 try:
     from .qap_specviewer.mock_qlook import qlook
-    from .react_specviewer.app import react_sviewer
 except ModuleNotFoundError:
     from sys import exit
     print(' Start Flask server using the following steps: \n'
@@ -30,9 +29,6 @@ except ModuleNotFoundError:
 
 app = Flask(__name__, static_folder='./', template_folder="./qap_specviewer/templates/")
 app.register_blueprint(qlook, url_prefix='/qlook')
-app.register_blueprint(react_sviewer, url_prefix='/react')
-
-print(app.url_map)
 
 
 @app.route('/')
