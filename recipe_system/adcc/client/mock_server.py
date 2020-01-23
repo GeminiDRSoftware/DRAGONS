@@ -15,8 +15,10 @@ import os
 
 from flask import Flask, abort, jsonify, render_template, send_from_directory
 
+
 try:
-    from .mock_qlook import qlook
+    from .qap_specviewer.mock_qlook import qlook
+    from .react_specviewer.app import react_sviewer
 except ModuleNotFoundError:
     from sys import exit
     print(' Start Flask server using the following steps: \n'
@@ -26,8 +28,11 @@ except ModuleNotFoundError:
     exit(1)
 
 
-app = Flask(__name__, static_folder=os.path.dirname(__file__))
+app = Flask(__name__, static_folder='./', template_folder="./qap_specviewer/templates/")
 app.register_blueprint(qlook, url_prefix='/qlook')
+app.register_blueprint(react_sviewer, url_prefix='/react')
+
+print(app.url_map)
 
 
 @app.route('/')
@@ -35,9 +40,9 @@ def index():
     return app.send_static_file("index.html")
 
 
-@app.route('/css/<path:path>')
-def css(path):
-    return send_from_directory("css", path)
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory("images", "dragons_favicon.ico")
 
 
 @app.route('/specqueue.json')
@@ -52,7 +57,6 @@ def specframe():
         jdata = json.load(json_file)
 
     try:
-        # return jsonify(json.dumps(jdata))
         return jdata
     except Exception as e:
         print(str(e))
@@ -62,7 +66,6 @@ def specframe():
 @qlook.errorhandler(500)
 def server_error(e):
     return render_template("500.html", error=str(e)), 500
-
 
 
 if __name__ == '__main__':
