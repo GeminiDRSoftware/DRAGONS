@@ -91,15 +91,15 @@ def ad_factory(request, path_to_inputs):
 
     def _ad_factory(filename, recipe, **kwargs):
 
-        filename = os.path.join(path_to_inputs, filename)
+        filepath = os.path.join(path_to_inputs, filename)
 
-        if os.path.exists(filename):
-            print("\n Loading existing input file:\n  {:s}\n".format(filename))
-            _ad = astrodata.open(filename)
+        if os.path.exists(filepath):
+            print("Loading existing input file:  {}".format(filename))
+            _ad = astrodata.open(filepath)
 
         elif force_preprocess:
-            print("\n\n Pre-processing input file:\n  {:s}\n".format(filename))
-            subpath, basename = os.path.split(filename)
+            print("Pre-processing input file:  {}".format(filename))
+            subpath, basename = os.path.split(filepath)
             basename, extension = os.path.splitext(basename)
             basename = basename.split('_')[0] + extension
 
@@ -110,7 +110,7 @@ def ad_factory(request, path_to_inputs):
 
         else:
             raise IOError(
-                "Cannot find input file:\n {:s}\n".format(filename) +
+                "Cannot find input file:\n {:s}\n".format(filepath) +
                 "Run PyTest with --force-preprocessed-data if you want to "
                 "force data cache and preprocessing.")
 

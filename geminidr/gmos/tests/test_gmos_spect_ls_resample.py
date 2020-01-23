@@ -7,7 +7,8 @@ import os
 import numpy as np
 import pytest
 
-import geminidr
+import astrodata
+import gemini_instruments
 from geminidr.gmos import primitives_gmos_spect
 
 # Test parameters -------------------------------------------------------------
@@ -21,11 +22,6 @@ test_datasets = [
      "N20190427S0268_distortionDetermined.fits"),  # R400 725
 ]
 
-ref_datasets = [
-    "_".join(f[0].split("_")[:-1]) + "_extracted.fits"
-    for f in test_datasets
-]
-
 
 @pytest.fixture(scope='module')
 def refpath(path_to_refs):
@@ -36,8 +32,8 @@ def refpath(path_to_refs):
 
 
 # Local Fixtures and Helper Functions -----------------------------------------
-@pytest.fixture(scope='module')
-def ad(request, ad_factory, path_to_outputs, refpath):
+@pytest.fixture()
+def adinputs(ad_factory, refpath):
     """
     Loads existing input FITS files as AstroData objects, runs the
     `extract1DSpectra` primitive on it, and return the output object containing
@@ -51,54 +47,26 @@ def ad(request, ad_factory, path_to_outputs, refpath):
     process it. If the raw data does not exist, it is then cached via download
     from the Gemini Archive.
 
-    Parameters
-    ----------
-    request : fixture
-        PyTest's built-in fixture with information about the test itself.
-    ad_factory : fixture
-        Custom fixture defined in the `conftest.py` file that loads cached
-        data, or download and/or process it if needed.
-    path_to_outputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to
-        the output folder.
-
-    Returns
-    -------
-    AstroData
-        Object containing Wavelength Solution table.
-
-    Raises
-    ------
-    IOError
-        If the input file does not exist and if --force-preprocess-data
-        is False.
-
     """
-    print('\n\n Running test inside folder:\n  {}'.format(refpath))
-    fname, arcname = request.param
+    print('Running test inside folder:\n  {}'.format(refpath))
+    adinputs = []
 
-    # create reduced arc
-    arcfile = os.path.join(refpath, arcname)
-    adarc = ad_factory(arcfile, preprocess_arc_recipe)
-    if not os.path.exists(arcfile):
-        adarc.write(arcfile)
+    for fname, arcname in test_datasets:
+        # create reduced arc
+        arcfile = os.path.join(refpath, arcname)
+        adarc = ad_factory(arcfile, preprocess_arc_recipe)
+        if not os.path.exists(arcfile):
+            adarc.write(arcfile)
 
-    # create input for this test
-    adfile = os.path.join(refpath, fname)
-    ad = ad_factory(adfile, preprocess_recipe, arc=adarc)
-    if not os.path.exists(adfile):
-        ad.write(adfile)
+        # create input for this test
+        adfile = os.path.join(refpath, fname)
+        ad = ad_factory(adfile, preprocess_recipe, arc=adarc)
+        if not os.path.exists(adfile):
+            ad.write(adfile)
+        adinputs.append(ad)
 
-    tests_failed_before_module = request.session.testsfailed
-    yield ad
-
-#     if request.session.testsfailed > tests_failed_before_module:
-#         _dir = os.path.join(path_to_outputs, os.path.dirname(fname))
-#         os.makedirs(_dir, exist_ok=True)
-
-#         fname_out = os.path.join(_dir, ad_out.filename)
-#         ad_out.write(filename=fname_out, overwrite=True)
-#         print('\n Saved file to:\n  {}\n'.format(fname_out))
+    print('')
+    yield adinputs
 
 
 def preprocess_arc_recipe(ad, path):
@@ -167,10 +135,22 @@ def preprocess_recipe(ad, path, arc):
 
 
 # Tests Definitions -----------------------------------------------------------
+
 @pytest.mark.preprocessed_data
-@pytest.mark.parametrize("ad, ad_ref", zip(test_datasets, ref_datasets),
-                         indirect=True)
-def test_resample_to_common_frame(ad, ad_ref):
-    pass
-#     assert ad[0].data.ndim == 1
-#     np.testing.assert_allclose(ad[0].data, ad_ref[0].data, atol=1e-3)
+def test_resample_and_linearize(adinputs):
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    adout = p.resampleToCommonFrame(dw=0.15)
+    # we get 3 ad objects with one spectrum
+    assert len(adout) == 3
+    assert {len(ad) for ad in adout} == {1}
+    assert {ad[0].shape[0] for ad in adout} == {4430}
+
+
+@pytest.mark.preprocessed_data
+def test_resample_and_linearize_with_trim(adinputs):
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    adout = p.resampleToCommonFrame(dw=0.15, trim_data=True)
+    # we get 3 ad objects with one spectrum
+    assert len(adout) == 3
+    assert {len(ad) for ad in adout} == {1}
+    assert {ad[0].shape[0] for ad in adout} == {1888}
