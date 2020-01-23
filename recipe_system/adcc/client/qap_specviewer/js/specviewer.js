@@ -250,7 +250,9 @@ SpecViewer.prototype = {
           <div class="apertureInfo">
             <span>
               <b>Aperture definition:</b>
-              ${aperture.center} (${aperture.lower}, ${aperture.upper})
+                <span class="app-info-field" title="Aperture center"> ${aperture.center} px </span> (
+                <span class="app-info-field" title="Lower aperture limit"> ${aperture.lower} px </span>,
+                <span class="app-info-field" title="Upper aperture limit"> ${aperture.upper} px </span>)
             </span>
             <span style="padding-left: 10%">
               <b>Dispersion:</b> ${aperture.dispersion} nm/px

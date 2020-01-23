@@ -84,3 +84,9 @@ body {
   padding: 10px 30px 10px 10px;
   border-radius: 5px;
 }
+
+.app-info-field:hover {
+  background-color: #ddd;
+  border-radius: 5px;
+  padding: 2px;
+}
