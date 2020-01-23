@@ -539,6 +539,8 @@ def startInterfaceServer(*args, **informers):
             port += 1
 
     print("Started  HTTP server on port %s" % str(port))
+    print("Serving metrics on:\n\t /qap/nighttime_metrics/html")
+    print("Serving 1D spectra on:\n\t/qlook/specviewer.html")
     while run_event.is_set():
         r, w, x = select.select([server.socket], [], [], .5)
         if r:
