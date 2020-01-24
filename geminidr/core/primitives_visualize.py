@@ -392,14 +392,27 @@ class Visualize(PrimitivesBASE):
             adoutputs.append(ad_out)
         return adoutputs
 
-    def plotSpectraForQA(self, adinputs=None):
+    def plotSpectraForQA(self, adinputs=None, adcc_url="localhost", adcc_port=8777):
         """
-        Reads extracted spectra from
+        Converts AstroData containing extracted spectra into a JSON object. Then,
+        push it to the Automated Dataflow Coordination Center (ADCC) Server
+        (see notes below) using a POST request.
+
+        This will allow the spectra to be visualized using the QAP SpecViewer
+        web browser client.
+
+        Notes
+        -----
+        This primitive only works if the (ADCC) Server is running locally.
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-             Input data containing extracted spectra.
+            Input data containing extracted spectra.
+        adcc_url : str
+            URL address to the ADCC server.
+        add_port : int
+            URL port to the ADCC server.
 
         Returns
         -------
@@ -408,11 +421,11 @@ class Visualize(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+
+        is_local_server = adcc_url == "localhost"
 
         for ad in adinputs:
-            for ext in ad:
-                pass
+            pass
 
         return adinputs
 
