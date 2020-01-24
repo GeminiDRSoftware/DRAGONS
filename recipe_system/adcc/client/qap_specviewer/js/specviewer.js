@@ -9,7 +9,7 @@ const specViewerJsonName = "/specqueue.json";
 /**
  * Main component for SpecViewer.
  *
- * @param {JQuery Object} parentElement - element that will hold SpecViewer.
+ * @param {object} parentElement - element that will hold SpecViewer.
  * @param {string} id - name of the ID of the SpecViewer div container.
  */
 function SpecViewer(parentElement, id) {
@@ -41,20 +41,17 @@ SpecViewer.prototype = {
    * Add navigation tabs based on how many apertures there is inside the
    * JSON file.
    *
-   * @param parentId
-   * @type parentId string
-   *
-   * @param numberOfApertures
-   * @type number
+   * @param {string} parentId
+   * @param {number} numberOfApertures
    */
   addNavigationTab: function(parentId, numberOfApertures) {
     'use restrict';
 
     /* Add navigation tab container */
-    var listOfTabs = $(`#${parentId} ul`);
+    let listOfTabs = $(`#${parentId} ul`);
 
     /* Create buttons and add them to the navigation tab */
-    for (var i = 0; i < numberOfApertures; i++) {
+    for (let i = 0; i < numberOfApertures; i++) {
       listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
     }
 
@@ -66,13 +63,13 @@ SpecViewer.prototype = {
   addPlots: function(parentId, data) {
     'use restrict';
 
-    var sViewer = this;
+    let sViewer = this;
 
-    var intensity = null;
-    var variance = null;
+    let intensity = null;
+    let variance = null;
 
-    var framePlots = [];
-    var stackPlots = [];
+    let framePlots = [];
+    let stackPlots = [];
 
     for (var i = 0; i < data.apertures.length; i++) {
 
