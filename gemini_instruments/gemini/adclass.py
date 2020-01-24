@@ -70,6 +70,7 @@ gemini_keyword_names = dict(
     gain_setting = 'GAINSET',
     gems = 'GWFS1CFG',
     grating = 'GRATING',
+    grating_order = 'GRODER',
     group_id = 'GROUPID',
     local_time = 'LT',
     lyot_stop = 'LYOTSTOP',
@@ -2005,6 +2006,25 @@ class AstroDataGemini(AstroDataFits):
             Grating used for the observation
         """
         return self.phu.get(self._keyword_for('grating'))
+
+    def _grating_order(self):
+        """
+        Returns the grating order for the observation
+
+        Returns
+        -------
+        int
+            Grating order for the observation if it is spectra, else None
+        """
+        if 'SPECT' in tags:
+            try:
+                grating_order = self.phu.get(self._keyword_for('grating_order'))
+                if grating_order is not None:
+                    return int(grating_order)
+            except:
+                pass
+        # If it isn't SPECT, or has no grating order, this is not relevant and we return None
+        return None
 
     def _prism(self):
         """

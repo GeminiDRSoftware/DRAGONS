@@ -253,6 +253,7 @@ def setup_log(path_to_outputs):
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.xfail(reason="Need to rebuild reference files")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
 def test_determine_distortion_comparing_models_coefficients(ad, ad_ref):
@@ -268,6 +269,7 @@ def test_determine_distortion_comparing_models_coefficients(ad, ad_ref):
     np.testing.assert_allclose(c, c_ref, atol=2)
 
 
+@pytest.mark.xfail(reason="Need to rebuild reference files")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
 def test_determine_distortion_comparing_modeled_arrays(ad, ad_ref):
