@@ -64,13 +64,22 @@ class Stack(PrimitivesBASE):
             Combine method.
 
         reject_method : str
-            Type of pixel rejection (passed to gemcombine).
+            Pixel rejection method (none, minmax, sigclip, varclip).
 
         zero : bool
             Apply zero-level offset to match background levels?
 
+        scale : bool
+            Scale images to the same intensity?
+
         memory : float or None
             Available memory (in GB) for stacking calculations.
+
+        statsec : str
+            Section for statistics.
+
+        separate_ext : bool
+            Handle extensions separately?
 
         Returns
         -------
