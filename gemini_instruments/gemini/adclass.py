@@ -2013,12 +2013,17 @@ class AstroDataGemini(AstroDataFits):
 
         Returns
         -------
-        str
+        int
             Grating order for the observation if it is spectra, else None
         """
         if 'SPECT' in tags:
-            return self.phu.get(self._keyword_for('grating_order'))
-        # If it isn't SPECT, this is not relevant and we return None
+            try:
+                grating_order = self.phu.get(self._keyword_for('grating_order'))
+                if grating_order is not None:
+                    return int(grating_order)
+            except:
+                pass
+        # If it isn't SPECT, or has no grating order, this is not relevant and we return None
         return None
 
     def _prism(self):
