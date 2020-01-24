@@ -133,7 +133,7 @@ def test_writes_to_new_fits(path_to_outputs):
     with pytest.raises(OSError):
         ad.write(testfile)
 
-    ad.write(overwrite=True)
+    ad.write(testfile, overwrite=True)
     assert os.path.exists(testfile)
 
 
