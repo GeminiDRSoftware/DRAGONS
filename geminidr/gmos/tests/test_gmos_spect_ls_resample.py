@@ -136,24 +136,54 @@ def preprocess_recipe(ad, path, arc):
 
 # Tests Definitions -----------------------------------------------------------
 
+def _check_params(records, expected):
+    for record in records:
+        if record.message.startswith('Resampling and linearizing'):
+            assert expected in record.message
+
+
 @pytest.mark.preprocessed_data
-def test_resample_and_linearize(adinputs):
+def test_resample_and_linearize(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
     adout = p.resampleToCommonFrame(dw=0.15)
     # we get 3 ad objects with one spectrum
     assert len(adout) == 3
     assert {len(ad) for ad in adout} == {1}
     assert {ad[0].shape[0] for ad in adout} == {3868}
+    _check_params(caplog.records, 'w1=508.343 w2=1088.323 dw=0.150 npix=3868')
 
 
 @pytest.mark.preprocessed_data
-def test_resample_linearize_trim_and_stack(adinputs):
+def test_resample_and_linearize_with_w1_w2(adinputs, caplog):
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p.resampleToCommonFrame(dw=0.15, w1=700, w2=850)
+    _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
+
+
+@pytest.mark.preprocessed_data
+def test_resample_and_linearize_with_npix(adinputs, caplog):
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p.resampleToCommonFrame(dw=0.15, w1=700, npix=1001)
+    _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
+
+
+@pytest.mark.preprocessed_data
+def test_resample_error_with_all(adinputs, caplog):
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    expected_error = "Maximum 3 of w1, w2, dw, npix must be specified"
+    with pytest.raises(ValueError, match=expected_error):
+        p.resampleToCommonFrame(dw=0.15, w1=700, w2=850, npix=1001)
+
+
+@pytest.mark.preprocessed_data
+def test_resample_linearize_trim_and_stack(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
     adout = p.resampleToCommonFrame(dw=0.15, trim_data=True)
     # we get 3 ad objects with one spectrum
     assert len(adout) == 3
     assert {len(ad) for ad in adout} == {1}
     assert {ad[0].shape[0] for ad in adout} == {2428}
+    _check_params(caplog.records, 'w1=614.812 w2=978.802 dw=0.150 npix=2428')
 
     adout = p.stackFrames()
     assert len(adout) == 1

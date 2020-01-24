@@ -101,6 +101,7 @@ class linearizeSpectraConfig(config.Config):
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
+
 class resampleToCommonFrameConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_linearized", optional=True)
     w1 = config.RangeField("Starting wavelength (nm)", float, None, min=0., optional=True)
@@ -113,8 +114,8 @@ class resampleToCommonFrameConfig(config.Config):
 
     def validate(self):
         config.Config.validate(self)
-        # if [self.w1, self.w2, self.dw, self.npix].count(None) not in (1, 4):
-        #     raise ValueError("Exactly 0 or 3 of w1, w2, dw, npix must be specified")
+        if [self.w1, self.w2, self.dw, self.npix].count(None) == 0:
+            raise ValueError("Maximum 3 of w1, w2, dw, npix must be specified")
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
