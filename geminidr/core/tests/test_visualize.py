@@ -2,6 +2,7 @@ import pytest
 
 import numpy as np
 
+from geminidr.core import primitives_visualize
 from geminidr.gmos.primitives_gmos_image import GMOSImage
 
 
@@ -42,3 +43,8 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
                 else:
                     diffs = np.diff(unbinned_positions) - binning * np.diff(x)
                     assert np.max(abs(diffs)) < 0.01
+
+
+def test_plot_spectra_for_qa_single_frame():
+    dataset = ["N20180112S0209.fits", "N20180112S0210.fits"]
+    pass
