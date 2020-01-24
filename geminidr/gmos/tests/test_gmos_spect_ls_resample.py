@@ -7,19 +7,19 @@ import os
 import numpy as np
 import pytest
 
-import astrodata
-import gemini_instruments
 from geminidr.gmos import primitives_gmos_spect
 
 # Test parameters -------------------------------------------------------------
 test_datasets = [
     # Input Filename
-    ("N20190427S0123_extracted.fits",
-     "N20190427S0266_distortionDetermined.fits"),  # R400 525
-    ("N20190427S0126_extracted.fits",
-     "N20190427S0267_distortionDetermined.fits"),  # R400 625
-    ("N20190427S0127_extracted.fits",
-     "N20190427S0268_distortionDetermined.fits"),  # R400 725
+    ("S20190808S0048_extracted.fits",              # R400 : 0.740
+     "S20190808S0167_distortionDetermined.fits"),  #
+    ("S20190808S0049_extracted.fits",              # R400 : 0.760
+     "S20190808S0168_distortionDetermined.fits"),  #
+    # ("S20190808S0052_extracted.fits",              # R400 : 0.650
+    #  "S20190808S0165_distortionDetermined.fits"),  #
+    ("S20190808S0053_extracted.fits",              # R400 : 0.850
+     "S20190808S0169_distortionDetermined.fits"),  #
 ]
 
 
@@ -48,7 +48,7 @@ def adinputs(ad_factory, refpath):
     from the Gemini Archive.
 
     """
-    print('Running test inside folder:\n  {}'.format(refpath))
+    print('\nRunning test inside folder:\n  {}'.format(refpath))
     adinputs = []
 
     for fname, arcname in test_datasets:
@@ -143,14 +143,19 @@ def test_resample_and_linearize(adinputs):
     # we get 3 ad objects with one spectrum
     assert len(adout) == 3
     assert {len(ad) for ad in adout} == {1}
-    assert {ad[0].shape[0] for ad in adout} == {4430}
+    assert {ad[0].shape[0] for ad in adout} == {3868}
 
 
 @pytest.mark.preprocessed_data
-def test_resample_and_linearize_with_trim(adinputs):
+def test_resample_linearize_trim_and_stack(adinputs):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
     adout = p.resampleToCommonFrame(dw=0.15, trim_data=True)
     # we get 3 ad objects with one spectrum
     assert len(adout) == 3
     assert {len(ad) for ad in adout} == {1}
-    assert {ad[0].shape[0] for ad in adout} == {1888}
+    assert {ad[0].shape[0] for ad in adout} == {2428}
+
+    adout = p.stackFrames()
+    assert len(adout) == 1
+    assert len(adout[0]) == 1
+    assert adout[0][0].shape[0] == 2428

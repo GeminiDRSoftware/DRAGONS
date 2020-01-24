@@ -73,8 +73,8 @@ def ad_factory(request, path_to_inputs):
     request : fixture
         PyTest's built-in fixture with information about the test itself.
     path_to_inputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        cached input files.
+        Custom fixture defined in `astrodata.testing` containing the path
+        to the cached input files.
 
     Returns
     -------
@@ -84,7 +84,8 @@ def ad_factory(request, path_to_inputs):
     Raises
     ------
     IOError
-        If the input file does not exist and if --force-preprocess-data is False.
+        If the input file does not exist and if ``--force-preprocess-data``
+        is False.
 
     """
     force_preprocess = request.config.getoption("--force-preprocess-data")
@@ -94,11 +95,11 @@ def ad_factory(request, path_to_inputs):
         filepath = os.path.join(path_to_inputs, filename)
 
         if os.path.exists(filepath):
-            print("Loading existing input file:  {}".format(filename))
+            print("Loading existing input file: {}".format(filename))
             _ad = astrodata.open(filepath)
 
         elif force_preprocess:
-            print("Pre-processing input file:  {}".format(filename))
+            print("Pre-processing input file: {}".format(filename))
             subpath, basename = os.path.split(filepath)
             basename, extension = os.path.splitext(basename)
             basename = basename.split('_')[0] + extension
