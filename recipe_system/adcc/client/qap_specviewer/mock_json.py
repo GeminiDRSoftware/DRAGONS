@@ -74,7 +74,7 @@ def main():
             "apertures": apertures,
             "stackApertures": stack_apertures}
 
-    filename = os.path.join(os.path.dirname(__file__), "data.json")
+    filename = os.path.join(os.path.dirname(__file__), "adcc_response.json")
     with open(filename, 'w') as json_file:
         json.dump(data, json_file)
 
