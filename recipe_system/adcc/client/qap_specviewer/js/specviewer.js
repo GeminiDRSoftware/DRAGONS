@@ -50,7 +50,7 @@ SpecViewer.prototype = {
     /* Add navigation tab container */
     let listOfTabs = $(`#${parentId} ul`);
 
-    /* Create buttons and add them to the navigation tab */
+    // Create buttons and add them to the navigation tab
     for (let i = 0; i < numberOfApertures; i++) {
       listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
     }
@@ -65,8 +65,8 @@ SpecViewer.prototype = {
 
     let sViewer = this;
 
-    let intensity = null;
-    let variance = null;
+    var intensity = null;
+    var stddev = null;
 
     let framePlots = [];
     let stackPlots = [];
@@ -77,11 +77,11 @@ SpecViewer.prototype = {
       intensity = buildSeries(
         data.apertures[i].wavelength, data.apertures[i].intensity);
 
-      variance = buildSeries(
-        data.apertures[i].wavelength, data.apertures[i].variance);
+      stddev = buildSeries(
+        data.apertures[i].wavelength, data.apertures[i].stddev);
 
       framePlots[i] = $.jqplot(
-        `framePlot${i}`, [intensity, variance], $.extend(plotOptions, {
+        `framePlot${i}`, [intensity, stddev], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
 
@@ -89,11 +89,11 @@ SpecViewer.prototype = {
       intensity = buildSeries(
         data.stackApertures[i].wavelength, data.stackApertures[i].intensity);
 
-      variance = buildSeries(
-        data.stackApertures[i].wavelength, data.stackApertures[i].variance);
+      stddev = buildSeries(
+        data.stackApertures[i].wavelength, data.stackApertures[i].stddev);
 
       stackPlots[i] = $.jqplot(
-        `stackPlot${i}`, [intensity, variance], $.extend(plotOptions, {
+        `stackPlot${i}`, [intensity, stddev], $.extend(plotOptions, {
           title: `Aperture ${i} - Stack Frame`,
         }));
 
@@ -376,7 +376,7 @@ plotOptions = {
       labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
     },
     yaxis: {
-      label: "Flux [???]",
+      label: "Intensity [e\u207B]", // escaped superscript minus
       labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
     },
   },
@@ -396,7 +396,7 @@ plotOptions = {
     },
     {
       color: '#ff7f0e',
-      label: 'Variance'
+      label: 'Standard Deviation'
     },
   ],
 
