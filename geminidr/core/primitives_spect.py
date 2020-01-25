@@ -1043,10 +1043,10 @@ class Spect(PrimitivesBASE):
                     apmask = np.logical_or.reduce([ap.aperture_mask(ext, width=width, grow=grow)
                                                    for ap in apertures])
 
-                for i, aperture in enumerate(apertures):
-                    log.stdinfo("    Extracting spectrum from aperture {}".format(i + 1))
+                for apnum, aperture in enumerate(apertures, start=1):
+                    log.stdinfo("    Extracting spectrum from aperture {}".format(apnum))
                     self.viewer.width = 2
-                    self.viewer.color = colors[i % len(colors)]
+                    self.viewer.color = colors[(apnum-1) % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
                                                 method=method, viewer=self.viewer if debug else None)
 
@@ -1085,7 +1085,7 @@ class Spect(PrimitivesBASE):
                                                              handle_mask=np.bitwise_or))
                         else:
                             log.warning("Difficulty finding sky aperture. No sky"
-                                        " subtraction for aperture {}".format(i))
+                                        " subtraction for aperture {}".format(apnum))
                             ad_spec.append(ndd_spec)
                     else:
                         ad_spec.append(ndd_spec)
@@ -1096,14 +1096,16 @@ class Spect(PrimitivesBASE):
                         ad_spec[-1].WAVECAL = ext.WAVECAL
                     except AttributeError:  # That's OK, there wasn't one
                         pass
-                    ad_spec[-1].hdr[ad._keyword_for('aperture_number')] = model_dict['number']
-                    center = model_dict['c0']
+                    ad_spec[-1].hdr[ad._keyword_for('aperture_number')] = apnum
+                    center = aperture.model.c0.value
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
                                                            "from {} {}".format(direction, int(center + 0.5)))
                     ad_spec[-1].hdr['XTRACTLO'] = (aperture._last_extraction[0],
                                                    'Aperture lower limit')
                     ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
                                                    'Aperture upper limit')
+
+                    print(len(ad_spec), ad_spec.hdr['APERTURE'])
 
                     # Delete some header keywords
                     for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
