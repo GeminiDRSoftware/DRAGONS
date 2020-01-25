@@ -121,11 +121,11 @@ def test_phu():
 
 
 @pytest.mark.dragons_remote_data
-def test_writes_to_new_fits(tmpdir):
+def test_writes_to_new_fits(path_to_outputs):
     fname = download_from_archive(test_files[0])
     ad = astrodata.open(fname)
 
-    testfile = str(tmpdir.join('temp.fits'))
+    testfile = os.path.join(path_to_outputs, 'temp.fits')
     ad.write(testfile)
     assert os.path.exists(testfile)
 
@@ -133,7 +133,7 @@ def test_writes_to_new_fits(tmpdir):
     with pytest.raises(OSError):
         ad.write(testfile)
 
-    ad.write(overwrite=True)
+    ad.write(testfile, overwrite=True)
     assert os.path.exists(testfile)
 
 
