@@ -17,7 +17,7 @@ def reduce(p):
 
     p.prepare(attach_mdf=True)
     p.addDQ()
-    p.trimOverscan()
+    p.subtractOverscan()
     p.ADUToElectrons()
     p.measureIQ(display=True)
     p.writeOutputs()

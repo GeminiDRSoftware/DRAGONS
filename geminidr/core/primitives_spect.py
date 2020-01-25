@@ -3,43 +3,37 @@
 #
 #                                                             primtives_spect.py
 # ------------------------------------------------------------------------------
-from geminidr import PrimitivesBASE
-from . import parameters_spect
 import os
 import re
-
-import numpy as np
-from numpy.ma.extras import _ezclump
-from scipy import spatial, optimize
-from scipy.interpolate import UnivariateSpline
+from copy import deepcopy
+from datetime import datetime
 from importlib import import_module
 
+import numpy as np
+from astropy import units as u
+from astropy.io.registry import IORegistryError
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
-from astropy.io.registry import IORegistryError
 from astropy.wcs import WCS
-from astropy import units as u
-
-from specutils import SpectralRegion
-
 from matplotlib import pyplot as plt
-
-from gempy.gemini import gemini_tools as gt
-from gempy.library.astrotools import array_from_list
-from gempy.library import astromodels, matching, tracing
-from gempy.library.spectral import Spek1D
-from gempy.library.nddops import NDStacker
-from gempy.library import transform
-from geminidr.gemini.lookups import DQ_definitions as DQ
+from numpy.ma.extras import _ezclump
+from scipy import spatial, optimize
+from scipy.interpolate import UnivariateSpline
+from specutils import SpectralRegion
 
 import astrodata
 from astrodata import NDAstroData
-
-from datetime import datetime
-from copy import deepcopy
-
+from geminidr import PrimitivesBASE
+from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.gemini import gemini_tools as gt
+from gempy.library import astromodels, matching, tracing
+from gempy.library import transform
+from gempy.library.astrotools import array_from_list
+from gempy.library.nddops import NDStacker
+from gempy.library.spectral import Spek1D
 from recipe_system.utils.decorators import parameter_override
+from . import parameters_spect
 
 
 # ------------------------------------------------------------------------------
@@ -55,9 +49,9 @@ class Spect(PrimitivesBASE):
         super(Spect, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
-
     def calculateSensitivity(self, adinputs=None, **params):
         """
+        ???
 
         Parameters
         ----------
@@ -111,8 +105,8 @@ class Spect(PrimitivesBASE):
                 # Compute values that are counts / (exptime * flux_density * bandpass)
                 wave, zpt, zpt_err = [], [], []
                 for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
-                    spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
-                    region = SpectralRegion(w0 - 0.5*dw, w0 + 0.5*dw)
+                                            spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
+                    region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
                     data, mask, variance = spectrum.signal(region)
                     if not mask and fluxdens > 0:
                         # Regardless of whether FLUX column is f_nu or f_lambda
@@ -127,14 +121,14 @@ class Spect(PrimitivesBASE):
                 zpt_err = array_from_list(zpt_err)
 
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value,
-                                            zpt.value, w=1./zpt_err.value, order=order)
+                                                                        zpt.value, w=1. / zpt_err.value, order=order)
 
-                #plt.ioff()
-                #fig, ax = plt.subplots()
-                #ax.plot(wave, zpt, 'ko')
-                #x = np.linspace(min(wave), max(wave), ext.shape[0])
-                #ax.plot(x, spline(x), 'r-')
-                #plt.show()
+                # plt.ioff()
+                # fig, ax = plt.subplots()
+                # ax.plot(wave, zpt, 'ko')
+                # x = np.linspace(min(wave), max(wave), ext.shape[0])
+                # ax.plot(x, spline(x), 'r-')
+                # plt.show()
 
                 knots, coeffs, degree = spline._eval_args
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
@@ -153,6 +147,24 @@ class Spect(PrimitivesBASE):
         dispersion direction. Then it fits a 2D Chebyshev polynomial to the
         fitted coordinates in the dispersion direction. The distortion map does
         not change the coordinates in the spatial direction.
+
+        The Chebyshev2D model is stored as a Table object in the `.FITCOORD`
+        plane with the following format:
+
+        =============== ================ ============== ======================
+        name            coefficients     inv_name       inv_coefficients
+        --------------- ---------------- -------------- ----------------------
+        ndim            (int as float)   ndim           (int as float)
+        x_degree        (int as float)   x_degree       (int as float)
+        y_degree        (int as float)   y_degree       (int as float)
+        x_domain_start  (int as float)   x_domain_start (int as float)
+        x_domain_end    (int as float)   x_domain_end   (int as float)
+        y_domain_start  (int as float)   y_domain_start (int as float)
+        y_domain_end    (int as float)   y_domain_end   (int as float)
+        c0_0            (float)          c0_0           (float)
+        c1_0            (float)          c1_0           (float)
+        ...             ...              ...            ...
+        =============== ================ ============== ======================
 
         Parameters
         ----------
@@ -271,37 +283,38 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("Found {} peaks".format(len(initial_peaks)))
 
                 # The coordinates are always returned as (x-coords, y-coords)
-                ref_coords, in_coords = tracing.trace_lines(ext, axis=1-dispaxis,
-                        start=start, initial=initial_peaks, width=5, step=step,
-                        nsum=nsum, max_missed=max_missed, max_shift=max_shift*ybin/xbin,
-                        viewer=self.viewer if debug else None)
+                ref_coords, in_coords = tracing.trace_lines(ext, axis=1 - dispaxis,
+                                                            start=start, initial=initial_peaks, width=5, step=step,
+                                                            nsum=nsum, max_missed=max_missed,
+                                                            max_shift=max_shift * ybin / xbin,
+                                                            viewer=self.viewer if debug else None)
 
                 ## These coordinates need to be in the reference frame of a
                 ## full-frame unbinned image, so modify the coordinates by
                 ## the detector section
-                #x1, x2, y1, y2 = ext.detector_section()
-                #ref_coords = np.array([ref_coords[0] * xbin + x1,
+                # x1, x2, y1, y2 = ext.detector_section()
+                # ref_coords = np.array([ref_coords[0] * xbin + x1,
                 #                       ref_coords[1] * ybin + y1])
-                #in_coords = np.array([in_coords[0] * xbin + x1,
+                # in_coords = np.array([in_coords[0] * xbin + x1,
                 #                      in_coords[1] * ybin + y1])
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
-                m_init = models.Chebyshev2D(x_degree=orders[1-dispaxis],
+                m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
                                             x_domain=[0, ext.shape[1]],
                                             y_domain=[0, ext.shape[0]])
-                #x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
-                #y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
+                # x_domain = [x1, x1 + ext.shape[1] * xbin - 1],
+                # y_domain = [y1, y1 + ext.shape[0] * ybin - 1])
                 # Find model to transform actual (x,y) locations to the
                 # value of the reference pixel along the dispersion axis
                 fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                            sigma_clip, sigma=3)
-                m_final, _ = fit_it(m_init, *in_coords, ref_coords[1-dispaxis])
-                m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1-dispaxis])
+                m_final, _ = fit_it(m_init, *in_coords, ref_coords[1 - dispaxis])
+                m_inverse, masked = fit_it(m_init, *ref_coords, in_coords[1 - dispaxis])
 
                 # TODO: Some logging about quality of fit
-                #print(np.min(diff), np.max(diff), np.std(diff))
+                # print(np.min(diff), np.max(diff), np.std(diff))
 
                 if dispaxis == 1:
                     model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
@@ -312,8 +325,8 @@ class Spect(PrimitivesBASE):
 
                 self.viewer.color = "blue"
                 spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
-                                             ext.shape[1-dispaxis] // (step*10))
-                spectral_coords = np.unique(ref_coords[1-dispaxis])
+                                             ext.shape[1 - dispaxis] // (step * 10))
+                spectral_coords = np.unique(ref_coords[1 - dispaxis])
                 for coord in spectral_coords:
                     if dispaxis == 1:
                         xref = [coord] * len(spatial_coords)
@@ -321,7 +334,7 @@ class Spect(PrimitivesBASE):
                     else:
                         xref = spatial_coords
                         yref = [coord] * len(spatial_coords)
-                    #mapped_coords = (np.array(model.inverse(xref, yref)).T -
+                    # mapped_coords = (np.array(model.inverse(xref, yref)).T -
                     #                 np.array([x1, y1])) / np.array([xbin, ybin])
                     mapped_coords = np.array(model.inverse(xref, yref)).T
                     if debug:
@@ -336,7 +349,7 @@ class Spect(PrimitivesBASE):
                 # have different orders and we might need to pad one
                 ext.FITCOORD = Table(columns, names=("name", "coefficients",
                                                      "inv_name", "inv_coefficients"))
-                #ext.COORDS = Table([*in_coords] + [*ref_coords], names=('xin','yin','xref','yref'))
+                # ext.COORDS = Table([*in_coords] + [*ref_coords], names=('xin','yin','xref','yref'))
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -417,7 +430,7 @@ class Spect(PrimitivesBASE):
             if len_arc not in (1, len_ad):
                 log.warning("Science frame {} has {} extensions and arc {} "
                             "has {} extensions.".format(ad.filename, len_ad,
-                                                       arc.filename, len_arc))
+                                                        arc.filename, len_arc))
                 adoutputs.append(ad)
                 continue
 
@@ -554,44 +567,22 @@ class Spect(PrimitivesBASE):
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
-        This primitive determines the wavelength solution for an ARC and
-        stores it as an attached `.WAVECAL` table.
+        Determines the wavelength solution for an ARC and stores it as an
+        attached `.WAVECAL` :class:`~astropy.table.Table`.
 
         2D input images are converted to 1D by collapsing a slice of the image
         along the dispersion direction, and peaks are identified. These are then
-        matched to an arc line list, using the `KDTreeFitter`.
+        matched to an arc line list, using :class:`~gempy.library.matching.KDTreeFitter`.
+        This class has a strong dependency with the fwith parameter and works better
+        if a good inicial value is providen.
 
-        For each `AstroData` object and for each extension within it, this
-        primitive contains the following bigger steps:
+        The `.WAVECAL` table contains four columns:
+            ["name", "coefficients", "peaks", "wavelengths"]
 
-        - Read Arc Lines;
-
-        - Extract 1D spectrum;
-
-        - Mask data skipping non-linear or saturated lines;
-
-        - Use known central wavelength to calculate wavelength range and
-          dispersion;
-
-        - Estimate line widths to be used on peak detection;
-
-        - Detect peaks using Continuous Wavelet Transform;
-
-        - Create weight dictionary with different types of weights
-          (intensity/flux);
-
-        - Create iteration sequence with different weights methods;
-
-        - Create 0th iteration using a 1D Chebyshev model;
-
-        - Fit iteration using `KDTreeFitter`;
-
-        - Matching using `Chebyshev1DMatchBox`;
-
-        - Convert model into dictionary and, then, into a Table;
-
-        - Store solution as a Table.
-
+        The `name` and the `coefficients` columns contain information to
+        re-create an Chebyshev1D object. The `peaks` column contains the position
+        of the lines that were matched to the cathalog, and the `wavelengths`
+        column contains the wavelengths that were matched to that line.
 
         Parameters
         ----------
@@ -599,32 +590,40 @@ class Spect(PrimitivesBASE):
         adinputs : list of :class:`~astrodata.AstroData`
              Mosaicked Arc data as 2D spectral images or 1D spectra.
 
-        suffix : str
-            Suffix to be added to output files.
+        suffix : str, optional
+            Suffix to be added to output files
+            (default: "_wavelengthSolutionDetermined").
 
-        center : int or None
+        center : None or int, optional
             Central row/column for 1D extraction (None => use middle).
 
-        nsum : int
-            Number of rows/columns to average.
+        nsum : int, optional
+            Number of rows/columns to average (default: 10).
 
-        order : int
-            Order of Chebyshev fitting function.
+        order : int, optional
+            Order of Chebyshev fitting function (default: 2).
 
-        min_snr : float
-            Minimum S/N ratio in line peak to be used in fitting.
+        min_snr : float, optional
+            Minimum S/N ratio in line peak to be used in fitting (default: 10).
 
-        fwidth : float
-            Expected width of arc lines in pixels.
+        fwidth : None or float, optional
+            Expected width of arc lines in pixels. It tells how far the
+            KDTreeFitter should look for when matching detected peaks with
+            reference arcs lines. If None (the default), `fwidth` is
+            determined using `tracing.estimate_peak_width`.
 
-        linelist : str or None
-            Name of file containing arc lines.
+        linelist : None or str, optional
+            Name of file containing arc lines. If None, then a default look-up
+            table will be used.
 
-        weighting : {'none', 'natural', 'relative'}
+        weighting : {'natural', 'relative', 'none'}
             How to weight the detected peaks.
 
         nbright : int
-            Number of brightest lines to cull before fitting.
+            Number of brightest lines to cull before fitting (default: 0).
+
+        plot : bool
+            Enable plots for debugging.
 
         Returns
         -------
@@ -661,7 +660,7 @@ class Spect(PrimitivesBASE):
         # mosaicked before calling super()?
         #
         # Top-level decision for this to only work on single-extension ADs
-        #if not all(len(ad)==1 for ad in adinputs):
+        # if not all(len(ad)==1 for ad in adinputs):
         #    raise ValueError("Not all inputs are single-extension AD objects")
 
         # Get list of arc lines (probably from a text file dependent on the
@@ -720,7 +719,7 @@ class Spect(PrimitivesBASE):
                 if arc_file is None:
                     arc_lines, arc_weights = self._get_arc_linelist(ext, w1=w1, w2=w2, dw=dw)
 
-                #arc_weights = None
+                # arc_weights = None
 
                 if min(arc_lines) > cenwave + 0.5 * len(data) * abs(dw):
                     log.warning("Line list appears to be in Angstroms; converting to nm")
@@ -731,7 +730,7 @@ class Spect(PrimitivesBASE):
                 peaks, peak_snrs = tracing.find_peaks(data, widths, mask=mask,
                                                       variance=variance, min_snr=min_snr)
                 log.stdinfo('{}: {} peaks and {} arc lines'.
-                             format(ad.filename, len(peaks), len(arc_lines)))
+                            format(ad.filename, len(peaks), len(arc_lines)))
 
                 # Compute all the different types of weightings so we can
                 # change between them as needs require
@@ -743,7 +742,7 @@ class Spect(PrimitivesBASE):
                 tree = spatial.cKDTree(np.array([peaks]).T)
                 # Find lines within 10% of the array size
                 indices = tree.query(np.array([peaks]).T, k=10,
-                                     distance_upper_bound=abs(0.1*len(data)*dw))[1]
+                                     distance_upper_bound=abs(0.1 * len(data) * dw))[1]
                 snrs = np.array(list(peak_snrs) + [np.nan])[indices]
                 # Normalize weights by the maximum of these lines
                 weights['relative'] = peak_snrs / np.nanmedian(snrs, axis=1)
@@ -760,21 +759,27 @@ class Spect(PrimitivesBASE):
                 # iteration the next initial model comes from the fitted
                 # (final) model of the previous iteration
                 m_final = models.Chebyshev1D(degree=1, c0=cenwave,
-                                             c1=0.5*dw*len(data), domain=[0, len(data)-1])
+                                             c1=0.5 * dw * len(data), domain=[0, len(data) - 1])
                 if plot:
                     plot_arc_fit(data, peaks, arc_lines, arc_weights, m_final, "Initial model")
                 log.stdinfo('Initial model: {}'.format(repr(m_final)))
 
                 kdsigma = fwidth * abs(dw)
                 peaks_to_fit = peak_snrs > min_snr
-                peaks_to_fit[np.argsort(peak_snrs)[len(peaks)-nbright:]] = False
+                peaks_to_fit[np.argsort(peak_snrs)[len(peaks) - nbright:]] = False
 
                 # Temporary code to help with testing
                 try:
                     sequence = self.fit_sequence
                 except AttributeError:
-                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
-                                tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order+1)))
+
+                    # FixMe: toggle commented lines bellow to make tests pass
+
+                    sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping')) +
+                                tuple((order, 'none', 'Nelder-Mead') for order in range(2, order+1)))
+
+                    # sequence = (((1, 'none', 'basinhopping', ['c1']), (2, 'none', 'basinhopping', ['c1'])) +
+                    #             tuple((order, 'relative', 'Nelder-Mead') for order in range(2, order + 1)))
 
                 # Now make repeated fits, increasing the polynomial order
                 for item in sequence:
@@ -798,7 +803,11 @@ class Spect(PrimitivesBASE):
                     # Set some bounds; this may need to be abstracted for
                     # different instruments? TODO
                     dw = abs(2 * m_init.c1 / np.diff(m_init.domain)[0])
-                    c0_unc = 0.05 * cenwave
+
+                    # FixMe: "0.02 * cenwave" makes tests for determineWavelengthSolution
+                    #  fail. Use "0.05 * cenwave" to make them pass.
+                    c0_unc = 0.02 * cenwave
+
                     m_init.c0.bounds = (m_init.c0 - c0_unc, m_init.c0 + c0_unc)
                     c1_unc = 0.005 * abs(m_init.c1)
                     m_init.c1.bounds = tuple(sorted([m_init.c1 - c1_unc, m_init.c1 + c1_unc]))
@@ -812,7 +821,7 @@ class Spect(PrimitivesBASE):
                     fit_it = matching.KDTreeFitter(sigma=kdsigma, maxsig=10, k=3, method=method)
                     m_final = fit_it(m_init, peaks[peaks_to_fit], arc_lines,
                                      in_weights=in_weights[peaks_to_fit],
-                                     ref_weights=None if weight_type is 'none' else arc_weights)
+                                     ref_weights=None if weight_type == 'none' else arc_weights)
                     #                 method='basinhopping' if weight_type is 'none' else 'Nelder-Mead')
                     #                 options={'xtol': 1.0e-7, 'ftol': 1.0e-8})
 
@@ -828,8 +837,8 @@ class Spect(PrimitivesBASE):
                     m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
                                                                        model=m_final, match_radius=match_radius,
                                                                        sigma_clip=3)
-                    #kdsigma = m.rms_output
-                    #print("New kdsigma {}".format(kdsigma))
+                    # kdsigma = m.rms_output
+                    # print("New kdsigma {}".format(kdsigma))
                     kdsigma = fwidth * abs(dw)
                     yplot += 1
 
@@ -837,10 +846,14 @@ class Spect(PrimitivesBASE):
                 for p in m_final.param_names:
                     getattr(m_final, p).bounds = (None, None)
 
-                match_radius = 2 * fwidth * abs(m_final.c1) / len(data)  # fwidth pixels
+                # FixMe: using "4 * fwidth" breaks tests in test_gmos_spect_ls_wavelength_calibration.
+                #   Use "2 * fwidth" to make them pass.
+                match_radius = 4 * fwidth * abs(m_final.c1) / len(data)  # 2*fwidth pixels
+
                 # match_radius = kdsigma
                 m = matching.Chebyshev1DMatchBox.create_from_kdfit(peaks, arc_lines,
-                                model=m_final, match_radius=match_radius, sigma_clip=3)
+                                                                   model=m_final, match_radius=match_radius,
+                                                                   sigma_clip=3)
                 if plot:
                     for incoord, outcoord in zip(m.forward(m.input_coords), m.output_coords):
                         ax.text(incoord, yplot, '{:.4f}'.format(outcoord), rotation=90,
@@ -853,7 +866,7 @@ class Spect(PrimitivesBASE):
 
                 # Choice of kdsigma can have a big effect. This oscillates
                 # around the initial choice, with increasing amplitude.
-                #kdsigma = 10.*abs(dw) * (((1.0+0.1*((kditer+1)//2)))**((-1)**kditer)
+                # kdsigma = 10.*abs(dw) * (((1.0+0.1*((kditer+1)//2)))**((-1)**kditer)
                 #                    if kditer<21 else 1)
 
                 m_final = m.forward
@@ -1030,10 +1043,10 @@ class Spect(PrimitivesBASE):
                     apmask = np.logical_or.reduce([ap.aperture_mask(ext, width=width, grow=grow)
                                                    for ap in apertures])
 
-                for i, aperture in enumerate(apertures):
-                    log.stdinfo("    Extracting spectrum from aperture {}".format(i + 1))
+                for apnum, aperture in enumerate(apertures, start=1):
+                    log.stdinfo("    Extracting spectrum from aperture {}".format(apnum))
                     self.viewer.width = 2
-                    self.viewer.color = colors[i % len(colors)]
+                    self.viewer.color = colors[(apnum-1) % len(colors)]
                     ndd_spec = aperture.extract(ext, width=width,
                                                 method=method, viewer=self.viewer if debug else None)
 
@@ -1053,7 +1066,7 @@ class Spect(PrimitivesBASE):
                             ok = False
                             while not ok:
                                 if ((min_ + offset - 0.5 * sky_width < -0.5) or
-                                     (max_ + offset + 0.5 * sky_width > ext.shape[1-dispaxis] - 0.5)):
+                                        (max_ + offset + 0.5 * sky_width > ext.shape[1 - dispaxis] - 0.5)):
                                     break
 
                                 sky_trace_model = aperture.model | models.Shift(offset)
@@ -1072,7 +1085,7 @@ class Spect(PrimitivesBASE):
                                                              handle_mask=np.bitwise_or))
                         else:
                             log.warning("Difficulty finding sky aperture. No sky"
-                                        " subtraction for aperture {}".format(i))
+                                        " subtraction for aperture {}".format(apnum))
                             ad_spec.append(ndd_spec)
                     else:
                         ad_spec.append(ndd_spec)
@@ -1083,14 +1096,16 @@ class Spect(PrimitivesBASE):
                         ad_spec[-1].WAVECAL = ext.WAVECAL
                     except AttributeError:  # That's OK, there wasn't one
                         pass
-                    ad_spec[-1].hdr[ad._keyword_for('aperture_number')] = model_dict['number']
-                    center = model_dict['c0']
+                    ad_spec[-1].hdr[ad._keyword_for('aperture_number')] = apnum
+                    center = aperture.model.c0.value
                     ad_spec[-1].hdr['XTRACTED'] = (center, "Spectrum extracted "
-                                "from {} {}".format(direction, int(center + 0.5)))
+                                                           "from {} {}".format(direction, int(center + 0.5)))
                     ad_spec[-1].hdr['XTRACTLO'] = (aperture._last_extraction[0],
                                                    'Aperture lower limit')
                     ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
                                                    'Aperture upper limit')
+
+                    print(len(ad_spec), ad_spec.hdr['APERTURE'])
 
                     # Delete some header keywords
                     for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
@@ -1199,7 +1214,7 @@ class Spect(PrimitivesBASE):
                 mean, sigma, _ = gt.measure_bg_from_image(ndd, sampling=1)
 
                 # Mask sky-line regions and find clumps of unmasked pixels
-                mask1d[var1d > mean+sigma] = 1
+                mask1d[var1d > mean + sigma] = 1
                 slices = np.ma.clump_unmasked(np.ma.masked_array(var1d, mask1d))
                 sky_regions = [slice_ for slice_ in slices
                                if slice_.stop - slice_.start >= min_sky_pix]
@@ -1215,12 +1230,12 @@ class Spect(PrimitivesBASE):
                 profile, prof_mask, prof_var = NDStacker.combine(data.T, mask=sky_mask.T,
                                                                  variance=None if variance is None else variance.T,
                                                                  rejector="none", combiner="mean")
-                #profile, prof_mask, prof_var = NDStacker.combine((data / data1d).T, mask=sky_mask.T,
+                # profile, prof_mask, prof_var = NDStacker.combine((data / data1d).T, mask=sky_mask.T,
                 #                                                 variance=None if variance is None else (variance / (data1d*data1d)).T,
                 #                                                 rejector="sigclip", combiner="wtmean")
 
                 # TODO: find_peaks might not be best considering we have no
-                # idea whether sources will be extended or not
+                #   idea whether sources will be extended or not
                 widths = np.arange(5, 30)
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
                                                     variance=prof_var, reject_bad=False,
@@ -1229,20 +1244,22 @@ class Spect(PrimitivesBASE):
                 locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
                                             reverse=True)[:max_apertures]).T[0]
                 log.stdinfo("Found sources at {}s: {}".format(direction,
-                            ' '.join(['{:.1f}'.format(loc) for loc in locations])))
+                                                              ' '.join(['{:.1f}'.format(loc) for loc in locations])))
 
                 all_limits = tracing.get_limits(profile, prof_mask, peaks=locations,
                                                 threshold=threshold, method=limit_method)
 
                 all_model_dicts = []
                 for loc, limits in zip(locations, all_limits):
-                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix-1], c0=loc)
+                    cheb = models.Chebyshev1D(degree=0, domain=[0, npix - 1], c0=loc)
                     model_dict = astromodels.chebyshev_to_dict(cheb)
-                    model_dict['aper_lower'] = limits[0] - loc
-                    model_dict['aper_upper'] = limits[1] - loc
+                    lower, upper = limits - loc
+                    model_dict['aper_lower'] = lower
+                    model_dict['aper_upper'] = upper
                     all_model_dicts.append(model_dict)
+                    log.debug("Limits for source {:.1f} ({:.1f}, +{:.1f})".format(loc, lower, upper))
 
-                aptable = Table([np.arange(len(locations))+1], names=['number'])
+                aptable = Table([np.arange(len(locations)) + 1], names=['number'])
                 for name in model_dict.keys():  # Still defined from above loop
                     aptable[name] = [model_dict.get(name, 0)
                                      for model_dict in all_model_dicts]
@@ -1287,8 +1304,8 @@ class Spect(PrimitivesBASE):
         if std is None:
             raise NotImplementedError("Cannot perform automatic standard star"
                                       " association")
-            #self.getProcessedStandard(adinputs, refresh=False)
-            #std_list = self._get_cal(adinputs, 'processed_standard')
+            # self.getProcessedStandard(adinputs, refresh=False)
+            # std_list = self._get_cal(adinputs, 'processed_standard')
         else:
             std_list = std
 
@@ -1335,7 +1352,7 @@ class Spect(PrimitivesBASE):
                     elif not unit.is_equivalent(u.dimensionless_unscaled):
                         log.warning("{} has incompatible units ('{}' and '{}')."
                                     "Cannot flux calibrate".format(extver,
-                                           sci_flux_unit, std_flux_unit))
+                                                                   sci_flux_unit, std_flux_unit))
                         continue
                 else:
                     log.warning("Cannot determine units of data and/or SENSFUNC "
@@ -1346,18 +1363,18 @@ class Spect(PrimitivesBASE):
                 wcs = WCS(ext.hdr)
                 ndim = len(ext.shape)
                 dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
-                wave_unit = u.Unit(ext.hdr['CUNIT{}'.format(ndim-dispaxis)])
+                wave_unit = u.Unit(ext.hdr['CUNIT{}'.format(ndim - dispaxis)])
 
                 # Get wavelengths and pixel sizes of all the pixels along the dispersion axis
                 coords = np.arange(-0.5, ext.shape[dispaxis], 0.5)
                 if ndim == 2:
-                    other_axis = np.full_like(coords, 0.5*(ext.shape[1-dispaxis] - 1))
+                    other_axis = np.full_like(coords, 0.5 * (ext.shape[1 - dispaxis] - 1))
                     coords = [coords, other_axis] if dispaxis == 1 else [other_axis, coords]
                 else:
                     coords = [coords]
                 all_waves = wcs.all_pix2world(*coords, 0) * wave_unit
                 if ndim == 2:
-                    all_waves = all_waves[1-dispaxis]
+                    all_waves = all_waves[1 - dispaxis]
                 else:
                     all_waves = all_waves[0]
                 waves = all_waves[1::2]
@@ -1371,7 +1388,9 @@ class Spect(PrimitivesBASE):
                     sens_factor = sens_factor.physical
                 except AttributeError:
                     pass
-                final_sens_factor = (sci_flux_unit / (sens_factor * pixel_sizes)).to(final_units, equivalencies=u.spectral_density(waves)).value
+                final_sens_factor = (sci_flux_unit / (sens_factor * pixel_sizes)).to(final_units,
+                                                                                     equivalencies=u.spectral_density(
+                                                                                         waves)).value
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]
@@ -1439,13 +1458,13 @@ class Spect(PrimitivesBASE):
             # Work out the missing variable from the others
             if npix is None:
                 npix = int(np.ceil((w2 - w1) / dw)) + 1
-                w2 = w1 + (npix-1) * dw
+                w2 = w1 + (npix - 1) * dw
             elif w1 is None:
-                w1 = w2 - (npix-1) * dw
+                w1 = w2 - (npix - 1) * dw
             elif w2 is None:
-                w2 = w1 + (npix-1) * dw
+                w2 = w1 + (npix - 1) * dw
             else:
-                dw = (w2 - w1) / (npix-1)
+                dw = (w2 - w1) / (npix - 1)
 
         for ad in adinputs:
             for ext in ad:
@@ -1467,7 +1486,7 @@ class Spect(PrimitivesBASE):
 
                 if nones == 4:
                     npix = ext.data.size
-                    limits = cheb([0, npix-1])
+                    limits = cheb([0, npix - 1])
                     w1, w2 = min(limits), max(limits)
                     dw = (w2 - w1) / (npix - 1)
 
@@ -1485,12 +1504,11 @@ class Spect(PrimitivesBASE):
                 # over features. We avoid this by subsampling back to the
                 # original pixel scale (approximately).
                 input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
-                subsample = abs(dw / input_dw)
-                if subsample > 1.1:
-                    subsample = int(subsample + 0.5)
+                subsample = int(np.ceil(abs(dw / input_dw) - 0.1))
 
                 dg = transform.DataGroup([ext], [t])
                 dg.output_shape = (npix,)
+                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
                 output_dict = dg.transform(attributes=attributes, subsample=subsample,
                                            conserve=conserve)
                 for key, value in output_dict.items():
@@ -1547,7 +1565,7 @@ class Spect(PrimitivesBASE):
         for ad in adinputs:
             # Don't mosaic if the multiple extensions are because the
             # data are MOS or cross-dispersed
-            if len(ad) > 1 and not({'MOS', 'XD'} & ad.tags):
+            if len(ad) > 1 and not ({'MOS', 'XD'} & ad.tags):
                 geotable = import_module('.geometry_conf', self.inst_lookups)
                 adg = transform.create_mosaic_transform(ad, geotable)
                 admos = adg.transform(attributes=None, order=1)
@@ -1564,7 +1582,7 @@ class Spect(PrimitivesBASE):
                 data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
                 log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
                             format(direction, extract_slice.start + 1, extract_slice.stop))
-                mask |= (DQ.no_data * (variance==0))  # Ignore var=0 points
+                mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
                 slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
                 masked_data = np.ma.masked_array(data, mask=mask)
@@ -1579,7 +1597,8 @@ class Spect(PrimitivesBASE):
                     coeffs = np.ones((nslices - 1,))
                     boundaries = list(slice_.stop for slice_ in slices[:-1])
                     result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
-                            weights, boundaries, spectral_order), tol=1e-7, method='Nelder-Mead')
+                                                                       weights, boundaries, spectral_order), tol=1e-7,
+                                               method='Nelder-Mead')
                     if not result.success:
                         log.warning("Problem with spline fitting: {}".format(result.message))
 
@@ -1592,11 +1611,11 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                    order=spectral_order, w=weights)
+                                                                        order=spectral_order, w=weights)
 
                 if not mosaicked:
-                    flat_data = np.tile(spline.data, (ext.shape[dispaxis-1], 1))
-                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis==2))[0])
+                    flat_data = np.tile(spline.data, (ext.shape[dispaxis - 1], 1))
+                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis == 2))[0])
 
             # If we've mosaicked, there's only one extension
             # We forward transform the input pixels, take the transformed
@@ -1676,7 +1695,7 @@ class Spect(PrimitivesBASE):
             start = datetime.now()
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
-                slitlen = ext.shape[1-dispaxis]
+                slitlen = ext.shape[1 - dispaxis]
                 pixels = np.arange(slitlen)
 
                 # We want to mask pixels in apertures in addition to the mask
@@ -1698,11 +1717,11 @@ class Spect(PrimitivesBASE):
                         sky_mask |= aperture.aperture_mask(ext, grow=grow)
 
                 # Transpose if needed so we're iterating along rows
-                data, mask, var = _transpose_if_needed(ext.data, sky_mask, ext.variance, transpose=dispaxis==1)
+                data, mask, var = _transpose_if_needed(ext.data, sky_mask, ext.variance, transpose=dispaxis == 1)
                 sky_model = np.empty_like(data)
                 sky_weights = (np.ones_like(data) if var is None
                                else np.sqrt(np.divide(1., var, out=np.zeros_like(data),
-                                                      where=var>0)))
+                                                      where=var > 0)))
 
                 # Now fit the model for each row/column along dispersion axis
                 for i, (data_row, mask_row, weight_row) in enumerate(zip(data, mask,
@@ -1724,7 +1743,6 @@ class Spect(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
 
     def traceApertures(self, adinputs=None, **params):
         """
@@ -1812,7 +1830,8 @@ class Spect(PrimitivesBASE):
                 all_ref_coords, all_in_coords = tracing.trace_lines(ext, axis=dispaxis,
                                                                     start=start, initial=locations, width=5, step=step,
                                                                     nsum=nsum, max_missed=max_missed,
-                                                                    max_shift=max_shift, viewer=self.viewer if debug else None)
+                                                                    max_shift=max_shift,
+                                                                    viewer=self.viewer if debug else None)
 
                 self.viewer.color = "blue"
                 spectral_coords = np.arange(0, ext.shape[dispaxis], step)
@@ -1986,15 +2005,15 @@ class Spect(PrimitivesBASE):
         # If we don't have a flux column, create one
         if not 'FLUX' in spec_table.colnames:
             # Use ".data" here to avoid "mag" being in the unit
-            spec_table['FLUX'] = (10**(-0.4*(spec_table['MAGNITUDE'].data + 48.6))
+            spec_table['FLUX'] = (10 ** (-0.4 * (spec_table['MAGNITUDE'].data + 48.6))
                                   * u.Unit("erg cm-2 s-1") / u.Hz)
         return spec_table
 
-#-----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
 def _average_along_slit(ext, center=None, nsum=None):
     """
-    Calculated the average of long the slit and its pixel-by-pixel variance.
+    Calculates the average of long the slit and its pixel-by-pixel variance.
 
     Parameters
     ----------
@@ -2031,9 +2050,13 @@ def _average_along_slit(ext, center=None, nsum=None):
 
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
-    data, mask, variance = NDStacker.mean(data, mask=mask, variance=None)
+
+    # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
+    #  Use "variance=None" to make them pass again.
+    data, mask, variance = NDStacker.mean(data, mask=mask, variance=variance)
 
     return data, mask, variance, extract_slice
+
 
 def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
@@ -2096,9 +2119,9 @@ def QESpline(coeffs, xpix, data, weights, boundaries, order):
     scaled_data = scaling * data
     scaled_weights = 1. / scaling if weights is None else (weights / scaling).astype(np.float64)
     spline = astromodels.UnivariateSplineWithOutlierRemoval(xpix, scaled_data,
-                        order=order, w=scaled_weights, niter=1, grow=0)
+                                                            order=order, w=scaled_weights, niter=1, grow=0)
     result = np.ma.masked_where(spline.mask, np.square((spline.data - scaled_data) *
-                                scaled_weights)).sum() / (~spline.mask).sum()
+                                                       scaled_weights)).sum() / (~spline.mask).sum()
     return result
 
 

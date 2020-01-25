@@ -4,7 +4,7 @@ from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.errors import RecipeNotFound
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_primitive_not_found():
     testfile = download_from_archive("N20160524S0119.fits", path="GMOS")
 
@@ -15,7 +15,7 @@ def test_primitive_not_found():
         red.runr()
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_mode_not_found():
     testfile = download_from_archive("N20160524S0119.fits", path="GMOS")
 

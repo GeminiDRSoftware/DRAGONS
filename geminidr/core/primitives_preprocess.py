@@ -540,6 +540,10 @@ class Preprocess(PrimitivesBASE):
         If no flatfield is provided, getProcessedFlat will be called
         to ensure a flat exists for every adinput.
 
+        If the flatfield has had a QE correction applied, this information is
+        copied into the science header to avoid the correction being applied
+        twice.
+
         Parameters
         ----------
         suffix: str
@@ -552,6 +556,7 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        qecorr_key = self.timestamp_keys['applyQECorrection']
 
         if not do_flat:
             log.warning("Flat correction has been turned off.")
@@ -599,8 +604,15 @@ class Preprocess(PrimitivesBASE):
                          "flat:\n{}".format(ad.filename, flat.filename))
             ad.divide(flat)
 
-            # Update the header and filename
+            # Update the header and filename, copying QECORR keyword from flat
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
+            try:
+                qecorr_value = flat.phu[qecorr_key]
+            except KeyError:
+                pass
+            else:
+                log.fullinfo("Copying {} keyword from flatfield".format(qecorr_key))
+                ad.phu.set(qecorr_key, qecorr_value, flat.phu.comments[qecorr_key])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
             ad.add_provenance(Provenance(datetime.datetime.now(), flat.filename, md5sum(flat.path), "flatCorrect"))

@@ -992,6 +992,7 @@ def fit_continuum(ad):
     log = logutils.get_logger(__name__)
     import warnings
 
+    find_sources_while_iterating = False
     good_sources = []
 
     pixel_scale = ad.pixel_scale()
@@ -1015,12 +1016,12 @@ def fit_continuum(ad):
 
         # Determine regions for collapsing into 1D spatial profiles
         if 'IMAGE' in tags:
-            # A through-slit image: extract a 2-arcsecond wide region about
+            # A through-slit image: extract a 4-arcsecond wide region about
             # the center. This should be OK irrespective of the actual slit
             # width and avoids having to work out the width from instrument-
             # dependent header information.
             centers = [dispersed_length // 2]
-            hwidth = int(1.0 / pixel_scale + 0.5)
+            hwidth = int(2.0 / pixel_scale + 0.5)
         else:
             # This is a dispersed 2D spectral image, chop it into 512-pixel
             # (unbinned) sections. This is one GMOS amp, and most detectors
@@ -1061,15 +1062,9 @@ def fit_continuum(ad):
                                                 aper_upper=model_dict['aper_upper'])
                     spatial_slices.append(aperture)
             except AttributeError:
-                # No apertures, so find sources now in the region already defined
-                # Taking the 95th percentile should remove CRs
-                if ext.mask is None:
-                    profile = np.percentile(ext.data, 95, axis=dispaxis)
-                else:
-                    profile = np.percentile(np.where(ext.mask==0, ext.data, 0), 95, axis=dispaxis)
-                center = np.argmax(profile[spatial_slice]) + spatial_slice.start
-                spatial_slices = [slice(max(center-spatial_box, 0),
-                                        min(center+spatial_box, ext.shape[1-dispaxis]))]
+                # No apertures, so defer source-finding until we iterate
+                # over the spectral_slices
+                find_sources_while_iterating = True
         else:
             for slit in acq_star_positions.split():
                 c, w = [int(x) for x in slit.split(':')]
@@ -1078,6 +1073,15 @@ def fit_continuum(ad):
         from matplotlib import pyplot as plt
         for spectral_slice in spectral_slices:
             coord = 0.5 * (spectral_slice.start + spectral_slice.stop)
+
+            if find_sources_while_iterating:
+                if ext.mask is None:
+                    profile = np.percentile(ext.data, 95, axis=dispaxis)
+                else:
+                    profile = np.nanpercentile(np.where(ext.mask == 0, ext.data, np.nan), 99, axis=dispaxis)
+                center = np.argmax(profile[spatial_slice]) + spatial_slice.start
+                spatial_slices = [slice(max(center - spatial_box, 0),
+                                        min(center + spatial_box, ext.shape[1 - dispaxis]))]
 
             for spatial_slice in spatial_slices:
                 try:
@@ -1144,7 +1148,7 @@ def fit_continuum(ad):
                 if fit_it.fit_info['ierr'] < 5:
                     # This is kind of ugly and empirical; philosophy is that peak should
                     # be away from the edge and should be similar to the maximum
-                    if (m_final.amplitude_0 > 0.5*maxflux and
+                    if (m_final.amplitude_0 > 0.5*(maxflux-m_final.amplitude_2) and
                         pixels.min()+1 < m_final.mean_0 < pixels.max()-1):
                         fwhm = abs(2 * np.sqrt(2*np.log(2)) * m_final.stddev_0)
                         fwhm_list.append(fwhm)
@@ -1526,15 +1530,19 @@ def parse_sextractor_param(param_file):
     list
         names of all the columns in the SExtractor output catalog
     """
+    regexp = re.compile('(.*)\(\d+\)')
     columns = []
     fp = open(param_file)
     for line in fp:
         fields = line.split()
-        if len(fields)==0:
+        if len(fields) == 0:
             continue
         if fields[0].startswith("#"):
             continue
-        name = fields[0]
+        try:  # Turn FLUX_APER(n) -> FLUX_APER
+            name = regexp.match(fields[0]).group(1)
+        except AttributeError:
+            name = fields[0]
         columns.append(name)
     return columns
 

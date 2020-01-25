@@ -1,16 +1,14 @@
 from builtins import object
-from future.builtins import str
-from future.utils import PY3
+from future.utils import string_types
 from copy import deepcopy
 
 from astropy.io import fits
-from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
 
 from .core import AstroDataError
 
 
 def fits_opener(source):
-    if isinstance(source, HDUList):
+    if isinstance(source, fits.HDUList):
         return source
     return fits.open(source, memmap=True)
 
@@ -27,24 +25,27 @@ class AstroDataFactory(object):
     @staticmethod
     def _openFile(source):
         """
-        Internal static method that takes a `source`, assuming that it is a string
-        pointing to a file to be opened.
+        Internal static method that takes a `source`, assuming that it is a
+        string pointing to a file to be opened.
 
-        If this is the case, it will try to open the file and return an instance of
-        the appropriate native class to be able to manipulate it (eg. ``HDUList``).
+        If this is the case, it will try to open the file and return an
+        instance of the appropriate native class to be able to manipulate it
+        (eg. ``HDUList``).
 
-        If `source` is not a string, it will be returned verbatim, assuming that it
-        represents an already opened file.
+        If `source` is not a string, it will be returned verbatim, assuming
+        that it represents an already opened file.
+
         """
-        if isinstance(source, (str if PY3 else basestring)):
+        if isinstance(source, string_types):
             for func in AstroDataFactory._file_openers:
                 try:
                     return func(source)
-                except Exception as excp:
-                    # Just ignore the error. Assume that it is a not supported format
-                    # and go for the next opener
+                except Exception:
+                    # Just ignore the error. Assume that it is a not supported
+                    # format and go for the next opener
                     pass
-            raise AstroDataError("No access, or not supported format for: {}".format(source))
+            raise AstroDataError("No access, or not supported format for: {}"
+                                 .format(source))
         else:
             return source
 
@@ -54,28 +55,29 @@ class AstroDataFactory(object):
         instantiating an AstroData class for a FITS file.
         """
         if not hasattr(cls, '_matches_data'):
-            raise AttributeError("Class '{}' has no '_matches_data' method".format(cls.__name__))
+            raise AttributeError("Class '{}' has no '_matches_data' method"
+                                 .format(cls.__name__))
         self._registry.add(cls)
 
     def getAstroData(self, source):
         """
-        Takes either a string (with the path to a file) or an HDUList as input, and
-        tries to return an AstroData instance.
+        Takes either a string (with the path to a file) or an HDUList as input,
+        and tries to return an AstroData instance.
 
-        It will raise exceptions if the file is not found, or if there is no match
-        for the HDUList, among the registered AstroData classes.
+        It will raise exceptions if the file is not found, or if there is no
+        match for the HDUList, among the registered AstroData classes.
 
         Returns an instantiated object, or raises AstroDataError if it was
         not possible to find a match
-        """
 
+        """
         opened = self._openFile(source)
         candidates = []
         for adclass in self._registry:
             try:
                 if adclass._matches_data(opened):
                     candidates.append(adclass)
-            except:  # Some problem opening this
+            except Exception:  # Some problem opening this
                 pass
 
         # For every candidate in the list, remove the ones that are base classes
@@ -94,18 +96,26 @@ class AstroDataFactory(object):
         return final_candidates[0].load(source)
 
     def createFromScratch(self, phu, extensions=None):
-        """
-        Creates an AstroData object from a collection of objects.
-        """
+        """Creates an AstroData object from a collection of objects.
 
-        lst = HDUList()
+        Parameters
+        ----------
+        phu : fits.PrimaryHDU or fits.Header or dict or list
+            FITS primary HDU or header, or something that can be used to create
+            a fits.Header (a dict, a list of "cards").
+        extensions : list of HDUs
+            List of HDU objects.
+
+        """
+        lst = fits.HDUList()
         if phu is not None:
-            if isinstance(phu, PrimaryHDU):
+            if isinstance(phu, fits.PrimaryHDU):
                 lst.append(deepcopy(phu))
-            elif isinstance(phu, Header):
-                lst.append(PrimaryHDU(header=deepcopy(phu), data=DELAYED))
+            elif isinstance(phu, fits.Header):
+                lst.append(fits.PrimaryHDU(header=deepcopy(phu),
+                                           data=fits.DELAYED))
             elif isinstance(phu, (dict, list, tuple)):
-                p = PrimaryHDU()
+                p = fits.PrimaryHDU()
                 p.header.update(phu)
                 lst.append(p)
             else:
