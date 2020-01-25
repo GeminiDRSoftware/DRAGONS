@@ -1,166 +1,102 @@
 #!/usr/bin/env python
-import copy
 
 import numpy as np
+import operator
 import pytest
 from astropy.io import fits
+from numpy.testing import assert_array_equal
 
 import astrodata
 
+SHAPE = (4, 5)
+
 
 @pytest.fixture
-def sample_astrodata_with_ones():
-    data_array = np.ones((100, 100))
+def ad1():
+    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
+    phu = fits.PrimaryHDU(header=hdr)
+    hdu = fits.ImageHDU(data=np.ones(SHAPE), name='SCI')
+    return astrodata.create(phu, [hdu])
 
+
+@pytest.fixture
+def ad2():
     phu = fits.PrimaryHDU()
-    hdu = fits.ImageHDU(data=data_array, name='SCI')
-
-    ad = astrodata.create(phu, [hdu])
-
-    return ad
+    hdu = fits.ImageHDU(data=np.ones(SHAPE) * 2, name='SCI')
+    return astrodata.create(phu, [hdu])
 
 
 def test_can_create_new_astrodata_object_with_no_data():
-    primary_header_unit = fits.PrimaryHDU()
-
-    ad = astrodata.create(primary_header_unit)
-
+    ad = astrodata.create(fits.PrimaryHDU())
     assert isinstance(ad, astrodata.AstroData)
+    assert len(ad) == 0
+    assert ad.instrument() is None
+    assert ad.object() is None
 
 
 def test_can_create_astrodata_from_image_hdu():
-    data_array = np.zeros((100, 100))
+    data_array = np.zeros(SHAPE)
 
     phu = fits.PrimaryHDU()
     hdu = fits.ImageHDU(data=data_array, name='SCI')
-
     ad = astrodata.create(phu, [hdu])
 
     assert isinstance(ad, astrodata.AstroData)
     assert len(ad) == 1
     assert isinstance(ad[0].data, np.ndarray)
+    assert ad[0].data is hdu.data
 
 
 def test_can_append_an_image_hdu_object_to_an_astrodata_object():
-    primary_header_unit = fits.PrimaryHDU()
-
-    ad = astrodata.create(primary_header_unit)
-
-    data_array = np.zeros((100, 100))
-
-    header_data_unit = fits.ImageHDU()
-    header_data_unit.data = data_array
-
-    ad.append(header_data_unit, name='SCI')
-    ad.append(header_data_unit, name='SCI2')
+    ad = astrodata.create(fits.PrimaryHDU())
+    hdu = fits.ImageHDU(data=np.zeros(SHAPE))
+    ad.append(hdu, name='SCI')
+    ad.append(hdu, name='SCI2')
 
     assert len(ad) == 2
+    assert ad[0].data is hdu.data
+    assert ad[1].data is hdu.data
 
 
-def test_can_add_two_astrodata_objects(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-    ad2 = copy.deepcopy(sample_astrodata_with_ones)
+def test_attributes(ad1):
+    assert ad1[0].shape == SHAPE
 
-    result = ad1 + ad2
-
-    expected = np.ones((100, 100)) * 2
-
-    assert isinstance(result, astrodata.AstroData)
-    assert len(result) == 1
-    assert isinstance(result[0].data, np.ndarray)
-    assert isinstance(result[0].hdr, fits.Header)
-
-    np.testing.assert_array_almost_equal(result[0].data, expected)
-
-
-def test_can_subtract_two_astrodata_objects(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-    ad2 = copy.deepcopy(sample_astrodata_with_ones)
-
-    result = ad1 - ad2
-
-    expected = np.zeros((100, 100))
-
-    assert isinstance(result, astrodata.AstroData)
-    assert len(result) == 1
-    assert isinstance(result[0].data, np.ndarray)
-    assert isinstance(result[0].hdr, fits.Header)
-
-    np.testing.assert_array_almost_equal(result[0].data, expected)
-
-
-def test_can_add_constant_to_astrodata_objects(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-    ad2 = copy.deepcopy(sample_astrodata_with_ones)
-
-    result = ad1.add(100)
-
-    assert isinstance(result, astrodata.AstroData)
-    assert isinstance(result[0].data, np.ndarray)
-    assert isinstance(result[0].hdr, fits.Header)
-    assert len(result) == 1
-    assert np.all(result[0].data == ad2[0].data + 100)
-
-
-def test_can_subtract_constant_to_astrodata_objects(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-    ad2 = copy.deepcopy(sample_astrodata_with_ones)
-
-    result = ad1.subtract(100)
-
-    assert isinstance(result, astrodata.AstroData)
-    assert isinstance(result[0].data, np.ndarray)
-    assert isinstance(result[0].hdr, fits.Header)
-    assert len(result) == 1
-    assert np.all(result[0].data == ad2[0].data - 100)
-
-
-def test_can_multiply_constant_to_astrodata_objects(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-    ad2 = copy.deepcopy(sample_astrodata_with_ones)
-
-    result = ad1.multiply(3)
-
-    assert isinstance(result, astrodata.AstroData)
-    assert isinstance(result[0].data, np.ndarray)
-    assert isinstance(result[0].hdr, fits.Header)
-    assert len(result) == 1
-    assert np.all(result[0].data == ad2[0].data * 3)
-
-
-def test_can_divide_constant_to_astrodata_objects(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-    ad2 = copy.deepcopy(sample_astrodata_with_ones)
-
-    result = ad1.divide(3)
-
-    assert isinstance(result, astrodata.AstroData)
-    assert isinstance(result[0].data, np.ndarray)
-    assert isinstance(result[0].hdr, fits.Header)
-    assert len(result) == 1
-    assert np.all(result[0].data == ad2[0].data / 3)
-
-
-def test_can_return_shape_of_data(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-    assert np.all(ad1.shape == np.array([(100, 100)]))
-
-
-def test_can_call_each_pixel_in_data(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
-
-    for x in range(100):
-        for y in range(100):
-            assert ad1[0].data[x, y] == 1
-
-
-def test_can_find_mean_average_and_median(sample_astrodata_with_ones):
-    ad1 = copy.deepcopy(sample_astrodata_with_ones)
     data = ad1[0].data
-
+    assert_array_equal(data, 1)
     assert data.mean() == 1
-    assert np.average(data) == 1
     assert np.median(data) == 1
+
+    assert ad1.phu['INSTRUME'] == 'darkimager'
+    assert ad1.instrument() == 'darkimager'
+    assert ad1.object() == 'M42'
+
+
+@pytest.mark.parametrize('op, res', [(operator.add, 3),
+                                     (operator.sub, -1),
+                                     (operator.mul, 2),
+                                     (operator.truediv, 0.5)])
+def test_can_add_two_astrodata_objects(op, res, ad1, ad2):
+
+    for data in (ad2, ad2.data):
+        result = op(ad1, data)
+        assert_array_equal(result.data, res)
+        assert isinstance(result, astrodata.AstroData)
+        assert len(result) == 1
+        assert isinstance(result[0].data, np.ndarray)
+        assert isinstance(result[0].hdr, fits.Header)
+
+
+@pytest.mark.parametrize('op, arg, res', [('add', 100, 101),
+                                          ('subtract', 100, -99),
+                                          ('multiply', 3, 3),
+                                          ('divide', 2, 0.5)])
+def test_operations(ad1, op, arg, res):
+    result = getattr(ad1, op)(arg)
+    assert_array_equal(result.data, res)
+    assert isinstance(result, astrodata.AstroData)
+    assert isinstance(result[0].data, np.ndarray)
+    assert isinstance(result[0].hdr, fits.Header)
+    assert len(result) == 1
 
 
 if __name__ == '__main__':

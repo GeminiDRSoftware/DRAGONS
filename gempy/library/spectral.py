@@ -62,11 +62,9 @@ class Spek1D(Spectrum1D, NDAstroData):
                     wcs = spectrum.nddata.wcs
                 else:
                     spec_unit = u.Unit(spectrum.hdr.get('CUNIT1', 'nm'))
-                    det2wave = (models.Scale(1./u.pix) |
-                                models.Shift((1-spectrum.hdr['CRPIX1'])) |
+                    det2wave = (models.Shift((1-spectrum.hdr['CRPIX1'])) |
                                 models.Scale(spectrum.hdr['CD1_1']) |
-                                models.Shift(spectrum.hdr['CRVAL1']) |
-                                models.Scale(1.*spec_unit))
+                                models.Shift(spectrum.hdr['CRVAL1']))
                     detector_frame = cf.CoordinateFrame(1, axes_type='SPATIAL',
                                     axes_order=(0,), unit=u.pix, axes_names='x')
                     spec_frame = cf.SpectralFrame(unit=spec_unit, name='lambda')
@@ -76,6 +74,7 @@ class Spek1D(Spectrum1D, NDAstroData):
                 wcs = spectrum.wcs  # from an NDData-like object
 
         super().__init__(flux=flux, spectral_axis=spectral_axis, wcs=wcs, **kwargs)
+        self.filename = getattr(spectrum, 'filename', None)
 
 
     def _get_pixel_limits(self, subregion, constrain=True):

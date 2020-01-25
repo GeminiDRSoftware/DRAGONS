@@ -35,13 +35,13 @@ def testfile2():
     return download_from_archive("N20160524S0119.fits", path="GMOS")
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_can_read_data(testfile1):
     ad = astrodata.open(testfile1)
     assert len(ad) == 3
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_array_to_root_no_name(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -54,7 +54,7 @@ def test_append_array_to_root_no_name(testfile2):
     assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_array_to_root_with_name_sci(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -67,7 +67,7 @@ def test_append_array_to_root_with_name_sci(testfile2):
     assert ad[-1].hdr['EXTVER'] == len(ad)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_array_to_root_with_arbitrary_name(testfile2):
     ad = astrodata.open(testfile2)
     assert len(ad) == 6
@@ -77,7 +77,7 @@ def test_append_array_to_root_with_arbitrary_name(testfile2):
         ad.append(ones, name='ARBITRARY')
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_array_to_extension_with_name_sci(testfile2):
     ad = astrodata.open(testfile2)
     assert len(ad) == 6
@@ -87,7 +87,7 @@ def test_append_array_to_extension_with_name_sci(testfile2):
         ad[0].append(ones, name='SCI')
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_array_to_extension_with_arbitrary_name(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -99,7 +99,7 @@ def test_append_array_to_extension_with_arbitrary_name(testfile2):
     assert ad[0].ARBITRARY is ones
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_nddata_to_root_no_name(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -112,7 +112,7 @@ def test_append_nddata_to_root_no_name(testfile2):
     assert len(ad) == (lbefore + 1)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_nddata_to_root_with_arbitrary_name(testfile2):
     ad = astrodata.open(testfile2)
     assert len(ad) == 6
@@ -126,7 +126,7 @@ def test_append_nddata_to_root_with_arbitrary_name(testfile2):
         ad.append(nd)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_table_to_root(testfile2):
     ad = astrodata.open(testfile2)
     with pytest.raises(AttributeError):
@@ -138,7 +138,7 @@ def test_append_table_to_root(testfile2):
     assert (ad.MYTABLE == table).all()
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_table_to_root_without_name(testfile2):
     ad = astrodata.open(testfile2)
     assert len(ad) == 6
@@ -151,7 +151,7 @@ def test_append_table_to_root_without_name(testfile2):
     assert isinstance(ad.TABLE1, Table)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_table_to_extension(testfile2):
     ad = astrodata.open(testfile2)
     assert len(ad) == 6
@@ -163,7 +163,7 @@ def test_append_table_to_extension(testfile2):
 
 # Append / assign Gemini specific
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_dq_to_root(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -172,7 +172,7 @@ def test_append_dq_to_root(testfile2):
         ad.append(dq, 'DQ')
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_dq_to_ext(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -181,7 +181,7 @@ def test_append_dq_to_ext(testfile2):
     assert dq is ad[0].mask
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_var_to_root(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -190,7 +190,7 @@ def test_append_var_to_root(testfile2):
         ad.append(var, 'VAR')
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_var_to_ext(testfile2):
     ad = astrodata.open(testfile2)
 
@@ -201,7 +201,7 @@ def test_append_var_to_ext(testfile2):
 
 # Append AstroData slices
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_single_slice(testfile1, testfile2):
     ad = astrodata.open(testfile2)
     ad2 = astrodata.open(testfile1)
@@ -215,7 +215,7 @@ def test_append_single_slice(testfile1, testfile2):
     assert last_ever < ad2[-1].nddata.meta['header'].get('EXTVER', -1)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_non_single_slice(testfile1, testfile2):
     ad = astrodata.open(testfile2)
     ad2 = astrodata.open(testfile1)
@@ -224,7 +224,7 @@ def test_append_non_single_slice(testfile1, testfile2):
         ad2.append(ad[1:])
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_whole_instance(testfile1, testfile2):
     ad = astrodata.open(testfile2)
     ad2 = astrodata.open(testfile1)
@@ -233,7 +233,7 @@ def test_append_whole_instance(testfile1, testfile2):
         ad2.append(ad)
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_append_slice_to_extension(testfile1, testfile2):
     ad = astrodata.open(testfile2)
     ad2 = astrodata.open(testfile1)
@@ -242,7 +242,7 @@ def test_append_slice_to_extension(testfile1, testfile2):
         ad2[0].append(ad[0], name="FOOBAR")
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_delete_named_associated_extension(testfile2):
     ad = astrodata.open(testfile2)
     table = Table(([1, 2, 3], [4, 5, 6], [7, 8, 9]), names=('a', 'b', 'c'))
@@ -252,7 +252,7 @@ def test_delete_named_associated_extension(testfile2):
     assert 'MYTABLE' not in ad[0]
 
 
-@pytest.mark.remote_data
+@pytest.mark.dragons_remote_data
 def test_delete_arbitrary_attribute_from_ad(testfile2):
     ad = astrodata.open(testfile2)
 
