@@ -419,9 +419,6 @@ class Visualize(PrimitivesBASE):
         list of :class:`~astrodata.AstroData`
             Data used for plotting.
         """
-        adcc_url = params["adcc_url"]
-        adcc_port = params["adcc_port"]
-
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 

@@ -40,6 +40,5 @@ class tileArraysConfig(config.Config):
 
 
 class plotSpectraForQA(config.Config):
-    adcc_url = config.Field("URL address to the ADCC server.", str, optional=True)
-    adcc_port = config.Field("URL port to the ADCC server.", int, optional=True)
-
+    adcc_url = config.Field("URL address to the ADCC server.", str, default="localhost", optional=True)
+    adcc_port = config.Field("URL port to the ADCC server.", int, default=8777, optional=True)
