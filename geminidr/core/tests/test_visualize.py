@@ -53,6 +53,10 @@ def test_plot_spectra_for_qa_single_frame(path_to_outputs):
     import astrodata
     import gemini_instruments
 
+    from gempy.utils import logutils
+
+    logutils.config("quiet", file_name="foo.log")
+
     def process_arc(filename, suffix="distortionDetermined"):
         """
         Helper recipe to reduce the arc file.
