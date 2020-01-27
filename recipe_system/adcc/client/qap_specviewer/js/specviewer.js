@@ -13,29 +13,57 @@ const specViewerJsonName = "/specqueue.json";
  * @param {string} id - name of the ID of the SpecViewer div container.
  */
 function SpecViewer(parentElement, id) {
-  'use strict';
+    'use strict';
 
-  // Creating empty object
-  this.parentElement = parentElement;
-  this.id = id;
+    // Creating empty object
+    this.parentElement = parentElement;
+    this.id = id;
 
-  // Placeholders for different elements
-  this.activeTab = null;
-  this.framePlots = [];
-  this.stackPlots = [];
+    // Placeholders for different elements
+    this.activeTab = null;
+    this.framePlots = [];
+    this.stackPlots = [];
 
-  /* Create empty page */
-  this.parentElement.append(`<div id="${id}"><ul></ul></div>`);
-  this.loadData();
+    /* Create empty page */
+    this.parentElement.append(`<div id="${id}"><ul></ul></div>`);
+    //this.loadData();
 
-  this.specPump = new SpectroPump();
+    // Placeholder for adcc command pump
+    this.gjs = null;
 
-} // end SpecViewer
+    // Load site/time information from the adcc server
+    // and initialize the viewer
+    this.load();
+}
+    //this.specPump = new SpectroPump();
+//} // end SpecViewer
 
-
+// Add methods to prototype
 SpecViewer.prototype = {
 
-  constructor: SpecViewer,
+    constructor: SpecViewer,
+
+    // // ??init: function() {
+    // 	// Make an AJAX request to the server for the current
+    // 	// time and the server site information.
+    // 	// The callback for this request will call the init function
+    // 	var sv = this;
+    // 	$.ajax({type: "GET",
+    // 		url: "/rqsite.json",
+    // 		success: function (data) {
+    // 		    sv.site = data.local_site;
+    // 		    sv.timestamp = data.lt_now;
+    // 		    sv.init();
+    // 		}, // end success
+    // 		error: function() {
+    // 		    sv.site = undefined;
+    // 		    sv.tzname = "LT";
+    // 		    sv.timestamp = new Date();
+    // 		    sv.init();
+    // 		} // end error
+    // 	       }); // end ajax
+
+    // }, // end load
 
   /**
    * Add navigation tabs based on how many apertures there is inside the
