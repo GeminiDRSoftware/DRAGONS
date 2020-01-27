@@ -155,8 +155,8 @@ def test_plot_spectra_for_qa_single_frame(path_to_outputs):
     arc_fname = "N20180112S0353.fits"
     fname = "N20180112S0209.fits"
 
-    arc_ad = process_arc(arc_fname)
-    ad = process_object(fname, arc=arc_ad)
+    # arc_ad = process_arc(arc_fname)
+    # ad = process_object(fname, arc=arc_ad)
 
-    p = primitives_visualize.Visualize([ad])
+    p = primitives_visualize.Visualize([])
     p.plotSpectraForQA()
