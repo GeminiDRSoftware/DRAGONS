@@ -42,7 +42,7 @@ def main():
             int(0.01 * width), obj_max_weight) + obj_continnum
         intensity = gaussian_filter1d(intensity, 5)
 
-        variance = 0.1 * (np.random.poisson(intensity) +
+        stddev = 0.1 * (np.random.poisson(intensity) +
            noise * (np.random.rand(width) - 0.5))
 
         wavelength = min_wavelength + np.arange(width) * dispersion * 10
@@ -55,13 +55,13 @@ def main():
             "dispersion": dispersion,
             "wavelength": list(wavelength),
             "intensity": list(intensity),
-            "variance": list(variance),
+            "stddev": list(stddev),
         }
 
         stack_aperture = {
             "wavelength": list(wavelength),
             "intensity": list(intensity),
-            "variance": list(variance / 10),
+            "stddev": list(stddev / 10),
         }
 
         apertures.append(aperture)
@@ -74,7 +74,7 @@ def main():
             "apertures": apertures,
             "stackApertures": stack_apertures}
 
-    filename = os.path.join(os.path.dirname(__file__), "data.json")
+    filename = os.path.join(os.path.dirname(__file__), "adcc_response.json")
     with open(filename, 'w') as json_file:
         json.dump(data, json_file)
 

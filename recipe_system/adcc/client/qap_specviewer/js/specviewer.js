@@ -9,7 +9,7 @@ const specViewerJsonName = "/specqueue.json";
 /**
  * Main component for SpecViewer.
  *
- * @param {JQuery Object} parentElement - element that will hold SpecViewer.
+ * @param {object} parentElement - element that will hold SpecViewer.
  * @param {string} id - name of the ID of the SpecViewer div container.
  */
 function SpecViewer(parentElement, id) {
@@ -69,20 +69,17 @@ SpecViewer.prototype = {
    * Add navigation tabs based on how many apertures there is inside the
    * JSON file.
    *
-   * @param parentId
-   * @type parentId string
-   *
-   * @param numberOfApertures
-   * @type number
+   * @param {string} parentId
+   * @param {number} numberOfApertures
    */
   addNavigationTab: function(parentId, numberOfApertures) {
     'use restrict';
 
     /* Add navigation tab container */
-    var listOfTabs = $(`#${parentId} ul`);
+    let listOfTabs = $(`#${parentId} ul`);
 
-    /* Create buttons and add them to the navigation tab */
-    for (var i = 0; i < numberOfApertures; i++) {
+    // Create buttons and add them to the navigation tab
+    for (let i = 0; i < numberOfApertures; i++) {
       listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
     }
 
@@ -94,13 +91,13 @@ SpecViewer.prototype = {
   addPlots: function(parentId, data) {
     'use restrict';
 
-    var sViewer = this;
+    let sViewer = this;
 
     var intensity = null;
-    var variance = null;
+    var stddev = null;
 
-    var framePlots = [];
-    var stackPlots = [];
+    let framePlots = [];
+    let stackPlots = [];
 
     for (var i = 0; i < data.apertures.length; i++) {
 
@@ -108,11 +105,11 @@ SpecViewer.prototype = {
       intensity = buildSeries(
         data.apertures[i].wavelength, data.apertures[i].intensity);
 
-      variance = buildSeries(
-        data.apertures[i].wavelength, data.apertures[i].variance);
+      stddev = buildSeries(
+        data.apertures[i].wavelength, data.apertures[i].stddev);
 
       framePlots[i] = $.jqplot(
-        `framePlot${i}`, [intensity, variance], $.extend(plotOptions, {
+        `framePlot${i}`, [intensity, stddev], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
 
@@ -120,11 +117,11 @@ SpecViewer.prototype = {
       intensity = buildSeries(
         data.stackApertures[i].wavelength, data.stackApertures[i].intensity);
 
-      variance = buildSeries(
-        data.stackApertures[i].wavelength, data.stackApertures[i].variance);
+      stddev = buildSeries(
+        data.stackApertures[i].wavelength, data.stackApertures[i].stddev);
 
       stackPlots[i] = $.jqplot(
-        `stackPlot${i}`, [intensity, variance], $.extend(plotOptions, {
+        `stackPlot${i}`, [intensity, stddev], $.extend(plotOptions, {
           title: `Aperture ${i} - Stack Frame`,
         }));
 
@@ -278,7 +275,9 @@ SpecViewer.prototype = {
           <div class="apertureInfo">
             <span>
               <b>Aperture definition:</b>
-              ${aperture.center} (${aperture.lower}, ${aperture.upper})
+                <span class="app-info-field" title="Aperture center"> ${aperture.center} px </span> (
+                <span class="app-info-field" title="Lower aperture limit"> ${aperture.lower} px </span>,
+                <span class="app-info-field" title="Upper aperture limit"> ${aperture.upper} px </span>)
             </span>
             <span style="padding-left: 10%">
               <b>Dispersion:</b> ${aperture.dispersion} nm/px
@@ -405,7 +404,7 @@ plotOptions = {
       labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
     },
     yaxis: {
-      label: "Flux [???]",
+      label: "Intensity [e\u207B]", // escaped superscript minus
       labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
     },
   },
@@ -425,7 +424,7 @@ plotOptions = {
     },
     {
       color: '#ff7f0e',
-      label: 'Variance'
+      label: 'Standard Deviation'
     },
   ],
 
