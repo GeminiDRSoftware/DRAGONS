@@ -24,16 +24,21 @@ function SpecViewer(parentElement, id) {
     this.framePlots = [];
     this.stackPlots = [];
 
-    /* Create empty page */
-    this.parentElement.append(`<div id="${id}"><ul></ul></div>`);
-    //this.loadData();
+    // Create empty page 
+    this.parentElement.html(`
+      <div id="${id}">
+        <div class="loading"> 
+          Waiting data from server ...
+        </div>
+      </div>
+    `);
+  
+    // Call function to activate the tabs
+    $(`#${id}`).tabs();
 
     // Placeholder for adcc command pump
     this.gjs = null;
 
-    // Load site/time information from the adcc server
-    // and initialize the viewer
-    this.load();
 }
     //this.specPump = new SpectroPump();
 //} // end SpecViewer
@@ -43,27 +48,33 @@ SpecViewer.prototype = {
 
     constructor: SpecViewer,
 
-    // // ??init: function() {
-    // 	// Make an AJAX request to the server for the current
-    // 	// time and the server site information.
-    // 	// The callback for this request will call the init function
-    // 	var sv = this;
-    // 	$.ajax({type: "GET",
-    // 		url: "/rqsite.json",
-    // 		success: function (data) {
-    // 		    sv.site = data.local_site;
-    // 		    sv.timestamp = data.lt_now;
-    // 		    sv.init();
-    // 		}, // end success
-    // 		error: function() {
-    // 		    sv.site = undefined;
-    // 		    sv.tzname = "LT";
-    // 		    sv.timestamp = new Date();
-    // 		    sv.init();
-    // 		} // end error
-    // 	       }); // end ajax
-
-    // }, // end load
+    start: function() {
+      
+        console.log("Starting SpecViewer");
+      
+     	// Make an AJAX request to the server for the current
+     	// time and the server site information.
+     	// The callback for this request will call the init function
+     	var sv = this;
+      
+     	$.ajax(
+          {
+            type: "GET",
+     		url: "/rqsite.json",
+     		success: function (data) {
+     		    sv.site = data.local_site;
+     		    sv.timestamp = data.lt_now;
+//     		    sv.init();
+     		}, // end success
+     		error: function() {
+     		    sv.site = undefined;
+     		    sv.tzname = "LT";
+     		    sv.timestamp = new Date();
+//     		    sv.init();
+     		} // end error
+          }
+        ); // end ajax
+    }, // end start
 
   /**
    * Add navigation tabs based on how many apertures there is inside the
@@ -345,14 +356,11 @@ SpecViewer.prototype = {
 
         var data = JSON.parse(JSON.stringify(jsonData));
 
-        // Call function to activate the tabs
-        $(`#${sViewer.id}`).tabs();
-
         sViewer.addNavigationTab(sViewer.id, data.apertures.length);
         sViewer.addTabs(sViewer.id, data);
         sViewer.addPlots(sViewer.id, data);
 
-        // Remove loading GIF
+        // Remove loading 
         $('.loading').remove();
 
       }, // end success
@@ -361,7 +369,7 @@ SpecViewer.prototype = {
         console.log('Could not receive json file');
         $( `#${sViewer.id}` ).html(e.responseText);
 
-        // Remove loading GIF
+        // Remove loading 
         $('.loading').remove();
 
       } // end error
