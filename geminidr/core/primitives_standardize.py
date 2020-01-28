@@ -333,7 +333,8 @@ class Standardize(PrimitivesBASE):
             filename = ad.filename
             ad.update_filename(suffix=sfx, strip=True)
         for ad, filename, path in zip(adinputs, filenames, paths):
-            ad.add_provenance(Provenance(datetime.now(), filename, md5sum(path), "prepare"))
+            if path:
+                ad.add_provenance(Provenance(datetime.now(), filename, md5sum(path), "prepare"))
         return adinputs
 
     def standardizeHeaders(self, adinputs=None, **params):

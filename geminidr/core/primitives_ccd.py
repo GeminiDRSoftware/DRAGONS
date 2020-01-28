@@ -96,7 +96,8 @@ class CCD(PrimitivesBASE):
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-            ad.add_provenance(Provenance(datetime.now(), bias.filename, md5sum(bias.path), "biasCorrect"))
+            if bias.path:
+                ad.add_provenance(Provenance(datetime.now(), bias.filename, md5sum(bias.path), "biasCorrect"))
 
             timestamp = datetime.now()
         return adinputs

@@ -153,15 +153,14 @@ def _get_provenance_inputs(adinputs):
     """
     retval = list()
     for ad in adinputs:
-        if ad.filename:
-            if ad.path:
-                md5 = md5sum(ad.path)
-            else:
-                md5 = ""
-            retval.append({"filename": ad.filename,
-                           "md5": md5,
-                           "provenance": ad.provenance,
-                           "provenance_history": ad.provenance_history})
+        if ad.path:
+            md5 = md5sum(ad.path)
+        else:
+            md5 = ""
+        retval.append({"filename": ad.filename,
+                        "md5": md5,
+                        "provenance": ad.provenance,
+                        "provenance_history": ad.provenance_history})
     return retval
 
 
@@ -186,7 +185,7 @@ def _clone_provenance(provenance_input, ad):
 
     """
     # set will be faster for checking contents
-    existing_provenance = set(ad.provenance)
+    existing_provenance = ad.provenance
 
     provenance = provenance_input["provenance"]
 
