@@ -18,6 +18,9 @@ from copy import deepcopy
 from .provenance import Provenance, ProvenanceHistory
 
 
+PROVENANCE_DATE_FORMAT="%Y-%m-%d %H:%M:%S.%f"
+
+
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
     TagSet(add=None, remove=None, blocked_by=None, blocks=None, if_present=None)
@@ -1050,10 +1053,10 @@ class AstroData(object):
         list of `Provenance` records
         """
         retval = list()
-        if hasattr(self._dataprov, 'PROVENANCE'):
-            provenance = self._dataprov.PROVENANCE
+        if hasattr(self, 'PROVENANCE'):
+            provenance = self.PROVENANCE
             for row in provenance:
-                timestamp = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                timestamp = datetime.strptime(row[0], PROVENANCE_DATE_FORMAT)
                 filename = row[1]
                 md5 = row[2]
                 primitive = row[3]
@@ -1088,22 +1091,19 @@ class AstroData(object):
         if value.timestamp is None:
             timestamp_str = ""
         else:
-            timestamp_str = value.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")
+            timestamp_str = value.timestamp.strftime(PROVENANCE_DATE_FORMAT)
 
-        if not hasattr(self._dataprov, 'PROVENANCE'):
+        if not hasattr(self, 'PROVENANCE'):
             timestamp_data = np.array([timestamp_str])
             filename_data = np.array([value.filename])
             md5_data = np.array([value.md5])
             provenance_added_by_data = np.array([value.provenance_added_by])
-            my_astropy_table = Table([timestamp_data, filename_data, md5_data, provenance_added_by_data],
+            self.PROVENANCE = Table([timestamp_data, filename_data, md5_data, provenance_added_by_data],
                                      names=('timestamp', 'filename', 'md5', 'provenance_added_by'),
                                      dtype=('S28', 'S128', 'S128', 'S128'))
-            self.append(my_astropy_table, name='PROVENANCE')
-            pass
         else:
-            provenance = self._dataprov.PROVENANCE
+            provenance = self.PROVENANCE
             provenance.add_row((timestamp_str, value.filename, value.md5, value.provenance_added_by))
-            pass
 
     @property
     def provenance_history(self):
@@ -1116,11 +1116,11 @@ class AstroData(object):
         """
 
         retval = list()
-        if hasattr(self._dataprov, 'PROVENANCE_HISTORY'):
-            provenance_history = self._dataprov.PROVENANCE_HISTORY
+        if hasattr(self, 'PROVENANCE_HISTORY'):
+            provenance_history = self.PROVENANCE_HISTORY
             for row in provenance_history:
-                timestamp_start = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                timestamp_stop = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S.%f")
+                timestamp_start = datetime.strptime(row[0], PROVENANCE_DATE_FORMAT)
+                timestamp_stop = datetime.strptime(row[1], PROVENANCE_DATE_FORMAT)
                 primitive = row[2]
                 args = row[3]
                 ph = ProvenanceHistory(timestamp_start, timestamp_stop, primitive, args)
@@ -1145,13 +1145,12 @@ class AstroData(object):
             return
         history.append(value)
         colsize = max(len(ph.args) for ph in history) + 1
-        timestamp_start = np.array([ph.timestamp_start.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in history])
-        timestamp_stop = np.array([ph.timestamp_stop.strftime("%Y-%m-%d %H:%M:%S.%f") for ph in history])
+        timestamp_start = np.array([ph.timestamp_start.strftime(PROVENANCE_DATE_FORMAT) for ph in history])
+        timestamp_stop = np.array([ph.timestamp_stop.strftime(PROVENANCE_DATE_FORMAT) for ph in history])
         primitive = np.array([ph.primitive for ph in history])
         args = np.array([ph.args for ph in history])
         dtype = ("S28", "S28", "S128", "S%d" % colsize)
-        table = Table([timestamp_start, timestamp_stop, primitive, args],
-                      names=('timestamp_start', 'timestamp_stop',
-                             'primitive', 'args'),
-                      dtype=dtype)
-        self.append(table, name='PROVENANCE_HISTORY')
+        self.PROVENANCE_HISTORY = Table([timestamp_start, timestamp_stop, primitive, args],
+                                        names=('timestamp_start', 'timestamp_stop',
+                                                'primitive', 'args'),
+                                        dtype=dtype)

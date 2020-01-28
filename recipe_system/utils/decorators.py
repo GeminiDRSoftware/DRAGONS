@@ -154,7 +154,7 @@ def _get_provenance_inputs(adinputs):
     retval = list()
     for ad in adinputs:
         if ad.path:
-            md5 = md5sum(ad.path)
+            md5 = md5sum(ad.path) or ""
         else:
             md5 = ""
         retval.append({"filename": ad.filename,

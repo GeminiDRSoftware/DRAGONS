@@ -167,7 +167,7 @@ class Image(Preprocess, Register, Resample):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
             if fringe.path:
-                ad.add_provenance(Provenance(datetime.now(), fringe.filename, md5sum(fringe.path), "fringeCorrect"))
+                ad.add_provenance(Provenance(datetime.now(), fringe.filename, md5sum(fringe.path) or "", self.myself()))
         return adinputs
 
     def makeFringeForQA(self, adinputs=None, **params):

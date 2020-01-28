@@ -97,7 +97,7 @@ class CCD(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
             if bias.path:
-                ad.add_provenance(Provenance(datetime.now(), bias.filename, md5sum(bias.path), "biasCorrect"))
+                ad.add_provenance(Provenance(datetime.now(), bias.filename, md5sum(bias.path) or "", self.myself()))
 
             timestamp = datetime.now()
         return adinputs
