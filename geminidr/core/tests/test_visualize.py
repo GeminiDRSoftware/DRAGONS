@@ -2,6 +2,7 @@ import pytest
 
 import os
 import numpy as np
+import psutil
 
 import astrodata
 import gemini_instruments
@@ -58,6 +59,9 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
 def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
 
     logutils.config("quiet", file_name="foo.log")
+
+    if "adcc" not in (p.name() for p in psutil.process_iter()):
+        pytest.skip("ADCC is not running.")
 
     def process_arc(filename, suffix="distortionDetermined"):
         """
