@@ -192,7 +192,7 @@ def _clone_provenance(provenance_input, ad):
     for prov in provenance:
         if prov not in existing_provenance:
             ad.add_provenance(prov)
-            existing_provenance.add(prov)
+            existing_provenance.append(prov)
 
 
 def _clone_history(provenance_input, ad):
@@ -215,13 +215,13 @@ def _clone_history(provenance_input, ad):
     none
     """
     # set will be faster for checking contents
-    existing_history = set(ad.provenance_history)
+    existing_history = ad.provenance_history
 
     provenance_history = provenance_input["provenance_history"]
     for ph in provenance_history:
         if ph not in existing_history:
             ad.add_provenance_history(ph)
-            existing_history.add(ph)
+            existing_history.append(ph)
 
 
 def __top_level_primitive__():
