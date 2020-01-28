@@ -1050,8 +1050,8 @@ class AstroData(object):
         list of `Provenance` records
         """
         retval = list()
-        if hasattr(self._dataprov, 'GEM_PROVENANCE'):
-            provenance = self._dataprov.GEM_PROVENANCE
+        if hasattr(self._dataprov, 'PROVENANCE'):
+            provenance = self._dataprov.PROVENANCE
             for row in provenance:
                 timestamp = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
                 filename = row[1]
@@ -1090,7 +1090,7 @@ class AstroData(object):
         else:
             timestamp_str = value.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")
 
-        if not hasattr(self._dataprov, 'GEM_PROVENANCE'):
+        if not hasattr(self._dataprov, 'PROVENANCE'):
             timestamp_data = np.array([timestamp_str])
             filename_data = np.array([value.filename])
             md5_data = np.array([value.md5])
@@ -1098,10 +1098,10 @@ class AstroData(object):
             my_astropy_table = Table([timestamp_data, filename_data, md5_data, provenance_added_by_data],
                                      names=('timestamp', 'filename', 'md5', 'provenance_added_by'),
                                      dtype=('S28', 'S128', 'S128', 'S128'))
-            self.append(my_astropy_table, name='GEM_PROVENANCE')
+            self.append(my_astropy_table, name='PROVENANCE')
             pass
         else:
-            provenance = self._dataprov.GEM_PROVENANCE
+            provenance = self._dataprov.PROVENANCE
             provenance.add_row((timestamp_str, value.filename, value.md5, value.provenance_added_by))
             pass
 
@@ -1116,8 +1116,8 @@ class AstroData(object):
         """
 
         retval = list()
-        if hasattr(self._dataprov, 'GEM_PROVENANCE_HISTORY'):
-            provenance_history = self._dataprov.GEM_PROVENANCE_HISTORY
+        if hasattr(self._dataprov, 'PROVENANCE_HISTORY'):
+            provenance_history = self._dataprov.PROVENANCE_HISTORY
             for row in provenance_history:
                 timestamp_start = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
                 timestamp_stop = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S.%f")
@@ -1154,4 +1154,4 @@ class AstroData(object):
                       names=('timestamp_start', 'timestamp_stop',
                              'primitive', 'args'),
                       dtype=dtype)
-        self.append(table, name='GEM_PROVENANCE_HISTORY')
+        self.append(table, name='PROVENANCE_HISTORY')
