@@ -39,7 +39,9 @@ class tileArraysConfig(config.Config):
     tile_all = config.Field("Tile to single extension?", bool, False)
 
 
-class plotSpectraForQA(config.Config):
-    adcc_url = config.Field("URL address to the ADCC server.", str, optional=True)
-    adcc_port = config.Field("URL port to the ADCC server.", int, optional=True)
+class plotSpectraForQAConfig(config.Config):
 
+    url = config.Field(
+        doc="URL address to the ADCC server.",
+        dtype=str,
+        default="http://localhost:8777/spec_report")

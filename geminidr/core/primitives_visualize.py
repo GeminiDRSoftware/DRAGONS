@@ -3,11 +3,17 @@
 #
 #                                                        primitives_visualize.py
 # ------------------------------------------------------------------------------
+import datetime
+import json
 import numpy as np
+import os
+import time
+import urllib.request
+
 from copy import deepcopy
 from importlib import import_module
-import time
 
+from gempy.library import astromodels
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy import numdisplay as nd
@@ -409,21 +415,89 @@ class Visualize(PrimitivesBASE):
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
             Input data containing extracted spectra.
-        adcc_url : str
+        url : str
             URL address to the ADCC server.
-        add_port : int
-            URL port to the ADCC server.
 
         Returns
         -------
         list of :class:`~astrodata.AstroData`
             Data used for plotting.
         """
-        adcc_url = params["adcc_url"]
-        adcc_port = params["adcc_port"]
+        url = params["url"]
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        spec_packs = []
+
+        for ad in adinputs:
+
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+
+            spec_pack = {
+                "apertures": [],
+                "data_label": ad.data_label(),
+                "filename": ad.filename,
+                "group_id": ad.group_id(),
+                "is_stack": ad.coadds() > 1,
+                "metadata": [],
+                "msgtype": "specjson",
+                "program_id": ad.program_id(),
+                "timestamp": timestamp,
+            }
+
+            for ext in ad:
+                data = ext.data
+                stddev = np.sqrt(ext.variance)
+
+                wavelength_calibration_table = ext.WAVECAL
+
+                wavelength_calibration_model = astromodels.dict_to_chebyshev(
+                    dict(
+                        zip(
+                            wavelength_calibration_table["name"],
+                            wavelength_calibration_table["coefficients"]
+                        )
+                    )
+                )
+
+                wavelength = wavelength_calibration_model(np.arange(data.size))
+
+                # Clean up bad data
+                mask = np.logical_not(np.ma.masked_invalid(data).mask)
+
+                wavelength = wavelength[mask]
+                data = data[mask]
+                stddev = stddev[mask]
+
+                # Round and convert data/stddev to int to minimize data transfer load
+                wavelength = np.round(wavelength, decimals=3)
+                data = np.round(data)
+                stddev = np.round(stddev)
+
+                _intensity = [[w, int(d)] for w, d in zip(wavelength, data)]
+                _stddev = [[w, int(s)] for w, s in zip(wavelength, stddev)]
+
+                aperture = {
+                    "center": ext.hdr["XTRACTED"],
+                    "lower": ext.hdr["XTRACTLO"],
+                    "upper": ext.hdr["XTRACTHI"],
+                    "dispersion": ext.hdr["CDELT1"],
+                    "wavelength_units": ext.hdr["CUNIT1"],
+                    "intensity": _intensity,
+                    "stddev": _stddev,
+                }
+
+                spec_pack["apertures"].append(aperture)
+
+                spec_packs.append(spec_pack)
+
+            spec_packs_json = json.dumps(spec_packs).encode("utf-8")
+
+            post_request = urllib.request.Request(url)
+            postr = urllib.request.urlopen(post_request, spec_packs_json)
+            postr.read()
+            postr.close()
 
         return adinputs
 

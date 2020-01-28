@@ -3,6 +3,10 @@ import pytest
 import os
 import numpy as np
 
+import astrodata
+import gemini_instruments
+
+from gempy.utils import logutils
 from geminidr.core import primitives_visualize
 
 
@@ -49,11 +53,6 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
 
 @pytest.mark.dragons_remote_data
 def test_plot_spectra_for_qa_single_frame(path_to_outputs):
-
-    import astrodata
-    import gemini_instruments
-
-    from gempy.utils import logutils
 
     logutils.config("quiet", file_name="foo.log")
 
@@ -155,8 +154,8 @@ def test_plot_spectra_for_qa_single_frame(path_to_outputs):
     arc_fname = "N20180112S0353.fits"
     fname = "N20180112S0209.fits"
 
-    # arc_ad = process_arc(arc_fname)
-    # ad = process_object(fname, arc=arc_ad)
+    arc_ad = process_arc(arc_fname)
+    ad = process_object(fname, arc=arc_ad)
 
     p = primitives_visualize.Visualize([])
-    p.plotSpectraForQA()
+    p.plotSpectraForQA(adinputs=[ad])
