@@ -9,6 +9,8 @@ import gemini_instruments
 from gempy.utils import logutils
 from geminidr.core import primitives_visualize
 
+from astrodata.testing import new_path_to_inputs as path_to_inputs
+
 
 @pytest.fixture
 def astrofaker():
@@ -52,7 +54,8 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
 
 
 @pytest.mark.dragons_remote_data
-def test_plot_spectra_for_qa_single_frame(path_to_outputs):
+@pytest.mark.parametrize("fname, arc_fname", zip(["N20180112S0209.fits"], ["N20180112S0353.fits"]))
+def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
 
     logutils.config("quiet", file_name="foo.log")
 
@@ -70,7 +73,6 @@ def test_plot_spectra_for_qa_single_frame(path_to_outputs):
 
         processed_filename, ext = os.path.splitext(filename)
         processed_filename += "_{:s}{:s}".format(suffix, ext)
-        print(processed_filename)
 
         if os.path.exists(processed_filename):
             ad = astrodata.open(processed_filename)
@@ -114,7 +116,6 @@ def test_plot_spectra_for_qa_single_frame(path_to_outputs):
 
         processed_filename, ext = os.path.splitext(filename)
         processed_filename += "_{:s}{:s}".format(suffix, ext)
-        print(processed_filename)
 
         if os.path.exists(processed_filename):
             ad = astrodata.open(processed_filename)
@@ -149,10 +150,7 @@ def test_plot_spectra_for_qa_single_frame(path_to_outputs):
 
         return ad
 
-    os.chdir(path_to_outputs)
-
-    arc_fname = "N20180112S0353.fits"
-    fname = "N20180112S0209.fits"
+    os.chdir(path_to_inputs)
 
     arc_ad = process_arc(arc_fname)
     ad = process_object(fname, arc=arc_ad)
