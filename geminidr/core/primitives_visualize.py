@@ -3,10 +3,8 @@
 #
 #                                                        primitives_visualize.py
 # ------------------------------------------------------------------------------
-import datetime
 import json
 import numpy as np
-import os
 import time
 import urllib.request
 
@@ -432,7 +430,7 @@ class Visualize(PrimitivesBASE):
 
         for ad in adinputs:
 
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+            timestamp = time.time()
 
             spec_pack = {
                 "apertures": [],
