@@ -1145,10 +1145,10 @@ class AstroData(object):
             return
         history.append(value)
         colsize = max(len(ph.args) for ph in history) + 1
-        timestamp_start = np.array([ph.timestamp_start.strftime(PROVENANCE_DATE_FORMAT) for ph in history])
-        timestamp_stop = np.array([ph.timestamp_stop.strftime(PROVENANCE_DATE_FORMAT) for ph in history])
-        primitive = np.array([ph.primitive for ph in history])
-        args = np.array([ph.args for ph in history])
+        timestamp_start = [ph.timestamp_start.strftime(PROVENANCE_DATE_FORMAT) for ph in history]
+        timestamp_stop = [ph.timestamp_stop.strftime(PROVENANCE_DATE_FORMAT) for ph in history]
+        primitive = [ph.primitive for ph in history]
+        args = [ph.args for ph in history]
         dtype = ("S28", "S28", "S128", "S%d" % colsize)
         self.PROVENANCE_HISTORY = Table([timestamp_start, timestamp_stop, primitive, args],
                                         names=('timestamp_start', 'timestamp_stop',
