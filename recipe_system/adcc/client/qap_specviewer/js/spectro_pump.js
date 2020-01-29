@@ -10,7 +10,7 @@ class SpectroPump {
   constructor(url) {
 
     console.log("Created SpectroPump object")
-    this.url = url || "/cmdqueue.json";
+    this.url = url || "/specqueue.json";
     this.callbacks = {};
     this.timeout = null;
     this.stop = true;

@@ -38,10 +38,8 @@ function SpecViewer(parentElement, id) {
 
     // Placeholder for adcc command pump
     this.gjs = null;
-
+    this.start()
 }
-    //this.specPump = new SpectroPump();
-//} // end SpecViewer
 
 // Add methods to prototype
 SpecViewer.prototype = {
@@ -56,7 +54,6 @@ SpecViewer.prototype = {
      	// time and the server site information.
      	// The callback for this request will call the init function
      	var sv = this;
-      
      	$.ajax(
           {
             type: "GET",
@@ -64,16 +61,19 @@ SpecViewer.prototype = {
      		success: function (data) {
      		    sv.site = data.local_site;
      		    sv.timestamp = data.lt_now;
-//     		    sv.init();
      		}, // end success
      		error: function() {
      		    sv.site = undefined;
      		    sv.tzname = "LT";
      		    sv.timestamp = new Date();
-//     		    sv.init();
      		} // end error
           }
         ); // end ajax
+
+	this.gjs = new GJSCommandPipe();
+	this.gjs.registerCallback("specjson", function(msg){sv.loadData(msg);});
+	this.gjs.startPump(sv.timestamp, "specjson");
+
     }, // end start
 
   /**
@@ -339,42 +339,21 @@ SpecViewer.prototype = {
 
   }, // end addTabs
 
-
-  /**
-   * Query server for JSON file and start to populate page.
-   */
-  loadData: function() {
-    'use restrict';
-
-    // Reference to self to use in functions inside load
-    var sViewer = this;
-
-    $.ajax({
-      type: "GET",
-      url: specViewerJsonName,
-      success: function(jsonData) {
-
-        var data = JSON.parse(JSON.stringify(jsonData));
-
-        sViewer.addNavigationTab(sViewer.id, data.apertures.length);
-        sViewer.addTabs(sViewer.id, data);
-        sViewer.addPlots(sViewer.id, data);
-
-        // Remove loading 
-        $('.loading').remove();
-
-      }, // end success
-      error: function(e) {
-
-        console.log('Could not receive json file');
-        $( `#${sViewer.id}` ).html(e.responseText);
-
-        // Remove loading 
-        $('.loading').remove();
-
-      } // end error
-    }); // end ajax
-  }, // end load
+    // Query server for JSON file and start to populate page. This function is
+    // the registered callback on the command pump.
+    loadData: function(sdata) {
+	'use restrict';
+	console.log("Data recieved.");
+	// Reference to self to use in functions inside load
+	var sViewer = this;
+	var jsonData = sdata;
+	var data = JSON.stringify(jsonData);
+	sViewer.addNavigationTab(sViewer.id, data.apertures.length);
+	sViewer.addTabs(sViewer.id, data);
+	sViewer.addPlots(sViewer.id, data);
+	// Remove loading 
+	$('.loading').remove();
+    }, // end load
 
 }; // end prototype
 

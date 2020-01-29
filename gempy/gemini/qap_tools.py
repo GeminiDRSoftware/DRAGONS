@@ -23,7 +23,8 @@ from recipe_system.adcc.servers.eventsManager import EventsManager
 
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
-URL = "http://localhost:8777/event_report"
+MURL = "http://localhost:8777/event_report" # metrics
+SURL = "http://localhost:8777/spec_report"  # spec data
 # ------------------------------------------------------------------------------
 def ping_adcc():
     """
@@ -67,6 +68,11 @@ def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
     """
     if not ping_adcc():
         return
+
+    if name == 'spec':
+        URL = SURL
+    else:
+        URL = MURL
 
     evman = EventsManager()
     evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)

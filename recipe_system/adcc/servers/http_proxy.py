@@ -483,38 +483,35 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
     # -------------------------------------------------------------------------
     # privitized handling specview.json requests
-    def _handle_specqueue_json(self, events, parms):
+    def _handle_specqueue_json(self, spec_events, parms):
         """
         Handle HTTP client GET requests on service: specqueue.json
 
         """
-        ############ TEMP ############
-        jfile = os.environ['SPECDATA']
-        ##############################
-
         specdic = list()
         verbosity = self.informers["verbose"]
         self.send_response(200)
         self.send_header('Content-type', "application/json")
         self.end_headers()
 
-        spec_events = specview_get(jfile)
+        # TODO: hook up spec pump, which will deposit spec events on this list.
+        if not spec_events.event_list:
+            self.log_message(msg_form, "No quicklook spectra.", info_code, size)
+
+            tdic = spec_events.get_list()
+            tdic.insert(0, {"msgtype":"specview.request","timestamp": time.time()})
+            self.wfile.write(
+                bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
+            )
+            return
+
+        spec_events = spec_events.get_list()
         specdic.append(spec_events)
         specdic.insert(0, {"msgtype": "specqueue.request", "timestamp": time.time()})
         specdic.append({"msgtype": "specqueue.request", "timestamp": time.time()})
         self.wfile.write(
             bytes(json.dumps(spec_events, sort_keys=True, indent=4).encode('utf-8'))
         )
-
-        # TODO: hook up the specqueue pump, which will deposit spec events on this list.
-        # if not spec_events.event_list:
-        #     self.log_message(msg_form, "No quicklook spectra.", info_code, size)
-
-        #     tdic = spec_events.get_list()
-        #     tdic.insert(0, {"msgtype":"specview.request","timestamp": time.time()})
-        #     self.wfile.write(
-        #         bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
-        #         )
 
         return
 
