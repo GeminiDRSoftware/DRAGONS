@@ -103,7 +103,7 @@ class linearizeSpectraConfig(config.Config):
 
 
 class resampleToCommonFrameConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_linearized", optional=True)
+    suffix = config.Field("Filename suffix", str, "_align", optional=True)
     w1 = config.RangeField("Starting wavelength (nm)", float, None, min=0., optional=True)
     w2 = config.RangeField("Ending wavelength (nm)", float, None, min=0., optional=True)
     dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
