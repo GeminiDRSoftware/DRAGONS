@@ -3,8 +3,6 @@ Regression tests for GMOS LS `resampleToCommonFrame`.
 """
 
 import os
-
-import numpy as np
 import pytest
 
 from geminidr.gmos import primitives_gmos_spect
@@ -151,6 +149,7 @@ def test_resample_and_linearize(adinputs, caplog):
     assert {len(ad) for ad in adout} == {1}
     assert {ad[0].shape[0] for ad in adout} == {3868}
     _check_params(caplog.records, 'w1=508.343 w2=1088.323 dw=0.150 npix=3868')
+    assert 'ALIGN' in adout[0].phu
 
 
 @pytest.mark.preprocessed_data
@@ -189,3 +188,14 @@ def test_resample_linearize_trim_and_stack(adinputs, caplog):
     assert len(adout) == 1
     assert len(adout[0]) == 1
     assert adout[0][0].shape[0] == 2428
+
+
+@pytest.mark.preprocessed_data
+def test_resample_only(adinputs, caplog):
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p.resampleToCommonFrame()
+    _check_params(caplog.records, 'w1=508.343 w2=1088.323')
+    caplog.clear()
+    adout = p.resampleToCommonFrame(dw=0.15)
+    assert 'ALIGN' in adout[0].phu
+    _check_params(caplog.records, 'w1=508.343 w2=978.802 dw=0.150 npix=3138')

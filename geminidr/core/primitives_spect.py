@@ -1640,8 +1640,9 @@ class Spect(PrimitivesBASE):
         if trim_data:
             log.fullinfo("Trimming data to size of reference spectra")
 
+        adref = adinputs[0]
         n_ad = len(adinputs)
-        n_ext = len(adinputs[0])
+        n_ext = len(adref)
 
         for iext in range(n_ext):
             w1_ext, w2_ext, dw_ext, npix_ext = w1, w2, dw, npix
@@ -1662,12 +1663,16 @@ class Spect(PrimitivesBASE):
                     elif dw_ext is None:
                         dw_ext = (w2_ext - w1_ext) / (npix_ext - 1)
 
+            chebref = info[0][iext]['cheb']
+            chebref.inverse.inverse = chebref
+
             for i, ad in enumerate(adinputs):
                 ext = ad[iext]
                 extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 cheb = info[i][iext]['cheb']
 
                 t = transform.Transform(cheb)
+                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
 
                 # Linearization (and inverse)
                 if linearize:
@@ -1681,19 +1686,23 @@ class Spect(PrimitivesBASE):
                     # If we resample to a coarser pixel scale, we may
                     # interpolate over features. We avoid this by subsampling
                     # back to the original pixel scale (approximately).
-                    input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
                     subsample = int(np.ceil(abs(dw_ext / input_dw) - 0.1))
                 else:
-                    log.stdinfo("Linearizing {}: w1={:.3f} w2={:.3f}"
+                    log.stdinfo("Resampling {}: w1={:.3f} w2={:.3f}"
                                 .format(extname, w1_ext, w2_ext))
-                    t.append(info[0][iext]['cheb'].inverse)
-                    subsample = False
+                    t.append(chebref.inverse)
+                    output_dw = (np.diff(chebref(chebref.domain))[0] /
+                                 np.diff(chebref.domain))
+                    subsample = int(np.ceil(abs(output_dw / input_dw) - 0.1))
 
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
                 dg = transform.DataGroup([ext], [t])
-                dg.output_shape = (npix_ext, )
+                if linearize:
+                    dg.output_shape = (npix_ext, )
+                else:
+                    dg.output_shape = ext.shape
                 dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
                 output_dict = dg.transform(attributes=attributes,
                                            subsample=subsample,
@@ -1701,11 +1710,28 @@ class Spect(PrimitivesBASE):
                 for key, value in output_dict.items():
                     setattr(ext, key, value)
 
-                ext.hdr["CRPIX1"] = 1.
-                ext.hdr["CRVAL1"] = w1_ext
-                ext.hdr["CDELT1"] = dw_ext
-                ext.hdr["CD1_1"] = dw_ext
-                ext.hdr["CUNIT1"] = "nanometer"
+                if linearize:
+                    ext.hdr["CRPIX1"] = 1.
+                    ext.hdr["CRVAL1"] = w1_ext
+                    ext.hdr["CDELT1"] = dw_ext
+                    ext.hdr["CD1_1"] = dw_ext
+                    ext.hdr["CUNIT1"] = "nanometer"
+                else:
+                    # limits = chebref.inverse([info[i][iext]['w1'],
+                    #                           info[i][iext]['w2']])
+                    # start, end = min(limits), max(limits)
+                    # print(f'updating domain1: {start}, {end}')
+
+                    # limits = cheb.inverse([info[0][iext]['w1'],
+                    #                        info[0][iext]['w2']])
+                    # start, end = min(limits), max(limits)
+                    # print(f'updating domain: {start}, {end}')
+
+                    ext.WAVECAL = adref[iext].WAVECAL.copy()
+                    # iline = ext.WAVECAL['name'] == 'domain_start'
+                    # ext.WAVECAL['coefficients'][iline] = start
+                    # iline = ext.WAVECAL['name'] == 'domain_end'
+                    # ext.WAVECAL['coefficients'][iline] = end
 
         for ad in adinputs:
             # Timestamp and update the filename
