@@ -88,8 +88,11 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
-            for module in (self.inst_lookups, gemini_lookups):
-                path = import_module('.', module).__path__[0]
+            for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
+                try:
+                    path = import_module('.', module).__path__[0]
+                except (ImportError, ModuleNotFoundError):
+                    continue
                 full_path = os.path.join(path, 'spectrophotometric_standards', filename)
                 try:
                     spec_table = self._get_spectrophotometry(full_path)
