@@ -12,6 +12,7 @@ from importlib import import_module
 import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
+from astropy.io.ascii.core import InconsistentTableError
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -77,21 +78,35 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         order = params["order"]
+        bandpass = params["bandpass"]
+
+        # We're going to look in the generic (gemini) module as well as the
+        # instrument module, so define that
+        module = self.inst_lookups.split('.')
+        module[-2] = 'gemini'
+        gemini_lookups = '.'.join(module)
 
         for ad in adinputs:
-
-            # TODO: Fix when we know how/where these will be stored
-            iraf_dir = os.path.join(os.environ.get('iraf'), "noao",
-                                    "lib", "onedstds")
-            filename = os.path.join(iraf_dir, "spec50cal",
-                                    "{}.dat".format(ad.object().lower()))
-            spec_table = self._get_spectrophotometry(filename)
-            if not spec_table:
-                log.warning("Unable to determine sensitivity for {}".
+            filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
+            for module in (self.inst_lookups, gemini_lookups):
+                path = import_module('.', module).__path__[0]
+                full_path = os.path.join(path, 'spectrophotometric_standards', filename)
+                try:
+                    spec_table = self._get_spectrophotometry(full_path)
+                except (FileNotFoundError, InconsistentTableError):
+                    pass
+                else:
+                    break
+            else:
+                log.warning("Cannot read spectrophotometric data table. "
+                            "Unable to determine sensitivity for {}".
                             format(ad.filename))
                 continue
 
             exptime = ad.exposure_time()
+            if 'WIDTH' not in spec_table.colnames:
+                log.warning("Using default bandpass of {} nm".format(bandpass))
+                spec_table['WIDTH'] = bandpass * u.nm
 
             # Could be XD so iterate over extensions
             for ext in ad:
@@ -1940,26 +1955,25 @@ class Spect(PrimitivesBASE):
         Table:
             the spectrophotometric data, with columns 'WAVELENGTH',
             'WIDTH', and 'FLUX'
+
+        Raises
+        ------
+        FileNotFoundError: if file does not exist
+        InconsistentTableError: if the file can't be read as ASCII
         """
         log = self.log
         try:
             tbl = Table.read(filename)
-        except FileNotFoundError:
-            log.warning("File {} not found!".format(filename))
-            return
         except IORegistryError:
-            try:
-                tbl = Table.read(filename, format='ascii')
-            except:
-                self.log.warning("Cannot read file {}".format(filename))
-                return
+            # Force ASCII
+            tbl = Table.read(filename, format='ascii')
         num_columns = len(tbl.columns)
 
         # Create table, interpreting column names (or lack thereof)
         spec_table = Table()
         colnames = ('WAVELENGTH', 'WIDTH', 'MAGNITUDE')
         aliases = (('WAVE', 'LAMBDA', 'col1'),
-                   ('FWHM', 'col{}'.format(min(3, num_columns))),
+                   ('FWHM', 'col3'),
                    ('MAG', 'ABMAG', 'FLUX', 'FLAM', 'FNU', 'col2', 'DATA'))
 
         for colname, alias in zip(colnames, aliases):
@@ -1971,7 +1985,6 @@ class Spect(PrimitivesBASE):
             else:
                 log.warning("Cannot find a column to convert to '{}' in "
                             "{}".format(colname.lower(), filename))
-                return
 
         # Now handle units
         for col in spec_table.itercols():
