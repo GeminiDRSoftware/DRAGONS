@@ -58,11 +58,6 @@ def test_mosaic_detectors_gmos_binning(astrofaker):
 @pytest.mark.parametrize("fname, arc_fname", zip(["N20180112S0209.fits"], ["N20180112S0353.fits"]))
 def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
 
-    logutils.config("quiet", file_name="foo.log")
-
-    if "adcc" not in (p.name() for p in psutil.process_iter()):
-        pytest.skip("ADCC is not running.")
-
     def process_arc(filename, suffix="distortionDetermined"):
         """
         Helper recipe to reduce the arc file.
@@ -85,7 +80,8 @@ def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
             if os.path.exists(filename):
                 ad = astrodata.open(filename)
             else:
-                ad = astrodata.open(download_from_archive(filename, path=''))
+                ad = astrodata.open(download_from_archive(
+                    filename, path='', env_var='DRAGONS_TEST'))
 
             p = GMOSLongslit([ad])
 
@@ -128,7 +124,8 @@ def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
             if os.path.exists(filename):
                 ad = astrodata.open(filename)
             else:
-                ad = astrodata.open(download_from_archive(filename, path=''))
+                ad = astrodata.open(download_from_archive(
+                    filename, path='', env_var='DRAGONS_TEST'))
 
             p = GMOSLongslit([ad])
 
@@ -154,7 +151,14 @@ def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
 
         return ad
 
+    if not any(["adcc" in p.name() for p in psutil.process_iter()]):
+        pytest.skip("ADCC is not running.")
+
     os.chdir(path_to_inputs)
+    print(' Current working directory:\n   {}'.format(path_to_inputs))
+
+    logutils.config("standard",
+                    file_name=os.path.basename(__file__.replace('.py', '.log')))
 
     arc_ad = process_arc(arc_fname)
     ad = process_object(fname, arc=arc_ad)
