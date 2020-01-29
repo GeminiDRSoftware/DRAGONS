@@ -1717,21 +1717,7 @@ class Spect(PrimitivesBASE):
                     ext.hdr["CD1_1"] = dw_ext
                     ext.hdr["CUNIT1"] = "nanometer"
                 else:
-                    # limits = chebref.inverse([info[i][iext]['w1'],
-                    #                           info[i][iext]['w2']])
-                    # start, end = min(limits), max(limits)
-                    # print(f'updating domain1: {start}, {end}')
-
-                    # limits = cheb.inverse([info[0][iext]['w1'],
-                    #                        info[0][iext]['w2']])
-                    # start, end = min(limits), max(limits)
-                    # print(f'updating domain: {start}, {end}')
-
                     ext.WAVECAL = adref[iext].WAVECAL.copy()
-                    # iline = ext.WAVECAL['name'] == 'domain_start'
-                    # ext.WAVECAL['coefficients'][iline] = start
-                    # iline = ext.WAVECAL['name'] == 'domain_end'
-                    # ext.WAVECAL['coefficients'][iline] = end
 
         for ad in adinputs:
             # Timestamp and update the filename
