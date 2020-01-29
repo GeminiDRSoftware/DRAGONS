@@ -1,16 +1,13 @@
-import pytest
-
 import os
+
 import numpy as np
 import psutil
+import pytest
 
 import astrodata
-import gemini_instruments
 
 from gempy.utils import logutils
 from geminidr.core import primitives_visualize
-
-from astrodata.testing import new_path_to_inputs as path_to_inputs
 
 
 @pytest.fixture
@@ -151,8 +148,25 @@ def test_plot_spectra_for_qa_single_frame(fname, arc_fname, path_to_inputs):
 
         return ad
 
-    if not any(["adcc" in p.name() for p in psutil.process_iter()]):
+    def check_if_process_running(process_name):
+        """
+        Check if there is any running process that contains the given name processName.
+        """
+        for proc in psutil.process_iter():
+            try:
+                if process_name.lower() in proc.name().lower():
+                    return True
+
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+
+        return False
+
+
+    if not check_if_process_running("adcc"):
         pytest.skip("ADCC is not running.")
+    else:
+        print("ADCC is up and running!")
 
     os.chdir(path_to_inputs)
     print(' Current working directory:\n   {}'.format(path_to_inputs))

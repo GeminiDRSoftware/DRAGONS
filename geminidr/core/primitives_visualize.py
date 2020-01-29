@@ -490,7 +490,13 @@ class Visualize(PrimitivesBASE):
 
                 spec_packs.append(spec_pack)
 
-            spec_packs_json = json.dumps(spec_packs).encode("utf-8")
+            spec_packs_json = json.dumps(spec_packs)
+
+            with open("spec_data.json", 'w') as json_buffer:
+                json.dump(spec_packs, json_buffer)
+
+            # Convert string to bytes
+            spec_packs_json = spec_packs_json.encode("utf-8")
 
             post_request = urllib.request.Request(url)
             postr = urllib.request.urlopen(post_request, spec_packs_json)
