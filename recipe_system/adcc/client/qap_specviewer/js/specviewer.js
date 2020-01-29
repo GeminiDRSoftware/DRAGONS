@@ -342,17 +342,21 @@ SpecViewer.prototype = {
     // Query server for JSON file and start to populate page. This function is
     // the registered callback on the command pump.
     loadData: function(sdata) {
-	'use restrict';
-	console.log("Data recieved.");
-	// Reference to self to use in functions inside load
-	var sViewer = this;
-	var jsonData = sdata;
-	var data = JSON.stringify(jsonData);
-	sViewer.addNavigationTab(sViewer.id, data.apertures.length);
-	sViewer.addTabs(sViewer.id, data);
-	sViewer.addPlots(sViewer.id, data);
-	// Remove loading 
-	$('.loading').remove();
+      'use restrict';
+      console.log("Data recieved.");
+	  
+      // Reference to self to use in functions inside load
+	  var sViewer = this;
+	  var jsonData = sdata;
+    
+      console.log(sdata);
+      
+//	var data = JSON.stringify(jsonData);
+//	sViewer.addNavigationTab(sViewer.id, data.apertures.length);
+//	sViewer.addTabs(sViewer.id, data);
+//	sViewer.addPlots(sViewer.id, data);
+//	// Remove loading 
+//	$('.loading').remove();
     }, // end load
 
 }; // end prototype
