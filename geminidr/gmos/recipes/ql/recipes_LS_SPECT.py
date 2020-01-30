@@ -44,7 +44,6 @@ def reduceStandard(p):
 
     """
     p.prepare()
-    crash
     p.addDQ(static_bpm=None)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
