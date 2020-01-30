@@ -23,6 +23,10 @@ function SpecViewer(parentElement, id) {
     this.activeTab = null;
     this.framePlots = [];
     this.stackPlots = [];
+  
+    this.apertures = [];  
+    this.dataLabel = null;
+    this.groupId = null;
 
     // Create empty page 
     this.parentElement.html(`
@@ -86,8 +90,11 @@ SpecViewer.prototype = {
   addNavigationTab: function(parentId, numberOfApertures) {
     'use restrict';
 
-    /* Add navigation tab container */
+    // Add navigation tab container
     let listOfTabs = $(`#${parentId} ul`);
+    
+    // Clear all the tabs 
+    listOfTabs.empty();
 
     // Create buttons and add them to the navigation tab
     for (let i = 0; i < numberOfApertures; i++) {
@@ -104,37 +111,34 @@ SpecViewer.prototype = {
 
     let sViewer = this;
 
-    var intensity = null;
-    var stddev = null;
+    let intensity = null;
+    let stddev = null;
 
     let framePlots = [];
     let stackPlots = [];
 
     for (var i = 0; i < data.apertures.length; i++) {
 
+      let isStack = data.is_stack;
+      console.log(" Is input data a stack? ", isStack)
+      
       // Adding plot for frame
-      intensity = buildSeries(
-        data.apertures[i].wavelength, data.apertures[i].intensity);
-
-      stddev = buildSeries(
-        data.apertures[i].wavelength, data.apertures[i].stddev);
-
+      intensity = data.apertures[i].intensity;
+      stddev = data.apertures[i].intensity;
+      
+      // Adding plot for frame
+      intensity = data.apertures[i].intensity;
+      stddev = data.apertures[i].stddev;
+      
       framePlots[i] = $.jqplot(
         `framePlot${i}`, [intensity, stddev], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
-
-      // Adding plots for stack
-      intensity = buildSeries(
-        data.stackApertures[i].wavelength, data.stackApertures[i].intensity);
-
-      stddev = buildSeries(
-        data.stackApertures[i].wavelength, data.stackApertures[i].stddev);
-
+      
       stackPlots[i] = $.jqplot(
         `stackPlot${i}`, [intensity, stddev], $.extend(plotOptions, {
-          title: `Aperture ${i} - Stack Frame`,
-        }));
+        title: `Aperture ${i} - Stack Frame`,
+        }));  
 
     }
 
@@ -343,20 +347,31 @@ SpecViewer.prototype = {
     // the registered callback on the command pump.
     loadData: function(sdata) {
       'use restrict';
-      console.log("Data recieved.");
-	  
-      // Reference to self to use in functions inside load
-	  var sViewer = this;
-	  var jsonData = sdata;
-    
-      console.log(sdata);
       
-//	var data = JSON.stringify(jsonData);
-//	sViewer.addNavigationTab(sViewer.id, data.apertures.length);
-//	sViewer.addTabs(sViewer.id, data);
-//	sViewer.addPlots(sViewer.id, data);
-//	// Remove loading 
-//	$('.loading').remove();
+      console.log("Data received.");
+
+      // ToDo - Should I get the first or the last element from message?
+      var jsonData = sdata[0];
+
+//      if (jsonData.data_label === this.dataLabel) {
+//        console.log("Data received already being plotted ")  
+//      } else {
+//        console.log(`New data: ${jsonData.data_label}`);
+//        this.dataLabel = jsonData.data_label;
+//        
+//        console.log(jsonData);
+//      }     
+//      
+//      // FixMe - Doing this only to force my data to have more than one aperture
+//      jsonData.apertures.push(jsonData.apertures[0])
+
+      this.addNavigationTab(this.id, jsonData.apertures.length);
+      this.addTabs(this.id, jsonData);
+      this.addPlots(this.id, jsonData);
+      
+      // Remove loading 
+      $('.loading').remove();
+      
     }, // end load
 
 }; // end prototype
