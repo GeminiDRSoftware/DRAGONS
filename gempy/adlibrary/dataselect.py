@@ -1,6 +1,6 @@
 import re
 from copy import deepcopy
-from datetime import datetime  # leave it in.  It is used by the exec.
+from datetime import datetime  # leave it in.  It is used by the eval.
 
 import astrodata
 import gemini_instruments

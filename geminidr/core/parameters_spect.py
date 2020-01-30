@@ -26,6 +26,7 @@ class fluxCalibrateConfig(config.Config):
 class calculateSensitivityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     order = config.RangeField("Order of spline fit", int, 6, min=1)
+    bandpass = config.RangeField("Bandpass width (nm) if not suuplied", float, 5., min=0.1, max=10.)
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)

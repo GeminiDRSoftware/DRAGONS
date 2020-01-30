@@ -174,6 +174,10 @@ class GMOS(Gemini, CCD):
         order: int
             order of Chebyshev fit or spline/None
         """
+        # To avoid crashing at the first line
+        if not adinputs:
+            return adinputs
+
         detname = adinputs[0].detector_name(pretty=True)
         func = (params["function"] or 'none').lower()
         if params["order"] is None and func.startswith('poly'):

@@ -70,6 +70,11 @@ class AstroDataGmos(AstroDataGemini):
         if self.phu.get('OBJECT', '').upper() == 'DOMEFLAT':
             return TagSet(['DOMEFLAT', 'CAL', 'FLAT'])
 
+    @astro_data_tag
+    def _tag_standard(self):
+        if self.object().lower().replace(' ', '') in lookup.standard_star_names:
+            return TagSet(['STANDARD', 'CAL'])
+
     def _tag_is_spect(self):
         pairs = (
             ('MASKTYP', 0),
