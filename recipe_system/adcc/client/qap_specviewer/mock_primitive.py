@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Mock plotSpectraForQA primitive.
 
@@ -10,7 +10,7 @@ In practice, it creates JSON data and send it to the ADCC Server in a timed loop
 import json
 import numpy as np
 import time
-import urllib
+import urllib.request
 
 from scipy import ndimage
 
