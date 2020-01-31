@@ -69,12 +69,12 @@ def main():
                 _data = data[i]
                 _error = np.random.poisson(_data)
                 _aperture = ApertureModel(
-                    center[i], lower[i], upper[i], wavelength_units, dispersion,
-                    wavelength, _data, _error).__dict__
-                yield _aperture
+                    int(center[i]), int(lower[i]), int(upper[i]), wavelength_units, dispersion,
+                    wavelength, _data, _error)
+                return _aperture.__dict__
 
-            # apertures = [aperture_generator(i) for i in range(n_apertures)]
-            apertures = []
+            apertures = [aperture_generator(i) for i in range(n_apertures)]
+            # apertures = []
 
             frame = SpecPackModel(
                 data_label, group_id, filename, is_stack, program_id, apertures)
@@ -153,8 +153,10 @@ class SpecPackModel:
         self.data_label = data_label
         self.group_id = group_id
         self.filename = filename
+        self.msgtype = "specjson"
         self.is_stack = is_stack
         self.program_id = program_id
+        self.timestamp = time.time()
         self.apertures = apertures
 
 
