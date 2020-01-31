@@ -6,26 +6,6 @@ from datetime import datetime
 PROVENANCE_DATE_FORMAT="%Y-%m-%d %H:%M:%S.%f"
 
 
-def provenance_deprecated(ad):
-    """
-    get full set of `Provenance` records on this object.
-
-    Returns
-    --------
-    list of `Provenance` records
-    """
-    retval = list()
-    if hasattr(ad, 'PROVENANCE'):
-        provenance = ad.PROVENANCE
-        for row in provenance:
-            timestamp = datetime.strptime(row[0], PROVENANCE_DATE_FORMAT)
-            filename = row[1]
-            md5 = row[2]
-            primitive = row[3]
-            retval.append(Provenance_deprecated(timestamp, filename, md5, primitive))
-    return retval
-
-
 def add_provenance(ad, filename, md5, primitive, timestamp=None):
     """
     Add the given `Provenance` entry to the full set of provenance records on this object.
@@ -93,6 +73,7 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
                     primitive == row[2] and \
                     args == row[3]:
                 # already in the history, skip
+                print("Already in output, skipping")
                 return
 
     colsize = len(args)+1
@@ -115,10 +96,14 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
     args_arr.append(args)
 
     dtype = ("S28", "S28", "S128", "S%d" % colsize)
-    ad.PROVENANCE_HISTORY = Table([timestamp_start_arr, timestamp_stop_arr, primitive_arr, args_arr],
+    ad.append(Table([timestamp_start_arr, timestamp_stop_arr, primitive_arr, args_arr],
                                     names=('timestamp_start', 'timestamp_stop',
                                             'primitive', 'args'),
-                                    dtype=dtype)
+                                    dtype=dtype), name="PROVENANCE_HISTORY")
+    # ad.PROVENANCE_HISTORY = Table([timestamp_start_arr, timestamp_stop_arr, primitive_arr, args_arr],
+    #                                 names=('timestamp_start', 'timestamp_stop',
+    #                                         'primitive', 'args'),
+    #                                 dtype=dtype)
 
 
 def clone_provenance(provenance_data, ad):

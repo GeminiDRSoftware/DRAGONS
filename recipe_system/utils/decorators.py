@@ -204,32 +204,6 @@ def _clone_provenance_deprecated(provenance_input, ad):
         ad.add_provenance(prov)
 
 
-def _clone_history_deprecated(provenance_input, ad):
-    """
-    For a single input's provenance history, copy it into the output
-    `AstroData` object as appropriate.
-
-    This takes a dictionary with a source filename, md5 and both it's
-    original provenance and provenance_history information.  It duplicates
-    the provenance data into the outgoing `AstroData` ad object.
-
-    Args
-    -----
-    provenance_input : dictionary with provenance data from a single input.
-        We only care about the `provenance_history` element, which holds a list 
-        of provenance history data
-    ad : outgoing `AstroData` object to add provenance data to
-
-    Returns
-    --------
-    none
-    """
-    # set will be faster for checking contents
-    provenance_history = provenance_input["provenance_history"]
-    for ph in provenance_history:
-        ad.add_provenance_history(ph)
-
-
 def __top_level_primitive__():
     """ Check if we are at the top-level, not being called from another primitive.
     
@@ -281,10 +255,10 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
                 clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
-                if not hasattr(ad, 'PROVENANCE_HISTORY'):
+                if ad.PROVENANCE_HISTORY:
                     clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
             else:
-                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                if ad.PROVENANCE_HISTORY:
                     clone_hist = False
                 else:
                     clone_hist = True
