@@ -88,8 +88,11 @@ class Spect(PrimitivesBASE):
 
         for ad in adinputs:
             filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
-            for module in (self.inst_lookups, gemini_lookups):
-                path = import_module('.', module).__path__[0]
+            for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
+                try:
+                    path = import_module('.', module).__path__[0]
+                except (ImportError, ModuleNotFoundError):
+                    continue
                 full_path = os.path.join(path, 'spectrophotometric_standards', filename)
                 try:
                     spec_table = self._get_spectrophotometry(full_path)
@@ -108,12 +111,19 @@ class Spect(PrimitivesBASE):
                 log.warning("Using default bandpass of {} nm".format(bandpass))
                 spec_table['WIDTH'] = bandpass * u.nm
 
-            # Could be XD so iterate over extensions
+            # We will only calculate sensitivity for the first 1D spectrum,
+            # unless the data are cross-dispersed, so need to keep track
+            calculated = False
             for ext in ad:
                 if len(ext.shape) != 1:
                     log.warning("{}:{} is not a 1D spectrum".
                                 format(ad.filename, ext.hdr['EXTVER']))
                     continue
+
+                if calculated and 'XD' not in ad.tags:
+                    log.warning("Found additional 1D extensions in non-XD data."
+                                " Ignoring.")
+                    break
 
                 spectrum = Spek1D(ext) / (exptime * u.s)
 
@@ -149,6 +159,7 @@ class Spect(PrimitivesBASE):
                 sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
                                  names=('knots', 'coefficients'))
                 ext.SENSFUNC = sensfunc
+                calculated = True
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
