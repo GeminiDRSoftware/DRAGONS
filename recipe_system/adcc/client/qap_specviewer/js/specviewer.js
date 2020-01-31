@@ -24,15 +24,15 @@ function SpecViewer(parentElement, id) {
     this.framePlots = [];
     this.stackPlots = [];
 
-    // Create empty page 
+    // Create empty page
     this.parentElement.html(`
       <div id="${id}">
-        <div class="loading"> 
+        <div class="loading">
           Waiting data from server ...
         </div>
       </div>
     `);
-  
+
     // Call function to activate the tabs
     $(`#${id}`).tabs();
 
@@ -50,14 +50,14 @@ SpecViewer.prototype = {
     constructor: SpecViewer,
 
     start: function() {
-      
+
         console.log("Starting SpecViewer");
-      
+
      	// Make an AJAX request to the server for the current
      	// time and the server site information.
      	// The callback for this request will call the init function
      	var sv = this;
-      
+
      	$.ajax(
           {
             type: "GET",
@@ -73,11 +73,11 @@ SpecViewer.prototype = {
      		} // end error
           }
         ); // end ajax
-      
+
         this.gjs = new GJSCommandPipe();
         this.gjs.registerCallback("specjson", function(msg){sv.loadData(msg);});
         this.gjs.startPump(sv.timestamp, "specjson");
-      
+
     }, // end start
 
   /**
@@ -145,7 +145,7 @@ SpecViewer.prototype = {
     // Save plots references in the object itself
     this.framePlots = framePlots;
     this.stackPlots = stackPlots;
-    
+
     // Add select tab handler
     var selectTab = function(e, tab) {
       console.log("Selected tab ", tab.newTab.index())
@@ -155,7 +155,7 @@ SpecViewer.prototype = {
 
     // Call function to activate the tabs
     $( `#${parentId}` ).tabs('refresh');
-    $( `#${parentId}` ).tabs('option', 'active', 0);    
+    $( `#${parentId}` ).tabs('option', 'active', 0);
     $( `#${parentId}` ).tabs( {'activate': selectTab} );
 
     // Allow plot area to be resized
@@ -219,14 +219,14 @@ SpecViewer.prototype = {
         p.resetZoom();
       });
     });
-    
+
   },
 
   /**
-   * Resizes frame plots on different situations, like window resizing or 
+   * Resizes frame plots on different situations, like window resizing or
    * when changing tabs.
-   * 
-   * @param activeTabIndex {number} 
+   *
+   * @param activeTabIndex {number}
    */
   resizeFramePlots: function (activeTabIndex) {
 
@@ -235,20 +235,20 @@ SpecViewer.prototype = {
     $(`framePlot${activeTabIndex}`).height(
       $(`framePlot${activeTabIndex}-resizable`).height() * 0.96
     );
-    
+
     $(`framePlot${activeTabIndex}`).width(
       $(`framePlot${activeTabIndex}-resizable`).width() * 0.96
     );
-    
+
     this.framePlots[activeTabIndex].replot({ resetAxes: true });
 
   },
-  
+
   /**
-   * Resizes frame plots on different situations, like window resizing or 
+   * Resizes frame plots on different situations, like window resizing or
    * when changing tabs.
-   * 
-   * @param activeTabIndex {number} 
+   *
+   * @param activeTabIndex {number}
    */
   resizeStackPlots: function (activeTabIndex) {
 
@@ -257,11 +257,11 @@ SpecViewer.prototype = {
     $(`stackPlot${activeTabIndex}`).height(
       $(`stackPlot${activeTabIndex}-resizable`).height() * 0.96
     );
-    
+
     $(`stackPlot${activeTabIndex}`).width(
       $(`stackPlot${activeTabIndex}-resizable`).width() * 0.96
     );
-    
+
     this.stackPlots[activeTabIndex].replot({ resetAxes: true });
 
   },
@@ -345,26 +345,44 @@ SpecViewer.prototype = {
 
 
   /**
-   * Query server for JSON file and start to populate page. 
+   * Query server for JSON file and start to populate page.
    * This function is the registered callback on the command pump.
    */
-  loadData: function(sdata) {
+  loadData: function(jsonData) {
     'use restrict';
-    console.log("Data recieved.");
-    console.log(sdata)
+
+    let now = Date(Date.now());
+
+    console.log(`\nReceived new JSON data list on\n ${now.toString()}`)
+
+    // Remove loading
+    $('.loading').remove();
+
+    for (let i = 0; i < jsonData.length; i++) {
+      if (jsonData[i].data_label === this.dataLabel) {
+        console.log(`Received OLD data with following data label: ${jsonData[i].data_label}`);
+      } else {
+
+        let jsonElement = jsonData[i];
+
+        console.log(`Received NEW data with following data label: ${jsonElement.data_label}`);
+        this.dataLabel = jsonElement.data_label;
+
+      }
+    }
 
     // Reference to self to use in functions inside load
 //	var sViewer = this;
 //	var jsonData = sdata;
 //	var data = JSON.stringify(jsonData);
-	
+
 //  sViewer.addNavigationTab(sViewer.id, data.apertures.length);
 //	sViewer.addTabs(sViewer.id, data);
 //	sViewer.addPlots(sViewer.id, data);
-	
-    // Remove loading 
+
+    // Remove loading
 	$('.loading').remove();
-    
+
   }, // end load
 
 }; // end prototype
