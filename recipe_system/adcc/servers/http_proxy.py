@@ -66,6 +66,7 @@ def server_time():
 
     """
     lt_now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    unxtime = time.time()
     utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
     utc_offset = datetime.datetime.utcnow() - datetime.datetime.now()
 
@@ -86,6 +87,7 @@ def server_time():
     time_dict = {"local_site": local_site,
                  "tzname"    : time.tzname[0],
                  "lt_now"    : lt_now,
+                 "unxtime"   : unxtime,
                  "utc_now"   : utc_now,
                  "utc_offset": utc_offset}
     return time_dict
@@ -495,14 +497,13 @@ class ADCCHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         # TODO: hook up spec pump, which will deposit spec events on this list.
-        if not spec_events.event_list:
+        if not spec_events.get_list():
             self.log_message(msg_form, "No quicklook spectra.", info_code, size)
-
-            tdic = spec_events.get_list()
-            tdic.insert(0, {"msgtype":"specview.request","timestamp": time.time()})
+            specdic.insert(0, {"msgtype":"specqueue.request","timestamp": time.time()})
+            specdic.append({"msgtype": "specqueue.request", "timestamp": time.time()})
             self.wfile.write(
-                bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
-            )
+                bytes(json.dumps(specdic, sort_keys=True, indent=4).encode('utf-8')))
+
             return
 
         spec_events = spec_events.get_list()
@@ -512,7 +513,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         self.wfile.write(
             bytes(json.dumps(spec_events, sort_keys=True, indent=4).encode('utf-8'))
         )
-
+        spec_events.clear_list()
         return
 
 
