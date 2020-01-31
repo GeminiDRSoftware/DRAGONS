@@ -13,7 +13,7 @@ from astropy.convolution import convolve
 
 import astrodata
 import gemini_instruments
-from astrodata import Provenance
+from astrodata.provenance import add_provenance
 
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -487,7 +487,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
             if dark.path:
-                ad.add_provenance(Provenance(datetime.datetime.now(), dark.filename, md5sum(dark.path) or "", self.myself()))
+                add_provenance(ad, dark.filename, md5sum(dark.path) or "", self.myself())
         return adinputs
 
     def dilateObjectMask(self, adinputs=None, suffix=None, dilation=1, repeat=False):
@@ -617,7 +617,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
             if flat.path:
-                ad.add_provenance(Provenance(datetime.datetime.now(), flat.filename, md5sum(flat.path) or "", self.myself()))
+                add_provenance(ad, flat.filename, md5sum(flat.path) or "", self.myself())
         return adinputs
 
     def makeSky(self, adinputs=None, **params):

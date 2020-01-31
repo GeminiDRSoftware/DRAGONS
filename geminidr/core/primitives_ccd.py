@@ -10,7 +10,7 @@ import numpy as np
 from astropy.modeling import models, fitting
 from scipy.interpolate import UnivariateSpline, LSQUnivariateSpline
 
-from astrodata import Provenance
+from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 
 from geminidr import PrimitivesBASE
@@ -97,7 +97,7 @@ class CCD(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
             if bias.path:
-                ad.add_provenance(Provenance(datetime.now(), bias.filename, md5sum(bias.path) or "", self.myself()))
+                add_provenance(ad, bias.filename, md5sum(bias.path) or "", self.myself())
 
             timestamp = datetime.now()
         return adinputs

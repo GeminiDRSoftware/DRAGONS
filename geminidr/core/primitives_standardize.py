@@ -10,7 +10,7 @@ import numpy as np
 from importlib import import_module
 from scipy.ndimage import measurements
 
-from astrodata import Provenance
+from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
 from gempy.utils import logutils
@@ -334,7 +334,7 @@ class Standardize(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         for ad, filename, path in zip(adinputs, filenames, paths):
             if path:
-                ad.add_provenance(Provenance(datetime.now(), filename, md5sum(path) or "", self.myself()))
+                add_provenance(ad, filename, md5sum(path) or "", self.myself())
         return adinputs
 
     def standardizeHeaders(self, adinputs=None, **params):
