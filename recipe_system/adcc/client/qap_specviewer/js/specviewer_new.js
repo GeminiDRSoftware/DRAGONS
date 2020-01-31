@@ -3,7 +3,7 @@
  * Quality Assessment Pipeline - Spectrum Viewer
  *
  */
-const specViewerJsonName = "/specqueue.json";
+const specViewerJsonName = "/specqueue.json"
 
 
 /**
@@ -20,9 +20,18 @@ function SpecViewer(parentElement, id) {
     this.id = id;
 
     // Placeholders for different elements
-    this.activeTab = null;
+    this.frameData = null;
     this.framePlots = [];
+  
+    this.stackData = null;
     this.stackPlots = [];
+  
+    this.dataLabel = null;
+    this.groupId = null;
+  
+    this.tabActive = null;
+    this.tabCenterTolerance = 10;
+    this.tabList = [];
 
     // Create empty page 
     this.parentElement.html(`
@@ -38,61 +47,71 @@ function SpecViewer(parentElement, id) {
 
     // Placeholder for adcc command pump
     this.gjs = null;
-
+    this.start()
 }
-    //this.specPump = new SpectroPump();
-//} // end SpecViewer
 
 // Add methods to prototype
 SpecViewer.prototype = {
 
-    constructor: SpecViewer,
+  constructor: SpecViewer,
 
-    start: function() {
-      
-        console.log("Starting SpecViewer");
-      
-     	// Make an AJAX request to the server for the current
-     	// time and the server site information.
-     	// The callback for this request will call the init function
-     	var sv = this;
-      
-     	$.ajax(
-          {
-            type: "GET",
-     		url: "/rqsite.json",
-     		success: function (data) {
-     		    sv.site = data.local_site;
-     		    sv.timestamp = data.lt_now;
-//     		    sv.init();
-     		}, // end success
-     		error: function() {
-     		    sv.site = undefined;
-     		    sv.tzname = "LT";
-     		    sv.timestamp = new Date();
-//     		    sv.init();
-     		} // end error
-          }
-        ); // end ajax
-    }, // end start
+  start: function() {
+    
+    'use restrict';
+    console.log("Starting SpecViewer");
 
+    // Make an AJAX request to the server for the current
+    // time and the server site information.
+    // The callback for this request will call the init function
+    var sv = this;
+
+    $.ajax(
+      {
+        type: "GET",
+        url: "/rqsite.json",
+        success: function (data) {
+          sv.site = data.local_site;
+          sv.timestamp = data.lt_now;
+        }, // end success
+        error: function() {
+          sv.site = undefined;
+          sv.tzname = "LT";
+          sv.timestamp = new Date();
+        } // end error
+      }
+    ); // end ajax
+
+    this.gjs = new GJSCommandPipe();
+    this.gjs.registerCallback("specjson", function(msg){sv.loadData(msg);});
+	this.gjs.startPump(sv.timestamp, "specjson");
+
+  }, // end start
+  
   /**
-   * Add navigation tabs based on how many apertures there is inside the
+   * Add navigation new tabs based on how many apertures there is inside the
    * JSON file.
    *
    * @param {string} parentId
-   * @param {number} numberOfApertures
    */
-  addNavigationTab: function(parentId, numberOfApertures) {
+  addNavigationTab: function(apertureCenter) {
+    
     'use restrict';
-
-    /* Add navigation tab container */
-    let listOfTabs = $(`#${parentId} ul`);
-
-    // Create buttons and add them to the navigation tab
-    for (let i = 0; i < numberOfApertures; i++) {
-      listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
-    }
+        
+    console.log(`Adding new navigation tab in ${this.id}`);
+    
+    // Add navigation tab container if it does not exists
+    let listOfTabs = $(`#${this.id} ul`);
+    
+//    let i = this.tabList.length + 1;
+    
+//    // Clear all the tabs 
+//    listOfTabs.empty();
+//    
+//    // Append tab
+//    listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
+//    
+//    $( `#${this.id}` ).tabs('refresh');
+//    $( `#${this.id}` ).tabs('option', 'active', 0);    
 
   },
 
@@ -104,37 +123,34 @@ SpecViewer.prototype = {
 
     let sViewer = this;
 
-    var intensity = null;
-    var stddev = null;
+    let intensity = null;
+    let stddev = null;
 
     let framePlots = [];
     let stackPlots = [];
 
     for (var i = 0; i < data.apertures.length; i++) {
 
+      let isStack = data.is_stack;
+      console.log(" Is input data a stack? ", isStack)
+      
       // Adding plot for frame
-      intensity = buildSeries(
-        data.apertures[i].wavelength, data.apertures[i].intensity);
-
-      stddev = buildSeries(
-        data.apertures[i].wavelength, data.apertures[i].stddev);
-
+      intensity = data.apertures[i].intensity;
+      stddev = data.apertures[i].intensity;
+      
+      // Adding plot for frame
+      intensity = data.apertures[i].intensity;
+      stddev = data.apertures[i].stddev;
+      
       framePlots[i] = $.jqplot(
         `framePlot${i}`, [intensity, stddev], $.extend(plotOptions, {
           title: `Aperture ${i} - Last Frame`,
         }));
-
-      // Adding plots for stack
-      intensity = buildSeries(
-        data.stackApertures[i].wavelength, data.stackApertures[i].intensity);
-
-      stddev = buildSeries(
-        data.stackApertures[i].wavelength, data.stackApertures[i].stddev);
-
+      
       stackPlots[i] = $.jqplot(
         `stackPlot${i}`, [intensity, stddev], $.extend(plotOptions, {
-          title: `Aperture ${i} - Stack Frame`,
-        }));
+        title: `Aperture ${i} - Stack Frame`,
+        }));  
 
     }
 
@@ -218,6 +234,18 @@ SpecViewer.prototype = {
     
   },
 
+  /**
+   * Clear page every time we receive data with a new Group Id.
+   *
+   * @param {string} parentId
+   */ 
+  clearPage: function(parentId) {
+
+    // ToDo - Implement me
+    console.log("- Clearing page");
+    
+  },
+  
   /**
    * Resizes frame plots on different situations, like window resizing or 
    * when changing tabs.
@@ -339,42 +367,55 @@ SpecViewer.prototype = {
 
   }, // end addTabs
 
-
-  /**
-   * Query server for JSON file and start to populate page.
-   */
-  loadData: function() {
+  // Query server for JSON file and start to populate page. This function is
+  // the registered callback on the command pump.
+  loadData: function(jsonData) {
     'use restrict';
-
-    // Reference to self to use in functions inside load
-    var sViewer = this;
-
-    $.ajax({
-      type: "GET",
-      url: specViewerJsonName,
-      success: function(jsonData) {
-
-        var data = JSON.parse(JSON.stringify(jsonData));
-
-        sViewer.addNavigationTab(sViewer.id, data.apertures.length);
-        sViewer.addTabs(sViewer.id, data);
-        sViewer.addPlots(sViewer.id, data);
-
-        // Remove loading 
-        $('.loading').remove();
-
-      }, // end success
-      error: function(e) {
-
-        console.log('Could not receive json file');
-        $( `#${sViewer.id}` ).html(e.responseText);
-
-        // Remove loading 
-        $('.loading').remove();
-
-      } // end error
-    }); // end ajax
-  }, // end load
+      
+    let now = Date(Date.now());
+      
+//      console.clear()
+      console.log(`\nReceived new JSON data list on\n ${now.toString()}`)
+      
+      for (let i = 0; i < jsonData.length; i++) {           
+        if (jsonData[i].data_label === this.dataLabel) {
+          console.log(`Received OLD data with following data label: ${jsonData[i].data_label}`);
+        } else {
+          this.refreshPage(jsonData[i]);
+        }     
+      }      
+    }, // end load
+  
+  /**
+   * Refreshed the page when new data shows up.
+   */
+  refreshPage: function (jsonElement) {
+    
+    // Remove loading 
+    $('.loading').remove();
+      
+    console.log(`Received NEW data with following data label: ${jsonElement.data_label}`);
+    this.dataLabel = jsonElement.data_label;
+    
+    if (jsonElement.group_id === this.groupId) {
+      console.log(`- Data had OLD group id: ${jsonElement.group_id}`);      
+    } else {
+      console.log(`- Data has NEW group id: ${jsonElement.group_id}`);
+      this.groupId = jsonElement.groupId;
+      this.clearPage();
+    }
+         
+    for (var i = 0; i < jsonElement.apertures.length; i++) {
+          
+      let aperture = jsonElement.apertures[i];
+    
+      this.addNavigationTab(aperture.center);
+//      this.addTab(aperture, jsonElement.is_stack);
+//      this.addPlot(aperture, jsonElement.is_stack);
+      
+    }
+  
+  }  
 
 }; // end prototype
 
