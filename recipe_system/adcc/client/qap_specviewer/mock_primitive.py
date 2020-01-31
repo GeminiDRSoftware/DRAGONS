@@ -14,7 +14,7 @@ import urllib.request
 
 from scipy import ndimage
 
-URL = "http://localhost:8777/spec_report"
+URL = "http://localhost:5000/spec_report"
 
 
 def main():
@@ -73,8 +73,8 @@ def main():
                     wavelength, _data, _error)
                 return _aperture.__dict__
 
-            apertures = [aperture_generator(i) for i in range(n_apertures)]
-            # apertures = []
+            # apertures = [aperture_generator(i) for i in range(n_apertures)]
+            apertures = []
 
             frame = SpecPackModel(
                 data_label, group_id, filename, is_stack, program_id, apertures)
@@ -89,6 +89,7 @@ def main():
             print("  Performing request...")
 
             post_request = urllib.request.Request(URL)
+            post_request.add_header("Content-Type", "application/json")
             postr = urllib.request.urlopen(post_request, json_data)
             postr.read()
             postr.close()
