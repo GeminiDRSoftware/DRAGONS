@@ -67,7 +67,7 @@ SpecViewer.prototype = {
      		url: "/rqsite.json",
      		success: function (data) {
      		    sv.site = data.local_site;
-     		    sv.timestamp = data.lt_now;
+		    sv.timestamp = data.unxtime;
      		}, // end success
      		error: function() {
      		    sv.site = undefined;
