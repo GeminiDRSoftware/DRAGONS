@@ -10,8 +10,10 @@ is using to design frontend/backend.
 Remember to run it from the same folder where it lives since it relies on
 relative path. This is a temporary solution.
 """
+import datetime
 import json
 import os
+import time
 
 from flask import Flask, abort, jsonify, render_template, send_from_directory
 
@@ -39,6 +41,26 @@ def index():
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory("images", "dragons_favicon.ico")
+
+
+@app.route('/rqsite.json')
+def get_site_information():
+
+    lt_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    unxtime = time.time()
+    utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+    utc_offset = datetime.datetime.utcnow() - datetime.datetime.now()
+
+    site_information = {
+        "local_site": "gemini-south",
+        "lt_now": lt_now,
+        "tzname": time.strftime("%Z"),
+        "unxtime": unxtime,
+        "utc_now": utc_now,
+        "utc_offset": int(utc_offset.seconds // 3600.),
+    }
+
+    return json.dumps(site_information).encode("utf-8")
 
 
 @app.route('/specqueue.json')
