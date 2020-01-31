@@ -167,7 +167,7 @@ def _get_provenance_inputs(adinputs):
             provenance_history = ad.PROVENANCE_HISTORY.copy()
         else:
             provenance_history = []
-        retval[ad.datalabel] = \
+        retval[ad.data_label()] = \
             {
                 "filename": ad.filename,
                 "md5": md5,
@@ -278,20 +278,20 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     try:
         timestamp = datetime.now()
         for ad in ret_value:
-            if ad.datalabel in provenance_inputs:
+            if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
-                clone_provenance(provenance_inputs[ad.datalabel]['provenance'], ad)
-                if not ad.provenance_history:
-                    clone_history(provenance_inputs[ad.datalabel]['provenance_history'], ad)
+                clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
+                if not hasattr(ad, 'PROVENANCE_HISTORY'):
+                    clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
             else:
-                if ad.provenance_history:
-                    clone_history = False
+                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                    clone_hist = False
                 else:
-                    clone_history = True
-                for provenance_input in provenance_inputs.values:
+                    clone_hist = True
+                for provenance_input in provenance_inputs.values():
                     clone_provenance(provenance_input['provenance'], ad)
-                    if clone_history:
-                        clone_history(provenance_input['provenance_history'], ad)
+                    if clone_hist:
+                        clone_provenance_history(provenance_input['provenance_history'], ad)
         for ad in ret_value:
             add_provenance_history(ad, timestamp_start, timestamp, fn.__name__, args)
     except Exception as e:

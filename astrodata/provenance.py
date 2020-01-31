@@ -1,5 +1,6 @@
 
 from astropy.table import Table
+from datetime import datetime
 
 
 PROVENANCE_DATE_FORMAT="%Y-%m-%d %H:%M:%S.%f"
@@ -165,6 +166,6 @@ def clone_provenance_history(provenance_history_data, ad):
     --------
     none
     """
-    phd = [(prov_hist[0], proprov_histv[1], prov_hist[2], prov_hist[3]) for prov_hist in provenance_history_data]
+    phd = [(prov_hist[0], prov_hist[1], prov_hist[2], prov_hist[3]) for prov_hist in provenance_history_data]
     for ph in phd:
         add_provenance_history(ad, ph[0], ph[1], ph[2], ph[3])
