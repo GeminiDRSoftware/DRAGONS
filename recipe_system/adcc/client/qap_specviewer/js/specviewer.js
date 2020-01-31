@@ -24,6 +24,9 @@ function SpecViewer(parentElement, id) {
     this.framePlots = [];
     this.stackPlots = [];
 
+    this.dataLabel = null;
+    this.groupId = null;
+
     // Create empty page
     this.parentElement.html(`
       <div id="${id}">
@@ -148,10 +151,10 @@ SpecViewer.prototype = {
 
     // Add select tab handler
     var selectTab = function(e, tab) {
-      console.log("Selected tab ", tab.newTab.index())
+      console.log("Selected tab ", tab.newTab.index());
       sViewer.resizeFramePlots(tab.newTab.index());
       sViewer.resizeStackPlots(tab.newTab.index());
-    }
+    };
 
     // Call function to activate the tabs
     $( `#${parentId}` ).tabs('refresh');
@@ -353,20 +356,27 @@ SpecViewer.prototype = {
 
     let now = Date(Date.now());
 
-    console.log(`\nReceived new JSON data list on\n ${now.toString()}`)
+    console.log(`\nReceived new JSON data list on\n ${now.toString()}`);
 
     // Remove loading
     $('.loading').remove();
 
     for (let i = 0; i < jsonData.length; i++) {
       if (jsonData[i].data_label === this.dataLabel) {
-        console.log(`Received OLD data with following data label: ${jsonData[i].data_label}`);
+        console.log(`- OLD data label: ${jsonData[i].data_label}`);
       } else {
 
         let jsonElement = jsonData[i];
 
-        console.log(`Received NEW data with following data label: ${jsonElement.data_label}`);
+        console.log(`- NEW data label: ${jsonElement.data_label}`);
         this.dataLabel = jsonElement.data_label;
+
+        if (jsonElement.group_id === this.groupId) {
+          console.log(`- MATCHING group id: ${jsonElement.group_id}`);
+        } else {
+          console.log(`- NEW group id: ${jsonElement.group_id}`);
+          this.groupId = jsonElement.group_id;
+        }
 
       }
     }
