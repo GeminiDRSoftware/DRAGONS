@@ -506,12 +506,12 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
             return
 
-        spec_events = spec_events.get_list()
-        specdic.append(spec_events)
+        splist = spec_events.get_list()
+        specdic.append(splist)
         specdic.insert(0, {"msgtype": "specqueue.request", "timestamp": time.time()})
         specdic.append({"msgtype": "specqueue.request", "timestamp": time.time()})
         self.wfile.write(
-            bytes(json.dumps(spec_events, sort_keys=True, indent=4).encode('utf-8'))
+            bytes(json.dumps(specdic, sort_keys=True, indent=4).encode('utf-8'))
         )
         spec_events.clear_list()
         return
