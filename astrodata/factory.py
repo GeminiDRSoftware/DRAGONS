@@ -1,3 +1,5 @@
+import os
+
 from builtins import object
 from future.utils import string_types
 from copy import deepcopy
@@ -6,10 +8,18 @@ from astropy.io import fits
 
 from .core import AstroDataError
 
+import logging
+
+LOGGER = logging.getLogger('AstroData Factory')
 
 def fits_opener(source):
     if isinstance(source, fits.HDUList):
         return source
+
+    stats = os.stat(source)
+    if stats.st_size == 0:
+        LOGGER.warning("File {} is zero size".format(source))
+
     return fits.open(source, memmap=True)
 
 
