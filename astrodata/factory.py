@@ -16,10 +16,6 @@ def fits_opener(source):
     if isinstance(source, fits.HDUList):
         return source
 
-    stats = os.stat(source)
-    if stats.st_size == 0:
-        LOGGER.warning("File {} is zero size".format(source))
-
     return fits.open(source, memmap=True)
 
 
@@ -47,6 +43,11 @@ class AstroDataFactory(object):
 
         """
         if isinstance(source, string_types):
+            stats = os.stat(source)
+            if stats.st_size == 0:
+                LOGGER.warning("File {} is zero size".format(source))
+
+            # try vs all handlers
             for func in AstroDataFactory._file_openers:
                 try:
                     return func(source)
