@@ -21,16 +21,13 @@ def main():
     """
     Main function.
     """
-
+    np.random.seed(0)
     args = _parse_arguments()
 
     url = args.url
-
-    np.random.seed(0)
-
-    n_frames = 3
-    n_apertures = 3
-    sleep_between_frames = 10.
+    n_frames = args.n_frames
+    n_apertures = args.n_apertures
+    sleep_between_frames = args.sleep_time
 
     data_size = 4000
     snr = 10.
@@ -81,8 +78,7 @@ def main():
                     wavelength, _data, _error)
                 return _aperture.__dict__
 
-            # apertures = [aperture_generator(i) for i in range(n_apertures)]
-            apertures = []
+            apertures = [aperture_generator(i) for i in range(n_apertures)]
 
             frame = SpecPackModel(
                 data_label, group_id, filename, is_stack, program_id, apertures)
@@ -110,7 +106,7 @@ def main():
                 sys.exit()
 
             print("  Done.")
-            print("  Sleeping...")
+            print("  Sleeping for {} seconds ...".format(sleep_between_frames))
 
             time.sleep(sleep_between_frames)
             file_index += 1
@@ -136,11 +132,35 @@ def _parse_arguments():
                     "ADCC server.")
 
     parser.add_argument(
+        '-a', '--apertures',
+        default=3,
+        dest="n_apertures",
+        help="Number of aperetures for each data",
+        type=int,
+    )
+
+    parser.add_argument(
+        '-f', '--frames',
+        default=3,
+        dest="n_frames",
+        help="Number of frames for each Group ID.",
+        type=int,
+    )
+
+    parser.add_argument(
         '-u', '--url',
         default=URL,
         help="URL of the ADCC server (e.g.: http://localhost:8777/spec_report)",
         type=str,
-        )
+    )
+
+    parser.add_argument(
+        '-s', '--sleep',
+        default=10.,
+        dest="sleep_time",
+        help="Sleep time between post requests",
+        type=float,
+    )
 
     return parser.parse_args()
 
