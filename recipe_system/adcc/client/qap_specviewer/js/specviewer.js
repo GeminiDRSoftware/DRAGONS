@@ -34,11 +34,15 @@ function SpecViewer(parentElement, id) {
         <div class="loading">
           Waiting data from server ...
         </div>
+        <ul></ul>
       </div>
     `);
 
-  // Call function to activate the tabs
+  // Call function to enable the tabs
   $(`#${id}`).tabs();
+
+  // Add event handler to tabs
+  $(`#${id}`).tabs({activate: this.onTabChange});
 
   // Placeholder for adcc command pump
   this.gjs = null;
@@ -54,6 +58,8 @@ SpecViewer.prototype = {
   constructor: SpecViewer,
 
   /**
+   * @deprecated
+   *
    * Add navigation tabs based on how many apertures there is inside the
    * JSON file.
    *
@@ -127,11 +133,11 @@ SpecViewer.prototype = {
     };
 
     // Call function to activate the tabs
-    $(`#${parentId}`).tabs('refresh');
-    $(`#${parentId}`).tabs('option', 'active', 0);
-    $(`#${parentId}`).tabs({
-      'activate': selectTab
-    });
+    // $(`#${parentId}`).tabs('refresh');
+    // $(`#${parentId}`).tabs('option', 'active', 0);
+    // $(`#${parentId}`).tabs({
+    //   'activate': selectTab
+    // });
 
     // Allow plot area to be resized
     $('.ui-widget-content.resizable:has(.framePlot)').map(
@@ -201,35 +207,42 @@ SpecViewer.prototype = {
    * Add/refresh tab content for incomming data.
    * @type {object} data Incomming JSON data
    */
-  addTabContent: function(data) {
+  newTabContent: function(data) {
 
     for (let i = 0; i < data.apertures.length; i++) {
 
       let aperture = data.apertures[i];
 
-      console.log(`Adding content for aperture at ${aperture.center} px`);
-      console.log(this.aperturesCenter)
-
-      // Add empty tab container
+      // Add empty tab container if it does not exist
+      // !!! ToDo: improve matching criterium !!!
       if (!this.aperturesCenter.includes(aperture.center)) {
+
         $(`#${this.id}`).append(
-          `<div id="aperture${aperture.center}" class="tabcontent"></div>`
+          `<div id="aperture${aperture.center}" class="tabcontent">
+            <div class="apertureInfo"> </div>
+            <div class="frameInfo"> </div>
+            <div id="framePlot${aperture.center}-resizable" class="ui-widget-content resizable"> </div>
+            <div class="stackInfo"> </div>
+            <div id="stackPlot${aperture.center}-resizable" class="ui-widget-content resizable"> </div>
+          </div>`
         );
+
+        this.aperturesCenter.push(aperture.center);
+
       }
 
-      $(`#aperture${aperture.center}`).html(`
-          <div class="apertureInfo">
-            <span>
-              <b>Aperture definition:</b>
-                <span class="app-info-field" title="Aperture center"> ${aperture.center} px </span> (
-                <span class="app-info-field" title="Lower aperture limit"> ${aperture.lower} px </span>,
-                <span class="app-info-field" title="Upper aperture limit"> ${aperture.upper} px </span>)
-            </span>
-            <span style="padding-left: 10%">
-              <b>Dispersion:</b> ${aperture.dispersion} nm/px
-            </span>
-          </div>
-        `);
+      // Add content to the container
+      $(`#aperture${aperture.center} .apertureInfo`).html(
+        getApertureInfo(aperture)
+      );
+
+      $(`#aperture${aperture.center} .frameInfo`).html(
+        getFrameInfo("", "")
+      );
+
+      $(`#aperture${aperture.center} .stackInfo`).html(
+        getStackInfo("", "")
+      );
 
     }
 
@@ -346,24 +359,29 @@ SpecViewer.prototype = {
           console.log(`- NEW group id: ${jsonElement.group_id}`);
           this.groupId = jsonElement.group_id;
 
-          // Clear navigation tabs
+          // Clear navigation tabs and aperture list
           $(`#${this.id} ul`).empty();
+          this.aperturesCenter = [];
 
           // Clear tab contents
           $('.tabcontent').remove();
 
           // Add tab content
-          this.addTabContent(jsonElement);
+          this.newTabContent(jsonElement);
+          this.updateNavigationTab(jsonElement);
+
+          console.log(jsonElement.is_stack);
+
+          if (jsonElement.is_stack) {
+            this.updateStackArea(jsonElement);
+          } else {
+            this.updateFrameArea(jsonElement);
+          }
 
         }
 
       }
     }
-
-    // Reference to self to use in functions inside load
-    //	var sViewer = this;
-    //	var jsonData = sdata;
-    //	var data = JSON.stringify(jsonData);
 
     //  sViewer.addNavigationTab(sViewer.id, data.apertures.length);
     //	sViewer.addTabs(sViewer.id, data);
@@ -373,6 +391,17 @@ SpecViewer.prototype = {
     $('.loading').remove();
 
   }, // end load
+
+  /**
+   * Handle event onTabChange; aka as $.tabs({activate: ...}).
+   */
+  onTabChange: function(event, tab) {
+
+    var newIndex = tab.newTab.index();
+
+    // sViewer.resizeFramePlots(tab.newTab.index());
+    // sViewer.resizeStackPlots(tab.newTab.index());
+  },
 
   /**
    * Resizes frame plots on different situations, like window resizing or
@@ -454,16 +483,59 @@ SpecViewer.prototype = {
   }, // end start
 
   /**
+   * [updateNavigationTab description]
+   * @type {[type]}
+   */
+  updateFrameArea: function(data) {
+
+    console.log('- Handling latest frame data');
+    for (let i = 0; i < this.aperturesCenter.length; i++) {
+      let apertureCenter = this.aperturesCenter[i];
+
+      $(`#aperture${apertureCenter} .frameInfo`).html(
+        getFrameInfo(data.filename, data.program_id)
+      );
+
+    }
+
+  },
+
+  /**
    * Updates the navigation tab based on matching aperture center.
    *
-   * @param apertures {array} Aperture objects.
+   * @param jsonElement {object}
    */
-  updateNavigationTab: function(apertures) {
+  updateNavigationTab: function(jsonElement) {
 
     // Add navigation tab container
-    let listOfTabs = $(`#${parentId} ul`);
+    let navTabContainer = $(`#${this.id} ul`);
 
-  }
+    this.aperturesCenter.sort();
+
+    // Create buttons and add them to the navigation tab
+    for (let i = 0; i < this.aperturesCenter.length; i++) {
+      navTabContainer.append(`<li><a href="#aperture${this.aperturesCenter[i]}">Aperture ${i + 1}</a></li>`);
+    }
+
+    /// Refresh tabs to update them
+    $(`#${this.id}`).tabs('refresh');
+
+    // Activate first tab if none is active
+    if (this.activeTab == null) {
+      this.activeTab = 0;
+    }
+
+    $(`#${this.id}`).tabs('option', 'active', this.activeTab);
+
+  },
+
+  /**
+   * [updateNavigationTab description]
+   * @type {[type]}
+   */
+  updateStackArea: function(data) {
+    console.log('Handling stack frame data');
+  },
 
 }; // end prototype
 
@@ -486,6 +558,91 @@ function buildSeries(x, y) {
   }
   return temp;
 }
+
+/**
+ * Returns the Aperture Info div element using a template.
+ *
+ * @type {Object} aperture Aperture definition containing its center, the
+ * relative lower limit, the relative upper limit and the dispersion.
+ */
+function getApertureInfo(aperture) {
+
+  return `
+    <div class="apertureInfo">
+      <span>
+        <b>Aperture definition:</b>
+          <span class="app-info-field" title="Aperture center"> ${aperture.center} px </span> (
+          <span class="app-info-field" title="Lower aperture limit"> ${aperture.lower} px </span>,
+          <span class="app-info-field" title="Upper aperture limit"> ${aperture.upper} px </span>)
+      </span>
+      <span style="padding-left: 10%">
+        <b>Dispersion:</b> ${Math.round(aperture.dispersion * 1000) / 1000} nm/px
+      </span>
+    </div>
+    `;
+
+}
+
+/**
+ * Returns the last frame info div element using a template.
+ *
+ * @param filename {string} name of the filename.
+ * @param programId {string} program Id code.
+ */
+function getFrameInfo(filename, programId) {
+
+  if (filename === '') {
+    filename = '<span style="color: #999"> (Not available yet) </span>';
+  }
+
+  if (programId === '') {
+    programId = '<span style="color: #999"> (Not available yet) </span>';
+  }
+
+  return `
+  <div class="d-table w-100">
+    <p class="d-table-cell">
+      Latest frame - ${filename} - ${programId}
+    </p>
+    <div class="d-table-cell tar">
+      <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
+        <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
+      </button>
+    </div>
+  </div>`;
+}
+
+/**
+ * Returns the stack frame info div element using a template.
+ *
+ * @param filename {string} name of the filename.
+ * @param programId {string} program Id code.
+ */
+function getStackInfo(filename, programId) {
+
+  if (filename === '') {
+    filename = '<span style="color: #999"> (Not available yet) </span>';
+  }
+
+  if (programId === '') {
+    programId = '<span style="color: #999"> (Not available yet) </span>';
+  }
+
+  return `
+    <div class="d-table w-100">
+      <p class="d-table-cell">
+        Stack frame - ${filename} - ${programId}
+      </p>
+      <div class="d-table-cell tar">
+        <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
+          <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+
 
 
 /**
