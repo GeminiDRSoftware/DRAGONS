@@ -10,7 +10,7 @@ In practice, it creates JSON data and send it to the ADCC Server in a timed loop
 import json
 import numpy as np
 import time
-import urllib.request
+import urllib.error, urllib.request
 
 from scipy import ndimage
 
@@ -18,6 +18,14 @@ URL = "http://localhost:5000/spec_report"
 
 
 def main():
+    """
+    Main function.
+    """
+
+    args = _parse_arguments()
+
+    url = args.url
+
     np.random.seed(0)
 
     n_frames = 3
@@ -88,11 +96,18 @@ def main():
             print("  Filename: {}".format(filename))
             print("  Performing request...")
 
-            post_request = urllib.request.Request(URL)
-            post_request.add_header("Content-Type", "application/json")
-            postr = urllib.request.urlopen(post_request, json_data)
-            postr.read()
-            postr.close()
+            try:
+                post_request = urllib.request.Request(url)
+                post_request.add_header("Content-Type", "application/json")
+                postr = urllib.request.urlopen(post_request, json_data)
+                postr.read()
+                postr.close()
+            except urllib.error.URLError:
+                import sys
+                print("\n Error trying to open URL: {}".format(url))
+                print(" Please, check that the server is running "
+                      "and run again.\n")
+                sys.exit()
 
             print("  Done.")
             print("  Sleeping...")
@@ -102,6 +117,32 @@ def main():
 
         program_index += 1
         group_index += 1
+
+
+def _parse_arguments():
+    """
+    Parses arguments received from the command line.
+
+    Returns
+    -------
+    namespace
+        all the default and customized options parsed from the command line.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="A script that simulates a pipeline running the "
+                    "plotSpectraForQA and posting JSON data to the "
+                    "ADCC server.")
+
+    parser.add_argument(
+        '-u', '--url',
+        default=URL,
+        help="URL of the ADCC server (e.g.: http://localhost:8777/spec_report)",
+        type=str,
+        )
+
+    return parser.parse_args()
 
 
 def create_1d_spectrum(width, n_lines, max_weight):
