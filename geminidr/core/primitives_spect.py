@@ -1549,6 +1549,7 @@ class Spect(PrimitivesBASE):
                 ext.hdr["CDELT1"] = dw
                 ext.hdr["CD1_1"] = dw
                 ext.hdr["CUNIT1"] = "nanometer"
+                del ext.WAVECAL  # not needed any more
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
