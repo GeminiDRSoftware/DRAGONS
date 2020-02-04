@@ -1619,6 +1619,8 @@ class Spect(PrimitivesBASE):
             else:
                 dw = (w2 - w1) / (npix - 1)
 
+        print(f'{w1=} {w2=} {dw=} {npix=}')
+
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix)
         info = []
@@ -1663,8 +1665,18 @@ class Spect(PrimitivesBASE):
                     elif dw_ext is None:
                         dw_ext = (w2_ext - w1_ext) / (npix_ext - 1)
 
-            chebref = info[0][iext]['cheb']
-            chebref.inverse.inverse = chebref
+            if not linearize:
+                chebref = info[0][iext]['cheb'].copy()
+                chebrefinv = chebref.inverse.copy()
+                chebrefinv.inverse = chebref.copy()
+                pixlim = np.array(
+                    [chebrefinv(info[i][iext]['cheb']([0, info[i][iext]['npix']-1]))
+                     for i in range(n_ad)]
+                )
+                if pixlim.min() < 0:
+                    pixlim -= np.floor(pixlim.min())
+                npix_ext = int(np.ceil(pixlim.max()))
+            print(f'{w1_ext=} {w2_ext=} {dw_ext=} {npix_ext=}')
 
             for i, ad in enumerate(adinputs):
                 ext = ad[iext]
@@ -1690,7 +1702,11 @@ class Spect(PrimitivesBASE):
                 else:
                     log.stdinfo("Resampling {}: w1={:.3f} w2={:.3f}"
                                 .format(extname, w1_ext, w2_ext))
-                    t.append(chebref.inverse)
+                    chebrefinv.domain = cheb.inverse.domain
+                    chebrefinv.inverse.domain = pixlim[i]
+                    print(f'{cheb.domain=} {cheb.inverse.domain=}')
+                    print(f'{chebrefinv.domain=} {chebrefinv.inverse.domain=}')
+                    t.append(chebrefinv)
                     output_dw = (np.diff(chebref(chebref.domain))[0] /
                                  np.diff(chebref.domain))
                     subsample = int(np.ceil(abs(output_dw / input_dw) - 0.1))
@@ -1699,10 +1715,7 @@ class Spect(PrimitivesBASE):
                               if getattr(ext, attr) is not None]
 
                 dg = transform.DataGroup([ext], [t])
-                if linearize:
-                    dg.output_shape = (npix_ext, )
-                else:
-                    dg.output_shape = ext.shape
+                dg.output_shape = (npix_ext, )
                 dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
                 output_dict = dg.transform(attributes=attributes,
                                            subsample=subsample,
@@ -1718,6 +1731,11 @@ class Spect(PrimitivesBASE):
                     ext.hdr["CUNIT1"] = "nanometer"
                 else:
                     ext.WAVECAL = adref[iext].WAVECAL.copy()
+                    # start, end = pixlim[i]
+                    # iline = ext.WAVECAL['name'] == 'domain_start'
+                    # ext.WAVECAL['coefficients'][iline] = start
+                    iline = ext.WAVECAL['name'] == 'domain_end'
+                    ext.WAVECAL['coefficients'][iline] = npix_ext
 
         for ad in adinputs:
             # Timestamp and update the filename
