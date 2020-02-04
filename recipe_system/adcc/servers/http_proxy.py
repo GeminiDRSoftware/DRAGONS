@@ -382,8 +382,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
 
         """
+        mform = '"%s" %s %s'
         info_code = 203
         size = "-"
+
         events = self.informers["events"]
         spec_events = self.informers["spec_events"]
         parms  = parsepath(self.path)
@@ -397,14 +399,17 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.end_headers()
             aevent = json.loads(pdict)
             events.append_event(aevent)
-            self.log_message('"%s" %s %s', "Appended event", info_code, size)
-            self.log_message('"%s" %s %s', repr(aevent), info_code, size)
+            self.log_message(mform, "Appended event", info_code, size)
+            self.log_message(mform, repr(aevent), info_code, size)
 
         elif parms["path"].startswith("/spec_report"):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
+            self.log_message(mform, "ADCC recieved new event", info_code, size)
+            self.log_message(mform, "ADCC clearing previous ...", info_code, size)
             aevent = json.loads(pdict)
+            print("===\n",aevent,"\n===")
             spec_events.append_event(aevent)
             self.log_message('"%s" %s %s', "Appended event", info_code, size)
             self.log_message('"%s" %s %s', repr(aevent), info_code, size)
@@ -507,9 +512,11 @@ class ADCCHandler(BaseHTTPRequestHandler):
             return
 
         splist = spec_events.get_list()
-        specdic.append(splist)
+        specdic.extend(splist)
         specdic.insert(0, {"msgtype": "specqueue.request", "timestamp": time.time()})
         specdic.append({"msgtype": "specqueue.request", "timestamp": time.time()})
+        print()
+        print("Sending specdic object ...")
         self.wfile.write(
             bytes(json.dumps(specdic, sort_keys=True, indent=4).encode('utf-8'))
         )

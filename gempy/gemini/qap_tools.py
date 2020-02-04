@@ -77,8 +77,10 @@ def adcc_report(ad=None, name=None, metric_report=None, metadata=None):
     evman = EventsManager()
     evman.append_event(ad=ad, name=name, mdict=metric_report, metadata=metadata)
     event_pkt = evman.event_list.pop()
+    print(event_pkt)
     jdata = json.dumps(event_pkt).encode('utf-8')
     postdata = jdata
+    print(type(postdata))
     try:
         post_request = urllib.request.Request(URL)
         postr = urllib.request.urlopen(post_request, postdata)
