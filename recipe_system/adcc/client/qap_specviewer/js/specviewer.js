@@ -25,7 +25,8 @@ function SpecViewer(parentElement, id) {
   this.stackPlots = [];
 
   this.aperturesCenter = [];
-  this.dataLabel = null;
+  this.fLabel = null;  // Frame Data Label
+  this.sLabel = null;  // Stack Data Label
   this.groupId = null;
 
   // Create empty page
@@ -220,10 +221,10 @@ SpecViewer.prototype = {
         $(`#${this.id}`).append(
           `<div id="aperture${aperture.center}" class="tabcontent">
             <div class="apertureInfo"> </div>
-            <div class="frameInfo"> </div>
-            <div id="framePlot${aperture.center}-resizable" class="ui-widget-content resizable"> </div>
-            <div class="stackInfo"> </div>
-            <div id="stackPlot${aperture.center}-resizable" class="ui-widget-content resizable"> </div>
+            <div class="info frame"> </div>
+            <div class="ui-widget-content resizable frame" id="framePlot${aperture.center}-resizable" > </div>
+            <div class="info stack"> </div>
+            <div class="ui-widget-content resizable stack" id="stackPlot${aperture.center}-resizable" > </div>
           </div>`
         );
 
@@ -236,11 +237,11 @@ SpecViewer.prototype = {
         getApertureInfo(aperture)
       );
 
-      $(`#aperture${aperture.center} .frameInfo`).html(
+      $(`#aperture${aperture.center} .info.frame`).html(
         getFrameInfo("", "")
       );
 
-      $(`#aperture${aperture.center} .stackInfo`).html(
+      $(`#aperture${aperture.center} .info.stack`).html(
         getStackInfo("", "")
       );
 
@@ -295,7 +296,7 @@ SpecViewer.prototype = {
           </div>
 
           <div id="framePlot${i}-resizable" class="ui-widget-content resizable">
-            <div class="framePlot" id="framePlot${i}">
+            <div class="plot frame" id="framePlot${i}">
             </div>
           </div>
 
@@ -313,7 +314,7 @@ SpecViewer.prototype = {
           </div>
 
           <div id="stackPlot${i}-resizable" class="ui-widget-content resizable">
-            <div class="stackPlot" id="stackPlot${i}">
+            <div class="plot stack" id="stackPlot${i}">
             </div>
           </div>
 
@@ -343,14 +344,21 @@ SpecViewer.prototype = {
 
     for (let i = 0; i < jsonData.length; i++) {
 
-      if (jsonData[i].data_label === this.dataLabel) {
-        console.log(`- OLD data label: ${jsonData[i].data_label}`);
+      let dLabel = jsonData[i].data_label;
+
+      if (dLabel === this.fdLabel || dLabel === this.sdLabel) {
+        console.log(`- OLD data label: ${dLabel}`);
       } else {
 
         let jsonElement = jsonData[i];
 
-        console.log(`- NEW data label: ${jsonElement.data_label}`);
-        this.dataLabel = jsonElement.data_label;
+        console.log(`- NEW data label: ${dLabel}`);
+
+        if (jsonElement.is_stack) {
+          this.fdLabel = dLabel;
+        } else {
+          this.sdLabel = dLabel;
+        }
 
         if (jsonElement.group_id === this.groupId) {
           console.log(`- MATCHING group id: ${jsonElement.group_id}`);
@@ -372,12 +380,12 @@ SpecViewer.prototype = {
           this.newTabContent(jsonElement);
           this.updateNavigationTab(jsonElement);
 
-          if (jsonElement.is_stack) {
-            this.updateStackArea(jsonElement);
-          } else {
-            this.updateFrameArea(jsonElement);
-          }
+        }
 
+        if (jsonElement.is_stack) {
+          this.updateStackArea(jsonElement);
+        } else {
+          this.updateFrameArea(jsonElement);
         }
 
       }
@@ -498,12 +506,12 @@ SpecViewer.prototype = {
       let stddev = data.apertures[i].stddev;
       let units = data.apertures[i].wavelength_units;
 
-      $(`#aperture${apertureCenter} .frameInfo`).html(
+      $(`#aperture${apertureCenter} .info.frame`).html(
         getFrameInfo(data.filename, data.program_id)
       );
 
       // Check if plot containers exist
-      if ($(`#aperture${apertureCenter} .framePlot`).length) {
+      if ($(`#aperture${apertureCenter} .plot.frame`).length) {
 
         console.log('Refresh plots');
 
@@ -511,12 +519,12 @@ SpecViewer.prototype = {
 
         console.log('Create new plots');
 
-        $(`#aperture${apertureCenter} .resizable`).append(
-          `<div class="framePlot" id="${framePlotId}"> </div>`);
+        $(`#aperture${apertureCenter} .resizable.frame`).append(
+          `<div class="plot frame" id="${framePlotId}"> </div>`);
 
         this.framePlots[i] = $.jqplot(
           framePlotId, [intensity, stddev], $.extend(plotOptions, {
-            title: `Aperture ${i} - Last Frame`,
+            title: `Aperture ${i+1} - Last Frame`,
             axes: {
               xaxis: {
                 label: getWavelengthUnits(units),
@@ -570,7 +578,53 @@ SpecViewer.prototype = {
    * @type {[type]}
    */
   updateStackArea: function(data) {
-    console.log('Handling stack frame data');
+
+    console.log('- Handling stack frame data');
+
+    for (let i = 0; i < this.aperturesCenter.length; i++) {
+
+      let apertureCenter = this.aperturesCenter[i];
+      let stackPlotId = `stackPlot_${apertureCenter}`;
+      let intensity = data.apertures[i].intensity;
+      let stddev = data.apertures[i].stddev;
+      let units = data.apertures[i].wavelength_units;
+
+      $(`#aperture${apertureCenter} .info.stack`).html(
+        getFrameInfo(data.filename, data.program_id)
+      );
+
+      // Check if plot containers exist
+      if ($(`#aperture${apertureCenter} .plot.stack`).length) {
+
+        console.log('Refresh plots');
+
+      } else {
+
+        console.log('Create new plots');
+
+        $(`#aperture${apertureCenter} .resizable.stack`).append(
+          `<div class="plot stack" id="${stackPlotId}"> </div>`);
+
+        this.stackPlots[i] = $.jqplot(
+          stackPlotId, [intensity, stddev], $.extend(plotOptions, {
+            title: `Aperture ${i} - Stack Frame`,
+            axes: {
+              xaxis: {
+                label: getWavelengthUnits(units),
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+              yaxis: {
+                label: "Intensity [e\u207B]", // escaped superscript minus
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+            },
+          })
+        );
+
+      }
+
+    }
+
   },
 
 }; // end prototype

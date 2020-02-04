@@ -1,5 +1,5 @@
 /* This is the commad pump for the QAP SpecViewer.
-   Requesting adcc on /specqueue.json 
+   Requesting adcc on /specqueue.json
 */
 
 function GJSCommandPipe(url) {
@@ -13,7 +13,7 @@ function GJSCommandPipe(url) {
     this.stop = true;
     this.timestamp = null;
     this.msgtype = null;
-    this.delay = 4000;
+    this.delay = 10000;
 }
 GJSCommandPipe.prototype = {
     constructor: GJSCommandPipe,
@@ -46,7 +46,7 @@ GJSCommandPipe.prototype = {
 
 	gjs.timestamp = data[data.length-1]['timestamp'];
     }, // end iteratePump
-    
+
     registerCallback: function(thetype, thefunction) {
 	if (this.callbacks[thetype]==undefined) {
 	    this.callbacks[thetype] = [thefunction];
@@ -60,7 +60,7 @@ GJSCommandPipe.prototype = {
 	    clearTimeout(this.timeout);
 	    this.timeout = null;
 	}
-        var gjs = this;	
+        var gjs = this;
 	$.ajax({type: "GET",
 		data: {timestamp: gjs.timestamp,
 		       msgtype: gjs.msgtype},
