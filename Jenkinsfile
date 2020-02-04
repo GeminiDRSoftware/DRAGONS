@@ -45,6 +45,7 @@ pipeline {
                 sh 'git clean -fxd'
                 sh 'mkdir plots reports'
                 sh '.jenkins/scripts/download_and_install_anaconda.sh'
+                sh 'rm -Rf .tox'
             }
 
         }
