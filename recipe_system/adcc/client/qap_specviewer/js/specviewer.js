@@ -25,9 +25,9 @@ function SpecViewer(parentElement, id) {
   this.stackPlots = [];
 
   this.aperturesCenter = [];
-  this.fLabel = null;  // Frame Data Label
-  this.sLabel = null;  // Stack Data Label
+  this.dataLabel = null;  // Last Frame Data Label
   this.groupId = null;
+  this.stackSize = 0;
 
   // Create empty page
   this.parentElement.html(`
@@ -344,51 +344,87 @@ SpecViewer.prototype = {
 
     for (let i = 0; i < jsonData.length; i++) {
 
-      let dLabel = jsonData[i].data_label;
+      let dataLabel = jsonData[i].data_label;
+      let isStack = jsonData[i].is_stack;
+      let newData = false;
+      let stackSize = jsonData[i].stack_size;
 
-      if (dLabel === this.fdLabel || dLabel === this.sdLabel) {
-        console.log(`- OLD data label: ${dLabel}`);
-      } else {
+      let jsonElement = jsonData[i];
 
-        let jsonElement = jsonData[i];
+      if (jsonElement.group_id !== this.groupId) {
 
-        console.log(`- NEW data label: ${dLabel}`);
+        console.log(`- NEW group ID: ${jsonElement.group_id}`);
+        this.groupId = jsonElement.group_id;
 
-        if (jsonElement.is_stack) {
-          this.fdLabel = dLabel;
-        } else {
-          this.sdLabel = dLabel;
-        }
+        // Clear navigation tabs and relevant lists
+        $(`#${this.id} ul`).empty();
+        this.aperturesCenter = [];
+        this.framePlots = [];
+        this.stackPlots = [];
+        this.stackSize = 0;
 
-        if (jsonElement.group_id === this.groupId) {
-          console.log(`- MATCHING group id: ${jsonElement.group_id}`);
-        } else {
+        // Clear tab contents
+        $('.tabcontent').remove();
 
-          console.log(`- NEW group id: ${jsonElement.group_id}`);
-          this.groupId = jsonElement.group_id;
+        // Add tab content
+        this.newTabContent(jsonElement);
+        this.updateNavigationTab(jsonElement);
 
-          // Clear navigation tabs and relevant lists
-          $(`#${this.id} ul`).empty();
-          this.aperturesCenter = [];
-          this.framePlots = [];
-          this.stackPlots = [];
-
-          // Clear tab contents
-          $('.tabcontent').remove();
-
-          // Add tab content
-          this.newTabContent(jsonElement);
-          this.updateNavigationTab(jsonElement);
-
-        }
-
-        if (jsonElement.is_stack) {
+        if (isStack) {
           this.updateStackArea(jsonElement);
         } else {
           this.updateFrameArea(jsonElement);
         }
 
+      } else {
+
+        console.log(`- Current group Id: ${this.groupId}`);
+
+        if (isStack) {
+          if (stackSize > this.stackSize) {
+            console.log(`- NEW stack data with ${stackSize}`);
+            this.stackSize = stackSize;
+            this.updateStackArea(jsonElement);
+          } else {
+            console.log(`- OLD stack data with ${stackSize}`);
+          }
+        } else {
+          if (this.dataLabel === jsonElement.data_label) {
+            console.log(`- OLD frame data: ${this.dataLabel}`);
+          } else {
+            console.log(`- NEW frame data: ${jsonElement.data_label}`);
+            this.dataLabel = jsonElement.data_label;
+            this.updateFrameArea(jsonElement);
+          }
+        }
+
       }
+
+      // if () {
+      //   console.log(`- MATCHING group id: ${this.groupId}.`);
+      //
+      //   if (isStack) {
+      //     // ToDo - How do I know if the stack data is new?
+      //     console.log(`- NEW stack data.`);
+      //   } else {
+      //     if (this.dataLabel === jsonElement.data_label) {
+      //       console.log(`- OLD last frame: ${this.dataLabel}`);
+      //     } else {
+      //       console.log(`- NEW last frame: ${jsonElement.data_label}`);
+      //       this.dataLabel = jsonElement.data_label;
+      //
+      //       this.updateFrameArea(jsonElement);
+      //     }
+      //
+      //   }
+      //
+      // } else {
+      //   console.log(`- NEW group id: ${jsonElement.group_id}`);
+      //   this.groupId = jsonElement.group_id;
+      //
+
+      //
+      // }
     }
 
     //  sViewer.addNavigationTab(sViewer.id, data.apertures.length);
@@ -786,7 +822,7 @@ plotOptions = {
       label: 'Intensity',
     },
     {
-      color: '#ff7f0e',
+      color: 'rgba(255, 127, 14, 0.2)',
       label: 'Standard Deviation'
     },
   ],
