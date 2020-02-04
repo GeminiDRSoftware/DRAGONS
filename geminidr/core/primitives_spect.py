@@ -65,6 +65,10 @@ class Spect(PrimitivesBASE):
         order: int
             Order of the spline fit to be performed
 
+        bandpass: float
+            default bandpass width (in nm) to use if not present in the
+            spectrophotometric data table
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
