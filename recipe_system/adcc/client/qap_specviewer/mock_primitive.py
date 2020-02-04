@@ -48,12 +48,12 @@ def main():
         wavelength = np.linspace(wavelength_min, wavelength_max, data_size)
         dispersion = np.mean(np.diff(wavelength))
 
+        data = [create_1d_spectrum(data_size, 20, obj_max_weight)
+                for i in range(n_apertures)]
+
         center = np.random.randint(100, 900, size=n_apertures)
         lower = np.random.randint(-15, -1, size=n_apertures)
         upper = np.random.randint(1, 15, size=n_apertures)
-
-        data = [create_1d_spectrum(data_size, 20, obj_max_weight)
-                for i in range(n_apertures)]
 
         year = 2020
         today = 20200131
@@ -68,9 +68,12 @@ def main():
             data_label = "{:s}-{:03d}".format(group_id, frame_index+1)
             filename = "X{}S{:03d}_frame.fits".format(today, file_index)
 
-            is_stack = False
+            if frame_index == 0:
+                stack_data_label = "{:s}-{:03d}_stack".format(group_id, frame_index+1)
+                stack_filename = "X{}S{:03d}_stack.fits".format(today, file_index)
 
             def aperture_generator(i):
+                # center[i] = center[i] + np.random.randint(-5, 5)
                 _data = data[i]
                 _error = np.random.poisson(_data)
                 _aperture = ApertureModel(
@@ -81,9 +84,22 @@ def main():
             apertures = [aperture_generator(i) for i in range(n_apertures)]
 
             frame = SpecPackModel(
-                data_label, group_id, filename, is_stack, program_id, apertures)
+                data_label=data_label,
+                group_id=group_id,
+                filename=filename,
+                is_stack=False,
+                program_id=program_id,
+                apertures=apertures)
 
-            json_data = json.dumps([frame.__dict__]).encode("utf-8")
+            stack = SpecPackModel(
+                data_label=stack_data_label,
+                group_id=group_id,
+                filename=stack_filename,
+                is_stack=True,
+                program_id=program_id,
+                apertures=apertures)
+
+            json_data = json.dumps([frame.__dict__, stack.__dict__]).encode("utf-8")
 
             print("\n Created JSON for single frame with: ")
             print("  Program ID: {}".format(program_id))

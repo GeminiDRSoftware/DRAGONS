@@ -372,12 +372,9 @@ SpecViewer.prototype = {
           this.newTabContent(jsonElement);
           this.updateNavigationTab(jsonElement);
 
-          console.log(jsonElement.is_stack);
-
           if (jsonElement.is_stack) {
             this.updateStackArea(jsonElement);
           } else {
-            console.log(jsonElement.apertures);
             this.updateFrameArea(jsonElement);
           }
 
@@ -500,8 +497,6 @@ SpecViewer.prototype = {
       let intensity = data.apertures[i].intensity;
       let stddev = data.apertures[i].stddev;
       let units = data.apertures[i].wavelength_units;
-
-      console.log(units);
 
       $(`#aperture${apertureCenter} .frameInfo`).html(
         getFrameInfo(data.filename, data.program_id)
