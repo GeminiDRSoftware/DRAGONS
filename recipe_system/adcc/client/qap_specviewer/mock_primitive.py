@@ -8,13 +8,14 @@ behave in real time.
 In practice, it creates JSON data and send it to the ADCC Server in a timed loop.
 """
 import json
-import numpy as np
 import time
-import urllib.error, urllib.request
+import urllib.error
+import urllib.request
 
+import numpy as np
 from scipy import ndimage
 
-URL = "http://localhost:5000/spec_report"
+URL = "http://localhost:8777/spec_report"
 
 
 def main():
@@ -48,7 +49,7 @@ def main():
         wavelength = np.linspace(wavelength_min, wavelength_max, data_size)
         dispersion = np.mean(np.diff(wavelength))
 
-        data = [create_1d_spectrum(data_size, 20, obj_max_weight)
+        data = [create_1d_spectrum(data_size, 20, obj_max_weight) + obj_continnum
                 for i in range(n_apertures)]
 
         center = np.random.randint(100, 900, size=n_apertures)
@@ -65,17 +66,17 @@ def main():
 
         for frame_index in range(n_frames):
 
-            data_label = "{:s}-{:03d}".format(group_id, frame_index+1)
+            data_label = "{:s}-{:03d}".format(group_id, frame_index + 1)
             filename = "X{}S{:03d}_frame.fits".format(today, file_index)
 
             if frame_index == 0:
-                stack_data_label = "{:s}-{:03d}_stack".format(group_id, frame_index+1)
+                stack_data_label = "{:s}-{:03d}_stack".format(group_id, frame_index + 1)
                 stack_filename = "X{}S{:03d}_stack.fits".format(today, file_index)
 
             def aperture_generator(i):
                 # center[i] = center[i] + np.random.randint(-5, 5)
                 _data = data[i]
-                _error = np.random.poisson(_data)
+                _error = np.random.poisson(_data) + noise_level * (np.random.rand(_data.size) - 0.5)
                 _aperture = ApertureModel(
                     int(center[i]), int(lower[i]), int(upper[i]), wavelength_units, dispersion,
                     wavelength, _data, _error)
@@ -88,16 +89,30 @@ def main():
                 group_id=group_id,
                 filename=filename,
                 is_stack=False,
+                stack_size=1,
                 program_id=program_id,
                 apertures=apertures)
+
+            def stack_aperture_generator(i):
+                # center[i] = center[i] + np.random.randint(-5, 5)
+                _data = data[i]
+                _error = (np.random.poisson(_data) + noise_level / (frame_index + 1) * (
+                            np.random.rand(_data.size) - 0.5))
+                _aperture = ApertureModel(
+                    int(center[i]), int(lower[i]), int(upper[i]), wavelength_units, dispersion,
+                    wavelength, _data, _error)
+                return _aperture.__dict__
+
+            stack_apertures = [stack_aperture_generator(i) for i in range(n_apertures)]
 
             stack = SpecPackModel(
                 data_label=stack_data_label,
                 group_id=group_id,
                 filename=stack_filename,
                 is_stack=True,
+                stack_size=frame_index+1,
                 program_id=program_id,
-                apertures=apertures)
+                apertures=stack_apertures)
 
             json_data = json.dumps([frame.__dict__, stack.__dict__]).encode("utf-8")
 
@@ -227,12 +242,13 @@ class ApertureModel:
 
 class SpecPackModel:
 
-    def __init__(self, data_label, group_id, filename, is_stack, program_id, apertures):
+    def __init__(self, data_label, group_id, filename, is_stack, stack_size, program_id, apertures):
         self.data_label = data_label
         self.group_id = group_id
         self.filename = filename
         self.msgtype = "specjson"
         self.is_stack = is_stack
+        self.stack_size = stack_size
         self.program_id = program_id
         self.timestamp = time.time()
         self.apertures = apertures
