@@ -13,7 +13,7 @@ function GJSCommandPipe(url) {
     this.stop = true;
     this.timestamp = null;
     this.msgtype = null;
-    this.delay = 10000;
+    this.delay = 4000;
 }
 GJSCommandPipe.prototype = {
     constructor: GJSCommandPipe,
