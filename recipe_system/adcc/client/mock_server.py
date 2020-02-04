@@ -10,10 +10,12 @@ is using to design frontend/backend.
 Remember to run it from the same folder where it lives since it relies on
 relative path. This is a temporary solution.
 """
+import datetime
 import json
 import os
+import time
 
-from flask import Flask, abort, jsonify, render_template, send_from_directory
+from flask import Flask, abort, jsonify, request, render_template, send_from_directory
 
 
 try:
@@ -30,6 +32,8 @@ except ModuleNotFoundError:
 app = Flask(__name__, static_folder='./', template_folder="./qap_specviewer/templates/")
 app.register_blueprint(qlook, url_prefix='/qlook')
 
+JSON_DATA = ""
+
 
 @app.route('/')
 def index():
@@ -41,22 +45,46 @@ def favicon():
     return send_from_directory("images", "dragons_favicon.ico")
 
 
+@app.route('/rqsite.json')
+def get_site_information():
+
+    lt_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    unxtime = time.time()
+    utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+    utc_offset = datetime.datetime.utcnow() - datetime.datetime.now()
+
+    site_information = {
+        "local_site": "gemini-south",
+        "lt_now": lt_now,
+        "tzname": time.strftime("%Z"),
+        "unxtime": unxtime,
+        "utc_now": utc_now,
+        "utc_offset": int(utc_offset.seconds // 3600.),
+    }
+
+    return json.dumps(site_information).encode("utf-8")
+
+
 @app.route('/specqueue.json')
-def specframe():
+def get_json_data():
 
-    path_to_data = os.getenv('SPEC_DATA')
+    global JSON_DATA
 
-    if path_to_data is None:
-        abort(500, description="Environment variable not defined: SPEC_DATA")
+    message_type = request.args.get('msgtype')
 
-    with open(path_to_data, 'r') as json_file:
-        jdata = json.load(json_file)
+    if message_type.strip().lower() == 'specjson':
+        return jsonify(JSON_DATA)
+    else:
+        return "Invalid message type"
 
-    try:
-        return jdata
-    except Exception as e:
-        print(str(e))
-        return jsonify(str(e))
+
+@app.route('/spec_report', methods=['POST'])
+def post_json_data():
+    global JSON_DATA
+
+    JSON_DATA = request.json
+
+    return ""
 
 
 @qlook.errorhandler(500)

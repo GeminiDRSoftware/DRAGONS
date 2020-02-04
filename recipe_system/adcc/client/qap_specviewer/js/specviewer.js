@@ -13,77 +13,54 @@ const specViewerJsonName = "/specqueue.json";
  * @param {string} id - name of the ID of the SpecViewer div container.
  */
 function SpecViewer(parentElement, id) {
-    'use strict';
+  'use strict';
 
-    // Creating empty object
-    this.parentElement = parentElement;
-    this.id = id;
+  // Creating empty object
+  this.parentElement = parentElement;
+  this.id = id;
 
-    // Placeholders for different elements
-    this.activeTab = null;
-    this.framePlots = [];
-    this.stackPlots = [];
+  // Placeholders for different elements
+  this.activeTab = null;
+  this.framePlots = [];
+  this.stackPlots = [];
 
-    this.dataLabel = null;
-    this.groupId = null;
+  this.aperturesCenter = [];
+  this.fLabel = null;  // Frame Data Label
+  this.sLabel = null;  // Stack Data Label
+  this.groupId = null;
 
-    // Create empty page
-    this.parentElement.html(`
+  // Create empty page
+  this.parentElement.html(`
       <div id="${id}">
         <div class="loading">
           Waiting data from server ...
         </div>
+        <ul></ul>
       </div>
     `);
 
-    // Call function to activate the tabs
-    $(`#${id}`).tabs();
+  // Call function to enable the tabs
+  $(`#${id}`).tabs();
 
-    // Placeholder for adcc command pump
-    this.gjs = null;
-    this.start();
+  // Add event handler to tabs
+  $(`#${id}`).tabs({activate: this.onTabChange});
+
+  // Placeholder for adcc command pump
+  this.gjs = null;
+  this.start();
 
 }
-    //this.specPump = new SpectroPump();
+//this.specPump = new SpectroPump();
 //} // end SpecViewer
 
 // Add methods to prototype
 SpecViewer.prototype = {
 
-    constructor: SpecViewer,
-
-    start: function() {
-
-        console.log("Starting SpecViewer");
-
-     	// Make an AJAX request to the server for the current
-     	// time and the server site information.
-     	// The callback for this request will call the init function
-     	var sv = this;
-
-     	$.ajax(
-          {
-            type: "GET",
-     		url: "/rqsite.json",
-     		success: function (data) {
-     		    sv.site = data.local_site;
-		    sv.timestamp = data.unxtime;
-     		}, // end success
-     		error: function() {
-     		    sv.site = undefined;
-     		    sv.tzname = "LT";
-     		    sv.timestamp = new Date();
-     		} // end error
-          }
-        ); // end ajax
-
-        this.gjs = new GJSCommandPipe();
-        this.gjs.registerCallback("specjson", function(msg){sv.loadData(msg);});
-        this.gjs.startPump(sv.timestamp, "specjson");
-
-    }, // end start
+  constructor: SpecViewer,
 
   /**
+   * @deprecated
+   *
    * Add navigation tabs based on how many apertures there is inside the
    * JSON file.
    *
@@ -157,9 +134,11 @@ SpecViewer.prototype = {
     };
 
     // Call function to activate the tabs
-    $( `#${parentId}` ).tabs('refresh');
-    $( `#${parentId}` ).tabs('option', 'active', 0);
-    $( `#${parentId}` ).tabs( {'activate': selectTab} );
+    // $(`#${parentId}`).tabs('refresh');
+    // $(`#${parentId}`).tabs('option', 'active', 0);
+    // $(`#${parentId}`).tabs({
+    //   'activate': selectTab
+    // });
 
     // Allow plot area to be resized
     $('.ui-widget-content.resizable:has(.framePlot)').map(
@@ -181,7 +160,7 @@ SpecViewer.prototype = {
 
       });
 
-        $('.ui-widget-content.resizable:has(.stackPlot)').map(
+    $('.ui-widget-content.resizable:has(.stackPlot)').map(
       function onResizeStackStop(index, element) {
 
         $(element).resizable({
@@ -226,46 +205,47 @@ SpecViewer.prototype = {
   },
 
   /**
-   * Resizes frame plots on different situations, like window resizing or
-   * when changing tabs.
-   *
-   * @param activeTabIndex {number}
+   * Add/refresh tab content for incomming data.
+   * @type {object} data Incomming JSON data
    */
-  resizeFramePlots: function (activeTabIndex) {
+  newTabContent: function(data) {
 
-    console.log(`Resizing frame plot ${activeTabIndex}`);
+    for (let i = 0; i < data.apertures.length; i++) {
 
-    $(`framePlot${activeTabIndex}`).height(
-      $(`framePlot${activeTabIndex}-resizable`).height() * 0.96
-    );
+      let aperture = data.apertures[i];
 
-    $(`framePlot${activeTabIndex}`).width(
-      $(`framePlot${activeTabIndex}-resizable`).width() * 0.96
-    );
+      // Add empty tab container if it does not exist
+      // !!! ToDo: improve matching criterium !!!
+      if (!this.aperturesCenter.includes(aperture.center)) {
 
-    this.framePlots[activeTabIndex].replot({ resetAxes: true });
+        $(`#${this.id}`).append(
+          `<div id="aperture${aperture.center}" class="tabcontent">
+            <div class="apertureInfo"> </div>
+            <div class="info frame"> </div>
+            <div class="ui-widget-content resizable frame" id="framePlot${aperture.center}-resizable" > </div>
+            <div class="info stack"> </div>
+            <div class="ui-widget-content resizable stack" id="stackPlot${aperture.center}-resizable" > </div>
+          </div>`
+        );
 
-  },
+        this.aperturesCenter.push(aperture.center);
 
-  /**
-   * Resizes frame plots on different situations, like window resizing or
-   * when changing tabs.
-   *
-   * @param activeTabIndex {number}
-   */
-  resizeStackPlots: function (activeTabIndex) {
+      }
 
-    console.log(`Resizing stack plot ${activeTabIndex}`);
+      // Add content to the container
+      $(`#aperture${aperture.center} .apertureInfo`).html(
+        getApertureInfo(aperture)
+      );
 
-    $(`stackPlot${activeTabIndex}`).height(
-      $(`stackPlot${activeTabIndex}-resizable`).height() * 0.96
-    );
+      $(`#aperture${aperture.center} .info.frame`).html(
+        getFrameInfo("", "")
+      );
 
-    $(`stackPlot${activeTabIndex}`).width(
-      $(`stackPlot${activeTabIndex}-resizable`).width() * 0.96
-    );
+      $(`#aperture${aperture.center} .info.stack`).html(
+        getStackInfo("", "")
+      );
 
-    this.stackPlots[activeTabIndex].replot({ resetAxes: true });
+    }
 
   },
 
@@ -316,7 +296,7 @@ SpecViewer.prototype = {
           </div>
 
           <div id="framePlot${i}-resizable" class="ui-widget-content resizable">
-            <div class="framePlot" id="framePlot${i}">
+            <div class="plot frame" id="framePlot${i}">
             </div>
           </div>
 
@@ -334,7 +314,7 @@ SpecViewer.prototype = {
           </div>
 
           <div id="stackPlot${i}-resizable" class="ui-widget-content resizable">
-            <div class="stackPlot" id="stackPlot${i}">
+            <div class="plot stack" id="stackPlot${i}">
             </div>
           </div>
 
@@ -346,10 +326,11 @@ SpecViewer.prototype = {
 
   }, // end addTabs
 
-
   /**
    * Query server for JSON file and start to populate page.
    * This function is the registered callback on the command pump.
+   *
+   * @param jsonData {object}
    */
   loadData: function(jsonData) {
     'use restrict';
@@ -362,43 +343,296 @@ SpecViewer.prototype = {
     $('.loading').remove();
 
     for (let i = 0; i < jsonData.length; i++) {
-      if (jsonData[i].data_label === this.dataLabel) {
-        console.log(`- OLD data label: ${jsonData[i].data_label}`);
+
+      let dLabel = jsonData[i].data_label;
+
+      if (dLabel === this.fdLabel || dLabel === this.sdLabel) {
+        console.log(`- OLD data label: ${dLabel}`);
       } else {
 
         let jsonElement = jsonData[i];
 
-        console.log(`- NEW data label: ${jsonElement.data_label}`);
-        this.dataLabel = jsonElement.data_label;
+        console.log(`- NEW data label: ${dLabel}`);
+
+        if (jsonElement.is_stack) {
+          this.fdLabel = dLabel;
+        } else {
+          this.sdLabel = dLabel;
+        }
 
         if (jsonElement.group_id === this.groupId) {
           console.log(`- MATCHING group id: ${jsonElement.group_id}`);
         } else {
+
           console.log(`- NEW group id: ${jsonElement.group_id}`);
           this.groupId = jsonElement.group_id;
+
+          // Clear navigation tabs and relevant lists
+          $(`#${this.id} ul`).empty();
+          this.aperturesCenter = [];
+          this.framePlots = [];
+          this.stackPlots = [];
+
+          // Clear tab contents
+          $('.tabcontent').remove();
+
+          // Add tab content
+          this.newTabContent(jsonElement);
+          this.updateNavigationTab(jsonElement);
+
+        }
+
+        if (jsonElement.is_stack) {
+          this.updateStackArea(jsonElement);
+        } else {
+          this.updateFrameArea(jsonElement);
         }
 
       }
     }
 
-    // Reference to self to use in functions inside load
-//	var sViewer = this;
-//	var jsonData = sdata;
-//	var data = JSON.stringify(jsonData);
-
-//  sViewer.addNavigationTab(sViewer.id, data.apertures.length);
-//	sViewer.addTabs(sViewer.id, data);
-//	sViewer.addPlots(sViewer.id, data);
+    //  sViewer.addNavigationTab(sViewer.id, data.apertures.length);
+    //	sViewer.addTabs(sViewer.id, data);
+    //	sViewer.addPlots(sViewer.id, data);
 
     // Remove loading
-	$('.loading').remove();
+    $('.loading').remove();
 
   }, // end load
+
+  /**
+   * Handle event onTabChange; aka as $.tabs({activate: ...}).
+   */
+  onTabChange: function(event, tab) {
+
+    var newIndex = tab.newTab.index();
+
+    // sViewer.resizeFramePlots(tab.newTab.index());
+    // sViewer.resizeStackPlots(tab.newTab.index());
+  },
+
+  /**
+   * Resizes frame plots on different situations, like window resizing or
+   * when changing tabs.
+   *
+   * @param activeTabIndex {number}
+   */
+  resizeFramePlots: function(activeTabIndex) {
+
+    console.log(`Resizing frame plot ${activeTabIndex}`);
+
+    $(`framePlot${activeTabIndex}`).height(
+      $(`framePlot${activeTabIndex}-resizable`).height() * 0.96
+    );
+
+    $(`framePlot${activeTabIndex}`).width(
+      $(`framePlot${activeTabIndex}-resizable`).width() * 0.96
+    );
+
+    this.framePlots[activeTabIndex].replot({
+      resetAxes: true
+    });
+
+  },
+
+  /**
+   * Resizes frame plots on different situations, like window resizing or
+   * when changing tabs.
+   *
+   * @param activeTabIndex {number}
+   */
+  resizeStackPlots: function(activeTabIndex) {
+
+    console.log(`Resizing stack plot ${activeTabIndex}`);
+
+    $(`stackPlot${activeTabIndex}`).height(
+      $(`stackPlot${activeTabIndex}-resizable`).height() * 0.96
+    );
+
+    $(`stackPlot${activeTabIndex}`).width(
+      $(`stackPlot${activeTabIndex}-resizable`).width() * 0.96
+    );
+
+    this.stackPlots[activeTabIndex].replot({
+      resetAxes: true
+    });
+
+  },
+
+  start: function() {
+
+    console.log("Starting SpecViewer");
+
+    // Make an AJAX request to the server for the current
+    // time and the server site information.
+    // The callback for this request will call the init function
+    var sv = this;
+
+    $.ajax({
+      type: "GET",
+      url: "/rqsite.json",
+      success: function(data) {
+        sv.site = data.local_site;
+        sv.timestamp = data.unxtime;
+      }, // end success
+      error: function() {
+        sv.site = undefined;
+        sv.tzname = "LT";
+        sv.timestamp = new Date();
+      } // end error
+    }); // end ajax
+
+    this.gjs = new GJSCommandPipe();
+    this.gjs.registerCallback("specjson", function(msg) {
+      sv.loadData(msg);
+    });
+    this.gjs.startPump(sv.timestamp, "specjson");
+
+  }, // end start
+
+  /**
+   * [updateNavigationTab description]
+   * @type {[type]}
+   */
+  updateFrameArea: function(data) {
+
+    console.log('- Handling latest frame data');
+
+    for (let i = 0; i < this.aperturesCenter.length; i++) {
+
+      let apertureCenter = this.aperturesCenter[i];
+      let framePlotId = `framePlot_${apertureCenter}`;
+      let intensity = data.apertures[i].intensity;
+      let stddev = data.apertures[i].stddev;
+      let units = data.apertures[i].wavelength_units;
+
+      $(`#aperture${apertureCenter} .info.frame`).html(
+        getFrameInfo(data.filename, data.program_id)
+      );
+
+      // Check if plot containers exist
+      if ($(`#aperture${apertureCenter} .plot.frame`).length) {
+
+        console.log('Refresh plots');
+
+      } else {
+
+        console.log('Create new plots');
+
+        $(`#aperture${apertureCenter} .resizable.frame`).append(
+          `<div class="plot frame" id="${framePlotId}"> </div>`);
+
+        this.framePlots[i] = $.jqplot(
+          framePlotId, [intensity, stddev], $.extend(plotOptions, {
+            title: `Aperture ${i+1} - Last Frame`,
+            axes: {
+              xaxis: {
+                label: getWavelengthUnits(units),
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+              yaxis: {
+                label: "Intensity [e\u207B]", // escaped superscript minus
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+            },
+          })
+        );
+
+      }
+
+    }
+
+  },
+
+  /**
+   * Updates the navigation tab based on matching aperture center.
+   *
+   * @param jsonElement {object}
+   */
+  updateNavigationTab: function(jsonElement) {
+
+    // Add navigation tab container
+    let navTabContainer = $(`#${this.id} ul`);
+
+    this.aperturesCenter.sort();
+
+    // Create buttons and add them to the navigation tab
+    for (let i = 0; i < this.aperturesCenter.length; i++) {
+      navTabContainer.append(`<li><a href="#aperture${this.aperturesCenter[i]}">Aperture ${i + 1}</a></li>`);
+    }
+
+    /// Refresh tabs to update them
+    $(`#${this.id}`).tabs('refresh');
+
+    // Activate first tab if none is active
+    if (this.activeTab == null) {
+      this.activeTab = 0;
+    }
+
+    $(`#${this.id}`).tabs('option', 'active', this.activeTab);
+
+  },
+
+  /**
+   * [updateNavigationTab description]
+   * @type {[type]}
+   */
+  updateStackArea: function(data) {
+
+    console.log('- Handling stack frame data');
+
+    for (let i = 0; i < this.aperturesCenter.length; i++) {
+
+      let apertureCenter = this.aperturesCenter[i];
+      let stackPlotId = `stackPlot_${apertureCenter}`;
+      let intensity = data.apertures[i].intensity;
+      let stddev = data.apertures[i].stddev;
+      let units = data.apertures[i].wavelength_units;
+
+      $(`#aperture${apertureCenter} .info.stack`).html(
+        getFrameInfo(data.filename, data.program_id)
+      );
+
+      // Check if plot containers exist
+      if ($(`#aperture${apertureCenter} .plot.stack`).length) {
+
+        console.log('Refresh plots');
+
+      } else {
+
+        console.log('Create new plots');
+
+        $(`#aperture${apertureCenter} .resizable.stack`).append(
+          `<div class="plot stack" id="${stackPlotId}"> </div>`);
+
+        this.stackPlots[i] = $.jqplot(
+          stackPlotId, [intensity, stddev], $.extend(plotOptions, {
+            title: `Aperture ${i} - Stack Frame`,
+            axes: {
+              xaxis: {
+                label: getWavelengthUnits(units),
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+              yaxis: {
+                label: "Intensity [e\u207B]", // escaped superscript minus
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+            },
+          })
+        );
+
+      }
+
+    }
+
+  },
 
 }; // end prototype
 
 
 /**
+ * @deprecated Now that input JSON file comes in the correct format.
+ *
  * Read two arrays and convert then into a single [x, y] array to be used in
  * plots.
  *
@@ -415,6 +649,119 @@ function buildSeries(x, y) {
   return temp;
 }
 
+/**
+ * Returns the Aperture Info div element using a template.
+ *
+ * @type {Object} aperture Aperture definition containing its center, the
+ * relative lower limit, the relative upper limit and the dispersion.
+ */
+function getApertureInfo(aperture) {
+
+  return `
+    <div class="apertureInfo">
+      <span>
+        <b>Aperture definition:</b>
+          <span class="app-info-field" title="Aperture center"> ${aperture.center} px </span> (
+          <span class="app-info-field" title="Lower aperture limit"> ${aperture.lower} px </span>,
+          <span class="app-info-field" title="Upper aperture limit"> ${aperture.upper} px </span>)
+      </span>
+      <span style="padding-left: 10%">
+        <b>Dispersion:</b> ${Math.round(aperture.dispersion * 1000) / 1000} nm/px
+      </span>
+    </div>
+    `;
+
+}
+
+
+/**
+ * Returns the last frame info div element using a template.
+ *
+ * @param filename {string} name of the filename.
+ * @param programId {string} program Id code.
+ */
+function getFrameInfo(filename, programId) {
+
+  if (filename === '') {
+    filename = '<span style="color: #999"> (Not available yet) </span>';
+  }
+
+  if (programId === '') {
+    programId = '<span style="color: #999"> (Not available yet) </span>';
+  }
+
+  return `
+  <div class="d-table w-100">
+    <p class="d-table-cell">
+      Latest frame - ${filename} - ${programId}
+    </p>
+    <div class="d-table-cell tar">
+      <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
+        <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
+      </button>
+    </div>
+  </div>`;
+}
+
+
+/**
+ * Returns the stack frame info div element using a template.
+ *
+ * @param filename {string} name of the filename.
+ * @param programId {string} program Id code.
+ */
+function getStackInfo(filename, programId) {
+
+  if (filename === '') {
+    filename = '<span style="color: #aaa"> (Not available yet) </span>';
+  }
+
+  if (programId === '') {
+    programId = '<span style="color: #aaa"> (Not available yet) </span>';
+  }
+
+  return `
+    <div class="d-table w-100">
+      <p class="d-table-cell">
+        Stack frame - ${filename} - ${programId}
+      </p>
+      <div class="d-table-cell tar">
+        <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
+          <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Convert input units to be used as label to the x-axis.
+ * @param {string} units
+ */
+function getWavelengthUnits(units) {
+
+  if (units) {
+    units = $.trim(units);
+    units = units.toLowerCase();
+
+    if (["um", "micrometer", "micrometers"].includes(units)) {
+      return "Wavelength [um]";
+    }
+
+    if (["nm", "nanometer", "nanometers"].includes(units)) {
+      return "Wavelength [nm]";
+    }
+
+    if (["a", "angsrom", "angsroms"].includes(units)) {
+      return "Wavelength [\u212B]";  // escaped Angstrom symbol
+    }
+
+  } else {
+    return "Wavelength";
+  }
+
+}
+
 
 /**
  * Options to be used by the plots
@@ -423,17 +770,6 @@ plotOptions = {
 
   axesDefaults: {
     alignTicks: true,
-  },
-
-  axes: {
-    xaxis: {
-      label: "Wavelength [\u212B]", // escaped Angstrom symbol
-      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-    },
-    yaxis: {
-      label: "Intensity [e\u207B]", // escaped superscript minus
-      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-    },
   },
 
   seriesDefaults: {

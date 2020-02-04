@@ -6,7 +6,7 @@ body {
 }
 
 .apertureInfo {
-  padding: 10px 15px;
+  padding: 5px 7px;
 }
 
 .app-info-field {
@@ -29,21 +29,24 @@ body {
 }
 
 .footer {
-  margin: 5px 0px 5px 0px;
+  margin-top: 5px;
   color: #999;
 }
 
-.frameInfo {
+.info {
   background-color: #ddd;
   border-radius: 5px;
-  padding: 10px 15px;
-  margin-bottom: 10px;
+  padding: 5px 15px;
   width: inherit;
 }
 
-.framePlot,
-.stackPlot {
-  padding: 10px 15px;
+.info.frame {
+  margin-bottom: 5px;
+}
+
+.info.stack {
+  margin-bottom: 5px;
+  margin-top: 5px;
 }
 
 .loading {
@@ -55,17 +58,13 @@ body {
   width: 20%;
 }
 
+.plot {
+  padding: 10px 15px;
+}
+
 .resizable {
   padding: 10px 30px 10px 10px;
   border-radius: 5px;
-}
-
-.stackInfo {
-  background-color: #ddd;
-  border-radius: 5px;
-  padding: 10px 15px;
-  margin-bottom: 10px;
-  margin-top: 10px;
 }
 
 .tar {
