@@ -6,7 +6,7 @@ body {
 }
 
 .apertureInfo {
-  padding: 10px 15px;
+  padding: 5px 7px;
 }
 
 .app-info-field {
@@ -29,14 +29,14 @@ body {
 }
 
 .footer {
-  margin: 5px 0px 5px 0px;
+  margin-top: 5px;
   color: #999;
 }
 
 .frameInfo {
   background-color: #ddd;
   border-radius: 5px;
-  padding: 10px 15px;
+  padding: 5px 15px;
   margin-bottom: 10px;
   width: inherit;
 }
@@ -63,7 +63,7 @@ body {
 .stackInfo {
   background-color: #ddd;
   border-radius: 5px;
-  padding: 10px 15px;
+  padding: 5px 15px;
   margin-bottom: 10px;
   margin-top: 10px;
 }

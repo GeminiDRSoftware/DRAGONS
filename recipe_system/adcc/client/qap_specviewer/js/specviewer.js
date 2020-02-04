@@ -359,9 +359,11 @@ SpecViewer.prototype = {
           console.log(`- NEW group id: ${jsonElement.group_id}`);
           this.groupId = jsonElement.group_id;
 
-          // Clear navigation tabs and aperture list
+          // Clear navigation tabs and relevant lists
           $(`#${this.id} ul`).empty();
           this.aperturesCenter = [];
+          this.framePlots = [];
+          this.stackPlots = [];
 
           // Clear tab contents
           $('.tabcontent').remove();
@@ -375,6 +377,7 @@ SpecViewer.prototype = {
           if (jsonElement.is_stack) {
             this.updateStackArea(jsonElement);
           } else {
+            console.log(jsonElement.apertures);
             this.updateFrameArea(jsonElement);
           }
 
@@ -489,12 +492,50 @@ SpecViewer.prototype = {
   updateFrameArea: function(data) {
 
     console.log('- Handling latest frame data');
+
     for (let i = 0; i < this.aperturesCenter.length; i++) {
+
       let apertureCenter = this.aperturesCenter[i];
+      let framePlotId = `framePlot_${apertureCenter}`;
+      let intensity = data.apertures[i].intensity;
+      let stddev = data.apertures[i].stddev;
+      let units = data.apertures[i].wavelength_units;
+
+      console.log(units);
 
       $(`#aperture${apertureCenter} .frameInfo`).html(
         getFrameInfo(data.filename, data.program_id)
       );
+
+      // Check if plot containers exist
+      if ($(`#aperture${apertureCenter} .framePlot`).length) {
+
+        console.log('Refresh plots');
+
+      } else {
+
+        console.log('Create new plots');
+
+        $(`#aperture${apertureCenter} .resizable`).append(
+          `<div class="framePlot" id="${framePlotId}"> </div>`);
+
+        this.framePlots[i] = $.jqplot(
+          framePlotId, [intensity, stddev], $.extend(plotOptions, {
+            title: `Aperture ${i} - Last Frame`,
+            axes: {
+              xaxis: {
+                label: getWavelengthUnits(units),
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+              yaxis: {
+                label: "Intensity [e\u207B]", // escaped superscript minus
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+              },
+            },
+          })
+        );
+
+      }
 
     }
 
@@ -583,6 +624,7 @@ function getApertureInfo(aperture) {
 
 }
 
+
 /**
  * Returns the last frame info div element using a template.
  *
@@ -612,6 +654,7 @@ function getFrameInfo(filename, programId) {
   </div>`;
 }
 
+
 /**
  * Returns the stack frame info div element using a template.
  *
@@ -621,11 +664,11 @@ function getFrameInfo(filename, programId) {
 function getStackInfo(filename, programId) {
 
   if (filename === '') {
-    filename = '<span style="color: #999"> (Not available yet) </span>';
+    filename = '<span style="color: #aaa"> (Not available yet) </span>';
   }
 
   if (programId === '') {
-    programId = '<span style="color: #999"> (Not available yet) </span>';
+    programId = '<span style="color: #aaa"> (Not available yet) </span>';
   }
 
   return `
@@ -642,7 +685,33 @@ function getStackInfo(filename, programId) {
   `;
 }
 
+/**
+ * Convert input units to be used as label to the x-axis.
+ * @param {string} units
+ */
+function getWavelengthUnits(units) {
 
+  if (units) {
+    units = $.trim(units);
+    units = units.toLowerCase();
+
+    if (["um", "micrometer", "micrometers"].includes(units)) {
+      return "Wavelength [um]";
+    }
+
+    if (["nm", "nanometer", "nanometers"].includes(units)) {
+      return "Wavelength [nm]";
+    }
+
+    if (["a", "angsrom", "angsroms"].includes(units)) {
+      return "Wavelength [\u212B]";  // escaped Angstrom symbol
+    }
+
+  } else {
+    return "Wavelength";
+  }
+
+}
 
 
 /**
@@ -652,17 +721,6 @@ plotOptions = {
 
   axesDefaults: {
     alignTicks: true,
-  },
-
-  axes: {
-    xaxis: {
-      label: "Wavelength [\u212B]", // escaped Angstrom symbol
-      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-    },
-    yaxis: {
-      label: "Intensity [e\u207B]", // escaped superscript minus
-      labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-    },
   },
 
   seriesDefaults: {
