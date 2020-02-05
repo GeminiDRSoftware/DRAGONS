@@ -237,10 +237,13 @@ SpecViewer.prototype = {
 
     let now = Date(Date.now());
 
-    console.log(`\nReceived new JSON data list on\n ${now.toString()}`);
+    // Clear console to avoid memory load
+    console.clear();
 
     // Remove loading
     $('.loading').remove();
+
+    console.log(`\nReceived new JSON data list on\n ${now.toString()}`);
 
     // Process incoming data
     for (let i = 0; i < jsonData.length; i++) {
@@ -300,9 +303,6 @@ SpecViewer.prototype = {
       }
 
     }
-
-    // Remove loading
-    $('.loading').remove();
 
     // Update UI behavior
     this.updateUiBehavior();
@@ -425,7 +425,7 @@ SpecViewer.prototype = {
       plotTarget.height(resizableArea.height() * 0.96);
       plotTarget.width(resizableArea.width() * 0.96);
 
-      // Sometimes this function is activated before plots are defined. 
+      // Sometimes this function is activated before plots are defined.
       if (plotInstance) {
         plotInstance.replot({ resetAxes: true });
       }
