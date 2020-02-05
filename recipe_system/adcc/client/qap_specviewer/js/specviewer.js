@@ -573,6 +573,8 @@ SpecViewer.prototype = {
         console.log('Refresh plots');
 
         this.framePlots[i].title.text = `Aperture ${i+1} - Last Frame - ${this.dataLabel}`;
+        this.framePlots[i].series[0].data = intensity;
+        this.framePlots[i].series[1].data = stddev;
         this.framePlots[i].resetAxesScale();
         this.framePlots[i].replot();
 
