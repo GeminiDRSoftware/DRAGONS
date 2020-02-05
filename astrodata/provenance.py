@@ -73,7 +73,6 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
                     primitive == row[2] and \
                     args == row[3]:
                 # already in the history, skip
-                print("Already in output, skipping")
                 return
 
     colsize = len(args)+1
