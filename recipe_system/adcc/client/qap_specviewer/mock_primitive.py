@@ -96,11 +96,15 @@ def main():
             def stack_aperture_generator(i):
                 # center[i] = center[i] + np.random.randint(-5, 5)
                 _data = data[i]
-                _error = (np.random.poisson(_data) + noise_level / (frame_index + 1) * (
-                            np.random.rand(_data.size) - 0.5))
+
+                _error = np.random.rand(_data.size) - 0.5
+                _error *= noise_level / (frame_index + 1)
+                _error += np.random.poisson(_data)
+
                 _aperture = ApertureModel(
                     int(center[i]), int(lower[i]), int(upper[i]), wavelength_units, dispersion,
                     wavelength, _data, _error)
+
                 return _aperture.__dict__
 
             stack_apertures = [stack_aperture_generator(i) for i in range(n_apertures)]

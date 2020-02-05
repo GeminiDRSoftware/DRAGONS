@@ -383,7 +383,6 @@ SpecViewer.prototype = {
         if (isStack) {
           if (stackSize > this.stackSize) {
             console.log(`- NEW stack data with ${stackSize}`);
-            this.stackSize = stackSize;
             this.updateStackArea(jsonElement);
           } else {
             console.log(`- OLD stack data with ${stackSize}`);
@@ -618,7 +617,8 @@ SpecViewer.prototype = {
    */
   updateStackArea: function(data) {
 
-    console.log('- Handling stack frame data');
+    this.stackSize = data.stack_size;
+    console.log(`- Handling stack frame data - Stack size: ${this.stackSize}`);
 
     for (let i = 0; i < this.aperturesCenter.length; i++) {
 
@@ -633,11 +633,7 @@ SpecViewer.prototype = {
       );
 
       // Check if plot containers exist
-      if ($(`#aperture${apertureCenter} .plot.stack`).length) {
-
-        console.log('Refresh plots');
-
-      } else {
+      if (!$(`#aperture${apertureCenter} .plot.stack`).length) {
 
         console.log('Create new plots');
 
@@ -646,7 +642,7 @@ SpecViewer.prototype = {
 
         this.stackPlots[i] = $.jqplot(
           stackPlotId, [intensity, stddev], $.extend(plotOptions, {
-            title: `Aperture ${i} - Stack Frame`,
+            title: `Aperture ${i + 1} - Stack Frame - Stack size: ${this.stackSize}`,
             axes: {
               xaxis: {
                 label: getWavelengthUnits(units),
@@ -659,6 +655,16 @@ SpecViewer.prototype = {
             },
           })
         );
+
+      } else {
+
+        console.log('Refresh plots');
+
+        this.stackPlots[i].title.text = `Aperture ${i + 1} - Stack Frame - Stack size: ${this.stackSize}`;
+        this.stackPlots[i].series[0].data = intensity;
+        this.stackPlots[i].series[1].data = stddev;
+        this.stackPlots[i].resetAxesScale();
+        this.stackPlots[i].replot();
 
       }
 
