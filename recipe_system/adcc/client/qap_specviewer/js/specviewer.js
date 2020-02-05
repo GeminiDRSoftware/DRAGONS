@@ -42,9 +42,6 @@ function SpecViewer(parentElement, id) {
   // Call function to enable the tabs
   $(`#${id}`).tabs();
 
-  // Add event handler to tabs
-  $(`#${id}`).tabs({activate: this.onTabChange});
-
   // Placeholder for adcc command pump
   this.gjs = null;
   this.start();
@@ -57,28 +54,6 @@ function SpecViewer(parentElement, id) {
 SpecViewer.prototype = {
 
   constructor: SpecViewer,
-
-  /**
-   * @deprecated
-   *
-   * Add navigation tabs based on how many apertures there is inside the
-   * JSON file.
-   *
-   * @param {string} parentId
-   * @param {number} numberOfApertures
-   */
-  addNavigationTab: function(parentId, numberOfApertures) {
-    'use restrict';
-
-    /* Add navigation tab container */
-    let listOfTabs = $(`#${parentId} ul`);
-
-    // Create buttons and add them to the navigation tab
-    for (let i = 0; i < numberOfApertures; i++) {
-      listOfTabs.append(`<li><a href="#aperture${i}">Aperture ${i}</a></li>`);
-    }
-
-  },
 
   /**
    * Add plots to the existing HTML elements.
@@ -250,83 +225,6 @@ SpecViewer.prototype = {
   },
 
   /**
-   * Add tabs containing plots and information on each aperture.
-   *
-   * @param parentId
-   * @type parentId string
-   *
-   * @param data
-   * @type data object
-   */
-  addTabs: function(parentId, data) {
-
-    'use restrict';
-    var parent = $(`#${parentId}`);
-
-    for (var i = 0; i < data.apertures.length; i++) {
-
-      var aperture = data.apertures[i];
-
-      const apertureTabContent = `
-        <div id="aperture${i}" class="tabcontent">
-
-          <div class="apertureInfo">
-            <span>
-              <b>Aperture definition:</b>
-                <span class="app-info-field" title="Aperture center"> ${aperture.center} px </span> (
-                <span class="app-info-field" title="Lower aperture limit"> ${aperture.lower} px </span>,
-                <span class="app-info-field" title="Upper aperture limit"> ${aperture.upper} px </span>)
-            </span>
-            <span style="padding-left: 10%">
-              <b>Dispersion:</b> ${aperture.dispersion} nm/px
-            </span>
-          </div>
-
-          <div class="frameInfo">
-            <div class="d-table w-100">
-              <p class="d-table-cell">
-                Latest frame - ${data.filename} - ${data.programId}
-              </p>
-              <div class="d-table-cell tar">
-                <button class="ui-button ui-widget ui-corner-all" id="resetZoomFramePlot${i}" title="Reset zoom">
-                  <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div id="framePlot${i}-resizable" class="ui-widget-content resizable">
-            <div class="plot frame" id="framePlot${i}">
-            </div>
-          </div>
-
-          <div class="stackInfo">
-            <div class="d-table w-100">
-              <p class="d-table-cell">
-                Stack frame - ${data.filename} - ${data.programId}
-              </p>
-              <div class="d-table-cell tar">
-                <button id="resetZoomStackPlot${i}" class="ui-button ui-widget ui-corner-all" title="Reset zoom">
-                    <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div id="stackPlot${i}-resizable" class="ui-widget-content resizable">
-            <div class="plot stack" id="stackPlot${i}">
-            </div>
-          </div>
-
-        </div>
-      `;
-
-      parent.append(apertureTabContent);
-    } // end for
-
-  }, // end addTabs
-
-  /**
    * Query server for JSON file and start to populate page.
    * This function is the registered callback on the command pump.
    *
@@ -342,6 +240,7 @@ SpecViewer.prototype = {
     // Remove loading
     $('.loading').remove();
 
+    // Process incoming data
     for (let i = 0; i < jsonData.length; i++) {
 
       let dataLabel = jsonData[i].data_label;
@@ -398,39 +297,13 @@ SpecViewer.prototype = {
 
       }
 
-      // if () {
-      //   console.log(`- MATCHING group id: ${this.groupId}.`);
-      //
-      //   if (isStack) {
-      //     // ToDo - How do I know if the stack data is new?
-      //     console.log(`- NEW stack data.`);
-      //   } else {
-      //     if (this.dataLabel === jsonElement.data_label) {
-      //       console.log(`- OLD last frame: ${this.dataLabel}`);
-      //     } else {
-      //       console.log(`- NEW last frame: ${jsonElement.data_label}`);
-      //       this.dataLabel = jsonElement.data_label;
-      //
-      //       this.updateFrameArea(jsonElement);
-      //     }
-      //
-      //   }
-      //
-      // } else {
-      //   console.log(`- NEW group id: ${jsonElement.group_id}`);
-      //   this.groupId = jsonElement.group_id;
-      //
-
-      //
-      // }
     }
-
-    //  sViewer.addNavigationTab(sViewer.id, data.apertures.length);
-    //	sViewer.addTabs(sViewer.id, data);
-    //	sViewer.addPlots(sViewer.id, data);
 
     // Remove loading
     $('.loading').remove();
+
+    // Update UI behavior
+    this.updateUiBehavior();
 
   }, // end load
 
@@ -523,6 +396,32 @@ SpecViewer.prototype = {
     this.gjs.startPump(sv.timestamp, "specjson");
 
   }, // end start
+
+  /**
+   * Updates the UI components behavior (buttons, plots, etc.)
+   */
+  updateUiBehavior: function() {
+
+    // ToDo - Enable plots to show on tab change
+    // $(`#${this.id}`).tabs({activate: this.onTabChange});
+
+    // ToDo - Enable Reset Zoom button for Frame Plots
+    // this.framePlots.map(function(p, i) {
+      // $(`#resetZoomFramePlot${i}`).click(function() {
+      //   console.log(`Reset zoom of frame plot #${i}.`);
+      //   p.resetZoom();
+      // });
+    // });
+
+    // ToDo - Enable Reset Zoom button for Stack Plots
+    // this.stackPlots.map(function(p, i) {
+      // $(`#resetZoomStackPlot${i}`).click(function() {
+      //   console.log(`Reset zoom of stack plot #${i}.`);
+      //   p.resetZoom();
+      // });
+    // });
+
+  },
 
   /**
    * [updateNavigationTab description]
@@ -674,25 +573,6 @@ SpecViewer.prototype = {
 
 }; // end prototype
 
-
-/**
- * @deprecated Now that input JSON file comes in the correct format.
- *
- * Read two arrays and convert then into a single [x, y] array to be used in
- * plots.
- *
- * @param  {array} x One dimensional array with the X coordinates.
- * @param  {array} y One dimensional array with the Y coordinates.
- *
- * @return {array} One dimensional arrays containing [x, y] points
- */
-function buildSeries(x, y) {
-  var temp = [];
-  for (var i = 0; i < x.length; i++) {
-    temp.push([x[i], y[i]]);
-  }
-  return temp;
-}
 
 /**
  * Returns the Aperture Info div element using a template.
