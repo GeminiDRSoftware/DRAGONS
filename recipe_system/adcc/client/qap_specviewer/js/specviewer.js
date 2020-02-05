@@ -154,15 +154,14 @@ SpecViewer.prototype = {
 
       });
 
-    // Resize plot area on window resize
-    $(window).resize(function onWindowResize() {
-      var activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
-      sViewer.resizeFramePlots(activeTabIndex);
-      sViewer.resizeStackPlots(activeTabIndex);
+      /* @deprecated
+      // Resize plot area on window resize
+      $(window).resize(function onWindowResize() {
+        var activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
+        sViewer.resizeFramePlots(activeTabIndex);
+        sViewer.resizeStackPlots(activeTabIndex);
+      });
 
-    });
-
-    /* @deprecated
       // Add button for reset zoom
       framePlots.map(function(p, i) {
         $(`#resetZoomFramePlot${i}`).click(function() {
@@ -205,7 +204,8 @@ SpecViewer.prototype = {
           </div>`
         );
 
-        this.aperturesCenter.push(aperture.center);
+        this.aperturesCenter.push(aperture.center);    // Remove loading
+    $('.loading').remove();
 
       }
 
@@ -434,13 +434,24 @@ SpecViewer.prototype = {
 
     function onTabChange(event, tab) {
       let newIndex = tab.newTab.index();
-      let apertureCenter = sViewer.aperturesCenter[newIndex];
-
       resizePlotArea(newIndex, 'frame');
       resizePlotArea(newIndex, 'stack');
     }
 
     $(`#${this.id}`).tabs({'activate': onTabChange});
+
+    // Resize plot area on window resize stop
+    function resizeEnd() {
+      let activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
+      resizePlotArea(activeTabIndex, 'frame');
+      resizePlotArea(activeTabIndex, 'stack');
+    }
+
+    var doit;
+    window.onresize = function() {
+      clearTimeout(doit);
+      doit = setTimeout(resizeEnd, 500);
+    };
 
   },
 
