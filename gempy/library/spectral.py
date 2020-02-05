@@ -142,7 +142,7 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         for subregion in region._subregions:
             # If the region extends beyond the spectrum, we flag with NO_DATA
-            limits = self._get_pixel_limits(subregion, constrain=False)
+            limits = sorted(self._get_pixel_limits(subregion, constrain=False))
             for i in (0, 1):
                 if limits[i] < -0.5:
                     limits[i] = -0.5
