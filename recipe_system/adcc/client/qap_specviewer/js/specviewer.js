@@ -162,13 +162,14 @@ SpecViewer.prototype = {
 
     });
 
-    // Add button for reset zoom
-    framePlots.map(function(p, i) {
-      $(`#resetZoomFramePlot${i}`).click(function() {
-        console.log(`Reset zoom of frame plot #${i}.`);
-        p.resetZoom();
+    /* @deprecated
+      // Add button for reset zoom
+      framePlots.map(function(p, i) {
+        $(`#resetZoomFramePlot${i}`).click(function() {
+          console.log(`Reset zoom of frame plot #${i}.`);
+          p.resetZoom();
+        });
       });
-    });
 
     stackPlots.map(function(p, i) {
       $(`#resetZoomStackPlot${i}`).click(function() {
@@ -176,6 +177,7 @@ SpecViewer.prototype = {
         p.resetZoom();
       });
     });
+    */
 
   },
 
@@ -308,17 +310,6 @@ SpecViewer.prototype = {
   }, // end load
 
   /**
-   * Handle event onTabChange; aka as $.tabs({activate: ...}).
-   */
-  onTabChange: function(event, tab) {
-
-    var newIndex = tab.newTab.index();
-
-    // sViewer.resizeFramePlots(tab.newTab.index());
-    // sViewer.resizeStackPlots(tab.newTab.index());
-  },
-
-  /**
    * Resizes frame plots on different situations, like window resizing or
    * when changing tabs.
    *
@@ -402,24 +393,54 @@ SpecViewer.prototype = {
    */
   updateUiBehavior: function() {
 
-    // ToDo - Enable plots to show on tab change
-    // $(`#${this.id}`).tabs({activate: this.onTabChange});
+    console.log('Adding UI behavior');
+    let sViewer = this;
 
-    // ToDo - Enable Reset Zoom button for Frame Plots
-    // this.framePlots.map(function(p, i) {
-      // $(`#resetZoomFramePlot${i}`).click(function() {
-      //   console.log(`Reset zoom of frame plot #${i}.`);
-      //   p.resetZoom();
-      // });
-    // });
+    // Enable Reset Zoom button for Frame Plots
+    function resetZoom(p, i, type) {
+      let apertureCenter = sViewer.aperturesCenter[i];
+      $(`#aperture${apertureCenter} .info.${type} button`).click( function() {
+        console.log(`Reset zoom of ${type} plot #${i}.`);
+        p.resetZoom();
+      });
+    }
 
-    // ToDo - Enable Reset Zoom button for Stack Plots
-    // this.stackPlots.map(function(p, i) {
-      // $(`#resetZoomStackPlot${i}`).click(function() {
-      //   console.log(`Reset zoom of stack plot #${i}.`);
-      //   p.resetZoom();
-      // });
-    // });
+    this.framePlots.map(function(p, i) {
+      resetZoom(p, i, 'frame');
+    });
+
+    this.stackPlots.map(function(p, i) {
+      resetZoom(p, i, 'stack');
+    });
+
+    // Enable on tab change event
+    function resizePlotArea(index, type) {
+      let apCenter = sViewer.aperturesCenter[index];
+      let plotInstance = sViewer[`${type}Plots`][index];
+      let plotTarget = $(`#${type}Plot_${apCenter}`);
+      let resizableArea = $(`#aperture${apCenter} .resizable.${type}`);
+
+      console.log('Aperture center: ', apCenter);
+
+      plotTarget.height(resizableArea.height() * 0.96);
+      plotTarget.width(resizableArea.width() * 0.96);
+
+      // Sometimes this function is activated before plots are defined. 
+      if (plotInstance) {
+        plotInstance.replot({ resetAxes: true });
+      }
+
+    }
+
+    function onTabChange(event, tab) {
+      let newIndex = tab.newTab.index();
+      let apertureCenter = sViewer.aperturesCenter[newIndex];
+
+      resizePlotArea(newIndex, 'frame');
+      resizePlotArea(newIndex, 'stack');
+    }
+
+    $(`#${this.id}`).tabs({'activate': onTabChange});
 
   },
 
@@ -439,6 +460,7 @@ SpecViewer.prototype = {
       let intensity = data.apertures[i].intensity;
       let stddev = data.apertures[i].stddev;
       let units = data.apertures[i].wavelength_units;
+      let activeTabIndex = $(`#${this.id}`).tabs('option', 'active');
 
       $(`#aperture${apertureCenter} .info.frame`).html(
         getFrameInfo(data.filename, data.program_id)
@@ -474,7 +496,11 @@ SpecViewer.prototype = {
         this.framePlots[i].series[0].data = intensity;
         this.framePlots[i].series[1].data = stddev;
         this.framePlots[i].resetAxesScale();
-        this.framePlots[i].replot();
+
+        // Refresh only on active tab
+        if (i == activeTabIndex) {
+          this.framePlots[i].replot();
+        }
 
       }
 
@@ -526,6 +552,7 @@ SpecViewer.prototype = {
       let intensity = data.apertures[i].intensity;
       let stddev = data.apertures[i].stddev;
       let units = data.apertures[i].wavelength_units;
+      let activeTabIndex = $(`#${this.id}`).tabs('option', 'active');
 
       $(`#aperture${apertureCenter} .info.stack`).html(
         getFrameInfo(data.filename, data.program_id)
@@ -563,7 +590,11 @@ SpecViewer.prototype = {
         this.stackPlots[i].series[0].data = intensity;
         this.stackPlots[i].series[1].data = stddev;
         this.stackPlots[i].resetAxesScale();
-        this.stackPlots[i].replot();
+
+        // Refresh only on active tab
+        if (i == activeTabIndex) {
+          this.stackPlots[i].replot();
+        }
 
       }
 
