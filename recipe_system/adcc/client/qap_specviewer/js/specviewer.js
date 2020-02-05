@@ -393,7 +393,6 @@ SpecViewer.prototype = {
             console.log(`- OLD frame data: ${this.dataLabel}`);
           } else {
             console.log(`- NEW frame data: ${jsonElement.data_label}`);
-            this.dataLabel = jsonElement.data_label;
             this.updateFrameArea(jsonElement);
           }
         }
@@ -532,7 +531,8 @@ SpecViewer.prototype = {
    */
   updateFrameArea: function(data) {
 
-    console.log('- Handling latest frame data');
+    this.dataLabel = data.data_label;
+    console.log(`- Handling latest frame data: ${this.dataLabel}`);
 
     for (let i = 0; i < this.aperturesCenter.length; i++) {
 
@@ -547,37 +547,38 @@ SpecViewer.prototype = {
       );
 
       // Check if plot containers exist
-      if ($(`#aperture${apertureCenter} .plot.frame`).length) {
-
-        console.log('Refresh plots');
-
-      } else {
-
+      if (!$(`#aperture${apertureCenter} .plot.frame`).length) {
         console.log('Create new plots');
 
         $(`#aperture${apertureCenter} .resizable.frame`).append(
           `<div class="plot frame" id="${framePlotId}"> </div>`);
 
-        this.framePlots[i] = $.jqplot(
-          framePlotId, [intensity, stddev], $.extend(plotOptions, {
-            title: `Aperture ${i+1} - Last Frame`,
-            axes: {
-              xaxis: {
-                label: getWavelengthUnits(units),
-                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+          this.framePlots[i] = $.jqplot(
+            framePlotId, [intensity, stddev], $.extend(plotOptions, {
+              title: `Aperture ${i+1} - Last Frame - ${this.dataLabel}`,
+              axes: {
+                xaxis: {
+                  label: getWavelengthUnits(units),
+                  labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                },
+                yaxis: {
+                  label: "Intensity [e\u207B]", // escaped superscript minus
+                  labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                },
               },
-              yaxis: {
-                label: "Intensity [e\u207B]", // escaped superscript minus
-                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-              },
-            },
-          })
-        );
+            })
+          );
+
+      } else {
+        console.log('Refresh plots');
+
+        this.framePlots[i].title.text = `Aperture ${i+1} - Last Frame - ${this.dataLabel}`;
+        this.framePlots[i].resetAxesScale();
+        this.framePlots[i].replot();
 
       }
 
     }
-
   },
 
   /**
