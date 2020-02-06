@@ -432,15 +432,23 @@ class Visualize(PrimitivesBASE):
 
             timestamp = time.time()
 
+            if 'NCOMBINE' in ad.phu:
+                is_stack = ad.phu['NCOMBINE'] > 1
+                stack_size = ad.phu['NCOMBINE']
+            else:
+                is_stack = False
+                stack_size = 1
+
             spec_pack = {
                 "apertures": [],
                 "data_label": ad.data_label(),
                 "filename": ad.filename,
                 "group_id": ad.group_id(),
-                "is_stack": ad.coadds() > 1,
-                "stack_size": ad.coadds(),
+                "is_stack": is_stack,
+                "stack_size": stack_size,
                 "metadata": [],
                 "msgtype": "specjson",
+                "pixel_scale": ad.pixel_scale(),
                 "program_id": ad.program_id(),
                 "timestamp": timestamp,
             }
