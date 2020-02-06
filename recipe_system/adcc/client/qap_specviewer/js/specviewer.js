@@ -171,10 +171,9 @@ SpecViewer.prototype = {
     for (let i = 0; i < data.apertures.length; i++) {
 
       let aperture = data.apertures[i];
+      let newAperture = !matchApertures(aperture, this.aperturesCenter);
 
-      // Add empty tab container if it does not exist
-      // !!! ToDo: improve matching criterium !!!
-      if (!this.aperturesCenter.includes(aperture.center)) {
+      if (newAperture) {
 
         $(`#${this.id}`).append(
           `<div id="aperture${aperture.center}" class="tabcontent">
@@ -752,6 +751,15 @@ function getWavelengthUnits(units) {
 
 }
 
+/**
+ * Checks if aperture is likely to be inside listOfApertures.
+ * @param  {[type]} aperture
+ * @param  {[type]} listOfCenters
+ * @return {bool}
+ */
+function matchApertures(aperture, listOfCenters) {
+  return listOfCenters.includes(aperture.center);
+}
 
 /**
  * Options to be used by the plots
