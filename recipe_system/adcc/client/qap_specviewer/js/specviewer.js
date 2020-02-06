@@ -166,48 +166,36 @@ SpecViewer.prototype = {
    * Add/refresh tab content for incomming data.
    * @type {object} data Incomming JSON data
    */
-  newTabContent: function(data) {
+  newTabContent: function(aperture) {
 
-    for (let i = 0; i < data.apertures.length; i++) {
+    this.aperturesCenter.push(aperture.center);
 
-      let aperture = data.apertures[i];
-      let newAperture = !matchApertures(aperture, this.aperturesCenter);
+    $(`#${this.id}`).append(
+      `<div id="aperture${aperture.center}" class="tabcontent">
+        <div class="apertureInfo"> </div>
+        <div class="info frame"> </div>
+        <div class="ui-widget-content resizable frame" id="framePlot${aperture.center}-resizable" >
+          ${notAvailableYet}
+        </div>
+        <div class="info stack"> </div>
+        <div class="ui-widget-content resizable stack" id="stackPlot${aperture.center}-resizable" >
+          ${notAvailableYet}
+        </div>
+      </div>`
+    );
 
-      if (newAperture) {
+    // Add content to the container
+    $(`#aperture${aperture.center} .apertureInfo`).html(
+      getApertureInfo(aperture)
+    );
 
-        $(`#${this.id}`).append(
-          `<div id="aperture${aperture.center}" class="tabcontent">
-            <div class="apertureInfo"> </div>
-            <div class="info frame"> </div>
-            <div class="ui-widget-content resizable frame" id="framePlot${aperture.center}-resizable" >
-              ${notAvailableYet}
-            </div>
-            <div class="info stack"> </div>
-            <div class="ui-widget-content resizable stack" id="stackPlot${aperture.center}-resizable" >
-              ${notAvailableYet}
-            </div>
-          </div>`
-        );
+    $(`#aperture${aperture.center} .info.frame`).html(
+      getFrameInfo("", "")
+    );
 
-        this.aperturesCenter.push(aperture.center);    // Remove loading
-    $('.loading').remove();
-
-      }
-
-      // Add content to the container
-      $(`#aperture${aperture.center} .apertureInfo`).html(
-        getApertureInfo(aperture)
-      );
-
-      $(`#aperture${aperture.center} .info.frame`).html(
-        getFrameInfo("", "")
-      );
-
-      $(`#aperture${aperture.center} .info.stack`).html(
-        getStackInfo("", "")
-      );
-
-    }
+    $(`#aperture${aperture.center} .info.stack`).html(
+      getStackInfo("", "")
+    );
 
   },
 
@@ -245,12 +233,11 @@ SpecViewer.prototype = {
 
       if (jsonElement.group_id !== this.groupId) {
 
-        console.log(`- NEW group ID: ${jsonElement.group_id}`);
+        console.log(`- NEW data with group ID: ${jsonElement.group_id}`);
         this.groupId = jsonElement.group_id;
 
         // Clear navigation tabs and relevant lists
-        $(`#${this.id} ul`).empty();
-        this.aperturesCenter = [];
+        this.aperturesCenter = []
         this.framePlots = [];
         this.stackPlots = [];
         this.stackSize = 0;
@@ -258,9 +245,10 @@ SpecViewer.prototype = {
         // Clear tab contents
         $('.tabcontent').remove();
 
-        // Add tab content
-        this.newTabContent(jsonElement);
-        this.updateNavigationTab(jsonElement);
+        // Add tab content for every aperture
+        for (let i = 0; i < jsonElement.apertures.length; i++) {
+          this.newTabContent(jsonElement.apertures[i]);
+        }
 
         if (isStack) {
           this.updateStackArea(jsonElement);
@@ -288,7 +276,10 @@ SpecViewer.prototype = {
           }
         }
 
+
       }
+
+      this.updateNavigationTab();
 
     }
 
@@ -444,8 +435,9 @@ SpecViewer.prototype = {
   },
 
   /**
-   * [updateNavigationTab description]
-   * @type {[type]}
+   * [description]
+   * @param  {[type]} data [description]
+   * @return {[type]}      [description]
    */
   updateFrameArea: function(data) {
 
@@ -507,20 +499,25 @@ SpecViewer.prototype = {
   },
 
   /**
-   * Updates the navigation tab based on matching aperture center.
-   *
-   * @param jsonElement {object}
+   * Updates navigation tabs based on tab contents and the number of aperture
+   * centers registered inside SpecViewer
    */
-  updateNavigationTab: function(jsonElement) {
+  updateNavigationTab: function() {
 
     // Add navigation tab container
     let navTabContainer = $(`#${this.id} ul`);
 
+    // Empty tab containers
+    navTabContainer.empty();
+
+    // Sort appertures to make our life easier
     this.aperturesCenter.sort();
 
     // Create buttons and add them to the navigation tab
     for (let i = 0; i < this.aperturesCenter.length; i++) {
-      navTabContainer.append(`<li><a href="#aperture${this.aperturesCenter[i]}">Aperture ${i + 1}</a></li>`);
+      navTabContainer.append(`
+        <li><a href="#aperture${this.aperturesCenter[i]}"> Aperture ${i + 1}
+        </a></li>`);
     }
 
     /// Refresh tabs to update them
@@ -536,8 +533,9 @@ SpecViewer.prototype = {
   },
 
   /**
-   * [updateNavigationTab description]
-   * @type {[type]}
+   * [description]
+   * @param  {[type]} data [description]
+   * @return {[type]}      [description]
    */
   updateStackArea: function(data) {
 
