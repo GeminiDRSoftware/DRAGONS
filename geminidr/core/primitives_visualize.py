@@ -438,6 +438,7 @@ class Visualize(PrimitivesBASE):
                 "filename": ad.filename,
                 "group_id": ad.group_id(),
                 "is_stack": ad.coadds() > 1,
+                "stack_size": ad.coadds(),
                 "metadata": [],
                 "msgtype": "specjson",
                 "program_id": ad.program_id(),
