@@ -83,6 +83,11 @@ body {
   width: 20%;
 }
 
+.not-available {
+  color: #aaa;
+  text-align: center;
+}
+
 .plot {
   padding: 10px 15px;
 }
@@ -90,6 +95,8 @@ body {
 .resizable {
   padding: 10px 30px 10px 10px;
   border-radius: 5px;
+  text-align: center;
+  min-height: 200px;
 }
 
 .tar {
