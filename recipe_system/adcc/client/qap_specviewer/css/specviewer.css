@@ -20,6 +20,14 @@ body {
   background-color: #ddd;
 }
 
+.countdown {
+  padding-right: 5px;
+}
+
+.countdown .number {
+  width: 30px;
+}
+
 .d-table {
   display: table;
 }

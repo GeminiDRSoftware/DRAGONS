@@ -634,8 +634,8 @@ function addCountDown(sViewer) {
   $(`.countdown`).append(`<spam class="number"> </spam>`);
 
   function updateCountdown() {
-    sViewer.countdown--;
     $(`.countdown .number`).html(`${sViewer.countdown} s`);
+    sViewer.countdown--;
   }
 
   setInterval(updateCountdown, 1000);

@@ -39,9 +39,11 @@
         // For these examples, don't show the to image button.
         $.jqplot._noToImageButton = true;
 
+        var delay = 5000;  // miliseconds
         var element = $('#main');
         var id = 'specViewer';
-        var sViewer = new SpecViewer(element, id);
+        var sViewer = new SpecViewer(element, id, delay);
+        var countDown = addCountDown(sViewer);
       }
     );
   </script>
@@ -64,7 +66,9 @@
     </div>
 
     <div class="footer d-table">
-      Add info about QAP SpecViewer
+      <spam class="d-table-cell">
+        Add info about QAP SpecViewer
+      </spam>
     </div>
 
   </div>
