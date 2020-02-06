@@ -32,6 +32,7 @@ def main():
 
     data_size = 4000
     snr = 10.
+    pixel_scale = 0.1614
     wavelength_min = 300.
     wavelength_max = 800.
     wavelength_units = "nm"
@@ -74,7 +75,8 @@ def main():
                 stack_filename = "X{}S{:03d}_stack.fits".format(today, file_index)
 
             def aperture_generator(i):
-                # center[i] = center[i] + np.random.randint(-5, 5)
+                center[i] = center[i] + (np.random.rand() - 0.5) * 0.9 / pixel_scale
+                center[i] = np.round(center[i])
                 _data = data[i]
                 _error = np.random.poisson(_data) + noise_level * (np.random.rand(_data.size) - 0.5)
                 _aperture = ApertureModel(
@@ -90,12 +92,13 @@ def main():
                 group_id=group_id,
                 filename=filename,
                 is_stack=False,
-                stack_size=1,
+                pixel_scale=pixel_scale,
                 program_id=program_id,
+                stack_size=1,
                 apertures=apertures)
 
             def stack_aperture_generator(i):
-                # center[i] = center[i] + np.random.randint(-5, 5)
+                center[i] = center[i] + np.random.randint(-5, 5)
                 _data = data[i]
 
                 _error = np.random.rand(_data.size) - 0.5
@@ -115,8 +118,9 @@ def main():
                 group_id=group_id,
                 filename=stack_filename,
                 is_stack=True,
-                stack_size=frame_index+1,
+                pixel_scale=pixel_scale,
                 program_id=program_id,
+                stack_size=frame_index + 1,
                 apertures=stack_apertures)
 
             if frame_index > 2:
@@ -131,6 +135,7 @@ def main():
             print("  Group-id: {}".format(group_id))
             print("  Data-label: {}".format(data_label))
             print("  Filename: {}".format(filename))
+            print("  Apertures: {}".format(center))
             print("  Performing request...")
 
             try:
@@ -252,15 +257,18 @@ class ApertureModel:
 
 class SpecPackModel:
 
-    def __init__(self, data_label, group_id, filename, is_stack, stack_size, program_id, apertures):
+    def __init__(self, data_label, group_id, filename, is_stack, pixel_scale, program_id, stack_size, apertures):
+
         self.data_label = data_label
         self.group_id = group_id
         self.filename = filename
         self.msgtype = "specjson"
         self.is_stack = is_stack
-        self.stack_size = stack_size
+        self.pixel_scale = pixel_scale
         self.program_id = program_id
+        self.stack_size = stack_size
         self.timestamp = time.time()
+
         self.apertures = apertures
 
 
