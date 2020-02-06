@@ -12,7 +12,7 @@ const specViewerJsonName = "/specqueue.json";
  * @param {object} parentElement - element that will hold SpecViewer.
  * @param {string} id - name of the ID of the SpecViewer div container.
  */
-function SpecViewer(parentElement, id) {
+function SpecViewer(parentElement, id, delay) {
   'use strict';
 
   // Creating empty object
@@ -43,6 +43,8 @@ function SpecViewer(parentElement, id) {
   $(`#${id}`).tabs();
 
   // Placeholder for adcc command pump
+  this.delay = delay;
+  this.countdown = delay / 1000;
   this.gjs = null;
   this.start();
 
@@ -154,30 +156,6 @@ SpecViewer.prototype = {
 
       });
 
-      /* @deprecated
-      // Resize plot area on window resize
-      $(window).resize(function onWindowResize() {
-        var activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
-        sViewer.resizeFramePlots(activeTabIndex);
-        sViewer.resizeStackPlots(activeTabIndex);
-      });
-
-      // Add button for reset zoom
-      framePlots.map(function(p, i) {
-        $(`#resetZoomFramePlot${i}`).click(function() {
-          console.log(`Reset zoom of frame plot #${i}.`);
-          p.resetZoom();
-        });
-      });
-
-    stackPlots.map(function(p, i) {
-      $(`#resetZoomStackPlot${i}`).click(function() {
-        console.log(`Reset zoom of stack plot #${i}.`);
-        p.resetZoom();
-      });
-    });
-    */
-
   },
 
   /**
@@ -242,6 +220,9 @@ SpecViewer.prototype = {
 
     // Remove loading
     $('.loading').remove();
+
+    // Restart countdown
+    this.countdown = this.delay / 1000;
 
     console.log(`\nReceived new JSON data list on\n ${now.toString()}`);
 
@@ -385,6 +366,7 @@ SpecViewer.prototype = {
       sv.loadData(msg);
     });
     this.gjs.startPump(sv.timestamp, "specjson");
+    this.gjs.delay = this.delay;
 
   }, // end start
 
@@ -637,6 +619,26 @@ function getApertureInfo(aperture) {
       </span>
     </div>
     `;
+
+}
+
+/**
+ * Adds a count down in the footer to let user know when the server was queried.
+ * @param {object} sViewer - An initialized version of SpecViewer.
+ */
+function addCountDown(sViewer) {
+
+  $(`.footer`).width( $(`#${sViewer.id}`).width() );
+  $(`.footer`).append(`<div class="d-table-cell tar countdown"> </div>`);
+  $(`.countdown`).append(`<spam class="title">Querying server in </spam>`);
+  $(`.countdown`).append(`<spam class="number"> </spam>`);
+
+  function updateCountdown() {
+    sViewer.countdown--;
+    $(`.countdown .number`).html(`${sViewer.countdown} s`);
+  }
+
+  setInterval(updateCountdown, 1000);
 
 }
 
