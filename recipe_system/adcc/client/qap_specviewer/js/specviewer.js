@@ -168,8 +168,6 @@ SpecViewer.prototype = {
    */
   newTabContent: function(aperture) {
 
-    this.aperturesCenter.push(aperture.center);
-
     $(`#${this.id}`).append(
       `<div id="aperture${aperture.center}" class="tabcontent">
         <div class="apertureInfo"> </div>
@@ -237,7 +235,6 @@ SpecViewer.prototype = {
         this.groupId = jsonElement.group_id;
 
         // Clear navigation tabs and relevant lists
-        this.aperturesCenter = []
         this.framePlots = [];
         this.stackPlots = [];
         this.stackSize = 0;
@@ -246,7 +243,12 @@ SpecViewer.prototype = {
         $('.tabcontent').remove();
 
         // Add tab content for every aperture
-        for (let i = 0; i < jsonElement.apertures.length; i++) {
+        this.aperturesCenter = jsonElement.apertures.map(
+          function(a) { return a.center; });
+
+        this.aperturesCenter.sort();
+
+        for (let i = 0; i < this.aperturesCenter.length; i++) {
           this.newTabContent(jsonElement.apertures[i]);
         }
 
@@ -258,24 +260,32 @@ SpecViewer.prototype = {
 
       } else {
 
-        console.log(`- Current group Id: ${this.groupId}`);
+        console.log(`- Data from SAME group Id: ${this.groupId}`);
 
-        if (isStack) {
-          if (stackSize > this.stackSize) {
-            console.log(`- NEW stack data with ${stackSize}`);
-            this.updateStackArea(jsonElement);
-          } else {
-            console.log(`- OLD stack data with ${stackSize}`);
-          }
-        } else {
-          if (this.dataLabel === jsonElement.data_label) {
-            console.log(`- OLD frame data: ${this.dataLabel}`);
-          } else {
-            console.log(`- NEW frame data: ${jsonElement.data_label}`);
-            this.updateFrameArea(jsonElement);
+        for (let i = 0; i < jsonElement.apertures.length; i++) {
+          let ap = jsonElement.apertures[i];
+          let ps = jsonElement.pixel_scale;
+
+          if (notInApertureCenterList(ap.center, ps, this.aperturesCenter)) {
+            this.newTabContent(ap);
           }
         }
 
+        // if (isStack) {
+        //   if (stackSize > this.stackSize) {
+        //     console.log(`- NEW stack data with ${stackSize}`);
+        //     this.updateStackArea(jsonElement);
+        //   } else {
+        //     console.log(`- OLD stack data with ${stackSize}`);
+        //   }
+        // } else {
+        //   if (this.dataLabel === jsonElement.data_label) {
+        //     console.log(`- OLD frame data: ${this.dataLabel}`);
+        //   } else {
+        //     console.log(`- NEW frame data: ${jsonElement.data_label}`);
+        //     this.updateFrameArea(jsonElement);
+        //   }
+        // }
 
       }
 
@@ -417,7 +427,7 @@ SpecViewer.prototype = {
       resizePlotArea(newIndex, 'stack');
     }
 
-    $(`#${this.id}`).tabs({'activate': onTabChange});
+//    $(`#${this.id}`).tabs({'activate': onTabChange});
 
     // Resize plot area on window resize stop
     function resizeEnd() {
@@ -660,6 +670,20 @@ function addCountDown(sViewer) {
 
 }
 
+function getApertureIndex(apertureCenter, listOfApertures) {
+
+  let closestAperture = listOfApertures.reduce( function(prev, curr) {
+    return (Math.abs(curr - apertureCenter) < Math.abs(prev - apertureCenter) ? curr : prev);
+  });
+
+  function getIndex(value) {
+    return value === closestAperture;
+  }
+
+  return listOfApertures.findIndex(getIndex);
+
+}
+
 
 /**
  * Returns the last frame info div element using a template.
@@ -749,14 +773,27 @@ function getWavelengthUnits(units) {
 
 }
 
-/**
- * Checks if aperture is likely to be inside listOfApertures.
- * @param  {[type]} aperture
- * @param  {[type]} listOfCenters
- * @return {bool}
- */
-function matchApertures(aperture, listOfCenters) {
-  return listOfCenters.includes(aperture.center);
+
+function notInApertureCenterList(aperture, pixelScale, listOfApertures) {
+
+  let tolerance = 1.0;  // arcseconds
+  let apertureInList = listOfApertures.some(
+    function(l) {
+      return (Math.abs(l - aperture) * pixelScale <= tolerance);
+    }
+  );
+
+  i = getApertureIndex(aperture, listOfApertures);
+  a = listOfApertures[i];
+
+  if (apertureInList) {
+    console.log(`- Updating plots for aperture: ${a} (${aperture})`);
+  } else {
+    console.log(`- New aperture: ${aperture}`, listOfApertures);
+  }
+
+  return !apertureInList;
+
 }
 
 /**

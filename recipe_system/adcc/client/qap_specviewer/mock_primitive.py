@@ -75,7 +75,8 @@ def main():
                 stack_filename = "X{}S{:03d}_stack.fits".format(today, file_index)
 
             def aperture_generator(i):
-                center[i] = center[i] + (np.random.rand() - 0.5) * 0.9 / pixel_scale
+                delta_center = (np.random.rand() - 0.5) * 0.9 / pixel_scale
+                center[i] = center[i] + delta_center
                 center[i] = np.round(center[i])
                 _data = data[i]
                 _error = np.random.poisson(_data) + noise_level * (np.random.rand(_data.size) - 0.5)
@@ -98,7 +99,8 @@ def main():
                 apertures=apertures)
 
             def stack_aperture_generator(i):
-                center[i] = center[i] + np.random.randint(-5, 5)
+                delta_center = (np.random.rand() - 0.5) * 0.9 / pixel_scale
+                center[i] = center[i] + delta_center
                 _data = data[i]
 
                 _error = np.random.rand(_data.size) - 0.5
@@ -123,10 +125,11 @@ def main():
                 stack_size=frame_index + 1,
                 apertures=stack_apertures)
 
-            if frame_index > 2:
-                json_list = [frame.__dict__, stack.__dict__]
-            else:
-                json_list = [frame.__dict__]
+            json_list = [frame.__dict__, stack.__dict__]
+            # if frame_index > 2:
+            #     json_list = [frame.__dict__, stack.__dict__]
+            # else:
+            #     json_list = [frame.__dict__]
 
             json_data = json.dumps(json_list).encode("utf-8")
 
