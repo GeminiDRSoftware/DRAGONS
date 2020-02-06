@@ -4,6 +4,7 @@
  *
  */
 const specViewerJsonName = "/specqueue.json";
+const notAvailableYet = '<span class="not-available"> (Not available yet) </span>';
 
 
 /**
@@ -179,9 +180,13 @@ SpecViewer.prototype = {
           `<div id="aperture${aperture.center}" class="tabcontent">
             <div class="apertureInfo"> </div>
             <div class="info frame"> </div>
-            <div class="ui-widget-content resizable frame" id="framePlot${aperture.center}-resizable" > </div>
+            <div class="ui-widget-content resizable frame" id="framePlot${aperture.center}-resizable" >
+              ${notAvailableYet}
+            </div>
             <div class="info stack"> </div>
-            <div class="ui-widget-content resizable stack" id="stackPlot${aperture.center}-resizable" > </div>
+            <div class="ui-widget-content resizable stack" id="stackPlot${aperture.center}-resizable" >
+              ${notAvailableYet}
+            </div>
           </div>`
         );
 
@@ -378,7 +383,6 @@ SpecViewer.prototype = {
    */
   updateUiBehavior: function() {
 
-    console.log('Adding UI behavior');
     let sViewer = this;
 
     // Enable Reset Zoom button for Frame Plots
@@ -466,7 +470,7 @@ SpecViewer.prototype = {
       if (!$(`#aperture${apertureCenter} .plot.frame`).length) {
         console.log('Create new plots');
 
-        $(`#aperture${apertureCenter} .resizable.frame`).append(
+        $(`#aperture${apertureCenter} .resizable.frame`).html(
           `<div class="plot frame" id="${framePlotId}"> </div>`);
 
           this.framePlots[i] = $.jqplot(
@@ -559,7 +563,7 @@ SpecViewer.prototype = {
 
         console.log('Create new plots');
 
-        $(`#aperture${apertureCenter} .resizable.stack`).append(
+        $(`#aperture${apertureCenter} .resizable.stack`).html(
           `<div class="plot stack" id="${stackPlotId}"> </div>`);
 
         this.stackPlots[i] = $.jqplot(
@@ -669,11 +673,11 @@ function addCountDown(sViewer) {
 function getFrameInfo(filename, programId) {
 
   if (filename === '') {
-    filename = '<span style="color: #999"> (Not available yet) </span>';
+    filename = notAvailableYet;
   }
 
   if (programId === '') {
-    programId = '<span style="color: #999"> (Not available yet) </span>';
+    programId = notAvailableYet;
   }
 
   return `

@@ -82,6 +82,7 @@ def main():
                     wavelength, _data, _error)
                 return _aperture.__dict__
 
+            # n_apertures = max(n_apertures + np.random.randint(-1, 1), 1)
             apertures = [aperture_generator(i) for i in range(n_apertures)]
 
             frame = SpecPackModel(
@@ -118,7 +119,12 @@ def main():
                 program_id=program_id,
                 apertures=stack_apertures)
 
-            json_data = json.dumps([frame.__dict__, stack.__dict__]).encode("utf-8")
+            if frame_index > 2:
+                json_list = [frame.__dict__, stack.__dict__]
+            else:
+                json_list = [frame.__dict__]
+
+            json_data = json.dumps(json_list).encode("utf-8")
 
             print("\n Created JSON for single frame with: ")
             print("  Program ID: {}".format(program_id))
