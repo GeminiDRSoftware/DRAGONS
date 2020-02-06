@@ -221,7 +221,8 @@ SpecViewer.prototype = {
     // Restart countdown
     this.countdown = this.delay / 1000;
 
-    // Restart countdown
+    // Clear console
+    console.clear();
 
     // Remove loading
     $('.loading').remove();
@@ -632,12 +633,26 @@ function addCountDown(sViewer) {
 
   $(`.footer`).width( $(`#${sViewer.id}`).width() );
   $(`.footer`).append(`<div class="d-table-cell tar countdown"> </div>`);
+
+  $(`.countdown`).append(`<span class="dot"></span>`);
   $(`.countdown`).append(`<spam class="title">Querying server in </spam>`);
-  $(`.countdown`).append(`<spam class="number"> </spam>`);
+  $(`.countdown`).append(`<spam class="number" title=""> </spam>`);
 
   function updateCountdown() {
-    $(`.countdown .number`).html(`${sViewer.countdown} s`);
-    sViewer.countdown--;
+
+    if (sViewer.countdown >= 0) {
+      $(`.countdown .number`).html(`${sViewer.countdown} s`);
+      $(`.countdown .title, .countdown .number, .dot`).addClass(`online`);
+      $(`.countdown .title, .countdown .number, .dot`).removeClass(`offline`);
+      sViewer.countdown--;
+    } else {
+      $(`.countdown .title, .countdown .number, .dot`).removeClass(`online`);
+      $(`.countdown .title, .countdown .number, .dot`).addClass(`offline`);
+    }
+
+    $(`.online`).prop('title', "Server is responding");
+    $(`.offline`).prop('title', "No or empty response from server");
+
   }
 
   setInterval(updateCountdown, 1000);
