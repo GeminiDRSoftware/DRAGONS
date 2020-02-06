@@ -42,9 +42,12 @@ function SpecViewer(parentElement, id, delay) {
   // Call function to enable the tabs
   $(`#${id}`).tabs();
 
-  // Placeholder for adcc command pump
+  // Add countdown
   this.delay = delay;
   this.countdown = delay / 1000;
+  addCountDown(this);
+
+  // Placeholder for adcc command pump
   this.gjs = null;
   this.start();
 
@@ -215,14 +218,13 @@ SpecViewer.prototype = {
 
     let now = Date(Date.now());
 
-    // Clear console to avoid memory load
-    console.clear();
+    // Restart countdown
+    this.countdown = this.delay / 1000;
+
+    // Restart countdown
 
     // Remove loading
     $('.loading').remove();
-
-    // Restart countdown
-    this.countdown = this.delay / 1000;
 
     console.log(`\nReceived new JSON data list on\n ${now.toString()}`);
 
