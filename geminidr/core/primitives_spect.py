@@ -2257,12 +2257,18 @@ def _average_along_slit(ext, center=None, nsum=None):
         Slice object for extraction region.
     """
     slitaxis = ext.dispersion_axis() - 1
-    extraction = center or (0.5 * ext.data.shape[slitaxis])
-    extract_slice = slice(max(0, int(extraction - 0.5 * nsum)),
-                          min(ext.data.shape[slitaxis],
-                              int(extraction + 0.5 * nsum)))
+    npix = ext.data.shape[slitaxis]
+
+    if nsum is None:
+        nsum = npix
+    if center is None:
+        center = 0.5 * npix
+
+    extract_slice = slice(max(0, int(center - 0.5 * nsum)),
+                          min(npix, int(center + 0.5 * nsum)))
     data, mask, variance = _transpose_if_needed(ext.data, ext.mask, ext.variance,
-                                                transpose=(slitaxis == 1), section=extract_slice)
+                                                transpose=(slitaxis == 1),
+                                                section=extract_slice)
 
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
