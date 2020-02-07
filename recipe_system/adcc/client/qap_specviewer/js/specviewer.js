@@ -180,9 +180,9 @@ SpecViewer.prototype = {
 
         if (isStack) {
           if (stackSize <= this.stackSize) {
-            console.log(`- OLD stack data with ${stackSize}`);
+            console.log(`- OLD stack data with ${stackSize} frames`);
           } else {
-            console.log(`- NEW stack data with ${stackSize}`);
+            console.log(`- NEW stack data with ${stackSize} frames`);
             this.stackSize = stackSize;
             this.updatePlotArea(jsonElement, type);
           }
@@ -204,54 +204,11 @@ SpecViewer.prototype = {
 
   }, // end load
 
-  /**
-   * Resizes frame plots on different situations, like window resizing or
-   * when changing tabs.
-   *
-   * @param activeTabIndex {number}
-   */
-  resizeFramePlots: function(activeTabIndex) {
-
-    console.log(`Resizing frame plot ${activeTabIndex}`);
-
-    $(`framePlot${activeTabIndex}`).height(
-      $(`framePlot${activeTabIndex}-resizable`).height() * 0.96
-    );
-
-    $(`framePlot${activeTabIndex}`).width(
-      $(`framePlot${activeTabIndex}-resizable`).width() * 0.96
-    );
-
-    this.framePlots[activeTabIndex].replot({
-      resetAxes: true
-    });
-
-  },
 
   /**
-   * Resizes frame plots on different situations, like window resizing or
-   * when changing tabs.
-   *
-   * @param activeTabIndex {number}
+   * [description]
+   * @return {[type]} [description]
    */
-  resizeStackPlots: function(activeTabIndex) {
-
-    console.log(`Resizing stack plot ${activeTabIndex}`);
-
-    $(`stackPlot${activeTabIndex}`).height(
-      $(`stackPlot${activeTabIndex}-resizable`).height() * 0.96
-    );
-
-    $(`stackPlot${activeTabIndex}`).width(
-      $(`stackPlot${activeTabIndex}-resizable`).width() * 0.96
-    );
-
-    this.stackPlots[activeTabIndex].replot({
-      resetAxes: true
-    });
-
-  },
-
   start: function() {
 
     console.log("Starting SpecViewer");
@@ -302,7 +259,7 @@ SpecViewer.prototype = {
     }
 
     this.singlePlots.map(function(p, i) {
-      resetZoom(p, i, 'frame');
+      resetZoom(p, i, 'single');
     });
 
     this.stackPlots.map(function(p, i) {
@@ -316,8 +273,6 @@ SpecViewer.prototype = {
       let plotTarget = $(`#${type}Plot_${apCenter}`);
       let resizableArea = $(`#aperture${apCenter} .resizable.${type}`);
 
-      console.log('Aperture center: ', apCenter);
-
       plotTarget.height(resizableArea.height() * 0.96);
       plotTarget.width(resizableArea.width() * 0.96);
 
@@ -330,16 +285,17 @@ SpecViewer.prototype = {
 
     function onTabChange(event, tab) {
       let newIndex = tab.newTab.index();
-      resizePlotArea(newIndex, 'frame');
+      resizePlotArea(newIndex, 'single');
       resizePlotArea(newIndex, 'stack');
+      this.activeTab = newIndex;
     }
 
-//    $(`#${this.id}`).tabs({'activate': onTabChange});
+    $(`#${this.id}`).tabs({'activate': onTabChange});
 
     // Resize plot area on window resize stop
     function resizeEnd() {
       let activeTabIndex = $(`#${sViewer.id}`).tabs('option', 'active');
-      resizePlotArea(activeTabIndex, 'frame');
+      resizePlotArea(activeTabIndex, 'single');
       resizePlotArea(activeTabIndex, 'stack');
     }
 
@@ -373,15 +329,18 @@ SpecViewer.prototype = {
         </a></li>`);
     }
 
+    // Save active tab index to recover after
+    let activeTabIndex = $(`#${this.id}`).tabs('option', 'active');
+
     /// Refresh tabs to update them
     $(`#${this.id}`).tabs('refresh');
 
     // Activate first tab if none is active
-    if (this.activeTab == null) {
-      this.activeTab = 0;
+    if (activeTabIndex) {
+      $(`#${this.id}`).tabs('option', 'active', activeTabIndex);
+    } else {
+      $(`#${this.id}`).tabs('option', 'active', 0);
     }
-
-    $(`#${this.id}`).tabs('option', 'active', this.activeTab);
 
   },
 
@@ -410,7 +369,12 @@ SpecViewer.prototype = {
         getFrameInfo(data.filename, data.program_id)
       );
 
-      // Check if plot containers exist
+      // if (!isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
+      //   $(`#aperture${apertureCenter} .plot.${type}`).html('No Data');
+      // } else {
+      //
+      // }
+
       if (!$(`#aperture${apertureCenter} .plot.${type}`).length) {
 
         console.log('Create new plots');

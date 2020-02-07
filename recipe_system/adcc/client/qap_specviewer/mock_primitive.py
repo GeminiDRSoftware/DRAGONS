@@ -58,7 +58,7 @@ def main():
 
         year = 2020
         today = 20200131
-K
+
         program_id = "GX-{}C-Q-{:03d}".format(year, program_index)
 
         group_index = 1
