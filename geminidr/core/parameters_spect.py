@@ -102,6 +102,10 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
+class adjustSlitOffsetToReferenceConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitOffsetCorrected", optional=True)
+
+
 class resampleToCommonFrameConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_align", optional=True)
     w1 = config.RangeField("Starting wavelength (nm)", float, None, min=0., optional=True)

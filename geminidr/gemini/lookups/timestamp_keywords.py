@@ -12,6 +12,7 @@ timestamp_keys = {
     "addReferenceCatalog": "ADDRECAT",
     "addVAR": "ADDVAR",
     "adjustWCSToReference": "CORRWCS",
+    "adjustSlitOffsetToReference": "CORRSLOFF",
     "ADUToElectrons": "ADUTOELE",
     "applyDQPlane": "APLDQPLN",
     "applyQECorrection": "QECORR",

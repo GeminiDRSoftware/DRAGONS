@@ -1552,16 +1552,67 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
+    def adjustSlitOffsetToReference(self, adinputs=None, **params):
+        """
+        Compute offsets along the slit by cross-correlation.
+
+        Notes:
+        - find offsets by cross-correlation
+        - fallback to POFFSET / QOFFSET ?
+        If the spectra are bright enough and the fit works, the idea
+        would be to replace the XOFFSET value with this more precise
+        measurement of the offset
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        if len(adinputs) <= 1:
+            log.warning("No correction will be performed, since at least two "
+                        "input images are required for matchWCSToReference")
+            return adinputs
+
+        if not all(len(ad) == 1 for ad in adinputs):
+            raise IOError("All input images must have only one extension.")
+
+        # Use first image in list as reference
+        ref_ad = adinputs[0]
+        log.stdinfo("Reference image: {}".format(ref_ad.filename))
+
+        ref_profile = None
+
+        for i, ad in enumerate(adinputs):
+            dispaxis = 2 - ad[0].dispersion_axis()  # python sense
+            data = np.ma.array(ad[0].data, mask=(ad[0].mask > 0))
+            data = np.ma.masked_invalid(data)
+            data = data.mean(axis=dispaxis)
+
+            if i == 0:
+                ref_profile = data
+                continue
+
+            # cross-correlate profiles to find the offset
+            corr = np.correlate(ref_profile, data, mode='full')
+            offset = np.argmax(corr) - ref_profile.shape[0] + 1
+            ad.phu['SLITOFF'] = offset
+
+            # Timestamp and update filenames
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
     def resampleToCommonFrame(self, adinputs=None, **params):
         """
-        Resample 1D spectra on a common frame, and optionally transform them
-        so that the relationship between them and their respective wavelength
-        calibration is linear.
+        Resample 1D or 2D spectra on a common frame, and optionally transform
+        them so that the relationship between them and their respective
+        wavelength calibration is linear.
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            Wavelength calibrated 1D spectra. Each extension must have a
+            Wavelength calibrated 1D or 2D spectra. Each extension must have a
             `.WAVECAL` table.
         suffix : str
             Suffix to be added to output files.
@@ -1602,9 +1653,15 @@ class Spect(PrimitivesBASE):
         conserve = params["conserve"]
         trim_data = params["trim_data"]
 
-        # Check that all ad objects have the same number of spectra
+        # Check that all ad objects are either 1D or 2D
+        ndim = set(len(ext.shape) for ad in adinputs for ext in ad)
+        if len(ndim) != 1:
+            raise ValueError('inputs must have the same dimension')
+        ndim = ndim[0]
+
+        # Check that all ad objects have the same number of extensions
         if len(set(len(ad) for ad in adinputs)) > 1:
-            raise ValueError('inputs must have the same number of spectra')
+            raise ValueError('inputs must have the same number of extensions')
 
         # If only one variable is missing we compute it from the others
         nparams = sum(x is not None for x in (w1, w2, dw, npix))
@@ -1618,8 +1675,6 @@ class Spect(PrimitivesBASE):
                 w2 = w1 + (npix - 1) * dw
             else:
                 dw = (w2 - w1) / (npix - 1)
-
-        print(f'{w1=} {w2=} {dw=} {npix=}')
 
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix)
@@ -1694,6 +1749,10 @@ class Spect(PrimitivesBASE):
 
                     t.append(models.Shift(-w1_ext))
                     t.append(models.Scale(1. / dw_ext))
+
+                    if ndim == 2 and i > 0:
+                        # TODO: apply spatial offset
+                        offset = ad.phu['SLITOFF']
 
                     # If we resample to a coarser pixel scale, we may
                     # interpolate over features. We avoid this by subsampling
