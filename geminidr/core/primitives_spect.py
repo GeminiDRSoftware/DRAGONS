@@ -1557,16 +1557,24 @@ class Spect(PrimitivesBASE):
         Compute offsets along the slit by cross-correlation.
 
         Notes:
-        - find offsets by cross-correlation
-        - fallback to POFFSET / QOFFSET ?
         If the spectra are bright enough and the fit works, the idea
         would be to replace the XOFFSET value with this more precise
         measurement of the offset
+
+        Parameters
+        ----------
+        suffix : str
+            suffix to be added to output files
+        method : str ['correlation' | 'offsets']
+            method to use to compute offsets. 'correlation' uses a
+            correlation of the slit profiles (the 2d images stacked
+            on the dispersion axis), 'offsets' uses the QOFFSET keyword.
 
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        method = params["method"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
@@ -1583,18 +1591,23 @@ class Spect(PrimitivesBASE):
         ref_profile = None
 
         for i, ad in enumerate(adinputs):
-            dispaxis = 2 - ad[0].dispersion_axis()  # python sense
-            data = np.ma.array(ad[0].data, mask=(ad[0].mask > 0))
-            data = np.ma.masked_invalid(data)
-            data = data.mean(axis=dispaxis)
+            if method == 'correlation':
+                dispaxis = 2 - ad[0].dispersion_axis()  # python sense
+                data = np.ma.array(ad[0].data, mask=(ad[0].mask > 0))
+                data = np.ma.masked_invalid(data)
+                data = data.mean(axis=dispaxis)
 
-            if i == 0:
-                ref_profile = data
-                continue
+                if i == 0:
+                    ref_profile = data
+                    continue
 
-            # cross-correlate profiles to find the offset
-            corr = np.correlate(ref_profile, data, mode='full')
-            offset = np.argmax(corr) - ref_profile.shape[0] + 1
+                # cross-correlate profiles to find the offset
+                corr = np.correlate(ref_profile, data, mode='full')
+                # TODO: get subpixel offset ?
+                offset = np.argmax(corr) - ref_profile.shape[0] + 1
+            elif method == 'offsets':
+                offset = ad.detector_y_offset() - ref_ad.detector_y_offset()
+
             ad.phu['SLITOFF'] = offset
 
             # Timestamp and update filenames

@@ -104,6 +104,12 @@ class linearizeSpectraConfig(config.Config):
 
 class adjustSlitOffsetToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitOffsetCorrected", optional=True)
+    method = config.ChoiceField(
+        "Alignment method", str,
+        allowed={"offsets": "Use telescope offsets",
+                 "correlation": "Correlate the slit profile"},
+        default="correlation"
+    )
 
 
 class resampleToCommonFrameConfig(config.Config):
