@@ -45,36 +45,47 @@ def expr_parser(expression, strict=False):
     """
 
     adexpr = re.sub(r'([_A-z]\w*)([!=<>]+\S+)', r'ad.\1()\2', expression)
-    codified_expression = deepcopy(adexpr)
+    codified_expression = ''
+    components = re.split(r'(\s+and\s+|\s+or\s+|\s+not\s+)', adexpr)
 
-    for strfound in re.finditer(r'(ad.)([_A-z]\w*)([\(\)]+)([!=<>]+)(\S+)',
-                                adexpr):
-        descriptor = strfound.groups()[1]
-        operator = strfound.groups()[3]
-        pattern = r'(ad.' + re.escape(descriptor) + r')([\(\)]+)([!=<>]+)(\S+)'
-        if descriptor in ['ut_time', 'local_time']:
-            codified_expression = \
-                re.sub(pattern,
-                       r'\1\2\3datetime.strptime(\4, "%H:%M:%S").time()',
-                       codified_expression)
-        elif descriptor == 'ut_date':
-            codified_expression = \
-                re.sub(pattern,
-                       r'\1\2\3datetime.strptime(\4, "%Y-%m-%d").date()',
-                       codified_expression)
-        elif descriptor == 'ut_datetime':
-            codified_expression = \
-                re.sub(pattern,
-                       r'\1\2\3datetime.strptime(\4, "%Y-%m-%d %H:%M:%S")',
-                       codified_expression)
-        elif descriptor == 'exposure_time' and operator == '==' and not strict:
-            codified_expression = \
-                re.sub(pattern, r'isclose(\1(),\4)', codified_expression)
-        elif descriptor == 'filter_name' and not strict:
-            codified_expression = \
-                re.sub(pattern, r'\1(pretty=True)\3\4', codified_expression)
+    for item in components:
+        match = re.match(r'(ad.)([_A-z]\w*)([\(\)]+)([!=<>]+)(\S+)', item)
+        if match:
+            descriptor = match.groups()[1]
+            operator = match.groups()[3]
+            pattern = r'(ad.' + re.escape(
+                descriptor) + r')([\(\)]+)([!=<>]+)(\S+)'
+            if descriptor in ['ut_time', 'local_time']:
+                codified_item = \
+                    re.sub(pattern,
+                           r'\1\2\3datetime.strptime(\4, "%H:%M:%S").time()',
+                           item)
+            elif descriptor == 'ut_date':
+                codified_item = \
+                    re.sub(pattern,
+                           r'\1\2\3datetime.strptime(\4, "%Y-%m-%d").date()',
+                           item)
+            elif descriptor == 'ut_datetime':
+                codified_item = \
+                    re.sub(pattern,
+                           r'\1\2\3datetime.strptime(\4, "%Y-%m-%d %H:%M:%S")',
+                           item)
+            elif descriptor == 'exposure_time' and operator == '==' and not strict:
+                codified_item = \
+                    re.sub(pattern, r'isclose(\1(),\4)', item)
+            elif descriptor == 'central_wavelength' and operator == '==' and \
+                not strict:
+                codified_item = \
+                    re.sub(pattern, r'isclose(\1(),\4, rel_tol=1e-5)', item)
+            elif descriptor == 'filter_name' and not strict:
+                codified_item = \
+                    re.sub(pattern, r'\1(pretty=True)\3\4', item)
+            else:
+                codified_item = item
+
+            codified_expression += codified_item
         else:
-            pass
+            codified_expression += item
 
     return codified_expression
 

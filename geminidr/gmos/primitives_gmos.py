@@ -8,15 +8,13 @@ from __future__ import print_function
 from builtins import zip
 
 import os
-import numpy as np
-from copy import deepcopy
 
 import astrodata
 import gemini_instruments
 
-#from gempy.gemini.eti import gmosaiceti
+# from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
-#from gempy.scripts.gmoss_fix_headers import correct_headers
+# from gempy.scripts.gmoss_fix_headers import correct_headers
 from gempy.gemini import hdr_fixing as hdrfix
 
 from geminidr.core import CCD
@@ -41,7 +39,6 @@ class GMOS(Gemini, CCD):
         super(GMOS, self).__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gmos.lookups'
         self._param_update(parameters_gmos)
-
 
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """
@@ -70,22 +67,22 @@ class GMOS(Gemini, CCD):
             # keywords in the headers that are specific to GMOS.
             log.status("Updating keywords that are specific to GMOS")
 
-            ##M Some of the header keywords are wrong for certain types of
-            ##M Hamamatsu data. This is temporary fix until GMOS-S DC is fixed
-#             if ad.detector_name(pretty=True) == "Hamamatsu-S":
-#                 log.status("Fixing headers for GMOS-S Hamamatsu data")
-#                 # Image extension headers appear to be correct - MS 2014-10-01
-#                 #     correct_image_extensions=Flase
-#                 # As does the DATE-OBS but as this seemed to break even after
-#                 # apparently being fixed, still perform this check. - MS
-#                 hdulist = ad.to_hdulist()
-# #                correct_headers(hdulist, logger=log,
-# #                                correct_image_extensions=False)
-#                 # When we create the new AD object, it needs to retain the
-#                 # filename information
-#                 orig_path = ad.path
-#                 ad = astrodata.open(hdulist)
-#                 ad.path = orig_path
+            # #M Some of the header keywords are wrong for certain types of
+            # #M Hamamatsu data. This is temporary fix until GMOS-S DC is fixed
+            # if ad.detector_name(pretty=True) == "Hamamatsu-S":
+            #     log.status("Fixing headers for GMOS-S Hamamatsu data")
+            #     # Image extension headers appear to be correct - MS 2014-10-01
+            #     #     correct_image_extensions=Flase
+            #     # As does the DATE-OBS but as this seemed to break even after
+            #     # apparently being fixed, still perform this check. - MS
+            #     hdulist = ad.to_hdulist()
+            #     # correct_headers(hdulist, logger=log,
+            #     #                 correct_image_extensions=False)
+            #     # When we create the new AD object, it needs to retain the
+            #     # filename information
+            #     orig_path = ad.path
+            #     ad = astrodata.open(hdulist)
+            #     ad.path = orig_path
 
             # KL Commissioning GMOS-N Hamamatsu.  Headers are not fully
             # KL settled yet.
