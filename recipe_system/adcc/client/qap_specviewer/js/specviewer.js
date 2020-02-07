@@ -21,7 +21,6 @@ function SpecViewer(parentElement, id, delay) {
   this.id = id;
 
   // Placeholders for different elements
-  this.activeTab = null;
   this.singlePlots = [];
   this.stackPlots = [];
 
@@ -273,8 +272,7 @@ SpecViewer.prototype = {
       let plotTarget = $(`#${type}Plot_${apCenter}`);
       let resizableArea = $(`#aperture${apCenter} .resizable.${type}`);
 
-      plotTarget.height(resizableArea.height() * 0.96);
-      plotTarget.width(resizableArea.width() * 0.96);
+      plotTarget.width(resizableArea.width() * 0.99);
 
       // Sometimes this function is activated before plots are defined.
       if (plotInstance) {
@@ -287,7 +285,6 @@ SpecViewer.prototype = {
       let newIndex = tab.newTab.index();
       resizePlotArea(newIndex, 'single');
       resizePlotArea(newIndex, 'stack');
-      this.activeTab = newIndex;
     }
 
     $(`#${this.id}`).tabs({'activate': onTabChange});
@@ -336,11 +333,8 @@ SpecViewer.prototype = {
     $(`#${this.id}`).tabs('refresh');
 
     // Activate first tab if none is active
-    if (activeTabIndex) {
-      $(`#${this.id}`).tabs('option', 'active', activeTabIndex);
-    } else {
-      $(`#${this.id}`).tabs('option', 'active', 0);
-    }
+    activeTabIndex = activeTabIndex ? activeTabIndex:0;
+    $(`#${this.id}`).tabs('option', 'active', activeTabIndex);
 
   },
 
@@ -369,47 +363,52 @@ SpecViewer.prototype = {
         getFrameInfo(data.filename, data.program_id)
       );
 
-      // if (!isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
-      //   $(`#aperture${apertureCenter} .plot.${type}`).html('No Data');
-      // } else {
-      //
-      // }
-
       if (!$(`#aperture${apertureCenter} .plot.${type}`).length) {
 
-        console.log('Create new plots');
+        if (isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
 
-        $(`#aperture${apertureCenter} .resizable.${type}`).html(
-          `<div class="plot ${type}" id="${plotId}"> </div>`);
+          console.log('Create new plots');
 
-        this[`${type}Plots`][i] = $.jqplot(
-          plotId, [intensity, stddev], $.extend(plotOptions, {
-            title: plotTitle,
-            axes: {
-              xaxis: {
-                label: getWavelengthUnits(units),
-                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+          $(`#aperture${apertureCenter} .resizable.${type}`).html(
+            `<div class="plot ${type}" id="${plotId}"> </div>`);
+
+          this[`${type}Plots`][i] = $.jqplot(
+            plotId, [intensity, stddev], $.extend(plotOptions, {
+              title: plotTitle,
+              axes: {
+                xaxis: {
+                  label: getWavelengthUnits(units),
+                  labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                },
+                yaxis: {
+                  label: "Intensity [e\u207B]", // escaped superscript minus
+                  labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                },
               },
-              yaxis: {
-                label: "Intensity [e\u207B]", // escaped superscript minus
-                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-              },
-            },
-          })
-        );
+            })
+          );
+
+        } else {
+          $(`#aperture${apertureCenter} .plot.${type}`).html('No Data');
+        }
 
       } else {
 
-        console.log('Refresh plots');
+        if (isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
+          console.log('Refresh plots');
 
-        this[`${type}Plots`][i].title.text = plotTitle;
-        this[`${type}Plots`][i].series[0].data = intensity;
-        this[`${type}Plots`][i].series[1].data = stddev;
-        this[`${type}Plots`][i].resetAxesScale();
+          this[`${type}Plots`][i].title.text = plotTitle;
+          this[`${type}Plots`][i].series[0].data = intensity;
+          this[`${type}Plots`][i].series[1].data = stddev;
+          this[`${type}Plots`][i].resetAxesScale();
 
-        // Refresh only on active tab
-        if (i == activeTabIndex) {
-          this[`${type}Plots`][i].replot();
+          // Refresh only on active tab
+          if (i == activeTabIndex) {
+            this[`${type}Plots`][i].replot();
+          }
+
+        } else {
+          $(`#aperture${apertureCenter} .plot.${type}`).html('No Data');
         }
 
       }
