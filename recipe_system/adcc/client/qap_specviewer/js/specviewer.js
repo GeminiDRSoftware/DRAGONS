@@ -373,6 +373,7 @@ SpecViewer.prototype = {
       if (!$(`#${plotId}`).length) {
         $(`#aperture${apertureCenter} .resizable.${type}`).html(
           `<div class="plot ${type}" id="${plotId}"> </div>`);
+//        $(`#${plotId}`).height($(`#aperture${apertureCenter} .resizable.${type}`).height() * 0.93);
       }
 
       // Plot instance exists
