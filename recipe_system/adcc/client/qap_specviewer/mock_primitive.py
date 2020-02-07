@@ -50,8 +50,7 @@ def main():
         wavelength = np.linspace(wavelength_min, wavelength_max, data_size)
         dispersion = np.mean(np.diff(wavelength))
 
-        data = [create_1d_spectrum(data_size, 20, obj_max_weight) + obj_continnum
-                for i in range(n_apertures)]
+        data = [create_1d_spectrum(data_size, 20, obj_max_weight) + obj_continnum * i for i in range(n_apertures)]
 
         center = np.random.randint(100, 900, size=n_apertures)
         lower = np.random.randint(-15, -1, size=n_apertures)
@@ -59,7 +58,7 @@ def main():
 
         year = 2020
         today = 20200131
-
+K
         program_id = "GX-{}C-Q-{:03d}".format(year, program_index)
 
         group_index = 1
@@ -114,6 +113,7 @@ def main():
                 return _aperture.__dict__
 
             stack_apertures = [stack_aperture_generator(i) for i in range(n_apertures)]
+            stack_apertures.pop(1)
 
             stack = SpecPackModel(
                 data_label=stack_data_label,
@@ -126,10 +126,6 @@ def main():
                 apertures=stack_apertures)
 
             json_list = [frame.__dict__, stack.__dict__]
-            # if frame_index > 2:
-            #     json_list = [frame.__dict__, stack.__dict__]
-            # else:
-            #     json_list = [frame.__dict__]
 
             json_data = json.dumps(json_list).encode("utf-8")
 
