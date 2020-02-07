@@ -5,6 +5,7 @@
  */
 const specViewerJsonName = "/specqueue.json";
 const notAvailableYet = '<span class="not-available"> (Not available yet) </span>';
+const noData = '<span class="no-data"> No Data </span>';
 
 
 /**
@@ -110,7 +111,7 @@ SpecViewer.prototype = {
     this.countdown = this.delay / 1000;
 
     // Clear console
-    // console.clear();
+    console.clear();
 
     // Remove loading
     $('.loading').remove();
@@ -147,7 +148,7 @@ SpecViewer.prototype = {
 
         // Add tab content for every aperture
         this.aperturesCenter = jsonElement.apertures.map(
-          function(a) { return a.center; });
+          function(a) { return Math.round(a.center); });
 
         this.aperturesCenter.sort();
 
@@ -176,9 +177,9 @@ SpecViewer.prototype = {
           let ps = jsonElement.pixel_scale;
 
           if (!isInApertureList(ap.center, ps, this.aperturesCenter)) {
-            console.log('Found new aperture:', ap.center);
-            this.newTabContent(ap);
-            this.aperturesCenter.push(ap.center);
+            console.log( `Found new aperture: ${ap.center}` );
+            this.newTabContent( ap );
+            this.aperturesCenter.push( Math.round(ap.center) );
           }
 
         }
@@ -280,8 +281,10 @@ SpecViewer.prototype = {
       plotTarget.width(resizableArea.width() * 0.99);
 
       // Sometimes this function is activated before plots are defined.
-      if (plotInstance) {
-        plotInstance.replot({ resetAxes: true });
+      if ($(plotTarget).length) {
+        if (plotInstance) {
+          plotInstance.replot({ resetAxes: true });
+        }
       }
 
     }
@@ -366,14 +369,40 @@ SpecViewer.prototype = {
         getFrameInfo(data.filename, data.program_id)
       );
 
-      if (!$(`#aperture${apertureCenter} .plot.${type}`).length) {
+      // Create plot area if it does not exist
+      if (!$(`#${plotId}`).length) {
+        $(`#aperture${apertureCenter} .resizable.${type}`).html(
+          `<div class="plot ${type}" id="${plotId}"> </div>`);
+      }
 
+      // Plot instance exists
+      if (this[`${type}Plots`][i]) {
+
+        // Existing plotted apperture center exists inside data apertures
+        if (isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
+
+          console.log('Refresh plots');
+
+          this[`${type}Plots`][i].title.text = plotTitle;
+          this[`${type}Plots`][i].series[0].data = intensity;
+          this[`${type}Plots`][i].series[1].data = stddev;
+          this[`${type}Plots`][i].resetAxesScale();
+
+          // Refresh only on active tab
+          if (i === activeTabIndex) {
+            this[`${type}Plots`][i].replot();
+          }
+
+        } else {
+          $(`#${plotId}`).html(noData);
+        }
+
+      } else {
+
+        // Existing plotted apperture center exists inside data apertures
         if (isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
 
           console.log('Create new plots');
-
-          $(`#aperture${apertureCenter} .resizable.${type}`).html(
-            `<div class="plot ${type}" id="${plotId}"> </div>`);
 
           this[`${type}Plots`][i] = $.jqplot(
             plotId, [intensity, stddev], $.extend(plotOptions, {
@@ -392,26 +421,7 @@ SpecViewer.prototype = {
           );
 
         } else {
-          $(`#aperture${apertureCenter} .plot.${type}`).html('No Data');
-        }
-
-      } else {
-
-        if (isInApertureList(apertureCenter, data.pixel_scale, inputAperturesCenter)) {
-          console.log('Refresh plots');
-
-          this[`${type}Plots`][i].title.text = plotTitle;
-          this[`${type}Plots`][i].series[0].data = intensity;
-          this[`${type}Plots`][i].series[1].data = stddev;
-          this[`${type}Plots`][i].resetAxesScale();
-
-          // Refresh only on active tab
-          if (i == activeTabIndex) {
-            this[`${type}Plots`][i].replot();
-          }
-
-        } else {
-          $(`#aperture${apertureCenter} .plot.${type}`).html('No Data');
+          $(`#${plotId}`).html(noData);
         }
 
       }

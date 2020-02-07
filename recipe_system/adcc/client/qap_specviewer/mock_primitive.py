@@ -52,9 +52,9 @@ def main():
 
         data = [create_1d_spectrum(data_size, 20, obj_max_weight) + obj_continnum * i for i in range(n_apertures)]
 
-        center = np.random.randint(100, 900, size=n_apertures)
-        lower = np.random.randint(-15, -1, size=n_apertures)
-        upper = np.random.randint(1, 15, size=n_apertures)
+        center = np.random.randint(100, 900, size=n_apertures+1)
+        lower = np.random.randint(-15, -1, size=n_apertures+1)
+        upper = np.random.randint(1, 15, size=n_apertures+1)
 
         year = 2020
         today = 20200131
@@ -84,19 +84,6 @@ def main():
                     wavelength, _data, _error)
                 return _aperture.__dict__
 
-            # n_apertures = max(n_apertures + np.random.randint(-1, 1), 1)
-            apertures = [aperture_generator(i) for i in range(n_apertures)]
-
-            frame = SpecPackModel(
-                data_label=data_label,
-                group_id=group_id,
-                filename=filename,
-                is_stack=False,
-                pixel_scale=pixel_scale,
-                program_id=program_id,
-                stack_size=1,
-                apertures=apertures)
-
             def stack_aperture_generator(i):
                 delta_center = (np.random.rand() - 0.5) * 0.9 / pixel_scale
                 center[i] = center[i] + delta_center
@@ -112,8 +99,21 @@ def main():
 
                 return _aperture.__dict__
 
-            stack_apertures = [stack_aperture_generator(i) for i in range(n_apertures)]
-            stack_apertures.pop(1)
+            n = np.random.randint(n_apertures-1, n_apertures+1)
+            apertures = [aperture_generator(i) for i in range(n)]
+
+            n = np.random.randint(n_apertures - 1, n_apertures + 1)
+            stack_apertures = [stack_aperture_generator(i) for i in range(n)]
+
+            frame = SpecPackModel(
+                    data_label=data_label,
+                    group_id=group_id,
+                    filename=filename,
+                    is_stack=False,
+                    pixel_scale=pixel_scale,
+                    program_id=program_id,
+                    stack_size=1,
+                    apertures=apertures)
 
             stack = SpecPackModel(
                 data_label=stack_data_label,
