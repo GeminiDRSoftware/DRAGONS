@@ -110,7 +110,7 @@ SpecViewer.prototype = {
     this.countdown = this.delay / 1000;
 
     // Clear console
-    console.clear();
+    // console.clear();
 
     // Remove loading
     $('.loading').remove();
@@ -163,6 +163,7 @@ SpecViewer.prototype = {
         }
 
         this.updatePlotArea(jsonElement, type);
+        this.updateNavigationTab();
 
       } else {
 
@@ -175,6 +176,7 @@ SpecViewer.prototype = {
           let ps = jsonElement.pixel_scale;
 
           if (!isInApertureList(ap.center, ps, this.aperturesCenter)) {
+            console.log('Found new aperture:', ap.center);
             this.newTabContent(ap);
             this.aperturesCenter.push(ap.center);
           }
@@ -188,6 +190,7 @@ SpecViewer.prototype = {
             console.log(`- NEW stack data with ${stackSize} frames`);
             this.stackSize = stackSize;
             this.updatePlotArea(jsonElement, type);
+            this.updateNavigationTab();
           }
         } else {
           if (this.dataLabel === jsonElement.data_label) {
@@ -196,12 +199,10 @@ SpecViewer.prototype = {
             console.log(`- NEW frame data: ${jsonElement.data_label}`);
             this.dataLabel = jsonElement.data_label;
             this.updatePlotArea(jsonElement, type);
+            this.updateNavigationTab();
           }
         }
-
       }
-      this.updateNavigationTab();
-
     }
     this.updateUiBehavior();
 
@@ -344,8 +345,6 @@ SpecViewer.prototype = {
 
   updatePlotArea: function(data, type) {
 
-    console.log(`Update plot area for ${type} data`);
-
     for (let i = 0; i < this.aperturesCenter.length; i++) {
 
       let apertureCenter = this.aperturesCenter[i];
@@ -483,6 +482,24 @@ function addCountDown(sViewer) {
 }
 
 /**
+ * Get element value inside `list` that is the nearest to the `target` value.
+ * @param  {number} target - Target value
+ * @param  {array} list - List containg numbers.
+ * @return {number} - Nearest element.
+ */
+function getNearest(target, list) {
+
+  let nearest = list.reduce(
+    function(prev, curr) {
+      return (Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev);
+    }
+  );
+
+  return nearest;
+
+}
+
+/**
  * Returns the index of the element inside `list` that is the nearest tho the
  *  `target` value.
  * @param  {number} target - Target value
@@ -491,9 +508,7 @@ function addCountDown(sViewer) {
  */
 function getNearestIndex(target, list) {
 
-  let nearest = list.reduce( function(prev, curr) {
-    return (Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev);
-  });
+  let nearest = getNearest(target, list);
 
   function getIndex(value) {
     return value === nearest;
@@ -592,27 +607,26 @@ function getWavelengthUnits(units) {
 
 }
 
-
+/**
+ * Gets the nearest aperture center value inside `listOfApertures` and verify
+ *  if the absolute difference between this nearest value and the expected
+ *  `aperture` value is smaller than the tolerance value.
+ *
+ * @param  {number}  aperture - Input aperture center value.
+ * @param  {number}  pixelScale - Binned pixel scale in arcseconds per pixel.
+ * @param  {array}  listOfApertures - List of apertures centers.
+ * @return {boolean} - Returns True is absolute difference between aperture and
+ *   its nearest value is smaller than the tolerance.
+ */
 function isInApertureList(aperture, pixelScale, listOfApertures) {
 
   let tolerance = 1.0;  // arcseconds
-  let apertureInList = listOfApertures.some(
-    function(l) {
-      return (Math.abs(l - aperture) * pixelScale <= tolerance);
-    }
-  );
+  let nearest = getNearest(aperture, listOfApertures);
+  let nearestIndex = getNearestIndex(aperture, listOfApertures);
 
-  i = getNearestIndex(aperture, listOfApertures);
-  a = listOfApertures[i];
-  let d = Math.abs(a - aperture);
+  let matches = (Math.abs(aperture - nearest) * pixelScale <= tolerance);
 
-  // if (apertureInList) {
-  //   console.log(` - Aperture match - [new, old, diff] = [${aperture}, ${a}, ${d}]`);
-  // } else {
-  //   console.log(` - New aperture: ${aperture}`, listOfApertures);
-  // }
-
-  return apertureInList;
+  return matches;
 
 }
 
