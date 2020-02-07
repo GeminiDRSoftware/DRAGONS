@@ -486,9 +486,9 @@ class Visualize(PrimitivesBASE):
                 _stddev = [[w, int(s)] for w, s in zip(wavelength, stddev)]
 
                 aperture = {
-                    "center": ext.hdr["XTRACTED"],
-                    "lower": ext.hdr["XTRACTLO"],
-                    "upper": ext.hdr["XTRACTHI"],
+                    "center": np.round(ext.hdr["XTRACTED"]),
+                    "lower": np.round(ext.hdr["XTRACTLO"]),
+                    "upper": np.round(ext.hdr["XTRACTHI"]),
                     "dispersion": ext.hdr["CDELT1"],
                     "wavelength_units": ext.hdr["CUNIT1"],
                     "intensity": _intensity,
