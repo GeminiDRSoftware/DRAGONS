@@ -141,6 +141,10 @@ SpecViewer.prototype = {
         // Clear tab contents
         $('.tabcontent').remove();
 
+        // Clear navigation tab
+        $(`#${this.id} ul`).empty();
+        $(`#${this.id}`).tabs('refresh');
+
         // Add tab content for every aperture
         this.aperturesCenter = jsonElement.apertures.map(
           function(a) { return a.center; });
