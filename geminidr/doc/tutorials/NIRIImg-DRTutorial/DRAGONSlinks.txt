@@ -10,6 +10,11 @@
 
     <a href="https://astrodata-user-manual.readthedocs.io/en/latest/appendices/appendix_descriptors.html" target="_blank">descriptors</a>
 
+.. |descriptor| raw:: html
+
+    <a href="https://astrodata-user-manual.readthedocs.io/en/latest/appendices/appendix_descriptors.html" target="_blank">descriptors</a>
+
+
 .. |reduce| raw:: html
 
     <a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/latest/reduce.html" target="_blank">reduce</a>
