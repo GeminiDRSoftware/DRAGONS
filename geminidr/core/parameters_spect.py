@@ -103,7 +103,11 @@ class linearizeSpectraConfig(config.Config):
 
 
 class adjustSlitOffsetToReferenceConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_slitOffsetCorrected", optional=True)
+    suffix = config.Field("Filename suffix", str, "_slitOffsetCorrected",
+                          optional=True)
+    tolerance = config.RangeField("Maximum distance from the header offset, "
+                                  "for the correlation method (arcsec)",
+                                  float, 1, min=0., optional=True)
     method = config.ChoiceField(
         "Alignment method", str,
         allowed={"offsets": "Use telescope offsets",

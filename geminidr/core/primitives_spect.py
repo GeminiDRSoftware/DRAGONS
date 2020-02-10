@@ -1575,10 +1575,11 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         method = params["method"]
+        tolerance = params["tolerance"]
 
         if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least two "
-                        "input images are required for matchWCSToReference")
+                        "input images are required")
             return adinputs
 
         if not all(len(ad) == 1 for ad in adinputs):
@@ -1591,6 +1592,8 @@ class Spect(PrimitivesBASE):
         ref_profile = None
 
         for i, ad in enumerate(adinputs):
+            ref_offset = ad.detector_y_offset() - ref_ad.detector_y_offset()
+
             if method == 'correlation':
                 dispaxis = 2 - ad[0].dispersion_axis()  # python sense
                 data = np.ma.array(ad[0].data, mask=(ad[0].mask > 0))
@@ -1605,9 +1608,22 @@ class Spect(PrimitivesBASE):
                 corr = np.correlate(ref_profile, data, mode='full')
                 # TODO: get subpixel offset ?
                 offset = np.argmax(corr) - ref_profile.shape[0] + 1
-            elif method == 'offsets':
-                offset = ad.detector_y_offset() - ref_ad.detector_y_offset()
 
+                # Check that the offset is similar to the one from headers
+                dist_arsec = np.abs(ref_offset - offset) * self.pixel_scale()
+                if tolerance and dist_arsec > tolerance:
+                    # Fallback to header offset?
+                    log.warning("Offset from correlation ({}) is too big "
+                                "compared to the header offset ({}). Using "
+                                "this one instead".format(offset, ref_offset))
+                    offset = ref_offset
+
+            elif method == 'offsets':
+                # Use directly the offset from the headers
+                offset = ref_offset
+
+            log.stdinfo("Offset for image {} : {} pixels"
+                        .format(ref_ad.filename, offset))
             ad.phu['SLITOFF'] = offset
 
             # Timestamp and update filenames
