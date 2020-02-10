@@ -129,6 +129,8 @@ SpecViewer.prototype = {
 
       let jsonElement = jsonData[i];
 
+      jsonElement.apertures = assureUniqueApertures(jsonElement.apertures);
+
       if (jsonElement.group_id !== this.groupId) {
 
         console.log(`- NEW group Id: ${jsonElement.group_id} - ${type} data`);
@@ -489,6 +491,30 @@ function addCountDown(sViewer) {
   }
 
   setInterval(updateCountdown, 1000);
+
+}
+
+/**
+ * Makes sure that every incoming aperture is unique. 
+ *
+ * @param {array} apertures - List of incoming apertures.
+ */
+function assureUniqueApertures(apertures) {
+
+  let uniqueCenters = [];
+  let uniqueApertures = [];
+
+  apertures.map(
+    function(ap) {
+      if (!uniqueCenters.includes(ap.center)) {
+  
+        uniqueCenters.push(ap.center);
+        uniqueApertures.push(ap);
+      }
+    }
+  ); 
+
+  return uniqueApertures;
 
 }
 
