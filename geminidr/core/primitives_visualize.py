@@ -456,7 +456,6 @@ class Visualize(PrimitivesBASE):
             for ext in ad:
                 data = ext.data
                 stddev = np.sqrt(ext.variance)
-                wavelength = np.arange(data.size, dtype=float)
 
                 if hasattr(ext, 'WAVECAL'):
 
@@ -469,7 +468,7 @@ class Visualize(PrimitivesBASE):
                         )
                     )
 
-                    wavelength = wcal_model(data.size)
+                    wavelength = wcal_model(np.arange(data.size, dtype=float))
                     w_dispersion = ext.hdr["CDELT1"]
                     w_units = ext.hdr["CUNIT1"]
 
@@ -477,7 +476,8 @@ class Visualize(PrimitivesBASE):
 
                     wavelength = (
                         ext.hdr["CRVAL1"] + ext.hdr["CDELT1"] * (
-                            wavelength + 1 - ext.hdr["CRPIX1"]))
+                            np.arange(data.size, dtype=float)
+                            + 1 - ext.hdr["CRPIX1"]))
 
                     w_dispersion = ext.hdr["CDELT1"]
                     w_units = ext.hdr["CUNIT1"]
