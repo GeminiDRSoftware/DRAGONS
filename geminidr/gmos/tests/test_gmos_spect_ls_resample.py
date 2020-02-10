@@ -199,3 +199,14 @@ def test_resample_only(adinputs, caplog):
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
     _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
+
+
+@pytest.mark.preprocessed_data
+def test_resample_only_and_trim(adinputs, caplog):
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    p.resampleToCommonFrame(trim_data=True)
+    _check_params(caplog.records, 'w1=614.666 w2=978.802 dw=0.151 npix=2407')
+    caplog.clear()
+    adout = p.resampleToCommonFrame(dw=0.15)
+    assert 'ALIGN' in adout[0].phu
+    _check_params(caplog.records, 'w1=614.574 w2=978.648 dw=0.150 npix=2429')
