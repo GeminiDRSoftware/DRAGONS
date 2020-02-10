@@ -1723,7 +1723,7 @@ class Spect(PrimitivesBASE):
         ndim = set(len(ext.shape) for ad in adinputs for ext in ad)
         if len(ndim) != 1:
             raise ValueError('inputs must have the same dimension')
-        ndim = ndim[0]
+        ndim = ndim.pop()
 
         # Check that all ad objects have the same number of extensions
         if len(set(len(ad) for ad in adinputs)) > 1:
@@ -1768,99 +1768,96 @@ class Spect(PrimitivesBASE):
         n_ext = len(adref)
 
         for iext in range(n_ext):
-            w1_ext, w2_ext, dw_ext, npix_ext = w1, w2, dw, npix
+            w1out, w2out, dwout, npixout = w1, w2, dw, npix
             if nparams < 3:
-                if w1_ext is None:
+                if w1out is None:
                     func = max if trim_data else min
-                    w1_ext = func(info[i][iext]['w1'] for i in range(n_ad))
-                if w2_ext is None:
+                    w1out = func(info[i][iext]['w1'] for i in range(n_ad))
+                if w2out is None:
                     func = min if trim_data else max
-                    w2_ext = func(info[i][iext]['w2'] for i in range(n_ad))
+                    w2out = func(info[i][iext]['w2'] for i in range(n_ad))
                 if linearize:
-                    if npix_ext is None and dw_ext is None:
+                    if npixout is None and dwout is None:
                         # if both are missing, use the reference spectra
-                        npix_ext = info[0][iext]['npix']
-                        dw_ext = info[0][iext]['dw']
-                    elif npix_ext is None:
-                        npix_ext = int(np.ceil((w2_ext - w1_ext) / dw_ext)) + 1
-                    elif dw_ext is None:
-                        dw_ext = (w2_ext - w1_ext) / (npix_ext - 1)
+                        npixout = info[0][iext]['npix']
+                        dwout = info[0][iext]['dw']
+                    elif npixout is None:
+                        npixout = int(np.ceil((w2out - w1out) / dwout)) + 1
+                    elif dwout is None:
+                        dwout = (w2out - w1out) / (npixout - 1)
 
-            if not linearize:
-                chebref = info[0][iext]['cheb'].copy()
-                chebrefinv = chebref.inverse.copy()
-                chebrefinv.inverse = chebref.copy()
-                pixlim = np.array(
-                    [chebrefinv(info[i][iext]['cheb']([0, info[i][iext]['npix']-1]))
-                     for i in range(n_ad)]
-                )
-                if pixlim.min() < 0:
-                    pixlim -= np.floor(pixlim.min())
-                npix_ext = int(np.ceil(pixlim.max()))
-            print(f'{w1_ext=} {w2_ext=} {dw_ext=} {npix_ext=}')
+            chebref = info[0][iext]['wave_model']
+            pixel_shift = int(np.ceil(chebref.inverse([w1out, w2out]).min()))
+
+            if linearize:
+                wave_to_output_pix = (models.Shift(-w1out) |
+                                      models.Scale(1. / dwout))
+            else:
+                wave_to_output_pix = chebref.inverse.copy()
+                wave_to_output_pix.inverse = chebref.copy()
+                npixout = int(
+                    np.floor(wave_to_output_pix([w1out, w2out]).max())
+                    + 1 - pixel_shift)
+                dwout = (w2out - w1out) / (npixout - 1)
 
             for i, ad in enumerate(adinputs):
                 ext = ad[iext]
-                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
-                cheb = info[i][iext]['cheb']
+                wave_model = info[i][iext]['wave_model']
 
-                t = transform.Transform(cheb)
-                input_dw = np.diff(cheb(cheb.domain))[0] / np.diff(cheb.domain)
+                if wave_model.inverse is wave_to_output_pix:
+                    log.stdinfo("NO INTERPOLATION")
+                    t = transform.Transform()
+                else:
+                    t = transform.Transform([wave_model, wave_to_output_pix])
+
+                msg = "Resampling"
+                if linearize:
+                    msg += " and linearizing"
+                extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                log.stdinfo("{} {}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
+                            .format(msg, extn, w1out, w2out, dwout, npixout))
 
                 # Linearization (and inverse)
                 if linearize:
-                    log.stdinfo("Resampling and linearizing {}: w1={:.3f} "
-                                "w2={:.3f} dw={:.3f} npix={}".format(
-                                    extname, w1_ext, w2_ext, dw_ext, npix_ext))
-
-                    t.append(models.Shift(-w1_ext))
-                    t.append(models.Scale(1. / dw_ext))
-
                     if ndim == 2 and i > 0:
                         # TODO: apply spatial offset
                         offset = ad.phu['SLITOFF']
 
-                    # If we resample to a coarser pixel scale, we may
-                    # interpolate over features. We avoid this by subsampling
-                    # back to the original pixel scale (approximately).
-                    subsample = int(np.ceil(abs(dw_ext / input_dw) - 0.1))
-                else:
-                    log.stdinfo("Resampling {}: w1={:.3f} w2={:.3f}"
-                                .format(extname, w1_ext, w2_ext))
-                    chebrefinv.domain = cheb.inverse.domain
-                    chebrefinv.inverse.domain = pixlim[i]
-                    print(f'{cheb.domain=} {cheb.inverse.domain=}')
-                    print(f'{chebrefinv.domain=} {chebrefinv.inverse.domain=}')
-                    t.append(chebrefinv)
-                    output_dw = (np.diff(chebref(chebref.domain))[0] /
-                                 np.diff(chebref.domain))
-                    subsample = int(np.ceil(abs(output_dw / input_dw) - 0.1))
-
+                # If we resample to a coarser pixel scale, we may
+                # interpolate over features. We avoid this by subsampling
+                # back to the original pixel scale (approximately).
+                input_dw = (np.diff(wave_model(wave_model.domain))[0] /
+                            np.diff(wave_model.domain))
+                subsample = int(np.ceil(abs(dwout / input_dw) - 0.1))
                 attributes = [attr for attr in ('data', 'mask', 'variance')
                               if getattr(ext, attr) is not None]
 
                 dg = transform.DataGroup([ext], [t])
-                dg.output_shape = (npix_ext, )
+                dg.output_shape = (npixout, )
                 dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
+                dg.origin = (pixel_shift,)  # equivalent to a final shift for all models
                 output_dict = dg.transform(attributes=attributes,
                                            subsample=subsample,
                                            conserve=conserve)
                 for key, value in output_dict.items():
                     setattr(ext, key, value)
 
-                if linearize:
-                    ext.hdr["CRPIX1"] = 1.
-                    ext.hdr["CRVAL1"] = w1_ext
-                    ext.hdr["CDELT1"] = dw_ext
-                    ext.hdr["CD1_1"] = dw_ext
-                    ext.hdr["CUNIT1"] = "nm"
-                else:
-                    ext.WAVECAL = adref[iext].WAVECAL.copy()
-                    # start, end = pixlim[i]
-                    # iline = ext.WAVECAL['name'] == 'domain_start'
-                    # ext.WAVECAL['coefficients'][iline] = start
-                    iline = ext.WAVECAL['name'] == 'domain_end'
-                    ext.WAVECAL['coefficients'][iline] = npix_ext
+                # Accurate solution if linearize=True, else approximate
+                ext.hdr["CRPIX1"] = 1.
+                ext.hdr["CRVAL1"] = w1out
+                ext.hdr["CDELT1"] = dwout
+                ext.hdr["CD1_1"] = dwout
+                ext.hdr["CUNIT1"] = "nm"
+
+                if not linearize:
+                    output_wave = wave_to_output_pix.inverse.copy()
+                    output_wave.domain = [x - pixel_shift
+                                          for x in output_wave.domain]
+                    model_dict = astromodels.chebyshev_to_dict(output_wave)
+                    ext.WAVECAL = Table(
+                        [list(model_dict.keys()), list(model_dict.values())],
+                        names=("name", "coefficients")
+                    )
 
         for ad in adinputs:
             # Timestamp and update the filename
@@ -2434,20 +2431,22 @@ def _read_chebyshev_model(ext):
     try:
         wavecal = dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
     except (AttributeError, KeyError):
-        raise ValueError('missing cheb model')
+        raise ValueError('missing wave model')
     else:
-        cheb = astromodels.dict_to_chebyshev(wavecal)
-    return cheb
+        return astromodels.dict_to_chebyshev(wavecal)
 
 
 def _extract_model_info(ext, extname):
-    cheb = _read_chebyshev_model(ext)
-    cheb.inverse = astromodels.make_inverse_chebyshev1d(cheb, rms=0.1)
-    npix = ext.data.size
-    limits = cheb([0, npix - 1])
+    ndim = len(ext.shape)
+    dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
+    wave_model = _read_chebyshev_model(ext)
+    wave_model.inverse = astromodels.make_inverse_chebyshev1d(wave_model, rms=0.1)
+    npix = ext.shape[dispaxis]
+    limits = wave_model([0, npix])
     w1, w2 = min(limits), max(limits)
     dw = (w2 - w1) / (npix - 1)
-    return {'cheb': cheb, 'w1': w1, 'w2': w2, 'npix': npix, 'dw': dw}
+    return {'wave_model': wave_model, 'w1': w1, 'w2': w2,
+            'npix': npix, 'dw': dw}
 
 
 def QESpline(coeffs, xpix, data, weights, boundaries, order):

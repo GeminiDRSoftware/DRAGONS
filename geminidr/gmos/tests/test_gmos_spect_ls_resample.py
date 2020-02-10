@@ -147,8 +147,8 @@ def test_resample_and_linearize(adinputs, caplog):
     # we get 3 ad objects with one spectrum
     assert len(adout) == 3
     assert {len(ad) for ad in adout} == {1}
-    assert {ad[0].shape[0] for ad in adout} == {3868}
-    _check_params(caplog.records, 'w1=508.343 w2=1088.323 dw=0.150 npix=3868')
+    assert {ad[0].shape[0] for ad in adout} == {3869}
+    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
     assert 'ALIGN' in adout[0].phu
 
 
@@ -181,21 +181,21 @@ def test_resample_linearize_trim_and_stack(adinputs, caplog):
     # we get 3 ad objects with one spectrum
     assert len(adout) == 3
     assert {len(ad) for ad in adout} == {1}
-    assert {ad[0].shape[0] for ad in adout} == {2428}
-    _check_params(caplog.records, 'w1=614.812 w2=978.802 dw=0.150 npix=2428')
+    assert {ad[0].shape[0] for ad in adout} == {2429}
+    _check_params(caplog.records, 'w1=614.666 w2=978.802 dw=0.150 npix=2429')
 
     adout = p.stackFrames()
     assert len(adout) == 1
     assert len(adout[0]) == 1
-    assert adout[0][0].shape[0] == 2428
+    assert adout[0][0].shape[0] == 2429
 
 
 @pytest.mark.preprocessed_data
 def test_resample_only(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
     p.resampleToCommonFrame()
-    _check_params(caplog.records, 'w1=508.343 w2=1088.323')
+    _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.151 npix=3841')
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=508.343 w2=978.802 dw=0.150 npix=3138')
+    _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
