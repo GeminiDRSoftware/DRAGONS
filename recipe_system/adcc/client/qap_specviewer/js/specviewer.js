@@ -116,7 +116,7 @@ SpecViewer.prototype = {
     // Remove loading
     $('.loading').remove();
 
-    console.log(`\nReceived new JSON data list on\n ${now.toString()}`);
+    console.log(`\nReceived new JSON data list (${jsonData.length} elements) on\n ${now.toString()}`);
 
     // Process incoming data
     for (let i = 0; i < jsonData.length; i++) {

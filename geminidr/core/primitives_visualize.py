@@ -513,7 +513,7 @@ class Visualize(PrimitivesBASE):
 
                 spec_pack["apertures"].append(aperture)
 
-                spec_packs.append(spec_pack)
+            spec_packs.append(spec_pack)
 
             spec_packs_json = json.dumps(spec_packs)
 
