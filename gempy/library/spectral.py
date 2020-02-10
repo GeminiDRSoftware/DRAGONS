@@ -9,6 +9,8 @@ from astropy.modeling import models
 from gwcs import wcs as gWCS
 from gwcs import coordinate_frames as cf
 
+from . import astromodels as am
+
 class Spek1D(Spectrum1D, NDAstroData):
     """
     Spectrum container for 1D spectral data, utilizing benefits of
@@ -31,6 +33,9 @@ class Spek1D(Spectrum1D, NDAstroData):
         if not isinstance(spectrum, (AstroData, NDData)):
             super().__init__(spectrum, spectral_axis=spectral_axis, wcs=wcs, **kwargs)
             return
+
+        if isinstance(spectrum, AstroData) and not spectrum.is_single:
+            raise TypeError("Input spectrum must be a single AstroData slice")
 
         # Unit handling
         try:  # for NDData-like
@@ -62,11 +67,17 @@ class Spek1D(Spectrum1D, NDAstroData):
                     wcs = spectrum.nddata.wcs
                 else:
                     spec_unit = u.Unit(spectrum.hdr.get('CUNIT1', 'nm'))
-                    det2wave = (models.Scale(1./u.pix) |
-                                models.Shift((1-spectrum.hdr['CRPIX1'])) |
-                                models.Scale(spectrum.hdr['CD1_1']) |
-                                models.Shift(spectrum.hdr['CRVAL1']) |
-                                models.Scale(1.*spec_unit))
+                    try:
+                        wavecal = dict(zip(spectrum.WAVECAL["name"],
+                                           spectrum.WAVECAL["coefficients"]))
+                    except (AttributeError, KeyError):  # make a Model from the FITS WCS info
+                        det2wave = (models.Shift((1-spectrum.hdr['CRPIX1'])) |
+                                    models.Scale(spectrum.hdr['CD1_1']) |
+                                    models.Shift(spectrum.hdr['CRVAL1']))
+                    else:
+                        det2wave = am.dict_to_chebyshev(wavecal)
+                        det2wave.inverse = am.make_inverse_chebyshev1d(det2wave, sampling=1)
+                        spec_unit = u.nm
                     detector_frame = cf.CoordinateFrame(1, axes_type='SPATIAL',
                                     axes_order=(0,), unit=u.pix, axes_names='x')
                     spec_frame = cf.SpectralFrame(unit=spec_unit, name='lambda')
@@ -144,7 +155,7 @@ class Spek1D(Spectrum1D, NDAstroData):
 
         for subregion in region._subregions:
             # If the region extends beyond the spectrum, we flag with NO_DATA
-            limits = self._get_pixel_limits(subregion, constrain=False)
+            limits = sorted(self._get_pixel_limits(subregion, constrain=False))
             for i in (0, 1):
                 if limits[i] < -0.5:
                     limits[i] = -0.5

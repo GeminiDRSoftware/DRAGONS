@@ -23,7 +23,7 @@ import astropy
 from astropy.modeling import models, fitting, FittableModel, Parameter
 from astropy.stats import sigma_clip
 from astropy.utils import minversion
-from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline
+from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, BSpline
 
 from .nddops import NDStacker
 
@@ -246,11 +246,11 @@ class UnivariateSplineWithOutlierRemoval(object):
         else:
             raise ValueError("Both t and s have been specified")
 
+        orig_mask = np.zeros(x.shape, dtype=bool)
         if isinstance(y, np.ma.masked_array):
-            orig_mask = np.zeros(x.shape, dtype=bool) if y.mask is np.ma.nomask else y.mask.astype(bool)
+            if y.mask is not np.ma.nomask:
+                orig_mask = y.mask.astype(bool)
             y = y.data
-        else:
-            orig_mask = np.zeros(x.shape, dtype=bool)
 
         iter = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
@@ -274,13 +274,12 @@ class UnivariateSplineWithOutlierRemoval(object):
                 spline_args = (knots,)
 
             # Create appropriate spline object using current mask
-            instance = object.__new__(cls_)
             try:
-                instance.__init__(x[~full_mask], y[~full_mask],
+                spline = cls_(x[~full_mask], y[~full_mask],
                                   *spline_args, w=None if w is None else w[~full_mask], **spline_kwargs)
             except ValueError as e:
                 raise e
-            spline_y = instance(x)
+            spline_y = spline(x)
             #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
             #mask = masked_residuals.mask
 
@@ -304,10 +303,12 @@ class UnivariateSplineWithOutlierRemoval(object):
                 break
             iter += 1
 
+        # Create a standard BSpline object from tck
+        bspline = BSpline(*spline._eval_args)
         # Attach the mask and model (may be useful)
-        instance.mask = full_mask
-        instance.data = spline_y
-        return instance
+        bspline.mask = full_mask
+        bspline.data = spline_y
+        return bspline
 
 
 # -----------------------------------------------------------------------------

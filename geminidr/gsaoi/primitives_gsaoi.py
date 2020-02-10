@@ -168,11 +168,11 @@ class GSAOI(Gemini, NearIR):
         # Get the stacked flat and dark; these are single-element lists
         try:
             flat = adinputs[0]
-        except (KeyError, TypeError):
+        except IndexError:
             raise IOError("A SET OF FLATS IS REQUIRED INPUT")
         try:
             dark = self.streams['darks'][0]
-        except (KeyError, TypeError):
+        except (KeyError, TypeError, IndexError):
             raise IOError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
