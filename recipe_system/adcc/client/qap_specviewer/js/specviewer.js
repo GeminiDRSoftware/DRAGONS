@@ -188,18 +188,18 @@ SpecViewer.prototype = {
 
         if (isStack) {
           if (stackSize <= this.stackSize) {
-            console.log(`- OLD stack data with ${stackSize} frames`);
+            console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
           } else {
-            console.log(`- NEW stack data with ${stackSize} frames`);
+            console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
             this.stackSize = stackSize;
             this.updatePlotArea(jsonElement, type);
             this.updateNavigationTab();
           }
         } else {
           if (this.dataLabel === jsonElement.data_label) {
-            console.log(`- OLD frame data: ${this.dataLabel}`);
+            console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
           } else {
-            console.log(`- NEW frame data: ${jsonElement.data_label}`);
+            console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
             this.dataLabel = jsonElement.data_label;
             this.updatePlotArea(jsonElement, type);
             this.updateNavigationTab();
@@ -283,10 +283,17 @@ SpecViewer.prototype = {
       plotTarget.width(resizableArea.width() * 0.99);
 
       // Sometimes this function is activated before plots are defined.
-      if ($(plotTarget).length) {
-        if (plotInstance) {
-          plotInstance.replot({ resetAxes: true });
-        }
+      // if ($(plotTarget).length) {
+      //   if (plotInstance) {
+      //     plotInstance.replot({ resetAxes: true }
+      //     );
+      //   }
+      // }
+
+
+      if (plotInstance) {
+        plotInstance.replot({ resetAxes: true }
+        );
       }
 
     }
@@ -495,7 +502,7 @@ function addCountDown(sViewer) {
 }
 
 /**
- * Makes sure that every incoming aperture is unique. 
+ * Makes sure that every incoming aperture is unique.
  *
  * @param {array} apertures - List of incoming apertures.
  */
@@ -507,12 +514,12 @@ function assureUniqueApertures(apertures) {
   apertures.map(
     function(ap) {
       if (!uniqueCenters.includes(ap.center)) {
-  
+
         uniqueCenters.push(ap.center);
         uniqueApertures.push(ap);
       }
     }
-  ); 
+  );
 
   return uniqueApertures;
 
