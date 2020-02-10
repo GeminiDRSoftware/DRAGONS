@@ -1725,9 +1725,9 @@ class Spect(PrimitivesBASE):
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()
 
-        # Check that all ad objects have the same number of extensions
-        if len(set(len(ad) for ad in adinputs)) > 1:
-            raise ValueError('inputs must have the same number of extensions')
+        # # Check that all ad objects have the same number of extensions
+        # if len(set(len(ad) for ad in adinputs)) > 1:
+        #     raise ValueError('inputs must have the same number of extensions')
 
         # If only one variable is missing we compute it from the others
         nparams = sum(x is not None for x in (w1, w2, dw, npix))
@@ -1743,8 +1743,9 @@ class Spect(PrimitivesBASE):
                 dw = (w2 - w1) / (npix - 1)
 
         # Gather information from all the spectra (Chebyshev1D model,
-        # w1, w2, dw, npix)
+        # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
         info = []
+        w1out, w2out, dwout, npixout = w1, w2, dw, npix
         for ad in adinputs:
             adinfo = []
             for ext in ad:
@@ -1755,57 +1756,59 @@ class Spect(PrimitivesBASE):
                     raise ValueError("{} has no WAVECAL. Cannot linearize."
                                      .format(extname))
                 adinfo.append(model_info)
+
+                if w1 is None:
+                    if w1out is None:
+                        w1out = model_info['w1']
+                    elif trim_data:
+                        w1out = max(w1out, model_info['w1'])
+                    else:
+                        w1out = min(w1out, model_info['w1'])
+
+                if w2 is None:
+                    if w2out is None:
+                        w2out = model_info['w2']
+                    elif trim_data:
+                        w2out = min(w2out, model_info['w2'])
+                    else:
+                        w2out = max(w2out, model_info['w2'])
             info.append(adinfo)
 
         # linearize spectra only if the grid parameters are specified
         linearize = npix is not None or dw is not None
+        if linearize:
+            if npixout is None and dwout is None:
+                # if both are missing, use the reference spectra
+                dwout = info[0][0]['dw']
+
+            if npixout is None:
+                npixout = int(np.ceil((w2out - w1out) / dwout)) + 1
+            elif dwout is None:
+                dwout = (w2out - w1out) / (npixout - 1)
 
         if trim_data:
             log.fullinfo("Trimming data to size of reference spectra")
 
-        adref = adinputs[0]
-        n_ad = len(adinputs)
-        n_ext = len(adref)
+        if linearize:
+            wave_to_output_pix = (models.Shift(-w1out) |
+                                  models.Scale(1. / dwout))
+        else:
+            wave_model_ref = info[0][0]['wave_model']
+            limits = wave_model_ref.inverse([w1out, w2out])
+            pixel_shift = int(np.ceil(limits.min()))
+            wave_to_output_pix = wave_model_ref.inverse.copy()
+            wave_to_output_pix.inverse = wave_model_ref.copy()
+            npixout = int(np.floor(wave_to_output_pix([w1out, w2out]).max())
+                          + 1 - pixel_shift)
+            dwout = (w2out - w1out) / (npixout - 1)
 
-        for iext in range(n_ext):
-            w1out, w2out, dwout, npixout = w1, w2, dw, npix
-            if nparams < 3:
-                if w1out is None:
-                    func = max if trim_data else min
-                    w1out = func(info[i][iext]['w1'] for i in range(n_ad))
-                if w2out is None:
-                    func = min if trim_data else max
-                    w2out = func(info[i][iext]['w2'] for i in range(n_ad))
-                if linearize:
-                    if npixout is None and dwout is None:
-                        # if both are missing, use the reference spectra
-                        npixout = info[0][iext]['npix']
-                        dwout = info[0][iext]['dw']
-                    elif npixout is None:
-                        npixout = int(np.ceil((w2out - w1out) / dwout)) + 1
-                    elif dwout is None:
-                        dwout = (w2out - w1out) / (npixout - 1)
-
-            chebref = info[0][iext]['wave_model']
-            pixel_shift = int(np.ceil(chebref.inverse([w1out, w2out]).min()))
-
-            if linearize:
-                wave_to_output_pix = (models.Shift(-w1out) |
-                                      models.Scale(1. / dwout))
-            else:
-                wave_to_output_pix = chebref.inverse.copy()
-                wave_to_output_pix.inverse = chebref.copy()
-                npixout = int(
-                    np.floor(wave_to_output_pix([w1out, w2out]).max())
-                    + 1 - pixel_shift)
-                dwout = (w2out - w1out) / (npixout - 1)
-
-            for i, ad in enumerate(adinputs):
-                ext = ad[iext]
+        for i, ad in enumerate(adinputs):
+            for iext, ext in enumerate(ad):
                 wave_model = info[i][iext]['wave_model']
+                extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
 
-                if wave_model.inverse is wave_to_output_pix:
-                    log.stdinfo("NO INTERPOLATION")
+                if i == 0 and not linearize:
+                    log.fullinfo("{}: No interpolation")
                     t = transform.Transform()
                 else:
                     t = transform.Transform([wave_model, wave_to_output_pix])
@@ -1813,7 +1816,6 @@ class Spect(PrimitivesBASE):
                 msg = "Resampling"
                 if linearize:
                     msg += " and linearizing"
-                extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
                 log.stdinfo("{} {}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
                             .format(msg, extn, w1out, w2out, dwout, npixout))
 
@@ -1835,7 +1837,9 @@ class Spect(PrimitivesBASE):
                 dg = transform.DataGroup([ext], [t])
                 dg.output_shape = (npixout, )
                 dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
-                dg.origin = (pixel_shift,)  # equivalent to a final shift for all models
+                if not linearize:
+                    # equivalent to a final shift for all models
+                    dg.origin = (pixel_shift,)
                 output_dict = dg.transform(attributes=attributes,
                                            subsample=subsample,
                                            conserve=conserve)
