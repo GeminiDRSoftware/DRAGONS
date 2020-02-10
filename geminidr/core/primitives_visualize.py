@@ -456,19 +456,35 @@ class Visualize(PrimitivesBASE):
             for ext in ad:
                 data = ext.data
                 stddev = np.sqrt(ext.variance)
+                wavelength = np.arange(data.size, dtype=float)
 
-                wavelength_calibration_table = ext.WAVECAL
+                if hasattr(ext, 'WAVECAL'):
 
-                wavelength_calibration_model = astromodels.dict_to_chebyshev(
-                    dict(
-                        zip(
-                            wavelength_calibration_table["name"],
-                            wavelength_calibration_table["coefficients"]
+                    wcal_model = astromodels.dict_to_chebyshev(
+                        dict(
+                            zip(
+                                ext.WAVECAL["name"],
+                                ext.WAVECAL["coefficients"]
+                            )
                         )
                     )
-                )
 
-                wavelength = wavelength_calibration_model(np.arange(data.size))
+                    wavelength = wcal_model(data.size)
+                    w_dispersion = ext.hdr["CDELT1"]
+                    w_units = ext.hdr["CUNIT1"]
+
+                elif "CTYPE1" in ext.hdr:
+
+                    wavelength = (
+                        ext.hdr["CRVAL1"] + ext.hdr["CDELT1"] * (
+                            wavelength + 1 - ext.hdr["CRPIX1"]))
+
+                    w_dispersion = ext.hdr["CDELT1"]
+                    w_units = ext.hdr["CUNIT1"]
+
+                else:
+                    w_units = "px"
+                    w_dispersion = 1
 
                 # Clean up bad data
                 mask = np.logical_not(np.ma.masked_invalid(data).mask)
@@ -489,8 +505,8 @@ class Visualize(PrimitivesBASE):
                     "center": np.round(ext.hdr["XTRACTED"]),
                     "lower": np.round(ext.hdr["XTRACTLO"]),
                     "upper": np.round(ext.hdr["XTRACTHI"]),
-                    "dispersion": ext.hdr["CDELT1"],
-                    "wavelength_units": ext.hdr["CUNIT1"],
+                    "dispersion": w_dispersion,
+                    "wavelength_units": w_units,
                     "intensity": _intensity,
                     "stddev": _stddev,
                 }
