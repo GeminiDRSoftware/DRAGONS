@@ -1580,7 +1580,7 @@ class Spect(PrimitivesBASE):
                 ext.hdr["CRVAL1"] = w1
                 ext.hdr["CDELT1"] = dw
                 ext.hdr["CD1_1"] = dw
-                ext.hdr["CUNIT1"] = "nanometer"
+                ext.hdr["CUNIT1"] = "nm"
                 del ext.WAVECAL  # not needed any more
 
             # Timestamp and update the filename
@@ -1853,7 +1853,7 @@ class Spect(PrimitivesBASE):
                     ext.hdr["CRVAL1"] = w1_ext
                     ext.hdr["CDELT1"] = dw_ext
                     ext.hdr["CD1_1"] = dw_ext
-                    ext.hdr["CUNIT1"] = "nanometer"
+                    ext.hdr["CUNIT1"] = "nm"
                 else:
                     ext.WAVECAL = adref[iext].WAVECAL.copy()
                     # start, end = pixlim[i]
