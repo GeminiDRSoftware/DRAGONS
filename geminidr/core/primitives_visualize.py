@@ -426,9 +426,14 @@ class Visualize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
+        log.stdinfo('Number of input file(s): {}'.format(len(adinputs)))
+
         spec_packs = []
 
         for ad in adinputs:
+
+            log.stdinfo('Reading {} aperture(s) from file: {}'.format(
+                len(ad), ad.filename))
 
             timestamp = time.time()
 
@@ -453,7 +458,7 @@ class Visualize(PrimitivesBASE):
                 "timestamp": timestamp,
             }
 
-            for ext in ad:
+            for i, ext in enumerate(ad):
                 data = ext.data
                 stddev = np.sqrt(ext.variance)
 
@@ -506,10 +511,14 @@ class Visualize(PrimitivesBASE):
                 _intensity = [[w, int(d)] for w, d in zip(wavelength, data)]
                 _stddev = [[w, int(s)] for w, s in zip(wavelength, stddev)]
 
+                center = np.round(ext.hdr["XTRACTED"])
+                lower = np.round(ext.hdr["XTRACTLO"])
+                upper = np.round(ext.hdr["XTRACTHI"])
+
                 aperture = {
-                    "center": np.round(ext.hdr["XTRACTED"]),
-                    "lower": np.round(ext.hdr["XTRACTLO"]),
-                    "upper": np.round(ext.hdr["XTRACTHI"]),
+                    "center": center,
+                    "lower": lower,
+                    "upper": upper,
                     "dispersion": w_dispersion,
                     "wavelength_units": w_units,
                     "intensity": _intensity,
@@ -517,6 +526,9 @@ class Visualize(PrimitivesBASE):
                 }
 
                 spec_pack["apertures"].append(aperture)
+
+                log.stdinfo(' Aperture center: {}, Lower: {}, Upper: {}'.format(
+                    center, lower, upper))
 
             spec_packs.append(spec_pack)
 
@@ -528,10 +540,17 @@ class Visualize(PrimitivesBASE):
             # Convert string to bytes
             spec_packs_json = spec_packs_json.encode("utf-8")
 
-            post_request = urllib.request.Request(url)
-            postr = urllib.request.urlopen(post_request, spec_packs_json)
-            postr.read()
-            postr.close()
+            try:
+                log.stdinfo('Sending data to QA SpecViewer')
+                post_request = urllib.request.Request(url)
+                postr = urllib.request.urlopen(post_request, spec_packs_json)
+                postr.read()
+                postr.close()
+                log.stdinfo('Success.')
+
+            except urllib.error.URLError:
+                log.warning('Failed to connect to ADCC Server.\n'
+                            'Make sure it is up and running.')
 
         return adinputs
 
