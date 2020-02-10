@@ -457,6 +457,11 @@ class Visualize(PrimitivesBASE):
                 data = ext.data
                 stddev = np.sqrt(ext.variance)
 
+                if data.ndim > 1:
+                    raise TypeError(
+                        "Expected 1D data. Found {:d}D data: {:s}".format(
+                            data.ndim, ad.filename))
+
                 if hasattr(ext, 'WAVECAL'):
 
                     wcal_model = astromodels.dict_to_chebyshev(
@@ -472,7 +477,7 @@ class Visualize(PrimitivesBASE):
                     w_dispersion = ext.hdr["CDELT1"]
                     w_units = ext.hdr["CUNIT1"]
 
-                elif "CTYPE1" in ext.hdr:
+                elif "CDELT1" in ext.hdr:
 
                     wavelength = (
                         ext.hdr["CRVAL1"] + ext.hdr["CDELT1"] * (
