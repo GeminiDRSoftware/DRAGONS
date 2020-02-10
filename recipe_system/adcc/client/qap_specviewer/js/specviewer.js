@@ -160,8 +160,10 @@ SpecViewer.prototype = {
 
         // Update relevant values and plots
         if (isStack) {
+          $('.footer .status').html(`Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
           this.stackSize = jsonElement.stack_size;
         } else {
+          $('.footer .status').html(`Received new data with ${jsonElement.apertures.length} aperture(s)`);
           this.dataLabel = jsonElement.data_label;
         }
 
@@ -189,8 +191,10 @@ SpecViewer.prototype = {
         if (isStack) {
           if (stackSize <= this.stackSize) {
             console.log(`- OLD stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
+            $('.footer .status').html(`No new data from last request.`);
           } else {
             console.log(`- NEW stack data with ${stackSize} frames (${jsonElement.apertures.length} apertures)`);
+            $('.footer .status').html(`Received new stack data with ${jsonElement.apertures.length} aperture(s)`);
             this.stackSize = stackSize;
             this.updatePlotArea(jsonElement, type);
             this.updateNavigationTab();
@@ -198,8 +202,10 @@ SpecViewer.prototype = {
         } else {
           if (this.dataLabel === jsonElement.data_label) {
             console.log(`- OLD frame data: ${this.dataLabel} (${jsonElement.apertures.length} apertures)`);
+            $('.footer .status').html(`No new data from last request.`);
           } else {
             console.log(`- NEW frame data: ${jsonElement.data_label} (${jsonElement.apertures.length} apertures)`);
+            $('.footer .status').html(`Received new data with ${jsonElement.apertures.length} aperture(s)`);
             this.dataLabel = jsonElement.data_label;
             this.updatePlotArea(jsonElement, type);
             this.updateNavigationTab();

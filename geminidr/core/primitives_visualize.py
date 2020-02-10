@@ -444,11 +444,14 @@ class Visualize(PrimitivesBASE):
                 is_stack = False
                 stack_size = 1
 
+            group_id = ad.group_id().split('_[')[0]
+            group_id += ad.group_id().split(']')[1]
+
             spec_pack = {
                 "apertures": [],
                 "data_label": ad.data_label(),
                 "filename": ad.filename,
-                "group_id": ad.group_id(),
+                "group_id": group_id,
                 "is_stack": is_stack,
                 "stack_size": stack_size,
                 "metadata": [],
