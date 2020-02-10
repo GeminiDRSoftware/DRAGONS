@@ -1725,9 +1725,9 @@ class Spect(PrimitivesBASE):
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()
 
-        # # Check that all ad objects have the same number of extensions
-        # if len(set(len(ad) for ad in adinputs)) > 1:
-        #     raise ValueError('inputs must have the same number of extensions')
+        # For the 2D case check that all ad objects have only 1 extension
+        if ndim > 1 and set(len(ad) for ad in adinputs) != {1}:
+            raise ValueError('inputs must have the same number of extensions')
 
         # If only one variable is missing we compute it from the others
         nparams = sum(x is not None for x in (w1, w2, dw, npix))
@@ -1744,6 +1744,7 @@ class Spect(PrimitivesBASE):
 
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
+        # if there are not provided
         info = []
         w1out, w2out, dwout, npixout = w1, w2, dw, npix
         for ad in adinputs:
@@ -1793,6 +1794,8 @@ class Spect(PrimitivesBASE):
             wave_to_output_pix = (models.Shift(-w1out) |
                                   models.Scale(1. / dwout))
         else:
+            # compute the inverse model needed to go to the reference
+            # spectrum grid
             wave_model_ref = info[0][0]['wave_model']
             limits = wave_model_ref.inverse([w1out, w2out])
             pixel_shift = int(np.ceil(limits.min()))
@@ -1854,6 +1857,7 @@ class Spect(PrimitivesBASE):
                 ext.hdr["CUNIT1"] = "nm"
 
                 if not linearize:
+                    # update domain in the WAVECAL table
                     output_wave = wave_to_output_pix.inverse.copy()
                     output_wave.domain = [x - pixel_shift
                                           for x in output_wave.domain]
