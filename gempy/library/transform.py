@@ -994,9 +994,7 @@ class DataGroup(object):
 
             # Create a mapping from output pixel to input pixels
             mapping = transform.inverse.affine_matrices(shape=output_array_shape)
-            jfactor = abs(np.linalg.det(mapping.matrix))
-            if not conserve:
-                jfactor = 1
+            jfactor = abs(np.linalg.det(mapping.matrix)) if conserve else 1.0
             self.jfactors.append(jfactor)
 
             integer_shift = (transform.is_affine
@@ -1022,6 +1020,9 @@ class DataGroup(object):
                     if conserve:
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
                         transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
+
+                        # These are the coordinates in the input frame corresponding to each
+                        # (subsampled) output pixel in a frame with an additional 1-pixel boundary
                         jacobian_mapping = GeoMap(transform, jacobian_shape)
                         det_matrices = np.empty((ndim, ndim, np.multiply.reduce(trans_output_shape)))
                         for num_axis in range(ndim):
@@ -1032,8 +1033,8 @@ class DataGroup(object):
                                 slice_[denom_axis] = slice(2, None)
                                 # Account for the fact that we are measuring
                                 # differences in the subsampled plane
-                                det_matrices[num_axis, denom_axis] = \
-                                    diff_coords[slice_].flatten() / (2*subsample)
+                                det_matrices[num_axis, denom_axis] = 2. / (
+                                    diff_coords[tuple(slice_)].flatten() * subsample)
                         jfactor = 1. / abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
                         # Delete the extra Shift(1) and put a better jfactor in the list
                         del transform[-1]
