@@ -1960,15 +1960,24 @@ class Spect(PrimitivesBASE):
 
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis
-                    m_init = models.Chebyshev1D(degree=order,
+                    m_init = models.Chebyshev1D(degree=order, c0=location,
                                                 domain=[0, ext.shape[dispaxis] - 1])
                     fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                                sigma_clip, sigma=3)
-                    m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
-                    plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
-                    if debug:
-                        self.viewer.polygon(plot_coords, closed=False,
-                                            xfirst=(dispaxis == 1), origin=0)
+                    try:
+                        m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
+                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        # This hides a multitude of sins, including no points
+                        # returned by the trace, or insufficient points to
+                        # constrain the request order of polynomial.
+                        log.warning("Unable to trace aperture {}".format(aperture["number"]))
+                        m_final = models.Chebyshev1D(degree=0, c0=location,
+                                                     domain=[0, ext.shape[dispaxis] - 1])
+                    else:
+                        if debug:
+                            plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
+                            self.viewer.polygon(plot_coords, closed=False,
+                                                xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
 
                     # Recalculate aperture limits after rectification
