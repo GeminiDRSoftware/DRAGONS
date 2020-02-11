@@ -1626,44 +1626,43 @@ class Spect(PrimitivesBASE):
         ref_ad = adinputs[0]
         log.stdinfo("Reference image: {}".format(ref_ad.filename))
 
-        ref_profile = None
+        def stack_slit(ext):
+            dispaxis = 2 - ext.dispersion_axis()  # python sense
+            data = np.ma.array(ext.data, mask=(ext.mask > 0))
+            data = np.ma.masked_invalid(data)
+            return data.mean(axis=dispaxis)
 
-        for i, ad in enumerate(adinputs):
-            ref_offset = ad.detector_y_offset() - ref_ad.detector_y_offset()
+        ref_profile = stack_slit(ref_ad[0])
+
+        for ad in adinputs[1:]:
+            hdr_offset = ad.detector_y_offset() - ref_ad.detector_y_offset()
 
             if method == 'correlation':
-                dispaxis = 2 - ad[0].dispersion_axis()  # python sense
-                data = np.ma.array(ad[0].data, mask=(ad[0].mask > 0))
-                data = np.ma.masked_invalid(data)
-                data = data.mean(axis=dispaxis)
-
-                if i == 0:
-                    ref_profile = data
-                    continue
-
+                profile = stack_slit(ad[0])
                 # cross-correlate profiles to find the offset
-                corr = np.correlate(ref_profile, data, mode='full')
+                corr = np.correlate(ref_profile, profile, mode='full')
                 # TODO: get subpixel offset ?
                 offset = np.argmax(corr) - ref_profile.shape[0] + 1
 
                 # Check that the offset is similar to the one from headers
-                dist_arsec = np.abs(ref_offset - offset) * ad.pixel_scale()
+                dist_arsec = np.abs(hdr_offset - offset) * ad.pixel_scale()
                 if tolerance and dist_arsec > tolerance:
                     # Fallback to header offset?
                     log.warning("Offset from correlation ({}) is too big "
                                 "compared to the header offset ({}). Using "
-                                "this one instead".format(offset, ref_offset))
-                    offset = ref_offset
+                                "this one instead".format(offset, hdr_offset))
+                    offset = hdr_offset
 
             elif method == 'offsets':
                 # Use directly the offset from the headers
-                offset = ref_offset
+                offset = hdr_offset
 
             log.stdinfo("Offset for image {} : {} pixels"
-                        .format(ref_ad.filename, offset))
+                        .format(ad.filename, offset))
             ad.phu['SLITOFF'] = offset
 
-            # Timestamp and update filenames
+        # Timestamp and update filenames
+        for i, ad in enumerate(adinputs):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
 
