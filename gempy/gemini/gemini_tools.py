@@ -1078,7 +1078,7 @@ def fit_continuum(ad):
                 if ext.mask is None:
                     profile = np.percentile(ext.data, 95, axis=dispaxis)
                 else:
-                    profile = np.nanpercentile(np.where(ext.mask == 0, ext.data, np.nan), 99, axis=dispaxis)
+                    profile = np.percentile(np.where(ext.mask == 0, ext.data, -np.inf), 95, axis=dispaxis)
                 center = np.argmax(profile[spatial_slice]) + spatial_slice.start
                 spatial_slices = [slice(max(center - spatial_box, 0),
                                         min(center + spatial_box, ext.shape[1 - dispaxis]))]
