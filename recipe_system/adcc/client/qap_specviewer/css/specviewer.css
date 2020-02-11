@@ -58,6 +58,11 @@ body {
   color: #999;
 }
 
+.header {
+  margin: 0px;
+  line-height: 0.5;
+}
+
 .info {
   background-color: #ddd;
   border-radius: 5px;
@@ -74,13 +79,17 @@ body {
   margin-top: 5px;
 }
 
+.jqplot-grid-canvas {
+  height: inherit;
+}
+
 .loading {
   color: #333;
   display: block;
   margin-left: auto;
   margin-right: auto;
   padding: 20px;
-  width: 20%;
+  width: 30%;
 }
 
 .not-available {
@@ -94,7 +103,8 @@ body {
 }
 
 .plot {
-  padding: 10px 15px;
+  padding: 0px;
+  width: 96%;
 }
 
 .resizable {
@@ -102,7 +112,7 @@ body {
   border-radius: 5px;
   text-align: center;
   min-height: 100px;
-  /* height: 25vh; */
+  width: inherit;
 }
 
 .tar {

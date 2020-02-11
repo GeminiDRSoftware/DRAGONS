@@ -296,7 +296,6 @@ SpecViewer.prototype = {
       //   }
       // }
 
-
       if (plotInstance) {
         plotInstance.replot({ resetAxes: true }
         );
@@ -324,6 +323,25 @@ SpecViewer.prototype = {
       clearTimeout(doit);
       doit = setTimeout(resizeEnd, 500);
     };
+
+    // Enable to resize plot area's height
+    $('.resizable').resizable({
+      ghost: true,
+      resize: function(event, ui) {
+
+        // Restrict horizontal resizing
+        ui.size.width = ui.originalSize.width;
+
+        // Resize internal elements
+        let id = $(this).children('.plot').attr('id');
+        let index = $(`#${sViewer.id}`).tabs('option', 'active');
+        let type = (id.includes('stack') ? 'stack':'single');
+
+        $('.plot').height(ui.size.height * 0.95);
+        sViewer[`${type}Plots`][index].replot( { resetAxes: true } );
+
+      }
+    });
 
   },
 
@@ -388,7 +406,7 @@ SpecViewer.prototype = {
       if (!$(`#${plotId}`).length) {
         $(`#aperture${apertureCenter} .resizable.${type}`).html(
           `<div class="plot ${type}" id="${plotId}"> </div>`);
-//        $(`#${plotId}`).height($(`#aperture${apertureCenter} .resizable.${type}`).height() * 0.93);
+
       }
 
       // Plot instance exists
@@ -406,7 +424,7 @@ SpecViewer.prototype = {
 
           // Refresh only on active tab
           if (i === activeTabIndex) {
-            this[`${type}Plots`][i].replot();
+            this[`${type}Plots`][i].replot( { resetAxes:true } );
           }
 
         } else {
