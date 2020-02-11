@@ -296,7 +296,7 @@ def test_round_trip_gwcs():
     fdist = models.Chebyshev2D(2, 2,
                                c0_0=4.81125, c1_0=5.43375, c0_1=-0.135,
                                c1_1=-0.405, c0_2=0.30375, c1_2=0.91125,
-                               x_domain=(0., 9.), y_domain=(0., 9.))
+                               x_domain=[0., 9.], y_domain=[0., 9.])
 
     # This is not an accurate inverse, but will do for this test:
     idist = models.Chebyshev2D(2, 2,
@@ -305,7 +305,7 @@ def test_round_trip_gwcs():
                                c1_1=0.35652358, c2_1=-0.01193828,
                                c0_2=-0.29996306, c1_2=-0.91823397,
                                c2_2=0.02390594,
-                               x_domain=(-1.5, 12.), y_domain=(0., 9.))
+                               x_domain=[-1.5, 12.], y_domain=[0., 9.])
 
     # The resulting 2D co-ordinate mapping from detector to ref row pixels:
     distrans = models.Mapping((0, 1, 1)) | (fdist & models.Identity(1))
@@ -319,9 +319,9 @@ def test_round_trip_gwcs():
     rss_frame = cf.CompositeFrame([spec_frame, row_frame])
 
     # Toy wavelength model & approximate inverse:
-    fwcal = models.Chebyshev1D(2, c0=500.075, c1=0.05, c2=0.001, domain=(0, 9))
+    fwcal = models.Chebyshev1D(2, c0=500.075, c1=0.05, c2=0.001, domain=[0, 9])
     iwcal = models.Chebyshev1D(2, c0=4.59006292, c1=4.49601817, c2=-0.08989608,
-                               domain=(500.026, 500.126))
+                               domain=[500.026, 500.126])
 
     # The resulting 2D co-ordinate mapping from ref pixels to wavelength:
     wavtrans = fwcal & models.Identity(1)
