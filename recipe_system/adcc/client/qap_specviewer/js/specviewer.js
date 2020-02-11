@@ -610,7 +610,7 @@ function getFrameInfo(filename, programId) {
     </p>
     <div class="d-table-cell tar">
       <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
-        <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
+        <img class="zoom-reset" src="/qapspec/images/zoom_reset_48px.png"></img>
       </button>
     </div>
   </div>`;
@@ -640,7 +640,7 @@ function getStackInfo(filename, programId) {
       </p>
       <div class="d-table-cell tar">
         <button class="ui-button ui-widget ui-corner-all" title="Reset zoom">
-          <img class="zoom-reset" src="/qlook/images/zoom_reset_48px.png"></img>
+          <img class="zoom-reset" src="/qapspec/images/zoom_reset_48px.png"></img>
         </button>
       </div>
     </div>

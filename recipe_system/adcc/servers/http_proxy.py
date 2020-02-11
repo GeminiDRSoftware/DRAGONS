@@ -253,7 +253,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         try:
             # First test for an html request on the QAP nighttime_metrics page.
             # I.e.  <localhost>:<port>/qap/nighttime_metrics.html
-            if self.path.startswith("/qap"):
+            if self.path.startswith("/qap/"):
                 dirname = os.path.dirname(__file__)
                 if dark_theme:
                     joinlist = [dirname, "../client/adcc_faceplate_dark/"]
@@ -264,7 +264,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.path = self.path.split("?")[0]
 
                 #append any further directory info.
-                joinlist.append(self.path[5:])
+                joinlist.append(self.path.split('qap/')[-1])
                 fname = os.path.join(*joinlist)
                 self.log_message('{} {} {}'.format("Loading "+joinlist[1]+
                                             os.path.basename(fname), 203, '-'))
@@ -295,17 +295,19 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self._handle_cmdqueue_json(events, parms)
 
             # ------------------------------------------------------------------
-            # HTTP client GET requests on quicklook (/qlook) spectra service.
-            if parms["path"].startswith("/qlook"):
+            # HTTP client GET requests on QAP Spectra (/qapspec/) Service.
+            if parms["path"].startswith("/qapspec/"):
+
                 dirname = os.path.dirname(__file__)
                 joinlist = [dirname, "../client/qap_specviewer/"]
 
                 # Split out any parameters in the URL
                 self.path = self.path.split("?")[0]
 
-                #append any further directory info.
-                joinlist.append(self.path[7:])
+                # Append any further directory info.
+                joinlist.append(self.path.split('qapspec/')[-1])
                 fname = os.path.join(*joinlist)
+
                 self.log_message('{} {} {}'.format("Loading "+joinlist[1]+
                                             os.path.basename(fname), 203, '-'))
                 #try:
@@ -315,7 +317,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     #data = bytes("<b>NO SUCH RESOURCE AVAILABLE</b>".encode('utf-8'))
 
                 self.send_response(200)
-                if  self.path.endswith(".js"):
+                if self.path.endswith(".js"):
                     self.send_header('Content-type', 'text/javascript')
                 elif self.path.endswith(".css"):
                     self.send_header("Content-type", "text/css")
@@ -542,8 +544,8 @@ def startInterfaceServer(*args, **informers):
             port += 1
 
     print("Started  HTTP server on port %s" % str(port))
-    print("Serving metrics on:\n\t /qap/nighttime_metrics/html")
-    print("Serving 1D spectra on:\n\t/qlook/specviewer.html")
+    print("Serving metrics on:\n\t /qap/nighttime_metrics.html")
+    print("Serving 1D spectra on:\n\t/qapspec/specviewer.html")
     while run_event.is_set():
         r, w, x = select.select([server.socket], [], [], .5)
         if r:
