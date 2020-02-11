@@ -1647,7 +1647,7 @@ class Spect(PrimitivesBASE):
                 offset = np.argmax(corr) - ref_profile.shape[0] + 1
 
                 # Check that the offset is similar to the one from headers
-                dist_arsec = np.abs(ref_offset - offset) * self.pixel_scale()
+                dist_arsec = np.abs(ref_offset - offset) * ad.pixel_scale()
                 if tolerance and dist_arsec > tolerance:
                     # Fallback to header offset?
                     log.warning("Offset from correlation ({}) is too big "
