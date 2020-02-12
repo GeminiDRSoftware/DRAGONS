@@ -59,6 +59,7 @@ def reduceStandard(p):
     p.extract1DSpectra()
     p.linearizeSpectra()  # TODO: needed?
     p.calculateSensitivity()
+    p.storeProcessedStandard()
     p.writeOutputs()
 
 

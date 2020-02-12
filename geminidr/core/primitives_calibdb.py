@@ -24,6 +24,7 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'processed_dark': ['PROCESSED', 'DARK'],
                      'processed_flat': ['PROCESSED', 'FLAT'],
                      'processed_fringe': ['PROCESSED', 'FRINGE'],
+                     'processed_standard': ['PROCESSED', 'STANDARD'],
                      'bpm': ['BPM']}
 
 
@@ -136,6 +137,12 @@ class CalibDB(PrimitivesBASE):
     def getProcessedFringe(self, adinputs=None, **params):
         caltype = "processed_fringe"
         log = self.log
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self._assert_calibrations(adinputs, caltype)
+        return adinputs
+
+    def getProcessedStandard(self, adinputs=None, **params):
+        caltype = "processed_standard"
         self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
@@ -290,6 +297,17 @@ class CalibDB(PrimitivesBASE):
                                                 keyword_comments=self.keyword_comments)
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                            primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adinputs
+
+    def storeProcessedStandard(self, adinputs=None, suffix=None, force=False):
+        caltype = 'processed_standard'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="standard",
+                                                keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
+                                           primname=self.myself(), keyword="PROCSTND")
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
