@@ -1591,12 +1591,9 @@ class Spect(PrimitivesBASE):
 
     def adjustSlitOffsetToReference(self, adinputs=None, **params):
         """
-        Compute offsets along the slit by cross-correlation.
-
-        Notes:
-        If the spectra are bright enough and the fit works, the idea
-        would be to replace the XOFFSET value with this more precise
-        measurement of the offset
+        Compute offsets along the slit by cross-correlation, or use offset
+        from the headers (QOFFSET). The computed offset is stored in the
+        SLITOFF keyword.
 
         Parameters
         ----------
@@ -1606,6 +1603,10 @@ class Spect(PrimitivesBASE):
             method to use to compute offsets. 'correlation' uses a
             correlation of the slit profiles (the 2d images stacked
             on the dispersion axis), 'offsets' uses the QOFFSET keyword.
+        tolerance : float
+            Maximum distance from the header offset, for the correlation
+            method (arcsec). If the correlation computed offset is too
+            different from the header offset, then the latter is used.
 
         """
         log = self.log
