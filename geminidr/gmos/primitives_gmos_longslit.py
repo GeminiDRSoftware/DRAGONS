@@ -4,6 +4,8 @@
 #                                                     primtives_gmos_longslit.py
 # ------------------------------------------------------------------------------
 import numpy as np
+import warnings
+
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 from gempy.library import astromodels
@@ -115,8 +117,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        suffix = params["suffix"]
-        spectral_order = params["spectral_order"]
+
+        # For flexibility, the code is going to pass whatever validated
+        # parameters it gets (apart from suffix and spectral_order) to
+        # the spline fitter
+        spline_kwargs = params.copy()
+        suffix = spline_kwargs.pop("suffix")
+        spectral_order = spline_kwargs.pop("spectral_order")
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
@@ -147,9 +154,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     masked_data = np.ma.masked_array(row.data, mask=row.mask)
                     weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
                     spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                    order=order, w=weights)
+                                                    order=order, w=weights, **spline_kwargs)
                     fitted_data[i] = spline(pixels)
-                ext.divide(fitted_data)
+                with warnings.catch_warnings():
+                    # Ignore pesky divide-by-zero type warnings because we
+                    # handle NaNs later
+                    warnings.filterwarnings('ignore', r'.*true_divide.*')
+                    ext.divide(fitted_data)
 
                 # Split the normalized flat back into the separate extensions
                 tiled_detsec = ext.detector_section()
