@@ -1,0 +1,14 @@
+{
+  "name": "dragons-qap-specviewer",
+  "version": "0.0.1",
+  "description": "DRAGONS: QAP Spectrum Viewer",
+  "standard": {
+    "globals": [
+      "$"
+    ]
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-plugin-html": "^6.0.0"
+  }
+}
