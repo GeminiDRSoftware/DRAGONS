@@ -300,16 +300,25 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
-    def storeProcessedStandard(self, adinputs=None, suffix=None, force=False):
+    def storeProcessedStandard(self, adinputs=None, suffix=None):
         caltype = 'processed_standard'
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        if force:
-            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="standard",
-                                                keyword_comments=self.keyword_comments)
-        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
+        adoutputs = list()
+        for ad in adinputs:
+            passes = True
+            for add in ad:
+                if not hasattr(add, 'SENSFUNC'):
+                    passes = False
+            # if all of the extensions on this ad have a sensfunc attribute:
+            if passes:
+                procstdads = [ad]
+                procstdads = self._markAsCalibration(procstdads, suffix=suffix,
                                            primname=self.myself(), keyword="PROCSTND")
+                adoutputs.extend(procstdads)
+            else:
+                adoutputs.append(ad)
         self.storeCalibration(adinputs, caltype=caltype)
-        return adinputs
+        return adoutputs
 
 
 ##################

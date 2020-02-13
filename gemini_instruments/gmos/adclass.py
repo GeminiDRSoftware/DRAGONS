@@ -75,6 +75,12 @@ class AstroDataGmos(AstroDataGemini):
         if self.object().lower().replace(' ', '') in lookup.standard_star_names:
             return TagSet(['STANDARD', 'CAL'])
 
+    @astro_data_tag
+    def _tag_processed_standard(self):
+        if 'SENSFUNC' in self.phu:
+            print("returning PROCESSED STANDARD CAL tag set")
+            return TagSet(['PROCESSED', 'STANDARD', 'CAL'], blocks=['RAW'])
+
     def _tag_is_spect(self):
         pairs = (
             ('MASKTYP', 0),
