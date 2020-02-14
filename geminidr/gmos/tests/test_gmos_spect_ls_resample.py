@@ -21,43 +21,23 @@ test_datasets = [
 ]
 
 
-@pytest.fixture(scope='module')
-def refpath(path_to_refs):
-    testpath = __name__.split('.')
-    testpath.remove('tests')
-    testpath = os.path.join(path_to_refs, *testpath)
-    return testpath
-
-
 # Local Fixtures and Helper Functions -----------------------------------------
 @pytest.fixture()
-def adinputs(ad_factory, refpath):
+def adinputs(ad_factory, new_path_to_inputs):
+    """ Generate input data for the tests if needed (and if
+    --force-preprocess-data is set), using preprocess recipe below.
     """
-    Loads existing input FITS files as AstroData objects, runs the
-    `extract1DSpectra` primitive on it, and return the output object containing
-    the extracted 1d spectrum. This makes tests more efficient because the
-    primitive is run only once, instead of N x Numbes of tests.
-
-    If the input file does not exist, this fixture raises a IOError.
-
-    If the input file does not exist and PyTest is called with the
-    `--force-preprocess-data`, this fixture looks for cached raw data and
-    process it. If the raw data does not exist, it is then cached via download
-    from the Gemini Archive.
-
-    """
-    print('\nRunning test inside folder:\n  {}'.format(refpath))
+    print('\nRunning test inside folder:\n  {}'.format(new_path_to_inputs))
     adinputs = []
-
     for fname, arcname in test_datasets:
         # create reduced arc
-        arcfile = os.path.join(refpath, arcname)
+        arcfile = os.path.join(new_path_to_inputs, arcname)
         adarc = ad_factory(arcfile, preprocess_arc_recipe)
         if not os.path.exists(arcfile):
             adarc.write(arcfile)
 
         # create input for this test
-        adfile = os.path.join(refpath, fname)
+        adfile = os.path.join(new_path_to_inputs, fname)
         ad = ad_factory(adfile, preprocess_recipe, arc=adarc)
         if not os.path.exists(adfile):
             ad.write(adfile)
@@ -68,22 +48,7 @@ def adinputs(ad_factory, refpath):
 
 
 def preprocess_arc_recipe(ad, path):
-    """
-    Recipe used to generate arc data for `extract1DSpectra` tests.
-
-    Parameters
-    ----------
-    ad : AstroData
-        Input raw arc data loaded as AstroData.
-    path : str
-        Path that points to where the input data is cached.
-
-    Returns
-    -------
-    AstroData
-        Pre-processed arc data.
-
-    """
+    """ Recipe used to generate _distortionDetermined files from raw arc."""
     p = primitives_gmos_spect.GMOSSpect([ad])
     p.prepare()
     p.addDQ(static_bpm=None)
@@ -99,23 +64,7 @@ def preprocess_arc_recipe(ad, path):
 
 
 def preprocess_recipe(ad, path, arc):
-    """Recipe used to generate input data.
-
-    Parameters
-    ----------
-    ad : AstroData
-        Input raw arc data loaded as AstroData.
-    path : str
-        Path that points to where the input data is cached.
-    arc : AstroData
-        Distortion corrected arc loaded as AstroData.
-
-    Returns
-    -------
-    AstroData
-        Pre-processed arc data.
-
-    """
+    """Recipe used to generate _extracted files from raw data. """
     p = primitives_gmos_spect.GMOSSpect([ad])
     p.prepare()
     p.addDQ(static_bpm=None)
