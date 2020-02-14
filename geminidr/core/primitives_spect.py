@@ -1624,8 +1624,8 @@ class Spect(PrimitivesBASE):
             raise IOError("All input images must have only one extension.")
 
         # Use first image in list as reference
-        ref_ad = adinputs[0]
-        log.stdinfo("Reference image: {}".format(ref_ad.filename))
+        refad = adinputs[0]
+        log.stdinfo("Reference image: {}".format(refad.filename))
 
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -1633,16 +1633,19 @@ class Spect(PrimitivesBASE):
             data = np.ma.masked_invalid(data)
             return data.mean(axis=dispaxis)
 
-        ref_profile = stack_slit(ref_ad[0])
+        ref_profile = stack_slit(refad[0])
 
         for ad in adinputs[1:]:
-            hdr_offset = ad.detector_y_offset() - ref_ad.detector_y_offset()
+            dispaxis = 2 - ad[0].dispersion_axis()  # python sense
+            if dispaxis == 1:
+                hdr_offset = ad.detector_y_offset() - refad.detector_y_offset()
+            else:
+                hdr_offset = ad.detector_x_offset() - refad.detector_x_offset()
 
             if method == 'correlation':
                 profile = stack_slit(ad[0])
                 # cross-correlate profiles to find the offset
                 corr = np.correlate(ref_profile, profile, mode='full')
-                # TODO: get subpixel offset ?
                 offset = np.argmax(corr) - ref_profile.shape[0] + 1
 
                 # Check that the offset is similar to the one from headers
@@ -1726,8 +1729,15 @@ class Spect(PrimitivesBASE):
         ndim = ndim.pop()
 
         # For the 2D case check that all ad objects have only 1 extension
-        if ndim > 1 and set(len(ad) for ad in adinputs) != {1}:
-            raise ValueError('inputs must have the same number of extensions')
+        if ndim > 1:
+            adjust_key = self.timestamp_keys['adjustSlitOffsetToReference']
+            for i, ad in enumerate(adinputs):
+                if len(ad) != 1:
+                    raise ValueError('inputs must have only 1 extension')
+                if i > 0 and adjust_key not in ad.phu:
+                    log.warning(
+                        "{} has not offset, adjustSlitOffsetToReference "
+                        "should be run first".format(ad.filename))
 
         # If only one variable is missing we compute it from the others
         nparams = sum(x is not None for x in (w1, w2, dw, npix))
@@ -1809,24 +1819,34 @@ class Spect(PrimitivesBASE):
             for iext, ext in enumerate(ad):
                 wave_model = info[i][iext]['wave_model']
                 extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
 
+                t = transform.Transform()
                 if i == 0 and not linearize:
                     log.fullinfo("{}: No interpolation")
-                    t = transform.Transform()
                 else:
-                    t = transform.Transform([wave_model, wave_to_output_pix])
+                    wave_full_model = wave_model | wave_to_output_pix
+                    if ndim == 1:
+                        t.append(wave_full_model)
+                    elif ndim == 2:
+                        if i > 0 and 'SLITOFF' not in ad.phu:
+                            raise Exception('FIXME: what should we do here?')
+
+                        # Apply spatial offset if needed (i.e. not for the
+                        # first extension)
+                        offset = (models.Shift(ad.phu['SLITOFF']) if i > 0
+                                  else models.Identity(1))
+
+                        if dispaxis == 0:
+                            t.append(offset & wave_full_model)
+                        else:
+                            t.append(wave_full_model & offset)
 
                 msg = "Resampling"
                 if linearize:
                     msg += " and linearizing"
                 log.stdinfo("{} {}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
                             .format(msg, extn, w1out, w2out, dwout, npixout))
-
-                # Linearization (and inverse)
-                if linearize:
-                    if ndim == 2 and i > 0:
-                        # TODO: apply spatial offset
-                        offset = ad.phu['SLITOFF']
 
                 # If we resample to a coarser pixel scale, we may
                 # interpolate over features. We avoid this by subsampling
@@ -1838,11 +1858,23 @@ class Spect(PrimitivesBASE):
                               if getattr(ext, attr) is not None]
 
                 dg = transform.DataGroup([ext], [t])
-                dg.output_shape = (npixout, )
                 dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
-                if not linearize:
-                    # equivalent to a final shift for all models
-                    dg.origin = (pixel_shift,)
+
+                if ndim == 1:
+                    dg.output_shape = (npixout, )
+                    if not linearize:
+                        # equivalent to a final shift for all models
+                        dg.origin = (pixel_shift,)
+                elif ndim == 2:
+                    if dispaxis == 0:
+                        dg.output_shape = (npixout, ext.data.shape[1])
+                        if not linearize:
+                            dg.origin = (pixel_shift, 0)
+                    else:
+                        dg.output_shape = (ext.data.shape[0], npixout)
+                        if not linearize:
+                            dg.origin = (0, pixel_shift)
+
                 output_dict = dg.transform(attributes=attributes,
                                            subsample=subsample,
                                            conserve=conserve)
