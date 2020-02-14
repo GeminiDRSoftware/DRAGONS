@@ -31,5 +31,14 @@ def test_download_from_archive(path_to_outputs):
     assert os.path.exists(fname)
 
 
+def test_path_to_test_data(path_to_test_data):
+    assert os.path.exists(path_to_test_data)
+
+
+def test_path_to_inputs(path_to_inputs):
+    print(path_to_inputs)
+    assert os.path.exists(path_to_inputs)
+
+
 if __name__ == '__main__':
     pytest.main()

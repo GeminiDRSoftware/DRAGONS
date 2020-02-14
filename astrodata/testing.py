@@ -198,6 +198,73 @@ def path_to_refs():
     return path
 
 
+@pytest.fixture(scope='module')
+def new_path_to_inputs(request, path_to_test_data):
+    """
+    PyTest fixture that returns the path to where the input files for a given
+    test module live.
+
+    Parameters
+    ----------
+    request : fixture
+        PyTest's built-in fixture with information about the test itself.
+
+    path_to_test_data : pytest.fixture
+        Custom astrodata fixture that returs the root path to where input and
+        reference files should live.
+
+    Returns
+    -------
+    str:
+        Path to the input files.
+    """
+    module_path = request.module.__name__.split('.') + ["inputs"]
+    module_path = [item for item in module_path if item not in "tests"]
+    path = os.path.join(path_to_test_data, *module_path)
+
+    if not os.path.exists(path):
+        print(" Creating new directory to store input data for DRAGONS tests:"
+              "\n    {:s}".format(path))
+        os.makedirs(path)
+
+    if not os.access(path, os.W_OK):
+        pytest.fail('\n  Path to input test data exists but is not accessible: '
+                    '\n    {:s}'.format(path))
+
+    return path
+
+
+@pytest.fixture(scope='session')
+def path_to_test_data():
+    """
+    PyTest fixture that reads the environment variable $DRAGONS_TEST that
+    should contain data that will be used inside tests.
+
+    If the environment variable does not exist, it marks the test to be skipped.
+
+    If the environment variable exists but it not accessible, the test fails.
+
+    Returns
+    -------
+    str : path to the reference data
+    """
+    path = os.getenv('DRAGONS_TEST')
+
+    if path is None:
+        pytest.skip('Environment variable not set: $DRAGONS_TEST')
+
+    path = os.path.expanduser(path).strip()
+
+    if not os.access(path, os.W_OK):
+        pytest.fail(
+            '\n  Could not access the path stored inside $DRAGONS_TEST. '
+            '\n  Make sure the following path exists '
+            ' and that you have write permissions in it:'
+            '\n    {:s}'.format(path))
+
+    return path
+
+
 @pytest.fixture(scope='session')
 def path_to_outputs(tmp_path_factory):
     """
