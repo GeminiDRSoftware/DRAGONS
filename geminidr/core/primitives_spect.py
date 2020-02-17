@@ -1684,9 +1684,9 @@ class Spect(PrimitivesBASE):
         for ad in adinputs[1:]:
             dispaxis = 2 - ad[0].dispersion_axis()  # python sense
             if dispaxis == 1:
-                hdr_offset = ad.detector_y_offset() - refad.detector_y_offset()
+                hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
             else:
-                hdr_offset = ad.detector_x_offset() - refad.detector_x_offset()
+                hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
 
             if method == 'correlation':
                 profile = stack_slit(ad[0])

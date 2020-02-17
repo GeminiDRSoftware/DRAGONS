@@ -108,7 +108,7 @@ def test_correlation(adinputs, caplog):
     for i, ad in enumerate(adinputs[1:], start=1):
         ad[0].data = np.roll(ad[0].data, 10 * i, axis=0)
         ad[0].mask = np.roll(ad[0].mask, 10 * i, axis=0)
-        ad.phu['QOFFSET'] -= 10 * i * ad.pixel_scale()
+        ad.phu['QOFFSET'] += 10 * i * ad.pixel_scale()
 
     p = primitives_gmos_spect.GMOSSpect(adinputs)
     adout = p.adjustSlitOffsetToReference()
@@ -132,7 +132,7 @@ def test_header_offset(adinputs2, caplog):
 
     for rec in caplog.records:
         assert not rec.message.startswith('WARNING - Offset from correlation')
-    assert np.isclose(adout[1].phu['SLITOFF'], 93.75)
+    assert np.isclose(adout[1].phu['SLITOFF'], -93.75)
 
 
 @pytest.mark.preprocessed_data
@@ -142,5 +142,5 @@ def test_header_offset_fallback(adinputs2, caplog):
 
     assert caplog.records[3].message.startswith(
         'WARNING - Offset from correlation (0) is too big compared to the '
-        'header offset (93.74999999999996). Using this one instead')
-    assert np.isclose(adout[1].phu['SLITOFF'], 93.75)
+        'header offset (-93.74999999999996). Using this one instead')
+    assert np.isclose(adout[1].phu['SLITOFF'], -93.75)
