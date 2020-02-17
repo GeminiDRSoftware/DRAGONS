@@ -116,6 +116,10 @@ def test_correlation(adinputs, caplog):
     assert adout[1].phu['SLITOFF'] == -10
     assert adout[2].phu['SLITOFF'] == -20
 
+    p.resampleToCommonFrame(dw=0.15)
+    adstack = p.stackFrames()
+    assert adstack[0][0].shape == (512, 3869)
+
     # adout = p.resampleToCommonFrame(dw=0.15)
     # # we get 3 ad objects with one spectrum
     # assert len(adout) == 3
@@ -123,6 +127,44 @@ def test_correlation(adinputs, caplog):
     # assert {ad[0].shape[0] for ad in adout} == {3868}
     # _check_params(caplog.records, 'w1=508.343 w2=1088.323 dw=0.150 npix=3868')
     # assert 'ALIGN' in adout[0].phu
+
+
+@pytest.mark.preprocessed_data
+def test_correlation_and_trim(adinputs, caplog):
+    # introduce fake offsets
+    for i, ad in enumerate(adinputs[1:], start=1):
+        ad[0].data = np.roll(ad[0].data, 10 * i, axis=0)
+        ad[0].mask = np.roll(ad[0].mask, 10 * i, axis=0)
+        ad.phu['QOFFSET'] += 10 * i * ad.pixel_scale()
+
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    adout = p.adjustSlitOffsetToReference()
+
+    assert adout[1].phu['SLITOFF'] == -10
+    assert adout[2].phu['SLITOFF'] == -20
+
+    p.resampleToCommonFrame(dw=0.15, trim_data=True)
+    adstack = p.stackFrames()
+    assert adstack[0][0].shape == (512, 2429)
+
+
+@pytest.mark.preprocessed_data
+def test_correlation_and_w1_w2(adinputs, caplog):
+    # introduce fake offsets
+    for i, ad in enumerate(adinputs[1:], start=1):
+        ad[0].data = np.roll(ad[0].data, 10 * i, axis=0)
+        ad[0].mask = np.roll(ad[0].mask, 10 * i, axis=0)
+        ad.phu['QOFFSET'] += 10 * i * ad.pixel_scale()
+
+    p = primitives_gmos_spect.GMOSSpect(adinputs)
+    adout = p.adjustSlitOffsetToReference()
+
+    assert adout[1].phu['SLITOFF'] == -10
+    assert adout[2].phu['SLITOFF'] == -20
+
+    p.resampleToCommonFrame(dw=0.15, w1=700, w2=850)
+    adstack = p.stackFrames()
+    assert adstack[0][0].shape == (512, 1001)
 
 
 @pytest.mark.preprocessed_data
