@@ -1531,7 +1531,7 @@ def parse_sextractor_param(param_file):
     list
         names of all the columns in the SExtractor output catalog
     """
-    regexp = re.compile('(.*)\(\d+\)')
+    regexp = re.compile(r'(.*)\(\d+\)')
     columns = []
     fp = open(param_file)
     for line in fp:
