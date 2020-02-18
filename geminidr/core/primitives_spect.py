@@ -1314,11 +1314,16 @@ class Spect(PrimitivesBASE):
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
                                                     variance=prof_var, reject_bad=False,
                                                     min_snr=3, min_frac=0.2)
+
+                if peaks_and_snrs.size == 0:
+                    log.warning("Found no sources")
+                    continue
+
                 # Reverse-sort by SNR and return only the locations
                 locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
                                             reverse=True)[:max_apertures]).T[0]
-                log.stdinfo("Found sources at {}s: {}".format(direction,
-                                                              ' '.join(['{:.1f}'.format(loc) for loc in locations])))
+                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+                log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
 
                 all_limits = tracing.get_limits(profile, prof_mask, peaks=locations,
                                                 threshold=threshold, method=limit_method)
