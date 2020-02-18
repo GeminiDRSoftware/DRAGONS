@@ -1091,8 +1091,11 @@ class Spect(PrimitivesBASE):
                     wavecal = dict(zip(ext.WAVECAL["name"],
                                        ext.WAVECAL["coefficients"]))
                 except (AttributeError, KeyError):
-                    log.warning("Could not read wavelength solution for {}:{}"
-                                "".format(ad.filename, ext.hdr['EXTVER']))
+                    if (self.timestamp_keys['linearizeSpectra'] not in ad.phu and
+                            self.timestamp_keys['resampleToCommonFrame'] not in ad.phu):
+                        # warn only if the spectra have not been linearized
+                        log.warning("Could not read wavelength solution for {}:{}"
+                                    .format(ad.filename, ext.hdr['EXTVER']))
                     hdr_dict.update({'CRPIX1': 0.5 * (ext.shape[dispaxis] + 1),
                                      'CRVAL1': ext.central_wavelength(asNanometers=True),
                                      'CDELT1': ext.dispersion(asNanometers=True)})
