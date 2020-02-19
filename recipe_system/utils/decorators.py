@@ -42,9 +42,22 @@ E.g.,::
 
 """
 import gc
+import inspect
+import traceback
+from collections import Iterable
+from datetime import datetime
+
+import psutil
 from functools import wraps
 from copy import copy, deepcopy
+
+import geminidr
+from astrodata import AstroData
+from astrodata.provenance import add_provenance_history, clone_provenance, clone_provenance_history
+
 from gempy.utils import logutils
+from recipe_system.utils.md5 import md5sum
+
 
 def memusage():
     import psutil
@@ -104,6 +117,8 @@ def zeroset():
     LOGINDENT = 0
     logutils.update_indent(LOGINDENT)
     return
+
+
 # -------------------------------- decorators ----------------------------------
 def make_class_wrapper(wrapped):
     @wraps(wrapped)
@@ -116,11 +131,159 @@ def make_class_wrapper(wrapped):
         return cls
     return class_wrapper
 
+
+def _get_provenance_inputs(adinputs):
+    """
+    gets the input information for a future call to store provenance history.
+
+    The AstroData inputs can change during the call to a primitive.  We use this
+    helper function to extract the 'before' state of things so that we can accurately
+    record provenance history.  After the primitive returns, we have the AstroData
+    objects into which we'll want to record this information.
+
+
+    Args
+    -----
+    adinputs : list of incoming `AstroData` objects
+        We expect to be called before the primitive executes, since we want to capture the
+        state of the adinputs before they may be modified.
+
+    Returns
+    --------
+    `dict` by datalabel of dictionaries with the filename, md5, provenance and 
+        provenance_history data from the inputs
+    """
+    retval = dict()
+    for ad in adinputs:
+        if ad.path:
+            md5 = md5sum(ad.path) or ""
+        else:
+            md5 = ""
+        if hasattr(ad, 'PROVENANCE'):
+            provenance = ad.PROVENANCE.copy()
+        else:
+            provenance = []
+        if hasattr(ad, 'PROVENANCE_HISTORY'):
+            provenance_history = ad.PROVENANCE_HISTORY.copy()
+        else:
+            provenance_history = []
+        retval[ad.data_label()] = \
+            {
+                "filename": ad.filename,
+                "md5": md5,
+                "provenance": provenance,
+                "provenance_history": provenance_history
+            }
+    return retval
+
+
+def _clone_provenance_deprecated(provenance_input, ad):
+    """
+    For a single input's provenance, copy it into the output
+    `AstroData` object as appropriate.
+
+    This takes a dictionary with a source filename, md5 and both it's
+    original provenance and provenance_history information.  It duplicates
+    the provenance data into the outgoing `AstroData` ad object.
+
+    Args
+    -----
+    provenance_input : dictionary with provenance data from a single input.
+        We only care about the `provenance` element, which holds a list of 
+        provenance data
+    ad : outgoing `AstroData` object to add provenance data to
+
+    Returns
+    --------
+    none
+
+    """
+    provenance = provenance_input["provenance"]
+
+    for prov in provenance:
+        ad.add_provenance(prov)
+
+
+def __top_level_primitive__():
+    """ Check if we are at the top-level, not being called from another primitive.
+    
+    We only want to capture provenance history when we are passing through the
+    uppermost primitive calls.  These are the calls that get made from the recipe.
+    """
+    for trace in inspect.stack():
+        if "self" in trace[0].f_locals:
+            inst = trace[0].f_locals["self"]
+            if isinstance(inst, geminidr.PrimitivesBASE):
+                return False
+    # if we encounter no primitives above this decorator, then this is a top level primitive call
+    return True
+
+
+def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args):
+    """
+    Add the given provenance data to the outgoing `AstroData` objects in ret_value,
+    with an additional provenance entry for the current operation.
+
+    This is a fairly specific function that does a couple of things.  First, it will
+    iterate over collected provenance and history data in provenance_inputs and add
+    them as appropriate to the outgoing `AstroData` in ret_value.  Second, it takes
+    the current operation, expressed in timestamp_start, fn and args, and adds that
+    to the outgoing ret_value objects' provenance as well.
+
+    Args
+    -----
+    provenance_inputs : provenance and provenance history information to add
+        This is an dictionary keyed by datalabel of dictionaries with the relevant
+        provenance for that particular input.  Each dictionary contains the filename, 
+        md5 and the provenance and provenance_history of that `AstroData` prior to execution of
+        the primitive.
+    ret_value : outgoing list of `AstroData` data
+    fn : name of the function (primitive) being executed
+    args : arguments that are being passed to the primitive
+
+    Returns
+    --------
+    none
+    """
+    if not __top_level_primitive__():
+        # We're inside a primitive being called from another, we want to omit this
+        # from the provenance.  Only the recipe calls are relevant.
+        return
+    try:
+        timestamp = datetime.now()
+        for ad in ret_value:
+            if ad.data_label() in provenance_inputs:
+                # output corresponds to an input, we only need to copy from there
+                clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
+                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                    clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
+            else:
+                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                    clone_hist = False
+                else:
+                    clone_hist = True
+                for provenance_input in provenance_inputs.values():
+                    clone_provenance(provenance_input['provenance'], ad)
+                    if clone_hist:
+                        clone_provenance_history(provenance_input['provenance_history'], ad)
+        for ad in ret_value:
+            add_provenance_history(ad, timestamp_start, timestamp, fn.__name__, args)
+    except Exception as e:
+        # we don't want provenance failures to prevent data reduction
+        log.warn("Unable to save provenance information, continuing on: %s" % e)
+        traceback.print_exc()
+
+
 @make_class_wrapper
 def parameter_override(fn):
     @wraps(fn)
     def gn(pobj, *args, **kwargs):
         pname = fn.__name__
+
+        # for provenance information
+        stringified_args = "%s" % kwargs
+        timestamp_start = datetime.now()
+
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
         config = copy(pobj.params[pname])
@@ -152,7 +315,11 @@ def parameter_override(fn):
                 # Allow a non-existent stream to be passed
                 adinputs = pobj.streams.get(instream, [])
             try:
-                ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                provenance_inputs = _get_provenance_inputs(adinputs)
+                fnargs = dict(config.items())
+                stringified_args = "%s" % fnargs
+                ret_value = fn(pobj, adinputs=adinputs, **fnargs)
+                _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise
@@ -162,7 +329,11 @@ def parameter_override(fn):
             if args:  # if not, adinputs has already been assigned from params
                 adinputs = args[0]
             try:
+                if isinstance(adinputs, AstroData):
+                    raise TypeError("Single AstroData instance passed to primitive, should be a list")
+                provenance_inputs = _get_provenance_inputs(adinputs)
                 ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, stringified_args)
             except Exception:
                 zeroset()
                 raise

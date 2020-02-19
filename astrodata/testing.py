@@ -79,7 +79,8 @@ def assert_have_same_distortion(ad, ad_ref):
         distortion = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
         distortion = dict_to_chebyshev(distortion)
 
-        distortion_ref = dict(zip(ext.FITCOORD["name"], ext.FITCOORD["coefficients"]))
+        distortion_ref = dict(zip(ext_ref.FITCOORD["name"],
+                                  ext_ref.FITCOORD["coefficients"]))
         distortion_ref = dict_to_chebyshev(distortion_ref)
 
         assert isinstance(distortion, type(distortion_ref))
