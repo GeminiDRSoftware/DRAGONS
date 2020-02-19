@@ -1,7 +1,7 @@
 #
 #                                                                  gemini_python
 #
-#                                                      primitives_bookkeeping.py
+#                                                           primitives_upload.py
 # ------------------------------------------------------------------------------
 import copy
 
