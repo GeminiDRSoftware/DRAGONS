@@ -13,7 +13,7 @@ from astropy.convolution import convolve
 
 import astrodata
 import gemini_instruments
-from astrodata import Provenance
+from astrodata.provenance import add_provenance
 
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ

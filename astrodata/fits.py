@@ -22,7 +22,7 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest, product as cart_product
 
-from .core import AstroData, DataProvider, astro_data_descriptor, Provenance
+from .core import AstroData, DataProvider, astro_data_descriptor
 from .nddata import NDAstroData as NDDataObject, new_variance_uncertainty_instance
 
 import astropy
