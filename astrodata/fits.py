@@ -681,7 +681,10 @@ class FitsProvider(DataProvider):
         # self._resetting shortcircuits the method when populating the object. In that
         # situation, we don't want to interfere. Of course, we need to check first
         # if self._resetting is there, because otherwise we enter a loop..
-        if '_resetting' in self.__dict__ and not self._resetting and not _my_attribute(attribute):
+        # CJS 20200131: if the attribute is "exposed" then we should set it via the
+        # append method I think (it's a Table or something)
+        if ('_resetting' in self.__dict__ and not self._resetting and
+                (not _my_attribute(attribute) or attribute in self._exposed)):
             if attribute.isupper():
                 self.append(value, name=attribute, add_to=None)
                 return

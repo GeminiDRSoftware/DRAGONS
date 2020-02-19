@@ -12,6 +12,7 @@ from importlib import import_module
 import numpy as np
 from astropy import units as u
 from astropy.io.registry import IORegistryError
+from astropy.io.ascii.core import InconsistentTableError
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
@@ -19,7 +20,7 @@ from astropy.wcs import WCS
 from matplotlib import pyplot as plt
 from numpy.ma.extras import _ezclump
 from scipy import spatial, optimize
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import BSpline
 from specutils import SpectralRegion
 
 import astrodata
@@ -64,6 +65,13 @@ class Spect(PrimitivesBASE):
         order: int
             Order of the spline fit to be performed
 
+        individual: bool
+            Calculate sensitivity for each AD spectrum individually?
+
+        bandpass: float
+            default bandpass width (in nm) to use if not present in the
+            spectrophotometric data table
+
         Returns
         -------
         list of :class:`~astrodata.AstroData`
@@ -77,33 +85,67 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         order = params["order"]
+        individual = params["individual"]
+        bandpass = params["bandpass"]
 
+        atmospheric_extinction = lambda wavelength: 0.
+        # For non-individual mode, keep a list of references to slices
+        # that will need the final SENSFUNC table attaching
+        exts_requiring_sensfunc = []
+
+        # We're going to look in the generic (gemini) module as well as the
+        # instrument module, so define that
+        module = self.inst_lookups.split('.')
+        module[-2] = 'gemini'
+        gemini_lookups = '.'.join(module)
+
+        wave, zpt, zpt_err, source = [], [], [], []
+        source_number = 0
         for ad in adinputs:
-
-            # TODO: Fix when we know how/where these will be stored
-            iraf_dir = os.path.join(os.environ.get('iraf'), "noao",
-                                    "lib", "onedstds")
-            filename = os.path.join(iraf_dir, "spec50cal",
-                                    "{}.dat".format(ad.object().lower()))
-            spec_table = self._get_spectrophotometry(filename)
-            if not spec_table:
-                log.warning("Unable to determine sensitivity for {}".
+            filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
+            for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
+                try:
+                    path = import_module('.', module).__path__[0]
+                except (ImportError, ModuleNotFoundError):
+                    continue
+                full_path = os.path.join(path, 'spectrophotometric_standards', filename)
+                try:
+                    spec_table = self._get_spectrophotometry(full_path)
+                except (FileNotFoundError, InconsistentTableError):
+                    pass
+                else:
+                    break
+            else:
+                log.warning("Cannot read spectrophotometric data table. "
+                            "Unable to determine sensitivity for {}".
                             format(ad.filename))
                 continue
 
             exptime = ad.exposure_time()
+            if 'WIDTH' not in spec_table.colnames:
+                log.warning("Using default bandpass of {} nm".format(bandpass))
+                spec_table['WIDTH'] = bandpass * u.nm
 
-            # Could be XD so iterate over extensions
+            airmass = ad.airmass()
+
+            # We will only calculate sensitivity for the first 1D spectrum,
+            # unless the data are cross-dispersed, so need to keep track
+            calculated = False
             for ext in ad:
                 if len(ext.shape) != 1:
                     log.warning("{}:{} is not a 1D spectrum".
                                 format(ad.filename, ext.hdr['EXTVER']))
                     continue
 
-                spectrum = Spek1D(ext) / (exptime * u.s)
+                if calculated and 'XD' not in ad.tags:
+                    log.warning("Found additional 1D extensions in non-XD data."
+                                " Ignoring.")
+                    break
+
+                spectrum = Spek1D(ext)  / (exptime * u.s)
+                spectrum *= 10**(0.4 * atmospheric_extinction(spectrum.spectral_axis))
 
                 # Compute values that are counts / (exptime * flux_density * bandpass)
-                wave, zpt, zpt_err = [], [], []
                 for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
                                             spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
@@ -115,29 +157,63 @@ class Spect(PrimitivesBASE):
                         wave.append(w0)
                         zpt.append(u.Magnitude(data / flux))
                         zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
+                        source.append(source_number)
 
-                wave = array_from_list(wave)
-                zpt = array_from_list(zpt)
-                zpt_err = array_from_list(zpt_err)
+                if individual:
+                    # TODO: Abstract to interactive fitting
+                    wave = array_from_list(wave)
+                    zpt = array_from_list(zpt)
+                    zpt_err = array_from_list(zpt_err)
+                    spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
+                                                                            w=1./zpt_err.value,
+                                                                            order=order)
+                    knots, coeffs, degree = spline.tck
+                    sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
+                                     names=('knots', 'coefficients'))
+                    ext.SENSFUNC = sensfunc
+                    plt.ioff()
+                    fig, ax = plt.subplots()
+                    ax.plot(wave, zpt, 'ko')
+                    x = np.linspace(min(wave), max(wave), ext.shape[0])
+                    ax.plot(x, spline(x), 'r-')
+                    plt.show()
+                    wave, zpt, zpt_err = [], [], []
+                else:
+                    exts_requiring_sensfunc.append(ext)
+                    source_number += 1
 
-                spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value,
-                                                                        zpt.value, w=1. / zpt_err.value, order=order)
+                calculated = True
 
-                # plt.ioff()
-                # fig, ax = plt.subplots()
-                # ax.plot(wave, zpt, 'ko')
-                # x = np.linspace(min(wave), max(wave), ext.shape[0])
-                # ax.plot(x, spline(x), 'r-')
-                # plt.show()
+                # Timestamp and update the filename
+                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=sfx, strip=True)
 
-                knots, coeffs, degree = spline._eval_args
-                sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                 names=('knots', 'coefficients'))
+        # If we're computing a single SENSFUNC from all inputs, calculate it now!
+        if not individual:
+            wave = array_from_list(wave)
+            zpt = array_from_list(zpt)
+            zpt_err = array_from_list(zpt_err)
+            spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
+                                                                    w=1. / zpt_err.value,
+                                                                    order=order)
+            knots, coeffs, degree = spline.tck
+            sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
+                             names=('knots', 'coefficients'))
+            for ext in exts_requiring_sensfunc:
                 ext.SENSFUNC = sensfunc
+                # Timestamp and update the filename
+                gt.mark_history(ext, primname=self.myself(), keyword=timestamp_key)
+                ext.update_filename(suffix=sfx, strip=True)
 
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            plt.ioff()
+            fig, ax = plt.subplots()
+            for source_number in range(max(source)+1):
+                sym = 'krgybmc'[source_number]+'o'
+                ax.plot(wave[source==source_number], zpt[source==source_number], sym)
+            x = np.linspace(min(wave), max(wave), ext.shape[0])
+            ax.plot(x, spline(x), 'r-')
+            plt.show()
+
 
         return adinputs
 
@@ -1009,7 +1085,7 @@ class Spect(PrimitivesBASE):
                 # Create dict of wavelength keywords to add to new headers
                 # TODO: Properly. Simply put the linear approximation here for now
                 hdr_dict = {'CTYPE1': 'Wavelength',
-                            'CUNIT1': 'nanometer'}
+                            'CUNIT1': 'nm'}
 
                 try:
                     wavecal = dict(zip(ext.WAVECAL["name"],
@@ -1104,8 +1180,6 @@ class Spect(PrimitivesBASE):
                                                    'Aperture lower limit')
                     ad_spec[-1].hdr['XTRACTHI'] = (aperture._last_extraction[1],
                                                    'Aperture upper limit')
-
-                    print(len(ad_spec), ad_spec.hdr['APERTURE'])
 
                     # Delete some header keywords
                     for kw in ("CTYPE", "CRPIX", "CRVAL", "CUNIT", "CD1_", "CD2_"):
@@ -1298,6 +1372,8 @@ class Spect(PrimitivesBASE):
         std = params["standard"]
         final_units = params["units"]
 
+        # Expectation is that the SENSFUNC table will be in units
+        # like (electron/s) / (W/m^2)
         flux_units = u.Unit("W m-2")
 
         # Get a suitable arc frame (with distortion map) for every science AD
@@ -1316,15 +1392,23 @@ class Spect(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            if len(ad) != len(std):
+            len_std, len_ad = len(std), len(ad)
+            if len_std not in (1, len_ad):
                 log.warning("{} has {} extensions so cannot be used to "
                             "calibrate {} with {} extensions.".
-                            format(std.filename, len(std), ad.filename, len(ad)))
+                            format(std.filename, len_std, ad.filename, len_ad))
                 continue
 
             exptime = ad.exposure_time()
+            try:
+                delta_airmass = ad.airmass() - std.airmass()
+            except TypeError:  # if either airmass() returns None
+                log.warning("Cannot determine airmass of target and/or standard."
+                            " Not making an airmass correction.")
+                delta_airmass = 0
 
-            for ext, ext_std in zip(ad, std):
+            for index, ext in enumerate(ad):
+                ext_std = std[max(index, len_std-1)]
                 try:
                     sensfunc = ext_std.SENSFUNC
                 except AttributeError:
@@ -1360,37 +1444,61 @@ class Spect(PrimitivesBASE):
                     continue
 
                 # Get wavelengths of all pixels
-                wcs = WCS(ext.hdr)
                 ndim = len(ext.shape)
                 dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
                 wave_unit = u.Unit(ext.hdr['CUNIT{}'.format(ndim - dispaxis)])
 
-                # Get wavelengths and pixel sizes of all the pixels along the dispersion axis
+                # Get wavelengths and pixel sizes of all the pixels along the
+                # dispersion axis by calculating wavelengths in the middles and
+                # edges of all pixels. Use WAVECAL if it exists.
                 coords = np.arange(-0.5, ext.shape[dispaxis], 0.5)
-                if ndim == 2:
-                    other_axis = np.full_like(coords, 0.5 * (ext.shape[1 - dispaxis] - 1))
-                    coords = [coords, other_axis] if dispaxis == 1 else [other_axis, coords]
+                try:
+                    wavecal = dict(zip(ext.WAVECAL["name"],
+                                       ext.WAVECAL["coefficients"]))
+                except (AttributeError, KeyError):
+                    wcs = WCS(ext.hdr)
+                    if ndim == 2:
+                        # 2D coordinates along middle row or column
+                        other_axis = np.full_like(coords, 0.5 * (ext.shape[1-dispaxis]-1))
+                        coords = [coords, other_axis] if dispaxis == 1 else [other_axis, coords]
+                    else:
+                        coords = [coords]
+                    all_waves = wcs.all_pix2world(*coords, 0) * wave_unit
+                    if ndim == 2:
+                        all_waves = all_waves[1 - dispaxis]
+                    else:
+                        all_waves = all_waves[0]
                 else:
-                    coords = [coords]
-                all_waves = wcs.all_pix2world(*coords, 0) * wave_unit
-                if ndim == 2:
-                    all_waves = all_waves[1 - dispaxis]
-                else:
-                    all_waves = all_waves[0]
+                    cheb = astromodels.dict_to_chebyshev(wavecal)
+                    all_waves = cheb(coords) * u.nm
+
                 waves = all_waves[1::2]
-                pixel_sizes = np.diff(all_waves[::2])
+                pixel_sizes = abs(np.diff(all_waves[::2]))
 
                 # Reconstruct the spline and evaluate it at every wavelength
-                tck = (sensfunc['knots'].data, sensfunc['coefficients'].data, 3)
-                spline = UnivariateSpline._from_tck(tck)
+                spline = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, 3)
                 sens_factor = spline(waves.to(sensfunc['knots'].unit)) * sensfunc['coefficients'].unit
-                try:
+                try:  # conversion from magnitude/logarithmic units
                     sens_factor = sens_factor.physical
                 except AttributeError:
                     pass
+
+                # Apply airmass correction. If none is needed/possible, we
+                # don't need to try to do this
+                if delta_airmass != 0:
+                    telescope = ad.telescope()
+                    try:
+                        extinction_correction = extinct.extinction(waves, telescope=telescope)
+                    except KeyError:
+                        log.warning("Telescope {} not recognized. "
+                                    "Not making an airmass correction.".format(telescope))
+                    else:
+                        log.stdinfo("Correcting for difference of {:5.3f} "
+                                    "airmasses".format(delta_airmass))
+                        sens_factor *= 10**(0.4*delta_airmass * extinction_correction)
+
                 final_sens_factor = (sci_flux_unit / (sens_factor * pixel_sizes)).to(final_units,
-                                                                                     equivalencies=u.spectral_density(
-                                                                                         waves)).value
+                                     equivalencies=u.spectral_density(waves)).value
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]
@@ -1519,6 +1627,7 @@ class Spect(PrimitivesBASE):
                 ext.hdr["CDELT1"] = dw
                 ext.hdr["CD1_1"] = dw
                 ext.hdr["CUNIT1"] = "nanometer"
+                del ext.WAVECAL  # not needed any more
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1851,15 +1960,24 @@ class Spect(PrimitivesBASE):
 
                     # Find model to transform actual (x,y) locations to the
                     # value of the reference pixel along the dispersion axis
-                    m_init = models.Chebyshev1D(degree=order,
+                    m_init = models.Chebyshev1D(degree=order, c0=location,
                                                 domain=[0, ext.shape[dispaxis] - 1])
                     fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                                sigma_clip, sigma=3)
-                    m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
-                    plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
-                    if debug:
-                        self.viewer.polygon(plot_coords, closed=False,
-                                            xfirst=(dispaxis == 1), origin=0)
+                    try:
+                        m_final, _ = fit_it(m_init, in_coords[1 - dispaxis], in_coords[dispaxis])
+                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        # This hides a multitude of sins, including no points
+                        # returned by the trace, or insufficient points to
+                        # constrain the request order of polynomial.
+                        log.warning("Unable to trace aperture {}".format(aperture["number"]))
+                        m_final = models.Chebyshev1D(degree=0, c0=location,
+                                                     domain=[0, ext.shape[dispaxis] - 1])
+                    else:
+                        if debug:
+                            plot_coords = np.array([spectral_coords, m_final(spectral_coords)]).T
+                            self.viewer.polygon(plot_coords, closed=False,
+                                                xfirst=(dispaxis == 1), origin=0)
                     model_dict = astromodels.chebyshev_to_dict(m_final)
 
                     # Recalculate aperture limits after rectification
@@ -1940,26 +2058,25 @@ class Spect(PrimitivesBASE):
         Table:
             the spectrophotometric data, with columns 'WAVELENGTH',
             'WIDTH', and 'FLUX'
+
+        Raises
+        ------
+        FileNotFoundError: if file does not exist
+        InconsistentTableError: if the file can't be read as ASCII
         """
         log = self.log
         try:
             tbl = Table.read(filename)
-        except FileNotFoundError:
-            log.warning("File {} not found!".format(filename))
-            return
         except IORegistryError:
-            try:
-                tbl = Table.read(filename, format='ascii')
-            except:
-                self.log.warning("Cannot read file {}".format(filename))
-                return
+            # Force ASCII
+            tbl = Table.read(filename, format='ascii')
         num_columns = len(tbl.columns)
 
         # Create table, interpreting column names (or lack thereof)
         spec_table = Table()
         colnames = ('WAVELENGTH', 'WIDTH', 'MAGNITUDE')
         aliases = (('WAVE', 'LAMBDA', 'col1'),
-                   ('FWHM', 'col{}'.format(min(3, num_columns))),
+                   ('FWHM', 'col3'),
                    ('MAG', 'ABMAG', 'FLUX', 'FLAM', 'FNU', 'col2', 'DATA'))
 
         for colname, alias in zip(colnames, aliases):
@@ -1971,7 +2088,6 @@ class Spect(PrimitivesBASE):
             else:
                 log.warning("Cannot find a column to convert to '{}' in "
                             "{}".format(colname.lower(), filename))
-                return
 
         # Now handle units
         for col in spec_table.itercols():

@@ -23,7 +23,7 @@ import astropy
 from astropy.modeling import models, fitting, FittableModel, Parameter
 from astropy.stats import sigma_clip
 from astropy.utils import minversion
-from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline
+from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, BSpline
 
 from .nddops import NDStacker
 
@@ -193,11 +193,23 @@ class UnivariateSplineWithOutlierRemoval(object):
                 ext=0, check_finite=False, outlier_func=sigma_clip,
                 niter=3, grow=0, **outlier_kwargs):
         """
-        Instantiating this class creates a new spline that fits to the
+        Instantiating this class creates a spline object that fits to the
         1D data, iteratively removing outliers using a specified function.
-        A LSQUnivariateSpline() object will be created if the locations of
+        A LSQUnivariateSpline() object will be used if the locations of
         the spline knots are specified, otherwise a UnivariateSpline() object
-        will be created with the specified smoothing factor.
+        will be used with the specified smoothing factor.
+
+        Duplicate x values are allowed here in the case of a specified order,
+        because the spline is an approximation and therefore does not need to
+        pass through all the points. However, for the purposes of determining
+        whether knots satisfy the Schoenberg-Whitney conditions, duplicates
+        are treated as a single x-value.
+
+        If an order is specified, it may be reduced proportionally to the
+        number of unmasked pixels.
+
+        Once the spline has been finalized, an identical BSpline object is
+        created and returned.
 
         Parameters
         ----------
@@ -230,7 +242,7 @@ class UnivariateSplineWithOutlierRemoval(object):
 
         Returns
         -------
-        UnivariateSpline() or LSQUnivariateSpline() instance
+        BSpline object
             a callable to return the value of the interpolated spline
         """
 
@@ -246,48 +258,72 @@ class UnivariateSplineWithOutlierRemoval(object):
         else:
             raise ValueError("Both t and s have been specified")
 
+        # Both spline classes require sorted x, so do that here. We also
+        # require unique x values, so we're going to deal with duplicates by
+        # making duplicated values slightly larger. But we have to do this
+        # iteratively in case of a basket-case scenario like (1, 1, 1, 1+eps, 2)
+        # which would become (1, 1+eps, 1+2*eps, 1+eps, 2), which still has
+        # duplicates and isn't sorted!
+        # I can't think of any better way to cope with this, other than write
+        # least-squares spline-fitting code that handles duplicates from scratch
+        epsf = np.finfo(float).eps
+
+        orig_mask = np.zeros(y.shape, dtype=bool)
         if isinstance(y, np.ma.masked_array):
-            orig_mask = np.zeros(x.shape, dtype=bool) if y.mask is np.ma.nomask else y.mask.astype(bool)
+            if y.mask is not np.ma.nomask:
+                orig_mask = y.mask.astype(bool)
             y = y.data
-        else:
-            orig_mask = np.zeros(x.shape, dtype=bool)
 
         iter = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
         while iter < niter+1:
             last_mask = full_mask
+            x_to_fit = x.astype(float)
 
             if order is not None:
                 # Determine actual order to apply based on fraction of unmasked
-                # pixels, and place the knots equally among only the good pixels
-                # Unmask everything if there are too few good pixels
+                # pixels, and unmask everything if there are too few good pixels
                 this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
                 if this_order == 0:
                     full_mask = np.zeros(x.shape, dtype=bool)
                     this_order = order
-                #knots = np.linspace(x[np.argmin(full_mask)],
-                #                    x[::-1][np.argmin(full_mask[::-1])],
-                #                    this_order + 1)[1:-1]
-                good_pixels = x[~full_mask]
-                knots = [good_pixels[int(xx+0.5)]
-                         for xx in np.linspace(0, len(good_pixels)-1, this_order+1)[1:-1]]
+
+            xgood = x_to_fit[~full_mask]
+            while True:
+                xunique, indices = np.unique(xgood, return_index=True)
+                if len(indices) == len(xgood):
+                    # All unique x values so continue
+                    break
+                if order is None:
+                    raise ValueError("Must specify spline order when there are "
+                                     "duplicate x values")
+                for i in range(len(xgood)):
+                    if not (last_mask[i] or i in indices):
+                        xgood[i] *= (1.0 + epsf)
+
+            # Space knots equally based on density of unique x values
+            if order is not None:
+                knots = [xunique[int(xx+0.5)]
+                         for xx in np.linspace(0, len(xunique)-1, this_order+1)[1:-1]]
                 spline_args = (knots,)
 
+            sort_indices = np.argsort(xgood)
             # Create appropriate spline object using current mask
-            instance = object.__new__(cls_)
             try:
-                instance.__init__(x[~full_mask], y[~full_mask],
-                                  *spline_args, w=None if w is None else w[~full_mask], **spline_kwargs)
+                spline = cls_(xgood[sort_indices], y[~full_mask][sort_indices],
+                              *spline_args, w=None if w is None else w[~full_mask][sort_indices],
+                              **spline_kwargs)
             except ValueError as e:
                 raise e
-            spline_y = instance(x)
+            spline_y = spline(x)
             #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
             #mask = masked_residuals.mask
 
             # When sigma-clipping, only remove the originally-masked points.
             # Note that this differs from the astropy.modeling code because
             # the sigma-clipping and spline-fitting are done independently here.
-            d, mask, v = NDStacker.sigclip(spline_y-y, mask=orig_mask, variance=None, **outlier_kwargs)
+            d, mask, v = NDStacker.sigclip(spline_y-y, mask=orig_mask, variance=None,
+                                           **outlier_kwargs)
             if grow > 0:
                 maskarray = np.zeros((grow * 2 + 1, len(y)), dtype=bool)
                 for i in range(-grow, grow + 1):
@@ -304,10 +340,12 @@ class UnivariateSplineWithOutlierRemoval(object):
                 break
             iter += 1
 
+        # Create a standard BSpline object
+        bspline = BSpline(*spline._eval_args)
         # Attach the mask and model (may be useful)
-        instance.mask = full_mask
-        instance.data = spline_y
-        return instance
+        bspline.mask = full_mask
+        bspline.data = spline_y
+        return bspline
 
 
 # -----------------------------------------------------------------------------

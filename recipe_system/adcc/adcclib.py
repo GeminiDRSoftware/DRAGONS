@@ -56,6 +56,7 @@ class ADCC(with_metaclass(Singleton, object)):
         else:
             self.dark = args.dark
             self.events = eventsManager.EventsManager()
+            self.spec_events = eventsManager.EventsManager()
             self.http_port = args.httpport
             self.sreport = args.adccsrn
             self.racefile = "adccinfo.py"
@@ -83,8 +84,14 @@ class ADCC(with_metaclass(Singleton, object)):
         # establish HTTP server and proxy.
         self.web = Thread(group=None, target=http_proxy.main, name="webface",
                           args=(run_event,),
-                          kwargs={'port': self.http_port, 'dark': self.dark,
-                                  'events': self.events, 'verbose': self.verbose})
+                          kwargs={
+                              'port': self.http_port,
+                              'dark': self.dark,
+                              'events': self.events,
+                              'spec_events': self.spec_events,
+                              'verbose': self.verbose
+                          }
+        )
         return
 
     def _handle_locks(self):

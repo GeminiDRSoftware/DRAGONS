@@ -1,12 +1,12 @@
 """
 Recipes available to data with tags ['GMOS', 'SPECT', 'LS'].
 These are GMOS longslit observations.
-Default is "reduce".
+Default is "reduceScience".
 """
 recipe_tags = set(['GMOS', 'SPECT', 'LS'])
 
 
-def reduce(p):
+def reduceScience(p):
     """
     todo: add docstring
 
@@ -66,4 +66,4 @@ def reduceStandard(p):
 
 
 
-_default = reduce
+_default = reduceScience

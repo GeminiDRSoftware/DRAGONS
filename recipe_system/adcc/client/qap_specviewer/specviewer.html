@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QAP SpecViewer</title>
+  <link rel="shortcut icon" href="favicon.ico" />
+  <!-- JQuery -->
+  <script type="text/javascript" src="/qapspec/js/jquery-3.4.1.min.js"></script>
+
+  <!-- JQuery-UI -->
+  <link rel="stylesheet" href="/qapspec/js/jquery-ui-1.12.1/jquery-ui.min.css">
+  <script type="text/javascript" src="/qapspec/js/jquery-ui-1.12.1/jquery-ui.min.js"></script>
+
+  <!-- JQPlot -->
+  <link rel="stylesheet" href="/qapspec/js/jqplot.1.0.9/jquery.jqplot.min.css">
+  <script type="text/javascript" src="/qapspec/js/jqplot.1.0.9/jquery.jqplot.min.js"></script>
+  <script type="text/javascript" src="/qapspec/js/jqplot.1.0.9/plugins/jqplot.canvasTextRenderer.js"></script>
+  <script type="text/javascript" src="/qapspec/js/jqplot.1.0.9/plugins/jqplot.canvasAxisLabelRenderer.js"></script>
+  <script type="text/javascript" src="/qapspec/js/jqplot.1.0.9/plugins/jqplot.canvasAxisTickRenderer.js"></script>
+  <script type="text/javascript" src="/qapspec/js/jqplot.1.0.9/plugins/jqplot.cursor.js"></script>
+  <script type="text/javascript" src="/qapspec/js/jqplot.1.0.9/plugins/jqplot.enhancedLegendRenderer.js"></script>
+
+  <!-- QAP SpecViewer is mostly defined in JS -->
+  <script type="text/javascript" src="/qapspec/js/gjs_specpump.js"></script>
+  <script type="text/javascript" src="/qapspec/js/specviewer.js"></script>
+  <link rel="stylesheet" href="/qapspec/css/specviewer.css">
+
+  <!-- Initialize SpecViewer -->
+  <script>
+    $(document).ready(
+      function() {
+
+        // Enable plugins like cursor and highlighter by default.
+        $.jqplot.config.enablePlugins = true;
+
+        // For these examples, don't show the to image button.
+        $.jqplot._noToImageButton = true;
+
+        var delay = 10000;  // miliseconds
+        var element = $('#main');
+        var id = 'specViewer';
+        var sViewer = new SpecViewer(element, id, delay);
+      }
+    );
+    // Enable tooltips
+    $( document ).tooltip();
+  </script>
+
+</head>
+
+
+<body>
+
+  <div class="wrapper">
+
+    <div class="header d-table">
+      <h2> QAP SpecViewer </h2>
+    </div>
+
+    <div id="content">
+      <div id="main">
+         <!-- Placeholder for SpecViewer -->
+      </div>
+    </div>
+
+    <div class="footer d-table">
+      <spam class="status d-table-cell">
+        <!-- Add some information here -->
+      </spam>
+    </div>
+
+  </div>
+
+</body>
+
+</html>
