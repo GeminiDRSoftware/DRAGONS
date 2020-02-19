@@ -15,7 +15,7 @@ from . import parameters_gemini
 from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
-class Gemini(Standardize, Bookkeeping, Upload, Preprocess, Visualize, Stack, QA,
+class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
              CalibDB):
     """
     This is the class containing the generic Gemini primitives.

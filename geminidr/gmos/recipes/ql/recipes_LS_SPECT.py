@@ -32,7 +32,7 @@ def reduceScience(p):
     p.extract1DSpectra()
     p.linearizeSpectra()
     p.writeOutputs()
-    p.uploadFiles()
+    p.uploadScience()
 
 
 
@@ -62,7 +62,7 @@ def reduceStandard(p):
     p.linearizeSpectra()  # TODO: needed?
     p.calculateSensitivity()
     p.writeOutputs()
-    p.uploadFiles()
+    p.uploadScience()
 
 
 
