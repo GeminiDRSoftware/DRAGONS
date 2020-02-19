@@ -78,7 +78,6 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_tag
     def _tag_processed_standard(self):
         if 'SENSFUNC' in self.phu:
-            print("returning PROCESSED STANDARD CAL tag set")
             return TagSet(['PROCESSED', 'STANDARD', 'CAL'], blocks=['RAW'])
 
     def _tag_is_spect(self):
