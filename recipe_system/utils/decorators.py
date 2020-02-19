@@ -52,7 +52,8 @@ from functools import wraps
 from copy import copy, deepcopy
 
 import geminidr
-from astrodata import AstroData, ProvenanceHistory
+from astrodata import AstroData
+from astrodata.provenance import add_provenance_history, clone_provenance, clone_provenance_history
 
 from gempy.utils import logutils
 from recipe_system.utils.md5 import md5sum
@@ -149,23 +150,35 @@ def _get_provenance_inputs(adinputs):
 
     Returns
     --------
-    list of dictionaries with the filename, md5, provenance and provenance_history data from the inputs
+
+    `dict` by datalabel of dictionaries with the filename, md5, provenance and 
+        provenance_history data from the inputs
     """
-    retval = list()
+    retval = dict()
     for ad in adinputs:
-        if ad.filename:
-            if ad.path:
-                md5 = md5sum(ad.path)
-            else:
-                md5 = ""
-            retval.append({"filename": ad.filename,
-                           "md5": md5,
-                           "provenance": ad.provenance,
-                           "provenance_history": ad.provenance_history})
+        if ad.path:
+            md5 = md5sum(ad.path) or ""
+        else:
+            md5 = ""
+        if hasattr(ad, 'PROVENANCE'):
+            provenance = ad.PROVENANCE.copy()
+        else:
+            provenance = []
+        if hasattr(ad, 'PROVENANCE_HISTORY'):
+            provenance_history = ad.PROVENANCE_HISTORY.copy()
+        else:
+            provenance_history = []
+        retval[ad.data_label()] = \
+            {
+                "filename": ad.filename,
+                "md5": md5,
+                "provenance": provenance,
+                "provenance_history": provenance_history
+            }
     return retval
 
 
-def _clone_provenance(provenance_input, ad):
+def _clone_provenance_deprecated(provenance_input, ad):
     """
     For a single input's provenance, copy it into the output
     `AstroData` object as appropriate.
@@ -177,7 +190,8 @@ def _clone_provenance(provenance_input, ad):
     Args
     -----
     provenance_input : dictionary with provenance data from a single input.
-        We only care about the `provenance` element, which holds a list of `Provenance` data
+        We only care about the `provenance` element, which holds a list of 
+        provenance data
     ad : outgoing `AstroData` object to add provenance data to
 
     Returns
@@ -185,44 +199,10 @@ def _clone_provenance(provenance_input, ad):
     none
 
     """
-    # set will be faster for checking contents
-    existing_provenance = set(ad.provenance)
-
     provenance = provenance_input["provenance"]
 
     for prov in provenance:
-        if prov not in existing_provenance:
-            ad.add_provenance(prov)
-            existing_provenance.add(prov)
-
-
-def _clone_history(provenance_input, ad):
-    """
-    For a single input's provenance history, copy it into the output
-    `AstroData` object as appropriate.
-
-    This takes a dictionary with a source filename, md5 and both it's
-    original provenance and provenance_history information.  It duplicates
-    the provenance data into the outgoing `AstroData` ad object.
-
-    Args
-    -----
-    provenance_input : dictionary with provenance data from a single input.
-        We only care about the `provenance_history` element, which holds a list of `ProvenanceHistory` data
-    ad : outgoing `AstroData` object to add provenance data to
-
-    Returns
-    --------
-    none
-    """
-    # set will be faster for checking contents
-    existing_history = set(ad.provenance_history)
-
-    provenance_history = provenance_input["provenance_history"]
-    for ph in provenance_history:
-        if ph not in existing_history:
-            ad.add_provenance_history(ph)
-            existing_history.add(ph)
+        ad.add_provenance(prov)
 
 
 def __top_level_primitive__():
@@ -253,10 +233,10 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
 
     Args
     -----
-    provenance_inputs : `ProvenanceHistory` to add
-        This is an array of dictionaries.  There is one dictionary per original incoming
-        `AstroData` object.  Each dictionary contains the filename, md5 and the
-        provenance and provenance_history of that `AstroData` prior to execution of
+    provenance_inputs : provenance and provenance history information to add
+        This is an dictionary keyed by datalabel of dictionaries with the relevant
+        provenance for that particular input.  Each dictionary contains the filename, 
+        md5 and the provenance and provenance_history of that `AstroData` prior to execution of
         the primitive.
     ret_value : outgoing list of `AstroData` data
     fn : name of the function (primitive) being executed
@@ -272,28 +252,23 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
         return
     try:
         timestamp = datetime.now()
-        if len(provenance_inputs) == len(ret_value):
-            for provenance_input, ad in zip(provenance_inputs, ret_value):
-                _clone_provenance(provenance_input, ad)
-                if not ad.provenance_history:
-                    # if our output has no history, it's fresh and we want
-                    # to copy in the history from the input
-                    _clone_history(provenance_input, ad)
-        else:
-            for ad in ret_value:
-                # if our output has no history, it's fresh and we want
-                # to copy in the history from the inputs
-                if ad.provenance_history:
-                    clone_history = False
-                else:
-                    clone_history = True
-                for provenance_input in provenance_inputs:
-                    _clone_provenance(provenance_input, ad)
-                    if clone_history:
-                        _clone_history(provenance_input, ad)
-
         for ad in ret_value:
-            ad.add_provenance_history(ProvenanceHistory(timestamp_start, timestamp, fn.__name__, args))
+            if ad.data_label() in provenance_inputs:
+                # output corresponds to an input, we only need to copy from there
+                clone_provenance(provenance_inputs[ad.data_label()]['provenance'], ad)
+                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                    clone_provenance_history(provenance_inputs[ad.data_label()]['provenance_history'], ad)
+            else:
+                if hasattr(ad, 'PROVENANCE_HISTORY'):
+                    clone_hist = False
+                else:
+                    clone_hist = True
+                for provenance_input in provenance_inputs.values():
+                    clone_provenance(provenance_input['provenance'], ad)
+                    if clone_hist:
+                        clone_provenance_history(provenance_input['provenance_history'], ad)
+        for ad in ret_value:
+            add_provenance_history(ad, timestamp_start, timestamp, fn.__name__, args)
     except Exception as e:
         # we don't want provenance failures to prevent data reduction
         log.warn("Unable to save provenance information, continuing on: %s" % e)

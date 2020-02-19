@@ -486,7 +486,9 @@ class Preprocess(PrimitivesBASE):
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-            ad.add_provenance(Provenance(datetime.datetime.now(), dark.filename, md5sum(dark.path), "darkCorrect"))
+
+            if dark.path:
+                add_provenance(ad, dark.filename, md5sum(dark.path) or "", self.myself())
         return adinputs
 
     def dilateObjectMask(self, adinputs=None, suffix=None, dilation=1, repeat=False):
@@ -615,7 +617,8 @@ class Preprocess(PrimitivesBASE):
                 ad.phu.set(qecorr_key, qecorr_value, flat.phu.comments[qecorr_key])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-            ad.add_provenance(Provenance(datetime.datetime.now(), flat.filename, md5sum(flat.path), "flatCorrect"))
+            if flat.path:
+                add_provenance(ad, flat.filename, md5sum(flat.path) or "", self.myself())
         return adinputs
 
     def makeSky(self, adinputs=None, **params):
