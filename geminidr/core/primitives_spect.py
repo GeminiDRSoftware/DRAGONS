@@ -50,6 +50,92 @@ class Spect(PrimitivesBASE):
         super(Spect, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
+    def adjustSlitOffsetToReference(self, adinputs=None, **params):
+        """
+        Compute offsets along the slit by cross-correlation, or use offset
+        from the headers (QOFFSET). The computed offset is stored in the
+        SLITOFF keyword.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 1D or 2D spectra. Each extension must have a
+            `.WAVECAL` table.
+        suffix : str
+            Suffix to be added to output files
+        method : str ['correlation' | 'offsets']
+            Method to use to compute offsets. 'correlation' uses a
+            correlation of the slit profiles (the 2d images stacked
+            on the dispersion axis), 'offsets' uses the QOFFSET keyword.
+        tolerance : float
+            Maximum distance from the header offset, for the correlation
+            method (arcsec). If the correlation computed offset is too
+            different from the header offset, then the latter is used.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        method = params["method"]
+        tolerance = params["tolerance"]
+
+        if len(adinputs) <= 1:
+            log.warning("No correction will be performed, since at least two "
+                        "input images are required")
+            return adinputs
+
+        if not all(len(ad) == 1 for ad in adinputs):
+            raise IOError("All input images must have only one extension.")
+
+        # Use first image in list as reference
+        refad = adinputs[0]
+        log.stdinfo("Reference image: {}".format(refad.filename))
+
+        def stack_slit(ext):
+            dispaxis = 2 - ext.dispersion_axis()  # python sense
+            data = np.ma.array(ext.data, mask=(ext.mask > 0))
+            data = np.ma.masked_invalid(data)
+            return data.mean(axis=dispaxis)
+
+        ref_profile = stack_slit(refad[0])
+
+        for ad in adinputs[1:]:
+            dispaxis = 2 - ad[0].dispersion_axis()  # python sense
+            if dispaxis == 1:
+                hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+            else:
+                hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+
+            if method == 'correlation':
+                profile = stack_slit(ad[0])
+                # cross-correlate profiles to find the offset
+                corr = np.correlate(ref_profile, profile, mode='full')
+                offset = np.argmax(corr) - ref_profile.shape[0] + 1
+
+                # Check that the offset is similar to the one from headers
+                dist_arsec = np.abs(hdr_offset - offset) * ad.pixel_scale()
+                if tolerance and dist_arsec > tolerance:
+                    # Fallback to header offset?
+                    log.warning("Offset from correlation ({}) is too big "
+                                "compared to the header offset ({}). Using "
+                                "this one instead".format(offset, hdr_offset))
+                    offset = hdr_offset
+
+            elif method == 'offsets':
+                # Use directly the offset from the headers
+                offset = hdr_offset
+
+            log.stdinfo("Offset for image {} : {} pixels"
+                        .format(ad.filename, offset))
+            ad.phu['SLITOFF'] = offset
+
+        # Timestamp and update filenames
+        for i, ad in enumerate(adinputs):
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
     def calculateSensitivity(self, adinputs=None, **params):
         """
         ???
@@ -1643,86 +1729,115 @@ class Spect(PrimitivesBASE):
 
         return adinputs
 
-    def adjustSlitOffsetToReference(self, adinputs=None, **params):
+    def normalizeFlat(self, adinputs=None, **params):
         """
-        Compute offsets along the slit by cross-correlation, or use offset
-        from the headers (QOFFSET). The computed offset is stored in the
-        SLITOFF keyword.
+        This primitive normalizes a spectroscopic flatfield, by fitting
+        a cubic spline along the dispersion direction of an averaged
+        combination of rows/columns (by default, in the center of the
+        spatial direction). Each row/column is then divided by this spline.
+
+        For multi-extension AstroData objects of MOS or XD, each extension
+        is treated separately. For other multi-extension data,
+        mosaicDetectors() is called to produce a single extension, and the
+        spline fitting is performed with variable scaling parameters for
+        each detector (identified within the mosaic from groups of DQ.no_data
+        pixels). The spline fit is calculated in the mosaicked frame but it
+        is evaluated for each pixel in each unmosaicked detector, so that
+        the resultant flatfield always has the same format (i.e., number of
+        extensions and their shape) as the input frame.
 
         Parameters
         ----------
-        suffix : str
+        suffix: str
             suffix to be added to output files
-        method : str ['correlation' | 'offsets']
-            method to use to compute offsets. 'correlation' uses a
-            correlation of the slit profiles (the 2d images stacked
-            on the dispersion axis), 'offsets' uses the QOFFSET keyword.
-        tolerance : float
-            Maximum distance from the header offset, for the correlation
-            method (arcsec). If the correlation computed offset is too
-            different from the header offset, then the latter is used.
-
+        center: int/None
+            central row/column for 1D extraction (None => use middle)
+        nsum: int
+            number of rows/columns around center to combine
+        spectral_order: int
+            order of fit in spectral direction
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        method = params["method"]
-        tolerance = params["tolerance"]
+        sfx = params["suffix"]
+        spectral_order = params["spectral_order"]
+        center = params["center"]
+        nsum = params["nsum"]
 
-        if len(adinputs) <= 1:
-            log.warning("No correction will be performed, since at least two "
-                        "input images are required")
-            return adinputs
-
-        if not all(len(ad) == 1 for ad in adinputs):
-            raise IOError("All input images must have only one extension.")
-
-        # Use first image in list as reference
-        refad = adinputs[0]
-        log.stdinfo("Reference image: {}".format(refad.filename))
-
-        def stack_slit(ext):
-            dispaxis = 2 - ext.dispersion_axis()  # python sense
-            data = np.ma.array(ext.data, mask=(ext.mask > 0))
-            data = np.ma.masked_invalid(data)
-            return data.mean(axis=dispaxis)
-
-        ref_profile = stack_slit(refad[0])
-
-        for ad in adinputs[1:]:
-            dispaxis = 2 - ad[0].dispersion_axis()  # python sense
-            if dispaxis == 1:
-                hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+        for ad in adinputs:
+            # Don't mosaic if the multiple extensions are because the
+            # data are MOS or cross-dispersed
+            if len(ad) > 1 and not ({'MOS', 'XD'} & ad.tags):
+                geotable = import_module('.geometry_conf', self.inst_lookups)
+                adg = transform.create_mosaic_transform(ad, geotable)
+                admos = adg.transform(attributes=None, order=1)
+                mosaicked = True
             else:
-                hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+                admos = ad
+                mosaicked = False
 
-            if method == 'correlation':
-                profile = stack_slit(ad[0])
-                # cross-correlate profiles to find the offset
-                corr = np.correlate(ref_profile, profile, mode='full')
-                offset = np.argmax(corr) - ref_profile.shape[0] + 1
+            # This will loop over MOS slits or XD orders
+            for ext in admos:
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                direction = "row" if dispaxis == 1 else "column"
 
-                # Check that the offset is similar to the one from headers
-                dist_arsec = np.abs(hdr_offset - offset) * ad.pixel_scale()
-                if tolerance and dist_arsec > tolerance:
-                    # Fallback to header offset?
-                    log.warning("Offset from correlation ({}) is too big "
-                                "compared to the header offset ({}). Using "
-                                "this one instead".format(offset, hdr_offset))
-                    offset = hdr_offset
+                data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
+                log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
+                            format(direction, extract_slice.start + 1, extract_slice.stop))
+                mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
+                slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
-            elif method == 'offsets':
-                # Use directly the offset from the headers
-                offset = hdr_offset
+                masked_data = np.ma.masked_array(data, mask=mask)
+                weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
+                pixels = np.arange(len(masked_data))
 
-            log.stdinfo("Offset for image {} : {} pixels"
-                        .format(ad.filename, offset))
-            ad.phu['SLITOFF'] = offset
+                # We're only going to do CCD-to-CCD normalization if we've
+                # done the mosaicking in this primitive; if not, we assume
+                # the user has already taken care of it (if it's required).
+                nslices = len(slices)
+                if nslices > 1 and mosaicked:
+                    coeffs = np.ones((nslices - 1,))
+                    boundaries = list(slice_.stop for slice_ in slices[:-1])
+                    result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
+                                                                       weights, boundaries, spectral_order), tol=1e-7,
+                                               method='Nelder-Mead')
+                    if not result.success:
+                        log.warning("Problem with spline fitting: {}".format(result.message))
 
-        # Timestamp and update filenames
-        for i, ad in enumerate(adinputs):
+                    # Rescale coefficients so centre-left CCD is unscaled
+                    coeffs = np.insert(result.x, 0, [1])
+                    coeffs /= coeffs[len(coeffs) // 2]
+                    for coeff, slice_ in zip(coeffs, slices):
+                        masked_data[slice_] *= coeff
+                        weights[slice_] /= coeff
+                    log.stdinfo("QE scaling factors: " +
+                                " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
+                spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
+                                                                        order=spectral_order, w=weights)
+
+                if not mosaicked:
+                    flat_data = np.tile(spline.data, (ext.shape[dispaxis - 1], 1))
+                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis == 2))[0])
+
+            # If we've mosaicked, there's only one extension
+            # We forward transform the input pixels, take the transformed
+            # coordinate along the dispersion direction, and evaluate the
+            # spline there.
+            if mosaicked:
+                for block, trans in adg:
+                    trans.append(models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0]))
+                    for ext, corner in zip(block, block.corners):
+                        t = deepcopy(trans)
+                        # Shift so coordinates are correct in this Block
+                        t.prepend(models.Shift(corner[1]) & models.Shift(corner[0]))
+                        geomap = transform.GeoMap(t, ext.shape, inverse=True)
+                        flat_data = spline(geomap.coords[dispaxis])
+                        ext.divide(flat_data)
+
+            # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -1957,118 +2072,6 @@ class Spect(PrimitivesBASE):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
-
-        return adinputs
-
-    def normalizeFlat(self, adinputs=None, **params):
-        """
-        This primitive normalizes a spectroscopic flatfield, by fitting
-        a cubic spline along the dispersion direction of an averaged
-        combination of rows/columns (by default, in the center of the
-        spatial direction). Each row/column is then divided by this spline.
-
-        For multi-extension AstroData objects of MOS or XD, each extension
-        is treated separately. For other multi-extension data,
-        mosaicDetectors() is called to produce a single extension, and the
-        spline fitting is performed with variable scaling parameters for
-        each detector (identified within the mosaic from groups of DQ.no_data
-        pixels). The spline fit is calculated in the mosaicked frame but it
-        is evaluated for each pixel in each unmosaicked detector, so that
-        the resultant flatfield always has the same format (i.e., number of
-        extensions and their shape) as the input frame.
-
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        center: int/None
-            central row/column for 1D extraction (None => use middle)
-        nsum: int
-            number of rows/columns around center to combine
-        spectral_order: int
-            order of fit in spectral direction
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        spectral_order = params["spectral_order"]
-        center = params["center"]
-        nsum = params["nsum"]
-
-        for ad in adinputs:
-            # Don't mosaic if the multiple extensions are because the
-            # data are MOS or cross-dispersed
-            if len(ad) > 1 and not ({'MOS', 'XD'} & ad.tags):
-                geotable = import_module('.geometry_conf', self.inst_lookups)
-                adg = transform.create_mosaic_transform(ad, geotable)
-                admos = adg.transform(attributes=None, order=1)
-                mosaicked = True
-            else:
-                admos = ad
-                mosaicked = False
-
-            # This will loop over MOS slits or XD orders
-            for ext in admos:
-                dispaxis = 2 - ext.dispersion_axis()  # python sense
-                direction = "row" if dispaxis == 1 else "column"
-
-                data, mask, variance, extract_slice = _average_along_slit(ext, center=center, nsum=nsum)
-                log.stdinfo("Extracting 1D spectrum from {}s {} to {}".
-                            format(direction, extract_slice.start + 1, extract_slice.stop))
-                mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
-                slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
-
-                masked_data = np.ma.masked_array(data, mask=mask)
-                weights = np.sqrt(np.where(variance > 0, 1. / variance, 0.))
-                pixels = np.arange(len(masked_data))
-
-                # We're only going to do CCD-to-CCD normalization if we've
-                # done the mosaicking in this primitive; if not, we assume
-                # the user has already taken care of it (if it's required).
-                nslices = len(slices)
-                if nslices > 1 and mosaicked:
-                    coeffs = np.ones((nslices - 1,))
-                    boundaries = list(slice_.stop for slice_ in slices[:-1])
-                    result = optimize.minimize(QESpline, coeffs, args=(pixels, masked_data,
-                                                                       weights, boundaries, spectral_order), tol=1e-7,
-                                               method='Nelder-Mead')
-                    if not result.success:
-                        log.warning("Problem with spline fitting: {}".format(result.message))
-
-                    # Rescale coefficients so centre-left CCD is unscaled
-                    coeffs = np.insert(result.x, 0, [1])
-                    coeffs /= coeffs[len(coeffs) // 2]
-                    for coeff, slice_ in zip(coeffs, slices):
-                        masked_data[slice_] *= coeff
-                        weights[slice_] /= coeff
-                    log.stdinfo("QE scaling factors: " +
-                                " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
-                spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                                        order=spectral_order, w=weights)
-
-                if not mosaicked:
-                    flat_data = np.tile(spline.data, (ext.shape[dispaxis - 1], 1))
-                    ext.divide(_transpose_if_needed(flat_data, transpose=(dispaxis == 2))[0])
-
-            # If we've mosaicked, there's only one extension
-            # We forward transform the input pixels, take the transformed
-            # coordinate along the dispersion direction, and evaluate the
-            # spline there.
-            if mosaicked:
-                for block, trans in adg:
-                    trans.append(models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0]))
-                    for ext, corner in zip(block, block.corners):
-                        t = deepcopy(trans)
-                        # Shift so coordinates are correct in this Block
-                        t.prepend(models.Shift(corner[1]) & models.Shift(corner[0]))
-                        geomap = transform.GeoMap(t, ext.shape, inverse=True)
-                        flat_data = spline(geomap.coords[dispaxis])
-                        ext.divide(flat_data)
-
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
