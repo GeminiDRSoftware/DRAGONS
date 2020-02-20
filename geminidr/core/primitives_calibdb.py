@@ -208,7 +208,7 @@ class CalibDB(PrimitivesBASE):
             if self.upload and ((is_science and 'science' in self.upload) or \
                                 (not is_science and 'calibs' in self.upload)):
                 try:
-                    upload_calibration(fname)
+                    upload_calibration(fname, is_science=is_science)
                 except:
                     log.warning("Unable to upload file to {} system"
                                 .format("science" if is_science else "calibration"))
