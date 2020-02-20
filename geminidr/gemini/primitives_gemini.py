@@ -3,7 +3,6 @@
 #
 #                                                           primitives_gemini.py
 # ------------------------------------------------------------------------------
-from geminidr.core.primitives_upload import Upload
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.core import Bookkeeping, CalibDB, Preprocess

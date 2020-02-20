@@ -189,7 +189,7 @@ class CalibDB(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         storedcals = self.cachedict["calibrations"]
         caltype = params["caltype"]
-        is_science = caltype in ['sq', 'ql', 'qa']:
+        is_science = caltype in ['sq', 'ql', 'qa']
         required_tags = REQUIRED_TAG_DICT[caltype]
 
         # Create storage directory if it doesn't exist
