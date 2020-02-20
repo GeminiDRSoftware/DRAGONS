@@ -189,8 +189,13 @@ class CalibDB(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         storedcals = self.cachedict["calibrations"]
         caltype = params["caltype"]
-        is_science = caltype in ['sq', 'ql', 'qa']
         required_tags = REQUIRED_TAG_DICT[caltype]
+
+        # If we are one of the 'science' types, then we store it as science.
+        # This changes the log messages to refer to the files as science
+        # and ultimately routes to the upload_file web api instead of
+        # upload_processed_cal
+        is_science = caltype in ['sq', 'ql', 'qa']
 
         # Create storage directory if it doesn't exist
         if not os.path.exists(os.path.join(storedcals, caltype)):
@@ -303,7 +308,7 @@ class CalibDB(PrimitivesBASE):
     def storeScience(self, adinputs=None):
         if self.mode not in ['sq', 'ql', 'qa']:
             log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
-        if self.upload and 'science' in self.upload:
+        elif self.upload and 'science' in self.upload:
             # save filenames so we can restore them after
             filenames = [ad.filename for ad in adinputs]
 
