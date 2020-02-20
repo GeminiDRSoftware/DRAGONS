@@ -87,17 +87,18 @@ class Spect(PrimitivesBASE):
         if not all(len(ad) == 1 for ad in adinputs):
             raise IOError("All input images must have only one extension.")
 
-        # Use first image in list as reference
-        refad = adinputs[0]
-        log.stdinfo("Reference image: {}".format(refad.filename))
-
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
             data = np.ma.array(ext.data, mask=(ext.mask > 0))
             data = np.ma.masked_invalid(data)
             return data.mean(axis=dispaxis)
 
-        ref_profile = stack_slit(refad[0])
+        # Use first image in list as reference
+        refad = adinputs[0]
+        log.stdinfo("Reference image: {}".format(refad.filename))
+        refad.phu['SLITOFF'] = 0
+        if method == 'correlation':
+            ref_profile = stack_slit(refad[0])
 
         for ad in adinputs[1:]:
             dispaxis = 2 - ad[0].dispersion_axis()  # python sense
@@ -1903,7 +1904,7 @@ class Spect(PrimitivesBASE):
             for i, ad in enumerate(adinputs):
                 if len(ad) != 1:
                     raise ValueError('inputs must have only 1 extension')
-                if i > 0 and adjust_key not in ad.phu:
+                if adjust_key not in ad.phu:
                     log.warning(
                         "{} has not offset, adjustSlitOffsetToReference "
                         "should be run first".format(ad.filename))
@@ -1998,14 +1999,10 @@ class Spect(PrimitivesBASE):
                     if ndim == 1:
                         t.append(wave_full_model)
                     elif ndim == 2:
-                        if i > 0 and 'SLITOFF' not in ad.phu:
-                            raise Exception('FIXME: what should we do here?')
-
-                        # Apply spatial offset if needed (i.e. not for the
-                        # first extension)
-                        offset = (models.Shift(ad.phu['SLITOFF']) if i > 0
+                        # Apply spatial offset if needed
+                        offset = ad.phu.get('SLITOFF', 0)
+                        offset = (models.Shift(offset) if offset != 0
                                   else models.Identity(1))
-
                         if dispaxis == 0:
                             t.append(offset & wave_full_model)
                         else:
@@ -2068,7 +2065,6 @@ class Spect(PrimitivesBASE):
                         names=("name", "coefficients")
                     )
 
-        for ad in adinputs:
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
