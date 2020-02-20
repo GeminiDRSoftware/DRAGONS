@@ -180,6 +180,7 @@ def test_correlation_non_linearize(adinputs, caplog):
 
 @pytest.mark.preprocessed_data
 def test_header_offset(adinputs2, caplog):
+    """Test that the offset is correctly read from the headers."""
     p = primitives_gmos_spect.GMOSSpect(adinputs2)
     adout = p.adjustSlitOffsetToReference(method='offsets')
 
@@ -190,6 +191,10 @@ def test_header_offset(adinputs2, caplog):
 
 @pytest.mark.preprocessed_data
 def test_header_offset_fallback(adinputs2, caplog):
+    """For this dataset the correlation method fails, and give an offset very
+    different from the header one. So we check that the fallback to the header
+    offset works.
+    """
     p = primitives_gmos_spect.GMOSSpect(adinputs2)
     adout = p.adjustSlitOffsetToReference()
 
