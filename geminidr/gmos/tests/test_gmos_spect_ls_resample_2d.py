@@ -19,10 +19,14 @@ test_datasets = [
 ]
 
 test_datasets2 = [
-    ("S20161022S0051_skyCorrected.fits",           # R400 : 0.750
-     "S20161003S0280_distortionDetermined.fits"),  #
-    ("S20161022S0052_skyCorrected.fits",           # R400 : 0.750
-     "S20161003S0280_distortionDetermined.fits"),  #
+    ("N20180106S0025_skyCorrected.fits",           # B600 : 0.555
+     "N20180115S0264_distortionDetermined.fits"),  #
+    ("N20180106S0026_skyCorrected.fits",           # B600 : 0.555
+     "N20180115S0264_distortionDetermined.fits"),  #
+    ("N20180106S0028_skyCorrected.fits",           # B600 : 0.555
+     "N20180115S0264_distortionDetermined.fits"),  #
+    ("N20180106S0029_skyCorrected.fits",           # B600 : 0.555
+     "N20180115S0264_distortionDetermined.fits"),  #
 ]
 
 
@@ -186,7 +190,11 @@ def test_header_offset(adinputs2, caplog):
 
     for rec in caplog.records:
         assert not rec.message.startswith('WARNING - Offset from correlation')
-    assert np.isclose(adout[1].phu['SLITOFF'], -93.75)
+
+    assert np.isclose(adout[0].phu['SLITOFF'], 0)
+    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
+    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
+    assert np.isclose(adout[3].phu['SLITOFF'], 0)
 
 
 @pytest.mark.preprocessed_data
@@ -200,5 +208,9 @@ def test_header_offset_fallback(adinputs2, caplog):
 
     assert caplog.records[3].message.startswith(
         'WARNING - Offset from correlation (0) is too big compared to the '
-        'header offset (-93.74999999999996). Using this one instead')
-    assert np.isclose(adout[1].phu['SLITOFF'], -93.75)
+        'header offset (-92.93680297397756). Using this one instead')
+
+    assert np.isclose(adout[0].phu['SLITOFF'], 0)
+    assert np.isclose(adout[1].phu['SLITOFF'], -92.9368)
+    assert np.isclose(adout[2].phu['SLITOFF'], -92.9368)
+    assert np.isclose(adout[3].phu['SLITOFF'], 0)
