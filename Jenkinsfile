@@ -76,6 +76,9 @@ pipeline {
             steps {
                 echo "Running tests"
                 sh 'tox -e py36-unit -v -- --junit-xml reports/unittests_results.xml'
+
+                echo "Reportint coverage to CodeCov"
+                sh 'tox -e codecov'
             }
 
         }
