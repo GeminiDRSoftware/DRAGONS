@@ -417,11 +417,12 @@ def asdftablehdu_to_wcs(hdu):
         # data, in which case we just extract unmodified bytes from the table.
         if colarr.dtype.kind in ('U', 'S'):
             sep = os.linesep
-            # Not sure whether io.fits ever produces 'S' on Py 3, but just in
-            # case: join lines as str & avoid a TypeError with unicode linesep;
-            # could also use astype('U') but it assumes an encoding implicitly.
+            # Just in case io.fits ever produces 'S' on Py 3 (not the default):
+            # join lines as str & avoid a TypeError with unicode linesep; could
+            # also use astype('U') but it assumes an encoding implicitly.
             if colarr.dtype.kind == 'S' and not isinstance(sep, bytes):
-                colarr = np.vectorize(lambda b: b.decode('ascii'))(colarr)
+                colarr = np.char.decode(np.char.rstrip(colarr),
+                                        encoding='ascii')
             wcsbuf = sep.join(colarr).encode('ascii')
         else:
             wcsbuf = colarr.tobytes()
