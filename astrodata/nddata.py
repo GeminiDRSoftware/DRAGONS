@@ -85,7 +85,7 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def variance(self):
         un = self.uncertainty
         if un is not None:
-            return un.array**2
+            return un.array
 
     @property
     def mask(self):
