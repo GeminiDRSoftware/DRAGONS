@@ -13,11 +13,13 @@ from astropy.convolution import convolve
 
 import astrodata
 import gemini_instruments
+from astrodata.provenance import add_provenance
 
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
+from recipe_system.utils.md5 import md5sum
 from . import parameters_preprocess
 
 from recipe_system.utils.decorators import parameter_override
@@ -484,6 +486,8 @@ class Preprocess(PrimitivesBASE):
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
+            if dark.path:
+                add_provenance(ad, dark.filename, md5sum(dark.path) or "", self.myself())
         return adinputs
 
     def dilateObjectMask(self, adinputs=None, suffix=None, dilation=1, repeat=False):
@@ -612,6 +616,8 @@ class Preprocess(PrimitivesBASE):
                 ad.phu.set(qecorr_key, qecorr_value, flat.phu.comments[qecorr_key])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
+            if flat.path:
+                add_provenance(ad, flat.filename, md5sum(flat.path) or "", self.myself())
         return adinputs
 
     def makeSky(self, adinputs=None, **params):
