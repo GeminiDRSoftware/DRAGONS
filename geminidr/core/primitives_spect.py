@@ -21,6 +21,9 @@ from astropy.io.registry import IORegistryError
 from astropy.wcs import WCS
 from astropy import units as u
 
+from gwcs.coordinate_frames import Frame2D
+from gwcs.wcs import WCS as gWCS
+
 from specutils import SpectralRegion
 
 from matplotlib import pyplot as plt
@@ -155,23 +158,10 @@ class Spect(PrimitivesBASE):
         fitted coordinates in the dispersion direction. The distortion map does
         not change the coordinates in the spatial direction.
 
-        The Chebyshev2D model is stored as a Table object in the `.FITCOORD`
-        plane with the following format:
+        The Chebyshev2D model is stored as part of a gWCS object in each
+        `nddata.wcs` attribute, which gets mapped to a FITS table extension
+        named `WCS` on disk.
 
-        =============== ================ ============== ======================
-        name            coefficients     inv_name       inv_coefficients
-        --------------- ---------------- -------------- ----------------------
-        ndim            (int as float)   ndim           (int as float)
-        x_degree        (int as float)   x_degree       (int as float)
-        y_degree        (int as float)   y_degree       (int as float)
-        x_domain_start  (int as float)   x_domain_start (int as float)
-        x_domain_end    (int as float)   x_domain_end   (int as float)
-        y_domain_start  (int as float)   y_domain_start (int as float)
-        y_domain_end    (int as float)   y_domain_end   (int as float)
-        c0_0            (float)          c0_0           (float)
-        c1_0            (float)          c1_0           (float)
-        ...             ...              ...            ...
-        =============== ================ ============== ======================
 
         Parameters
         ----------
@@ -212,8 +202,8 @@ class Spect(PrimitivesBASE):
         Returns
         -------
         list of :class:`~astrodata.AstroData`
-            The same input list is used as output but each object now has a
-            `.FITCOORD` table appended to each of its extensions. This table
+            The same input list is used as output but each object now has the
+            appropriate `nddata.wcs` defined for each of its extensions. This
             provides details of the 2D Chebyshev fit which maps the distortion.
         """
         log = self.log
@@ -325,9 +315,11 @@ class Spect(PrimitivesBASE):
                 if dispaxis == 1:
                     model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
                     model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
+                    refaxes = ("xref", "y")
                 else:
                     model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
                     model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
+                    refaxes = ("x", "yref")
 
                 self.viewer.color = "blue"
                 spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
@@ -346,16 +338,15 @@ class Spect(PrimitivesBASE):
                     if debug:
                         self.viewer.polygon(mapped_coords, closed=False, xfirst=True, origin=0)
 
-                columns = []
-                for m in (m_final, m_inverse):
-                    model_dict = astromodels.chebyshev_to_dict(m)
-                    columns.append(list(model_dict.keys()))
-                    columns.append(list(model_dict.values()))
-                # If we're genuinely worried about the two models, they might
-                # have different orders and we might need to pad one
-                ext.FITCOORD = Table(columns, names=("name", "coefficients",
-                                                     "inv_name", "inv_coefficients"))
-                #ext.COORDS = Table([*in_coords] + [*ref_coords], names=('xin','yin','xref','yref'))
+                # The data may not be a mosaic for instruments other than GMOS
+                # but that's the logical step we're at:
+                in_frame = Frame2D(name="det_mosaic", axes_names=("x", "y"),
+                                   unit=(u.pix, u.pix))
+                ref_frame = Frame2D(name="dist_ref_spec", axes_names=refaxes,
+                                   unit=(u.pix, u.pix))
+
+                ext.nddata.wcs = gWCS([(in_frame, model),
+                                       (ref_frame, None)])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -405,10 +396,6 @@ class Spect(PrimitivesBASE):
         else:
             arc_list = arc
 
-        # The forward Transform is *only* used to determine the shape
-        # of the output image, which we want to be the same as the input
-        m_ident = models.Identity(2)
-
         adoutputs = []
         # Provide an arc AD object for every science frame
         for ad, arc in zip(*gt.make_lists(adinputs, arc_list, force_ad=True)):
@@ -450,24 +437,23 @@ class Spect(PrimitivesBASE):
             # one block of reading and verifying them
             distortion_models = []
             for ext in arc:
-                fitcoord = ext.FITCOORD
-                model_dict = dict(zip(fitcoord['inv_name'],
-                                      fitcoord['inv_coefficients']))
-                m_inverse = astromodels.dict_to_chebyshev(model_dict)
-                if not isinstance(m_inverse, models.Chebyshev2D):
+
+                wcs = ext.nddata.wcs
+
+                if not (isinstance(wcs, gWCS) and
+                        wcs.pixel_n_dim == 2 and wcs.world_n_dim == 2):
                     log.warning("Could not read distortion model from arc {}:{}"
                                 " - continuing".format(arc.filename, ext.hdr['EXTVER']))
                     adoutputs.append(ad)
                     continue
 
-                # Use AstroPy Compound Models to have a model that can be applied to 2D data:
-                # https://docs.astropy.org/en/stable/modeling/compound-models.html#advanced-mappings
-                dispaxis = arc[0].dispersion_axis() - 1
-                if dispaxis == 0:
-                    m_ident.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
-                else:
-                    m_ident.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
-                distortion_models.append(m_ident.copy())
+                # We could just pass the forward transform of the WCS, which
+                # already has its inverse attached, but the code currently
+                # relies on a no-op forward model to size the output correctly:
+                # m_wcs = wcs.forward_transform
+                m_wcs = models.Identity(2)
+                m_wcs.inverse = wcs.backward_transform
+                distortion_models.append(m_wcs)
 
             # Determine whether we're producing a single-extension AD
             # or keeping the number of extensions as-is
@@ -515,7 +501,7 @@ class Spect(PrimitivesBASE):
                     # correction transform
                     origin_shift = models.Shift(-adg.origin[1]) & models.Shift(-adg.origin[0])
                     for t in adg.transforms:
-                        t.append([origin_shift, m_ident.copy()])
+                        t.append([origin_shift, m_wcs])
                     # And recalculate output_shape and origin properly
                     adg.calculate_output_shape()
                 else:
@@ -531,9 +517,9 @@ class Spect(PrimitivesBASE):
                         # No mosaicking, so we can just do a shift
                         m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
                                    models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
-                        adg = transform.AstroDataGroup(ad, [transform.Transform([m_shift, m_ident])])
+                        adg = transform.AstroDataGroup(ad, [transform.Transform([m_shift, m_wcs])])
                     else:
-                        adg = transform.AstroDataGroup(ad, [transform.Transform(m_ident)])
+                        adg = transform.AstroDataGroup(ad, [transform.Transform(m_wcs)])
 
                 ad_out = adg.transform(order=order, subsample=subsample, parallel=False)
                 try:
