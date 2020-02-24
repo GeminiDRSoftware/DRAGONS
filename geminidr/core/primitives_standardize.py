@@ -4,10 +4,13 @@
 #                                                      primitives_standardize.py
 # ------------------------------------------------------------------------------
 import os
+from datetime import datetime
+
 import numpy as np
 from importlib import import_module
 from scipy.ndimage import measurements
 
+from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
 from gempy.utils import logutils
@@ -15,6 +18,7 @@ from gempy.utils import logutils
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from geminidr import PrimitivesBASE
+from recipe_system.utils.md5 import md5sum
 from . import parameters_standardize
 
 from recipe_system.utils.decorators import parameter_override
@@ -311,6 +315,12 @@ class Standardize(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
+
+        provenance_timestamp = datetime.now()
+
+        filenames = [ad.filename for ad in adinputs]
+        paths = [ad.path for ad in adinputs]
+
         timestamp_key = self.timestamp_keys["prepare"]
         sfx = params["suffix"]
         for primitive in ('validateData', 'standardizeStructure',
@@ -320,7 +330,11 @@ class Standardize(PrimitivesBASE):
 
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
+            filename = ad.filename
             ad.update_filename(suffix=sfx, strip=True)
+        for ad, filename, path in zip(adinputs, filenames, paths):
+            if path:
+                add_provenance(ad, filename, md5sum(path) or "", self.myself())
         return adinputs
 
     def standardizeHeaders(self, adinputs=None, **params):

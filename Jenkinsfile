@@ -15,7 +15,7 @@
 pipeline {
 
     agent {
-        label 'bquint-ld1'
+        label 'master'
     }
 
     triggers {

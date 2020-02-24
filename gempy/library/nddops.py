@@ -47,15 +47,15 @@ def take_along_axis(arr, ind, axis):
     """
     Returns a view of an array (arr), re-ordered along an axis according to
     the indices (ind). Taken from numpy issue 8708 under BSD licence,
-    pending inclusion into numpy.
+    pending inclusion into numpy (added in version 1.15.0).
     """
     if arr is None:
         return None
     if axis < 0:
-       if axis >= -arr.ndim:
-           axis += arr.ndim
-       else:
-           raise IndexError('axis out of range')
+        if axis >= -arr.ndim:
+            axis += arr.ndim
+        else:
+            raise IndexError('axis out of range')
     ind_shape = (1,) * ind.ndim
     ins_ndim = ind.ndim - (arr.ndim - 1)   #inserted dimensions
 

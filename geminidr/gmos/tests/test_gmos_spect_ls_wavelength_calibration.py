@@ -38,7 +38,6 @@ import geminidr
 from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
 from gempy.library import astromodels
-from gempy.utils import logutils
 from .plots_gmos_spect_longslit_arcs import PlotGmosSpectLongslitArcs
 
 # Test parameters --------------------------------------------------------------
@@ -256,24 +255,8 @@ def preprocess_recipe(ad, path):
     return ad
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_log(path_to_outputs):
-    """
-    Fixture that setups DRAGONS' logging system to avoid duplicated outputs.
-
-    Parameters
-    ----------
-    path_to_outputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        output folder.
-    """
-    log_file = "{}.log".format(os.path.splitext(os.path.basename(__file__))[0])
-    log_file = os.path.join(path_to_outputs, log_file)
-
-    logutils.config(mode="standard", file_name=log_file)
-
-
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.xfail(reason="Work in progress")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad", input_files, indirect=True)
 def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(ad):
@@ -301,7 +284,7 @@ def test_reduced_arcs_contain_wavelength_solution_model_with_expected_rms(ad):
     np.testing.assert_array_less(rms, required_rms)
 
 
-
+@pytest.mark.xfail(reason="Need to rebuild reference files")
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
 def test_reduced_arcs_contains_stable_wavelength_solution(ad, ad_ref):
