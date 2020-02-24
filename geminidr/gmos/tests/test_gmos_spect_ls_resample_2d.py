@@ -126,8 +126,16 @@ def test_correlation(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15)
     _check_params(caplog.records, 'w1=508.198 w2=1088.323 dw=0.150 npix=3869')
 
-    adstack = p.stackFrames()
-    assert adstack[0][0].shape == (512, 3869)
+    ad = p.stackFrames()[0]
+    assert ad[0].shape == (512, 3869)
+
+    caplog.clear()
+    ad = p.findSourceApertures()[0]
+    assert len(ad[0].APERTURE) == 1
+    assert caplog.records[3].message == 'Found sources at rows: 260.7'
+
+    ad = p.extract1DSpectra()[0]
+    assert ad[0].shape == (3869,)
 
 
 @pytest.mark.preprocessed_data
@@ -142,8 +150,16 @@ def test_correlation_and_trim(adinputs, caplog):
     p.resampleToCommonFrame(dw=0.15, trim_data=True)
     _check_params(caplog.records, 'w1=614.666 w2=978.802 dw=0.150 npix=2429')
 
-    adstack = p.stackFrames()
-    assert adstack[0][0].shape == (512, 2429)
+    ad = p.stackFrames()[0]
+    assert ad[0].shape == (512, 2429)
+
+    caplog.clear()
+    ad = p.findSourceApertures()[0]
+    assert len(ad[0].APERTURE) == 1
+    assert caplog.records[3].message == 'Found sources at rows: 260.4'
+
+    ad = p.extract1DSpectra()[0]
+    assert ad[0].shape == (2429,)
 
 
 @pytest.mark.preprocessed_data
