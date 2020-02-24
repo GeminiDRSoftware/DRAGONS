@@ -3,11 +3,15 @@
 #
 #                                                        primitives_visualize.py
 # ------------------------------------------------------------------------------
+import json
 import numpy as np
+import time
+import urllib.request
+
 from copy import deepcopy
 from importlib import import_module
-import time
 
+from gempy.library import astromodels
 from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy import numdisplay as nd
@@ -391,6 +395,168 @@ class Visualize(PrimitivesBASE):
             ad_out.update_filename(suffix=suffix, strip=True)
             adoutputs.append(ad_out)
         return adoutputs
+
+    def plotSpectraForQA(self, adinputs=None, **params):
+        """
+        Converts AstroData containing extracted spectra into a JSON object. Then,
+        push it to the Automated Dataflow Coordination Center (ADCC) Server
+        (see notes below) using a POST request.
+
+        This will allow the spectra to be visualized using the QAP SpecViewer
+        web browser client.
+
+        Notes
+        -----
+        This primitive only works if the (ADCC) Server is running locally.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Input data containing extracted spectra.
+        url : str
+            URL address to the ADCC server.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Data used for plotting.
+        """
+        url = params["url"]
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        log.stdinfo('Number of input file(s): {}'.format(len(adinputs)))
+
+        spec_packs = []
+
+        for ad in adinputs:
+
+            log.stdinfo('Reading {} aperture(s) from file: {}'.format(
+                len(ad), ad.filename))
+
+            timestamp = time.time()
+
+            if 'NCOMBINE' in ad.phu:
+                is_stack = ad.phu['NCOMBINE'] > 1
+                stack_size = ad.phu['NCOMBINE']
+            else:
+                is_stack = False
+                stack_size = 1
+
+            group_id = ad.group_id().split('_[')[0]
+            group_id += ad.group_id().split(']')[1]
+
+            spec_pack = {
+                "apertures": [],
+                "data_label": ad.data_label(),
+                "filename": ad.filename,
+                "group_id": group_id,
+                "is_stack": is_stack,
+                "stack_size": stack_size,
+                "metadata": [],
+                "msgtype": "specjson",
+                "pixel_scale": ad.pixel_scale(),
+                "program_id": ad.program_id(),
+                "timestamp": timestamp,
+            }
+
+            for i, ext in enumerate(ad):
+                data = ext.data
+                stddev = np.sqrt(ext.variance)
+
+                if data.ndim > 1:
+                    raise TypeError(
+                        "Expected 1D data. Found {:d}D data: {:s}".format(
+                            data.ndim, ad.filename))
+
+                if hasattr(ext, 'WAVECAL'):
+
+                    wcal_model = astromodels.dict_to_chebyshev(
+                        dict(
+                            zip(
+                                ext.WAVECAL["name"],
+                                ext.WAVECAL["coefficients"]
+                            )
+                        )
+                    )
+
+                    wavelength = wcal_model(np.arange(data.size, dtype=float))
+                    w_dispersion = ext.hdr["CDELT1"]
+                    w_units = ext.hdr["CUNIT1"]
+
+                elif "CDELT1" in ext.hdr:
+
+                    wavelength = (
+                        ext.hdr["CRVAL1"] + ext.hdr["CDELT1"] * (
+                            np.arange(data.size, dtype=float)
+                            + 1 - ext.hdr["CRPIX1"]))
+
+                    w_dispersion = ext.hdr["CDELT1"]
+                    w_units = ext.hdr["CUNIT1"]
+
+                else:
+                    w_units = "px"
+                    w_dispersion = 1
+
+                # Clean up bad data
+                mask = np.logical_not(np.ma.masked_invalid(data).mask)
+
+                wavelength = wavelength[mask]
+                data = data[mask]
+                stddev = stddev[mask]
+
+                # Round and convert data/stddev to int to minimize data transfer load
+                wavelength = np.round(wavelength, decimals=3)
+                data = np.round(data)
+                stddev = np.round(stddev)
+
+                _intensity = [[w, int(d)] for w, d in zip(wavelength, data)]
+                _stddev = [[w, int(s)] for w, s in zip(wavelength, stddev)]
+
+                center = np.round(ext.hdr["XTRACTED"])
+                lower = np.round(ext.hdr["XTRACTLO"])
+                upper = np.round(ext.hdr["XTRACTHI"])
+
+                aperture = {
+                    "center": center,
+                    "lower": lower,
+                    "upper": upper,
+                    "dispersion": w_dispersion,
+                    "wavelength_units": w_units,
+                    "intensity": _intensity,
+                    "stddev": _stddev,
+                }
+
+                spec_pack["apertures"].append(aperture)
+
+                log.stdinfo(' Aperture center: {}, Lower: {}, Upper: {}'.format(
+                    center, lower, upper))
+
+            spec_packs.append(spec_pack)
+
+            spec_packs_json = json.dumps(spec_packs)
+
+            with open("spec_data.json", 'w') as json_buffer:
+                json.dump(spec_packs, json_buffer)
+
+            # Convert string to bytes
+            spec_packs_json = spec_packs_json.encode("utf-8")
+
+            try:
+                log.stdinfo('Sending data to QA SpecViewer')
+                post_request = urllib.request.Request(url)
+                postr = urllib.request.urlopen(post_request, spec_packs_json)
+                postr.read()
+                postr.close()
+                log.stdinfo('Success.')
+
+            except urllib.error.URLError:
+                log.warning('Failed to connect to ADCC Server.\n'
+                            'Make sure it is up and running.')
+
+        return adinputs
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #

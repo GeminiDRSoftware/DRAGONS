@@ -21,3 +21,6 @@ class normalizeFlatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     spectral_order = config.Field("Fitting order in spectral direction",
                                   (int, str), 20, check=flat_order_check)
+    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
+    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
+    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)

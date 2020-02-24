@@ -7,6 +7,7 @@ from gempy.library import config
 def threshold_check(value):
     return (isinstance(value, float) or value == 'auto')
 
+
 class displayConfig(config.Config):
     extname = config.Field("EXTNAME to display", str, "SCI")
     frame = config.RangeField("Starting frame for display", int, 1, min=1)
@@ -17,18 +18,30 @@ class displayConfig(config.Config):
     tile = config.Field("Tile multiple extensions into single display frame?", bool, True)
     zscale = config.Field("Use zscale algorithm?", bool, True)
 
+
 class inspectConfig(displayConfig):
     pause = config.RangeField("Pause between the display, in seconds", int, 2, min=0)
 
+
 #class mosaicDetectorsConfig(config.Config):
 #    pass
+
 
 class mosaicDetectorsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_mosaic")
     sci_only = config.Field("Mosaic only SCI extensions?", bool, False)
     order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
 
+
 class tileArraysConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_tiled", optional=True)
     sci_only = config.Field("Tile only SCI extensions?", bool, False)
     tile_all = config.Field("Tile to single extension?", bool, False)
+
+
+class plotSpectraForQAConfig(config.Config):
+
+    url = config.Field(
+        doc="URL address to the ADCC server.",
+        dtype=str,
+        default="http://localhost:8777/spec_report")

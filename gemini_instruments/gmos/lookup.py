@@ -1684,3 +1684,17 @@ gratingeq = (1.629168086997, 1.6150523031634, 1.6004445587539, 1.5853493034291,
              0.25226733328635, 0.22090227288766, 0.18946992351687, 0.15797985977208,
              0.12644167383172, 0.094864972532733, 0.063259374444201, 0.03163450693745,
              3.2534573368714E-9)
+
+# Names of spectrophotometric standards used in the Gemini OBJECT field,
+# after converting to lowercase and stripping out spaces
+standard_star_names = ('bd+284211', 'cd-329927', 'cd-34241', 'cygob2no9',
+                       'eg81', 'eg131', 'eg274',
+                       'feige34', 'feige56', 'feige66', 'feige67', 'feige110',
+                       'g191b2b', 'gd108', 'gd140',
+                       'hd192281', 'hd217086', 'hiltner600', 'hz14', 'hz44',
+                       'ltt1020', 'ltt1788', 'ltt2415', 'ltt2915', 'ltt3218',
+                       'ltt3864', 'ltt4364', 'ltt4816', 'ltt6248', 'ltt7379',
+                       'ltt7987', 'ltt9239', 'ltt9491',
+                       'pg0205+134', 'pg0216+032', 'pg0310+149', 'pg0823+546',
+                       'pg0846+249', 'pg0934+554', 'pg0939+262', 'pg1211+145',
+                       'pg1545+035', 'pg1708+602', 'wolf1346')

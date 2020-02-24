@@ -4,6 +4,8 @@
 #                                                     primtives_gmos_longslit.py
 # ------------------------------------------------------------------------------
 import numpy as np
+import warnings
+
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 from gempy.library import astromodels
@@ -54,27 +56,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                             format(ad.filename))
                 continue
 
-            if illum is None:
-                # Default operation for GMOS LS
-                # The 95% cut should ensure that we're sampling something
-                # bright (even for an arc)
-                # The 75% cut is intended to handle R150 data, where many of
-                # the extensions are unilluminated
-                row_medians = np.percentile(np.array([np.percentile(ext.data, 95, axis=1)
-                                                      for ext in ad]), 75, axis=0)
-                rows = np.arange(len(row_medians))
-                m_init = models.Polynomial1D(degree=2)
-                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
-                                                           outlier_func=sigma_clip)
-                m_final, mask = fit_it(m_init, rows, row_medians)
-                mask &= (row_medians < m_final(rows))
-                # The default selection tends to mask the edges of the good
-                # regions, so rein it in a bit
-                mask = at.boxcar(mask, operation=np.logical_and, size=1)
-                for ext in ad:
-                    ext.mask |= (mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
-
-            else:
+            if illum:
                 log.fullinfo("Using {} as illumination mask".format(illum.filename))
                 final_illum = gt.clip_auxiliary_data(ad, aux=illum, aux_type='bpm',
                                           return_dtype=DQ.datatype)
@@ -85,6 +67,25 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                         iext = np.where(illum_ext.data > 0, DQ.unilluminated,
                                         0).astype(DQ.datatype)
                         ext.mask = iext if ext.mask is None else ext.mask | iext
+            elif not all(detsec.y1 > 1600 and detsec.y2 < 2900
+                         for detsec in ad.detector_section()):
+                # Default operation for GMOS LS
+                # The 95% cut should ensure that we're sampling something
+                # bright (even for an arc)
+                # The 75% cut is intended to handle R150 data, where many of
+                # the extensions are unilluminated
+                row_medians = np.percentile(np.array([np.percentile(ext.data, 95, axis=1)
+                                                      for ext in ad]), 75, axis=0)
+                rows = np.arange(len(row_medians))
+                m_init = models.Polynomial1D(degree=3)
+                fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                           outlier_func=sigma_clip)
+                m_final, _ = fit_it(m_init, rows, row_medians)
+                # Find points which are significantly below the smooth illumination fit
+                row_mask = at.boxcar(m_final(rows) - row_medians > 0.1 * np.median(row_medians),
+                                     operation=np.logical_or, size=2)
+                for ext in ad:
+                    ext.mask |= (row_mask * DQ.unilluminated).astype(DQ.datatype)[:, np.newaxis]
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -116,8 +117,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        suffix = params["suffix"]
-        spectral_order = params["spectral_order"]
+
+        # For flexibility, the code is going to pass whatever validated
+        # parameters it gets (apart from suffix and spectral_order) to
+        # the spline fitter
+        spline_kwargs = params.copy()
+        suffix = spline_kwargs.pop("suffix")
+        spectral_order = spline_kwargs.pop("spectral_order")
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
@@ -148,9 +154,13 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     masked_data = np.ma.masked_array(row.data, mask=row.mask)
                     weights = np.sqrt(np.where(row.variance > 0, 1. / row.variance, 0.))
                     spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                    order=order, w=weights)
+                                                    order=order, w=weights, **spline_kwargs)
                     fitted_data[i] = spline(pixels)
-                ext.divide(fitted_data)
+                with warnings.catch_warnings():
+                    # Ignore pesky divide-by-zero type warnings because we
+                    # handle NaNs later
+                    warnings.filterwarnings('ignore', r'.*true_divide.*')
+                    ext.divide(fitted_data)
 
                 # Split the normalized flat back into the separate extensions
                 tiled_detsec = ext.detector_section()

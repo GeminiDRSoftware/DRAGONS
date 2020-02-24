@@ -1,0 +1,148 @@
+body {
+  background-color: #F2F2F2;
+  color: black;
+  font: normal normal 16px Verdana, Geneva, Arial, Helvetica, sans-serif;
+  padding: 10px;
+}
+
+.apertureInfo {
+  padding: 5px 7px;
+}
+
+.app-info-field {
+  transition: all .25s linear;
+  border-radius: 5px;
+  padding: 2px;
+  cursor: default;
+}
+
+.app-info-field:hover {
+  background-color: #ddd;
+}
+
+.countdown {
+  padding-right: 5px;
+}
+
+.countdown .number {
+  width: 30px;
+}
+
+.dot {
+  height: 10px;
+  width: 10px;
+  margin-right: 5px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.online {
+  background-color: #4da6ff;
+}
+
+.dot.offline {
+  background-color: #b30000;
+}
+
+.d-table {
+  display: table;
+}
+
+.d-table-cell {
+  display: table-cell;
+}
+
+.footer {
+  margin-top: 5px;
+  color: #999;
+}
+
+.header {
+  margin: 0px;
+  line-height: 0.5;
+}
+
+.info {
+  background-color: #ddd;
+  border-radius: 5px;
+  padding: 5px 15px;
+  width: inherit;
+}
+
+.info.single {
+  margin-bottom: 5px;
+}
+
+.info.stack {
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
+
+.jqplot-grid-canvas {
+  height: inherit;
+}
+
+.loading {
+  color: #333;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 20px;
+  width: 30%;
+}
+
+.not-available {
+  color: #aaa;
+  text-align: center;
+}
+
+.no-data {
+  font-size: 16px;
+  color: #aaa;
+}
+
+.plot {
+  padding: 0px;
+  width: 96%;
+}
+
+.resizable {
+  padding: 10px 30px 10px 10px;
+  border-radius: 5px;
+  text-align: center;
+  min-height: 100px;
+  width: inherit;
+}
+
+.tar {
+  text-align: right;
+}
+
+.ui-button {
+  border-radius: 5px;
+  height: 32px;
+  width: 32px;
+  padding: 4px;
+}
+
+.ui-resizable-helper {
+  border: 2px solid gray;
+}
+
+.ui-tabs .ui-tabs-panel {
+  width: inherit;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.zoom-reset {
+  width: 100%;
+  height: 100%;
+}
+
+#specViewer {
+  transition: all .5s linear;
+}

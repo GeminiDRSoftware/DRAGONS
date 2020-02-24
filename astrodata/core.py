@@ -1,10 +1,20 @@
-import inspect
+from datetime import datetime
+
+from astropy.table import Table
+
+import numpy as np
+
+try:
+    from builtins import object
+    from future.utils import with_metaclass
+except ImportError:
+    raise ImportError("AstroData requires the 'future' package for Python 2/3 compatibility")
+
 from abc import ABCMeta, abstractmethod, abstractproperty
-from builtins import object
+from functools import wraps
+import inspect
 from collections import namedtuple
 from copy import deepcopy
-from functools import wraps
-from future.utils import with_metaclass
 
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
@@ -156,6 +166,7 @@ def astro_data_tag(fn):
 
 class AstroDataError(Exception):
     pass
+
 
 
 class DataProvider(with_metaclass(ABCMeta, object)):
@@ -426,6 +437,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         operating with the data
         """
         pass
+
 
 # NOTE: This is not being used at all. Maybe it would be better to remove it altogether for the time
 #       being, and reimplement it if it's ever needed

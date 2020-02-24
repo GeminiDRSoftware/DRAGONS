@@ -992,6 +992,7 @@ def fit_continuum(ad):
     log = logutils.get_logger(__name__)
     import warnings
 
+    find_sources_while_iterating = False
     good_sources = []
 
     pixel_scale = ad.pixel_scale()
@@ -1010,6 +1011,7 @@ def fit_continuum(ad):
 
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         dispersed_length = ext.shape[dispaxis]
+        spatial_length = ext.shape[1-dispaxis]
         binnings = (ext.detector_x_bin(), ext.detector_y_bin())
         spatial_bin, spectral_bin = binnings[1-dispaxis], binnings[dispaxis]
 
@@ -1038,7 +1040,7 @@ def fit_continuum(ad):
             shuffle = ad.shuffle_pixels() // spatial_bin
             spatial_slice = slice(shuffle, shuffle * 2)
         else:
-            spatial_slice = slice(0, ext.shape[1 - dispaxis])
+            spatial_slice = slice(0, spatial_length)
 
         # First, if there are acquisition slits, we use those positions
         spatial_slices = []
@@ -1052,7 +1054,7 @@ def fit_continuum(ad):
                 continue
             try:
                 # No acquisition slits, maybe we've already found apertures?
-                aptable = ext.APERTURES
+                aptable = ext.APERTURE
                 for row in aptable:
                     model_dict = dict(zip(aptable.colnames, row))
                     trace_model = astromodels.dict_to_chebyshev(model_dict)
@@ -1061,33 +1063,39 @@ def fit_continuum(ad):
                                                 aper_upper=model_dict['aper_upper'])
                     spatial_slices.append(aperture)
             except AttributeError:
-                # No apertures, so find sources now in the region already defined
-                # Taking the 95th percentile should remove CRs
-                if ext.mask is None:
-                    profile = np.percentile(ext.data, 95, axis=dispaxis)
-                else:
-                    profile = np.percentile(np.where(ext.mask==0, ext.data, 0), 95, axis=dispaxis)
-                center = np.argmax(profile[spatial_slice]) + spatial_slice.start
-                spatial_slices = [slice(max(center-spatial_box, 0),
-                                        min(center+spatial_box, ext.shape[1-dispaxis]))]
+                # No apertures, so defer source-finding until we iterate
+                # over the spectral_slices
+                find_sources_while_iterating = True
         else:
             for slit in acq_star_positions.split():
                 c, w = [int(x) for x in slit.split(':')]
                 spatial_slices.append(slice(c-w, c+w))
 
-        from matplotlib import pyplot as plt
         for spectral_slice in spectral_slices:
             coord = 0.5 * (spectral_slice.start + spectral_slice.stop)
 
+            if find_sources_while_iterating:
+                if ext.mask is None:
+                    profile = np.percentile(ext.data, 95, axis=dispaxis)
+                else:
+                    profile = np.percentile(np.where(ext.mask == 0, ext.data, -np.inf),
+                                            95, axis=dispaxis)
+                center = np.argmax(profile[spatial_slice]) + spatial_slice.start
+                spatial_slices = [slice(max(center - spatial_box, 0),
+                                        min(center + spatial_box, spatial_length))]
+
             for spatial_slice in spatial_slices:
-                try:
-                    length = spatial_slice.stop - spatial_slice.start
-                except AttributeError:
-                    # It's an Aperture, so convert to a regular slice object
-                    limits = spatial_slice.model(coord) + np.array([spatial_slice.lower,
-                                                                    spatial_slice.upper])
-                    spatial_slice = slice(*limits)
-                    length = spatial_slice.stop - spatial_slice.start
+                if isinstance(spatial_slice, tracing.Aperture):
+                    # convert to a regular slice object
+                    limits = spatial_slice.model(coord) + np.array([spatial_slice.aper_lower,
+                                                                    spatial_slice.aper_upper])
+                    spatial_slice = slice(max(0, int(np.floor(limits[0]))),
+                                          min(spatial_length, int(np.ceil(limits[1]))))
+                length = spatial_slice.stop - spatial_slice.start
+
+                # General sanity requirement (will reject bad Apertures)
+                if length < 10:
+                    continue
 
                 # These are all in terms of the full unsliced extension
                 pixels = np.arange(spatial_slice.start, spatial_slice.stop)
@@ -1101,7 +1109,9 @@ def fit_continuum(ad):
                     ndd = ext.nddata[full_slice].T
 
                 data, mask, var = NDStacker.mean(ndd)
-                maxflux = np.max(abs(data))
+                if mask is not None:
+                    mask = (mask == 0)
+                maxflux = np.max(abs(data[mask]))
 
                 # Crude SNR test; is target bright enough in this wavelength range?
                 #if np.percentile(col,90)*xbox < np.mean(databox[dqbox==0]) \
@@ -1139,12 +1149,12 @@ def fit_continuum(ad):
                 fit_it = fitting.LevMarLSQFitter()
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    m_final = fit_it(m_init, pixels, data)
+                    m_final = fit_it(m_init, pixels[mask], data[mask])
 
                 if fit_it.fit_info['ierr'] < 5:
                     # This is kind of ugly and empirical; philosophy is that peak should
                     # be away from the edge and should be similar to the maximum
-                    if (m_final.amplitude_0 > 0.5*maxflux and
+                    if (m_final.amplitude_0 > 0.5*(maxflux-m_final.amplitude_2) and
                         pixels.min()+1 < m_final.mean_0 < pixels.max()-1):
                         fwhm = abs(2 * np.sqrt(2*np.log(2)) * m_final.stddev_0)
                         fwhm_list.append(fwhm)
@@ -1526,7 +1536,7 @@ def parse_sextractor_param(param_file):
     list
         names of all the columns in the SExtractor output catalog
     """
-    regexp = re.compile('(.*)\(\d+\)')
+    regexp = re.compile(r'(.*)\(\d+\)')
     columns = []
     fp = open(param_file)
     for line in fp:
