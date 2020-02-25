@@ -78,7 +78,7 @@ pipeline {
                 sh 'tox -e py36-unit -v -- --junit-xml reports/unittests_results.xml'
 
                 echo "Reportint coverage to CodeCov"
-                sh 'tox -e codecov-unit'
+                sh 'tox -e codecov -- -F unit'
             }
 
         }
@@ -91,7 +91,7 @@ pipeline {
 
                 echo "Reporting coverage"
 //                 sh 'tox -e covreport -- xml -o reports/coverage.xml'
-                sh 'tox -e codecov-gmosls'
+                sh 'tox -e codecov -- -F gmosls'
             }
             post {
                 always {
@@ -112,7 +112,7 @@ pipeline {
                 sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
 
                 echo "Reporting coverage"
-                sh 'tox -e codecov-integ'
+                sh 'tox -e codecov -- -F integration'
             }
 
         }
