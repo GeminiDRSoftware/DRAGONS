@@ -209,6 +209,7 @@ def preprocess_recipe(ad, path, center, arc):
 
 # Tests Definitions ------------------------------------------------------------
 @pytest.mark.preprocessed_data
+@pytest.mark.gmosls
 @pytest.mark.parametrize("ad, ad_ref", zip(test_datasets, ref_datasets), indirect=True)
 def test_extract_1d_spectra_is_stable(ad, ad_ref):
     assert ad[0].data.ndim == 1
