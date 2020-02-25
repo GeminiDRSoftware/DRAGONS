@@ -50,6 +50,93 @@ class Spect(PrimitivesBASE):
         super(Spect, self).__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
+    def adjustSlitOffsetToReference(self, adinputs=None, **params):
+        """
+        Compute offsets along the slit by cross-correlation, or use offset
+        from the headers (QOFFSET). The computed offset is stored in the
+        SLITOFF keyword.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 1D or 2D spectra. Each extension must have a
+            `.WAVECAL` table.
+        suffix : str
+            Suffix to be added to output files
+        method : str ['correlation' | 'offsets']
+            Method to use to compute offsets. 'correlation' uses a
+            correlation of the slit profiles (the 2d images stacked
+            on the dispersion axis), 'offsets' uses the QOFFSET keyword.
+        tolerance : float
+            Maximum distance from the header offset, for the correlation
+            method (arcsec). If the correlation computed offset is too
+            different from the header offset, then the latter is used.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        method = params["method"]
+        tolerance = params["tolerance"]
+
+        if len(adinputs) <= 1:
+            log.warning("No correction will be performed, since at least two "
+                        "input images are required")
+            return adinputs
+
+        if not all(len(ad) == 1 for ad in adinputs):
+            raise IOError("All input images must have only one extension.")
+
+        def stack_slit(ext):
+            dispaxis = 2 - ext.dispersion_axis()  # python sense
+            data = np.ma.array(ext.data, mask=(ext.mask > 0))
+            data = np.ma.masked_invalid(data)
+            return data.mean(axis=dispaxis)
+
+        # Use first image in list as reference
+        refad = adinputs[0]
+        log.stdinfo("Reference image: {}".format(refad.filename))
+        refad.phu['SLITOFF'] = 0
+        if method == 'correlation':
+            ref_profile = stack_slit(refad[0])
+
+        for ad in adinputs[1:]:
+            dispaxis = 2 - ad[0].dispersion_axis()  # python sense
+            if dispaxis == 1:
+                hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+            else:
+                hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+
+            if method == 'correlation':
+                profile = stack_slit(ad[0])
+                # cross-correlate profiles to find the offset
+                corr = np.correlate(ref_profile, profile, mode='full')
+                offset = np.argmax(corr) - ref_profile.shape[0] + 1
+
+                # Check that the offset is similar to the one from headers
+                dist_arsec = np.abs(hdr_offset - offset) * ad.pixel_scale()
+                if tolerance and dist_arsec > tolerance:
+                    # Fallback to header offset?
+                    log.warning("Offset from correlation ({}) is too big "
+                                "compared to the header offset ({}). Using "
+                                "this one instead".format(offset, hdr_offset))
+                    offset = hdr_offset
+
+            elif method == 'offsets':
+                # Use directly the offset from the headers
+                offset = hdr_offset
+
+            log.stdinfo("Offset for image {} : {} pixels"
+                        .format(ad.filename, offset))
+            ad.phu['SLITOFF'] = offset
+
+        # Timestamp and update filenames
+        for i, ad in enumerate(adinputs):
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
     def calculateSensitivity(self, adinputs=None, **params):
         """
         ???
@@ -1091,8 +1178,11 @@ class Spect(PrimitivesBASE):
                     wavecal = dict(zip(ext.WAVECAL["name"],
                                        ext.WAVECAL["coefficients"]))
                 except (AttributeError, KeyError):
-                    log.warning("Could not read wavelength solution for {}:{}"
-                                "".format(ad.filename, ext.hdr['EXTVER']))
+                    if (self.timestamp_keys['linearizeSpectra'] not in ad.phu and
+                            self.timestamp_keys['resampleToCommonFrame'] not in ad.phu):
+                        # warn only if the spectra have not been linearized
+                        log.warning("Could not read wavelength solution for {}:{}"
+                                    .format(ad.filename, ext.hdr['EXTVER']))
                     hdr_dict.update({'CRPIX1': 0.5 * (ext.shape[dispaxis] + 1),
                                      'CRVAL1': ext.central_wavelength(asNanometers=True),
                                      'CDELT1': ext.dispersion(asNanometers=True)})
@@ -1314,11 +1404,16 @@ class Spect(PrimitivesBASE):
                 peaks_and_snrs = tracing.find_peaks(profile, widths, mask=prof_mask,
                                                     variance=prof_var, reject_bad=False,
                                                     min_snr=3, min_frac=0.2)
+
+                if peaks_and_snrs.size == 0:
+                    log.warning("Found no sources")
+                    continue
+
                 # Reverse-sort by SNR and return only the locations
                 locations = np.array(sorted(peaks_and_snrs.T, key=lambda x: x[1],
                                             reverse=True)[:max_apertures]).T[0]
-                log.stdinfo("Found sources at {}s: {}".format(direction,
-                                                              ' '.join(['{:.1f}'.format(loc) for loc in locations])))
+                locstr = ' '.join(['{:.1f}'.format(loc) for loc in locations])
+                log.stdinfo("Found sources at {}s: {}".format(direction, locstr))
 
                 all_limits = tracing.get_limits(profile, prof_mask, peaks=locations,
                                                 threshold=threshold, method=limit_method)
@@ -1626,7 +1721,7 @@ class Spect(PrimitivesBASE):
                 ext.hdr["CRVAL1"] = w1
                 ext.hdr["CDELT1"] = dw
                 ext.hdr["CD1_1"] = dw
-                ext.hdr["CUNIT1"] = "nanometer"
+                ext.hdr["CUNIT1"] = "nm"
                 del ext.WAVECAL  # not needed any more
 
             # Timestamp and update the filename
@@ -1744,6 +1839,235 @@ class Spect(PrimitivesBASE):
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def resampleToCommonFrame(self, adinputs=None, **params):
+        """
+        Resample 1D or 2D spectra on a common frame, and optionally transform
+        them so that the relationship between them and their respective
+        wavelength calibration is linear.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Wavelength calibrated 1D or 2D spectra. Each extension must have a
+            `.WAVECAL` table.
+        suffix : str
+            Suffix to be added to output files.
+        w1 : float
+            Wavelength of first pixel (nm). See Notes below.
+        w2 : float
+            Wavelength of last pixel (nm). See Notes below.
+        dw : float
+            Dispersion (nm/pixel). See Notes below.
+        npix : int
+            Number of pixels in output spectrum. See Notes below.
+        conserve : bool
+            Conserve flux (rather than interpolate)?
+        trim_data : bool
+            Trim spectra to size of reference spectra?
+
+        Notes
+        -----
+        If ``w1`` or ``w2`` are not specified, they are computed from the
+        individual spectra: if ``trim_data`` is True, this is the intersection
+        of the spectra ranges, otherwise this is the union of all ranges,
+
+        If ``dw`` or ``npix`` are specified, the spectra are linearized.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Linearized 1D spectra.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        w1 = params["w1"]
+        w2 = params["w2"]
+        dw = params["dw"]
+        npix = params["npix"]
+        conserve = params["conserve"]
+        trim_data = params["trim_data"]
+
+        # Check that all ad objects are either 1D or 2D
+        ndim = set(len(ext.shape) for ad in adinputs for ext in ad)
+        if len(ndim) != 1:
+            raise ValueError('inputs must have the same dimension')
+        ndim = ndim.pop()
+
+        # For the 2D case check that all ad objects have only 1 extension
+        if ndim > 1:
+            adjust_key = self.timestamp_keys['adjustSlitOffsetToReference']
+            for i, ad in enumerate(adinputs):
+                if len(ad) != 1:
+                    raise ValueError('inputs must have only 1 extension')
+                if adjust_key not in ad.phu:
+                    log.warning(
+                        "{} has not offset, adjustSlitOffsetToReference "
+                        "should be run first".format(ad.filename))
+
+        # If only one variable is missing we compute it from the others
+        nparams = sum(x is not None for x in (w1, w2, dw, npix))
+        if nparams == 3:
+            if npix is None:
+                npix = int(np.ceil((w2 - w1) / dw)) + 1
+                w2 = w1 + (npix - 1) * dw
+            elif w1 is None:
+                w1 = w2 - (npix - 1) * dw
+            elif w2 is None:
+                w2 = w1 + (npix - 1) * dw
+            else:
+                dw = (w2 - w1) / (npix - 1)
+
+        # Gather information from all the spectra (Chebyshev1D model,
+        # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
+        # if there are not provided
+        info = []
+        w1out, w2out, dwout, npixout = w1, w2, dw, npix
+        for ad in adinputs:
+            adinfo = []
+            for ext in ad:
+                extname = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                try:
+                    model_info = _extract_model_info(ext, extname)
+                except ValueError:
+                    raise ValueError("{} has no WAVECAL. Cannot linearize."
+                                     .format(extname))
+                adinfo.append(model_info)
+
+                if w1 is None:
+                    if w1out is None:
+                        w1out = model_info['w1']
+                    elif trim_data:
+                        w1out = max(w1out, model_info['w1'])
+                    else:
+                        w1out = min(w1out, model_info['w1'])
+
+                if w2 is None:
+                    if w2out is None:
+                        w2out = model_info['w2']
+                    elif trim_data:
+                        w2out = min(w2out, model_info['w2'])
+                    else:
+                        w2out = max(w2out, model_info['w2'])
+            info.append(adinfo)
+
+        # linearize spectra only if the grid parameters are specified
+        linearize = npix is not None or dw is not None
+        if linearize:
+            if npixout is None and dwout is None:
+                # if both are missing, use the reference spectra
+                dwout = info[0][0]['dw']
+
+            if npixout is None:
+                npixout = int(np.ceil((w2out - w1out) / dwout)) + 1
+            elif dwout is None:
+                dwout = (w2out - w1out) / (npixout - 1)
+
+        if trim_data:
+            log.fullinfo("Trimming data to size of reference spectra")
+
+        if linearize:
+            wave_to_output_pix = (models.Shift(-w1out) |
+                                  models.Scale(1. / dwout))
+        else:
+            # compute the inverse model needed to go to the reference
+            # spectrum grid
+            wave_model_ref = info[0][0]['wave_model']
+            limits = wave_model_ref.inverse([w1out, w2out])
+            pixel_shift = int(np.ceil(limits.min()))
+            wave_to_output_pix = wave_model_ref.inverse.copy()
+            wave_to_output_pix.inverse = wave_model_ref.copy()
+            npixout = int(np.floor(wave_to_output_pix([w1out, w2out]).max())
+                          + 1 - pixel_shift)
+            dwout = (w2out - w1out) / (npixout - 1)
+
+        for i, ad in enumerate(adinputs):
+            for iext, ext in enumerate(ad):
+                wave_model = info[i][iext]['wave_model']
+                extn = "{}:{}".format(ad.filename, ext.hdr['EXTVER'])
+                dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
+
+                t = transform.Transform()
+                if i == 0 and not linearize:
+                    log.fullinfo("{}: No interpolation")
+                else:
+                    wave_full_model = wave_model | wave_to_output_pix
+                    if ndim == 1:
+                        t.append(wave_full_model)
+                    elif ndim == 2:
+                        # Apply spatial offset if needed
+                        offset = ad.phu.get('SLITOFF', 0)
+                        offset = (models.Shift(offset) if offset != 0
+                                  else models.Identity(1))
+                        if dispaxis == 0:
+                            t.append(offset & wave_full_model)
+                        else:
+                            t.append(wave_full_model & offset)
+
+                msg = "Resampling"
+                if linearize:
+                    msg += " and linearizing"
+                log.stdinfo("{} {}: w1={:.3f} w2={:.3f} dw={:.3f} npix={}"
+                            .format(msg, extn, w1out, w2out, dwout, npixout))
+
+                # If we resample to a coarser pixel scale, we may
+                # interpolate over features. We avoid this by subsampling
+                # back to the original pixel scale (approximately).
+                input_dw = (np.diff(wave_model(wave_model.domain))[0] /
+                            np.diff(wave_model.domain))
+                subsample = int(np.ceil(abs(dwout / input_dw) - 0.1))
+                attributes = [attr for attr in ('data', 'mask', 'variance')
+                              if getattr(ext, attr) is not None]
+
+                dg = transform.DataGroup([ext], [t])
+                dg.no_data['mask'] = DQ.no_data  # DataGroup not AstroDataGroup
+
+                if ndim == 1:
+                    dg.output_shape = (npixout, )
+                    if not linearize:
+                        # equivalent to a final shift for all models
+                        dg.origin = (pixel_shift,)
+                elif ndim == 2:
+                    if dispaxis == 0:
+                        dg.output_shape = (npixout, ext.data.shape[1])
+                        if not linearize:
+                            dg.origin = (pixel_shift, 0)
+                    else:
+                        dg.output_shape = (ext.data.shape[0], npixout)
+                        if not linearize:
+                            dg.origin = (0, pixel_shift)
+
+                output_dict = dg.transform(attributes=attributes,
+                                           subsample=subsample,
+                                           conserve=conserve)
+                for key, value in output_dict.items():
+                    setattr(ext, key, value)
+
+                # Accurate solution if linearize=True, else approximate
+                ext.hdr["CRPIX1"] = 1.
+                ext.hdr["CRVAL1"] = w1out
+                ext.hdr["CDELT1"] = dwout
+                ext.hdr["CD1_1"] = dwout
+                ext.hdr["CUNIT1"] = "nm"
+
+                if not linearize:
+                    # update domain in the WAVECAL table
+                    output_wave = wave_to_output_pix.inverse.copy()
+                    output_wave.domain = [x - pixel_shift
+                                          for x in output_wave.domain]
+                    model_dict = astromodels.chebyshev_to_dict(output_wave)
+                    ext.WAVECAL = Table(
+                        [list(model_dict.keys()), list(model_dict.values())],
+                        names=("name", "coefficients")
+                    )
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
@@ -2157,12 +2481,18 @@ def _average_along_slit(ext, center=None, nsum=None):
         Slice object for extraction region.
     """
     slitaxis = ext.dispersion_axis() - 1
-    extraction = center or (0.5 * ext.data.shape[slitaxis])
-    extract_slice = slice(max(0, int(extraction - 0.5 * nsum)),
-                          min(ext.data.shape[slitaxis],
-                              int(extraction + 0.5 * nsum)))
+    npix = ext.data.shape[slitaxis]
+
+    if nsum is None:
+        nsum = npix
+    if center is None:
+        center = 0.5 * npix
+
+    extract_slice = slice(max(0, int(center - 0.5 * nsum)),
+                          min(npix, int(center + 0.5 * nsum)))
     data, mask, variance = _transpose_if_needed(ext.data, ext.mask, ext.variance,
-                                                transpose=(slitaxis == 1), section=extract_slice)
+                                                transpose=(slitaxis == 1),
+                                                section=extract_slice)
 
     # Create 1D spectrum; pixel-to-pixel variation is a better indicator
     # of S/N than the VAR plane
@@ -2197,6 +2527,28 @@ def _transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     return list(None if arg is None
                 else arg.T[section] if transpose else arg[section] for arg in args)
+
+
+def _read_chebyshev_model(ext):
+    try:
+        wavecal = dict(zip(ext.WAVECAL["name"], ext.WAVECAL["coefficients"]))
+    except (AttributeError, KeyError):
+        raise ValueError('missing wave model')
+    else:
+        return astromodels.dict_to_chebyshev(wavecal)
+
+
+def _extract_model_info(ext, extname):
+    ndim = len(ext.shape)
+    dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
+    wave_model = _read_chebyshev_model(ext)
+    wave_model.inverse = astromodels.make_inverse_chebyshev1d(wave_model, rms=0.1)
+    npix = ext.shape[dispaxis]
+    limits = wave_model([0, npix])
+    w1, w2 = min(limits), max(limits)
+    dw = (w2 - w1) / (npix - 1)
+    return {'wave_model': wave_model, 'w1': w1, 'w2': w2,
+            'npix': npix, 'dw': dw}
 
 
 def QESpline(coeffs, xpix, data, weights, boundaries, order):

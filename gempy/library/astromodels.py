@@ -274,6 +274,9 @@ class UnivariateSplineWithOutlierRemoval(object):
                 orig_mask = y.mask.astype(bool)
             y = y.data
 
+        if w is not None:
+            orig_mask |= (w == 0)
+
         iter = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
         while iter < niter+1:
@@ -286,7 +289,9 @@ class UnivariateSplineWithOutlierRemoval(object):
                 this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
                 if this_order == 0:
                     full_mask = np.zeros(x.shape, dtype=bool)
-                    this_order = order
+                    if w is not None and not all(w == 0):
+                        full_mask |= (w == 0)
+                    this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
 
             xgood = x_to_fit[~full_mask]
             while True:

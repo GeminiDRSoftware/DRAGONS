@@ -418,4 +418,3 @@ class GMOSSpect(Spect, GMOS):
                                 'CuAr_GMOS{}.dat'.format('_mixord' if use_second_order else ''))
 
         return np.loadtxt(filename, usecols=[0]), None
-

@@ -102,6 +102,38 @@ class linearizeSpectraConfig(config.Config):
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
+
+class adjustSlitOffsetToReferenceConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitOffsetCorrected",
+                          optional=True)
+    tolerance = config.RangeField("Maximum distance from the header offset, "
+                                  "for the correlation method (arcsec)",
+                                  float, 1, min=0., optional=True)
+    method = config.ChoiceField(
+        "Alignment method", str,
+        allowed={"offsets": "Use telescope offsets",
+                 "correlation": "Correlate the slit profile"},
+        default="correlation"
+    )
+
+
+class resampleToCommonFrameConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_align", optional=True)
+    w1 = config.RangeField("Starting wavelength (nm)", float, None, min=0., optional=True)
+    w2 = config.RangeField("Ending wavelength (nm)", float, None, min=0., optional=True)
+    dw = config.RangeField("Dispersion (nm/pixel)", float, None, min=0.01, optional=True)
+    npix = config.RangeField("Number of pixels in spectrum", int, None, min=2, optional=True)
+    conserve = config.Field("Conserve flux?", bool, False)
+    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5)
+    trim_data = config.Field("Trim to field of view of reference image?", bool, False)
+
+    def validate(self):
+        config.Config.validate(self)
+        if [self.w1, self.w2, self.dw, self.npix].count(None) == 0:
+            raise ValueError("Maximum 3 of w1, w2, dw, npix must be specified")
+        if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
+            raise ValueError("Ending wavelength must be greater than starting wavelength")
+
 class normalizeFlatConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
