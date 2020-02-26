@@ -1,8 +1,10 @@
 # This code is looked up by gempy as part of the configuration for the
 # appropriate instrument and evaled by the infrastructure. It has initially
-# been written to support gemini_tools.ExposureGroup and is semi-optimized. 
+# been written to support gemini_tools.ExposureGroup and is semi-optimized.
+#
+# All calculations are now done in PIXELS
 
-def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
+def pointing_in_field(ad, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     """
     See gemini_tools.pointing_in_field() for the API. This is an
@@ -17,37 +19,16 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     :type frac_slit: float
     """
 
-    # Since this function gets looked up & evaled, we have to do any
-    # essential imports in-line (but Python caches them):
-    import math, re
-
-    # Use the first argument for looking up instrument & configuration
-    # properties, since the second position doesn't always correspond to a
-    # single exposure, ie. AstroData instance.
-    ad = pos
-
-    # Extract pointing info. (currently p/q but this will be replaced with
-    # RA/Dec/PA) from the AstroData instance.
-    position = (ad.phu['POFFSET'], ad.phu['QOFFSET'])
+    # Extract pointing info from the AstroData instance.
+    position = (ad.detector_x_offset(), ad.detector_y_offset())
 
     # TO DO: References to the field size will need changing to decimal
     # degrees once we pass absolute co-ordinates?
 
-    # TO DO: The following is used because as of r4619, the pixel_scale()
-    # descriptor slows us down by 50x for some reason (and prepare has
-    # already updated the header from the descriptor anyway so it doesn't
-    # need recalculating here). The first branch of this condition can be
-    # removed once pixel_scale() is improved or has the same check has been
-    # added to it:
-    if 'PREPARED' in ad.tags:
-        scale = ad.phu['PIXSCALE']
-    else:
-        scale = ad.pixel_scale()
-
     # Imaging:
     if 'IMAGE' in ad.tags:
-        dist = 512.* scale
-        return all([abs(x-r) < dist for x, r in zip(position,refpos)])
+        return all([abs(x-r) < frac_FOV * ad[0].shape[0]
+                    for x, r in zip(position, refpos)])
 
     # Long slit:
     elif 'SPECT' in ad.tags:
@@ -90,11 +71,11 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         # return all([abs(x-r-o) < d for x, r, d, o in \
         #            zip(position,refpos,dist,offset)])
 
-        raise NotImplementedError("FOV lookup not yet supported for NIRI " \
+        raise NotImplementedError("FOV lookup not yet supported for NIRI "
           "spectroscopy")
 
     # Some engineering observation or bad mask value etc.:
     else:
-        raise ValueError("Can't determine FOV for unrecognized NIRI config. " \
+        raise ValueError("Can't determine FOV for unrecognized NIRI config. "
           "(%s, %s)" % (str(ad.focal_plane_mask()), str(ad.disperser())))
 

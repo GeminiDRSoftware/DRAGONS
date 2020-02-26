@@ -33,6 +33,8 @@ from scipy.special import erf
 from ..library import astrotools as at
 from ..utils import logutils
 
+from datetime import datetime
+
 import astrodata
 
 from collections import namedtuple
@@ -1842,11 +1844,13 @@ class ExposureGroup(object):
     # pass around nddata instances rather than lists or dictionaries but
     # that's not even well defined within AstroPy yet.
 
-    def __init__(self, adinput, pkg=None, frac_FOV=1.0):
+    def __init__(self, adinputs, pkg=None, frac_FOV=1.0):
         """
-        :param adinputs: an exposure list from which to initialize the group
+        Parameters
+        ----------
+        adinputs: AstroData/list of AD objects
+            exposure list from which to initialize the group
             (currently may not be empty)
-        :type adinputs: list of AstroData instances
 
         :param pkg: Package name of the
 
@@ -1856,46 +1860,52 @@ class ExposureGroup(object):
             positions right at the edge of the field).
         :type frac_FOV: float
         """
-        if not isinstance(adinput, list):
-            adinput = [adinput]
+        if not isinstance(adinputs, list):
+            adinputs = [adinputs]
         # Make sure the field scaling is valid:
         if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
-            raise IOError('frac_FOV must be >= 0.')
+            raise ValueError('frac_FOV must be >= 0.')
 
         # Initialize members:
         self.members = {}
-        self.package = pkg
         self._frac_FOV = frac_FOV
-        self.group_cen = (0., 0.)
-        self.add_members(adinput)
+        self.group_center = (0., 0.)
+        self.add_members(adinputs)
+        try:
+            FOV = import_module('{}.FOV'.format(pkg))
+            self._pointing_in_field = FOV.pointing_in_field
+        except (ImportError, AttributeError):
+            raise NameError("FOV.pointing_in_field() function not found in {}".
+                            format(pkg))
 
-        # Use the first list element as a reference for getting the
-        # instrument properties:
-        ref_ad = adinput[0]
-
-        # Here we used to define self._pointing_in_field, pointing to the
-        # instrument-specific back-end function, but that's been moved to a
-        # separate function in this module since it may be generally useful.
-
-    def pointing_in_field(self, position):
+    def pointing_in_field(self, ad, fast=True):
         """
-        Determine whether or not a point falls within the same field of view
-        as the centre of the existing group (using the function of the same
-        name).
+        Determine whether or not a new pointing falls within this group.
+        The check can be done against either the group center, or against
+        all members of the group.
 
-        :param position: An AstroData instance to compare with the centroid
-          of the set of existing group members.
-        :type position: tuple, list, AstroData
+        Parameters
+        ----------
+        ad: AstroData instance
+            the AD object to be tested
+        fast: bool
+            check against the field center only? (or else, check for overlap
+            with all group members)
 
-        :returns: Whether or not the input point is within the field of view
+        Returns
+        -------
+        bool: whether or not the input point is within the field of view
             (adjusted by the frac_FOV specified when creating the group).
-        :rtype: boolean
         """
-
-        # Check co-ordinates WRT the group centre & field of view as
-        # appropriate for the instrument:
-        return pointing_in_field(position, self.package, self.group_cen,
-                                 frac_FOV=self._frac_FOV)
+        if fast:
+            return self._pointing_in_field(ad, self.group_center,
+                                           frac_FOV=self._frac_FOV)
+        else:
+            for offset in self.members.values():
+                if self._pointing_in_field(ad, offset,
+                                           frac_FOV=self._frac_FOV):
+                    return True
+        return False
 
     def __len__(self):
         return len(self.members)
@@ -1908,8 +1918,7 @@ class ExposureGroup(object):
             # A Python dictionary equality seems to take care of comparing
             # groups nicely, irrespective of ordering:
             return self.members == other.members
-        else:
-            return False
+        return False
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -1923,7 +1932,7 @@ class ExposureGroup(object):
         """
         return list(self.members.keys())
 
-    def add_members(self, adinput):
+    def add_members(self, adinputs):
         """
         Add one or more new points to the group.
 
@@ -1931,220 +1940,94 @@ class ExposureGroup(object):
             membership.
         :type adinputs: AstroData, list of AstroData instances
         """
-        if not isinstance(adinput, list):
-            adinput = [adinput]
+        if not isinstance(adinputs, list):
+            adinputs = [adinputs]
         # How many points were there previously and will there be now?
         ngroups = self.__len__()
-        ntot = ngroups + len(adinput)
+        ntot = ngroups + len(adinputs)
 
-        # This will be replaced by a descriptor that looks up the RA/Dec
-        # of the field centre:
-        addict = get_offset_dict(adinput)
-
-        # Complain sensibly if we didn't get valid co-ordinates:
-        for ad in addict:
-            for coord in addict[ad]:
-                if not isinstance(coord, numbers.Number):
-                    raise IOError('non-numeric co-ordinate %s ' \
-                        % coord + 'from %s' % ad)
+        # Create dict for new members and complain if coords are invalid
+        new_dict = {ad: (ad.detector_x_offset(), ad.detector_y_offset())
+                    for ad in adinputs}
+        for ad, offsets in new_dict.items():
+            if not all(isinstance(offset, numbers.Number) for offset in offsets):
+                    raise ValueError("non-numeric coordinate {} from {}"
+                                     "".format(offsets, ad.filename))
 
         # Add the new points to the group list:
-        self.members.update(addict)
+        self.members.update(new_dict)
 
-        # Update the group centroid to account for the new points:
-        new_vals = list(addict.values())
+        # Update the group centroid to account for the new points
+        new_vals = list(new_dict.values())
         newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_cen = [(cval * ngroups + nval) / ntot \
-          for cval, nval in zip(self.group_cen, newsum)]
+        self.group_center = [(cval * ngroups + nval) / ntot
+                             for cval, nval in zip(self.group_center, newsum)]
 
-def group_exposures(adinput, pkg=None, frac_FOV=1.0):
 
+def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     """
     Sort a list of AstroData instances into dither groups around common
-    nod positions, according to their WCS offsets.
+    nod positions, according to their pointing offsets.
 
-    :param adinputs: A list of exposures to sort into groups.
-    :type adinputs: list of AstroData instances
+    In principle divisive clustering algorithms have the best chance of
+    robust separation because of their top-down view of the problem.
+    However, an agglomerative algorithm is probably more practical to
+    implement here in the first instance, given that we can try to
+    constrain the problem using the known field size and remembering the
+    one-at-a-time case where the full list isn't available up front.
 
-    :param pkg: package containing instrument lookups. Passed through
-                to ExposureGroup() call.
-    :type pkg: <str>
+    The FOV gives us a pretty good idea what's close enough to the base
+    position to be considered on-source, but it may not be enough on its
+    own to provide a threshold for intermediate nod distances for F2 given
+    IQ problems towards the edges of the field. OTOH intermediate offsets
+    are generally difficult to achieve anyway due to guide probe limits
+    when the instrumental FOV is comparable to that of the telescope.
 
-    :param frac_FOV: proportion by which to scale the area in which
-        points are considered to be within the same field, for tweaking
-        the results in borderline cases (eg. to avoid co-adding target
-        positions right at the edge of the field).
-    :type frac_FOV: float
+    Parameters
+    ----------
+    adinputs: list of AD instances
+        Exposures to sort into groups
 
-    :returns: One group of exposures per identified nod position.
-    :rtype: tuple of ExposureGroup instances
+    pkg: str
+        Name of the module containing the instrument FOV lookup.
+        Passed through to ExposureGroup() call.
+
+    frac_FOV: float
+        proportion by which to scale the area in which points are considered
+        to be within the same field, for tweaking the results in borderline
+        cases (eg. to avoid co-adding target positions right at the edge of
+        the field). frac_FOV=1.0 means *any* overlap is OK.
+
+    Returns
+    -------
+    tuple: of ExposureGroup instances, one per distinct pointing position
     """
-
-    # In principle divisive clustering algorithms have the best chance of
-    # robust separation because of their top-down view of the problem.
-    # However, an agglomerative algorithm is probably more practical to
-    # implement here in the first instance, given that we can try to
-    # constrain the problem using the known field size and remembering the
-    # one-at-a-time case where the full list isn't available up front.
-
-    # The FOV gives us a pretty good idea what's close enough to the base
-    # position to be considered on-source, but it may not be enough on its
-    # own to provide a threshold for intermediate nod distances for F2 given
-    # IQ problems towards the edges of the field. OTOH intermediate offsets
-    # are generally difficult to achieve anyway due to guide probe limits
-    # when the instrumental FOV is comparable to that of the telescope.
-
     groups = []
 
-    for ad in adinput:
-
+    for ad in adinputs:
         # Should this pointing be associated with an existing group?
+        # Check against field centers first.
         found = False
         for group in groups:
-            if group.pointing_in_field(ad):
+            if group.pointing_in_field(ad, fast=True):
                 group.add_members(ad)
                 found = True
                 break
 
-        # If unassociated, start a new group:
+        # If we haven't found a match, do a more rigorous (slower) check
+        # against all members of each group
         if not found:
-            groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
-            # if debug: print 'New group', groups[-1]
+            for group in groups:
+                if group.pointing_in_field(ad, fast=False):
+                    group.add_members(ad)
+                    found = True
+                    break
+            if not found:
+                groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
 
     # Here this simple algorithm could be made more robust for borderline
     # spacing (a bit smaller than the field size) by merging clusters that
     # have members within than the threshold after initial agglomeration.
     # This is an odd use case that's hard to classify automatically anyway
     # but the grouping info. might be more useful later, when stacking.
-
-    # if debug: print 'Groups are', groups
-
     return tuple(groups)
-
-def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
-
-    """
-    Determine whether two telescope pointings fall within each other's
-    instrumental field of view, such that point(s) at the centre(s) of one
-    exposure's aperture(s) will still fall within the same aperture(s) of
-    the other exposure or reference position.
-
-    For direct imaging, this is the same question as "is point 1 within the
-    field at pointing 2?" but for multi-object spectroscopy neither position
-    at which the telescope pointing is defined will actually illuminate the
-    detector unless it happens to coincide with a target aperture.
-
-    This function has no knowledge of actual target position(s) within the
-    field, providing accurate results for centred target(s) with the default
-    frac_FOV=1.0. This should only be of concern in borderline cases where
-    exposures are offset by approximately the width of the field.
-
-    :param pos: Exposure defining the position & instrumental field of view
-      to check.
-    :type pos: AstroData instance
-
-    :param refpos: Reference position/exposure (currently assumed to be
-      Gemini p/q co-ordinates, but we intend to change that to RA/Dec).
-    :type refpos: AstroData instance or tuple of floats
-
-    :param frac_FOV: Proportion by which to scale the field size in order to
-      adjust whether borderline points are considered within its boundaries.
-    :type frac_FOV: float
-
-    :param frac_slit: If defined, the maximum deviation from the slit centre
-      that's still considered to be within the field, as a fraction of the
-      slit's half-width. If None, the value of frac_FOV is used instead. For
-      direct images this parameter is ignored.
-    :type frac_slit: float
-
-    :returns: Whether or not the pointing falls within the field (after
-      adjusting for frac_FOV & frac_slit).
-    :rtype: boolean
-
-    """
-    log = logutils.get_logger(__name__)
-
-    # This function needs an AstroData instance rather than just 2
-    # co-ordinate tuples and a PA in order to look up the instrument for
-    # which the field of view is defined and so that the back-end function
-    # can distinguish between focal plane masks and access instrument-
-    # specific MDF tables for MOS.
-
-    # Use the first argument for looking up the instrument, since that's
-    # the one that's always an AstroData instance because the reference point
-    # doesn't always correspond to a single exposure.
-    inst = pos.instrument().lower()
-
-    # To keep the back-end functions simple, always pass them a dictionary
-    # for the reference position (at least for now). All these checks add ~4%
-    # in overhead for imaging.
-    try:
-        pointing = (refpos.phu['POFFSET'], refpos.phu['QOFFSET'])
-    except AttributeError:
-        if not isinstance(refpos, (list, tuple)) or \
-           not all(isinstance(x, numbers.Number) for x in refpos):
-            raise IOError('Parameter refpos should be a '
-                'co-ordinate tuple or AstroData instance')
-        # Currently the comparison is always 2D since we're explicitly
-        # looking up POFFSET & QOFFSET:
-        if len(refpos) != 2:
-            raise IOError('Points to group must have the '
-                    'same number of co-ords')
-        pointing = refpos
-
-    # Use a single scaling for slit length & width if latter unspecified:
-    if frac_slit is None:
-        frac_slit = frac_FOV
-
-    # These values are cached in order to avoid the multiple-second overhead of
-    # reading and evaling a look-up table when there are repeated queries for
-    # the same instrument. Instead of private global variables we could use a
-    # function-like class here, but that would make the API rather convoluted
-    # in this simple case.
-    global _FOV_lookup, _FOV_pointing_in_field
-
-    try:
-        FOV = import_module('{}.FOV'.format(package))
-        _FOV_pointing_in_field = FOV.pointing_in_field
-    except (ImportError, AttributeError):
-        raise NameError("FOV.pointing_in_field() function not found in {}".
-                        format(package))
-
-    # Execute it & return the results:
-    return _FOV_pointing_in_field(pos, pointing, frac_FOV=frac_FOV,
-                                  frac_slit=frac_slit)
-
-# Since the following function will go away after redefining RA & Dec
-# descriptors appropriately, I've put it here instead of in
-# gemini_metadata_utils to avoid creating an import that's circular WRT
-# existing imports and might later hang around causing trouble.
-@handle_single_adinput
-def get_offset_dict(adinput=None):
-    """
-    (To be deprecated)
-
-    The get_offset_dict() function extracts a dictionary of co-ordinate offset
-    tuples from a list of Gemini datasets, one per input AstroData instance.
-    What's currently Gemini-specific is that POFFSET & QOFFSET header keywords
-    are used; this could be abstracted via a descriptor once we decide how to
-    do so generically (accounting for the need to know slit axes sometimes).
-
-    :param adinputs: the AstroData objects
-    :type adinput: list of AstroData
-
-    :rtype: dictionary
-    :return: a dictionary whose keys are the AstroData instances and whose
-        values are tuples of (POFFSET, QOFFSET).
-    """
-    offsets = {}
-
-    # Loop over AstroData instances:
-    for ad in adinput:
-        # Get the offsets from the primary header:
-        poff = ad.phu['POFFSET']
-        qoff = ad.phu['QOFFSET']
-        # name = ad.filename
-        name = ad  # store a direct reference
-        offsets[name] = (poff, qoff)
-
-    return offsets
