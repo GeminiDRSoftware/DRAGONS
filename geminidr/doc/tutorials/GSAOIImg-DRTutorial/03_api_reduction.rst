@@ -37,6 +37,9 @@ Here is a copy of the table for quick reference.
 | Standard star || S20170504S0114-117 || Kshort, standard star, 30 s   |
 +---------------+---------------------+--------------------------------+
 
+.. note:: A master dark is not needed for GSAOI.  The dark current is very low.
+
+
 Setting up
 ==========
 
