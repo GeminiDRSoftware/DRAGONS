@@ -9,8 +9,7 @@ import warnings
 from copy import deepcopy
 
 from astropy.nddata import (NDData, NDSlicingMixin, NDArithmeticMixin,
-                            NDUncertainty, VarianceUncertainty,
-                            IncompatibleUncertaintiesException)
+                            VarianceUncertainty)
 from astropy.io.fits import ImageHDU
 
 import numpy as np
@@ -19,20 +18,13 @@ __all__ = ['NDAstroData']
 
 
 class ADVarianceUncertainty(VarianceUncertainty):
-    def __init__(self, array=None, copy=True, unit=None):
-        if array is not None:
-            if isinstance(array, NDUncertainty):
-                if array.uncertainty_type != self.uncertainty_type:
-                    raise IncompatibleUncertaintiesException
-                array = array.array
-
-            if array is not None and np.any(array < 0):
-                warnings.warn("Negative variance values found. Setting "
-                              "to zero.", RuntimeWarning)
-                array = np.where(array >= 0., array, 0.)
-
-        super(VarianceUncertainty, self).__init__(array=array, copy=copy,
-                                                  unit=unit)
+    @VarianceUncertainty.array.setter
+    def array(self, value):
+        if value is not None and np.any(value < 0):
+            warnings.warn("Negative variance values found. Setting to zero.",
+                          RuntimeWarning)
+            value = np.where(value >= 0., value, 0.)
+        VarianceUncertainty.array.fset(self, value)
 
 
 class FakeArray(object):
