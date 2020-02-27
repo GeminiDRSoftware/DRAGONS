@@ -8,19 +8,12 @@ from __future__ import (absolute_import, division, print_function)
 import warnings
 from copy import deepcopy
 
-from astropy.nddata import NDData
-from astropy.nddata.mixins.ndslicing import NDSlicingMixin
-from astropy.nddata.mixins.ndarithmetic import NDArithmeticMixin
+from astropy.nddata import (NDData, NDSlicingMixin, NDArithmeticMixin,
+                            NDUncertainty, VarianceUncertainty,
+                            IncompatibleUncertaintiesException)
 from astropy.io.fits import ImageHDU
 
 import numpy as np
-
-try:
-    from astropy.nddata import (VarianceUncertainty, NDUncertainty,
-                                IncompatibleUncertaintiesException)
-except ImportError:
-    from .nduncertainty import (VarianceUncertainty, NDUncertainty,
-                                IncompatibleUncertaintiesException)
 
 __all__ = ['NDAstroData']
 
