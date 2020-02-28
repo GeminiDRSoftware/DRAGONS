@@ -1,22 +1,42 @@
 import numpy as np
 import pytest
+from astropy.nddata import NDData, VarianceUncertainty
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 
 
-def test_window():
+@pytest.fixture
+def testnd():
     shape = (5, 5)
-    ndd = NDAstroData(data=np.arange(np.prod(shape)).reshape(shape),
-                      uncertainty=ADVarianceUncertainty(np.ones(shape) + 0.5),
-                      mask=np.zeros(shape, dtype=bool), unit='ct')
-    ndd.mask[3, 4] = True
+    nd = NDAstroData(data=np.arange(np.prod(shape)).reshape(shape),
+                     uncertainty=ADVarianceUncertainty(np.ones(shape) + 0.5),
+                     mask=np.zeros(shape, dtype=bool), unit='ct')
+    nd.mask[3, 4] = True
+    return nd
 
-    win = ndd.window[2:4, 3:5]
+
+def test_window(testnd):
+    win = testnd.window[2:4, 3:5]
     assert win.unit == 'ct'
     assert_array_equal(win.data, [[13, 14], [18, 19]])
     assert_array_equal(win.mask, [[False, False], [False, True]])
     assert_array_almost_equal(win.uncertainty.array, 1.5)
     assert_array_almost_equal(win.variance, 1.5)
+
+
+def test_transpose(testnd):
+    testnd.variance[0, -1] = 10
+    ndt = testnd.T
+    assert_array_equal(ndt.data[0], [0, 5, 10, 15, 20])
+    assert ndt.variance[-1, 0] == 10
+
+
+def test_set_section(testnd):
+    sec = NDData(np.zeros((2, 2)),
+                 uncertainty=VarianceUncertainty(np.ones((2, 2))))
+    testnd.set_section((slice(0, 2), slice(1, 3)), sec)
+    assert_array_equal(testnd[:2, 1:3].data, 0)
+    assert_array_equal(testnd[:2, 1:3].variance, 1)
 
 
 def test_variance_uncertainty_warn_if_there_are_any_negative_numbers():
