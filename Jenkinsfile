@@ -71,6 +71,18 @@ pipeline {
 
         }
 
+        stage('astrodata: unit tests') {
+
+          steps {
+            echo "Running tests"
+            sh 'tox -e py36-unit -v -- astrodata --junit-xml reports/astrodata_unittests.xml'
+
+            echo "Report coverage to CodeCov"
+            sh 'tox -e codecov -- -F astrodata-unit'
+          }
+
+        }
+
         stage('Unit tests') {
 
             steps {
