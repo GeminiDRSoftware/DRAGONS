@@ -33,10 +33,9 @@ class ADVarianceUncertainty(VarianceUncertainty):
 class FakeArray(object):
 
     def __init__(self, very_faked):
-
         self.data = very_faked
-        self.shape = (100, 100) # Won't matter. This is just to fool NDData
-        self.dtype = np.float32 # Same here
+        self.shape = (100, 100)  # Won't matter. This is just to fool NDData
+        self.dtype = np.float32  # Same here
 
     def __getitem__(self, index):
         # FAKE NEWS!
@@ -83,9 +82,8 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def variance(self):
-        un = self.uncertainty
-        if un is not None:
-            return un.array
+        if self.uncertainty is not None:
+            return self.uncertainty.array
 
     @property
     def mask(self):
@@ -93,7 +91,6 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
 
 def is_lazy(item):
-
     return isinstance(item, ImageHDU) or (hasattr(item, 'lazy') and item.lazy)
 
 
@@ -218,7 +215,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return scaling(source.data if section is None else source[section])
 
     def _get_uncertainty(self, section=None):
-
+        """Return the ADVarianceUncertainty object, or a slice of it."""
         if self._uncertainty is not None:
             if is_lazy(self._uncertainty):
                 if section is None:
@@ -291,7 +288,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         squared (as the uncertainty data is stored as standard deviation).
         """
         arr = self._get_uncertainty()
-
         if arr is not None:
             return arr.array
 
@@ -339,7 +335,9 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return self.transpose()
 
     def transpose(self):
-        new = self.__class__(self.data.T,
-                             uncertainty=None if self.uncertainty is None else self.uncertainty.__class__(self.uncertainty.array.T),
-                             mask=None if self.mask is None else self.mask.T, copy=False)
-        return new
+        unc = self.uncertainty
+        return self.__class__(
+            self.data.T,
+            uncertainty=None if unc is None else unc.__class__(unc.array.T),
+            mask=None if self.mask is None else self.mask.T, copy=False
+        )
