@@ -5,13 +5,11 @@ implementing windowing and on-the-fly data scaling.
 
 from __future__ import (absolute_import, division, print_function)
 
-from copy import deepcopy
 import warnings
+from copy import deepcopy
 
-from astropy.nddata import NDData
-from astropy.nddata import StdDevUncertainty
-from astropy.nddata.mixins.ndslicing import NDSlicingMixin
-from astropy.nddata.mixins.ndarithmetic import NDArithmeticMixin
+from astropy.nddata import (NDData, NDSlicingMixin, NDArithmeticMixin,
+                            VarianceUncertainty)
 from astropy.io.fits import ImageHDU
 
 import numpy as np
@@ -19,38 +17,17 @@ import numpy as np
 __all__ = ['NDAstroData']
 
 
-class StdDevAsVariance(object):
-
-    def as_variance(self):
-
-        if self.array is not None:
-            return self.array ** 2
-
-        else:
-            return None
-
-
-def new_variance_uncertainty_instance(array):
-
-    if array is None:
-        return
-
-    with warnings.catch_warnings():
-
-        if (array < 0.).any():
+class ADVarianceUncertainty(VarianceUncertainty):
+    """
+    Subclass VarianceUncertainty to check for negative values.
+    """
+    @VarianceUncertainty.array.setter
+    def array(self, value):
+        if value is not None and np.any(value < 0):
             warnings.warn("Negative variance values found. Setting to zero.",
                           RuntimeWarning)
-            array = np.where(array >= 0., array, 0.)
-
-        warnings.simplefilter("ignore", RuntimeWarning)
-
-        obj = StdDevUncertainty(np.sqrt(array))
-
-        warnings.simplefilter("default", RuntimeWarning)
-
-    cls = obj.__class__
-    obj.__class__ = cls.__class__(cls.__name__ + "WithAsVariance", (cls, StdDevAsVariance), {})
-    return obj
+            value = np.where(value >= 0., value, 0.)
+        VarianceUncertainty.array.fset(self, value)
 
 
 class FakeArray(object):
@@ -108,7 +85,7 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def variance(self):
         un = self.uncertainty
         if un is not None:
-            return un.array**2
+            return un.array
 
     @property
     def mask(self):
@@ -243,21 +220,14 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def _get_uncertainty(self, section=None):
 
         if self._uncertainty is not None:
-
             if is_lazy(self._uncertainty):
-
-                data = self._uncertainty.data if section is None else self._uncertainty[section]
-
-                temp = new_variance_uncertainty_instance(data)
-
                 if section is None:
-                    self.uncertainty = temp
-
-                return temp
-
+                    self.uncertainty = ADVarianceUncertainty(self._uncertainty.data)
+                    return self.uncertainty
+                else:
+                    return ADVarianceUncertainty(self._uncertainty[section])
             elif section is not None:
                 return self._uncertainty[section]
-
             else:
                 return self._uncertainty
 
@@ -323,11 +293,11 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         arr = self._get_uncertainty()
 
         if arr is not None:
-            return arr.array ** 2
+            return arr.array
 
     @variance.setter
     def variance(self, value):
-        self.uncertainty = new_variance_uncertainty_instance(value)
+        self.uncertainty = ADVarianceUncertainty(value)
 
     def set_section(self, section, input):
         """

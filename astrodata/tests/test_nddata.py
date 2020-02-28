@@ -1,58 +1,39 @@
 #!/usr/bin/env python
-import warnings
 
 import numpy as np
 import pytest
 
-from astrodata import nddata
+from astrodata.nddata import ADVarianceUncertainty
 
 
-def test_new_variance_uncertainty_instance_returns_none():
-    result = nddata.new_variance_uncertainty_instance(None)
+def test_variance_uncertainty_warn_if_there_are_any_negative_numbers():
+    arr = np.zeros((5, 5))
+    arr[2, 2] = -0.001
 
-    assert result is None
+    with pytest.warns(RuntimeWarning, match='Negative variance values found.'):
+        result = ADVarianceUncertainty(arr)
+
+    assert not np.all(arr >= 0)
+    assert isinstance(result, ADVarianceUncertainty)
+    assert result.array[2, 2] == 0
+
+    # check that it always works with a VarianceUncertainty instance
+    result.array[2, 2] = -0.001
+
+    with pytest.warns(RuntimeWarning, match='Negative variance values found.'):
+        result2 = ADVarianceUncertainty(result)
+
+    assert not np.all(arr >= 0)
+    assert not np.all(result.array >= 0)
+    assert isinstance(result2, ADVarianceUncertainty)
+    assert result2.array[2, 2] == 0
 
 
 def test_new_variance_uncertainty_instance_no_warning_if_the_array_is_zeros():
-    array = np.zeros((500, 500), dtype=np.float32)
-
-    with warnings.catch_warnings(record=True) as w:
-        result = nddata.new_variance_uncertainty_instance(array)
-        warnings.simplefilter("always")
-
-        for _w in w:
-            print(str(_w.message))
-
-        assert (array >= 0).all()
-        assert len(w) == 0
-
-
-def test_new_variance_uncertainty_instance_warn_if_there_are_any_negative_numbers():
-    array = np.zeros((500, 500), dtype=np.float32)
-    array[250, 250] = -0.001
-
-    with warnings.catch_warnings(record=True) as w:
-        result = nddata.new_variance_uncertainty_instance(array)
-        warnings.simplefilter("always")
-
-        for _w in w:
-            print(str(_w.message))
-
-        assert not (array >= 0).all()
-        assert len(w) == 1
-        assert isinstance(result, nddata.StdDevUncertainty)
-        assert result.array[250, 250] == 0
-
-
-def test_new_variance_uncertainty_instance():
-    array = np.ones((500, 500), dtype=np.float32)
-
-    with warnings.catch_warnings(record=True) as w:
-        result = nddata.new_variance_uncertainty_instance(array)
-        warnings.simplefilter("always")
-
-        assert len(w) == 0
-        assert isinstance(result, nddata.StdDevUncertainty)
+    arr = np.zeros((5, 5))
+    with pytest.warns(None) as w:
+        ADVarianceUncertainty(arr)
+    assert len(w) == 0
 
 
 if __name__ == '__main__':
