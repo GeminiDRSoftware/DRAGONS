@@ -297,7 +297,8 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @variance.setter
     def variance(self, value):
-        self.uncertainty = ADVarianceUncertainty(value)
+        self.uncertainty = (ADVarianceUncertainty(value) if value is not None
+                            else None)
 
     def set_section(self, section, input):
         """
