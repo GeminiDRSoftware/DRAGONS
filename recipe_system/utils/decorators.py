@@ -289,9 +289,14 @@ def parameter_override(fn):
         config = copy(pobj.params[pname])
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
-        # Override with values in the function call
-        params.update(kwargs)
         set_logging(pname)
+        # Override with values in the function call
+        for k, v in kwargs.items():
+            if k in params:
+                log.warning('Parameter {}={} was set but will be ignored '
+                            'because the recipe enforces a different value '
+                            '(={})'.format(k, params[k], v))
+        params.update(kwargs)
         # config doesn't know about streams or adinputs
         instream = params.get('instream', params.get('stream', 'main'))
         outstream = params.get('outstream', params.get('stream', 'main'))

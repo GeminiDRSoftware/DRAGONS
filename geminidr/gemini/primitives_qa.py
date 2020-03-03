@@ -1014,6 +1014,14 @@ def _iq_report(ad, fwhm, ellip, zfwhm, strehl, qastatus):
         comments.append('High ellipticity')
         if 'NON_SIDEREAL' in ad.tags:
             body.append(('- this is likely due to non-sidereal tracking', ''))
+
+    if {'IMAGE', 'LS'}.issubset(ad.tags):
+        log.warning('Through-slit IQ may be overestimated due to '
+                    'atmospheric dispersion')
+        body.append(('', 'WARNING: through-slit IQ measurement - '
+                         'may be overestimated'))
+        comments.append('Through-slit IQ measurement')
+
     if fwhm.samples == 1:
         log.warning('Only one source found. IQ numbers may not be accurate')
         body.append(('', 'WARNING: single source IQ measurement - '

@@ -1017,12 +1017,12 @@ def fit_continuum(ad):
 
         # Determine regions for collapsing into 1D spatial profiles
         if 'IMAGE' in tags:
-            # A through-slit image: extract a 4-arcsecond wide region about
+            # A through-slit image: extract a 2-arcsecond wide region about
             # the center. This should be OK irrespective of the actual slit
             # width and avoids having to work out the width from instrument-
             # dependent header information.
             centers = [dispersed_length // 2]
-            hwidth = int(2.0 / pixel_scale + 0.5)
+            hwidth = int(1.0 / pixel_scale + 0.5)
         else:
             # This is a dispersed 2D spectral image, chop it into 512-pixel
             # (unbinned) sections. This is one GMOS amp, and most detectors
@@ -1071,7 +1071,6 @@ def fit_continuum(ad):
                 c, w = [int(x) for x in slit.split(':')]
                 spatial_slices.append(slice(c-w, c+w))
 
-        from matplotlib import pyplot as plt
         for spectral_slice in spectral_slices:
             coord = 0.5 * (spectral_slice.start + spectral_slice.stop)
 
@@ -1094,6 +1093,10 @@ def fit_continuum(ad):
                                           min(spatial_length, int(np.ceil(limits[1]))))
                 length = spatial_slice.stop - spatial_slice.start
 
+                # General sanity requirement (will reject bad Apertures)
+                if length < 10:
+                    continue
+
                 # These are all in terms of the full unsliced extension
                 pixels = np.arange(spatial_slice.start, spatial_slice.stop)
 
@@ -1106,7 +1109,9 @@ def fit_continuum(ad):
                     ndd = ext.nddata[full_slice].T
 
                 data, mask, var = NDStacker.mean(ndd)
-                maxflux = np.max(abs(data))
+                if mask is not None:
+                    mask = (mask == 0)
+                maxflux = np.max(abs(data[mask]))
 
                 # Crude SNR test; is target bright enough in this wavelength range?
                 #if np.percentile(col,90)*xbox < np.mean(databox[dqbox==0]) \
@@ -1144,7 +1149,7 @@ def fit_continuum(ad):
                 fit_it = fitting.LevMarLSQFitter()
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    m_final = fit_it(m_init, pixels, data)
+                    m_final = fit_it(m_init, pixels[mask], data[mask])
 
                 if fit_it.fit_info['ierr'] < 5:
                     # This is kind of ugly and empirical; philosophy is that peak should

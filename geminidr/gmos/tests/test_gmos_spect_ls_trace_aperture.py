@@ -15,7 +15,6 @@ import geminidr
 import numpy as np
 from astrodata import testing
 from geminidr.gmos import primitives_gmos_spect
-from gempy.utils import logutils
 
 # Test parameters --------------------------------------------------------------
 input_datasets = [
@@ -151,23 +150,6 @@ def preprocess_recipe(ad, path, center):
     ad.write(os.path.join(path, ad.filename))
 
     return ad
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_log(path_to_outputs):
-    """
-    Fixture that setups DRAGONS' logging system to avoid duplicated outputs.
-
-    Parameters
-    ----------
-    path_to_outputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        output folder.
-    """
-    log_file = "{}.log".format(os.path.splitext(os.path.basename(__file__))[0])
-    log_file = os.path.join(path_to_outputs, log_file)
-
-    logutils.config(mode="standard", file_name=log_file)
 
 
 # Tests Definitions ------------------------------------------------------------
