@@ -561,12 +561,11 @@ class Transform(object):
         """Test a single Model for affinity, using its name (or the name
         of its submodels)"""
         try:
-            models = model._submodels
-        except AttributeError:
+            return np.logical_and.reduce([Transform.__model_is_affine(m)
+                                      for m in model])
+        except TypeError:  # it's not a CompoundModel
             return model.__class__.__name__[:5] in ('Rotat', 'Scale',
                                                     'Shift', 'Ident')
-        return np.logical_and.reduce([Transform.__model_is_affine(m)
-                                      for m in models])
 
     def __is_affine(self):
         """Test for affinity, using Model names.
