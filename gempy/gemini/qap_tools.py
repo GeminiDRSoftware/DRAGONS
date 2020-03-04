@@ -122,7 +122,7 @@ def status_report(status):
     event_pkt = evman.event_list.pop()
     postdata = json.dumps(event_pkt).encode('utf-8')
     try:
-        post_request = urllib.request.Request(URL)
+        post_request = urllib.request.Request(MURL)
         postr = urllib.request.urlopen(post_request, postdata)
         postr.read()
         postr.close()
@@ -179,8 +179,8 @@ def fitsstore_report(ad, metric, info_list, calurl_dict, mode, upload=False):
 
     # context --> mode, a <str>.
     # Here we pass 'mode' to the context key for fitsstore.
-    qareport["context"] = mode  
-    
+    qareport["context"] = mode
+
     qametric_list = []
     for ext, info in zip(ad, info_list):
         # No report is given for an extension without information
@@ -219,7 +219,7 @@ def send_fitsstore_report(qareport, calurl_dict):
         QA metrics report
 
     calurl_dict: <dict>
-        Provides FITSstore URLs. See the DRAGONS file, 
+        Provides FITSstore URLs. See the DRAGONS file,
         recipe_system.cal_service.calurl_dict
 
     Return
