@@ -26,7 +26,7 @@ from specutils import SpectralRegion
 import astrodata
 from astrodata import NDAstroData
 from geminidr import PrimitivesBASE
-from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr.gemini.lookups import DQ_definitions as DQ, extinction_data as extinct
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels, matching, tracing
 from gempy.library import transform
@@ -172,13 +172,8 @@ class Spect(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         order = params["order"]
-        individual = params["individual"]
         bandpass = params["bandpass"]
-
-        atmospheric_extinction = lambda wavelength: 0.
-        # For non-individual mode, keep a list of references to slices
-        # that will need the final SENSFUNC table attaching
-        exts_requiring_sensfunc = []
+        debug_plot = params["debug_plot"]
 
         # We're going to look in the generic (gemini) module as well as the
         # instrument module, so define that
@@ -186,8 +181,6 @@ class Spect(PrimitivesBASE):
         module[-2] = 'gemini'
         gemini_lookups = '.'.join(module)
 
-        wave, zpt, zpt_err, source = [], [], [], []
-        source_number = 0
         for ad in adinputs:
             filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
             for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
@@ -213,10 +206,8 @@ class Spect(PrimitivesBASE):
                 log.warning("Using default bandpass of {} nm".format(bandpass))
                 spec_table['WIDTH'] = bandpass * u.nm
 
-            airmass = ad.airmass()
-
-            # We will only calculate sensitivity for the first 1D spectrum,
-            # unless the data are cross-dispersed, so need to keep track
+            # We can only calculate the sensitivity for one extension in
+            # non-XD data, so keep track of this in case it's not the first one
             calculated = False
             for ext in ad:
                 if len(ext.shape) != 1:
@@ -229,8 +220,8 @@ class Spect(PrimitivesBASE):
                                 " Ignoring.")
                     break
 
-                spectrum = Spek1D(ext)  / (exptime * u.s)
-                spectrum *= 10**(0.4 * atmospheric_extinction(spectrum.spectral_axis))
+                spectrum = Spek1D(ext) / (exptime * u.s)
+                wave, zpt, zpt_err = [], [], []
 
                 # Compute values that are counts / (exptime * flux_density * bandpass)
                 for w0, dw, fluxdens in zip(spec_table['WAVELENGTH'].quantity,
@@ -244,63 +235,32 @@ class Spect(PrimitivesBASE):
                         wave.append(w0)
                         zpt.append(u.Magnitude(data / flux))
                         zpt_err.append(u.Magnitude(1 + np.sqrt(variance) / data))
-                        source.append(source_number)
 
-                if individual:
-                    # TODO: Abstract to interactive fitting
-                    wave = array_from_list(wave)
-                    zpt = array_from_list(zpt)
-                    zpt_err = array_from_list(zpt_err)
-                    spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
-                                                                            w=1./zpt_err.value,
-                                                                            order=order)
-                    knots, coeffs, degree = spline.tck
-                    sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                                     names=('knots', 'coefficients'))
-                    ext.SENSFUNC = sensfunc
+                # TODO: Abstract to interactive fitting
+                wave = array_from_list(wave)
+                zpt = array_from_list(zpt)
+                zpt_err = array_from_list(zpt_err)
+                spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
+                                                                        w=1./zpt_err.value,
+                                                                        order=order)
+                knots, coeffs, degree = spline.tck
+                sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
+                                 names=('knots', 'coefficients'))
+                ext.SENSFUNC = sensfunc
+                calculated = True
+
+                if debug_plot:
                     plt.ioff()
                     fig, ax = plt.subplots()
-                    ax.plot(wave, zpt, 'ko')
+                    ax.plot(wave, zpt, 'bo')
+                    ax.plot(wave[spline.mask], zpt[spline.mask], 'ko')
                     x = np.linspace(min(wave), max(wave), ext.shape[0])
                     ax.plot(x, spline(x), 'r-')
                     plt.show()
-                    wave, zpt, zpt_err = [], [], []
-                else:
-                    exts_requiring_sensfunc.append(ext)
-                    source_number += 1
 
-                calculated = True
-
-                # Timestamp and update the filename
-                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-                ad.update_filename(suffix=sfx, strip=True)
-
-        # If we're computing a single SENSFUNC from all inputs, calculate it now!
-        if not individual:
-            wave = array_from_list(wave)
-            zpt = array_from_list(zpt)
-            zpt_err = array_from_list(zpt_err)
-            spline = astromodels.UnivariateSplineWithOutlierRemoval(wave.value, zpt.value,
-                                                                    w=1. / zpt_err.value,
-                                                                    order=order)
-            knots, coeffs, degree = spline.tck
-            sensfunc = Table([knots * wave.unit, coeffs * zpt.unit],
-                             names=('knots', 'coefficients'))
-            for ext in exts_requiring_sensfunc:
-                ext.SENSFUNC = sensfunc
-                # Timestamp and update the filename
-                gt.mark_history(ext, primname=self.myself(), keyword=timestamp_key)
-                ext.update_filename(suffix=sfx, strip=True)
-
-            plt.ioff()
-            fig, ax = plt.subplots()
-            for source_number in range(max(source)+1):
-                sym = 'krgybmc'[source_number]+'o'
-                ax.plot(wave[source==source_number], zpt[source==source_number], sym)
-            x = np.linspace(min(wave), max(wave), ext.shape[0])
-            ax.plot(x, spline(x), 'r-')
-            plt.show()
-
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -1761,10 +1721,11 @@ class Spect(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        spectral_order = params["spectral_order"]
-        center = params["center"]
-        nsum = params["nsum"]
+        spline_kwargs = params.copy()
+        sfx = params.pop("suffix")
+        spectral_order = params.pop("spectral_order")
+        center = params.pop("center")
+        nsum = params.pop("nsum")
 
         for ad in adinputs:
             # Don't mosaic if the multiple extensions are because the
@@ -1815,7 +1776,8 @@ class Spect(PrimitivesBASE):
                     log.stdinfo("QE scaling factors: " +
                                 " ".join("{:6.4f}".format(coeff) for coeff in coeffs))
                 spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
-                                                                        order=spectral_order, w=weights)
+                                                                        order=spectral_order, w=weights,
+                                                                        **spline_kwargs)
 
                 if not mosaicked:
                     flat_data = np.tile(spline.data, (ext.shape[dispaxis - 1], 1))
