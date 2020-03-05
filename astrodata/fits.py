@@ -1,9 +1,5 @@
 from __future__ import print_function
 
-from datetime import datetime
-
-from future.utils import PY3
-
 from builtins import object
 from copy import deepcopy
 from collections import OrderedDict
@@ -1458,7 +1454,7 @@ class FitsLoader(object):
 
         provider = self._cls()
 
-        if isinstance(source, (str if PY3 else basestring)):
+        if isinstance(source, str):
             hdulist = fits.open(source, memmap=True,
                                 do_not_scale_image_data=True, mode='readonly')
             provider.path = source
