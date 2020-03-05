@@ -191,7 +191,7 @@ class Rotate2D(FittableModel):
 class UnivariateSplineWithOutlierRemoval(object):
     def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=False, outlier_func=sigma_clip,
-                niter=3, grow=0, **outlier_kwargs):
+                niter=3, grow=0, debug=False, **outlier_kwargs):
         """
         Instantiating this class creates a spline object that fits to the
         1D data, iteratively removing outliers using a specified function.
@@ -277,6 +277,10 @@ class UnivariateSplineWithOutlierRemoval(object):
         if w is not None:
             orig_mask |= (w == 0)
 
+        if debug:
+            print(y)
+            print(orig_mask)
+
         iter = 0
         full_mask = orig_mask  # Will include pixels masked because of "grow"
         while iter < niter+1:
@@ -292,6 +296,8 @@ class UnivariateSplineWithOutlierRemoval(object):
                     if w is not None and not all(w == 0):
                         full_mask |= (w == 0)
                     this_order = int(order * (1 - np.sum(full_mask) / len(full_mask)) + 0.5)
+                    if debug:
+                        print("FULL MASK", full_mask)
 
             xgood = x_to_fit[~full_mask]
             while True:
@@ -311,6 +317,8 @@ class UnivariateSplineWithOutlierRemoval(object):
                 knots = [xunique[int(xx+0.5)]
                          for xx in np.linspace(0, len(xunique)-1, this_order+1)[1:-1]]
                 spline_args = (knots,)
+                if debug:
+                    print ("KNOTS", knots)
 
             sort_indices = np.argsort(xgood)
             # Create appropriate spline object using current mask
@@ -319,7 +327,12 @@ class UnivariateSplineWithOutlierRemoval(object):
                               *spline_args, w=None if w is None else w[~full_mask][sort_indices],
                               **spline_kwargs)
             except ValueError as e:
-                raise e
+                if this_order == 0:
+                    avg_y = np.average(y[~full_mask],
+                                       weights=None if w is None else w[~full_mask])
+                    spline = lambda xx: avg_y
+                else:
+                    raise e
             spline_y = spline(x)
             #masked_residuals = outlier_func(spline_y - masked_y, **outlier_kwargs)
             #mask = masked_residuals.mask
@@ -346,7 +359,12 @@ class UnivariateSplineWithOutlierRemoval(object):
             iter += 1
 
         # Create a standard BSpline object
-        bspline = BSpline(*spline._eval_args)
+        try:
+            bspline = BSpline(*spline._eval_args)
+        except AttributeError:
+            # Create a spline object that's just a constant
+            bspline = BSpline(np.r_[(x[0],)*4, (x[-1],)*4],
+                              np.r_[(spline(0),)*4, (0.,)*4], 3)
         # Attach the mask and model (may be useful)
         bspline.mask = full_mask
         bspline.data = spline_y
