@@ -8,6 +8,7 @@ telescope_sites = {'Gemini-North': 'MKO',
                    'Gemini-South': 'MKO'}
 
 # Extinction curves for supported sites, as a function of wavelength in nm
+# Units are mag/airmass
 extinction_curves = {
     # From Buton et al. (2013, A&A 549, A8), 310nm point from Gemini website
     'MKO': spline(np.arange(310, 1001, 10),
