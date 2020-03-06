@@ -305,14 +305,10 @@ class CalibDB(PrimitivesBASE):
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adoutputs = list()
         for ad in adinputs:
-            passes = True
-            for add in ad:
-                if not hasattr(add, 'SENSFUNC'):
-                    passes = False
+            passes = all(hasattr(ext, 'SENSFUNC') for ext in ad)
             # if all of the extensions on this ad have a sensfunc attribute:
             if passes:
-                procstdads = [ad]
-                procstdads = self._markAsCalibration(procstdads, suffix=suffix,
+                procstdads = self._markAsCalibration([ad], suffix=suffix,
                                            primname=self.myself(), keyword="PROCSTND")
                 adoutputs.extend(procstdads)
             else:
