@@ -844,6 +844,15 @@
         "uiLevel"       : "UIBASIC",
         },
     }, 
+ "storeProcessedStandard":{
+    "suffix":{
+        "default"       : "_standard",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    }, 
  "subtractDark":{
     "suffix":{
         "default"       : "_darkCorrected",

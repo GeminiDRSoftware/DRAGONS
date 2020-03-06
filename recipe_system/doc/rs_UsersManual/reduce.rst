@@ -305,6 +305,7 @@ Configuration Switches and Options
     * processed_dark
     * processed_flat
     * processed_fringe
+    * processed_standard
 
 
 .. _atfile:
