@@ -189,62 +189,62 @@ class Rotate2D(FittableModel):
 
 
 class UnivariateSplineWithOutlierRemoval(object):
+    """
+    Instantiating this class creates a spline object that fits to the
+    1D data, iteratively removing outliers using a specified function.
+    A LSQUnivariateSpline() object will be used if the locations of
+    the spline knots are specified, otherwise a UnivariateSpline() object
+    will be used with the specified smoothing factor.
+
+    Duplicate x values are allowed here in the case of a specified order,
+    because the spline is an approximation and therefore does not need to
+    pass through all the points. However, for the purposes of determining
+    whether knots satisfy the Schoenberg-Whitney conditions, duplicates
+    are treated as a single x-value.
+
+    If an order is specified, it may be reduced proportionally to the
+    number of unmasked pixels.
+
+    Once the spline has been finalized, an identical BSpline object is
+    created and returned.
+
+    Parameters
+    ----------
+    x: array
+        x-coordinates of datapoints to fit
+    y: array/maskedarray
+        y-coordinates of datapoints to fit (mask is used)
+    order: int/None
+        order of spline fit (if not using smoothing factor)
+    s: float/None
+        smoothing factor (see UnivariateSpline description)
+    w: array
+        weighting for each point
+    bbox: (2,), array-like, optional
+        x-coordinate region over which interpolation is valid
+    k: int
+        order of spline interpolation
+    ext: int/str
+        type of extrapolation outside bounding box
+    check_finite: bool
+        check whether input contains only finite numbers
+    outlier_func: callable
+        function to call for defining outliers
+    niter: int
+        maximum number of clipping iterations to perform
+    grow: int
+        radius to reject pixels adjacent to masked pixels
+    outlier_kwargs: dict-like
+        parameter dict to pass to outlier_func()
+
+    Returns
+    -------
+    BSpline object
+        a callable to return the value of the interpolated spline
+    """
     def __new__(cls, x, y, order=None, s=None, w=None, bbox=[None]*2, k=3,
                 ext=0, check_finite=False, outlier_func=sigma_clip,
                 niter=3, grow=0, debug=False, **outlier_kwargs):
-        """
-        Instantiating this class creates a spline object that fits to the
-        1D data, iteratively removing outliers using a specified function.
-        A LSQUnivariateSpline() object will be used if the locations of
-        the spline knots are specified, otherwise a UnivariateSpline() object
-        will be used with the specified smoothing factor.
-
-        Duplicate x values are allowed here in the case of a specified order,
-        because the spline is an approximation and therefore does not need to
-        pass through all the points. However, for the purposes of determining
-        whether knots satisfy the Schoenberg-Whitney conditions, duplicates
-        are treated as a single x-value.
-
-        If an order is specified, it may be reduced proportionally to the
-        number of unmasked pixels.
-
-        Once the spline has been finalized, an identical BSpline object is
-        created and returned.
-
-        Parameters
-        ----------
-        x: array
-            x-coordinates of datapoints to fit
-        y: array/maskedarray
-            y-coordinates of datapoints to fit (mask is used)
-        order: int/None
-            order of spline fit (if not using smoothing factor)
-        s: float/None
-            smoothing factor (see UnivariateSpline description)
-        w: array
-            weighting for each point
-        bbox: (2,), array-like, optional
-            x-coordinate region over which interpolation is valid
-        k: int
-            order of spline interpolation
-        ext: int/str
-            type of extrapolation outside bounding box
-        check_finite: bool
-            check whether input contains only finite numbers
-        outlier_func: callable
-            function to call for defining outliers
-        niter: int
-            maximum number of clipping iterations to perform
-        grow: int
-            radius to reject pixels adjacent to masked pixels
-        outlier_kwargs: dict-like
-            parameter dict to pass to outlier_func()
-
-        Returns
-        -------
-        BSpline object
-            a callable to return the value of the interpolated spline
-        """
 
         # Decide what sort of spline object we're making
         spline_kwargs = {'bbox': bbox, 'k': k, 'ext': ext,
