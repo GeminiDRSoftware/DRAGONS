@@ -30,7 +30,7 @@ def test_ad_basics(input_file):
     fname = download_from_archive(input_file)
     ad = astrodata.open(fname)
 
-    assert isinstance(ad, astrodata.fits.AstroDataFits)
+    assert isinstance(ad, astrodata.AstroDataFits)
     assert ad.filename == os.path.basename(fname)
     assert type(ad[0].data) == np.ndarray
 
@@ -135,6 +135,19 @@ def test_writes_to_new_fits(path_to_outputs):
 
     ad.write(testfile, overwrite=True)
     assert os.path.exists(testfile)
+
+
+@pytest.mark.dragons_remote_data
+def test_from_hdulist():
+    fname = download_from_archive(test_files[0])
+
+    with fits.open(fname) as hdul:
+        ad = astrodata.open(hdul)
+        assert ad.instrument() == 'NIFS'
+        assert ad.object() == 'Dark'
+        assert ad.telescope() == 'Gemini-North'
+        assert len(ad) == 1
+        assert ad[0].shape == (2048, 2048)
 
 
 def test_can_make_and_write_ad_object(tmpdir):
@@ -267,6 +280,18 @@ def test_read_a_keyword_from_phu_deprecated():
     # and when accessing missing extension
     with pytest.raises(AttributeError):
         ad.ABC
+
+
+def test_invalid_file(tmpdir, caplog):
+    testfile = str(tmpdir.join('test.fits'))
+    with open(testfile, 'w'):
+        # create empty file
+        pass
+
+    with pytest.raises(astrodata.AstroDataError):
+        astrodata.open(testfile)
+
+    assert caplog.records[0].message.endswith('is zero size')
 
 
 if __name__ == '__main__':

@@ -12,10 +12,8 @@ import logging
 
 LOGGER = logging.getLogger('AstroData Factory')
 
-def fits_opener(source):
-    if isinstance(source, fits.HDUList):
-        return source
 
+def fits_opener(source):
     return fits.open(source, memmap=True)
 
 
