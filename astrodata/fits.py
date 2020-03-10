@@ -932,7 +932,6 @@ class FitsProvider(DataProvider):
                 header = {}
                 nd = NDDataObject(pixim, meta={})
 
-
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
         else:
@@ -1192,7 +1191,7 @@ class FitsProvider(DataProvider):
         if not isinstance(raw_nddata, NDDataObject):
             raw_nddata = NDDataObject(raw_nddata)
         processed_nddata = self._process_pixel_plane(raw_nddata, top_level=top_level,
-                custom_header=header, reset_ver=reset_ver)
+                                                     custom_header=header, reset_ver=reset_ver)
         return self._append_nddata(processed_nddata, name=name, add_to=add_to)
 
     # NOTE: This method is only used by others that have constructed NDData according

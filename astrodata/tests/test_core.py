@@ -1,9 +1,8 @@
-#!/usr/bin/env python
-
 import numpy as np
 import operator
 import pytest
 from astropy.io import fits
+from astropy.nddata import NDData, VarianceUncertainty
 from numpy.testing import assert_array_equal
 
 import astrodata
@@ -87,12 +86,13 @@ def test_attributes(ad1):
     assert ad1.object() == 'M42'
 
 
-@pytest.mark.parametrize('op, res', [(operator.add, 3),
-                                     (operator.sub, -1),
-                                     (operator.mul, 2),
-                                     (operator.truediv, 0.5)])
-def test_can_add_two_astrodata_objects(op, res, ad1, ad2):
-
+@pytest.mark.parametrize('op, res, res2', [
+    (operator.add, 3, 3),
+    (operator.sub, -1, 1),
+    (operator.mul, 2, 2),
+    (operator.truediv, 0.5, 2)
+])
+def test_can_add_two_astrodata_objects(op, res, res2, ad1, ad2):
     for data in (ad2, ad2.data):
         result = op(ad1, data)
         assert_array_equal(result.data, res)
@@ -100,6 +100,9 @@ def test_can_add_two_astrodata_objects(op, res, ad1, ad2):
         assert len(result) == 1
         assert isinstance(result[0].data, np.ndarray)
         assert isinstance(result[0].hdr, fits.Header)
+
+        result = op(data, ad1)
+        assert_array_equal(result.data, res2)
 
 
 @pytest.mark.parametrize('op, arg, res', [('add', 100, 101),
@@ -115,5 +118,55 @@ def test_operations(ad1, op, arg, res):
     assert len(result) == 1
 
 
-if __name__ == '__main__':
-    pytest.main()
+def test_operate():
+    ad = astrodata.create({})
+    nd = NDData(data=[[1, 2], [3, 4]],
+                uncertainty=VarianceUncertainty(np.ones((2, 2))),
+                mask=np.identity(2), meta={'header': {}})
+    ad.append(nd)
+
+    ad.operate(np.sum, axis=1)
+    assert_array_equal(ad[0].data, [3, 7])
+    assert_array_equal(ad[0].variance, [2, 2])
+    assert_array_equal(ad[0].mask, [1, 1])
+
+
+def test_reset(ad1):
+    data = np.ones(SHAPE) + 3
+    with pytest.raises(ValueError):
+        ad1.reset(data)
+
+    ext = ad1[0]
+
+    with pytest.raises(ValueError):
+        ext.reset(data, mask=np.ones((2, 2)), check=True)
+
+    with pytest.raises(ValueError):
+        ext.reset(data, variance=np.ones((2, 2)), check=True)
+
+    ext.reset(data, mask=np.ones(SHAPE), variance=np.ones(SHAPE))
+    assert_array_equal(ext.data, 4)
+    assert_array_equal(ext.variance, 1)
+    assert_array_equal(ext.mask, 1)
+
+    ext.reset(data, mask=None, variance=None)
+    assert ext.mask is None
+    assert ext.uncertainty is None
+
+    ext.reset(np.ma.array(data, mask=np.ones(SHAPE)))
+    assert_array_equal(ext.data, 4)
+    assert_array_equal(ext.mask, 1)
+
+    with pytest.raises(TypeError):
+        ext.reset(data, mask=1)
+
+    with pytest.raises(TypeError):
+        ext.reset(data, variance=1)
+
+    nd = NDData(data=data,
+                uncertainty=VarianceUncertainty(np.ones((2, 2)) * 3),
+                mask=np.ones((2, 2)) * 2, meta={'header': {}})
+    ext.reset(nd)
+    assert_array_equal(ext.data, 4)
+    assert_array_equal(ext.variance, 3)
+    assert_array_equal(ext.mask, 2)
