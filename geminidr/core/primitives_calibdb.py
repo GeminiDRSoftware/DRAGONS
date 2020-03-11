@@ -317,20 +317,15 @@ class CalibDB(PrimitivesBASE):
             self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
         elif self.upload and 'science' in self.upload:
             # save filenames so we can restore them after
-            storedcals = self.cachedict["calibrations"]
             filenames = [ad.filename for ad in adinputs]
 
             for ad in adinputs:
                 ad.phu.set('PROCSCI', self.mode)
                 ad.update_filename(suffix="_%s" % self.mode)
-                ad.write()
+                ad.write(overwrite=True)
             
                 try:
-                    if not os.path.exists(os.path.join(storedcals, self.mode)):
-                        os.mkdir(os.path.join(storedcals, self.mode))
-                    fname = os.path.join(storedcals, self.mode, os.path.basename(ad.filename))
-                    ad.write(fname, overwrite=True)
-                    upload_calibration(fname, is_science=True)
+                    upload_calibration(ad.filename, is_science=True)
                 except:
                     self.log.warning("Unable to upload file to science system")
                 else:
