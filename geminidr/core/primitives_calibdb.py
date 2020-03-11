@@ -328,7 +328,7 @@ class CalibDB(PrimitivesBASE):
             try:
                 upload_calibration(fname, is_science=is_science)
             except:
-                log.warning("Unable to upload file to science system"))
+                self.log.warning("Unable to upload file to science system")
             else:
                 msg = "File {} uploaded to fitsstore."
                 log.stdinfo(msg.format(os.path.basename(ad.filename)))
