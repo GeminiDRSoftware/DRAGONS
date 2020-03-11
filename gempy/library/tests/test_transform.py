@@ -5,18 +5,16 @@ from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.library import transform
 
 # Star locations: Use unique y values to enable sorting
-GMOS_STAR_LOCATIONS = ((200,50), (204,450), (4000,50), (4004,450))
+GMOS_STAR_LOCATIONS = ((200, 50), (204, 450), (4000, 50), (4004, 450))
+
+astrofaker = pytest.importorskip("astrofaker")
+
 
 @pytest.fixture
 def gmos_images():
     """
     Creates GMOS images with stars at predefined points
     """
-    try:
-        from AstroFaker import astrofaker
-    except ImportError:
-        pytest.skip("AstroFaker not installed")
-
     adinputs = []
     for binning in (1, 2, 4):
         ad = astrofaker.create('GMOS-N')

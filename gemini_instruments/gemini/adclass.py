@@ -240,7 +240,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_tag
     def _status_processed_cals(self):
         kwords = set(['PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
-                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG'])
+                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND'])
 
         if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])
@@ -2016,7 +2016,7 @@ class AstroDataGemini(AstroDataFits):
         int
             Grating order for the observation if it is spectra, else None
         """
-        if 'SPECT' in tags:
+        if 'SPECT' in self.tags:
             try:
                 grating_order = self.phu.get(self._keyword_for('grating_order'))
                 if grating_order is not None:

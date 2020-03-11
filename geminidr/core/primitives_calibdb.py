@@ -27,7 +27,8 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'bpm': ['BPM'],
                      'sq': [],
                      'ql': [],
-                     'qa': []}
+                     'qa': [],
+                     'processed_standard': ['PROCESSED', 'STANDARD']}
 
 
 # ------------------------------------------------------------------------------
@@ -139,6 +140,12 @@ class CalibDB(PrimitivesBASE):
     def getProcessedFringe(self, adinputs=None, **params):
         caltype = "processed_fringe"
         log = self.log
+        self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
+        self._assert_calibrations(adinputs, caltype)
+        return adinputs
+
+    def getProcessedStandard(self, adinputs=None, **params):
+        caltype = "processed_standard"
         self.getCalibration(adinputs, caltype=caltype, refresh=params["refresh"])
         self._assert_calibrations(adinputs, caltype)
         return adinputs
@@ -324,6 +331,22 @@ class CalibDB(PrimitivesBASE):
                 ad.filename = filename
         
         return adinputs
+
+    def storeProcessedStandard(self, adinputs=None, suffix=None):
+        caltype = 'processed_standard'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        adoutputs = list()
+        for ad in adinputs:
+            passes = all(hasattr(ext, 'SENSFUNC') for ext in ad)
+            # if all of the extensions on this ad have a sensfunc attribute:
+            if passes:
+                procstdads = self._markAsCalibration([ad], suffix=suffix,
+                                           primname=self.myself(), keyword="PROCSTND")
+                adoutputs.extend(procstdads)
+            else:
+                adoutputs.append(ad)
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adoutputs
 
 
 ##################

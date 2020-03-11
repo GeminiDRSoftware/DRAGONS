@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import glob
 import pytest
 import os
@@ -9,22 +7,11 @@ from gempy.utils import logutils
 
 logutils.config(file_name='dummy.log')
 
-try:
-    path = os.environ['TEST_PATH']
-except KeyError:
-    pytestmark = pytest.mark.skip(
-        "Could not find environment variable: $TEST_PATH")
-else:
-    if not os.path.exists(path):
-        pytestmark = pytest.mark.skip(
-            "Could not find path stored in $TEST_PATH: {}".format(path))
 
-    # Returns list of all files in the TEST_PATH directory
-    F2_reduce = glob.glob(os.path.join(path, "F2/test_reduce/", "*fits"))
-
-    # Separates the directory from the list, helps cleanup code
-    fits_files = [_file.split('/')[-1] for _file in F2_reduce]
-    assert len(fits_files) > 1
+@pytest.fixture
+def F2_reduce(path_to_inputs):
+    return glob.glob(os.path.join(path_to_inputs,
+                                  "F2", "test_reduce", "*fits"))
 
 
 def test_isclose_returns_proper_values_with_edgecases():
@@ -33,9 +20,12 @@ def test_isclose_returns_proper_values_with_edgecases():
     which correspond to the expected answer. This just means we can shorten
     the amount of lines in this test and use one assert instead of multiple
     """
-    answer_values = [dataselect.isclose(1.0, 2.0, 2.0), dataselect.isclose(1.0, 2.1),
-                     dataselect.isclose(0.1, 0.1, 0.0), dataselect.isclose(0.1, 0.11),
-                     dataselect.isclose(1.5, 3.0, 1.4), dataselect.isclose(4, 8, 0.1, 9)]
+    answer_values = [dataselect.isclose(1.0, 2.0, 2.0),
+                     dataselect.isclose(1.0, 2.1),
+                     dataselect.isclose(0.1, 0.1, 0.0),
+                     dataselect.isclose(0.1, 0.11),
+                     dataselect.isclose(1.5, 3.0, 1.4),
+                     dataselect.isclose(4, 8, 0.1, 9)]
     excpected_values = [True, False, True, False, True, True]
     for i in range(len(answer_values)):
         assert answer_values[i] == excpected_values[i]
@@ -261,20 +251,14 @@ def test_evalexpression():
     assert answer0 is answer1 is answer2 is answer3 is False
 
 
-def test_select_data():
+@pytest.mark.dragons_remote_data
+def test_select_data(F2_reduce):
     answer = dataselect.select_data(F2_reduce, ["F2", "FLAT"], [],
                                     dataselect.expr_parser('filter_name=="Y"'))
-
-    # For legibility, the list of answers just has the files, we append this to
-    # the full path in the for loop
-    correct_files = ['S20131126S1113.fits', 'S20131129S0322.fits',
+    # For legibility, the list of answers just has the files
+    correct_files = {'S20131126S1113.fits', 'S20131129S0322.fits',
                      'S20131126S1111.fits', 'S20131129S0321.fits',
                      'S20131126S1115.fits', 'S20131126S1116.fits',
                      'S20131129S0323.fits', 'S20131126S1112.fits',
-                     'S20131129S0320.fits', 'S20131126S1114.fits']
-
-    for i in range(len(correct_files)):
-        # adds the full path to the files above and makes sure each value
-        # in the select_data instance is the correct string.
-        expected = os.path.join(path, "F2/test_reduce/", correct_files[i])
-        assert answer[i] == expected
+                     'S20131129S0320.fits', 'S20131126S1114.fits'}
+    assert {os.path.basename(f) for f in answer} == correct_files

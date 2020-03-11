@@ -15,7 +15,8 @@ class addCalibrationConfig(config.Config):
                  "processed_bias": "procsessed BIAS",
                  "processed_dark": "processed DARK",
                  "processed_flat": "processed FLAT",
-                 "processed_fringe": "processed fringe"
+                 "processed_fringe": "processed fringe",
+                 "processed_standard": "processed standard"
                  }
         )
 
@@ -31,7 +32,8 @@ class getCalibrationConfig(config.Config):
                  "processed_bias": "procsessed BIAS",
                  "processed_dark": "processed DARK",
                  "processed_flat": "processed FLAT",
-                 "processed_fringe": "processed fringe"
+                 "processed_fringe": "processed fringe",
+                 "processed_standard": "processed standard"
                  },
         optional=False
     )
@@ -87,7 +89,8 @@ class storeCalibrationConfig(config.Config):
                  "bpm": "bad pixel mask",
                  "sq": "science quality",
                  "qa": "QA",
-                 "ql": "quick look"
+                 "ql": "quick look",
+                 "processed_standard": "processed standard"
                  },
         optional=False
     )
@@ -124,3 +127,6 @@ class storeProcessedFringeConfig(config.Config):
 
 class storeScienceConfig(config.Config):
     pass
+
+class storeProcessedStandardConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_standard", optional=True)

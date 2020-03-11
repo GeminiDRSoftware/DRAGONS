@@ -44,10 +44,8 @@ E.g.,::
 import gc
 import inspect
 import traceback
-from collections import Iterable
 from datetime import datetime
 
-import psutil
 from functools import wraps
 from copy import copy, deepcopy
 
@@ -150,8 +148,7 @@ def _get_provenance_inputs(adinputs):
 
     Returns
     --------
-
-    `dict` by datalabel of dictionaries with the filename, md5, provenance and 
+    `dict` by datalabel of dictionaries with the filename, md5, provenance and
         provenance_history data from the inputs
     """
     retval = dict()
@@ -190,7 +187,7 @@ def _clone_provenance_deprecated(provenance_input, ad):
     Args
     -----
     provenance_input : dictionary with provenance data from a single input.
-        We only care about the `provenance` element, which holds a list of 
+        We only care about the `provenance` element, which holds a list of
         provenance data
     ad : outgoing `AstroData` object to add provenance data to
 
@@ -207,7 +204,7 @@ def _clone_provenance_deprecated(provenance_input, ad):
 
 def __top_level_primitive__():
     """ Check if we are at the top-level, not being called from another primitive.
-    
+
     We only want to capture provenance history when we are passing through the
     uppermost primitive calls.  These are the calls that get made from the recipe.
     """
@@ -235,7 +232,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     -----
     provenance_inputs : provenance and provenance history information to add
         This is an dictionary keyed by datalabel of dictionaries with the relevant
-        provenance for that particular input.  Each dictionary contains the filename, 
+        provenance for that particular input.  Each dictionary contains the filename,
         md5 and the provenance and provenance_history of that `AstroData` prior to execution of
         the primitive.
     ret_value : outgoing list of `AstroData` data
@@ -290,9 +287,14 @@ def parameter_override(fn):
         config = copy(pobj.params[pname])
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
-        # Override with values in the function call
-        params.update(kwargs)
         set_logging(pname)
+        # Override with values in the function call
+        for k, v in kwargs.items():
+            if k in params:
+                log.warning('Parameter {}={} was set but will be ignored '
+                            'because the recipe enforces a different value '
+                            '(={})'.format(k, params[k], v))
+        params.update(kwargs)
         # config doesn't know about streams or adinputs
         instream = params.get('instream', params.get('stream', 'main'))
         outstream = params.get('outstream', params.get('stream', 'main'))

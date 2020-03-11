@@ -72,44 +72,40 @@ pipeline {
         }
 
         stage('Unit tests') {
-
-            steps {
-                echo "Running tests"
-                sh 'tox -e py36-unit -v -- --junit-xml reports/unittests_results.xml'
-            }
-
-        }
-
-        stage('GMOS LS Tests') {
-
-            steps {
-                echo "Running tests"
-                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
-
-                echo "Reporting coverage"
-                sh 'tox -e covreport -- xml -o reports/coverage.xml'
-            }
-            post {
-                always {
-                    echo "Running 'archivePlots' from inside GmosArcTests"
-                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-                }
-            }
-
+          steps {
+            echo "Running tests"
+            sh 'tox -e py36-unit -v -- --junit-xml reports/unittests_results.xml'
+            echo "Reportint coverage to CodeCov"
+            sh 'tox -e codecov -- -F unit'
+          }
         }
 
         stage('Integration tests') {
-
-            // when {
-            //     branch 'master'
-            // }
-            steps {
-                echo "Integration tests"
-                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
-            }
-
+          // when {
+          //     branch 'master'
+          // }
+          steps {
+            echo "Integration tests"
+            sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
+            echo "Reporting coverage"
+            sh 'tox -e codecov -- -F integration'
+          }
         }
 
+        stage('GMOS LS Tests') {
+          steps {
+            echo "Running tests"
+            sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
+            echo "Reporting coverage"
+            sh 'tox -e codecov -- -F gmosls'
+          }  // end steps
+          post {
+            always {
+              echo "Running 'archivePlots' from inside GmosArcTests"
+              archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+            }  // end always
+          }  // end post
+        }  // end stage
 
     }
     post {

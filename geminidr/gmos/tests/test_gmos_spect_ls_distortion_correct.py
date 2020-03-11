@@ -18,7 +18,6 @@ import geminidr
 from astrodata import testing
 from copy import deepcopy
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
-from gempy.utils import logutils
 
 
 # Test parameters --------------------------------------------------------------
@@ -242,24 +241,8 @@ def preprocess_recipe(ad, path):
     return ad
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_log(path_to_outputs):
-    """
-    Fixture that setups DRAGONS' logging system to avoid duplicated outputs.
-
-    Parameters
-    ----------
-    path_to_outputs : fixture
-        Custom fixture defined in `astrodata.testing` containing the path to the
-        output folder.
-    """
-    log_file = "{}.log".format(os.path.splitext(os.path.basename(__file__))[0])
-    log_file = os.path.join(path_to_outputs, log_file)
-
-    logutils.config(mode="standard", file_name=log_file)
-
-
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
 def test_distortion_correct_is_stable(ad, ad_ref):
@@ -276,6 +259,7 @@ def test_distortion_correct_is_stable(ad, ad_ref):
 
 
 @pytest.mark.dragons_remote_data
+@pytest.mark.gmosls
 @pytest.mark.parametrize("fname", input_files)
 def test_full_frame_distortion_works_on_smaller_region(fname, path_to_inputs):
     """

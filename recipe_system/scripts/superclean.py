@@ -114,7 +114,7 @@ def rmfiles(dir_=None, ext=None, path_file="", pre=None):
         if os.path.exists(path_file):
             pass_ = subprocess.call(["rm", "-r", path_file])
             if pass_ == 0:
-                fstr += "\nremoved %s" % path_filei
+                fstr += "\nremoved %s" % path_file
     return fstr
 
 # Show options if none selected

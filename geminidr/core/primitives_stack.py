@@ -64,13 +64,22 @@ class Stack(PrimitivesBASE):
             Combine method.
 
         reject_method : str
-            Type of pixel rejection (passed to gemcombine).
+            Pixel rejection method (none, minmax, sigclip, varclip).
 
         zero : bool
             Apply zero-level offset to match background levels?
 
+        scale : bool
+            Scale images to the same intensity?
+
         memory : float or None
             Available memory (in GB) for stacking calculations.
+
+        statsec : str
+            Section for statistics.
+
+        separate_ext : bool
+            Handle extensions separately?
 
         Returns
         -------
@@ -119,14 +128,14 @@ class Stack(PrimitivesBASE):
             return adinputs
 
         if (reject_method == "minmax" and self.mode == "qa" and
-               params["nlow"] + params["nhigh"] >= len(adinputs)):
-           log.warning("Trying to reject too many images. Setting nlow=nhigh=0.")
-           params["nlow"] = 0
-           params["nhigh"] = 0
+                params["nlow"] + params["nhigh"] >= len(adinputs)):
+            log.warning("Trying to reject too many images. Setting nlow=nhigh=0.")
+            params["nlow"] = 0
+            params["nhigh"] = 0
 
         # Perform various checks on inputs
         for ad in adinputs:
-            if not "PREPARED" in ad.tags:
+            if "PREPARED" not in ad.tags:
                 raise IOError("{} must be prepared" .format(ad.filename))
 
         if len(set(len(ad) for ad in adinputs)) > 1:
@@ -147,7 +156,7 @@ class Stack(PrimitivesBASE):
         gain_list = [np.mean([gain[i] for gain in gains])
                      for i in range(nexts)]
         read_noise_list = [np.sqrt(np.sum([rn[i]*rn[i] for rn in read_noises]))
-                                     for i in range(nexts)]
+                           for i in range(nexts)]
 
         num_img = len(adinputs)
         num_ext = len(adinputs[0])
@@ -274,8 +283,8 @@ class Stack(PrimitivesBASE):
         # Propagate REFCAT as the union of all input REFCATs
         refcats = [ad.REFCAT for ad in adinputs if hasattr(ad, 'REFCAT')]
         if refcats:
-            out_refcat = table.unique(table.vstack(refcats,
-                                metadata_conflicts='silent'), keys='Cat_Id')
+            out_refcat = table.unique(table.vstack(refcats, metadata_conflicts='silent'),
+                                      keys='Cat_Id')
             out_refcat['Id'] = list(range(1, len(out_refcat)+1))
             ad_out.REFCAT = out_refcat
 
@@ -283,7 +292,7 @@ class Stack(PrimitivesBASE):
         try:
             airmass_kw = ad_out._keyword_for('airmass')
             mean_airmass = np.mean([ad.airmass() for ad in adinputs])
-        except:  # generic implementation failure (probably non-Gemini)
+        except Exception:  # generic implementation failure (probably non-Gemini)
             pass
         else:
             ad_out.phu.set(airmass_kw, mean_airmass, "Mean airmass for the exposure")
@@ -299,7 +308,7 @@ class Stack(PrimitivesBASE):
 
         # Add suffix to datalabel to distinguish from the reference frame
         ad_out.phu.set('DATALAB', "{}{}".format(ad_out.data_label(), sfx),
-                   self.keyword_comments['DATALAB'])
+                       self.keyword_comments['DATALAB'])
 
         # Add other keywords to the PHU about the stacking inputs
         ad_out.orig_filename = ad_out.phu.get('ORIGNAME')

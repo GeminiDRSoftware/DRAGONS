@@ -267,7 +267,7 @@ def _parse_iraf_section(section):
     [y1, y2, x1, x2]
 
     """
-    assert isinstance(section, basestring)
+    assert isinstance(section, str)
 
     [x1, x2, y1, y2] = [int(a) for b in section.strip('[]').split(':')
                         for a in b.split(",")]
@@ -330,7 +330,7 @@ def parse_command_line_inputs():
 
     args = parser.parse_args()
     if not args.no_write and not args.clobber:
-        assert isinstance(args.prefix, basestring), \
+        assert isinstance(args.prefix, str), \
             ('When writing files and not clobbering, prefix must be set')
 
     # Set global verbose flag
