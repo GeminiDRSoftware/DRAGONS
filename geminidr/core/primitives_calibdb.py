@@ -317,6 +317,7 @@ class CalibDB(PrimitivesBASE):
             self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
         elif self.upload and 'science' in self.upload:
             # save filenames so we can restore them after
+            storedcals = self.cachedict["calibrations"]
             filenames = [ad.filename for ad in adinputs]
 
             for ad in adinputs:
@@ -324,14 +325,17 @@ class CalibDB(PrimitivesBASE):
                 ad.update_filename(suffix="_%s" % self.mode)
                 ad.write()
             
-            # self.storeCalibration(adinputs, caltype=self.mode)
-            try:
-                upload_calibration(fname, is_science=True)
-            except:
-                self.log.warning("Unable to upload file to science system")
-            else:
-                msg = "File {} uploaded to fitsstore."
-                log.stdinfo(msg.format(os.path.basename(ad.filename)))
+                try:
+                    if not os.path.exists(os.path.join(storedcals, self.mode)):
+                        os.mkdir(os.path.join(storedcals, self.mode))
+                    fname = os.path.join(storedcals, self.mode, os.path.basename(ad.filename))
+                    ad.write(fname, overwrite=True)
+                    upload_calibration(fname, is_science=True)
+                except:
+                    self.log.warning("Unable to upload file to science system")
+                else:
+                    msg = "File {} uploaded to fitsstore."
+                    self.log.stdinfo(msg.format(os.path.basename(ad.filename)))
 
             # restore filenames, we don't want the _sq or _ql on the local filesystem copy
             for filename, ad in zip(filenames, adinputs):
