@@ -326,7 +326,7 @@ class CalibDB(PrimitivesBASE):
             
             # self.storeCalibration(adinputs, caltype=self.mode)
             try:
-                upload_calibration(fname, is_science=is_science)
+                upload_calibration(fname, is_science=True)
             except:
                 self.log.warning("Unable to upload file to science system")
             else:
