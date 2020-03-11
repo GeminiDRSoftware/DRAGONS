@@ -191,25 +191,13 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
 
 
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("input_file", test_files)
-def test_set_a_keyword_on_phu_deprecated(input_file):
-    fname = download_from_archive(input_file)
+def test_set_a_keyword_on_phu_deprecated():
+    fname = download_from_archive(test_files[0])
     ad = astrodata.open(fname)
-
-    try:
-        with pytest.raises(AssertionError):
-            ad.phu.DETECTOR = 'FooBar'
-            ad.phu.ARBTRARY = 'BarBaz'
-
-            assert ad.phu.DETECTOR == 'FooBar'
-            assert ad.phu.ARBTRARY == 'BarBaz'
-            assert ad.phu['DETECTOR'] == 'FooBar'
-    except KeyError as e:
-        # Some instruments don't have DETECTOR as a keyword
-        if e.args[0] == "Keyword 'DETECTOR' not found.":
-            pass
-        else:
-            raise KeyError
+    # Test that setting DETECTOR as an attribute doesn't modify the header
+    ad.phu.DETECTOR = 'FooBar'
+    assert ad.phu.DETECTOR == 'FooBar'
+    assert ad.phu['DETECTOR'] == 'NIFS'
 
 
 # Regression:
@@ -294,5 +282,42 @@ def test_invalid_file(tmpdir, caplog):
     assert caplog.records[0].message.endswith('is zero size')
 
 
-if __name__ == '__main__':
-    pytest.main()
+@pytest.mark.dragons_remote_data
+def test_header_collection():
+    fname = download_from_archive(test_files[1])
+    ad = astrodata.open(fname)
+    assert len(ad) == 12
+    assert len([hdr for hdr in ad.hdr]) == 12
+
+    # get
+    assert 'FRAMEID' in ad.hdr
+    assert 'FOO' not in ad.hdr
+    assert ad.hdr.get('FRAMEID') == [
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
+    with pytest.raises(KeyError):
+        ad.hdr['FOO']
+    assert ad.hdr.get('FOO') == [None] * 12
+    assert ad.hdr.get('FOO', default='BAR') == ['BAR'] * 12
+
+    # del/remove
+    assert ad.hdr['GAIN'] == [1.0] * 12
+    del ad.hdr['GAIN']
+    with pytest.raises(KeyError):
+        ad.hdr['GAIN']
+    with pytest.raises(KeyError):
+        del ad.hdr['GAIN']
+
+    # set
+    assert ad.hdr['RDNOISE'] == [1.0] * 12
+    ad.hdr['RDNOISE'] = 2.0
+    assert ad.hdr['RDNOISE'] == [2.0] * 12
+
+    # comment
+    assert ad.hdr.get_comment('DATATYPE') == ['Type of Data'] * 12
+    ad.hdr.set_comment('DATATYPE', 'Hello!')
+    assert ad.hdr.get_comment('DATATYPE') == ['Hello!'] * 12
+    ad.hdr['RDNOISE'] = (2.0, 'New comment')
+    assert ad.hdr.get_comment('RDNOISE') == ['New comment'] * 12
+    with pytest.raises(KeyError,
+                       match="Keyword 'FOO' not available at header 0"):
+        ad.hdr.set_comment('FOO', 'A comment')

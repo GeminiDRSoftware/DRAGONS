@@ -131,7 +131,8 @@ class FitsHeaderCollection(object):
                 ret.append(None)
                 raised = True
         if raised:
-            error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
+            error = KeyError("The keyword couldn't be found at headers: {}"
+                             .format(tuple(missing_at)))
             error.missing_at = missing_at
             error.values = ret
             raise error
@@ -174,19 +175,20 @@ class FitsHeaderCollection(object):
             try:
                 _inner_set_comment(header)
             except KeyError as err:
-                err.message = err.message + " at header {}".format(n)
-                raise
+                raise KeyError(err.args[0] + " at header {}".format(n))
 
     def __contains__(self, key):
         return any(tuple(key in h for h in self.__headers))
 
+
 def new_imagehdu(data, header, name=None):
-# Assigning data in a delayed way, won't reset BZERO/BSCALE in the header,
-# for some reason. Need to investigated. Maybe astropy.io.fits bug. Figure
-# out WHY were we delaying in the first place.
-#    i = ImageHDU(data=DELAYED, header=header.copy(), name=name)
-#    i.data = data
+    # Assigning data in a delayed way, won't reset BZERO/BSCALE in the header,
+    # for some reason. Need to investigated. Maybe astropy.io.fits bug. Figure
+    # out WHY were we delaying in the first place.
+    #    i = ImageHDU(data=DELAYED, header=header.copy(), name=name)
+    #    i.data = data
     return ImageHDU(data=data, header=header.copy(), name=name)
+
 
 def table_to_bintablehdu(table, extname=None):
     add_header_to_table(table)
