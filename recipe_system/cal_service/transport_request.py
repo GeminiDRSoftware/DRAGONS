@@ -137,7 +137,11 @@ def calibration_search(rq, howmany=1, return_xml=False):
     log.stdinfo("CENTRAL CALIBRATION SEARCH: {}".format(rqurl))
     rqurl = rqurl + "/{}".format(rq.filename)
     # encode and send request
-    sequence = [("descriptors", rq.descriptors), ("types", rq.tags)]
+    fixed_descriptors = dict()
+    for k, v in rq.descriptors.items():
+        if k != "dispersion_axis":
+            fixed_descriptors[k] = v
+    sequence = [("descriptors", fixed_descriptors), ("types", rq.tags)]
     postdata = urllib.parse.urlencode(sequence).encode('utf-8')
     response = "CALIBRATION_NOT_FOUND"
     try:

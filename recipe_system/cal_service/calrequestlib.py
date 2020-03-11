@@ -228,6 +228,7 @@ def process_cal_requests(cal_requests, howmany=None):
                         calibs.append(cachename)
                     except GetterError as err:
                         for message in err.messages:
+                            print(message)
                             log.error(message)
                 continue
 
@@ -238,6 +239,7 @@ def process_cal_requests(cal_requests, howmany=None):
                 calname = get_request(url, calname)
             except GetterError as err:
                 for message in err.messages:
+                    print(message)
                     log.error(message)
             else:
                 # hash compare
@@ -247,9 +249,11 @@ def process_cal_requests(cal_requests, howmany=None):
                     calibs.append(calname)
                 else:
                     err = "MD5 hash of downloaded file does not match expected hash {}"
+                    print("md5 mismatch")
                     raise IOError(err.format(md5))
 
         # If howmany=None, append the only file as a string, instead of the list
+        print("saw %d calibs" % len(calibs))
         if calibs:
             _add_cal_record(rq, calibs if howmany else calibs[0])
 
