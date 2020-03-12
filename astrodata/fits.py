@@ -682,6 +682,18 @@ class FitsProviderProxy(DataProvider):
         else:
             return self._mapped_nddata(0).shape
 
+    @property
+    def wcs(self):
+        if self.is_single:
+            return self._mapped_nddata(0).wcs
+        raise ValueError("Cannot return WCS for an AstroData object that is not a single slice")
+
+    @wcs.setter
+    def wcs(self, value):
+        if not self.is_single:
+            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
+        self._mapped_nddata(0).wcs = value
+
     def hdr(self):
         headers = self._provider._get_raw_headers(indices=self._mapping)
 
