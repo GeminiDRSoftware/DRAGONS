@@ -21,7 +21,7 @@ def main():
     cattotalflux = objcat.field("FLUX_AUTO")
     catmaxflux = objcat.field("FLUX_MAX")
 
-    i = int(raw_input('OBJCAT no: '))
+    i = int(input('OBJCAT no: '))
     i -= 1
     xcenter = catx[i]
     ycenter = caty[i]
@@ -31,8 +31,8 @@ def main():
 
     print("X, Y:  %.2f, %.2f" % (xcenter, ycenter))
 
-    xcenter = raw_input('X: ')
-    ycenter = raw_input('Y: ')
+    xcenter = input('X: ')
+    ycenter = input('Y: ')
 
     if xcenter == '':
         xcenter = catx[i]

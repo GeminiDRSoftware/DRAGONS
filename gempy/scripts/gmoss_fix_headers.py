@@ -681,7 +681,7 @@ def _expand_inputs(variable):
     Expand any environment or 'user' variables
 
     Parameters
-        variable: basestring
+        variable: str
 
     Returns:
         Expanded variable
@@ -699,10 +699,10 @@ def _parse_file_system(arg):
     Determines if arg requires OS expansion or not.
 
     Parameters:
-        `arg`: basestring
+        `arg`: str
 
     Returns:
-        Expanded input: basestring
+        Expanded input: str
 
     """
     if FILE_SYSTEM_REGEXP.search(arg):

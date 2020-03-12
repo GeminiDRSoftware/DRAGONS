@@ -88,7 +88,7 @@ def _check_params(records, expected):
         if record.message.startswith('Resampling and linearizing'):
             assert expected in record.message
 
-
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
@@ -101,6 +101,7 @@ def test_resample_and_linearize(adinputs, caplog):
     assert 'ALIGN' in adout[0].phu
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize_with_w1_w2(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
@@ -108,6 +109,7 @@ def test_resample_and_linearize_with_w1_w2(adinputs, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_and_linearize_with_npix(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
@@ -115,6 +117,7 @@ def test_resample_and_linearize_with_npix(adinputs, caplog):
     _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_error_with_all(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
@@ -123,6 +126,7 @@ def test_resample_error_with_all(adinputs, caplog):
         p.resampleToCommonFrame(dw=0.15, w1=700, w2=850, npix=1001)
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_linearize_trim_and_stack(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
@@ -139,6 +143,7 @@ def test_resample_linearize_trim_and_stack(adinputs, caplog):
     assert adout[0][0].shape[0] == 2429
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)
@@ -150,6 +155,7 @@ def test_resample_only(adinputs, caplog):
     _check_params(caplog.records, 'w1=508.198 w2=1088.232 dw=0.150 npix=3868')
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_resample_only_and_trim(adinputs, caplog):
     p = primitives_gmos_spect.GMOSSpect(adinputs)

@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import numpy as np
 import warnings
+import astrodata
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
@@ -124,6 +125,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
         spline_kwargs = params.copy()
         suffix = spline_kwargs.pop("suffix")
         spectral_order = spline_kwargs.pop("spectral_order")
+        threshold = spline_kwargs.pop("threshold")
 
         # Parameter validation should ensure we get an int or a list of 3 ints
         try:
@@ -136,6 +138,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             array_info = gt.array_information(ad)
             is_hamamatsu = 'Hamamatsu' in ad.detector_name(pretty=True)
             ad_tiled = self.tileArrays([ad], tile_all=False)[0]
+            ad_fitted = astrodata.create(ad.phu)
             for ext, order, indices in zip(ad_tiled, orders, array_info.extensions):
                 # If the entire row is unilluminated, we want to fit
                 # the pixels but still keep the edges masked
@@ -156,20 +159,26 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
                     spline = astromodels.UnivariateSplineWithOutlierRemoval(pixels, masked_data,
                                                     order=order, w=weights, **spline_kwargs)
                     fitted_data[i] = spline(pixels)
-                with warnings.catch_warnings():
-                    # Ignore pesky divide-by-zero type warnings because we
-                    # handle NaNs later
-                    warnings.filterwarnings('ignore', r'.*true_divide.*')
-                    ext.divide(fitted_data)
+                # Copy header so we have the _section() descriptors
+                # Turn zeros into tiny numbers to avoid 0/0 errors and NaNs
+                ad_fitted.append(fitted_data + np.spacing(0), header=ext.hdr)
 
-                # Split the normalized flat back into the separate extensions
-                tiled_detsec = ext.detector_section()
+            # Find the largest spline value for each row across all extensions
+            # and mask pixels below the requested fraction of the peak
+            row_max = np.array([ext_fitted.data.max(axis=1)
+                                for ext_fitted in ad_fitted]).max(axis=0)
+            for ext_fitted in ad_fitted:
+                ext_fitted.mask = np.where((ext_fitted.data.T / row_max).T < threshold,
+                                           DQ.unilluminated, DQ.good)
+
+            for ext_fitted, indices in zip(ad_fitted, array_info.extensions):
+                tiled_arrsec = ext_fitted.array_section()
                 for i in indices:
-                    detsec = ad[i].detector_section()
-                    slice_ = (slice((detsec.y1 - tiled_detsec.y1) // ybin, (detsec.y2 - tiled_detsec.y1) // ybin),
-                              slice((detsec.x1 - tiled_detsec.x1) // xbin, (detsec.x2 - tiled_detsec.x1) // xbin))
-                    ad[i].data = np.nan_to_num(ext.data[slice_])
-                    ad[i].variance = np.nan_to_num(ext.variance[slice_])
+                    ext = ad[i]
+                    arrsec = ext.array_section()
+                    slice_ = (slice((arrsec.y1 - tiled_arrsec.y1) // ybin, (arrsec.y2 - tiled_arrsec.y1) // ybin),
+                              slice((arrsec.x1 - tiled_arrsec.x1) // xbin, (arrsec.x2 - tiled_arrsec.x1) // xbin))
+                    ext /= ext_fitted.nddata[slice_]
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

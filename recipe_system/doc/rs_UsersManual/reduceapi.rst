@@ -196,6 +196,7 @@ upload              <type 'list' of 'str'>     None
     * processed_dark
     * processed_flat
     * processed_fringe
+    * processed_standard
 
     Here's how to use ``normalize_ucals``::
 

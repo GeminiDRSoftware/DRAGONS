@@ -1,9 +1,5 @@
 from __future__ import print_function
 
-from datetime import datetime
-
-from future.utils import PY3
-
 from builtins import object
 from copy import deepcopy
 from collections import OrderedDict
@@ -24,7 +20,7 @@ except ImportError:
     from itertools import izip_longest as zip_longest, product as cart_product
 
 from .core import AstroData, DataProvider, astro_data_descriptor
-from .nddata import NDAstroData as NDDataObject, new_variance_uncertainty_instance
+from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
 
 import astropy
 from astropy.io import fits
@@ -666,7 +662,7 @@ class FitsProviderProxy(DataProvider):
         if value is None:
             nd.uncertainty = None
         else:
-            nd.uncertainty = new_variance_uncertainty_instance(value)
+            nd.uncertainty = ADVarianceUncertainty(value)
 
     @property
     def nddata(self):
@@ -938,10 +934,9 @@ class FitsProvider(DataProvider):
 
     def _pixel_info(self, indices):
         for idx, obj in ((n, self._nddata[k]) for (n, k) in enumerate(indices)):
-            header = obj.meta['header']
             other_objects = []
             uncer = obj.uncertainty
-            fixed = (('variance', None if uncer is None else uncer.as_variance()), ('mask', obj.mask))
+            fixed = (('variance', None if uncer is None else uncer), ('mask', obj.mask))
             for name, other in fixed + tuple(sorted(obj.meta['other'].items())):
                 if other is not None:
                     if isinstance(other, Table):
@@ -1180,7 +1175,7 @@ class FitsProvider(DataProvider):
 
             hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
-                hlst.append(new_imagehdu(ext.uncertainty.array ** 2, header, 'VAR'))
+                hlst.append(new_imagehdu(ext.uncertainty.array, header, 'VAR'))
             if ext.mask is not None:
                 hlst.append(new_imagehdu(ext.mask, header, 'DQ'))
 
@@ -1242,7 +1237,7 @@ class FitsProvider(DataProvider):
     def variance(self):
         def variance_for(nd):
             if nd.uncertainty is not None:
-                return nd.uncertainty.array**2
+                return nd.uncertainty.array
 
         return [variance_for(nd) for nd in self._nddata]
 
@@ -1315,7 +1310,7 @@ class FitsProvider(DataProvider):
                 add_to.mask = data
                 ret = data
             elif name == 'VAR':
-                std_un = new_variance_uncertainty_instance(data)
+                std_un = ADVarianceUncertainty(data)
                 std_un.parent_nddata = add_to
                 add_to.uncertainty = std_un
                 ret = std_un
@@ -1602,7 +1597,7 @@ class FitsLoader(object):
 
         provider = self._cls()
 
-        if isinstance(source, (str if PY3 else basestring)):
+        if isinstance(source, str):
             hdulist = fits.open(source, memmap=True,
                                 do_not_scale_image_data=True, mode='readonly')
             provider.path = source
@@ -1703,7 +1698,7 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
         dtype = sequence[0].window[:1,:1].data.dtype
 
     result = NDDataObject(np.empty(shape, dtype=dtype),
-                          uncertainty=(new_variance_uncertainty_instance(np.zeros(shape, dtype=dtype))
+                          uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
                                        if with_uncertainty else None),
                           mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
                           meta=sequence[0].meta)

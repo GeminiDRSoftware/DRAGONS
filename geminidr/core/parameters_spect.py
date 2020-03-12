@@ -26,8 +26,8 @@ class fluxCalibrateConfig(config.Config):
 class calculateSensitivityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
     order = config.RangeField("Order of spline fit", int, 6, min=1)
-    individual = config.Field("Calculate sensitivity for each spectrum individually?", bool, True)
     bandpass = config.RangeField("Bandpass width (nm) if not suuplied", float, 5., min=0.1, max=10.)
+    debug_plot = config.Field("Plot sensitivity curve?", bool, False)
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
@@ -139,6 +139,9 @@ class normalizeFlatConfig(config.Config):
     center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     spectral_order = config.RangeField("Fitting order in spectral direction", int, 20, min=1)
+    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
+    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
+    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
 
 class traceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)

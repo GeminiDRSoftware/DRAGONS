@@ -13,15 +13,13 @@ from scipy.ndimage import measurements
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
-from gempy.utils import logutils
-
 from geminidr.gemini.lookups import DQ_definitions as DQ
-
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
+from recipe_system.utils.decorators import parameter_override
+
 from . import parameters_standardize
 
-from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Standardize(PrimitivesBASE):
@@ -587,74 +585,3 @@ class Standardize(PrimitivesBASE):
         # Prepend standard path if the filename doesn't start with '/'
         return mask if mask.startswith(os.path.sep) else \
             os.path.join(bpm_dir, mask)
-
-##########################################################################
-# Below are the helper functions for the primitives in this module       #
-##########################################################################
-
-def _calculate_var(adinput, add_read_noise=False, add_poisson_noise=False):
-    """
-    Calculates the variance of each extension in the input AstroData
-    object and updates the .variance attribute
-
-    Parameters
-    ----------
-    adinput: AstroData
-        AD instance to add variance planes to
-    add_read_noise: bool
-        add the read noise component?
-    add_poisson_noise: bool
-        add the Poisson noise component?
-    """
-    log = logutils.get_logger(__name__)
-    gain_list = adinput.gain()
-    read_noise_list = adinput.read_noise()
-    var_dtype = np.float32
-
-    in_adu = adinput.is_in_adu()
-    for ext, gain, read_noise in zip(adinput, gain_list, read_noise_list):
-        extver = ext.hdr['EXTVER']
-
-        # Create a variance array with the read noise (or zero)
-        if add_read_noise:
-            if read_noise is None:
-                log.warning('Read noise for {} extver {} = None. Setting '
-                            'to zero'.format(adinput.filename, extver))
-                read_noise = 0.0
-            else:
-                log.fullinfo('Read noise for {} extver {} = {} electrons'.
-                         format(adinput.filename, extver, read_noise))
-                log.fullinfo('Calculating the read noise component of the '
-                             'variance in {}'.format('ADU' if in_adu else 'electrons'))
-                if in_adu:
-                    read_noise /= gain
-            var_array = np.full(ext.data.shape, read_noise*read_noise)
-        else:
-            var_array = np.zeros(ext.data.shape)
-
-        # Add the Poisson noise if desired
-        if add_poisson_noise:
-            poisson_array = (ext.data if ext.is_coadds_summed() else
-                             ext.data / ext.coadds())
-            if bunit.upper() == 'ADU':
-                poisson_array = poisson_array / gain
-            log.fullinfo('Calculating the Poisson noise component of '
-                         'the variance in {}'.format(bunit))
-            var_array += np.where(poisson_array > 0, poisson_array, 0)
-
-        if ext.variance is not None:
-            if add_read_noise and add_poisson_noise:
-                raise ValueError("Cannot add read noise and Poisson noise"
-                                 " components to variance as variance "
-                                 "already exists")
-            else:
-                log.fullinfo("Combining the newly calculated variance "
-                             "with the current variance extension {}:{}".
-                             format(ext.filename, extver))
-                var_array += ext.variance
-        else:
-            log.fullinfo("Adding variance to {}:{}".format(ext.filename,
-                                                           extver))
-        # Attach to the extension
-        ext.variance = var_array.astype(var_dtype)
-    return
