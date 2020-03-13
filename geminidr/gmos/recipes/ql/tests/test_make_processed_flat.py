@@ -36,7 +36,7 @@ def test_processed_flat_is_stable(processed_flat, reference_flat):
 
 
 # -- Fixtures ----------------------------------------------------------------
-@pytest.fixture
+@pytest.fixture(scope='module')
 def cache_path(new_path_to_inputs):
     """
     Factory as a fixture used to cache data and return its local path.
@@ -79,7 +79,7 @@ def cache_path(new_path_to_inputs):
     return _cache_path
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def output_path(request, path_to_outputs):
     module_path = request.module.__name__.split('.') + ["outputs"]
     module_path = [item for item in module_path if item not in "tests"]
@@ -99,7 +99,7 @@ def output_path(request, path_to_outputs):
     return _output_path
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def processed_flat(request, cache_path, reduce_bias, reduce_flat):
     flat_fname = cache_path(request.param)
     data_label = query_datalabel(flat_fname)
@@ -161,7 +161,7 @@ def query_datalabel(fname):
     return df.iloc[0]['data_label']
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def reduce_bias(output_path):
     def _reduce_bias(datalabel, bias_fnames):
         with output_path():
@@ -177,7 +177,7 @@ def reduce_bias(output_path):
     return _reduce_bias
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def reduce_flat(output_path):
     def _reduce_flat(datalabel, flat_fname, master_bias):
         with output_path():
