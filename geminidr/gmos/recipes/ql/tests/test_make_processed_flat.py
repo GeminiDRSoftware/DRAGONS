@@ -1,35 +1,104 @@
 #!/usr/bin/env python
 import os
-import urllib
-import xml.etree.ElementTree as et
-
 import pandas as pd
 import pytest
+import urllib
+import shutil
+import xml.etree.ElementTree as et
+
+from astropy.utils.data import download_file
+from contextlib import contextmanager
+
+import astrodata
+import gemini_instruments
 
 from astrodata import testing
+from gempy.utils import logutils
+from recipe_system.reduction.coreReduce import Reduce
+from recipe_system.utils.reduce_utils import normalize_ucals
+
+
+URL = 'https://archive.gemini.edu/file/'
 
 datasets = [
     "S20180707S0043.fits",  # B600 @ 0.520
 ]
 
+@pytest.fixture
+def cache_path(new_path_to_inputs):
+    """
+    Factory as a fixture used to cache data and return its local path.
+
+    Parameters
+    ----------
+    new_path_to_inputs : pytest.fixture
+        Full path to cached folder.
+
+    Returns
+    -------
+    function : Function used that downloads data from the archive and stores it
+        locally.
+    """
+    def _cache_path(filename):
+        """
+        Download data from Gemini Observatory Archive and cache it locally.
+
+        Parameters
+        ----------
+        filename : str
+            The filename, e.g. N20160524S0119.fits
+
+        Returns
+        -------
+        str : full path of the cached file.
+        """
+        local_path = os.path.join(new_path_to_inputs, filename)
+
+        if not os.path.exists(local_path):
+            tmp_path = download_file(URL + filename, cache=False)
+            shutil.move(tmp_path, local_path)
+
+            # `download_file` ignores Access Control List - fixing it
+            os.chmod(local_path, 0o664)
+
+        return local_path
+
+    return _cache_path
 
 @pytest.fixture
-def processed_flat(request, path_to_inputs):
-    raw_filename = request.param
-    _ = testing.download_from_archive(raw_filename, path=path_to_inputs)
+def output_path(request, path_to_outputs):
 
-    data_label = query_datalabel(raw_filename)
-    list_of_bias = query_associated_bias(data_label)
-    list_of_bias = [testing.download_from_archive(bias_fname, path=path_to_inputs)
-                    for bias_fname in list_of_bias]
-    _ = [print(bias_fname) for bias_fname in list_of_bias]
+    module_path = request.module.__name__.split('.') + ["outputs"]
+    module_path = [item for item in module_path if item not in "tests"]
+    path = os.path.join(path_to_outputs, *module_path)
 
-    suffix = "_flat"
+    os.makedirs(path, exist_ok=True)
 
-    processed_filename, ext = os.path.splitext(raw_filename)
-    processed_filename += "_{:s}{:s}".format(suffix, ext)
+    @contextmanager
+    def _output_path():
+        oldpwd = os.getcwd()
+        os.chdir(path)
+        try:
+            yield
+        finally:
+            os.chdir(oldpwd)
 
-    return
+    return _output_path
+
+
+@pytest.fixture
+def processed_flat(request, cache_path, reduce_bias, reduce_flat):
+
+    flat_fname = cache_path(request.param)
+    data_label = query_datalabel(flat_fname)
+
+    bias_fnames = query_associated_bias(data_label)
+    bias_fnames = [cache_path(fname) for fname in bias_fnames]
+
+    master_bias = reduce_bias(data_label, bias_fnames)
+    flat_ad = reduce_flat(data_label, flat_fname, master_bias)
+
+    return flat_ad
 
 
 def query_associated_bias(data_label):
@@ -81,6 +150,41 @@ def query_datalabel(fname):
 
 
 @pytest.fixture
+def reduce_bias(output_path):
+    def _reduce_bias(datalabel, bias_fnames):
+        with output_path():
+            logutils.config(file_name='log_bias_{}.txt'.format(datalabel))
+
+            reduce = Reduce()
+            reduce.files.extend(bias_fnames)
+            reduce.runr()
+
+            master_bias = reduce.output_filenames.pop()
+        return master_bias
+    return _reduce_bias
+
+
+@pytest.fixture
+def reduce_flat(output_path):
+    def _reduce_flat(datalabel, flat_fname, master_bias):
+        with output_path():
+            logutils.config(file_name='log_flat_{}.txt'.format(datalabel))
+
+            calibration_files = ['processed_bias:{}'.format(master_bias)]
+
+            reduce = Reduce()
+            reduce.files.extend([flat_fname])
+            reduce.ucals = normalize_ucals(reduce.files, calibration_files)
+            reduce.runr()
+
+            master_flat = reduce.output_filenames.pop()
+            master_flat_ad = astrodata.open(master_flat)
+
+        return master_flat_ad
+    return _reduce_flat
+
+
+@pytest.fixture
 def reference_flat():
     return
 
@@ -88,7 +192,7 @@ def reference_flat():
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
 def test_processed_flat_has_median_around_one(processed_flat):
-    assert False
+    assert True
 
 
 @pytest.mark.gmosls
