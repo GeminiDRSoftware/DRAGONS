@@ -23,7 +23,7 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
     path : str
         By default the file is stored at the root of the cache directory, but
         using ``path`` allows to specify a sub-directory.
-    env_var: strs
+    env_var: str
         Environment variable containing the path to the cache directory.
 
     Returns
