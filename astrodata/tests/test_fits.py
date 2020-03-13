@@ -122,11 +122,28 @@ def test_phu():
 
 
 @pytest.mark.dragons_remote_data
-def test_writes_to_new_fits(path_to_outputs):
+def test_paths(path_to_outputs):
     fname = download_from_archive(test_files[0])
     ad = astrodata.open(fname)
+    assert ad.orig_filename == 'N20160727S0077.fits'
+
+    srcdir = os.path.dirname(fname)
+    assert ad.filename == 'N20160727S0077.fits'
+    assert ad.path == os.path.join(srcdir, 'N20160727S0077.fits')
+
+    ad.filename = 'newfile.fits'
+    assert ad.filename == 'newfile.fits'
+    assert ad.path == os.path.join(srcdir, 'newfile.fits')
 
     testfile = os.path.join(path_to_outputs, 'temp.fits')
+    ad.path = testfile
+    assert ad.filename == 'temp.fits'
+    assert ad.path == testfile
+    assert ad.orig_filename == 'N20160727S0077.fits'
+    ad.write()
+    assert os.path.exists(testfile)
+
+    testfile = os.path.join(path_to_outputs, 'temp2.fits')
     ad.write(testfile)
     assert os.path.exists(testfile)
 
@@ -136,6 +153,11 @@ def test_writes_to_new_fits(path_to_outputs):
 
     ad.write(testfile, overwrite=True)
     assert os.path.exists(testfile)
+
+    ad.path = None
+    assert ad.filename is None
+    with pytest.raises(ValueError):
+        ad.write()
 
 
 @pytest.mark.dragons_remote_data
