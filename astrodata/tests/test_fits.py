@@ -6,6 +6,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 import astrodata
+from astrodata.nddata import NDAstroData
 from astrodata.testing import download_from_archive
 
 test_files = [
@@ -143,11 +144,17 @@ def test_from_hdulist():
 
     with fits.open(fname) as hdul:
         ad = astrodata.open(hdul)
+        assert ad.path == 'N20160727S0077.fits'
         assert ad.instrument() == 'NIFS'
         assert ad.object() == 'Dark'
         assert ad.telescope() == 'Gemini-North'
         assert len(ad) == 1
         assert ad[0].shape == (2048, 2048)
+
+    with fits.open(fname) as hdul:
+        del hdul[0].header['ORIGNAME']
+        ad = astrodata.open(hdul)
+        assert ad.path is None
 
 
 def test_can_make_and_write_ad_object(tmpdir):
@@ -178,6 +185,9 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     ad.append(tbl, name='BOB')
     assert ad.exposed == {'BOB'}
 
+    assert ad.tables == {'BOB'}
+    assert np.all(ad.table()['BOB'] == tbl)
+
     ad.info()
     captured = capsys.readouterr()
     assert '.BOB           Table       (10, 2)' in captured.out
@@ -188,6 +198,35 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
     adnew = astrodata.open(testfile)
     assert adnew.exposed == {'BOB'}
     assert len(adnew.BOB) == 10
+
+    del ad.BOB
+    assert ad.tables == set()
+    with pytest.raises(AttributeError):
+        del ad.BOB
+
+
+@pytest.mark.dragons_remote_data
+def test_attributes():
+    fname = download_from_archive(test_files[5])
+    ad = astrodata.open(fname)
+    assert ad.shape == [(2048, 2048)] * 4
+    assert [arr.shape for arr in ad.data] == [(2048, 2048)] * 4
+    assert [arr.dtype for arr in ad.data] == ['f'] * 4
+    assert ad.uncertainty == [None] * 4
+    assert ad.mask == [None] * 4
+
+    assert all(isinstance(nd, NDAstroData) for nd in ad.nddata)
+    assert [nd.shape for nd in ad.nddata] == [(2048, 2048)] * 4
+
+    match = 'Trying to assign to a non-sliced AstroData object'
+    with pytest.raises(ValueError, match=match):
+        ad.data = 1
+    with pytest.raises(ValueError, match=match):
+        ad.variance = 1
+    with pytest.raises(ValueError, match=match):
+        ad.uncertainty = 1
+    with pytest.raises(ValueError, match=match):
+        ad.mask = 1
 
 
 @pytest.mark.dragons_remote_data

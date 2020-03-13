@@ -1,22 +1,15 @@
-from __future__ import print_function
-
-from builtins import object
-from copy import deepcopy
-from collections import OrderedDict
-import os
-import re
-from functools import partial, wraps
-import logging
-import warnings
 import gc
 import inspect
+import logging
+import os
+import re
 import traceback
-
-try:
-    # Python 3
-    from itertools import zip_longest, product as cart_product
-except ImportError:
-    from itertools import izip_longest as zip_longest, product as cart_product
+import warnings
+from builtins import object
+from collections import OrderedDict
+from copy import deepcopy
+from functools import partial, wraps
+from itertools import zip_longest, product as cart_product
 
 from .core import AstroData, DataProvider, astro_data_descriptor
 from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
@@ -39,10 +32,13 @@ INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
 LOGGER = logging.getLogger('AstroData FITS')
 
+
 class AstroDataFitsDeprecationWarning(DeprecationWarning):
     pass
 
+
 warnings.simplefilter("always", AstroDataFitsDeprecationWarning)
+
 
 def deprecated(reason):
     def decorator_wrapper(fn):
@@ -56,6 +52,7 @@ def deprecated(reason):
         wrapper.seen = set()
         return wrapper
     return decorator_wrapper
+
 
 class KeywordCallableWrapper(object):
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
@@ -73,6 +70,7 @@ class KeywordCallableWrapper(object):
                 ret = manip.get(self.kw, self.default)
             return self.coercion_fn(ret)
         return wrapper
+
 
 class FitsHeaderCollection(object):
     """
@@ -1390,7 +1388,7 @@ class FitsLazyLoadable(object):
 
 class FitsLoader(object):
 
-    def __init__(self, cls = FitsProvider):
+    def __init__(self, cls=FitsProvider):
         self._cls = cls
 
     @staticmethod
