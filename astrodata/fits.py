@@ -753,6 +753,7 @@ class FitsProvider(DataProvider):
                 'uncertainty',
                 'mask',
                 'variance',
+                'wcs',
                 'path',
                 'filename'
                 ])
