@@ -162,12 +162,19 @@ class Block(object):
     @property
     def ndim(self):
         """Number of dimensions"""
-        return len(self._shape)
+        return len(self.shape)
 
     @property
     def shape(self):
         """Overall shape of Block"""
         return self._total_shape
+
+    @property
+    def wcs(self):
+        """WCS object"""
+        if self.corners[0] != (0, 0):
+            raise ValueError("First element does not start at (0, 0)")
+        return self._elements[0].wcs
 
     def _return_array(self, elements):
         """
