@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from astropy.io import fits
+from astropy.table import Table
 
 import astrodata
 from astrodata import (astro_data_tag, astro_data_descriptor, TagSet,
@@ -45,12 +46,12 @@ class AstroDataMyInstrument(AstroDataFits):
     @returns_list
     @astro_data_descriptor
     def gain(self):
-        return [1]
+        return [1, 1]
 
     @returns_list
     @astro_data_descriptor
     def badguy(self):
-        return [1, 2]
+        return [1, 2, 3]
 
     @astro_data_descriptor
     def array_name(self):
@@ -82,7 +83,11 @@ def testfile(tmpdir):
     })
     phu = fits.PrimaryHDU(header=hdr)
     hdu = fits.ImageHDU(data=np.ones(SHAPE))
-    ad = astrodata.create(phu, [hdu])
+    hdu2 = fits.ImageHDU(data=np.ones(SHAPE) + 1)
+    ad = astrodata.create(phu, [hdu, hdu2])
+    tbl = Table([np.zeros(10), np.ones(10)], names=['col1', 'col2'])
+    astrodata.add_header_to_table(tbl)
+    ad.append(tbl, name='MYCAT')
     filename = str(tmpdir.join('fakebias.fits'))
     ad.write(filename)
     return filename
@@ -99,11 +104,47 @@ def test_tags(testfile):
 
 def test_returns_list(testfile):
     ad = astrodata.open(testfile)
-    assert ad.dispersion_axis() == [1]
+    assert ad.dispersion_axis() == [1, 1]
     assert ad[0].dispersion_axis() == 1
 
-    assert ad.gain() == [1]
+    assert ad.gain() == [1, 1]
     assert ad[0].gain() == 1
 
     with pytest.raises(IndexError):
         ad.badguy()
+
+
+def test_info(testfile, capsys):
+    ad = astrodata.open(testfile)
+    ad.info()
+    captured = capsys.readouterr()
+    out = captured.out.splitlines()
+    assert out[0].endswith('fakebias.fits')
+    assert out[1:] == [
+        'Tags: DARK MYINSTRUMENT ',
+        '',
+        'Pixels Extensions',
+        'Index  Content                  Type              Dimensions     Format',
+        '[ 0]   science                  NDAstroData       (4, 5)         float64',
+        '[ 1]   science                  NDAstroData       (4, 5)         float64',
+        '',
+        'Other Extensions',
+        '               Type        Dimensions',
+        '.MYCAT         Table       (10, 2)'
+    ]
+
+    ad[1].info()
+    captured = capsys.readouterr()
+    out = captured.out.splitlines()
+    assert out[0].endswith('fakebias.fits')
+    assert out[1:] == [
+        'Tags: DARK MYINSTRUMENT ',
+        '',
+        'Pixels Extensions',
+        'Index  Content                  Type              Dimensions     Format',
+        '[ 0]   science                  NDAstroData       (4, 5)         float64',
+        '',
+        'Other Extensions',
+        '               Type        Dimensions',
+        '.MYCAT         Table       (10, 2)'
+    ]
