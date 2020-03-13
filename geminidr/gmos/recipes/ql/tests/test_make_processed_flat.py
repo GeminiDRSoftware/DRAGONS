@@ -197,6 +197,7 @@ def reduce_flat(output_path):
 
             reduce = Reduce()
             reduce.files.extend([flat_fname])
+            reduce.mode = 'ql'
             reduce.ucals = normalize_ucals(reduce.files, calibration_files)
             reduce.runr()
 
