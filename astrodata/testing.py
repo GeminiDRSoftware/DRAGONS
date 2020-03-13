@@ -236,7 +236,7 @@ def new_path_to_inputs(request, path_to_test_data):
 
 
 @pytest.fixture(scope='session')
-def path_to_test_data():
+def path_to_test_data(env_var='DRAGONS_TEST'):
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST that
     should contain data that will be used inside tests.
@@ -249,7 +249,7 @@ def path_to_test_data():
     -------
     str : path to the reference data
     """
-    path = os.getenv('DRAGONS_TEST')
+    path = os.getenv(env_var)
 
     if path is None:
         pytest.skip('Environment variable not set: $DRAGONS_TEST')
