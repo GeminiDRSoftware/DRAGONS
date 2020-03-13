@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 import os
-import pandas as pd
-import pytest
-import urllib
 import shutil
+import urllib
 import xml.etree.ElementTree as et
-
-from astropy.utils.data import download_file
 from contextlib import contextmanager
 
-import astrodata
-import gemini_instruments
+import numpy as np
+import pandas as pd
+import pytest
+from astropy.utils.data import download_file
 
-from astrodata import testing
+import astrodata
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
-
 
 URL = 'https://archive.gemini.edu/file/'
 
@@ -24,6 +21,21 @@ datasets = [
     "S20180707S0043.fits",  # B600 @ 0.520
 ]
 
+# -- Tests --------------------------------------------------------------------
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+def test_processed_flat_has_median_around_one(processed_flat):
+    np.testing.assert_almost_equal(
+        np.median(processed_flat[0].data.ravel()), 1.0, decimal=3)
+
+
+@pytest.mark.gmosls
+@pytest.mark.parametrize("processed_flat, reference_flat", zip(datasets, datasets))
+def test_processed_flat_is_stable(processed_flat, reference_flat):
+    pass
+
+
+# -- Fixtures ----------------------------------------------------------------
 @pytest.fixture
 def cache_path(new_path_to_inputs):
     """
@@ -39,6 +51,7 @@ def cache_path(new_path_to_inputs):
     function : Function used that downloads data from the archive and stores it
         locally.
     """
+
     def _cache_path(filename):
         """
         Download data from Gemini Observatory Archive and cache it locally.
@@ -65,9 +78,9 @@ def cache_path(new_path_to_inputs):
 
     return _cache_path
 
+
 @pytest.fixture
 def output_path(request, path_to_outputs):
-
     module_path = request.module.__name__.split('.') + ["outputs"]
     module_path = [item for item in module_path if item not in "tests"]
     path = os.path.join(path_to_outputs, *module_path)
@@ -88,7 +101,6 @@ def output_path(request, path_to_outputs):
 
 @pytest.fixture
 def processed_flat(request, cache_path, reduce_bias, reduce_flat):
-
     flat_fname = cache_path(request.param)
     data_label = query_datalabel(flat_fname)
 
@@ -161,6 +173,7 @@ def reduce_bias(output_path):
 
             master_bias = reduce.output_filenames.pop()
         return master_bias
+
     return _reduce_bias
 
 
@@ -181,24 +194,13 @@ def reduce_flat(output_path):
             master_flat_ad = astrodata.open(master_flat)
 
         return master_flat_ad
+
     return _reduce_flat
 
 
 @pytest.fixture
 def reference_flat():
     return
-
-
-@pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("processed_flat", datasets, indirect=True)
-def test_processed_flat_has_median_around_one(processed_flat):
-    assert True
-
-
-@pytest.mark.gmosls
-@pytest.mark.parametrize("processed_flat, reference_flat", zip(datasets, datasets))
-def test_processed_flat_is_stable(processed_flat, reference_flat):
-    pass
 
 
 if __name__ == '__main__':
