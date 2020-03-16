@@ -18,28 +18,35 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 URL = 'https://archive.gemini.edu/file/'
 
 datasets = [
-    ("S20180707S0043.fits", "S20180707S0043_flat.fits"), # B600 @ 0.520
+    "S20180707S0043.fits", # B600 @ 0.520
 ]
+
+refs = ["_flat".join(os.path.splitext(f)) for f in datasets]
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("fname, ref_fname", datasets)
-def test_processed_flat_has_median_around_one(fname, ref_fname, processed_flat):
-
-    ad = processed_flat(fname)
-    np.testing.assert_almost_equal(np.median(ad[0].data.ravel()), 1.0, decimal=3)
+@pytest.mark.parametrize("flat_fname", datasets)
+def test_processed_flat_has_median_around_one(flat_fname, processed_flat):
+    for ext in processed_flat(flat_fname):
+        np.testing.assert_almost_equal(
+            np.median(ext.data.ravel()), 1.0, decimal=3)
 
 
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("fname, ref_fname", datasets)
-def test_processed_flat_is_stable(fname, ref_fname, processed_flat, reference_flat):
+@pytest.mark.parametrize("flat_fname", datasets)
+def test_processed_flat_has_small_std(flat_fname, processed_flat):
+    for ext in processed_flat(flat_fname):
+        np.testing.assert_array_less(
+            np.std(ext.data.ravel()), 0.1)
 
-    ad = processed_flat(fname)
-    ad_ref = reference_flat(ref_fname)
 
-    for ext, ext_ref in zip(ad, ad_ref):
+@pytest.mark.gmosls
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("fname, ref_fname", zip(datasets, refs))
+def test_processed_flat_is_stable(fname, ref_fname, processed_flat, processed_ref_flat):
+    for ext, ext_ref in zip(processed_flat(fname), processed_ref_flat(ref_fname)):
         np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1e-7)
 
 
@@ -121,6 +128,20 @@ def processed_flat(request, cache_path, reduce_bias, reduce_flat):
 
         return flat_ad
     return _processed_flat
+
+
+@pytest.fixture
+def processed_ref_flat(new_path_to_refs):
+    def _processed_ref_flat(ref_fname):
+
+        ref_path = os.path.join(new_path_to_refs, ref_fname)
+
+        if not os.path.exists(ref_path):
+            pytest.fail('\n  Referece file does not exists: '
+                        '\n    {:s}'.format(ref_path))
+
+        return astrodata.open(ref_path)
+    return _processed_ref_flat
 
 
 def query_associated_bias(data_label):
@@ -207,20 +228,6 @@ def reduce_flat(output_path):
         return master_flat_ad
 
     return _reduce_flat
-
-
-@pytest.fixture
-def reference_flat(new_path_to_refs):
-    def _reference_flat(ref_fname):
-
-        ref_path = os.path.join(new_path_to_refs, ref_fname)
-
-        if not os.path.exists(ref_path):
-            pytest.fail('\n  Referece file does not exists: '
-                        '\n    {:s}'.format(ref_path))
-
-        return astrodata.open(ref_path)
-    return _reference_flat
 
 
 if __name__ == '__main__':
