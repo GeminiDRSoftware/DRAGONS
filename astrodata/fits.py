@@ -1707,7 +1707,6 @@ class AstroDataFits(AstroData):
 
         # Cope with prefix or suffix as None
         self.filename = (prefix or '') + root + (suffix or '') + filetype
-        return
 
     @astro_data_descriptor
     def instrument(self):

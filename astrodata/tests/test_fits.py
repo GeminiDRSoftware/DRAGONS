@@ -182,11 +182,7 @@ def test_from_hdulist():
 def test_can_make_and_write_ad_object(tmpdir):
     # Creates data and ad object
     phu = fits.PrimaryHDU()
-    pixel_data = np.random.rand(100, 100)
-
-    hdu = fits.ImageHDU()
-    hdu.data = pixel_data
-
+    hdu = fits.ImageHDU(data=np.arange(10))
     ad = astrodata.create(phu)
     ad.append(hdu, name='SCI')
 
@@ -196,7 +192,7 @@ def test_can_make_and_write_ad_object(tmpdir):
 
     # Opens file again and tests data is same as above
     adnew = astrodata.open(testfile)
-    assert np.array_equal(adnew[0].data, pixel_data)
+    assert np.array_equal(adnew[0].data, np.arange(10))
 
 
 def test_can_append_table_and_access_data(capsys, tmpdir):
@@ -278,6 +274,7 @@ def test_do_arith_and_retain_features(input_file):
 def test_update_filename():
     phu = fits.PrimaryHDU()
     ad = astrodata.create(phu)
+
     ad.filename = 'myfile.fits'
 
     # This will also set ORIGNAME='myfile.fits'
@@ -310,6 +307,25 @@ def test_update_filename():
     # "file_suffix1" is the root
     ad.update_filename(suffix='_suffix3', strip=True)
     assert ad.filename == 'file_suffix1_suffix3.fits'
+
+
+def test_update_filename2():
+    phu = fits.PrimaryHDU()
+    ad = astrodata.create(phu)
+
+    with pytest.raises(ValueError):
+        # Not possible when ad.filename is None
+        ad.update_filename(suffix='_suffix1')
+
+    # filename is taken from ORIGNAME by default
+    ad.phu['ORIGNAME'] = 'origfile.fits'
+    ad.update_filename(suffix='_suffix')
+    assert ad.filename == 'origfile_suffix.fits'
+
+    ad.phu['ORIGNAME'] = 'temp.fits'
+    ad.filename = 'origfile.fits'
+    ad.update_filename(suffix='_bar', strip=True)
+    assert ad.filename == 'origfile_bar.fits'
 
 
 @pytest.mark.dragons_remote_data
