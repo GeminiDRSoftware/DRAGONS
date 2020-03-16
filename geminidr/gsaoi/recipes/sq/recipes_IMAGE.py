@@ -31,6 +31,7 @@ def reduce_nostack(p):
     p.associateSky()
     p.skyCorrect(mask_objects=True)
     p.writeOutputs()
+    p.storeScience()
     return
 
 # The nostack version is used because stacking of GSAOI is time consuming.
