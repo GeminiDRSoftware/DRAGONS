@@ -18,7 +18,9 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 URL = 'https://archive.gemini.edu/file/'
 
 datasets = [
-    "S20180707S0043.fits", # B600 @ 0.520
+    "S20180707S0043.fits",  # B600 at 0.520 um
+    "S20190502S0096.fits",  # B600 at 0.525 um
+    "S20200122S0020.fits",  # B600 at 0.520 um
 ]
 
 refs = ["_flat".join(os.path.splitext(f)) for f in datasets]
