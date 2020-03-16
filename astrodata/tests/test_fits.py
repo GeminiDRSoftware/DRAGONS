@@ -171,8 +171,9 @@ def test_from_hdulist():
     fname = download_from_archive(test_files[0])
 
     with fits.open(fname) as hdul:
+        assert 'ORIGNAME' not in hdul[0].header
         ad = astrodata.open(hdul)
-        assert ad.path == 'N20160727S0077.fits'
+        assert ad.path is None
         assert ad.instrument() == 'NIFS'
         assert ad.object() == 'Dark'
         assert ad.telescope() == 'Gemini-North'
@@ -180,9 +181,10 @@ def test_from_hdulist():
         assert ad[0].shape == (2048, 2048)
 
     with fits.open(fname) as hdul:
-        del hdul[0].header['ORIGNAME']
+        # Make sure that when ORIGNAME is set, astrodata use it
+        hdul[0].header['ORIGNAME'] = 'N20160727S0077.fits'
         ad = astrodata.open(hdul)
-        assert ad.path is None
+        assert ad.path == 'N20160727S0077.fits'
 
 
 def test_can_make_and_write_ad_object(tmpdir):
