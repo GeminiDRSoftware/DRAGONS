@@ -334,7 +334,10 @@ class CalibDB(PrimitivesBASE):
 
             # restore filenames, we don't want the _sq or _ql on the local filesystem copy
             for filename, ad in zip(filenames, adinputs):
+                oldfilename = ad.filename
                 ad.filename = filename
+                if oldfilename != filename:
+                    os.unlink(oldfilename)
         
         return adinputs
 
