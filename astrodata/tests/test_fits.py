@@ -4,9 +4,10 @@ import numpy as np
 import pytest
 from astropy.io import fits
 from astropy.table import Table
+from numpy.testing import assert_array_equal
 
 import astrodata
-from astrodata.nddata import NDAstroData
+from astrodata.nddata import NDAstroData, ADVarianceUncertainty
 from astrodata.testing import download_from_archive
 
 test_files = [
@@ -26,20 +27,25 @@ test_files = [
 
 
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("input_file", test_files)
-def test_ad_basics(input_file):
-    fname = download_from_archive(input_file)
+def test_ad_basics():
+    fname = download_from_archive(test_files[1])
     ad = astrodata.open(fname)
 
     assert isinstance(ad, astrodata.AstroDataFits)
     assert ad.filename == os.path.basename(fname)
     assert type(ad[0].data) == np.ndarray
 
-    metadata = (('SCI', 1), ('SCI', 2), ('SCI', 3))
+    ext = ad[2]
+    assert ext.hdr['EXTNAME'] == 'SCI'
+    assert ext.hdr['EXTVER'] == 3
+    assert ad.extver_map()[3] == 2  # map EXTVER to HDU index
 
-    for ext, md in zip(ad, metadata):
-        assert ext.hdr['EXTNAME'] == md[0]
-        assert ext.hdr['EXTVER'] == md[1]
+    ext = ad.extver(5)
+    assert ext.hdr['EXTNAME'] == 'SCI'
+    assert ext.hdr['EXTVER'] == 5
+
+    with pytest.raises(ValueError, match='SCI is not an integer EXTVER'):
+        ext.extver('SCI')
 
 
 @pytest.mark.dragons_remote_data
@@ -231,7 +237,14 @@ def test_attributes():
     assert [arr.shape for arr in ad.data] == [(2048, 2048)] * 4
     assert [arr.dtype for arr in ad.data] == ['f'] * 4
     assert ad.uncertainty == [None] * 4
+    assert ad.variance == [None] * 4
     assert ad.mask == [None] * 4
+
+    ad[0].variance = np.ones(ad[0].shape)
+    assert isinstance(ad[0].uncertainty, ADVarianceUncertainty)
+    assert_array_equal(ad[0].uncertainty.array, 1)
+    assert_array_equal(ad[0].variance, 1)
+    assert_array_equal(ad.variance[0], 1)
 
     assert all(isinstance(nd, NDAstroData) for nd in ad.nddata)
     assert [nd.shape for nd in ad.nddata] == [(2048, 2048)] * 4

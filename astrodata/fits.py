@@ -1746,13 +1746,13 @@ class AstroDataFits(AstroData):
 
     def extver(self, ver):
         """
-        Get an extension using its EXTVER instead of the positional index in this
-        object.
+        Get an extension using its EXTVER instead of the positional index
+        in this object.
 
         Parameters
         ----------
-        ver: int
-             The EXTVER for the desired extension
+        ver : int
+            The EXTVER for the desired extension
 
         Returns
         -------
