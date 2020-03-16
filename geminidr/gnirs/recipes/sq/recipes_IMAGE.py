@@ -33,6 +33,7 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.stackFrames()
     p.writeOutputs()
+    p.storeScience()
     return
 
 _default = reduce

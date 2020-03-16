@@ -39,6 +39,7 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.stackFrames()
     p.writeOutputs()
+    p.storeScience()
     return
 
 def makeSkyFlat(p):
