@@ -153,6 +153,7 @@ def preprocess_recipe(ad, path, center):
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_datasets, ref_datasets), indirect=True)
 def test_trace_apertures_is_stable(ad, ad_ref):

@@ -242,6 +242,7 @@ def preprocess_recipe(ad, path):
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, ad_ref", zip(input_files, reference_files), indirect=True)
 def test_distortion_correct_is_stable(ad, ad_ref):
@@ -258,6 +259,7 @@ def test_distortion_correct_is_stable(ad, ad_ref):
 
 
 @pytest.mark.dragons_remote_data
+@pytest.mark.gmosls
 @pytest.mark.parametrize("fname", input_files)
 def test_full_frame_distortion_works_on_smaller_region(fname, path_to_inputs):
     """

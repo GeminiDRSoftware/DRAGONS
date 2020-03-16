@@ -125,12 +125,7 @@ class ConfigObject(object):
             from the config files.
 
         """
-        try:
-            basestring
-        except NameError:
-            basestring = str
-
-        if isinstance(filenames, basestring):
+        if isinstance(filenames, str):
             filenames = (filenames,)
 
         # Set the default values

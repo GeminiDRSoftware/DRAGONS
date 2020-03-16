@@ -114,6 +114,7 @@ def add_fake_offset(adinputs, offset=10):
         ad.phu['QOFFSET'] += offset * i * ad.pixel_scale()
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_correlation(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
@@ -138,6 +139,7 @@ def test_correlation(adinputs, caplog):
     assert ad[0].shape == (3869,)
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_correlation_and_trim(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
@@ -162,6 +164,7 @@ def test_correlation_and_trim(adinputs, caplog):
     assert ad[0].shape == (2429,)
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_correlation_and_w1_w2(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
@@ -178,6 +181,7 @@ def test_correlation_and_w1_w2(adinputs, caplog):
     assert adstack[0][0].shape == (512, 1001)
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_correlation_non_linearize(adinputs, caplog):
     add_fake_offset(adinputs, offset=10)
@@ -198,6 +202,7 @@ def test_correlation_non_linearize(adinputs, caplog):
     assert adstack[0][0].shape == (512, 3868)
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_header_offset(adinputs2, caplog):
     """Test that the offset is correctly read from the headers."""
@@ -213,6 +218,7 @@ def test_header_offset(adinputs2, caplog):
     assert np.isclose(adout[3].phu['SLITOFF'], 0)
 
 
+@pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 def test_header_offset_fallback(adinputs2, caplog):
     """For this dataset the correlation method fails, and give an offset very

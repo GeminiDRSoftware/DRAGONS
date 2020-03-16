@@ -52,10 +52,10 @@ class GMOSImage(GMOS, Image, Photometry):
         taking a starting point near the left-hand edge of the extension, level
         with the location at which the probe met the right-hand edge of the
         previous extension.
-        
+
         This code assumes that data_section extends over all rows. It is, of
         course, very GMOS-specific.
-        
+
         Parameters
         ----------
         adinputs : list of :class:`~gemini_instruments.gmos.AstroDataGmos`
@@ -184,7 +184,8 @@ class GMOSImage(GMOS, Image, Photometry):
                         # Dilate until WFS width at left of image equals width at
                         # right of previous extension image
                         width = np.sum(blocked[:,0])
-                        condition_met = (y_width - width < 2) or index > 9
+                        # Note: this will not be called before y_width is defined
+                        condition_met = (y_width - width < 2) or index > 9  # noqa
 
                 # Flag DQ pixels as unilluminated only if not flagged
                 # (to avoid problems with the edge extensions and/or saturation)
@@ -276,7 +277,7 @@ class GMOSImage(GMOS, Image, Photometry):
         This primitive will calculate a normalization factor from statistics
         on CCD2, then divide by this factor and propagate variance accordingly.
         CCD2 is used because of the dome-like shape of the GMOS detector
-        response: CCDs 1 and 3 have lower average illumination than CCD2, 
+        response: CCDs 1 and 3 have lower average illumination than CCD2,
         and that needs to be corrected for by the flat.
 
         Parameters
@@ -307,7 +308,7 @@ class GMOSImage(GMOS, Image, Photometry):
                           yborder,ext.data.shape[0]-yborder))
 
             stat_region = ext.data[yborder:-yborder, xborder:-xborder]
-                        
+
             # Remove DQ-flagged values (including saturated values)
             if ext.mask is not None:
                 dqdata = ext.mask[yborder:-yborder, xborder:-xborder]
@@ -321,7 +322,7 @@ class GMOSImage(GMOS, Image, Photometry):
                                       bins=int(np.max(ext.data)/ 0.1))
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)
-            
+
             # Find the values within 3 sigma of the mode; the normalization
             # factor is the median of these values
             central_values = stat_region[
@@ -330,7 +331,7 @@ class GMOSImage(GMOS, Image, Photometry):
             norm_factor = np.median(central_values)
             log.fullinfo("Normalization factor: {:.2f}".format(norm_factor))
             ad.divide(norm_factor)
-            
+
             # Set any DQ-flagged pixels to 1 (to avoid dividing by 0)
             for ext in ad:
                 ext.data[ext.mask>0] = 1.0
@@ -339,7 +340,7 @@ class GMOSImage(GMOS, Image, Photometry):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adinputs
-    
+
     def scaleByIntensity(self, adinputs=None, **params):
         """
         This primitive scales input images to the mean value of the first
