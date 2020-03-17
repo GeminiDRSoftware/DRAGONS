@@ -21,6 +21,10 @@ datasets = [
     "S20180707S0043.fits",  # B600 at 0.520 um
     "S20190502S0096.fits",  # B600 at 0.525 um
     "S20200122S0020.fits",  # B600 at 0.520 um
+    "N20200101S0055.fits",  # B1200 at 0.495 um
+    # "S20180410S0120.fits",  # B1200 at 0.595 um  # Scattered light?
+    # "S20190410S0053.fits",  # B1200 at 0.463 um  # Scattered light?
+
 ]
 
 refs = ["_flat".join(os.path.splitext(f)) for f in datasets]
@@ -28,27 +32,29 @@ refs = ["_flat".join(os.path.splitext(f)) for f in datasets]
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("flat_fname", datasets)
-def test_processed_flat_has_median_around_one(flat_fname, processed_flat):
-    for ext in processed_flat(flat_fname):
-        np.testing.assert_almost_equal(
-            np.median(ext.data.ravel()), 1.0, decimal=3)
+@pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+def test_processed_flat_has_median_around_one(processed_flat):
+    for ext in processed_flat:
+        data = np.ma.masked_array(ext.data, mask=ext.mask)
+        np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
+
+
+# @pytest.mark.skip(reason="High std on half of datasets. Scattered light?")
+@pytest.mark.gmosls
+@pytest.mark.dragons_remote_data
+@pytest.mark.parametrize("processed_flat", datasets, indirect=True)
+def test_processed_flat_has_small_std(processed_flat):
+    for ext in processed_flat:
+        data = np.ma.masked_array(ext.data, mask=ext.mask)
+        np.testing.assert_array_less(np.std(data.ravel()), 0.1)
 
 
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("flat_fname", datasets)
-def test_processed_flat_has_small_std(flat_fname, processed_flat):
-    for ext in processed_flat(flat_fname):
-        np.testing.assert_array_less(
-            np.std(ext.data.ravel()), 0.1)
-
-
-@pytest.mark.gmosls
-@pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("fname, ref_fname", zip(datasets, refs))
-def test_processed_flat_is_stable(fname, ref_fname, processed_flat, processed_ref_flat):
-    for ext, ext_ref in zip(processed_flat(fname), processed_ref_flat(ref_fname)):
+@pytest.mark.parametrize(
+    "processed_flat, processed_ref_flat", zip(datasets, refs), indirect=True)
+def test_processed_flat_is_stable(processed_flat, processed_ref_flat):
+    for ext, ext_ref in zip(processed_flat, processed_ref_flat):
         np.testing.assert_allclose(ext.data, ext_ref.data, rtol=1e-7)
 
 
@@ -118,32 +124,28 @@ def output_path(request, path_to_outputs):
 
 @pytest.fixture(scope='module')
 def processed_flat(request, cache_path, reduce_bias, reduce_flat):
-    def _processed_flat(fname):
-        flat_fname = cache_path(fname)
-        data_label = query_datalabel(flat_fname)
+    flat_fname = cache_path(request.param)
+    data_label = query_datalabel(flat_fname)
 
-        bias_fnames = query_associated_bias(data_label)
-        bias_fnames = [cache_path(fname) for fname in bias_fnames]
+    bias_fnames = query_associated_bias(data_label)
+    bias_fnames = [cache_path(fname) for fname in bias_fnames]
 
-        master_bias = reduce_bias(data_label, bias_fnames)
-        flat_ad = reduce_flat(data_label, flat_fname, master_bias)
+    master_bias = reduce_bias(data_label, bias_fnames)
+    flat_ad = reduce_flat(data_label, flat_fname, master_bias)
 
-        return flat_ad
-    return _processed_flat
+    return flat_ad
 
 
 @pytest.fixture
-def processed_ref_flat(new_path_to_refs):
-    def _processed_ref_flat(ref_fname):
+def processed_ref_flat(request, new_path_to_refs):
+    filename = request.param
+    ref_path = os.path.join(new_path_to_refs, filename)
 
-        ref_path = os.path.join(new_path_to_refs, ref_fname)
+    if not os.path.exists(ref_path):
+        pytest.fail('\n  Reference file does not exists: '
+                    '\n    {:s}'.format(ref_path))
 
-        if not os.path.exists(ref_path):
-            pytest.fail('\n  Referece file does not exists: '
-                        '\n    {:s}'.format(ref_path))
-
-        return astrodata.open(ref_path)
-    return _processed_ref_flat
+    return astrodata.open(ref_path)
 
 
 def query_associated_bias(data_label):
@@ -205,8 +207,8 @@ def reduce_bias(output_path):
             reduce.runr()
 
             master_bias = reduce.output_filenames.pop()
-        return master_bias
 
+        return master_bias
     return _reduce_bias
 
 
@@ -228,7 +230,6 @@ def reduce_flat(output_path):
             master_flat_ad = astrodata.open(master_flat)
 
         return master_flat_ad
-
     return _reduce_flat
 
 
