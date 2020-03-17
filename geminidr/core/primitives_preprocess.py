@@ -1321,11 +1321,11 @@ class Preprocess(PrimitivesBASE):
 
     def thresholdFlatfield(self, adinputs=None, **params):
         """
-        This primitive sets the DQ '64' bit for any pixels which have a value
-        <lower or >upper in the SCI plane.
+        This primitive sets the DQ '64' bit (unilluminated) for any pixels
+        which have a value <lower or >upper in the SCI plane.
         it also sets the science plane pixel value to 1.0 for pixels which are bad
         and very close to zero, to avoid divide by zero issues and inf values
-        in the flatfielded science data.
+        in the flat-fielded science data.
 
         Parameters
         ----------
@@ -1356,8 +1356,8 @@ class Preprocess(PrimitivesBASE):
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
                 # make sure the 64 is an int16(64) else it will promote the DQ
                 # plane to int64
-                unillum = np.where(((ext.data>upper) | (ext.data<lower)) &
-                                   ((ext.mask & DQ.bad_pixel)==0),
+                unillum = np.where(((ext.data > upper) | (ext.data < lower)) &
+                                   ((ext.mask & DQ.bad_pixel) == 0),
                                    np.int16(DQ.unilluminated), np.int16(0))
                 ext.mask = unillum if ext.mask is None else ext.mask | unillum
                 log.fullinfo("ThresholdFlatfield set bit '64' for values "
@@ -1366,10 +1366,10 @@ class Preprocess(PrimitivesBASE):
 
                 # Bad pixels might have low values and don't get flagged as
                 # unilluminated, so we need to flag them to avoid infinite
-                # values in the flatfielded image
+                # values in the flat-fielded image
+                ext.data[(ext.mask & DQ.unilluminated) > 0] = 1.0
                 ext.data[ext.data < lower] = 1.0
-                ext.data[(ext.mask & DQ.unilluminated)>0] = 1.0
-                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 "
+                log.fullinfo("ThresholdFlatfield set flat-field pixels to 1.0 "
                              "for non-illuminated pixels.")
 
             # Timestamp and update the filename
