@@ -12,7 +12,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : PrimitivesBASE object
+    p : GMOSImage object
         A primitive set matching the recipe_tags.
     """
 
