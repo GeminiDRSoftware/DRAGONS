@@ -1300,15 +1300,15 @@ class AstroDataGemini(AstroDataFits):
         # Calculate the derived QA state
         ret_qa_state = "{}:{}".format(rawpireq, rawgemqa)
         if 'UNKNOWN' in pair:
-                        ret_qa_state = "Undefined"
+            ret_qa_state = "Undefined"
         elif pair == ('YES', 'USABLE'):
-                        ret_qa_state = "Pass"
+            ret_qa_state = "Pass"
         elif pair == ('NO', 'USABLE'):
-                        ret_qa_state = "Usable"
+            ret_qa_state = "Usable"
         elif rawgemqa.upper() == "BAD":
-                        ret_qa_state = "Fail"
+            ret_qa_state = "Fail"
         elif 'CHECK' in pair:
-                        ret_qa_state = "CHECK"
+            ret_qa_state = "CHECK"
         return ret_qa_state
 
     @astro_data_descriptor
