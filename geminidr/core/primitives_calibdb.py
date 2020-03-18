@@ -24,8 +24,11 @@ REQUIRED_TAG_DICT = {'processed_arc': ['PROCESSED', 'ARC'],
                      'processed_dark': ['PROCESSED', 'DARK'],
                      'processed_flat': ['PROCESSED', 'FLAT'],
                      'processed_fringe': ['PROCESSED', 'FRINGE'],
-                     'processed_standard': ['PROCESSED', 'STANDARD'],
-                     'bpm': ['BPM']}
+                     'bpm': ['BPM'],
+                     'sq': [],
+                     'ql': [],
+                     'qa': [],
+                     'processed_standard': ['PROCESSED', 'STANDARD']}
 
 
 # ------------------------------------------------------------------------------
@@ -195,6 +198,12 @@ class CalibDB(PrimitivesBASE):
         caltype = params["caltype"]
         required_tags = REQUIRED_TAG_DICT[caltype]
 
+        # If we are one of the 'science' types, then we store it as science.
+        # This changes the log messages to refer to the files as science
+        # and ultimately routes to the upload_file web api instead of
+        # upload_processed_cal
+        is_science = caltype in ['sq', 'ql', 'qa']
+
         # Create storage directory if it doesn't exist
         if not os.path.exists(os.path.join(storedcals, caltype)):
             os.mkdir(os.path.join(storedcals, caltype))
@@ -202,16 +211,19 @@ class CalibDB(PrimitivesBASE):
         for ad in adinputs:
             if not ad.tags.issuperset(required_tags):
                 log.warning("File {} is not recognized as a {}. Not storing as"
-                            " a calibration.".format(ad.filename, caltype))
+                            " {}.".format(ad.filename, caltype, 
+                            "science" if is_science else "a calibration"))
                 continue
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
             ad.write(fname, overwrite=True)
-            log.stdinfo("Calibration stored as {}".format(fname))
-            if self.upload and 'calibs' in self.upload:
+            log.stdinfo("{} stored as {}".format("Science" if is_science else "Calibration", fname))
+            if self.upload and ((is_science and 'science' in self.upload) or \
+                                (not is_science and 'calibs' in self.upload)):
                 try:
-                    upload_calibration(fname)
+                    upload_calibration(fname, is_science=is_science)
                 except:
-                    log.warning("Unable to upload file to calibration system")
+                    log.warning("Unable to upload file to {} system"
+                                .format("science" if is_science else "calibration"))
                 else:
                     msg = "File {} uploaded to fitsstore."
                     log.stdinfo(msg.format(os.path.basename(ad.filename)))
@@ -298,6 +310,35 @@ class CalibDB(PrimitivesBASE):
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                            primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
         self.storeCalibration(adinputs, caltype=caltype)
+        return adinputs
+    
+    def storeScience(self, adinputs=None):
+        if self.mode not in ['sq', 'ql', 'qa']:
+            self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
+        elif self.upload and 'science' in self.upload:
+            # save filenames so we can restore them after
+            filenames = [ad.filename for ad in adinputs]
+
+            for ad in adinputs:
+                ad.phu.set('PROCSCI', self.mode)
+                ad.update_filename(suffix="_%s" % self.mode)
+                ad.write(overwrite=True)
+            
+                try:
+                    upload_calibration(ad.filename, is_science=True)
+                except:
+                    self.log.warning("Unable to upload file to science system")
+                else:
+                    msg = "File {} uploaded to fitsstore."
+                    self.log.stdinfo(msg.format(os.path.basename(ad.filename)))
+
+            # restore filenames, we don't want the _sq or _ql on the local filesystem copy
+            for filename, ad in zip(filenames, adinputs):
+                oldfilename = ad.filename
+                ad.filename = filename
+                if oldfilename != filename:
+                    os.unlink(oldfilename)
+        
         return adinputs
 
     def storeProcessedStandard(self, adinputs=None, suffix=None):

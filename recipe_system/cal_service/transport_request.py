@@ -76,7 +76,7 @@ RESPONSESTR = """########## Request Data BEGIN ##########
 log = logutils.get_logger(__name__)
 
 # -----------------------------------------------------------------------------
-def upload_calibration(filename):
+def upload_calibration(filename, is_science=False):
     """
     Uploads a calibration file to the FITS Store.
 
@@ -90,7 +90,10 @@ def upload_calibration(filename):
 
     """
     fn = basename(filename)
-    url = join(UPLOADPROCCAL, fn)
+    url = UPLOADPROCCAL
+    if is_science:
+        url = url.replace('upload_processed_cal', 'upload_file')
+    url = join(url, fn)
     postdata = open(filename, 'rb').read()
     try:
         rq = urllib.request.Request(url)

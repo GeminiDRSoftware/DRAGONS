@@ -12,7 +12,7 @@ def reduce(p):
 
     Parameters
     ----------
-    p : PrimitivesBASE object
+    p : GMOSImage object
         A primitive set matching the recipe_tags.
     """
 
@@ -31,6 +31,7 @@ def reduce(p):
     p.resampleToCommonFrame()
     p.flagCosmicRaysByStacking()
     p.stackFrames(zero=True)
+    p.storeScience()
     return
 
 

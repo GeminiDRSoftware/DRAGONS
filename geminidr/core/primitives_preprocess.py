@@ -486,6 +486,7 @@ class Preprocess(PrimitivesBASE):
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
+
             if dark.path:
                 add_provenance(ad, dark.filename, md5sum(dark.path) or "", self.myself())
         return adinputs
