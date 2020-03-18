@@ -102,6 +102,13 @@ def test_tags(testfile):
     assert ad.amp_read_area() == "'FOO':1:1024"
 
 
+def test_keyword_for(testfile):
+    ad = astrodata.open(testfile)
+    assert ad._keyword_for('array_name') == 'AMPNAME'
+    with pytest.raises(AttributeError, match="No match for 'foobar'"):
+        ad._keyword_for('foobar')
+
+
 def test_returns_list(testfile):
     ad = astrodata.open(testfile)
     assert ad.dispersion_axis() == [1, 1]

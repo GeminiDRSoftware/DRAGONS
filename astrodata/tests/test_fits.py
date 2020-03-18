@@ -44,8 +44,19 @@ def test_ad_basics():
     assert ext.hdr['EXTNAME'] == 'SCI'
     assert ext.hdr['EXTVER'] == 5
 
+    ext = ad[:8].extver(5)
+    assert ext.hdr['EXTNAME'] == 'SCI'
+    assert ext.hdr['EXTVER'] == 5
+
     with pytest.raises(ValueError, match='SCI is not an integer EXTVER'):
-        ext.extver('SCI')
+        ad.extver('SCI')
+
+    with pytest.raises(IndexError, match='EXTVER 15 not found'):
+        ad.extver(15)
+
+    with pytest.raises(ValueError,
+                       match="Trying to get a mapping out of a single slice"):
+        ext.extver(15)
 
 
 @pytest.mark.dragons_remote_data
