@@ -10,20 +10,20 @@ import astrodata
 from astrodata.nddata import NDAstroData, ADVarianceUncertainty
 from astrodata.testing import download_from_archive
 
-test_files = [
-    "N20160727S0077.fits",  # NIFS DARK
-    "N20170529S0168.fits",  # GMOS-N SPECT
-    "N20190116G0054i.fits",  # GRACES SPECT
-    "N20190120S0287.fits",  # NIRI IMAGE
-    "N20190206S0279.fits",  # GNIRS SPECT XD
-    "S20150609S0023.fits",  # GSAOI DARK
-    "S20170103S0032.fits",  # F2 IMAGE
-    "S20170505S0031.fits",  # GSAOI FLAT
-    "S20170505S0095.fits",  # GSAOI IMAGE
-    "S20171116S0078.fits",  # GMOS-S MOS NS
-    "S20180223S0229.fits",  # GMOS IFU ACQUISITION
-    "S20190213S0084.fits",  # F2 IMAGE
-]
+# test_files = [
+#     "N20160727S0077.fits",  # NIFS DARK
+#     "N20170529S0168.fits",  # GMOS-N SPECT
+#     "N20190116G0054i.fits",  # GRACES SPECT
+#     "N20190120S0287.fits",  # NIRI IMAGE
+#     "N20190206S0279.fits",  # GNIRS SPECT XD
+#     "S20150609S0023.fits",  # GSAOI DARK
+#     "S20170103S0032.fits",  # F2 IMAGE
+#     "S20170505S0031.fits",  # GSAOI FLAT
+#     "S20170505S0095.fits",  # GSAOI IMAGE
+#     "S20171116S0078.fits",  # GMOS-S MOS NS
+#     "S20180223S0229.fits",  # GMOS IFU ACQUISITION
+#     "S20190213S0084.fits",  # F2 IMAGE
+# ]
 
 
 @pytest.fixture(scope='module')
@@ -68,6 +68,15 @@ def GSAOI_DARK():
       4                4 ImageHDU       144   (2048, 2048)   float32
     """
     return download_from_archive("S20150609S0023.fits")
+
+
+@pytest.fixture(scope='module')
+def GRACES_SPECT():
+    """
+    No.    Name      Ver    Type      Cards   Dimensions   Format
+      0  PRIMARY       1 PrimaryHDU     183   (190747, 28)   float32
+    """
+    return download_from_archive("N20190116G0054i.fits")
 
 
 @pytest.mark.dragons_remote_data
@@ -465,3 +474,14 @@ def test_header_collection(GMOSN_SPECT):
     with pytest.raises(KeyError,
                        match="Keyword 'FOO' not available at header 0"):
         ad.hdr.set_comment('FOO', 'A comment')
+
+
+@pytest.mark.dragons_remote_data
+def test_read_no_extensions(GRACES_SPECT):
+    ad = astrodata.open(GRACES_SPECT)
+    assert len(ad) == 1
+    # header is duplicated for .phu and extension's header
+    assert len(ad.phu) == 181
+    assert len(ad[0].hdr) == 185
+    assert ad[0].hdr['EXTNAME'] == 'SCI'
+    assert ad[0].hdr['EXTVER'] == 1

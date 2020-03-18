@@ -1435,7 +1435,6 @@ class FitsLoader(object):
             for keyw in ('SIMPLE', 'EXTEND'):
                 if keyw in image.header:
                     del image.header[keyw]
-            # TODO: Remove self here (static method)
             image.header['EXTNAME'] = (default_extension, 'Added by AstroData')
             image.header['EXTVER'] = (1, 'Added by AstroData')
             new_list.append(image)
