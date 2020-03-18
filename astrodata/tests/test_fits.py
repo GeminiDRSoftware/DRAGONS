@@ -26,13 +26,56 @@ test_files = [
 ]
 
 
+@pytest.fixture(scope='module')
+def NIFS_DARK():
+    """
+    No.    Name      Ver    Type      Cards   Dimensions   Format
+      0  PRIMARY       1 PrimaryHDU     144   ()
+      1                1 ImageHDU       108   (2048, 2048)   float32
+    """
+    return download_from_archive("N20160727S0077.fits")
+
+
+@pytest.fixture(scope='module')
+def GMOSN_SPECT():
+    """
+    No.    Name      Ver    Type      Cards   Dimensions   Format
+      0  PRIMARY       1 PrimaryHDU     180   ()
+      1               -1 ImageHDU       108   (288, 512)   int16 (rescales to uint16)
+      2               -1 ImageHDU       108   (288, 512)   int16 (rescales to uint16)
+      3               -1 ImageHDU       108   (288, 512)   int16 (rescales to uint16)
+      4               -1 ImageHDU       108   (288, 512)   int16 (rescales to uint16)
+      5               -1 ImageHDU        72   (288, 512)   int16 (rescales to uint16)
+      6               -1 ImageHDU        72   (288, 512)   int16 (rescales to uint16)
+      7               -1 ImageHDU        72   (288, 512)   int16 (rescales to uint16)
+      8               -1 ImageHDU        72   (288, 512)   int16 (rescales to uint16)
+      9               -1 ImageHDU        38   (288, 512)   int16 (rescales to uint16)
+     10               -1 ImageHDU        38   (288, 512)   int16 (rescales to uint16)
+     11               -1 ImageHDU        38   (288, 512)   int16 (rescales to uint16)
+     12               -1 ImageHDU        38   (288, 512)   int16 (rescales to uint16)
+    """
+    return download_from_archive("N20170529S0168.fits")
+
+
+@pytest.fixture(scope='module')
+def GSAOI_DARK():
+    """
+    No.    Name      Ver    Type      Cards   Dimensions   Format
+      0  PRIMARY       1 PrimaryHDU     289   ()
+      1                1 ImageHDU       144   (2048, 2048)   float32
+      2                2 ImageHDU       144   (2048, 2048)   float32
+      3                3 ImageHDU       144   (2048, 2048)   float32
+      4                4 ImageHDU       144   (2048, 2048)   float32
+    """
+    return download_from_archive("S20150609S0023.fits")
+
+
 @pytest.mark.dragons_remote_data
-def test_ad_basics():
-    fname = download_from_archive(test_files[1])
-    ad = astrodata.open(fname)
+def test_ad_basics(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
 
     assert isinstance(ad, astrodata.AstroDataFits)
-    assert ad.filename == os.path.basename(fname)
+    assert ad.filename == os.path.basename(GMOSN_SPECT)
     assert type(ad[0].data) == np.ndarray
 
     ext = ad[2]
@@ -60,10 +103,8 @@ def test_ad_basics():
 
 
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("input_file", test_files)
-def test_can_add_and_del_extension(input_file):
-    fname = download_from_archive(input_file)
-    ad = astrodata.open(fname)
+def test_can_add_and_del_extension(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
     original_size = len(ad)
 
     ourarray = np.array([(1, 2, 3), (11, 12, 13), (21, 22, 23)])
@@ -75,35 +116,25 @@ def test_can_add_and_del_extension(input_file):
 
 
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("input_file", test_files)
-def test_slice(input_file):
-    fname = download_from_archive(input_file)
-    ad = astrodata.open(fname)
+def test_slice(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
     assert ad.is_sliced is False
 
     # single
-    try:
-        metadata = ('SCI', 2)
-        ext = ad[1]
-    except IndexError:
-        assert len(ad) == 1  # some files does not have enough extensions
-    else:
-        assert ext.is_single is True
-        assert ext.is_sliced is True
-        assert ext.hdr['EXTNAME'] == metadata[0]
-        assert ext.hdr['EXTVER'] == metadata[1]
+    metadata = ('SCI', 2)
+    ext = ad[1]
+    assert ext.is_single is True
+    assert ext.is_sliced is True
+    assert ext.hdr['EXTNAME'] == metadata[0]
+    assert ext.hdr['EXTVER'] == metadata[1]
 
     # multiple
     metadata = ('SCI', 2), ('SCI', 3)
-    try:
-        slc = ad[1, 2]
-    except IndexError:
-        assert len(ad) == 1  # some files does not have enough extensions
-    else:
-        assert len(slc) == 2
-        assert ext.is_sliced is True
-        for ext, md in zip(slc, metadata):
-            assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
+    slc = ad[1, 2]
+    assert len(slc) == 2
+    assert ext.is_sliced is True
+    for ext, md in zip(slc, metadata):
+        assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
 
     # iterate over single slice
     metadata = ('SCI', 1)
@@ -115,9 +146,8 @@ def test_slice(input_file):
 
 
 @pytest.mark.dragons_remote_data
-def test_phu():
-    fname = download_from_archive(test_files[0])
-    ad = astrodata.open(fname)
+def test_phu(NIFS_DARK):
+    ad = astrodata.open(NIFS_DARK)
 
     # The result of this depends if gemini_instruments was imported or not
     # assert ad.descriptors == ('instrument', 'object', 'telescope')
@@ -139,12 +169,11 @@ def test_phu():
 
 
 @pytest.mark.dragons_remote_data
-def test_paths(path_to_outputs):
-    fname = download_from_archive(test_files[0])
-    ad = astrodata.open(fname)
+def test_paths(path_to_outputs, NIFS_DARK):
+    ad = astrodata.open(NIFS_DARK)
     assert ad.orig_filename == 'N20160727S0077.fits'
 
-    srcdir = os.path.dirname(fname)
+    srcdir = os.path.dirname(NIFS_DARK)
     assert ad.filename == 'N20160727S0077.fits'
     assert ad.path == os.path.join(srcdir, 'N20160727S0077.fits')
 
@@ -178,10 +207,8 @@ def test_paths(path_to_outputs):
 
 
 @pytest.mark.dragons_remote_data
-def test_from_hdulist():
-    fname = download_from_archive(test_files[0])
-
-    with fits.open(fname) as hdul:
+def test_from_hdulist(NIFS_DARK):
+    with fits.open(NIFS_DARK) as hdul:
         assert 'ORIGNAME' not in hdul[0].header
         ad = astrodata.open(hdul)
         assert ad.path is None
@@ -191,7 +218,7 @@ def test_from_hdulist():
         assert len(ad) == 1
         assert ad[0].shape == (2048, 2048)
 
-    with fits.open(fname) as hdul:
+    with fits.open(NIFS_DARK) as hdul:
         # Make sure that when ORIGNAME is set, astrodata use it
         hdul[0].header['ORIGNAME'] = 'N20160727S0077.fits'
         ad = astrodata.open(hdul)
@@ -243,9 +270,8 @@ def test_can_append_table_and_access_data(capsys, tmpdir):
 
 
 @pytest.mark.dragons_remote_data
-def test_attributes():
-    fname = download_from_archive(test_files[5])
-    ad = astrodata.open(fname)
+def test_attributes(GSAOI_DARK):
+    ad = astrodata.open(GSAOI_DARK)
     assert ad.shape == [(2048, 2048)] * 4
     assert [arr.shape for arr in ad.data] == [(2048, 2048)] * 4
     assert [arr.dtype for arr in ad.data] == ['f'] * 4
@@ -274,9 +300,8 @@ def test_attributes():
 
 
 @pytest.mark.dragons_remote_data
-def test_set_a_keyword_on_phu_deprecated():
-    fname = download_from_archive(test_files[0])
-    ad = astrodata.open(fname)
+def test_set_a_keyword_on_phu_deprecated(NIFS_DARK):
+    ad = astrodata.open(NIFS_DARK)
     # Test that setting DETECTOR as an attribute doesn't modify the header
     ad.phu.DETECTOR = 'FooBar'
     assert ad.phu.DETECTOR == 'FooBar'
@@ -287,14 +312,11 @@ def test_set_a_keyword_on_phu_deprecated():
 # Make sure that references to associated
 # extension objects are copied across
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("input_file", test_files)
-def test_do_arith_and_retain_features(input_file):
-    fname = download_from_archive(input_file)
-    ad = astrodata.open(fname)
-
+def test_do_arith_and_retain_features(NIFS_DARK):
+    ad = astrodata.open(NIFS_DARK)
     ad[0].NEW_FEATURE = np.array([1, 2, 3, 4, 5])
     ad2 = ad * 5
-    np.testing.assert_array_almost_equal(ad[0].NEW_FEATURE, ad2[0].NEW_FEATURE)
+    assert_array_equal(ad[0].NEW_FEATURE, ad2[0].NEW_FEATURE)
 
 
 def test_update_filename():
@@ -373,7 +395,7 @@ def test_read_a_keyword_from_phu_deprecated():
         ad.ABC
 
 
-def test_invalid_file(tmpdir, caplog):
+def test_read_invalid_file(tmpdir, caplog):
     testfile = str(tmpdir.join('test.fits'))
     with open(testfile, 'w'):
         # create empty file
@@ -385,10 +407,29 @@ def test_invalid_file(tmpdir, caplog):
     assert caplog.records[0].message.endswith('is zero size')
 
 
+def test_read_empty_file(tmpdir):
+    testfile = str(tmpdir.join('test.fits'))
+    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
+    fits.PrimaryHDU(header=hdr).writeto(testfile)
+    ad = astrodata.open(testfile)
+    assert len(ad) == 0
+    assert ad.object() == 'M42'
+    assert ad.instrument() == 'darkimager'
+
+
+def test_read_file(tmpdir):
+    testfile = str(tmpdir.join('test.fits'))
+    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
+    fits.PrimaryHDU(header=hdr).writeto(testfile)
+    ad = astrodata.open(testfile)
+    assert len(ad) == 0
+    assert ad.object() == 'M42'
+    assert ad.instrument() == 'darkimager'
+
+
 @pytest.mark.dragons_remote_data
-def test_header_collection():
-    fname = download_from_archive(test_files[1])
-    ad = astrodata.open(fname)
+def test_header_collection(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
     assert len(ad) == 12
     assert len([hdr for hdr in ad.hdr]) == 12
 
