@@ -6,7 +6,6 @@ import xml.etree.ElementTree as et
 from contextlib import contextmanager
 
 import numpy as np
-import pandas as pd
 import pytest
 from astropy.utils.data import download_file
 
