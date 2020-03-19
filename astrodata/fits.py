@@ -1135,15 +1135,19 @@ class FitsProvider(DataProvider):
 
     def _append_array(self, data, name=None, header=None, add_to=None):
         def_ext = FitsProvider.default_extension
-        # Top level:
         if add_to is None:
+            # Top level extension
+
             # Special cases for Gemini
             if name is None:
                 name = def_ext
 
             if name in {'DQ', 'VAR'}:
-                raise ValueError("'{}' need to be associated to a '{}' one".format(name, def_ext))
+                raise ValueError("'{}' need to be associated to a '{}' one"
+                                 .format(name, def_ext))
             else:
+                # FIXME: the logic here is broken since name is
+                # always set to somehing above with def_ext
                 if name is not None:
                     hname = name
                 elif header is not None:
@@ -1151,11 +1155,11 @@ class FitsProvider(DataProvider):
                 else:
                     hname = def_ext
 
-                hdu = ImageHDU(data, header = header)
+                hdu = ImageHDU(data, header=header)
                 hdu.header['EXTNAME'] = hname
                 ret = self._append_imagehdu(hdu, name=hname, header=None, add_to=None)
-        # Attaching to another extension
         else:
+            # Attaching to another extension
             if header is not None and name in {'DQ', 'VAR'}:
                 LOGGER.warning("The header is ignored for '{}' extensions".format(name))
             if name is None:
@@ -1176,11 +1180,12 @@ class FitsProvider(DataProvider):
 
         return ret
 
-    def _append_imagehdu(self, unit, name, header, add_to, reset_ver=True):
+    def _append_imagehdu(self, hdu, name, header, add_to, reset_ver=True):
         if name in {'DQ', 'VAR'} or add_to is not None:
-            return self._append_array(unit.data, name=name, add_to=add_to)
+            return self._append_array(hdu.data, name=name, add_to=add_to)
         else:
-            nd = self._process_pixel_plane(unit, name=name, top_level=True, reset_ver=reset_ver,
+            nd = self._process_pixel_plane(hdu, name=name, top_level=True,
+                                           reset_ver=reset_ver,
                                            custom_header=header)
             return self._append_nddata(nd, name, add_to=None)
 
@@ -1194,12 +1199,11 @@ class FitsProvider(DataProvider):
                                                      custom_header=header, reset_ver=reset_ver)
         return self._append_nddata(processed_nddata, name=name, add_to=add_to)
 
-    # NOTE: This method is only used by others that have constructed NDData according
-    #       to our internal format. We don't accept new headers at this point, and
-    #       that's why it's missing from the signature
     def _append_nddata(self, new_nddata, name, add_to, reset_ver=True):
-        # 'name' is ignored. It's there just to comply with the
-        # _append_XXX signature
+        # NOTE: This method is only used by others that have constructed NDData
+        # according to our internal format. We don't accept new headers at this
+        # point, and that's why it's missing from the signature.  'name' is
+        # ignored. It's there just to comply with the _append_XXX signature.
         def_ext = FitsProvider.default_extension
         if add_to is not None:
             raise TypeError("You can only append NDData derived instances at the top level")
@@ -1211,7 +1215,8 @@ class FitsProvider(DataProvider):
                 self._reset_ver(new_nddata)
             self._nddata.append(new_nddata)
         else:
-            raise ValueError("Arbitrary image extensions can only be added in association to a '{}'".format(def_ext))
+            raise ValueError("Arbitrary image extensions can only be added "
+                             "in association to a '{}'".format(def_ext))
 
         return new_nddata
 
@@ -1244,13 +1249,13 @@ class FitsProvider(DataProvider):
             add_to.meta['other'][hname] = tb
         return tb
 
-    def _append_astrodata(self, astrod, name, header, add_to, reset_ver=True):
-        if not astrod.is_single:
+    def _append_astrodata(self, ad, name, header, add_to, reset_ver=True):
+        if not ad.is_single:
             raise ValueError("Cannot append AstroData instances that are not single slices")
         elif add_to is not None:
             raise ValueError("Cannot append an AstroData slice to another slice")
 
-        new_nddata = deepcopy(astrod.nddata)
+        new_nddata = deepcopy(ad.nddata)
         if header is not None:
             new_nddata.meta['header'] = deepcopy(header)
 
@@ -1260,14 +1265,15 @@ class FitsProvider(DataProvider):
         # NOTE: Most probably, if we want to copy the input argument, we
         #       should do it here...
         if isinstance(ext, PrimaryHDU):
-            raise ValueError("Only one Primary HDU allowed. Use set_phu if you really need to set one")
+            raise ValueError("Only one Primary HDU allowed. "
+                             "Use set_phu if you really need to set one")
 
         dispatcher = (
-                (NDData, self._append_raw_nddata),
-                ((Table, _TableBaseHDU), self._append_table),
-                (ImageHDU, self._append_imagehdu),
-                (AstroData, self._append_astrodata),
-                )
+            (NDData, self._append_raw_nddata),
+            ((Table, _TableBaseHDU), self._append_table),
+            (ImageHDU, self._append_imagehdu),
+            (AstroData, self._append_astrodata),
+        )
 
         for bases, method in dispatcher:
             if isinstance(ext, bases):

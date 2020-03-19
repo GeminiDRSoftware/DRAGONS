@@ -485,3 +485,73 @@ def test_read_no_extensions(GRACES_SPECT):
     assert len(ad[0].hdr) == 185
     assert ad[0].hdr['EXTNAME'] == 'SCI'
     assert ad[0].hdr['EXTVER'] == 1
+
+
+def test_add_var_and_dq(caplog):
+    shape = (3, 4)
+    fakedata = np.arange(np.prod(shape)).reshape(shape)
+
+    ad = astrodata.create({'OBJECT': 'M42'})
+    ad.append(fakedata)
+    assert ad[0].hdr['EXTNAME'] == 'SCI'  # default value for EXTNAME
+
+    with pytest.raises(ValueError, match="Only one Primary HDU allowed"):
+        ad.append(fits.PrimaryHDU(data=fakedata), name='FOO')
+
+    with pytest.raises(ValueError, match="Arbitrary image extensions can "
+                       "only be added in association to a 'SCI'"):
+        ad.append(np.zeros(shape), name='FOO')
+
+    with pytest.raises(ValueError,
+                       match="'VAR' need to be associated to a 'SCI' one"):
+        ad.append(np.ones(shape), name='VAR')
+
+    with pytest.raises(ValueError, match="Can't append pixel planes to "
+                       "other objects without a name"):
+        ad.append(np.ones(shape), add_to=ad[0].nddata)
+
+    with pytest.raises(ValueError,
+                       match="Can't attach 'SCI' arrays to other objects"):
+        ad.append(np.ones(shape), name='SCI', add_to=ad[0].nddata)
+
+    ad.append(fits.ImageHDU(data=np.ones(shape)), name='VAR',
+              add_to=ad[0].nddata)
+
+    ad.append(np.zeros(shape), name='DQ', add_to=ad[0].nddata, header='fake')
+    assert (caplog.records[0].message ==
+            "The header is ignored for 'DQ' extensions")
+
+    ad.append(np.ones(shape), name='FOO', add_to=ad[0].nddata)
+
+    assert_array_equal(ad[0].nddata.data, fakedata)
+    assert_array_equal(ad[0].nddata.variance, 1)
+    assert_array_equal(ad[0].nddata.mask, 0)
+
+
+def test_add_table():
+    shape = (3, 4)
+    fakedata = np.arange(np.prod(shape)).reshape(shape)
+
+    ad = astrodata.create({'OBJECT': 'M42'})
+    ad.append(fakedata)
+
+    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
+    ad.append(tbl)
+    assert ad.tables == {'TABLE1'}
+    ad.append(tbl)
+    assert ad.tables == {'TABLE1', 'TABLE2'}
+    ad.append(tbl, name='MYTABLE')
+    assert ad.tables == {'TABLE1', 'TABLE2', 'MYTABLE'}
+
+    hdr = fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'})
+    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad.append(tbl, add_to=ad[0].nddata, header=hdr)
+    ad.append(tbl, add_to=ad[0].nddata)
+    ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
+
+    assert ad[0].nddata.TABLE1.meta['header']['INSTRUME'] == 'darkimager'
+    assert (set(ad[0].nddata.meta['other'].keys()) ==
+            {'TABLE2', 'OTHERTABLE', 'TABLE1'})
+    assert_array_equal(ad[0].nddata.TABLE1['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].nddata.TABLE2['col0'], ['aa', 'bb', 'cc'])
+    assert_array_equal(ad[0].nddata.OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
