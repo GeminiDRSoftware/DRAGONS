@@ -180,7 +180,7 @@ def query_associated_bias(data_label):
 
 def query_datalabel(fname):
     """
-    Query datalabel associated to the filename from the Gemini Archive.
+    Retrieve the data label associated to the input file.
 
     Parameters
     ----------
@@ -191,9 +191,8 @@ def query_datalabel(fname):
     -------
     str : Data label.
     """
-    json_summmary_url = 'https://archive.gemini.edu/jsonsummary/{:s}'
-    df = pd.read_json(json_summmary_url.format(fname))
-    return df.iloc[0]['data_label']
+    ad = astrodata.open(fname)
+    return ad.data_label()
 
 
 @pytest.fixture(scope='module')
