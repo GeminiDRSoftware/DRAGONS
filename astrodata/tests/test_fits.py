@@ -2,11 +2,13 @@ import os
 
 import numpy as np
 import pytest
+import warnings
 from astropy.io import fits
 from astropy.table import Table
 from numpy.testing import assert_array_equal
 
 import astrodata
+from astrodata.fits import AstroDataFitsDeprecationWarning
 from astrodata.nddata import NDAstroData, ADVarianceUncertainty
 from astrodata.testing import download_from_archive
 
@@ -438,6 +440,9 @@ def test_read_file(tmpdir):
 
 @pytest.mark.dragons_remote_data
 def test_header_collection(GMOSN_SPECT):
+    ad = astrodata.create({})
+    assert ad.hdr is None
+
     ad = astrodata.open(GMOSN_SPECT)
     assert len(ad) == 12
     assert len([hdr for hdr in ad.hdr]) == 12
@@ -474,6 +479,23 @@ def test_header_collection(GMOSN_SPECT):
     with pytest.raises(KeyError,
                        match="Keyword 'FOO' not available at header 0"):
         ad.hdr.set_comment('FOO', 'A comment')
+
+    ad = astrodata.open(GMOSN_SPECT)
+    hdr = ad.hdr
+    assert len(list(hdr)) == 12
+    hdr._insert(1, fits.Header({'INSTRUME': 'darkimager', 'OBJECT': 'M42'}))
+    assert len(list(hdr)) == 13
+
+
+@pytest.mark.dragons_remote_data
+def test_header_deprecated(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
+    with pytest.warns(AstroDataFitsDeprecationWarning):
+        warnings.simplefilter('always', AstroDataFitsDeprecationWarning)
+        header = ad.header
+    assert header[0]['ORIGNAME'] == 'N20170529S0168.fits'
+    assert header[1]['EXTNAME'] == 'SCI'
+    assert header[1]['EXTVER'] == 1
 
 
 @pytest.mark.dragons_remote_data
