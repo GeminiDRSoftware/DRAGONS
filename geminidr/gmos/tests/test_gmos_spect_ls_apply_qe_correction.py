@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import glob
+import abc
+import matplotlib.pyplot as plt
+import numpy as np
 import os
 import pandas as pd
 import pytest
@@ -11,6 +13,7 @@ import xml.etree.ElementTree as et
 import astrodata
 import gemini_instruments
 
+from astropy import modeling
 from astropy.utils.data import download_file
 from contextlib import contextmanager
 from geminidr.gmos import primitives_gmos_longslit
@@ -18,13 +21,14 @@ from gempy.adlibrary import dataselect
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
+from scipy import interpolate, ndimage, signal
 
-
+DPI = 90
 URL = 'https://archive.gemini.edu/file/'
 
-datasets = [
-    ("N20180721S0444.fits")  # B1200 at 0.44 um
-]
+datasets = {
+    "N20180721S0444.fits",   # B1200 at 0.44 um
+}
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
@@ -308,6 +312,296 @@ def reduce_flat(output_path):
 
         return master_flat_ad
     return _reduce_flat
+
+
+# -- Classes for analysis -----------------------------------------------------
+class Gap:
+    """
+    Higher lever interface for gaps.
+
+    Parameters
+    ----------
+    l : int
+        Left index that defines the beginning of the gap.
+    r : int
+        Right index that defines the end of the gap
+    i : int
+        Increment size on both sides of the gap.
+
+    Attributes
+    ----------
+    center : float
+        Center of the gap
+    left : int
+        Left index that defines the beginning of the gap.
+    right : int
+        Right index that defines the beginning of the gap.
+    size : int
+        Gap size in number of elements.
+    """
+    def __init__(self, l, r, i):
+        self.center = 0.5 * (l + r)
+        self.left = l - i
+        self.right = r + i
+        self.size = abs(self.left - self.right)
+
+
+class LocalGapSize(abc.ABC):
+    """
+    Abstract class used to evaluate the measure the gap size locally.
+    """
+    def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
+                 sigma_lower=1.5, sigma_upper=3):
+
+        self.ad = ad
+        self.bad_cols = bad_cols
+        self.fit_family = fit_family
+        self.median_filter_size = med_filt_size
+        self.sigma_lower = sigma_lower
+        self.sigma_upper = sigma_upper
+        self.w_solution = WSolution(ad)
+
+        self.plot_name = "local_gap_size_{}_{}".format(
+            self.fit_family.lower().replace('.', ''), ad.data_label())
+
+        self.plot_title = \
+            "QE Corrected Spectrum: {:s} Fit for each detector\n {:s}".format(
+                fit_family, ad.data_label())
+
+        self.fig, self.axs = self.reset_plots()
+
+        m = ad[0].mask > 0
+        y = ad[0].data
+        v = ad[0].variance  # Never used for anything. But...
+        x = np.arange(y.size)
+
+        w = self.w_solution(x)
+        w = np.ma.masked_outside(w, 375, 1075)
+
+        y = np.ma.masked_array(y, mask=m)
+        y = self.smooth_data(y)
+        y, v = self.normalize_data(y, v)
+
+        for ax in self.axs:
+            ax.fill_between(w, 0, y, fc='k', alpha=0.1)
+            ax.grid(c='k', alpha=0.1)
+
+        split_mask = ad[0].mask >= 16
+        x_seg, y_seg, cuts = self.split_arrays_using_mask(x, y, split_mask)
+
+        self.plot_segmented_data(x_seg, y_seg)
+
+        self.x = x
+        self.y = y
+        self.w = w
+
+        self.gaps = [Gap(cuts[2 * i], cuts[2 * i + 1], bad_cols)
+                     for i in range(cuts.size // 2)]
+
+        fits = self.fit(x_seg, y_seg)
+
+        self.measure_gaps(fits)
+
+        for ax in self.axs:
+            ax.set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
+            ax.set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
+
+        self.axs[0].set_xlim(w.min(), w.max())
+        self.axs[0].set_ylim(-0.05, 1.05)
+        self.fig.tight_layout(h_pad=0.0)
+        plt.show()
+
+    def measure_gaps(self, _models):
+
+        if _models is None:
+            return
+
+        print('\n Measuring the gaps: ')
+        for i, gap in enumerate(self.gaps):
+
+            m_left = _models[i]
+            m_right = _models[i + 1]
+
+            w_center = self.w_solution(gap.center)
+            w_left = self.w_solution(gap.left - gap.size)
+            w_right = self.w_solution(gap.right + gap.size)
+
+            y_left = m_left(gap.center)
+            y_right = m_right(gap.center)
+            y_center = 0.5 * (y_left + y_right)
+
+            x_left = np.arange(gap.left - gap.size, gap.right)
+            x_right = np.arange(gap.left, gap.right + gap.size)
+
+            self.axs[i + 1].set_xlim(w_left, w_right)
+
+            self.axs[i + 1].set_ylim(
+                max(0, y_center - 0.15),
+                min(1.05, y_center + 0.15))
+
+            self.axs[i + 1].plot(
+                self.w_solution(x_right), m_left(x_right), ':C{}'.format(i))
+            self.axs[i + 1].plot(
+                self.w_solution(x_left), m_right(x_left), ':C{}'.format(i + 1))
+
+            self.axs[i + 1].scatter(
+                w_center, y_left, marker='o', c='C{}'.format(i), alpha=0.5)
+            self.axs[i + 1].scatter(
+                w_center, y_right, marker='o', c='C{}'.format(i + 1), alpha=0.5)
+
+            for ax in self.axs:
+                ax.axvline(w_center, c='C3', lw=0.5)
+
+            dy = y_left - y_right
+
+            s = ("\n"
+                 " gap {:1d}\n"
+                 " w={:.2f} y_left={:.2f} y_right={:.2f}"
+                 " |y_left-y_right|={:.4f} ")
+
+            print(s.format(i + 1, w_center, y_left, y_right, dy))
+
+    @abc.abstractmethod
+    def fit(self, x_seg, y_seg):
+        pass
+
+    @staticmethod
+    def normalize_data(y, v):
+        assert np.ma.is_masked(y)
+        _y = (y - np.min(y)) / np.ptp(y)
+        _v = (v - np.min(v)) / np.ptp(y)
+        return _y, _v
+
+    def plot_segmented_data(self, xs, ys):
+
+        for i, (xx, yy) in enumerate(zip(xs, ys)):
+            ww = self.w_solution(xx)
+            yy.mask = np.logical_or(yy.mask, ww < 375)
+            yy.mask = np.logical_or(yy.mask, ww > 1075)
+
+            c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
+
+            self.axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
+
+    def reset_plots(self):
+        plt.close(self.plot_name)
+
+        fig = plt.figure(constrained_layout=True, dpi=DPI, figsize=(6, 6),
+                         num=self.plot_name)
+
+        gs = plt.GridSpec(2, 2, figure=fig, height_ratios=[4, 1])
+
+        axs = [
+            fig.add_subplot(gs[0, :]),
+            fig.add_subplot(gs[1, 0]),
+            fig.add_subplot(gs[1, 1]),
+        ]
+
+        axs[0].set_title(self.plot_title)
+
+        axs[2].yaxis.tick_right()
+        axs[2].yaxis.set_label_position("right")
+
+        return fig, axs
+
+    def smooth_data(self, y):
+        assert np.ma.is_masked(y)
+        m = y.mask
+        y = ndimage.median_filter(y, size=self.median_filter_size)
+        y = ndimage.gaussian_filter1d(y, sigma=5)
+        y = np.ma.masked_array(y, mask=m)
+        return y
+
+    def split_arrays_using_mask(self, x, y, mask):
+        """
+        Split x and y into segments based on masked pixels in x.
+
+        Parameters
+        ----------
+        x : np.array
+            Masked array
+        y : np.array
+            Array that will be masked to follow x.
+        mask : np.array
+            Array that contains the mask used to split x and y.
+
+        Returns
+        -------
+        x_seg : list
+            List of np.arrays with the segments obtained from x.
+        y_seg : list
+            List of np.arrays with the segments obtained from y.
+        cuts : list
+            1D list containing the beginning and the end pixels for each gap.
+        """
+        m = ~ndimage.morphology.binary_opening(mask, iterations=10)
+
+        d = np.diff(m)
+        cuts = np.flatnonzero(d) + 1
+
+        if len(cuts) != 4:
+            print(cuts)
+            print(np.diff(cuts))
+            raise ValueError(
+                "Expected four coordinates in `cuts` variable. "
+                "Found {}".format(len(cuts)))
+
+        # Broadening gap
+        for i in range(cuts.size // 2):
+            cuts[2 * i] -= self.bad_cols
+            cuts[2 * i + 1] += self.bad_cols
+
+        xsplit = np.split(x, cuts)
+        ysplit = np.split(y, cuts)
+        msplit = np.split(m, cuts)
+
+        x_seg = [xseg for xseg, mseg in zip(xsplit, msplit) if np.all(mseg)]
+        y_seg = [yseg for yseg, mseg in zip(ysplit, msplit) if np.all(mseg)]
+
+        if len(x_seg) != 3:
+            raise ValueError(
+                "Expected three segments for X. Found {}".format(len(x_seg)))
+
+        if len(y_seg) != 3:
+            raise ValueError(
+                "Expected three segments for Y. Found {}".format(len(y_seg)))
+
+        return x_seg, y_seg, cuts
+
+
+class WSolution:
+    """
+    Wavelength solution parser from an AstroData object.
+
+    Parameters
+    ----------
+    ad : AstroData
+        Input spectra with wavelength solution.
+
+    Attributes
+    ----------
+    model : Linear1D
+        Linear model that parses from pixel to wavelength.
+    units : str
+        Wavelength units.
+    mask : ndarray
+        Array applied to returned data.
+    """
+
+    def __init__(self, ad):
+        self.model = modeling.models.Linear1D(
+            slope=ad[0].hdr.get('CDELT1'),
+            intercept=ad[0].hdr['CRVAL1'] - 1 * ad[0].hdr['CDELT1'])
+        self.units = ad[0].hdr.get('CUNIT1')
+        self.mask = None
+
+    def __call__(self, x):
+        """
+        Returns a masked array with the wavelengths.
+        """
+        _w = self.model(x)
+        _w = np.ma.masked_array(_w, mask=self.mask)
+        return _w
 
 
 if __name__ == '__main__':
