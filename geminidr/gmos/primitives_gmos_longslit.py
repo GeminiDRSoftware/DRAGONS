@@ -167,9 +167,14 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
             # and mask pixels below the requested fraction of the peak
             row_max = np.array([ext_fitted.data.max(axis=1)
                                 for ext_fitted in ad_fitted]).max(axis=0)
+
+            # Prevent runtime error in division
+            row_max[row_max == 0] = np.inf
+
             for ext_fitted in ad_fitted:
-                ext_fitted.mask = np.where((ext_fitted.data.T / row_max).T < threshold,
-                                           DQ.unilluminated, DQ.good)
+                ext_fitted.mask = np.where(
+                    (ext_fitted.data.T / row_max).T < threshold,
+                    DQ.unilluminated, DQ.good)
 
             for ext_fitted, indices in zip(ad_fitted, array_info.extensions):
                 tiled_arrsec = ext_fitted.array_section()
