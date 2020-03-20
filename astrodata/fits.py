@@ -268,18 +268,21 @@ def header_for_table(table):
         fits_header = update_header(table.meta['header'], fits_header)
     return fits_header
 
+
 def add_header_to_table(table):
     header = header_for_table(table)
     table.meta['header'] = header
     return header
 
+
 def card_filter(cards, include=None, exclude=None):
     for card in cards:
-        if include is not None and card not in include:
+        if include is not None and card[0] not in include:
             continue
-        elif exclude is not None and card in exclude:
+        elif exclude is not None and card[0] in exclude:
             continue
         yield card
+
 
 def update_header(headera, headerb):
     cardsa = tuple(tuple(cr) for cr in headera.cards)
@@ -297,8 +300,10 @@ def update_header(headera, headerb):
     for key in ('HISTORY', 'COMMENT'):
         fltcardsa = card_filter(cardsa, include={key})
         fltcardsb = card_filter(cardsb, include={key})
+        # assume we start with two headers that are mostly the same and
+        # that will have added comments/history at the end (in headerb)
         for (ca, cb) in zip_longest(fltcardsa, fltcardsb):
-            if cb is None:
+            if ca is None:
                 headera.update((cb,))
 
     return headera
