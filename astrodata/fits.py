@@ -28,7 +28,7 @@ from astropy.io.fits import HDUList, DELAYED
 from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU, TableHDU
 from astropy.io.fits import Column, FITS_rec
 from astropy.io.fits.hdu.table import _TableBaseHDU
-from astropy import units as u
+from astropy import units as u, coordinates as coord
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # from astropy.nddata import NDData, NDDataRef as NDDataObject
@@ -36,7 +36,9 @@ from astropy.nddata import NDData
 from astropy.table import Table
 import numpy as np
 
-from gwcs.wcs import WCS
+from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
+from gwcs.utils import make_fitswcs_transform
 
 INTEGER_TYPES = (int, np.integer)
 NO_DEFAULT = object()
@@ -451,6 +453,18 @@ def asdftablehdu_to_wcs(hdu):
         return
 
     return wcs
+
+def fitswcs_to_gwcs(header):
+    """
+    Create and return a gWCS object from a FITS header.
+    Currently the gWCS function here only supports imaging frames,
+    but that's OK for now because Gemini raw data always has an imaging WCS
+    """
+    transform = make_fitswcs_transform(header)
+    in_frame = cf.Frame2D(name="raw pixels")
+    out_frame = cf.CelestialFrame(name="world")
+    return gWCS([(in_frame, transform),
+                 (out_frame, None)])
 
 class FitsProviderProxy(DataProvider):
     # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not make
@@ -1180,7 +1194,7 @@ class FitsProvider(DataProvider):
             if ext.mask is not None:
                 hlst.append(new_imagehdu(ext.mask, header, 'DQ'))
 
-            if isinstance(ext.wcs, WCS):
+            if isinstance(ext.wcs, gWCS):
                 hlst.append(wcs_to_asdftablehdu(ext.wcs, extver=ver))
 
             for name, other in meta.get('other', {}).items():
@@ -1658,6 +1672,11 @@ class FitsLoader(object):
                         mask = None if parts['mask'] is None else FitsLazyLoadable(parts['mask']),
                         wcs = None if parts['wcs'] is None else asdftablehdu_to_wcs(parts['wcs'])
                         )
+                if nd.wcs is None:
+                    try:
+                        nd.wcs = fitswcs_to_gwcs(nd.meta['header'])
+                    except TypeError as e:
+                        raise e
                 provider.append(nd, name=def_ext, reset_ver=False)
             else:
                 nd = provider.append(parts['data'], name=def_ext, reset_ver=False)
@@ -1665,8 +1684,14 @@ class FitsLoader(object):
                     item = parts[item_name]
                     if item is not None:
                         provider.append(item, name=item.header['EXTNAME'], add_to=nd)
-                if parts['wcs'] is not None and isinstance(nd, NDData):
-                    nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+                if isinstance(nd, NDData):
+                    if parts['wcs'] is not None:
+                        nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
+                    else:
+                        try:
+                            nd.wcs = fitswcs_to_gwcs(nd.meta['header'])
+                        except TypeError:
+                            pass
 
             for other in parts['other']:
                 provider.append(other, name=other.header['EXTNAME'], add_to=nd)
