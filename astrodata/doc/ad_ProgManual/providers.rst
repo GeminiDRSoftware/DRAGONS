@@ -44,7 +44,7 @@ need to implement:
   view are instances of ``astrodata.fits.FitsProviderProxy``). The view should
   behave in almost every way as a normal provider.
 * ``__len__``: number of science extensions contained in this instance.
-* ``__iadd__``, ``__isub__``, ``__imul__``, ``__idiv__``; used to perform
+* ``__iadd__``, ``__isub__``, ``__imul__``, ``__itruediv__``; used to perform
   in-place operations over the data.
 * ``data``, ``uncertainty``, ``mask``, ``variance``: properties used to access
   certain common content. These methods generally return lists, with one

@@ -131,6 +131,13 @@ def test_slice(GMOSN_SPECT):
     ad = astrodata.open(GMOSN_SPECT)
     assert ad.is_sliced is False
 
+    n_ext = len(ad)
+    with pytest.raises(IndexError, match="Index out of range"):
+        ad[n_ext + 1]
+
+    with pytest.raises(ValueError, match='Invalid index: FOO'):
+        ad['FOO']
+
     # single
     metadata = ('SCI', 2)
     ext = ad[1]
@@ -138,6 +145,9 @@ def test_slice(GMOSN_SPECT):
     assert ext.is_sliced is True
     assert ext.hdr['EXTNAME'] == metadata[0]
     assert ext.hdr['EXTVER'] == metadata[1]
+
+    with pytest.raises(TypeError, match="Can't slice a single slice!"):
+        ext[1]
 
     # multiple
     metadata = ('SCI', 2), ('SCI', 3)

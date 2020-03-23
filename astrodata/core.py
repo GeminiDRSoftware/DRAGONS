@@ -338,7 +338,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         """
 
     @abstractmethod
-    def __idiv__(self, oper):
+    def __itruediv__(self, oper):
         """
         This method should attempt to do an in-place (modifying self) division of each
         internal science object and the oper.
@@ -650,7 +650,8 @@ class AstroData(object):
                 super(AstroData, self).__delattr__(attribute)
         except AttributeError:
             if self._dataprov.is_sliced:
-                raise AttributeError("{!r} sliced object has no attribute {!r}".format(self.__class__.__name__, attribute))
+                raise AttributeError("{!r} sliced object has no attribute {!r}"
+                                     .format(self.__class__.__name__, attribute))
             else:
                 raise
 
@@ -691,13 +692,14 @@ class AstroData(object):
 
     def __add__(self, oper):
         """
-        Implements the binary arithmetic operation `+` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `+` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be added to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -709,13 +711,14 @@ class AstroData(object):
 
     def __sub__(self, oper):
         """
-        Implements the binary arithmetic operation `-` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `-` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be subtracted to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -727,13 +730,14 @@ class AstroData(object):
 
     def __mul__(self, oper):
         """
-        Implements the binary arithmetic operation `*` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `*` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be multiplied to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -745,13 +749,14 @@ class AstroData(object):
 
     def __truediv__(self, oper):
         """
-        Implements the binary arithmetic operation `/` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `/` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be divided to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -768,8 +773,8 @@ class AstroData(object):
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be added to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -785,8 +790,8 @@ class AstroData(object):
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be subtracted to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -802,8 +807,8 @@ class AstroData(object):
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be multiplied to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -812,15 +817,15 @@ class AstroData(object):
         self._dataprov *= oper
         return self
 
-    def __idiv__(self, oper):
+    def __itruediv__(self, oper):
         """
         Implements the augmented arithmetic assignment `/=`.
 
         Args
         -----
         oper : number or other
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be divided to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -829,11 +834,10 @@ class AstroData(object):
         self._dataprov /= oper
         return self
 
-    __itruediv__ = __idiv__
     add = __iadd__
     subtract = __isub__
     multiply = __imul__
-    divide = __idiv__
+    divide = __itruediv__
 
     __radd__ = __add__
     __rmul__ = __mul__
@@ -844,7 +848,7 @@ class AstroData(object):
 
     def __rtruediv__(self, oper):
         copy = deepcopy(self)
-        copy._dataprov.__rdiv__(oper)
+        copy._dataprov.__rtruediv__(oper)
         return copy
 
     # This method needs to be implemented as classmethod

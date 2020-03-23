@@ -329,10 +329,12 @@ def normalize_indices(slc, nitems):
 
     return indices, multiple
 
+
 class FitsProviderProxy(DataProvider):
-    # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not make
-    #       sense for slices. If a method of interest is identified, we need to
-    #       implement it properly, or make it raise an exception if not valid.
+
+    # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not
+    # make sense for slices. If a method of interest is identified, we need to
+    # implement it properly, or make it raise an exception if not valid.
 
     def __init__(self, provider, mapping, single):
         # We're overloading __setattr__. This is safer than setting the
@@ -462,13 +464,11 @@ class FitsProviderProxy(DataProvider):
         self._provider._standard_nddata_op(NDDataObject.multiply, operand, self._mapping)
         return self
 
-    def __idiv__(self, operand):
+    def __itruediv__(self, operand):
         self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
         return self
 
-    __itruediv__ = __idiv__
-
-    def __rdiv__(self, operand):
+    def __rtruediv__(self, operand):
         self._provider._oper(self._provider._rdiv, operand, self._mapping)
         return self
 
@@ -598,8 +598,11 @@ class FitsProviderProxy(DataProvider):
     def info(self, tags):
         self._provider.info(tags, indices=self._mapping)
 
+
 class FitsProvider(DataProvider):
+
     default_extension = 'SCI'
+
     def __init__(self):
         # We're overloading __setattr__. This is safer than setting the
         # attributes the normal way.
@@ -741,13 +744,11 @@ class FitsProvider(DataProvider):
         self._standard_nddata_op(NDDataObject.multiply, operand)
         return self
 
-    def __idiv__(self, operand):
+    def __itruediv__(self, operand):
         self._standard_nddata_op(NDDataObject.divide, operand)
         return self
 
-    __itruediv__ = __idiv__
-
-    def __rdiv__(self, operand):
+    def __rtruediv__(self, operand):
         self._oper(self._rdiv, operand)
         return self
 

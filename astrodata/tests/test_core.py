@@ -1,11 +1,13 @@
-import numpy as np
 import operator
+from copy import deepcopy
+
+import numpy as np
 import pytest
-from astropy.io import fits
-from astropy.nddata import NDData, VarianceUncertainty
 from numpy.testing import assert_array_equal
 
 import astrodata
+from astropy.io import fits
+from astropy.nddata import NDData, VarianceUncertainty
 
 SHAPE = (4, 5)
 
@@ -92,7 +94,7 @@ def test_attributes(ad1):
     (operator.mul, 2, 2),
     (operator.truediv, 0.5, 2)
 ])
-def test_can_add_two_astrodata_objects(op, res, res2, ad1, ad2):
+def test_arithmetic(op, res, res2, ad1, ad2):
     for data in (ad2, ad2.data):
         result = op(ad1, data)
         assert_array_equal(result.data, res)
@@ -103,6 +105,48 @@ def test_can_add_two_astrodata_objects(op, res, res2, ad1, ad2):
 
         result = op(data, ad1)
         assert_array_equal(result.data, res2)
+
+    for data in (ad2[0], ad2[0].data):
+        result = op(ad1[0], data)
+        assert_array_equal(result.data, res)
+        assert isinstance(result, astrodata.AstroData)
+        assert len(result) == 1
+        assert isinstance(result[0].data, np.ndarray)
+        assert isinstance(result[0].hdr, fits.Header)
+
+    # FIXME: should work also with ad2[0].data, but crashes
+    result = op(ad2[0], ad1[0])
+    assert_array_equal(result.data, res2)
+
+
+@pytest.mark.parametrize('op, res, res2', [
+    (operator.iadd, 3, 3),
+    (operator.isub, -1, 1),
+    (operator.imul, 2, 2),
+    (operator.itruediv, 0.5, 2)
+])
+def test_arithmetic_inplace(op, res, res2, ad1, ad2):
+    for data in (ad2, ad2.data):
+        ad = deepcopy(ad1)
+        op(ad, data)
+        assert_array_equal(ad.data, res)
+        assert isinstance(ad, astrodata.AstroData)
+        assert len(ad) == 1
+        assert isinstance(ad[0].data, np.ndarray)
+        assert isinstance(ad[0].hdr, fits.Header)
+
+    # data2 = deepcopy(ad2[0])
+    # op(data2, ad1)
+    # assert_array_equal(data2, res2)
+
+    for data in (ad2[0], ad2[0].data):
+        ad = deepcopy(ad1)
+        op(ad[0], data)
+        assert_array_equal(ad.data, res)
+        assert isinstance(ad, astrodata.AstroData)
+        assert len(ad) == 1
+        assert isinstance(ad[0].data, np.ndarray)
+        assert isinstance(ad[0].hdr, fits.Header)
 
 
 @pytest.mark.parametrize('op, arg, res', [('add', 100, 101),
