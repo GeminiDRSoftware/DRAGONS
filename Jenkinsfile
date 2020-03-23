@@ -19,7 +19,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('H * * * *')  // Polls Source Code Manager every hour
+        pollSCM('H/6 * * * *')  // Polls Source Code Manager every six hours
     }
 
     options {

@@ -23,7 +23,7 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
     path : str
         By default the file is stored at the root of the cache directory, but
         using ``path`` allows to specify a sub-directory.
-    env_var: strs
+    env_var: str
         Environment variable containing the path to the cache directory.
 
     Returns
@@ -235,8 +235,43 @@ def new_path_to_inputs(request, path_to_test_data):
     return path
 
 
+@pytest.fixture(scope='module')
+def new_path_to_refs(request, path_to_test_data):
+    """
+    PyTest fixture that returns the path to where the reference files for a
+    given test module live.
+
+    Parameters
+    ----------
+    request : fixture
+        PyTest's built-in fixture with information about the test itself.
+
+    path_to_test_data : pytest.fixture
+        Custom astrodata fixture that returs the root path to where input and
+        reference files should live.
+
+    Returns
+    -------
+    str:
+        Path to the reference files.
+    """
+    module_path = request.module.__name__.split('.') + ["refs"]
+    module_path = [item for item in module_path if item not in "tests"]
+    path = os.path.join(path_to_test_data, *module_path)
+
+    if not os.path.exists(path):
+        pytest.fail('\n Path to reference test data does not exist: '
+                    '\n   {:s}'.format(path))
+
+    if not os.access(path, os.W_OK):
+        pytest.fail('\n Path to reference test data exists but is not accessible: '
+                    '\n    {:s}'.format(path))
+
+    return path
+
+
 @pytest.fixture(scope='session')
-def path_to_test_data():
+def path_to_test_data(env_var='DRAGONS_TEST'):
     """
     PyTest fixture that reads the environment variable $DRAGONS_TEST that
     should contain data that will be used inside tests.
@@ -249,7 +284,7 @@ def path_to_test_data():
     -------
     str : path to the reference data
     """
-    path = os.getenv('DRAGONS_TEST')
+    path = os.getenv(env_var)
 
     if path is None:
         pytest.skip('Environment variable not set: $DRAGONS_TEST')

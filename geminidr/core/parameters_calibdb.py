@@ -90,8 +90,11 @@ class storeCalibrationConfig(config.Config):
                  "processed_dark": "processed DARK",
                  "processed_flat": "processed FLAT",
                  "processed_fringe": "processed fringe",
-                 "processed_standard": "processed standard",
-                 "bpm": "bad pixel mask"
+                 "bpm": "bad pixel mask",
+                 "sq": "science quality",
+                 "qa": "QA",
+                 "ql": "quick look",
+                 "processed_standard": "processed standard"
                  },
         optional=False
     )
@@ -125,6 +128,9 @@ class storeProcessedFlatConfig(config.Config):
 
 class storeProcessedFringeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_fringe", optional=True)
+
+class storeScienceConfig(config.Config):
+    pass
 
 class storeProcessedStandardConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_standard", optional=True)
