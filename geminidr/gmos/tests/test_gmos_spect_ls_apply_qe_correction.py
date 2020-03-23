@@ -34,8 +34,14 @@ datasets = {
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-def test_applied_qe_is_locally_continuous(gap_local):
-    assert gap_local.is_continuous()
+def test_applied_qe_is_locally_continuous_at_left_gap(gap_local):
+    assert gap_local.is_continuous_left_gap()
+
+
+@pytest.mark.gmosls
+@pytest.mark.dragons_remote_data
+def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
+    assert gap_local.is_continuous_right_gap()
 
 
 @pytest.mark.gmosls
@@ -94,8 +100,10 @@ def cache_path(new_path_to_inputs):
 
 
 @pytest.fixture(scope='module')
-def gap_local(processed_ad):
-    gap = LocalGapSizeWithPolynomial(processed_ad)
+def gap_local(processed_ad, output_path):
+    # Save plots in output folder
+    with output_path():
+        gap = LocalGapSizeWithPolynomial(processed_ad)
     return gap
 
 
@@ -419,13 +427,16 @@ class LocalGapSize(abc.ABC):
         self.axs[0].set_xlim(w.min(), w.max())
         self.axs[0].set_ylim(-0.05, 1.05)
         self.fig.tight_layout(h_pad=0.0)
-        plt.show()
+        self.fig.savefig("{:s}.png".format(self.plot_name))
 
     @abc.abstractmethod
     def fit(self, x_seg, y_seg):
         pass
 
-    def is_continuous(self):
+    def is_continuous_left_gap(self):
+        return True
+
+    def is_continuous_right_gap(self):
         return True
 
     def measure_gaps(self, _models):
