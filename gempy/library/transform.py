@@ -615,7 +615,7 @@ class Transform(object):
             return np.logical_and.reduce([Transform.__model_is_affine(m)
                                           for m in model])
         except TypeError:
-            return model.__class__.__name__[:5] in ('Rotat', 'Scale',
+            return model.__class__.__name__[:5] in ('Affin', 'Rotat', 'Scale',
                                                     'Shift', 'Ident')
 
     def __is_affine(self):
