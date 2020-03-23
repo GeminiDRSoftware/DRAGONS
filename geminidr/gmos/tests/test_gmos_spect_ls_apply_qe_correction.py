@@ -15,6 +15,7 @@ import gemini_instruments
 
 from astropy import modeling
 from astropy.utils.data import download_file
+from astropy.stats import sigma_clip
 from contextlib import contextmanager
 from geminidr.gmos import primitives_gmos_longslit
 from gempy.adlibrary import dataselect
@@ -33,8 +34,8 @@ datasets = {
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-def test_applied_qe_is_locally_continuous(processed_ad):
-    print(processed_ad)
+def test_applied_qe_is_locally_continuous(gap_local):
+    assert gap_local.is_continuous()
 
 
 @pytest.mark.gmosls
@@ -90,6 +91,12 @@ def cache_path(new_path_to_inputs):
         return local_path
 
     return _cache_path
+
+
+@pytest.fixture(scope='module')
+def gap_local(processed_ad):
+    gap = LocalGapSizeWithPolynomial(processed_ad)
+    return gap
 
 
 def get_associated_calibrations(data_label):
@@ -177,7 +184,9 @@ def processed_ad(
     master_arc = reduce_arc(
         ad.data_label(), dataselect.select_data(cals, tags=['ARC']))
 
-    return reduce_data(ad, master_arc, master_bias, master_flat)
+    processed_data = reduce_data(ad, master_arc, master_bias, master_flat)
+
+    return processed_data[0]
 
 
 @pytest.fixture(scope='module')
@@ -351,12 +360,13 @@ class LocalGapSize(abc.ABC):
     Abstract class used to evaluate the measure the gap size locally.
     """
     def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
-                 sigma_lower=1.5, sigma_upper=3):
+                 order=5, sigma_lower=1.5, sigma_upper=3):
 
         self.ad = ad
         self.bad_cols = bad_cols
         self.fit_family = fit_family
         self.median_filter_size = med_filt_size
+        self.order = order
         self.sigma_lower = sigma_lower
         self.sigma_upper = sigma_upper
         self.w_solution = WSolution(ad)
@@ -411,6 +421,13 @@ class LocalGapSize(abc.ABC):
         self.fig.tight_layout(h_pad=0.0)
         plt.show()
 
+    @abc.abstractmethod
+    def fit(self, x_seg, y_seg):
+        pass
+
+    def is_continuous(self):
+        return True
+
     def measure_gaps(self, _models):
 
         if _models is None:
@@ -460,10 +477,6 @@ class LocalGapSize(abc.ABC):
                  " |y_left-y_right|={:.4f} ")
 
             print(s.format(i + 1, w_center, y_left, y_right, dy))
-
-    @abc.abstractmethod
-    def fit(self, x_seg, y_seg):
-        pass
 
     @staticmethod
     def normalize_data(y, v):
@@ -569,6 +582,57 @@ class LocalGapSize(abc.ABC):
         return x_seg, y_seg, cuts
 
 
+class LocalGapSizeWithPolynomial(LocalGapSize):
+
+    def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
+                 sigma_lower=1.5, sigma_upper=3):
+
+        super(LocalGapSizeWithPolynomial, self).__init__(
+            ad,
+            bad_cols=bad_cols,
+            fit_family='Pol.',
+            med_filt_size=med_filt_size,
+            order=order,
+            sigma_lower=sigma_lower,
+            sigma_upper=sigma_upper)
+
+    def fit(self, x_seg, y_seg):
+
+        fit = modeling.fitting.LinearLSQFitter()
+        self.fit_family = "Pol."
+
+        or_fit = modeling.fitting.FittingWithOutlierRemoval(
+            fit, sigma_clip, niter=3,
+            sigma_lower=self.sigma_lower, sigma_upper=self.sigma_upper)
+
+        poly_init = modeling.models.Polynomial1D(degree=self.order)
+
+        polynomials = []
+        for i, (xx, yy) in enumerate(zip(x_seg, y_seg)):
+
+            xx = xx[self.bad_cols:-self.bad_cols]
+            yy = yy[self.bad_cols:-self.bad_cols]
+
+            ww = self.w_solution(xx)
+            ww = np.ma.masked_array(ww)
+            ww.mask = np.logical_or(ww.mask, ww < 375)
+            ww.mask = np.logical_or(ww.mask, ww > 1075)
+
+            yy.mask = np.logical_or(yy.mask, ww.mask)
+            yy.mask = np.logical_or(yy.mask, ww.mask)
+
+            pp, rej_mask = or_fit(poly_init, xx, yy)
+            ww.mask = np.logical_or(ww.mask, rej_mask)
+
+            for ax in self.axs:
+                ax.plot(ww.data, pp(xx.data), '-C{}'.format(i), alpha=0.2)
+                ax.plot(ww, pp(xx), '-C{}'.format(i))
+
+            polynomials.append(pp)
+
+        return polynomials
+
+
 class WSolution:
     """
     Wavelength solution parser from an AstroData object.
@@ -590,9 +654,9 @@ class WSolution:
 
     def __init__(self, ad):
         self.model = modeling.models.Linear1D(
-            slope=ad[0].hdr.get('CDELT1'),
+            slope=ad[0].hdr['CDELT1'],
             intercept=ad[0].hdr['CRVAL1'] - 1 * ad[0].hdr['CDELT1'])
-        self.units = ad[0].hdr.get('CUNIT1')
+        self.units = ad[0].hdr['CUNIT1']
         self.mask = None
 
     def __call__(self, x):
