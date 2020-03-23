@@ -103,7 +103,7 @@ def cache_path(new_path_to_inputs):
 def gap_local(processed_ad, output_path):
     # Save plots in output folder
     with output_path():
-        gap = LocalGapSizeWithPolynomial(processed_ad)
+        gap = MeasureGapSizeLocallyWithPolynomial(processed_ad)
     return gap
 
 
@@ -331,7 +331,113 @@ def reduce_flat(output_path):
     return _reduce_flat
 
 
-# -- Classes for analysis -----------------------------------------------------
+# -- Classes and functions for analysis ---------------------------------------
+def normalize_data(y, v):
+    """
+    Normalize data for analysis.
+
+    Parameters
+    ----------
+    y : np.ma.MaskedArray
+        Values as a masked array.
+    v : np.ma.MaskedArray
+        Variance as a masked array.
+
+    Returns
+    -------
+    _y : np.ma.MaskedArray
+        Normalized values as a masked array.
+    _v : np.ma.MaskedArray
+        Normalized variance as a masked array.
+    """
+    assert np.ma.is_masked(y)
+    _y = (y - np.min(y)) / np.ptp(y)
+    _v = (v - np.min(v)) / np.ptp(y)
+    return _y, _v
+
+
+def smooth_data(y, median_filter_size):
+    """
+    Smooth input masked data using median and gaussian filters.
+
+    Parameters
+    ----------
+    y : np.ma.MaskedArray
+        Input masked 1D array.
+    median_filter_size : int
+        Size of the median filter.
+
+    Returns
+    -------
+    np.ma.MaskedArray : smoothed 1D masked array.
+    """
+    assert np.ma.is_masked(y)
+    m = y.mask
+    y = ndimage.median_filter(y, size=median_filter_size)
+    y = ndimage.gaussian_filter1d(y, sigma=5)
+    y = np.ma.masked_array(y, mask=m)
+    return y
+
+
+def split_arrays_using_mask(x, y, mask, bad_cols):
+    """
+    Split x and y into segments based on masked pixels in x.
+
+    Parameters
+    ----------
+    x : np.array
+        Masked array
+    y : np.array
+        Array that will be masked to follow x.
+    mask : np.array
+        Array that contains the mask used to split x and y.
+    bad_cols : int
+        Number of bad columns that will be ignored around the gaps.
+
+    Returns
+    -------
+    x_seg : list
+        List of np.arrays with the segments obtained from x.
+    y_seg : list
+        List of np.arrays with the segments obtained from y.
+    cuts : list
+        1D list containing the beginning and the end pixels for each gap.
+    """
+    m = ~ndimage.morphology.binary_opening(mask, iterations=10)
+
+    d = np.diff(m)
+    cuts = np.flatnonzero(d) + 1
+
+    if len(cuts) != 4:
+        print(cuts)
+        print(np.diff(cuts))
+        raise ValueError(
+            "Expected four coordinates in `cuts` variable. "
+            "Found {}".format(len(cuts)))
+
+    # Broadening gap
+    for i in range(cuts.size // 2):
+        cuts[2 * i] -= bad_cols
+        cuts[2 * i + 1] += bad_cols
+
+    xsplit = np.split(x, cuts)
+    ysplit = np.split(y, cuts)
+    msplit = np.split(m, cuts)
+
+    x_seg = [xseg for xseg, mseg in zip(xsplit, msplit) if np.all(mseg)]
+    y_seg = [yseg for yseg, mseg in zip(ysplit, msplit) if np.all(mseg)]
+
+    if len(x_seg) != 3:
+        raise ValueError(
+            "Expected three segments for X. Found {}".format(len(x_seg)))
+
+    if len(y_seg) != 3:
+        raise ValueError(
+            "Expected three segments for Y. Found {}".format(len(y_seg)))
+
+    return x_seg, y_seg, cuts
+
+
 class Gap:
     """
     Higher lever interface for gaps.
@@ -363,9 +469,26 @@ class Gap:
         self.size = abs(self.left - self.right)
 
 
-class LocalGapSize(abc.ABC):
+class MeasureGapSizeLocally(abc.ABC):
     """
     Abstract class used to evaluate the measure the gap size locally.
+
+    Parameters
+    ----------
+    ad : astrodata.AstroData
+        Input qe corrected spectrum with wavelength solution.
+    bad_cols : int
+        Number of bad columns around the gaps.
+    fit_family : str
+        Short name of the fit method to be used in plots and labels.
+    med_filt_size : int
+        Median filter size.
+    order : int
+        Order of the polynomial/chebyshev/spline fit (depends on sub-class).
+    sigma_lower : float
+        Lower sigma limit for sigma clipping.
+    sigma_upper : float
+        Upper sigma limit for sigma clipping.
     """
     def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
                  order=5, sigma_lower=1.5, sigma_upper=3):
@@ -397,15 +520,16 @@ class LocalGapSize(abc.ABC):
         w = np.ma.masked_outside(w, 375, 1075)
 
         y = np.ma.masked_array(y, mask=m)
-        y = self.smooth_data(y)
-        y, v = self.normalize_data(y, v)
+        y = smooth_data(y, self.median_filter_size)
+        y, v = normalize_data(y, v)
 
         for ax in self.axs:
             ax.fill_between(w, 0, y, fc='k', alpha=0.1)
             ax.grid(c='k', alpha=0.1)
 
         split_mask = ad[0].mask >= 16
-        x_seg, y_seg, cuts = self.split_arrays_using_mask(x, y, split_mask)
+        x_seg, y_seg, cuts = \
+            split_arrays_using_mask(x, y, split_mask, self.bad_cols)
 
         self.plot_segmented_data(x_seg, y_seg)
 
@@ -497,13 +621,6 @@ class LocalGapSize(abc.ABC):
         print(s.format(i + 1, w_center, y_left, y_right, dy))
         return dy
 
-    @staticmethod
-    def normalize_data(y, v):
-        assert np.ma.is_masked(y)
-        _y = (y - np.min(y)) / np.ptp(y)
-        _v = (v - np.min(v)) / np.ptp(y)
-        return _y, _v
-
     def plot_segmented_data(self, xs, ys):
 
         for i, (xx, yy) in enumerate(zip(xs, ys)):
@@ -536,77 +653,13 @@ class LocalGapSize(abc.ABC):
 
         return fig, axs
 
-    def smooth_data(self, y):
-        assert np.ma.is_masked(y)
-        m = y.mask
-        y = ndimage.median_filter(y, size=self.median_filter_size)
-        y = ndimage.gaussian_filter1d(y, sigma=5)
-        y = np.ma.masked_array(y, mask=m)
-        return y
 
-    def split_arrays_using_mask(self, x, y, mask):
-        """
-        Split x and y into segments based on masked pixels in x.
-
-        Parameters
-        ----------
-        x : np.array
-            Masked array
-        y : np.array
-            Array that will be masked to follow x.
-        mask : np.array
-            Array that contains the mask used to split x and y.
-
-        Returns
-        -------
-        x_seg : list
-            List of np.arrays with the segments obtained from x.
-        y_seg : list
-            List of np.arrays with the segments obtained from y.
-        cuts : list
-            1D list containing the beginning and the end pixels for each gap.
-        """
-        m = ~ndimage.morphology.binary_opening(mask, iterations=10)
-
-        d = np.diff(m)
-        cuts = np.flatnonzero(d) + 1
-
-        if len(cuts) != 4:
-            print(cuts)
-            print(np.diff(cuts))
-            raise ValueError(
-                "Expected four coordinates in `cuts` variable. "
-                "Found {}".format(len(cuts)))
-
-        # Broadening gap
-        for i in range(cuts.size // 2):
-            cuts[2 * i] -= self.bad_cols
-            cuts[2 * i + 1] += self.bad_cols
-
-        xsplit = np.split(x, cuts)
-        ysplit = np.split(y, cuts)
-        msplit = np.split(m, cuts)
-
-        x_seg = [xseg for xseg, mseg in zip(xsplit, msplit) if np.all(mseg)]
-        y_seg = [yseg for yseg, mseg in zip(ysplit, msplit) if np.all(mseg)]
-
-        if len(x_seg) != 3:
-            raise ValueError(
-                "Expected three segments for X. Found {}".format(len(x_seg)))
-
-        if len(y_seg) != 3:
-            raise ValueError(
-                "Expected three segments for Y. Found {}".format(len(y_seg)))
-
-        return x_seg, y_seg, cuts
-
-
-class LocalGapSizeWithPolynomial(LocalGapSize):
+class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
 
     def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
                  sigma_lower=1.5, sigma_upper=3):
 
-        super(LocalGapSizeWithPolynomial, self).__init__(
+        super(MeasureGapSizeLocallyWithPolynomial, self).__init__(
             ad,
             bad_cols=bad_cols,
             fit_family='Pol.',
@@ -650,6 +703,34 @@ class LocalGapSizeWithPolynomial(LocalGapSize):
             polynomials.append(pp)
 
         return polynomials
+
+
+class MeasureGapSizeGlobally(abc.ABC):
+    """
+    Base class used to measure gap size globally.
+    """
+    def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
+                 order=5, sigma_lower=1.5, sigma_upper=3):
+
+        self.ad = ad
+        self.bad_cols = bad_cols
+        self.fit_family = fit_family
+        self.median_filter_size = med_filt_size
+        self.order = order
+        self.sigma_lower = sigma_lower
+        self.sigma_upper = sigma_upper
+
+        self.w_solution = WSolution(ad)
+
+        self.plot_name = 'bridge_fit_{}_{}'.format(
+            self.fit_family.lower().replace('.', ''),
+            ad.observation_id())
+
+        self.plot_title = (
+            "QE Corrected Spectra: "
+            "{:s} Bridge fit\n {:s}".format(
+                self.fit_family,
+                ad.observation_id()))
 
 
 class WSolution:
