@@ -417,8 +417,10 @@ class LocalGapSize(abc.ABC):
                      for i in range(cuts.size // 2)]
 
         fits = self.fit(x_seg, y_seg)
+        self.models = fits
 
-        self.measure_gaps(fits)
+        self.is_continuous_left_gap()
+        self.is_continuous_right_gap()
 
         for ax in self.axs:
             ax.set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
@@ -434,60 +436,66 @@ class LocalGapSize(abc.ABC):
         pass
 
     def is_continuous_left_gap(self):
-        return True
+        gap_size = self.measure_gaps(0)
+        return abs(gap_size < 0.05)
 
     def is_continuous_right_gap(self):
-        return True
+        gap_size = self.measure_gaps(1)
+        return abs(gap_size < 0.05)
 
-    def measure_gaps(self, _models):
+    def measure_gaps(self, gap_index):
 
-        if _models is None:
+        if self.models is None:
             return
 
+        i = gap_index
+        gap = self.gaps[gap_index]
+
         print('\n Measuring the gaps: ')
-        for i, gap in enumerate(self.gaps):
+        m_left = self.models[i]
+        m_right = self.models[i + 1]
 
-            m_left = _models[i]
-            m_right = _models[i + 1]
+        w_center = self.w_solution(gap.center)
+        w_left = self.w_solution(gap.left - gap.size)
+        w_right = self.w_solution(gap.right + gap.size)
 
-            w_center = self.w_solution(gap.center)
-            w_left = self.w_solution(gap.left - gap.size)
-            w_right = self.w_solution(gap.right + gap.size)
+        y_left = m_left(gap.center)
+        y_right = m_right(gap.center)
+        y_center = 0.5 * (y_left + y_right)
 
-            y_left = m_left(gap.center)
-            y_right = m_right(gap.center)
-            y_center = 0.5 * (y_left + y_right)
+        x_left = np.arange(gap.left - gap.size, gap.right)
+        x_right = np.arange(gap.left, gap.right + gap.size)
 
-            x_left = np.arange(gap.left - gap.size, gap.right)
-            x_right = np.arange(gap.left, gap.right + gap.size)
+        self.axs[i + 1].set_xlim(w_left, w_right)
 
-            self.axs[i + 1].set_xlim(w_left, w_right)
+        self.axs[i + 1].set_ylim(
+            max(0, y_center - 0.15),
+            min(1.05, y_center + 0.15))
 
-            self.axs[i + 1].set_ylim(
-                max(0, y_center - 0.15),
-                min(1.05, y_center + 0.15))
+        self.axs[i + 1].plot(
+            self.w_solution(x_right), m_left(x_right), ':C{}'.format(i))
 
-            self.axs[i + 1].plot(
-                self.w_solution(x_right), m_left(x_right), ':C{}'.format(i))
-            self.axs[i + 1].plot(
-                self.w_solution(x_left), m_right(x_left), ':C{}'.format(i + 1))
+        self.axs[i + 1].plot(
+            self.w_solution(x_left), m_right(x_left), ':C{}'.format(i + 1))
 
-            self.axs[i + 1].scatter(
-                w_center, y_left, marker='o', c='C{}'.format(i), alpha=0.5)
-            self.axs[i + 1].scatter(
-                w_center, y_right, marker='o', c='C{}'.format(i + 1), alpha=0.5)
+        self.axs[i + 1].scatter(
+            w_center, y_left, marker='o', c='C{}'.format(i), alpha=0.5)
 
-            for ax in self.axs:
-                ax.axvline(w_center, c='C3', lw=0.5)
+        self.axs[i + 1].scatter(
+            w_center, y_right, marker='o', c='C{}'.format(i + 1), alpha=0.5)
 
-            dy = y_left - y_right
+        for ax in self.axs:
+            ax.axvline(w_center, c='C3', lw=0.5)
 
-            s = ("\n"
-                 " gap {:1d}\n"
-                 " w={:.2f} y_left={:.2f} y_right={:.2f}"
-                 " |y_left-y_right|={:.4f} ")
+        dy = y_left - y_right
 
-            print(s.format(i + 1, w_center, y_left, y_right, dy))
+        s = ("\n"
+             " gap {:1d}\n"
+             " w={:.2f} y_left={:.2f} y_right={:.2f}"
+             " |y_left-y_right|={:.4f} ")
+
+        print(s.format(i + 1, w_center, y_left, y_right, dy))
+        return dy
 
     @staticmethod
     def normalize_data(y, v):
