@@ -19,6 +19,7 @@ from astropy.stats import sigma_clip
 from contextlib import contextmanager
 from geminidr.gmos import primitives_gmos_longslit
 from gempy.adlibrary import dataselect
+from gempy.library import astromodels
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
@@ -46,8 +47,8 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
 
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-def test_applied_qe_is_globally_continuous():
-    pass
+def test_applied_qe_is_globally_continuous(gap_global):
+    assert gap_global.is_continuous()
 
 
 @pytest.mark.gmosls
@@ -104,6 +105,14 @@ def gap_local(processed_ad, output_path):
     # Save plots in output folder
     with output_path():
         gap = MeasureGapSizeLocallyWithPolynomial(processed_ad)
+    return gap
+
+
+@pytest.fixture(scope='module')
+def gap_global(processed_ad, output_path):
+    # Save plots in output folder
+    with output_path():
+        gap = MeasureGapSizeGloballyWithSpline(processed_ad)
     return gap
 
 
@@ -708,6 +717,23 @@ class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
 class MeasureGapSizeGlobally(abc.ABC):
     """
     Base class used to measure gap size globally.
+
+    Parameters
+    ----------
+    ad : astrodata.AstroData
+        Input qe corrected spectrum with wavelength solution.
+    bad_cols : int
+        Number of bad columns around the gaps.
+    fit_family : str
+        Short name of the fit method to be used in plots and labels.
+    med_filt_size : int
+        Median filter size.
+    order : int
+        Order of the polynomial/chebyshev/spline fit (depends on sub-class).
+    sigma_lower : float
+        Lower sigma limit for sigma clipping.
+    sigma_upper : float
+        Upper sigma limit for sigma clipping.
     """
     def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
                  order=5, sigma_lower=1.5, sigma_upper=3):
@@ -731,6 +757,137 @@ class MeasureGapSizeGlobally(abc.ABC):
             "{:s} Bridge fit\n {:s}".format(
                 self.fit_family,
                 ad.observation_id()))
+
+        self.fig, self.axs = self.reset_plots()
+
+        m = ad[0].mask > 0
+        y = ad[0].data
+        v = ad[0].variance  # Never used for anything. But...
+        x = np.arange(y.size)
+
+        w = self.w_solution(x)
+        w = np.ma.masked_outside(w, 375, 1075)
+
+        y = np.ma.masked_array(y, mask=m)
+        y = smooth_data(y, self.median_filter_size)
+        y, v = normalize_data(y, v)
+
+        self.axs[0].fill_between(w, 0, y, fc='k', alpha=0.1)
+
+        split_mask = ad[0].mask >= 16
+        x_seg, y_seg, cuts = split_arrays_using_mask(x, y, split_mask, self.bad_cols)
+
+        self.plot_segmented_data(x_seg, y_seg)
+
+        self.x = x
+        self.y = y
+        self.w = w
+
+        self.gaps = [Gap(cuts[2 * i], cuts[2 * i + 1], bad_cols)
+                     for i in range(cuts.size // 2)]
+
+        self.model = self.fit(x_seg, y_seg)
+
+        self.axs[0].grid(c='k', alpha=0.1)
+        self.axs[0].set_xlim(w.min(), w.max())
+        self.axs[0].set_ylim(-0.05, 1.05)
+        self.axs[0].set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
+        self.axs[0].set_title(self.plot_title)
+
+        self.axs[1].grid(c='k', alpha=0.1)
+        self.axs[1].set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
+
+        self.fig.tight_layout(h_pad=0.0)
+        self.fig.savefig("{:s}.png".format(self.plot_name))
+
+    @abc.abstractmethod
+    def fit(self, x_seg, y_seg):
+        pass
+
+    def is_continuous(self):
+        return True
+
+    def plot_segmented_data(self, xs, ys):
+
+        for i, (xx, yy) in enumerate(zip(xs, ys)):
+            ww = self.w_solution(xx)
+            yy.mask = np.logical_or(yy.mask, ww < 375)
+            yy.mask = np.logical_or(yy.mask, ww > 1075)
+
+            c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
+
+            self.axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
+
+    def reset_plots(self):
+        plt.close(self.plot_name)
+
+        fig, axs = plt.subplots(
+            constrained_layout=True,
+            dpi=DPI,
+            figsize=(6, 6),
+            nrows=2,
+            num=self.plot_name,
+            sharex='all',
+        )
+
+        return fig, axs
+
+
+class MeasureGapSizeGloballyWithSpline(MeasureGapSizeGlobally):
+
+    def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
+                 sigma_lower=1.5, sigma_upper=3):
+        super(MeasureGapSizeGloballyWithSpline, self).__init__(
+            ad,
+            bad_cols=bad_cols,
+            fit_family='Spl.',
+            med_filt_size=med_filt_size,
+            order=order,
+            sigma_lower=sigma_lower,
+            sigma_upper=sigma_upper)
+
+    def fit(self, x_seg, y_seg):
+        x_out = np.hstack((
+            x_seg[0][self.bad_cols:-self.bad_cols],
+            x_seg[2][self.bad_cols:-self.bad_cols]))
+
+        y_out = np.hstack((
+            y_seg[0][self.bad_cols:-self.bad_cols],
+            y_seg[2][self.bad_cols:-self.bad_cols]))
+
+        w_out = self.w_solution(x_out)
+        w_out = np.ma.masked_array(w_out)
+        w_out.mask = np.logical_or(w_out.mask, w_out < 375)
+        w_out.mask = np.logical_or(w_out.mask, w_out > 1075)
+
+        y_out.mask = np.logical_or(y_out.mask, w_out.mask)
+
+        s_out = astromodels.UnivariateSplineWithOutlierRemoval(
+            x_out, y_out, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
+            order=self.order)
+
+        w_out.mask = np.logical_or(w_out.mask, s_out.mask)
+
+        x_in = x_seg[1][self.bad_cols:-self.bad_cols]
+        y_in = y_seg[1][self.bad_cols:-self.bad_cols]
+        w_in = self.w_solution(x_in)
+
+        s_in = astromodels.UnivariateSplineWithOutlierRemoval(
+            x_in, y_in, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
+            order=self.order)
+
+        w_in.mask = np.logical_or(w_in.mask, s_in.mask)
+
+        self.axs[0].plot(w_out.data, s_out(x_out.data), 'C3', alpha=0.2)
+        self.axs[0].plot(w_out, s_out(x_out), 'C3')
+        self.axs[1].plot(w_in, y_in - s_out(x_in), 'C3')
+
+        self.axs[0].plot(w_in.data, s_in(x_in.data), 'C1', alpha=0.2)
+        self.axs[0].plot(w_in, s_in(x_in), 'C1')
+        self.axs[1].plot(self.w, s_in(self.x) - s_out(self.x), 'C1')
+
+        self.axs[1].set_ylim(-0.10, 0.10)
+        self.axs[1].axhspan(-0.05, 0.05, fc='k', alpha=0.1)
 
 
 class WSolution:
