@@ -73,6 +73,10 @@ class getProcessedFringeConfig(config.Config):
     refresh = config.Field("Refresh existing calibration associations?", bool, True)
 
 
+class getProcessedStandardConfig(config.Config):
+    refresh = config.Field("Refresh existing calibration associations?", bool, True)
+
+
 class getMDFConfig(config.Config):
     pass
 
