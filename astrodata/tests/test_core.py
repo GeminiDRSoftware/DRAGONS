@@ -8,6 +8,7 @@ from numpy.testing import assert_array_equal
 import astrodata
 from astropy.io import fits
 from astropy.nddata import NDData, VarianceUncertainty
+from astropy.table import Table
 
 SHAPE = (4, 5)
 
@@ -176,13 +177,59 @@ def test_operate():
     ad = astrodata.create({})
     nd = NDData(data=[[1, 2], [3, 4]],
                 uncertainty=VarianceUncertainty(np.ones((2, 2))),
-                mask=np.identity(2), meta={'header': {}})
+                mask=np.identity(2),
+                meta={'header': fits.Header()})
     ad.append(nd)
 
     ad.operate(np.sum, axis=1)
     assert_array_equal(ad[0].data, [3, 7])
     assert_array_equal(ad[0].variance, [2, 2])
     assert_array_equal(ad[0].mask, [1, 1])
+
+
+def test_write_and_read(tmpdir, capsys):
+    ad = astrodata.create({})
+    nd = NDData(data=[[1, 2], [3, 4]],
+                uncertainty=VarianceUncertainty(np.ones((2, 2))),
+                mask=np.identity(2),
+                meta={'header': fits.Header()})
+    ad.append(nd)
+
+    tbl = Table([np.zeros(10), np.ones(10)], names=('a', 'b'))
+    ad.append(tbl, name='BOB')
+
+    tbl = Table([np.zeros(5) + 2, np.zeros(5) + 3], names=('c', 'd'))
+    ad.append(tbl, name='BOB', add_to=nd)
+
+    ad.append(np.arange(10), name='MYVAL_WITH_A_VERY_LONG_NAME', add_to=nd)
+
+    match = "You can only append NDData derived instances at the top level"
+    with pytest.raises(TypeError, match=match):
+        ad.append(NDData(data=np.ones(10), meta={'header': fits.Header()}),
+                  name='MYNDD', add_to=nd)
+
+    testfile = str(tmpdir.join('testfile.fits'))
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
+    ad.info()
+    captured = capsys.readouterr()
+    assert captured.out.splitlines()[3:] == [
+        'Pixels Extensions',
+        'Index  Content                  Type              Dimensions     Format',
+        '[ 0]   science                  NDAstroData       (2, 2)         float64',
+        '          .variance             ADVarianceUncerta (2, 2)         float64',
+        '          .mask                 ndarray           (2, 2)         uint16',
+        '          .BOB                  Table             (5, 2)         n/a',
+        '          .MYVAL_WITH_A_VERY_LO ndarray           (10,)          int64',
+        '',
+        'Other Extensions',
+        '               Type        Dimensions',
+        '.BOB           Table       (10, 2)'
+    ]
+    assert_array_equal(ad[0].nddata.data[0], nd.data[0])
+    assert_array_equal(ad[0].nddata.variance[0], nd.uncertainty.array[0])
+    assert_array_equal(ad[0].nddata.mask[0], nd.mask[0])
 
 
 def test_reset(ad1):

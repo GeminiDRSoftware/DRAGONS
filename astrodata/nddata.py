@@ -152,6 +152,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     """
     def __init__(self, data, uncertainty=None, mask=None, wcs=None,
                  meta=None, unit=None, copy=False, window=None):
+        # FIXME: this attribute seems useless
         self._window = window
 
         super(NDAstroData, self).__init__(FakeArray(data) if is_lazy(data) else data,
@@ -212,6 +213,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         return self._data.shape
 
     def _extract(self, source, scaling, section=None):
+        # FIXME: seems unused
         return scaling(source.data if section is None else source[section])
 
     def _get_uncertainty(self, section=None):

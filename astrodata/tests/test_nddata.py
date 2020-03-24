@@ -1,16 +1,22 @@
 import numpy as np
 import pytest
-from astropy.nddata import NDData, VarianceUncertainty
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
+
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
+from astropy.io import fits
+from astropy.nddata import NDData, VarianceUncertainty
+from astropy.wcs import WCS
 
 
 @pytest.fixture
 def testnd():
     shape = (5, 5)
+    hdr = fits.Header({'CRPIX1': 1, 'CRPIX2': 2})
     nd = NDAstroData(data=np.arange(np.prod(shape)).reshape(shape),
                      uncertainty=ADVarianceUncertainty(np.ones(shape) + 0.5),
-                     mask=np.zeros(shape, dtype=bool), unit='ct')
+                     mask=np.zeros(shape, dtype=bool),
+                     wcs=WCS(header=hdr),
+                     unit='ct')
     nd.mask[3, 4] = True
     return nd
 
@@ -18,6 +24,7 @@ def testnd():
 def test_window(testnd):
     win = testnd.window[2:4, 3:5]
     assert win.unit == 'ct'
+    assert_array_equal(win.wcs.wcs.crpix, [1, 2])
     assert_array_equal(win.data, [[13, 14], [18, 19]])
     assert_array_equal(win.mask, [[False, False], [False, True]])
     assert_array_almost_equal(win.uncertainty.array, 1.5)

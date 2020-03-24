@@ -1027,6 +1027,7 @@ class FitsProvider(DataProvider):
         return FitsHeaderCollection(self._get_raw_headers())
 
     def set_name(self, ext, name):
+        # FIXME: seems useless ?
         self._nddata[ext].meta['name'] = name
 
     def to_hdulist(self):
@@ -1543,21 +1544,25 @@ class FitsLoader(object):
 
         return provider
 
-def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=False, with_mask=False):
+
+def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
+               with_uncertainty=False, with_mask=False):
     def generate_boxes(shape, kernel):
         if len(shape) != len(kernel):
-            raise AssertionError("Incompatible shape ({}) and kernel ({})".format(shape, kernel))
+            raise AssertionError("Incompatible shape ({}) and kernel ({})"
+                                 .format(shape, kernel))
         ticks = [[(x, x+step) for x in range(0, axis, step)]
                  for axis, step in zip(shape, kernel)]
         return cart_product(*ticks)
 
     if shape is None:
         if len(set(x.shape for x in sequence)) > 1:
-            raise ValueError("Can't calculate final shape: sequence elements disagree on shape, and none was provided")
+            raise ValueError("Can't calculate final shape: sequence elements "
+                             "disagree on shape, and none was provided")
         shape = sequence[0].shape
 
     if dtype is None:
-        dtype = sequence[0].window[:1,:1].data.dtype
+        dtype = sequence[0].window[:1, :1].data.dtype
 
     result = NDDataObject(np.empty(shape, dtype=dtype),
                           uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
@@ -1581,6 +1586,7 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None, with_uncertainty=Fa
     astropy.log.setLevel(log_level)  # and reset
 
     return result
+
 
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
