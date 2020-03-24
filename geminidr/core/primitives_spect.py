@@ -1501,7 +1501,7 @@ class Spect(PrimitivesBASE):
                 # Get wavelengths of all pixels
                 ndim = len(ext.shape)
                 dispaxis = 0 if ndim == 1 else 2 - ext.dispersion_axis()
-                wave_unit = u.Unit(ext.hdr['CUNIT{}'.format(ndim - dispaxis)])
+                wave_unit = u.Unit(ext.hdr.get('CUNIT{}'.format(ndim - dispaxis), 'nm'))
 
                 # Get wavelengths and pixel sizes of all the pixels along the
                 # dispersion axis by calculating wavelengths in the middles and
