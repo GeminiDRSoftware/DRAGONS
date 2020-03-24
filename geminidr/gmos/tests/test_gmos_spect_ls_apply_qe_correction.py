@@ -29,7 +29,9 @@ DPI = 90
 URL = 'https://archive.gemini.edu/file/'
 
 datasets = {
-    "N20180721S0444.fits",   # B1200 at 0.44 um
+    "N20180228S0134.fits",  # GN-2018A-Q-121-11 R400 0.57um L-Ok R-Ok G-Ok
+    # "N20180721S0444.fits",   # GN-2018B-Q-313-5 - B1200 at 0.44 um
+    # "N20190707S0032.fits",   # GN-2019A-Q-232-32 -
 }
 
 # -- Tests --------------------------------------------------------------------
@@ -48,6 +50,7 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
 def test_applied_qe_is_globally_continuous(gap_global):
+    print(gap_global.x_out)
     assert gap_global.is_continuous()
 
 
@@ -104,7 +107,7 @@ def cache_path(new_path_to_inputs):
 def gap_local(processed_ad, output_path):
     # Save plots in output folder
     with output_path():
-        gap = MeasureGapSizeLocallyWithPolynomial(processed_ad)
+        gap = MeasureGapSizeLocallyWithPolynomial(processed_ad, order=3, sigma_upper=1.5)
     return gap
 
 
@@ -189,6 +192,7 @@ def processed_ad(
         request, cache_path, reduce_arc, reduce_bias, reduce_data, reduce_flat):
 
     filename = cache_path(request.param)
+
     ad = astrodata.open(filename)
     cals = [cache_path(c) for c in get_associated_calibrations(ad.data_label())]
 
@@ -203,7 +207,7 @@ def processed_ad(
 
     processed_data = reduce_data(ad, master_arc, master_bias, master_flat)
 
-    return processed_data[0]
+    return processed_data.pop()
 
 
 @pytest.fixture(scope='module')
@@ -742,23 +746,12 @@ class MeasureGapSizeGlobally(abc.ABC):
         self.bad_cols = bad_cols
         self.fit_family = fit_family
         self.median_filter_size = med_filt_size
+        self.obs_id = ad.observation_id()
         self.order = order
         self.sigma_lower = sigma_lower
         self.sigma_upper = sigma_upper
 
         self.w_solution = WSolution(ad)
-
-        self.plot_name = 'bridge_fit_{}_{}'.format(
-            self.fit_family.lower().replace('.', ''),
-            ad.observation_id())
-
-        self.plot_title = (
-            "QE Corrected Spectra: "
-            "{:s} Bridge fit\n {:s}".format(
-                self.fit_family,
-                ad.observation_id()))
-
-        self.fig, self.axs = self.reset_plots()
 
         m = ad[0].mask > 0
         y = ad[0].data
@@ -772,81 +765,40 @@ class MeasureGapSizeGlobally(abc.ABC):
         y = smooth_data(y, self.median_filter_size)
         y, v = normalize_data(y, v)
 
-        self.axs[0].fill_between(w, 0, y, fc='k', alpha=0.1)
-
         split_mask = ad[0].mask >= 16
         x_seg, y_seg, cuts = split_arrays_using_mask(x, y, split_mask, self.bad_cols)
-
-        self.plot_segmented_data(x_seg, y_seg)
-
-        self.x = x
-        self.y = y
-        self.w = w
 
         self.gaps = [Gap(cuts[2 * i], cuts[2 * i + 1], bad_cols)
                      for i in range(cuts.size // 2)]
 
-        self.model = self.fit(x_seg, y_seg)
+        x_in, y_in, w_in = self.get_inner_data(x_seg, y_seg)
+        x_out, y_out, w_out = self.get_outer_data(x_seg, y_seg)
+        print(x_out)
 
-        self.axs[0].grid(c='k', alpha=0.1)
-        self.axs[0].set_xlim(w.min(), w.max())
-        self.axs[0].set_ylim(-0.05, 1.05)
-        self.axs[0].set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
-        self.axs[0].set_title(self.plot_title)
+        self.model_in, self.model_out = self.fit(x_in, y_in, x_out, y_out)
 
-        self.axs[1].grid(c='k', alpha=0.1)
-        self.axs[1].set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
+        w_in.mask = np.logical_or(w_in.mask, self.model_in.mask)
+        w_out.mask = np.logical_or(w_out.mask, self.model_out.mask)
 
-        self.fig.tight_layout(h_pad=0.0)
-        self.fig.savefig("{:s}.png".format(self.plot_name))
+        # Saving variables to self to plot
+        self.x, self.y, self.w = x, y, w
+        self.x_seg, self.y_seg, self.cuts = x_seg, y_seg, cuts
+        self.x_in, self.y_in, self.w_in = x_in, y_in, w_in
+        self.x_out, self.y_out, self.w_out = x_out, y_out, w_out
+        self.plot()
 
     @abc.abstractmethod
-    def fit(self, x_seg, y_seg):
+    def fit(self, x_in, y_in, x_out, y_out):
         pass
 
-    def is_continuous(self):
-        return True
+    def get_inner_data(self, x_seg, y_seg):
+        x_in = x_seg[1][self.bad_cols:-self.bad_cols]
+        y_in = y_seg[1][self.bad_cols:-self.bad_cols]
+        w_in = self.w_solution(x_in)
+        return x_in, y_in, w_in
 
-    def plot_segmented_data(self, xs, ys):
+    def get_outer_data(self, x_seg, y_seg):
 
-        for i, (xx, yy) in enumerate(zip(xs, ys)):
-            ww = self.w_solution(xx)
-            yy.mask = np.logical_or(yy.mask, ww < 375)
-            yy.mask = np.logical_or(yy.mask, ww > 1075)
-
-            c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
-
-            self.axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
-
-    def reset_plots(self):
-        plt.close(self.plot_name)
-
-        fig, axs = plt.subplots(
-            constrained_layout=True,
-            dpi=DPI,
-            figsize=(6, 6),
-            nrows=2,
-            num=self.plot_name,
-            sharex='all',
-        )
-
-        return fig, axs
-
-
-class MeasureGapSizeGloballyWithSpline(MeasureGapSizeGlobally):
-
-    def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
-                 sigma_lower=1.5, sigma_upper=3):
-        super(MeasureGapSizeGloballyWithSpline, self).__init__(
-            ad,
-            bad_cols=bad_cols,
-            fit_family='Spl.',
-            med_filt_size=med_filt_size,
-            order=order,
-            sigma_lower=sigma_lower,
-            sigma_upper=sigma_upper)
-
-    def fit(self, x_seg, y_seg):
         x_out = np.hstack((
             x_seg[0][self.bad_cols:-self.bad_cols],
             x_seg[2][self.bad_cols:-self.bad_cols]))
@@ -862,32 +814,84 @@ class MeasureGapSizeGloballyWithSpline(MeasureGapSizeGlobally):
 
         y_out.mask = np.logical_or(y_out.mask, w_out.mask)
 
-        s_out = astromodels.UnivariateSplineWithOutlierRemoval(
-            x_out, y_out, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
-            order=self.order)
+        return x_out, y_out, w_out
 
-        w_out.mask = np.logical_or(w_out.mask, s_out.mask)
+    def is_continuous(self):
+        diff = self.y_in - self.model_out(self.x_in)
+        return np.all(np.logical_and(-0.05 < diff, diff < 0.05))
 
-        x_in = x_seg[1][self.bad_cols:-self.bad_cols]
-        y_in = y_seg[1][self.bad_cols:-self.bad_cols]
-        w_in = self.w_solution(x_in)
+    def plot(self):
+
+        plot_name = 'global_gap_{}_{}'.format(
+            self.fit_family.lower().replace('.', ''), self.obs_id)
+
+        plot_title = "QE Corrected Spectra: {:s} Bridge fit\n {:s}".format(
+            self.fit_family, self.obs_id)
+
+        plt.close(plot_name)
+
+        fig, axs = plt.subplots(
+            constrained_layout=True, dpi=DPI, figsize=(6, 6),
+            gridspec_kw={'height_ratios': [4, 1]}, nrows=2,
+            num=plot_name, sharex='all')
+
+        axs[0].fill_between(self.w, 0, self.y, fc='k', alpha=0.1)
+
+        for i, (xx, yy) in enumerate(zip(self.x_seg, self.y_seg)):
+            ww = self.w_solution(xx)
+            yy.mask = np.logical_or(yy.mask, ww < 375)
+            yy.mask = np.logical_or(yy.mask, ww > 1075)
+
+            c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
+
+            axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
+
+        axs[0].plot(self.w_out.data, self.model_out(self.x_out.data), 'C3', alpha=0.2)
+        axs[0].plot(self.w_out, self.model_out(self.x_out), 'C3')
+        axs[0].plot(self.w_in.data, self.model_in(self.x_in.data), 'C1', alpha=0.2)
+        axs[0].plot(self.w_in, self.model_in(self.x_in), 'C1')
+
+        axs[0].grid(c='k', alpha=0.1)
+        axs[0].set_xlim(self.w.min(), self.w.max())
+        axs[0].set_ylim(-0.05, 1.05)
+        axs[0].set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
+        axs[0].set_title(plot_title)
+
+        axs[1].plot(self.w_in, self.y_in - self.model_out(self.x_in), 'C3')
+        axs[1].axhspan(-0.05, 0.05, fc='k', alpha=0.1)
+
+        axs[1].grid(c='k', alpha=0.1)
+        axs[1].set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
+        axs[1].set_ylim(-0.075, 0.075)
+
+        fig.tight_layout(h_pad=0.0)
+        fig.savefig("{:s}.png".format(plot_name))
+
+
+class MeasureGapSizeGloballyWithSpline(MeasureGapSizeGlobally):
+
+    def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
+                 sigma_lower=1.5, sigma_upper=3):
+        super(MeasureGapSizeGloballyWithSpline, self).__init__(
+            ad,
+            bad_cols=bad_cols,
+            fit_family='Spl.',
+            med_filt_size=med_filt_size,
+            order=order,
+            sigma_lower=sigma_lower,
+            sigma_upper=sigma_upper)
+
+    def fit(self, x_in, y_in, x_out, y_out):
 
         s_in = astromodels.UnivariateSplineWithOutlierRemoval(
             x_in, y_in, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
             order=self.order)
 
-        w_in.mask = np.logical_or(w_in.mask, s_in.mask)
+        s_out = astromodels.UnivariateSplineWithOutlierRemoval(
+            x_out, y_out, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
+            order=self.order)
 
-        self.axs[0].plot(w_out.data, s_out(x_out.data), 'C3', alpha=0.2)
-        self.axs[0].plot(w_out, s_out(x_out), 'C3')
-        self.axs[1].plot(w_in, y_in - s_out(x_in), 'C3')
-
-        self.axs[0].plot(w_in.data, s_in(x_in.data), 'C1', alpha=0.2)
-        self.axs[0].plot(w_in, s_in(x_in), 'C1')
-        self.axs[1].plot(self.w, s_in(self.x) - s_out(self.x), 'C1')
-
-        self.axs[1].set_ylim(-0.10, 0.10)
-        self.axs[1].axhspan(-0.05, 0.05, fc='k', alpha=0.1)
+        return s_in, s_out
 
 
 class WSolution:
