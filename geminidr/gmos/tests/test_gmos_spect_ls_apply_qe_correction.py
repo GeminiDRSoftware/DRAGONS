@@ -29,9 +29,15 @@ DPI = 90
 URL = 'https://archive.gemini.edu/file/'
 
 datasets = {
-    "N20180228S0134.fits",  # GN-2018A-Q-121-11 R400 0.57um L-Ok R-Ok G-Ok
+    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.570um L-Ok R-Ok G-Ok
+    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um L-Ok R-Ok G-Ok
     # "N20180721S0444.fits",   # GN-2018B-Q-313-5 - B1200 at 0.44 um
     # "N20190707S0032.fits",   # GN-2019A-Q-232-32 -
+
+}
+
+gap_local_kw = {
+    "N20180228S0134.fits": {'order': 3, 'sigma_upper': 1.5}
 }
 
 # -- Tests --------------------------------------------------------------------
@@ -105,9 +111,14 @@ def cache_path(new_path_to_inputs):
 
 @pytest.fixture(scope='module')
 def gap_local(processed_ad, output_path):
+
+    basename = processed_ad.filename.replace('_linearized', '')
+    kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
+
     # Save plots in output folder
     with output_path():
-        gap = MeasureGapSizeLocallyWithPolynomial(processed_ad, order=3, sigma_upper=1.5)
+        gap = MeasureGapSizeLocallyWithPolynomial(processed_ad, **kwargs)
+
     return gap
 
 
@@ -535,6 +546,7 @@ class MeasureGapSizeLocally(abc.ABC):
         y = np.ma.masked_array(y, mask=m)
         y = smooth_data(y, self.median_filter_size)
         y, v = normalize_data(y, v)
+        y.mask = np.logical_or(y.mask, y < 0.01)
 
         for ax in self.axs:
             ax.fill_between(w, 0, y, fc='k', alpha=0.1)
@@ -813,6 +825,7 @@ class MeasureGapSizeGlobally(abc.ABC):
         w_out.mask = np.logical_or(w_out.mask, w_out > 1075)
 
         y_out.mask = np.logical_or(y_out.mask, w_out.mask)
+        y_out.mask = np.logical_or(y_out.mask, y_out < 0.01)
 
         return x_out, y_out, w_out
 
