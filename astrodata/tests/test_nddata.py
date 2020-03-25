@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
+from astrodata.fits import windowedOp
 from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 from astropy.io import fits
 from astropy.nddata import NDData, VarianceUncertainty
@@ -29,6 +30,33 @@ def test_window(testnd):
     assert_array_equal(win.mask, [[False, False], [False, True]])
     assert_array_almost_equal(win.uncertainty.array, 1.5)
     assert_array_almost_equal(win.variance, 1.5)
+
+
+def test_windowedOp(testnd):
+
+    def stack(arrays):
+        arrays = [x for x in arrays]
+        data = np.array([arr.data for arr in arrays]).sum(axis=0)
+        unc = np.array([arr.uncertainty.array for arr in arrays]).sum(axis=0)
+        mask = np.array([arr.mask for arr in arrays]).sum(axis=0)
+        return NDAstroData(data=data,
+                           uncertainty=ADVarianceUncertainty(unc),
+                           mask=mask)
+
+    result = windowedOp(stack, [testnd, testnd],
+                        kernel=(3, 3),
+                        with_uncertainty=True,
+                        with_mask=True)
+    assert_array_equal(result.data, testnd.data * 2)
+    assert_array_equal(result.uncertainty.array, testnd.uncertainty.array * 2)
+    assert result.mask[3, 4] == 2
+
+    nd2 = NDAstroData(data=np.zeros((4, 4)))
+    with pytest.raises(ValueError, match=r"Can't calculate final shape.*"):
+        result = windowedOp(stack, [testnd, nd2], kernel=(3, 3))
+
+    with pytest.raises(AssertionError, match=r"Incompatible shape.*"):
+        result = windowedOp(stack, [testnd, testnd], kernel=[3], shape=(5, 5))
 
 
 def test_transpose(testnd):

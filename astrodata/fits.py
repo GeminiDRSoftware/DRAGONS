@@ -1565,11 +1565,13 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
     if dtype is None:
         dtype = sequence[0].window[:1, :1].data.dtype
 
-    result = NDDataObject(np.empty(shape, dtype=dtype),
-                          uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
-                                       if with_uncertainty else None),
-                          mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
-                          meta=sequence[0].meta)
+    result = NDDataObject(
+        np.empty(shape, dtype=dtype),
+        uncertainty=(ADVarianceUncertainty(np.zeros(shape, dtype=dtype))
+                     if with_uncertainty else None),
+        mask=(np.empty(shape, dtype=np.uint16) if with_mask else None),
+        meta=sequence[0].meta
+    )
     # Delete other extensions because we don't know what to do with them
     result.meta['other'] = OrderedDict()
     result.meta['other_header'] = {}
