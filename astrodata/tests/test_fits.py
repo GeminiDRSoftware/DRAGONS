@@ -145,17 +145,60 @@ def test_slice(GMOSN_SPECT):
     assert ext.is_sliced is True
     assert ext.hdr['EXTNAME'] == metadata[0]
     assert ext.hdr['EXTVER'] == metadata[1]
+    assert not ext.is_settable('filename')
+    assert ext.data[0, 0] == 387
+
+    match = "'AstroDataFits' object has no attribute 'FOO'"
+    with pytest.raises(AttributeError, match=match):
+        ext.FOO
+
+    # setting uppercase attr adds to the extension:
+    ext.FOO = 1
+    assert ext.FOO == 1
+    assert ext.exposed == {'FOO'}
+    assert ext.nddata.meta['other']['FOO'] == 1
+    del ext.FOO
+
+    with pytest.raises(AttributeError):
+        del ext.BAR
+
+    match = "Can't append objects to a slice without an extension name"
+    with pytest.raises(TypeError, match=match):
+        ext.append(np.zeros(5))
+
+    # but lowercase just adds a normal attribute to the object
+    ext.bar = 1
+    assert ext.bar == 1
+    assert 'bar' not in ext.nddata.meta['other']
+    del ext.bar
 
     with pytest.raises(TypeError, match="Can't slice a single slice!"):
         ext[1]
 
-    # multiple
+
+@pytest.mark.dragons_remote_data
+def test_slice_multiple(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
+
     metadata = ('SCI', 2), ('SCI', 3)
     slc = ad[1, 2]
     assert len(slc) == 2
-    assert ext.is_sliced is True
+    assert slc.is_sliced is True
+    assert len(slc.data) == 2
+    assert slc.data[0][0, 0] == 387
+    assert slc.data[1][0, 0] == 383
+    assert slc.shape == [(512, 288), (512, 288)]
+
     for ext, md in zip(slc, metadata):
         assert (ext.hdr['EXTNAME'], ext.hdr['EXTVER']) == md
+
+    match = "Can't remove items from a sliced object"
+    with pytest.raises(TypeError, match=match):
+        del slc[0]
+
+    match = "Can't append objects to non-single slices"
+    with pytest.raises(TypeError, match=match):
+        slc.append(np.zeros(5), name='ARR')
 
     # iterate over single slice
     metadata = ('SCI', 1)
@@ -164,6 +207,63 @@ def test_slice(GMOSN_SPECT):
 
     # slice negative
     assert ad.data[-1] is ad[-1].data
+
+    match = "This attribute can only be assigned to a single-slice object"
+    with pytest.raises(TypeError, match=match):
+        slc.FOO = 1
+
+    with pytest.raises(TypeError,
+                       match="Can't delete attributes on non-single slices"):
+        del slc.FOO
+
+    ext.bar = 1
+    assert ext.bar == 1
+    del ext.bar
+
+
+@pytest.mark.dragons_remote_data
+def test_slice_data(GMOSN_SPECT):
+    ad = astrodata.open(GMOSN_SPECT)
+
+    slc = ad[1, 2]
+    match = "Trying to assign to an AstroData object that is not a single slice"
+    with pytest.raises(ValueError, match=match):
+        slc.data = 1
+    with pytest.raises(ValueError, match=match):
+        slc.uncertainty = 1
+    with pytest.raises(ValueError, match=match):
+        slc.mask = 1
+    with pytest.raises(ValueError, match=match):
+        slc.variance = 1
+
+    assert slc.uncertainty == [None, None]
+    assert slc.mask == [None, None]
+
+    ext = ad[1]
+    match = "Trying to assign data to be something with no shape"
+    with pytest.raises(AttributeError, match=match):
+        ext.data = 1
+
+    # set/get on single slice
+    ext.data = np.ones(10)
+    assert_array_equal(ext.data, 1)
+
+    ext.variance = np.ones(10)
+    assert_array_equal(ext.variance, 1)
+    ext.variance = None
+    assert ext.variance is None
+
+    ext.uncertainty = ADVarianceUncertainty(np.ones(10))
+    assert_array_equal(ext.variance, 1)
+    assert_array_equal(slc.variance[0], 1)
+
+    ext.mask = np.zeros(10)
+    assert_array_equal(ext.mask, 0)
+    assert_array_equal(slc.mask[0], 0)
+
+    assert slc.nddata[0].data is ext.data
+    assert slc.nddata[0].uncertainty is ext.uncertainty
+    assert slc.nddata[0].mask is ext.mask
 
 
 @pytest.mark.dragons_remote_data
@@ -506,6 +606,11 @@ def test_header_deprecated(GMOSN_SPECT):
     assert header[0]['ORIGNAME'] == 'N20170529S0168.fits'
     assert header[1]['EXTNAME'] == 'SCI'
     assert header[1]['EXTVER'] == 1
+
+    with pytest.warns(AstroDataFitsDeprecationWarning):
+        warnings.simplefilter('always', AstroDataFitsDeprecationWarning)
+        header = ad[0].header
+    assert header[0]['ORIGNAME'] == 'N20170529S0168.fits'
 
 
 @pytest.mark.dragons_remote_data

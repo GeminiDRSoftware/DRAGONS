@@ -411,6 +411,7 @@ class FitsProviderProxy(DataProvider):
                 self._provider.append(value, name=attribute, add_to=target)
                 return
             elif attribute in {'path', 'filename'}:
+                # FIXME: never reached because path/filename are not settable
                 raise AttributeError("Can't set path or filename on a sliced object")
             else:
                 setattr(self._provider, attribute, value)
@@ -572,8 +573,8 @@ class FitsProviderProxy(DataProvider):
             raise TypeError("Can't append objects to non-single slices")
         elif name is None:
             raise TypeError("Can't append objects to a slice without an extension name")
-        target = self._mapped_nddata(0)
 
+        target = self._mapped_nddata(0)
         return self._provider.append(ext, name=name, add_to=target)
 
     def extver_map(self):
