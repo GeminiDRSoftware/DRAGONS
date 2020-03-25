@@ -5,7 +5,7 @@ import pytest
 import warnings
 from astropy.io import fits
 from astropy.table import Table
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_allclose
 
 import astrodata
 from astrodata.fits import AstroDataFitsDeprecationWarning
@@ -561,7 +561,8 @@ def test_header_collection(GMOSN_SPECT):
     assert 'FRAMEID' in ad.hdr
     assert 'FOO' not in ad.hdr
     assert ad.hdr.get('FRAMEID') == [
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'
+    ]
     with pytest.raises(KeyError):
         ad.hdr['FOO']
     assert ad.hdr.get('FOO') == [None] * 12
@@ -635,7 +636,8 @@ def test_add_var_and_dq(caplog):
     with pytest.raises(ValueError, match="Only one Primary HDU allowed"):
         ad.append(fits.PrimaryHDU(data=fakedata), name='FOO')
 
-    with pytest.raises(ValueError, match="Arbitrary image extensions can "
+    with pytest.raises(ValueError,
+                       match="Arbitrary image extensions can "
                        "only be added in association to a 'SCI'"):
         ad.append(np.zeros(shape), name='FOO')
 
@@ -643,7 +645,8 @@ def test_add_var_and_dq(caplog):
                        match="'VAR' need to be associated to a 'SCI' one"):
         ad.append(np.ones(shape), name='VAR')
 
-    with pytest.raises(ValueError, match="Can't append pixel planes to "
+    with pytest.raises(ValueError,
+                       match="Can't append pixel planes to "
                        "other objects without a name"):
         ad.append(np.ones(shape), add_to=ad[0].nddata)
 
@@ -651,7 +654,8 @@ def test_add_var_and_dq(caplog):
                        match="Can't attach 'SCI' arrays to other objects"):
         ad.append(np.ones(shape), name='SCI', add_to=ad[0].nddata)
 
-    ad.append(fits.ImageHDU(data=np.ones(shape)), name='VAR',
+    ad.append(fits.ImageHDU(data=np.ones(shape)),
+              name='VAR',
               add_to=ad[0].nddata)
 
     ad.append(np.zeros(shape), name='DQ', add_to=ad[0].nddata, header='fake')
@@ -687,8 +691,43 @@ def test_add_table():
     ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
 
     assert ad[0].nddata.TABLE1.meta['header']['INSTRUME'] == 'darkimager'
-    assert (set(ad[0].nddata.meta['other'].keys()) ==
-            {'TABLE2', 'OTHERTABLE', 'TABLE1'})
+    assert (set(ad[0].nddata.meta['other'].keys()) == {
+        'TABLE2', 'OTHERTABLE', 'TABLE1'
+    })
     assert_array_equal(ad[0].nddata.TABLE1['col0'], ['aa', 'bb', 'cc'])
     assert_array_equal(ad[0].nddata.TABLE2['col0'], ['aa', 'bb', 'cc'])
     assert_array_equal(ad[0].nddata.OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
+
+
+@pytest.mark.dragons_remote_data
+def test_crop(GSAOI_DARK):
+    ad = astrodata.open(GSAOI_DARK)
+    assert set(ad.shape) == {(2048, 2048)}
+
+    ad.crop(0, 0, 5, 10)
+    assert len(ad.nddata) == 4
+    assert set(ad.shape) == {(11, 6)}
+
+
+@pytest.mark.dragons_remote_data
+def test_crop_ext(GSAOI_DARK):
+    ad = astrodata.open(GSAOI_DARK)
+    ext = ad[0]
+    ext.uncertainty = ADVarianceUncertainty(np.ones(ext.shape))
+    ext.mask = np.ones(ext.shape, dtype=np.uint8)
+
+    # FIXME: cannot test cropping attached array because that does not work
+    # with numpy arrays, and can only attach NDData instance at the top level
+    # ext.append(np.zeros(ext.shape, dtype=int), name='FOO')
+
+    ext.BAR = 1
+
+    ext.crop(0, 0, 5, 10)
+    assert ext.shape == (11, 6)
+    assert_allclose(ext.data[0], [-1.75, -0.75, -4.75, 2.375, -0.25, 1.375])
+    assert_array_equal(ext.uncertainty.array, 1)
+    assert_array_equal(ext.mask, 1)
+
+    # assert ext.FOO.shape == (11, 6)
+    # assert_array_equal(ext.FOO, 0)
+    assert ext.BAR == 1

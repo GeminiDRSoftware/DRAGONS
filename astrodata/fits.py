@@ -564,6 +564,16 @@ class FitsProviderProxy(DataProvider):
     def set_name(self, ext, name):
         self._provider.set_name(self._mapping[ext], name)
 
+    def _crop_nd(self, nd, x1, y1, x2, y2):
+        # needed because __getattr__ breaks finding private methods in the
+        # parent class...
+        self._provider._crop_nd(nd, x1, y1, x2, y2)
+
+    def _crop_impl(self, x1, y1, x2, y2, nds=None):
+        # needed because __getattr__ breaks finding private methods in the
+        # parent class...
+        self._provider._crop_impl(x1, y1, x2, y2, nds=nds)
+
     def crop(self, x1, y1, x2, y2):
         self._crop_impl(x1, y1, x2, y2, self._mapped_nddata())
 
@@ -1111,9 +1121,9 @@ class FitsProvider(DataProvider):
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
-        if nd.uncertainty:
+        if nd.uncertainty is not None:
             nd.uncertainty = nd.uncertainty[y1:y2+1, x1:x2+1]
-        if nd.mask:
+        if nd.mask is not None:
             nd.mask = nd.mask[y1:y2+1, x1:x2+1]
 
     def _crop_impl(self, x1, y1, x2, y2, nds=None):
@@ -1121,14 +1131,15 @@ class FitsProvider(DataProvider):
             nds = self.nddata
         # TODO: Consider cropping of objects in the meta section
         for nd in nds:
-            dim = nd.data.shape
+            orig_shape = nd.data.shape
             self._crop_nd(nd, x1, y1, x2, y2)
-            for o in nd.meta['other'].items():
+            for o in nd.meta['other'].values():
                 try:
-                    if o.shape == dim:
-                        self._crop_nd(o)
+                    if o.shape == orig_shape:
+                        self._crop_nd(o, x1, y1, x2, y2)
                 except AttributeError:
-                    # No 'shape' attribute in the object. It's probably not array-like
+                    # No 'shape' attribute in the object. It's probably
+                    # not array-like
                     pass
 
     def crop(self, x1, y1, x2, y2):
