@@ -1308,7 +1308,7 @@ class FitsProvider(DataProvider):
 
     def extver_map(self):
         """
-        Provide a mapping between the FITS EXTVER of an extension and the index
+        Provide a mapping between the FITS EXTVER of antextension and the index
         that will be used to access it within this object.
 
         Returns

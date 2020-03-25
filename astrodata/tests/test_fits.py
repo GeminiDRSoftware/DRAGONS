@@ -1,16 +1,17 @@
+import copy
 import os
+import warnings
 
 import numpy as np
 import pytest
-import warnings
-from astropy.io import fits
-from astropy.table import Table
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 
 import astrodata
 from astrodata.fits import AstroDataFitsDeprecationWarning
-from astrodata.nddata import NDAstroData, ADVarianceUncertainty
+from astrodata.nddata import ADVarianceUncertainty, NDAstroData
 from astrodata.testing import download_from_archive
+from astropy.io import fits
+from astropy.table import Table
 
 # test_files = [
 #     "N20160727S0077.fits",  # NIFS DARK
@@ -353,6 +354,11 @@ def test_can_make_and_write_ad_object(tmpdir):
     ad = astrodata.create(phu)
     ad.append(hdu, name='SCI')
 
+    hdr = fits.Header({'EXTNAME': 'SCI', 'EXTVER': 1, 'FOO': 'BAR'})
+    ad.append(hdu, header=hdr)
+    # FIXME: custom header is ignored
+    # assert ad[1].hdr['FOO'] == 'BAR'
+
     # Write file and test it exists properly
     testfile = str(tmpdir.join('created_fits_file.fits'))
     ad.write(testfile)
@@ -690,6 +696,10 @@ def test_add_table():
     ad.append(tbl, add_to=ad[0].nddata)
     ad.append(tbl, add_to=ad[0].nddata, name='OTHERTABLE')
 
+    assert list(ad[0].OTHERTABLE['col0']) == ['aa', 'bb', 'cc']
+    assert ad[0].tables == {'TABLE1', 'MYTABLE', 'TABLE2'}
+    assert ad[0].exposed == {'TABLE1', 'TABLE2', 'MYTABLE', 'OTHERTABLE'}
+
     assert ad[0].nddata.TABLE1.meta['header']['INSTRUME'] == 'darkimager'
     assert (set(ad[0].nddata.meta['other'].keys()) == {
         'TABLE2', 'OTHERTABLE', 'TABLE1'
@@ -697,6 +707,38 @@ def test_add_table():
     assert_array_equal(ad[0].nddata.TABLE1['col0'], ['aa', 'bb', 'cc'])
     assert_array_equal(ad[0].nddata.TABLE2['col0'], ['aa', 'bb', 'cc'])
     assert_array_equal(ad[0].nddata.OTHERTABLE['col0'], ['aa', 'bb', 'cc'])
+
+
+@pytest.mark.dragons_remote_data
+def test_copy(GSAOI_DARK, capsys):
+    ad = astrodata.open(GSAOI_DARK)
+    tbl = Table([['a', 'b', 'c'], [1, 2, 3]])
+    ad.append(tbl)
+    tbl = Table([['aa', 'bb', 'cc'], [1, 2, 3]])
+    ad.append(tbl, add_to=ad[0].nddata)
+
+    ad.info()
+    captured = capsys.readouterr()
+
+    ad2 = copy.deepcopy(ad)
+    ad2.info()
+    captured2 = capsys.readouterr()
+
+    # Compare that objects have the same attributes etc. with their
+    # .info representation
+    assert captured.out == captured2.out
+
+    ext = ad[0]
+    ext.info()
+    captured = capsys.readouterr()
+
+    ext2 = copy.deepcopy(ext)
+    ext2.info()
+    captured2 = capsys.readouterr()
+
+    # Same for extension, except that first line is different (no
+    # filename in the copied ext)
+    assert captured.out.splitlines()[1:] == captured2.out.splitlines()[1:]
 
 
 @pytest.mark.dragons_remote_data

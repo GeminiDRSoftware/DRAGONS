@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Fixtures to be used in tests in DRAGONS
 """
@@ -294,9 +293,8 @@ def path_to_test_data(env_var='DRAGONS_TEST'):
     if not os.access(path, os.W_OK):
         pytest.fail(
             '\n  Could not access the path stored inside $DRAGONS_TEST. '
-            '\n  Make sure the following path exists '
-            ' and that you have write permissions in it:'
-            '\n    {:s}'.format(path))
+            '\n  Make sure the following path exists and that you have '
+            'write permissions in it:\n    {}'.format(path))
 
     return path
 
@@ -328,7 +326,6 @@ def path_to_outputs(tmp_path_factory):
 
     if not os.path.exists(path):
         raise IOError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
-                      "{}".format(path) +
-                      "\n Using current working directory")
+                      "{}\n Using current working directory".format(path))
 
     return str(path)  # todo: should astrodata be compatible with pathlib?

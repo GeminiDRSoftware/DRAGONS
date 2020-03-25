@@ -1,12 +1,14 @@
-#!/usr/bin/env python
 """
 Tests for the `astrodata.testing` module.
 """
 
 import os
+
+import numpy as np
 import pytest
 
-from astrodata.testing import download_from_archive
+import astrodata
+from astrodata.testing import assert_same_class, download_from_archive
 
 
 def test_download_from_archive_raises_ValueError_if_envvar_does_not_exists():
@@ -56,5 +58,10 @@ def test_path_to_inputs(path_to_inputs):
     assert os.path.exists(path_to_inputs)
 
 
-if __name__ == '__main__':
-    pytest.main()
+def test_assert_same_class():
+    ad = astrodata.create({})
+    ad2 = astrodata.create({})
+    assert_same_class(ad, ad2)
+
+    with pytest.raises(AssertionError):
+        assert_same_class(ad, np.array([1]))
