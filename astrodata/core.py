@@ -1,17 +1,6 @@
-from datetime import datetime
-
-from astropy.table import Table
-
-import numpy as np
-
-try:
-    from builtins import object
-    from future.utils import with_metaclass
-except ImportError:
-    raise ImportError("AstroData requires the 'future' package for Python 2/3 compatibility")
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 from functools import wraps
+from future.utils import with_metaclass
 import inspect
 from collections import namedtuple
 from copy import deepcopy
@@ -22,10 +11,10 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     TagSet(add=None, remove=None, blocked_by=None, blocks=None, if_present=None)
 
     Named tuple that is used by tag methods to return which actions should be
-    performed on a tag set. All the attributes are optional, and any combination
-    of them can be used, allowing to create complex tag structures. Read the
-    documentation on the tag-generating algorithm if you want to better understand
-    the interactions.
+    performed on a tag set. All the attributes are optional, and any
+    combination of them can be used, allowing to create complex tag structures.
+    Read the documentation on the tag-generating algorithm if you want to
+    better understand the interactions.
 
     The simplest TagSet, though, tends to just add tags to the global set.
 
@@ -168,11 +157,10 @@ class AstroDataError(Exception):
     pass
 
 
-
 class DataProvider(with_metaclass(ABCMeta, object)):
     """
-    Abstract class describing the minimal interface that `DataProvider` derivative
-    classes need to implement.
+    Abstract class describing the minimal interface that `DataProvider`
+    derivative classes need to implement.
     """
 
     @property
@@ -217,7 +205,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         --------
         A boolean
         """
-        pass
 
     @abstractmethod
     def append(self, ext, name=None):
@@ -258,7 +245,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         ValueError
             If adding an object that is not acceptable
         """
-        pass
 
     @abstractmethod
     def __getitem__(self, slice):
@@ -284,7 +270,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
             If an index is out of range
 
         """
-        pass
 
     @abstractmethod
     def __len__(self):
@@ -297,7 +282,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         --------
         An integer
         """
-        pass
 
     @abstractmethod
     def __iadd__(self, oper):
@@ -316,7 +300,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
-        pass
 
     @abstractmethod
     def __isub__(self, oper):
@@ -335,7 +318,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
-        pass
 
     @abstractmethod
     def __imul__(self, oper):
@@ -354,10 +336,9 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
-        pass
 
     @abstractmethod
-    def __idiv__(self, oper):
+    def __itruediv__(self, oper):
         """
         This method should attempt to do an in-place (modifying self) division of each
         internal science object and the oper.
@@ -373,7 +354,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         Generally, it should return `self`. The implementations may decide to return
         something else instead.
         """
-        pass
 
     @property
     def exposed(self):
@@ -396,7 +376,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         A list of the the arrays (or single array, if this is a single slice) corresponding
         to the science data attached to each extension, in loading/appending order.
         """
-        pass
 
     @abstractproperty
     def uncertainty(self):
@@ -411,7 +390,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         ---------
         variance: The actual array supporting the uncertainty object
         """
-        pass
 
     @abstractproperty
     def mask(self):
@@ -421,7 +399,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 
         For objects that miss a mask, `None` will be provided instead.
         """
-        pass
 
     @abstractproperty
     def variance(self):
@@ -436,7 +413,6 @@ class DataProvider(with_metaclass(ABCMeta, object)):
         uncertainty: The `NDUncertainty` object used under the hood to propagate uncertainty when
         operating with the data
         """
-        pass
 
 
 # NOTE: This is not being used at all. Maybe it would be better to remove it altogether for the time
@@ -674,7 +650,8 @@ class AstroData(object):
                 super(AstroData, self).__delattr__(attribute)
         except AttributeError:
             if self._dataprov.is_sliced:
-                raise AttributeError("{!r} sliced object has no attribute {!r}".format(self.__class__.__name__, attribute))
+                raise AttributeError("{!r} sliced object has no attribute {!r}"
+                                     .format(self.__class__.__name__, attribute))
             else:
                 raise
 
@@ -712,17 +689,17 @@ class AstroData(object):
         Prints out information about the contents of this instance. Implemented
         by the derived classes.
         """
-        pass
 
     def __add__(self, oper):
         """
-        Implements the binary arithmetic operation `+` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `+` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be added to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -734,13 +711,14 @@ class AstroData(object):
 
     def __sub__(self, oper):
         """
-        Implements the binary arithmetic operation `-` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `-` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be subtracted to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -752,13 +730,14 @@ class AstroData(object):
 
     def __mul__(self, oper):
         """
-        Implements the binary arithmetic operation `*` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `*` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be multiplied to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -770,13 +749,14 @@ class AstroData(object):
 
     def __truediv__(self, oper):
         """
-        Implements the binary arithmetic operation `/` with `AstroData` as the left operand.
+        Implements the binary arithmetic operation `/` with `AstroData` as
+        the left operand.
 
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be divided to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -793,8 +773,8 @@ class AstroData(object):
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be added to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -810,8 +790,8 @@ class AstroData(object):
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be subtracted to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -827,8 +807,8 @@ class AstroData(object):
         Args
         -----
         oper : number or object
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be multiplied to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -837,15 +817,15 @@ class AstroData(object):
         self._dataprov *= oper
         return self
 
-    def __idiv__(self, oper):
+    def __itruediv__(self, oper):
         """
         Implements the augmented arithmetic assignment `/=`.
 
         Args
         -----
         oper : number or other
-            The operand to be added to this instance. The accepted types depend on the
-            `DataProvider`
+            The operand to be divided to this instance. The accepted types
+            depend on the `DataProvider`.
 
         Returns
         --------
@@ -854,11 +834,10 @@ class AstroData(object):
         self._dataprov /= oper
         return self
 
-    __itruediv__ = __idiv__
     add = __iadd__
     subtract = __isub__
     multiply = __imul__
-    divide = __idiv__
+    divide = __itruediv__
 
     __radd__ = __add__
     __rmul__ = __mul__
@@ -867,9 +846,9 @@ class AstroData(object):
         copy = (deepcopy(self) - oper) * -1
         return copy
 
-    def __rdiv__(self, oper):
+    def __rtruediv__(self, oper):
         copy = deepcopy(self)
-        copy._dataprov.__rdiv__(oper)
+        copy._dataprov.__rtruediv__(oper)
         return copy
 
     # This method needs to be implemented as classmethod
@@ -881,7 +860,6 @@ class AstroData(object):
 
         This method is abstract and has to be implemented by derived classes.
         """
-        pass
 
     def append(self, extension, name=None, *args, **kw):
         """

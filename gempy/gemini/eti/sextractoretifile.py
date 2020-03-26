@@ -60,10 +60,7 @@ class SExtractorETIFile(ETIFile):
         #    # Need a dummy DQ array because .param file needs a FLAG_IMAGE
         #    hdulist.append(fits.ImageHDU(np.zeros_like(self.data, dtype=np.int16),
         #                                 header=self.header, name='DQ'))
-        try:
-            hdulist.writeto(filename, overwrite=True)
-        except TypeError:
-            hdulist.writeto(filename, clobber=True)
+        hdulist.writeto(filename, overwrite=True)
         self._disk_file = filename
 
     def recover(self):

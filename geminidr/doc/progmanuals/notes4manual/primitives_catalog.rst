@@ -6,12 +6,12 @@ Primitive Class Catalog
 The following catalog lists all currently defined classes under *gemindr*.
 In conjunction with the class name, this appendix also lists the public
 methods explicitly defined in that class (as opposed to inherited methods).
-If "Public methods" indicates "Not Implemented," then *no* methods are 
-explicitly defined on the class and only inherited methods are available. 
-Classes in parentheses to the right of the class name indicate the superclass 
+If "Public methods" indicates "Not Implemented," then *no* methods are
+explicitly defined on the class and only inherited methods are available.
+Classes in parentheses to the right of the class name indicate the superclass
 or classes of the listed class.
 
-Readers can consult the :ref:`diagram on Primitive Class Hierarchy <prmcls>` 
+Readers can consult the :ref:`diagram on Primitive Class Hierarchy <prmcls>`
 to help visualize how these pieces fit together.
 
 .. _defprims:
@@ -41,7 +41,7 @@ Public methods::
  getList(max_frames=None, purpose=None)
  showInputs()
  showList(purpose='all')
- writeOutputs(clobber=True, prefix='', strip=False, suffix='', outfilename=None)
+ writeOutputs(overwrite=True, prefix='', strip=False, suffix='', outfilename=None)
 
 **CalibDB** (PrimitivesBASE)
 
@@ -136,7 +136,7 @@ Public methods::
 Public methods::
 
   adjustWCSToReference(method="sources", fallback=None, use_wcs=True, first_pass=10.0,
-                             min_sources=3, cull_sources=False, rotate=False, scale=False, 
+                             min_sources=3, cull_sources=False, rotate=False, scale=False,
 			     suffix="_wcsCorrected")
 
   determineAstrometricSolution(full_wcs=None, suffix="_astrometryCorrected")
@@ -200,7 +200,7 @@ Public methods::
 
 Public methods::
 
-  display(extname="SCI", frame=1, ignore=False, overlay=None, remove_bias=False, threshold="auto", 
+  display(extname="SCI", frame=1, ignore=False, overlay=None, remove_bias=False, threshold="auto",
           tile=True, zscale=True)
   mosaicDetectors(tile=False, interpolate_gaps=False, interpolator="linear", suffix="_mosaicked")
   tileArrays(tile_all=False, suffix="_tiled")
@@ -208,7 +208,7 @@ Public methods::
 
 Derived Core Classes and Primitives
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The following *core* classes do not directly subclass PrimitivesBASE, but 
+The following *core* classes do not directly subclass PrimitivesBASE, but
 inherit from other core classes that do.
 
 **Image** (Register, Resample)
@@ -219,7 +219,7 @@ Public methods::
 
   fringeCorrect()
   makeFringe(subtract_median_image=None)
-  makeFringeFrame(operation="median", reject_method="avsigclip", subtract_median_image=True, 
+  makeFringeFrame(operation="median", reject_method="avsigclip", subtract_median_image=True,
                   suffix="_fringe")
   scaleByIntensity(suffix="_scaled")
   scaleFringeToScience(science=None, stats_scale=False, suffix="_fringeScaled")
@@ -229,16 +229,16 @@ Public methods::
 Gemini Classes and Primitives
 -----------------------------
 
-The Gemini Class does not subclass on PrimitivesBASE directly, but rather, 
-inherits *core* classes defined there and others (such as, 'QA'). The Gemini 
-class also marks the appearance of the class attribute ``tagset`` that first 
-includes tags useful to the PrimitiveMapper search algorithm. I.e., tags 
+The Gemini Class does not subclass on PrimitivesBASE directly, but rather,
+inherits *core* classes defined there and others (such as, 'QA'). The Gemini
+class also marks the appearance of the class attribute ``tagset`` that first
+includes tags useful to the PrimitiveMapper search algorithm. I.e., tags
 applicable to real instrument data.
 
-All classes inheriting from Gemini will override the tagset attribute, tuned 
+All classes inheriting from Gemini will override the tagset attribute, tuned
 to that class's particular instrument data processing capabilities.
 
-**Gemini** (Standardize, Bookkeeping, Preprocess, Visualize, 
+**Gemini** (Standardize, Bookkeeping, Preprocess, Visualize,
 Stack, QA, CalibDB)
 
   **tagset** = set(["GEMINI"])
@@ -321,7 +321,7 @@ Public methods::
 
 Public methods::
 
-  Not Implemented          
+  Not Implemented
 
 **GMOSMOS** (GMOSSpect, GMOSNodAndShuffle)
 

@@ -12,10 +12,8 @@ import logging
 
 LOGGER = logging.getLogger('AstroData Factory')
 
-def fits_opener(source):
-    if isinstance(source, fits.HDUList):
-        return source
 
+def fits_opener(source):
     return fits.open(source, memmap=True)
 
 
@@ -123,8 +121,7 @@ class AstroDataFactory(object):
             if isinstance(phu, fits.PrimaryHDU):
                 lst.append(deepcopy(phu))
             elif isinstance(phu, fits.Header):
-                lst.append(fits.PrimaryHDU(header=deepcopy(phu),
-                                           data=fits.DELAYED))
+                lst.append(fits.PrimaryHDU(header=deepcopy(phu)))
             elif isinstance(phu, (dict, list, tuple)):
                 p = fits.PrimaryHDU()
                 p.header.update(phu)

@@ -41,8 +41,8 @@ standard Python methods:
   not define ``__setitem__``, though. The basic AstroData series of classes only
   allows to append new data blocks, not to replace them in one sweeping move
 
-* Implements ``__iadd__``, ``__isub__``, ``__imul__``, ``__idiv__``, and their
-  not-in-place versions, based on them.
+* Implements ``__iadd__``, ``__isub__``, ``__imul__``, ``__itruediv__``, and
+  their not-in-place versions, based on them.
 
 All of these provide default implementations that rely heavily on the
 ``DataProvider`` capabilities. There are a few other methods. For a detailed

@@ -3,7 +3,7 @@ from astropy.table import Table
 from datetime import datetime
 
 
-PROVENANCE_DATE_FORMAT="%Y-%m-%d %H:%M:%S.%f"
+PROVENANCE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 def add_provenance(ad, filename, md5, primitive, timestamp=None):
@@ -43,8 +43,8 @@ def add_provenance(ad, filename, md5, primitive, timestamp=None):
         md5_data = [md5]
         provenance_added_by_data = [primitive]
         ad.PROVENANCE = Table([timestamp_data, filename_data, md5_data, provenance_added_by_data],
-                                    names=('timestamp', 'filename', 'md5', 'provenance_added_by'),
-                                    dtype=('S28', 'S128', 'S128', 'S128'))
+                              names=('timestamp', 'filename', 'md5', 'provenance_added_by'),
+                              dtype=('S28', 'S128', 'S128', 'S128'))
     else:
         provenance = ad.PROVENANCE
         provenance.add_row((timestamp, filename, md5, primitive))
@@ -78,7 +78,7 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
     colsize = len(args)+1
     if hasattr(ad, 'PROVENANCE_HISTORY'):
         colsize = max(colsize, max(len(ph[3]) for ph in ad.PROVENANCE_HISTORY) + 1)
-    
+
         timestamp_start_arr = [ph[0] for ph in ad.PROVENANCE_HISTORY]
         timestamp_stop_arr = [ph[1] for ph in ad.PROVENANCE_HISTORY]
         primitive_arr = [ph[2] for ph in ad.PROVENANCE_HISTORY]
@@ -96,13 +96,9 @@ def add_provenance_history(ad, timestamp_start, timestamp_stop, primitive, args)
 
     dtype = ("S28", "S28", "S128", "S%d" % colsize)
     ad.append(Table([timestamp_start_arr, timestamp_stop_arr, primitive_arr, args_arr],
-                                    names=('timestamp_start', 'timestamp_stop',
-                                            'primitive', 'args'),
-                                    dtype=dtype), name="PROVENANCE_HISTORY")
-    # ad.PROVENANCE_HISTORY = Table([timestamp_start_arr, timestamp_stop_arr, primitive_arr, args_arr],
-    #                                 names=('timestamp_start', 'timestamp_stop',
-    #                                         'primitive', 'args'),
-    #                                 dtype=dtype)
+                    names=('timestamp_start', 'timestamp_stop',
+                           'primitive', 'args'),
+                    dtype=dtype), name="PROVENANCE_HISTORY")
 
 
 def clone_provenance(provenance_data, ad):
