@@ -76,7 +76,7 @@ class Block:
         shapes = [el.shape for el in elements]
 
         # Check all elements have the same dimensionality
-        if len(set([len(s) for s in shapes])) > 1:
+        if len({len(s) for s in shapes}) > 1:
             raise ValueError("Not all elements have same dimensionality")
 
         # Check the shape for tiling elements matches number of elements
@@ -378,8 +378,7 @@ class Transform:
         self._affine = self.__is_affine()
 
     def __iter__(self):
-        for model in self._models:
-            yield model
+        yield from self._models
 
     def __len__(self):
         """Length (number of models)"""

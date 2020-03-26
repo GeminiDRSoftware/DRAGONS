@@ -27,7 +27,7 @@ class Image(Preprocess, Register, Resample):
     """
     This is the class containing the generic imaging primitives.
     """
-    tagset = set(["IMAGE"])
+    tagset = {"IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)
@@ -210,7 +210,7 @@ class Image(Preprocess, Register, Resample):
         # Exit without doing anything if any of the inputs are inappropriate
         if not all(self._needs_fringe_correction(ad) for ad in adinputs):
             return adinputs
-        if len(set(ad.filter_name(pretty=True) for ad in adinputs)) > 1:
+        if len({ad.filter_name(pretty=True) for ad in adinputs}) > 1:
             log.warning("Mismatched filters in input; not making fringe frame")
             return adinputs
 
@@ -315,7 +315,7 @@ class Image(Preprocess, Register, Resample):
             log.stdinfo("OBJCAT found on at least one input extension. "
                         "Not running detectSources.")
 
-        group_ids = set([ad.group_id() for ad in adinputs])
+        group_ids = {ad.group_id() for ad in adinputs}
 
         # Add object mask to DQ plane and stack with masking
         # separate_ext is irrelevant unless (scale or zero) but let's be explicit
@@ -361,7 +361,7 @@ class Image(Preprocess, Register, Resample):
             return adinputs
 
         # Do some housekeeping to handle mutually exclusive parameter inputs
-        if separate_ext and len(set([len(ad) for ad in adinputs])) > 1:
+        if separate_ext and len({len(ad) for ad in adinputs}) > 1:
             log.warning("Scaling by extension requested but inputs have "
                         "different sizes. Turning off.")
             separate_ext = False

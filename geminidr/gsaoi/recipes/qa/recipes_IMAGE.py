@@ -2,7 +2,7 @@
 Recipes available to data with tags ['GSAOI', 'IMAGE']
 Default is "reduce_nostack".
 """
-recipe_tags = set(['GSAOI', 'IMAGE'])
+recipe_tags = {'GSAOI', 'IMAGE'}
 
 def reduce_nostack(p):
     """

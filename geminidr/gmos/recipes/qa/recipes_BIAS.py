@@ -2,7 +2,7 @@
 Recipes available to data with tags ['GMOS', 'CAL', 'BIAS'].
 Default is "makeProcessedBias".
 """
-recipe_tags = set(['GMOS', 'CAL', 'BIAS'])
+recipe_tags = {'GMOS', 'CAL', 'BIAS'}
 
 def makeProcessedBias(p):
     """

@@ -2,7 +2,7 @@
 Recipes available to data with tags ['F2', 'IMAGE', 'CAL', 'FLAT']
 Default is "makeProcessedFlat".
 """
-recipe_tags = set(['F2', 'IMAGE', 'CAL', 'FLAT'])
+recipe_tags = {'F2', 'IMAGE', 'CAL', 'FLAT'}
 
 # TODO: This recipe needs serious fixing to be made meaningful to the user.
 def makeProcessedFlat(p):

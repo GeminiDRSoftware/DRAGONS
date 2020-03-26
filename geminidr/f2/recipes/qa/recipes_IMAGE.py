@@ -2,7 +2,7 @@
 Recipes available to data with tags ['F2', 'IMAGE']
 Default is "reduce_nostack".
 """
-recipe_tags = set(['F2', 'IMAGE'])
+recipe_tags = {'F2', 'IMAGE'}
 
 def reduce(p):
     """

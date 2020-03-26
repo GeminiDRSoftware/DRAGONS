@@ -2,7 +2,7 @@
 Recipes available to data with tags ['GNIRS', 'IMAGE']
 Default is "reduce".
 """
-recipe_tags = set(['GNIRS', 'IMAGE'])
+recipe_tags = {'GNIRS', 'IMAGE'}
 
 def reduce(p):
     """

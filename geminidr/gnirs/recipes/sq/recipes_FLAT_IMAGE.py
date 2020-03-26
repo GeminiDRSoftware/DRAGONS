@@ -2,7 +2,7 @@
 Recipes available to data with tags ['GNIRS', 'IMAGE', 'CAL', 'FLAT']
 Default is "makeProcessedFlat".
 """
-recipe_tags = set(['GNIRS', 'IMAGE', 'CAL', 'FLAT'])
+recipe_tags = {'GNIRS', 'IMAGE', 'CAL', 'FLAT'}
 
 def makeProcessedFlat(p):
     """
