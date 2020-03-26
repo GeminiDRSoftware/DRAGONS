@@ -561,12 +561,11 @@ class Transform(object):
         """Test a single Model for affinity, using its name (or the name
         of its submodels)"""
         try:
-            models = model._submodels
-        except AttributeError:
+            return np.logical_and.reduce([Transform.__model_is_affine(m)
+                                      for m in model])
+        except TypeError:  # it's not a CompoundModel
             return model.__class__.__name__[:5] in ('Rotat', 'Scale',
                                                     'Shift', 'Ident')
-        return np.logical_and.reduce([Transform.__model_is_affine(m)
-                                      for m in models])
 
     def __is_affine(self):
         """Test for affinity, using Model names.
@@ -945,7 +944,7 @@ class DataGroup(object):
                     # derivatives so expand the output pixel grid.
                     if conserve:
                         self.log.warning("Flux conservation has not been fully"
-                                         "test for non-affine transforms")
+                                         "tested for non-affine transforms")
                         jacobian_shape = tuple(length + 2 for length in trans_output_shape)
                         transform.append(reduce(Model.__and__, [models.Shift(1)] * ndim))
                         jacobian_mapping = GeoMap(transform, jacobian_shape)
@@ -958,8 +957,8 @@ class DataGroup(object):
                                 slice_[denom_axis] = slice(2, None)
                                 # Account for the fact that we are measuring
                                 # differences in the subsampled plane
-                                det_matrices[num_axis, denom_axis] = \
-                                    diff_coords[slice_].flatten() / (2*subsample)
+                                det_matrices[num_axis, denom_axis] = 2. / (
+                                    diff_coords[tuple(slice_)].flatten() * subsample)
                         jfactor = 1. / abs(np.linalg.det(np.moveaxis(det_matrices, -1, 0))).reshape(trans_output_shape)
                         # Delete the extra Shift(1) and put a better jfactor in the list
                         del transform[-1]

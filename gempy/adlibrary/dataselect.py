@@ -2,6 +2,8 @@ import re
 from copy import deepcopy
 from datetime import datetime
 
+from importlib import import_module
+
 import astrodata
 import gemini_instruments
 
@@ -99,7 +101,7 @@ def evalexpression(ad, expression):
     return eval(expression)
 
 
-def select_data(inputs, tags=[], xtags=[], expression='True'):
+def select_data(inputs, tags=[], xtags=[], expression='True', adpkg=None):
     """
     Given a list of fits files, function will return a list of astrodata objects
     that satisfy all the parameters
@@ -121,6 +123,9 @@ def select_data(inputs, tags=[], xtags=[], expression='True'):
         returns all objects that satisfy all the above requirements
     -------
     """
+    if adpkg is not None:
+        import_module(adpkg)
+
     selected_data = []
     for input in inputs:
         ad = astrodata.open(input)

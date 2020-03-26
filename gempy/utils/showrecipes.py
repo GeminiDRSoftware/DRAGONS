@@ -16,7 +16,7 @@ from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.mappers.recipeMapper import RecipeMapper
 
 
-def showrecipes(_file):
+def showrecipes(_file, adpkg=None, drpkg=None):
     """
     showrecipes takes in a file, and will return all the possible recipes
     that can be used on the file.
@@ -33,6 +33,9 @@ def showrecipes(_file):
     # string that results are appended to
     result = ""
 
+    if adpkg is not None:
+        importlib.import_module(adpkg)
+
     # Find the file and open it with astrodata
     try:
         ad = astrodata.open(_file)
@@ -48,7 +51,10 @@ def showrecipes(_file):
 
         try:
 
-            rm = RecipeMapper([ad], mode)
+            if drpkg is None:
+                rm = RecipeMapper([ad], mode)
+            else:
+                rm = RecipeMapper([ad], mode, drpkg=drpkg)
             recipe = rm.get_applicable_recipe()
 
         except RecipeNotFound:
@@ -102,7 +108,7 @@ def showrecipes(_file):
     return result
 
 
-def showprims(_file, mode='sq', recipe='_default'):
+def showprims(_file, mode='sq', recipe='_default', adpkg=None, drpkg=None):
     """
     showprims takes in a file, observing mode, and the data reduction
     recipe name, and will return the source code pertaining to that recipe,
@@ -130,6 +136,9 @@ def showprims(_file, mode='sq', recipe='_default'):
     # string that results are appended to
     result = ""
 
+    if adpkg is not None:
+        importlib.import_module(adpkg)
+
     # Make sure mode is a valid input
     if mode.lower() not in ['sq', 'qa', 'ql']:
         raise ValueError("mode must be 'sq', 'qa', or 'ql'!")
@@ -144,8 +153,10 @@ def showprims(_file, mode='sq', recipe='_default'):
         raise
 
     try:
-
-        rm = RecipeMapper([ad], mode, recipename=recipe)
+        if drpkg is None:
+            rm = RecipeMapper([ad], mode, recipename=recipe)
+        else:
+            rm = RecipeMapper([ad], mode, recipename=recipe, drpkg=drpkg)
         mapper_recipe = rm.get_applicable_recipe()
 
     except RecipeNotFound:

@@ -11,11 +11,13 @@ __author__ = 'Ivan Sharankov'
 def main():
     args = showprims_argparser()
     if args.all:
-        recipes_found = showrecipes.showrecipes(args.inputfile)
+        recipes_found = showrecipes.showrecipes(args.inputfile,
+                                                args.adpkg, args.drpkg)
         print(recipes_found)
     else:
+        print(args)
         primitives_found = showrecipes.showprims(
-            args.inputfile, args.mode, args.recipe)
+            args.inputfile, args.mode, args.recipe, args.adpkg, args.drpkg)
         print(primitives_found)
 
 
@@ -42,6 +44,16 @@ def showprims_argparser():
     parser.add_argument("--all", default=False, action='store_true',
                         help='Show the name of all the valid recipes.')
 
+    parser.add_argument('--adpkg', nargs=1,
+                        dest='adpkg', action='store', required=False,
+                        help='Name of the astrodata instrument package to use'
+                             'if not gemini_instruments')
+
+    parser.add_argument('--drpkg', nargs=1,
+                        dest='drpkg', action='store', required=False,
+                        help='Name of the DRAGONS instrument package to use'
+                             'if not geminidr')
+
     parser.add_argument("--debug", default=False, action='store_true',
                         help='Print debugging statements')
 
@@ -50,7 +62,12 @@ def showprims_argparser():
     if args.debug:
         print(args)
 
-    return parser.parse_args()
+    if args.adpkg is not None:
+        args.adpkg = args.adpkg[0]
+    if args.drpkg is not None:
+        args.drpkg = args.drpkg[0]
+
+    return args
 
 
 if __name__ == "__main__":

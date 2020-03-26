@@ -12,6 +12,8 @@ from __future__ import print_function
 import sys
 import argparse
 
+from importlib import import_module
+
 import astrodata
 import gemini_instruments
 
@@ -100,12 +102,19 @@ def parse_args(command_line_args):
                         help='comma-separated list of descriptor values to return')
     parser.add_argument('--csv', default=False, action='store_true',
                         help='Format as CSV list.')
+    parser.add_argument('--adpkg', type=str, nargs=1,
+                        dest='adpkg', action='store', required=False,
+                        help='Name of the astrodata instrument package to use'
+                             'if not gemini_instruments')
     parser.add_argument('--debug', default=False, action='store_true',
                         help='Toggle debug mode')
 
     args = parser.parse_args(command_line_args)
 
     args.descriptors = args.descriptors[0].split(',')
+
+    if args.adpkg is not None:
+        args.adpkg = args.adpkg[0]
 
     if args.debug:
         print(args)
@@ -126,6 +135,9 @@ def main(argv=None):
         argv[0:0] = input_stream
 
     args = parse_args(argv)
+
+    if args.adpkg is not None:
+        import_module(args.adpkg)
 
     # Go through the files and store the descriptors in a list of list.
     hdr = ['filename']
