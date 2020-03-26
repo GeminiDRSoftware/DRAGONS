@@ -23,17 +23,13 @@ from gempy.library import astromodels
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
-from scipy import interpolate, ndimage, signal
+from scipy import ndimage
 
 DPI = 90
 URL = 'https://archive.gemini.edu/file/'
 
 datasets = {
-    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.570um L-Ok R-Ok G-Ok
-    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um L-Ok R-Ok G-Ok
-    # "N20180721S0444.fits",   # GN-2018B-Q-313-5 - B1200 at 0.44 um
-    # "N20190707S0032.fits",   # GN-2019A-Q-232-32 -
-
+    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um L-Ok R-Ok G-Ok
 }
 
 gap_local_kw = {
@@ -53,17 +49,17 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
     assert gap_local.is_continuous_right_gap()
 
 
-@pytest.mark.gmosls
-@pytest.mark.dragons_remote_data
-def test_applied_qe_is_globally_continuous(gap_global):
-    print(gap_global.x_out)
-    assert gap_global.is_continuous()
-
-
-@pytest.mark.gmosls
-@pytest.mark.dragons_remote_data
-def test_applied_qe_is_stable():
-    pass
+# @pytest.mark.gmosls
+# @pytest.mark.dragons_remote_data
+# def test_applied_qe_is_globally_continuous(gap_global):
+#     print(gap_global.x_out)
+#     assert gap_global.is_continuous()
+#
+#
+# @pytest.mark.gmosls
+# @pytest.mark.dragons_remote_data
+# def test_applied_qe_is_stable():
+#     pass
 
 
 # -- Fixtures -----------------------------------------------------------------
@@ -515,25 +511,20 @@ class MeasureGapSizeLocally(abc.ABC):
         Upper sigma limit for sigma clipping.
     """
     def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
-                 order=5, sigma_lower=1.5, sigma_upper=3):
+                 order=5, sigma_lower=1.5, sigma_upper=3, wav_min=350.,
+                 wav_max=1050):
 
         self.ad = ad
         self.bad_cols = bad_cols
         self.fit_family = fit_family
         self.median_filter_size = med_filt_size
         self.order = order
+        self.plot_name = ""
         self.sigma_lower = sigma_lower
         self.sigma_upper = sigma_upper
+        self.wav_max = wav_max
+        self.wav_min = wav_min
         self.w_solution = WSolution(ad)
-
-        self.plot_name = "local_gap_size_{}_{}".format(
-            self.fit_family.lower().replace('.', ''), ad.data_label())
-
-        self.plot_title = \
-            "QE Corrected Spectrum: {:s} Fit for each detector\n {:s}".format(
-                fit_family, ad.data_label())
-
-        self.fig, self.axs = self.reset_plots()
 
         m = ad[0].mask > 0
         y = ad[0].data
@@ -546,39 +537,26 @@ class MeasureGapSizeLocally(abc.ABC):
         y = np.ma.masked_array(y, mask=m)
         y = smooth_data(y, self.median_filter_size)
         y, v = normalize_data(y, v)
-        y.mask = np.logical_or(y.mask, y < 0.01)
 
-        for ax in self.axs:
-            ax.fill_between(w, 0, y, fc='k', alpha=0.1)
-            ax.grid(c='k', alpha=0.1)
+        y.mask = np.logical_or(y.mask, y < 0.01)
+        x = np.ma.masked_array(x, mask=y.mask)
 
         split_mask = ad[0].mask >= 16
         x_seg, y_seg, cuts = \
             split_arrays_using_mask(x, y, split_mask, self.bad_cols)
 
-        self.plot_segmented_data(x_seg, y_seg)
-
-        self.x = x
-        self.y = y
-        self.w = w
+        self.x, self.y, self.w = x, y, w
+        self.x_seg, self.y_seg, self.cuts = x_seg, y_seg, cuts
 
         self.gaps = [Gap(cuts[2 * i], cuts[2 * i + 1], bad_cols)
                      for i in range(cuts.size // 2)]
 
-        fits = self.fit(x_seg, y_seg)
-        self.models = fits
+        self.models = self.fit(x_seg, y_seg)
 
+        self.fig, self.axs = self.start_plot()
         self.is_continuous_left_gap()
         self.is_continuous_right_gap()
-
-        for ax in self.axs:
-            ax.set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
-            ax.set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
-
-        self.axs[0].set_xlim(w.min(), w.max())
-        self.axs[0].set_ylim(-0.05, 1.05)
-        self.fig.tight_layout(h_pad=0.0)
-        self.fig.savefig("{:s}.png".format(self.plot_name))
+        self.save_plot()
 
     @abc.abstractmethod
     def fit(self, x_seg, y_seg):
@@ -615,6 +593,8 @@ class MeasureGapSizeLocally(abc.ABC):
         x_left = np.arange(gap.left - gap.size, gap.right)
         x_right = np.arange(gap.left, gap.right + gap.size)
 
+        dy = y_left - y_right
+
         self.axs[i + 1].set_xlim(w_left, w_right)
 
         self.axs[i + 1].set_ylim(
@@ -633,10 +613,11 @@ class MeasureGapSizeLocally(abc.ABC):
         self.axs[i + 1].scatter(
             w_center, y_right, marker='o', c='C{}'.format(i + 1), alpha=0.5)
 
+        self.axs[i + 1].annotate(
+            "    dy = {:.3f}".format(dy), (w_center, y_center))
+
         for ax in self.axs:
             ax.axvline(w_center, c='C3', lw=0.5)
-
-        dy = y_left - y_right
 
         s = ("\n"
              " gap {:1d}\n"
@@ -644,24 +625,23 @@ class MeasureGapSizeLocally(abc.ABC):
              " |y_left-y_right|={:.4f} ")
 
         print(s.format(i + 1, w_center, y_left, y_right, dy))
-        return dy
+        return abs(dy) < 0.5
 
-    def plot_segmented_data(self, xs, ys):
+    def save_plot(self):
+        self.fig.savefig("{:s}.png".format(self.plot_name))
 
-        for i, (xx, yy) in enumerate(zip(xs, ys)):
-            ww = self.w_solution(xx)
-            yy.mask = np.logical_or(yy.mask, ww < 375)
-            yy.mask = np.logical_or(yy.mask, ww > 1075)
+    def start_plot(self):
 
-            c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
+        self.plot_name = "local_gap_size_{}_{}".format(
+            self.fit_family.lower().replace('.', ''), self.ad.data_label())
 
-            self.axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
+        plot_title = "QE Corrected Spectrum: {:s} Fit for each detector\n {:s}".format(
+                self.fit_family, self.ad.data_label())
 
-    def reset_plots(self):
         plt.close(self.plot_name)
 
-        fig = plt.figure(constrained_layout=True, dpi=DPI, figsize=(6, 6),
-                         num=self.plot_name)
+        fig = plt.figure(
+            constrained_layout=True, dpi=DPI, figsize=(6, 6), num=self.plot_name)
 
         gs = plt.GridSpec(2, 2, figure=fig, height_ratios=[4, 1])
 
@@ -671,10 +651,33 @@ class MeasureGapSizeLocally(abc.ABC):
             fig.add_subplot(gs[1, 1]),
         ]
 
-        axs[0].set_title(self.plot_title)
+        for i, (xx, yy) in enumerate(zip(self.x_seg, self.y_seg)):
+            ww = self.w_solution(xx)
+            yy.mask = np.logical_or(yy.mask, ww < self.wav_min)
+            yy.mask = np.logical_or(yy.mask, ww > self.wav_max)
+            model = self.models[i]
+
+            c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
+            axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
+
+            for ax in axs:
+                ax.plot(ww.data, model(xx.data), '-C{}'.format(i), alpha=0.2)
+                ax.plot(ww, model(xx), '-C{}'.format(i))
+
+        for ax in axs:
+            ax.fill_between(self.w, 0, self.y, fc='k', alpha=0.1)
+            ax.grid(c='k', alpha=0.1)
+            ax.set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
+            ax.set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
+
+        axs[0].set_title(plot_title)
+        axs[0].set_xlim(self.w.min(), self.w.max())
+        axs[0].set_ylim(-0.05, 1.05)
 
         axs[2].yaxis.tick_right()
         axs[2].yaxis.set_label_position("right")
+
+        fig.tight_layout(h_pad=0.0)
 
         return fig, axs
 
@@ -682,7 +685,7 @@ class MeasureGapSizeLocally(abc.ABC):
 class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
 
     def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
-                 sigma_lower=1.5, sigma_upper=3):
+                 sigma_lower=1.5, sigma_upper=3, wav_min=375, wav_max=1050):
 
         super(MeasureGapSizeLocallyWithPolynomial, self).__init__(
             ad,
@@ -691,7 +694,9 @@ class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
             med_filt_size=med_filt_size,
             order=order,
             sigma_lower=sigma_lower,
-            sigma_upper=sigma_upper)
+            sigma_upper=sigma_upper,
+            wav_max=wav_max,
+            wav_min=wav_min)
 
     def fit(self, x_seg, y_seg):
 
@@ -720,10 +725,6 @@ class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
 
             pp, rej_mask = or_fit(poly_init, xx, yy)
             ww.mask = np.logical_or(ww.mask, rej_mask)
-
-            for ax in self.axs:
-                ax.plot(ww.data, pp(xx.data), '-C{}'.format(i), alpha=0.2)
-                ax.plot(ww, pp(xx), '-C{}'.format(i))
 
             polynomials.append(pp)
 
