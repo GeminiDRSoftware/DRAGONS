@@ -1,9 +1,8 @@
-from abc import ABCMeta, abstractmethod, abstractproperty
-from functools import wraps
-from future.utils import with_metaclass
 import inspect
+from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import namedtuple
 from copy import deepcopy
+from functools import wraps
 
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
@@ -157,7 +156,7 @@ class AstroDataError(Exception):
     pass
 
 
-class DataProvider(with_metaclass(ABCMeta, object)):
+class DataProvider(metaclass=ABCMeta):
     """
     Abstract class describing the minimal interface that `DataProvider`
     derivative classes need to implement.

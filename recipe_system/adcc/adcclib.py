@@ -2,9 +2,6 @@
 #
 #                                                                     adcclib.py
 # ------------------------------------------------------------------------------
-from future.utils import with_metaclass
-
-# ------------------------------------------------------------------------------
 import os
 import sys
 import signal
@@ -46,7 +43,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class ADCC(with_metaclass(Singleton, object)):
+class ADCC(metaclass=Singleton):
 
     def __init__(self, args=None):
         if args is None:

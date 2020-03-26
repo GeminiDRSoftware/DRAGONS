@@ -1,13 +1,10 @@
+import logging
 import os
-
-from future.utils import string_types
 from copy import deepcopy
 
 from astropy.io import fits
 
 from .core import AstroDataError
-
-import logging
 
 LOGGER = logging.getLogger('AstroData Factory')
 
@@ -39,7 +36,7 @@ class AstroDataFactory(object):
         that it represents an already opened file.
 
         """
-        if isinstance(source, string_types):
+        if isinstance(source, str):
             stats = os.stat(source)
             if stats.st_size == 0:
                 LOGGER.warning("File {} is zero size".format(source))

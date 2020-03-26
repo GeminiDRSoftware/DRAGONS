@@ -4,21 +4,20 @@
 #                                                                   gempy.gemini
 #                                                                   qap_tools.py
 # ------------------------------------------------------------------------------
-from future import standard_library
-standard_library.install_aliases()
-from concurrent.futures import TimeoutError
-# ------------------------------------------------------------------------------
-import os
-import sys
-import json
 import getpass
+import json
+import os
 import socket
-import urllib.request, urllib.error, urllib.parse
-
-from ..utils import logutils
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from concurrent.futures import TimeoutError
 
 from astrodata import __version__ as ad_version
 from recipe_system.adcc.servers.eventsManager import EventsManager
+
+from ..utils import logutils
 
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
