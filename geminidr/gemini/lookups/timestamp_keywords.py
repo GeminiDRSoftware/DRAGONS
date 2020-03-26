@@ -64,6 +64,7 @@ timestamp_keys = {
     "standardizeInstrumentHeaders": "SDZHDRSI",
     "standardizeObservatoryHeaders": "SDZHDRSG",
     "standardizeStructure": "SDZSTRUC",
+    "standardizeWCS": "SDZWCS",
     "subtractOverscan": "SUBOVER",
     "subtractSkyBackground": "SUBSKYBG",
     "subtractSky": "SUBSKY",

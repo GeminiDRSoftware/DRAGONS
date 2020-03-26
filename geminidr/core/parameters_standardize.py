@@ -36,6 +36,10 @@ class standardizeHeadersConfig(standardizeObservatoryHeadersConfig, standardizeI
 class standardizeStructureConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_structureStandardized", optional=True)
 
+class standardizeWCSConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_structureStandardized", optional=True)
+    reference_extension = config.RangeField("Reference extension (EXTVER not index)", int, None, min=0, optional=True)
+
 class validateDataConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dataValidated", optional=True)
 

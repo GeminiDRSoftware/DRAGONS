@@ -16,7 +16,7 @@ from gempy.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy import numdisplay as nd
 
-from gempy.library import transform
+from gempy.library import transform, transform_gwcs
 from astropy.modeling import models
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -290,19 +290,19 @@ class Visualize(PrimitivesBASE):
                 adoutputs.append(ad)
                 continue
 
-            # If there's an overscan section, we must trim it before mosaicking
+            # If there's an overscan section in the data, this will crash, but
+            # we can catch that, trim, and try again. Don't catch anything else
             try:
-                overscan_kw = ad._keyword_for('overscan_section')
-            except AttributeError:  # doesn't exist for this AD, so carry on
-                pass
-            else:
-                if overscan_kw in ad.hdr:
-                    ad = gt.trim_to_data_section(ad, self.keyword_comments)
+                transform_gwcs.add_mosaic_wcs(ad, geotable)
+            except ValueError as e:
+                if 'data sections' in repr(e):
+                        ad = gt.trim_to_data_section(ad, self.keyword_comments)
+                        transform_gwcs.add_mosaic_wcs(ad, geotable)
+                else:
+                    raise e
 
-            adg = transform.create_mosaic_transform(ad, geotable)
-            ad_out = adg.transform(attributes=attributes, order=order,
-                                   process_objcat=False)
-
+            ad_out = transform_gwcs.resample_from_wcs(ad, "mosaic", attributes=attributes,
+                                                      order=order, process_objcat=False)
             ad_out.orig_filename = ad.filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
             ad_out.update_filename(suffix=suffix, strip=True)

@@ -4,15 +4,18 @@
 #                                                      primitives_standardize.py
 # ------------------------------------------------------------------------------
 import os
-from datetime import datetime
 
 import numpy as np
 from importlib import import_module
 from scipy.ndimage import measurements
 
+from astropy.modeling import models
+from gwcs.wcs import WCS as gWCS
+
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.library.transform_gwcs import add_mosaic_wcs, add_spectroscopic_wcs
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
@@ -314,21 +317,22 @@ class Standardize(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
 
-        provenance_timestamp = datetime.now()
-
         filenames = [ad.filename for ad in adinputs]
         paths = [ad.path for ad in adinputs]
 
         timestamp_key = self.timestamp_keys["prepare"]
         sfx = params["suffix"]
         for primitive in ('validateData', 'standardizeStructure',
-                          'standardizeHeaders'):
-            passed_params = self._inherit_params(params, primitive)
-            adinputs = getattr(self, primitive)(adinputs, **passed_params)
+                          'standardizeHeaders', 'standardizeWCS'):
+            # No need to call standardizeWCS if all adinputs are single-extension
+            # images (tags should be the same for all adinputs)
+            if ('WCS' not in primitive or 'SPECT' in adinputs[0].tags or
+                    any(len(ad) > 1 for ad in adinputs)):
+                passed_params = self._inherit_params(params, primitive)
+                adinputs = getattr(self, primitive)(adinputs, **passed_params)
 
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
-            filename = ad.filename
             ad.update_filename(suffix=sfx, strip=True)
         for ad, filename, path in zip(adinputs, filenames, paths):
             if path:
@@ -363,6 +367,70 @@ class Standardize(PrimitivesBASE):
         return adinputs
 
     def standardizeStructure(self, adinputs=None, **params):
+        return adinputs
+
+    def standardizeWCS(self, adinputs=None, suffix=None, reference_extension=None):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For multi-extension ADs, this means
+        prepending a tiling and/or mosaic transform before the pixel->world
+        transform, and giving all extensions copies of the reference
+        extension's pixel->world transform. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+        reference_extension: int/None
+            reference extension whose WCS is inherited by others
+        """
+        log = self.log
+        timestamp_key = self.timestamp_keys[self.myself()]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        geotable = import_module('.geometry_conf', self.inst_lookups)
+
+        for ad in adinputs:
+            if reference_extension is not None:
+                try:
+                    ref_index = ad.extver_map()[reference_extension]
+                except KeyError:
+                    log.warning("Extension {} not found in {}".format(reference_extension, ad.filename))
+                    reference_extension = None
+
+            if reference_extension is None:
+                det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
+                centre = np.median(det_corners, axis=0)
+                distances = list(det_corners - centre)
+                ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
+
+            ref_wcs = ad[ref_index].wcs
+            add_mosaic_wcs(ad, geotable)
+            new_xorigin, new_yorigin = ad[ref_index].wcs(0, 0)
+            origin_shift = models.Shift(-new_xorigin) & models.Shift(-new_yorigin)
+
+            # Ideally I' like to insert this shift at the start of the final
+            # pipeline step, but that screws up slicing this pipeline, so we
+            # add it to the end of the previous step
+            #ref_wcs.insert_transform(ref_wcs.input_frame, origin_shift,
+            #                         after=True)
+            for ext in ad:
+                ext.wcs.insert_transform(ext.wcs.output_frame, origin_shift,
+                                         after=False)
+                pipeline = ext.wcs.pipeline
+                if ref_wcs is None:
+                    # Axiomatically(?) set the final frame's name to "world"
+                    pipeline[-1][0].name = "world"
+                else:
+                    pipeline[-1] = (pipeline[-1][0], ref_wcs.pipeline[0][1])
+                    pipeline.extend(ref_wcs.pipeline[1:])
+                # This is a required step to re-initialize all the frame names
+                # since they become attributes of the gWCS object
+                ext.wcs = gWCS(pipeline)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
     def validateData(self, adinputs=None, suffix=None):

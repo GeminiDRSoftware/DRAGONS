@@ -1054,7 +1054,6 @@ class FitsProvider(DataProvider):
         for ext in self._nddata:
             meta = ext.meta
             header, ver = meta['header'], meta['ver']
-
             wcs = ext.wcs
             if isinstance(wcs, gWCS):
                 # We don't have access to the AD tags so see if it's an image
@@ -2011,8 +2010,18 @@ def gwcs_to_fits_image(wcs):
         crval = (wcs_model[-1].lon.value, wcs_model[-1].lat.value)
         wcs_dict['CRVAL1'], wcs_dict['CRVAL2'] = crval
 
-        # Now the pre-projection part
-        affine = lambda x, y: np.array(wcs_model[:-2](x, y))
+        # Now the pre-projection part. There's an issue here in the way
+        # astropy.modeling allows models to be sliced: each step in the gWCS
+        # pipeline is a CompoundModel, and we can't slice the entire pipeline
+        # in a way that also slices one of these steps. So we need to slice
+        # the final step and then append it to any previous steps.
+        penultimate_frame = wcs.available_frames[-2]
+        pre_model = wcs.get_transform(wcs.input_frame, penultimate_frame)
+        if pre_model is None:
+            affine_model = wcs_model[:-2]
+        else:
+            affine_model = pre_model | wcs.get_transform(penultimate_frame, wcs.output_frame)[:-2]
+        affine = lambda x, y: np.array(affine_model(x, y))
         size = 500  # In case it's not really affine, this will give a better approximation
         wcs_dict['CD1_1'], wcs_dict['CD2_1'] = (affine(size, 0) - affine(-size, 0)) / (2 * size)
         wcs_dict['CD1_2'], wcs_dict['CD2_2'] = (affine(0, size) - affine(0, -size)) / (2 * size)
