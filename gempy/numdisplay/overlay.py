@@ -1,4 +1,3 @@
-from __future__ import division, print_function # confidence high
 
 import math
 import struct

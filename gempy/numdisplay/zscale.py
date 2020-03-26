@@ -1,4 +1,3 @@
-from __future__ import division # confidence high
 
 import math
 import numpy

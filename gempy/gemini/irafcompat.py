@@ -1,4 +1,3 @@
-from __future__ import print_function
 """
 Collection of functions to make pipeline-processed and 
 IRAF-processed files compatible with the other system.

@@ -16,7 +16,6 @@ loadImtoolrc (imtoolrc=None):
         1056 1024
 
 """    
-from __future__ import division, print_function # confidence high
 
 import os,string,sys
 

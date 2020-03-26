@@ -10,7 +10,6 @@
 # The methods of this class are static so they can be called on any dataset
 # to reduce its dimensionality by one.
 
-from __future__ import print_function
 
 import numpy as np
 import inspect

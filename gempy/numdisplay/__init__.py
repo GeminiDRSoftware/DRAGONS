@@ -82,7 +82,6 @@
 
 
 """
-from __future__ import absolute_import, division, print_function # confidence medium
 
 __version__ = '1.6.2-gemini'
 

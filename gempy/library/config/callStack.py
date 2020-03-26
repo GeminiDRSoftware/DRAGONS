@@ -20,7 +20,6 @@
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
-from __future__ import print_function, division, absolute_import
 
 __all__ = ['getCallerFrame', 'getStackFrame', 'StackFrame', 'getCallStack']
 

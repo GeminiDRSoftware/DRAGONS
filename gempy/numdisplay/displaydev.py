@@ -29,7 +29,6 @@ replacement for CDL.
 $Id$
 
 """
-from __future__ import division, print_function # confidence medium
 
 import os, socket, struct
 

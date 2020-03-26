@@ -8,7 +8,6 @@ Currently contains:
 
 """
 
-from __future__ import print_function
 
 def gmosn_ham_fixes(hdulist, verbose):
     updated_glob = False

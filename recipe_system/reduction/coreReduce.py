@@ -11,7 +11,6 @@ which calls on the mapper classes and passes the received data to them.
 #
 #                                                                  coreReduce.py
 # ------------------------------------------------------------------------------
-from __future__ import print_function
 from builtins import str
 from builtins import object
 # ---------------------------- Package Import ----------------------------------

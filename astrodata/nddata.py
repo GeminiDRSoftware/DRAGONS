@@ -3,7 +3,6 @@ This module implements a derivative class based on NDData with some Mixins,
 implementing windowing and on-the-fly data scaling.
 """
 
-from __future__ import (absolute_import, division, print_function)
 
 import warnings
 from copy import deepcopy
