@@ -14,14 +14,9 @@ An instance of `ConfigObject`, `globalConf`, is initialized when first loading
 this module, and it should be used as the only interface to the config system.
 
 """
-import future.utils
 import os
 from collections import defaultdict
-
-if future.utils.PY2:
-    from configparser import SafeConfigParser as ConfigParser
-else:
-    from configparser import ConfigParser
+from configparser import ConfigParser
 
 DEFAULT_DIRECTORY = '~/.geminidr'
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'

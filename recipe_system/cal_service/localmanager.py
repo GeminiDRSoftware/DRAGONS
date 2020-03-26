@@ -4,12 +4,11 @@
 #                                                                localmanager.py
 # ------------------------------------------------------------------------------
 
-import future.utils
 import os
 from os.path import abspath, basename, dirname, isdir
 
 import warnings
-
+from importlib import reload
 from collections import namedtuple
 
 from sqlalchemy.exc import SAWarning, OperationalError
@@ -26,11 +25,6 @@ from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 
 from gempy.utils import logutils
-
-if future.utils.PY2:
-    from imp import reload
-else:
-    from importlib import reload
 
 # ------------------------------------------------------------------------------
 __all__ = ['LocalManager', 'LocalManagerError']
