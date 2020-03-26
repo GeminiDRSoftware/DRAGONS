@@ -149,7 +149,9 @@ def test_slice(GMOSN_SPECT):
     assert not ext.is_settable('filename')
     assert ext.data[0, 0] == 387
 
-    match = "'AstroDataFits' object has no attribute 'FOO'"
+    # when astrofaker is imported this will be recognized as AstroFakerGmos
+    # instead of AstroDataFits
+    match = r"'Astro.*' object has no attribute 'FOO'"
     with pytest.raises(AttributeError, match=match):
         ext.FOO
 
