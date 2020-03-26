@@ -16,8 +16,6 @@ import urllib.request
 from socketserver import ThreadingMixIn
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from past.utils import old_div
-
 from recipe_system.cal_service import calurl_dict
 # ------------------------------------------------------------------------------
 # HTTP messaging, Global bits for logging
@@ -66,11 +64,11 @@ def server_time():
 
     if utc_offset.days != 0:
         utc_offset = -utc_offset
-        utc_offset = -int(round(old_div(utc_offset.seconds, 3600.)))
+        utc_offset = -int(round(utc_offset.seconds / 3600.))
     else:
-        utc_offset = int(round(old_div(utc_offset.seconds, 3600.)))
+        utc_offset = int(round(utc_offset.seconds / 3600.))
 
-    timezone = old_div(time.timezone, 3600)
+    timezone = time.timezone // 3600
     if timezone == 10:
         local_site = 'gemini-north'
     elif timezone in [3, 4]:   # TZ -4 but +1hr DST applied inconsistently
