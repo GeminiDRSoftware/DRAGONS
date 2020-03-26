@@ -29,11 +29,31 @@ DPI = 90
 URL = 'https://archive.gemini.edu/file/'
 
 datasets = {
-    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um L-Ok R-Ok G-Ok
+
+    # --- Good datasets ---
+    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+    # "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+    # "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+    # "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
+    # "S20191117S0570.fits",  # GS-2019B-Q-103-8-001 R400 0.42um
+    # "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+
+    # --- Need improvement ---
+    # "N20180721S0444.fits",  # GN-2018B-Q-313-5-002 B1200 0.44um
+    # "N20190707S0032.fits",  # GN-2019A-Q-232-32-001 B1200 0.453um
+    # "N20190929S0127.fits",  # GN-2019B-Q-209-5-001 B1200 0.449um
+    # "S20180418S0151.fits",  # GS-2018A-Q-211-38-002 B1200 0.44um
+    # "S20181025S0033.fits",  # GS-2018B-Q-311-5-001 B1200 0.445um
+    # "S20190506S0088.fits",  # GS-2019A-Q-401-5-001 B1200 0.45um
+    # "S20190118S0102.fits",  # GS-2018B-Q-308-8-001 B600 0.589um
+    # "N20181005S0139.fits",  # GN-2018B-FT-207-5-001 R400 0.700
+
+    # --- Won't do ---
+
 }
 
 gap_local_kw = {
-    "N20180228S0134.fits": {'order': 3, 'sigma_upper': 1.5}
 }
 
 # -- Tests --------------------------------------------------------------------
@@ -510,6 +530,7 @@ class MeasureGapSizeLocally(abc.ABC):
     sigma_upper : float
         Upper sigma limit for sigma clipping.
     """
+
     def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
                  order=5, sigma_lower=1.5, sigma_upper=3, wav_min=350.,
                  wav_max=1050):
@@ -532,7 +553,7 @@ class MeasureGapSizeLocally(abc.ABC):
         x = np.arange(y.size)
 
         w = self.w_solution(x)
-        w = np.ma.masked_outside(w, 375, 1075)
+        w = np.ma.masked_outside(w, wav_min, wav_max)
 
         y = np.ma.masked_array(y, mask=m)
         y = smooth_data(y, self.median_filter_size)
@@ -542,6 +563,7 @@ class MeasureGapSizeLocally(abc.ABC):
         x = np.ma.masked_array(x, mask=y.mask)
 
         split_mask = ad[0].mask >= 16
+        y[split_mask] = 0
         x_seg, y_seg, cuts = \
             split_arrays_using_mask(x, y, split_mask, self.bad_cols)
 
@@ -625,9 +647,10 @@ class MeasureGapSizeLocally(abc.ABC):
              " |y_left-y_right|={:.4f} ")
 
         print(s.format(i + 1, w_center, y_left, y_right, dy))
-        return abs(dy) < 0.5
+        return abs(dy)
 
     def save_plot(self):
+        # plt.show()
         self.fig.savefig("{:s}.png".format(self.plot_name))
 
     def start_plot(self):
@@ -636,7 +659,7 @@ class MeasureGapSizeLocally(abc.ABC):
             self.fit_family.lower().replace('.', ''), self.ad.data_label())
 
         plot_title = "QE Corrected Spectrum: {:s} Fit for each detector\n {:s}".format(
-                self.fit_family, self.ad.data_label())
+            self.fit_family, self.ad.data_label())
 
         plt.close(self.plot_name)
 
@@ -652,20 +675,25 @@ class MeasureGapSizeLocally(abc.ABC):
         ]
 
         for i, (xx, yy) in enumerate(zip(self.x_seg, self.y_seg)):
+
+            model = self.models[i]
+            xx = xx[self.bad_cols:-self.bad_cols]
+            yy = yy[self.bad_cols:-self.bad_cols]
+
             ww = self.w_solution(xx)
+            xx.mask = np.logical_or(xx.mask, model.mask)
             yy.mask = np.logical_or(yy.mask, ww < self.wav_min)
             yy.mask = np.logical_or(yy.mask, ww > self.wav_max)
-            model = self.models[i]
 
             c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
-            axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
+            axs[0].fill_between(ww.data, 0, yy.data, fc=c, alpha=0.3, label=label)
 
             for ax in axs:
                 ax.plot(ww.data, model(xx.data), '-C{}'.format(i), alpha=0.2)
                 ax.plot(ww, model(xx), '-C{}'.format(i))
 
         for ax in axs:
-            ax.fill_between(self.w, 0, self.y, fc='k', alpha=0.1)
+            ax.fill_between(self.w.data, 0, self.y.data, fc='k', alpha=0.1)
             ax.grid(c='k', alpha=0.1)
             ax.set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
             ax.set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
@@ -724,8 +752,7 @@ class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
             yy.mask = np.logical_or(yy.mask, ww.mask)
 
             pp, rej_mask = or_fit(poly_init, xx, yy)
-            ww.mask = np.logical_or(ww.mask, rej_mask)
-
+            pp.mask = rej_mask
             polynomials.append(pp)
 
         return polynomials
