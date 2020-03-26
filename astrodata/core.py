@@ -788,6 +788,8 @@ class AstroData(object):
         copy /= oper
         return copy
 
+    __truediv__ = __div__
+
     def __iadd__(self, oper):
         """
         Implements the augmented arithmetic assignment `+=`.
