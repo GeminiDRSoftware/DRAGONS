@@ -114,6 +114,30 @@ def test_ad_basics(GMOSN_SPECT):
         ext.extver(15)
 
 
+def test_extver(tmpdir):
+    ad = astrodata.create(fits.PrimaryHDU())
+    data = np.arange(5)
+    ad.append(fits.ImageHDU(data=data, header=fits.Header({'EXTVER': 2})))
+    ad.append(fits.ImageHDU(data=data + 2, header=fits.Header({'EXTVER': 5})))
+    ad.append(fits.ImageHDU(data=data + 5))
+    ad.append(fits.ImageHDU(data=data + 7, header=fits.Header({'EXTVER': 3})))
+
+    for i, hdr in enumerate(ad.hdr):
+        assert hdr['EXTVER'] == i + 1
+
+    assert ad.extver_map() == {1: 0, 2: 1, 3: 2, 4: 3}
+
+    testfile = str(tmpdir.join('testfile.fits'))
+    ad.write(testfile)
+
+    ad = astrodata.open(testfile)
+
+    for i, hdr in enumerate(ad.hdr):
+        assert hdr['EXTVER'] == i + 1
+
+    assert ad.extver_map() == {1: 0, 2: 1, 3: 2, 4: 3}
+
+
 @pytest.mark.dragons_remote_data
 def test_can_add_and_del_extension(GMOSN_SPECT):
     ad = astrodata.open(GMOSN_SPECT)

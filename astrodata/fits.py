@@ -935,33 +935,30 @@ class FitsProvider(DataProvider):
 
         return ver
 
-    def _process_pixel_plane(self, pixim, name=None, top_level=False, reset_ver=True, custom_header=None):
+    def _process_pixel_plane(self, pixim, name=None, top_level=False,
+                             reset_ver=True, custom_header=None):
         if not isinstance(pixim, NDDataObject):
             # Assume that we get an ImageHDU or something that can be
             # turned into one
             if isinstance(pixim, ImageHDU):
-                header = pixim.header
-                nd = NDDataObject(pixim.data, meta={'header': header})
+                nd = NDDataObject(pixim.data, meta={'header': pixim.header})
             elif custom_header is not None:
-                header = custom_header
                 nd = NDDataObject(pixim, meta={'header': custom_header})
             else:
-                header = {}
-                nd = NDDataObject(pixim, meta={})
-
-            currname = header.get('EXTNAME')
-            ver = header.get('EXTVER', -1)
+                nd = NDDataObject(pixim, meta={'header': {}})
         else:
-            if custom_header is not None:
-                pixim.meta['header'] = custom_header
-            header = pixim.meta['header']
             nd = pixim
-            currname = header.get('EXTNAME')
-            ver = header.get('EXTVER', -1)
+            if custom_header is not None:
+                nd.meta['header'] = custom_header
+
+        header = nd.meta['header']
+        currname = header.get('EXTNAME')
+        ver = header.get('EXTVER', -1)
 
         # TODO: Review the logic. This one seems bogus
         if name and (currname is None):
-            header['EXTNAME'] = (name if name is not None else FitsProvider.default_extension)
+            header['EXTNAME'] = (name if name is not None
+                                 else FitsProvider.default_extension)
 
         if top_level:
             if 'other' not in nd.meta:
