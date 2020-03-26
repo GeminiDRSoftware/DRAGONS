@@ -19,5 +19,5 @@ class GMOSMOS(GMOSSpect, GMOSNodAndShuffle):
     tagset = set(["GEMINI", "GMOS", "SPECT", "MOS"])
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSMOS, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_mos)

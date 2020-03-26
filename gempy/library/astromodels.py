@@ -71,8 +71,7 @@ class Pix2Sky(FittableModel):
         self._wcs = wcs.deepcopy()
         self._direction = 1  # pix->sky direction
         self._origin = origin
-        super(Pix2Sky, self).__init__(x_offset, y_offset, factor, angle,
-                                      **kwargs)
+        super().__init__(x_offset, y_offset, factor, angle, **kwargs)
 
     def evaluate(self, x, y, x_offset, y_offset, factor, angle):
         # x_offset and y_offset are actually arrays in the Model
@@ -142,7 +141,7 @@ class Scale2D(FittableModel):
     factor = Parameter(default=1.0)
 
     def __init__(self, factor=1.0, **kwargs):
-        super(Scale2D, self).__init__(factor, **kwargs)
+        super().__init__(factor, **kwargs)
 
     @property
     def inverse(self):
@@ -168,7 +167,7 @@ class Rotate2D(FittableModel):
     angle = Parameter(default=0.0, getter=np.rad2deg, setter=np.deg2rad)
 
     def __init__(self, angle=0.0, **kwargs):
-        super(Rotate2D, self).__init__(angle, **kwargs)
+        super().__init__(angle, **kwargs)
 
     @property
     def inverse(self):

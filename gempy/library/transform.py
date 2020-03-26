@@ -71,7 +71,7 @@ class Block:
         xlast: normally arrays are placed in the standard python order,
                along the x-axis first. This reverses that order.
         """
-        super(Block, self).__init__()
+        super().__init__()
         self._elements = list(elements)
         shapes = [el.shape for el in elements]
 
@@ -1264,7 +1264,7 @@ class AstroDataGroup(DataGroup):
     array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
 
     def __init__(self, arrays=[], transforms=None):
-        super(AstroDataGroup, self).__init__(arrays=arrays, transforms=transforms)
+        super().__init__(arrays=arrays, transforms=transforms)
         # To ensure uniform behaviour, we wish to encase single AD slices
         # as single-element Block objects
         self._arrays = [arr if isinstance(arr, Block) else Block(arr)
@@ -1384,9 +1384,9 @@ class AstroDataGroup(DataGroup):
 
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
-        super(AstroDataGroup, self).transform(attributes=attributes, order=order,
-                                              subsample=subsample, threshold=threshold,
-                                              conserve=conserve, parallel=parallel)
+        super().transform(attributes=attributes, order=order,
+                          subsample=subsample, threshold=threshold,
+                          conserve=conserve, parallel=parallel)
 
         adout.append(self.output_dict['data'], header=ref_ext.hdr.copy())
         for key, value in self.output_dict.items():

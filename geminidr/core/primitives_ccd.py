@@ -28,7 +28,7 @@ class CCD(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(CCD, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_ccd)
 
     def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_bias=True):

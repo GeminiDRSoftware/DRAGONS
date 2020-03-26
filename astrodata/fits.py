@@ -415,7 +415,7 @@ class FitsProviderProxy(DataProvider):
             else:
                 setattr(self._provider, attribute, value)
 
-        super(FitsProviderProxy, self).__setattr__(attribute, value)
+        super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         if not attribute.isupper():
@@ -704,7 +704,7 @@ class FitsProvider(DataProvider):
                 return
 
         # Fallback
-        super(FitsProvider, self).__setattr__(attribute, value)
+        super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         # TODO: So far we're only deleting tables by name.

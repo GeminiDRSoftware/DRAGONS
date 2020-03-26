@@ -29,11 +29,11 @@ class Register(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Register, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_register)
 
     def adjustWCSToReference(self, adinputs=None, **params):
-        """ 
+        """
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
         uses points of reference common to the reference image and the
@@ -44,42 +44,42 @@ class Register(PrimitivesBASE):
         align_to_reference_image function, which applies the relative
         transformation encoded in the WCS to transform input images into the
         reference image pixel coordinate system.
-        
+
         The primary registration method is intended to be by direct mapping
         of sources in the image frame to correlated sources in the reference
         frame. This method fails when there are no correlated sources in the
         field, or when the WCSs are very far off to begin with. As a back-up
-        method, the user can try correcting the WCS by the shifts indicated 
-        in the POFFSET and QOFFSET header keywords (option fallback='header'), 
+        method, the user can try correcting the WCS by the shifts indicated
+        in the POFFSET and QOFFSET header keywords (option fallback='header'),
         By default, only the direct method is
         attempted, as it is expected that the relative WCS will generally be
         more correct than either indirect method. If the user prefers not to
         attempt direct mapping at all, they may set method to 'header'.
-        
+
         In order to use the direct mapping method, sources must have been
-        detected in the frame and attached to the AstroData instance in an 
+        detected in the frame and attached to the AstroData instance in an
         OBJCAT extension. This can be accomplished via the detectSources
-        primitive. Running time is optimal, and sometimes the solution is 
+        primitive. Running time is optimal, and sometimes the solution is
         more robust, when there are not too many sources in the OBJCAT. Try
         running detectSources with threshold=20. The solution may also be
-        more robust if sub-optimal sources are rejected from the set of 
+        more robust if sub-optimal sources are rejected from the set of
         correlated sources (use option cull_sources=True). This option may
         substantially increase the running time if there are many sources in
         the OBJCAT.
-        
-        It is expected that the relative difference between the WCSs of 
+
+        It is expected that the relative difference between the WCSs of
         images to be combined should be quite small, so it may not be necessary
         to allow rotation and scaling degrees of freedom when fitting the image
-        WCS to the reference WCS. However, if it is desired, the options 
+        WCS to the reference WCS. However, if it is desired, the options
         rotate and scale can be used to allow these degrees of freedom. Note
         that these options refer to rotation/scaling of the WCS itself, not the
-        images. Significant rotation and scaling of the images themselves 
+        images. Significant rotation and scaling of the images themselves
         will generally already be encoded in the WCS, and will be corrected for
         when the images are aligned.
-        
+
         The WCS keywords in the headers of the output images are updated
         to contain the optimal registration solution.
-        
+
         Parameters
         ----------
         suffix: str
@@ -215,7 +215,7 @@ class Register(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
         return adoutputs
-    
+
     def determineAstrometricSolution(self, adinputs=None, **params):
         """
         This primitive determines how to modify the WCS of each image to

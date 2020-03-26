@@ -30,7 +30,7 @@ class MatchBox:
     def __init__(self, input_coords, output_coords, forward_model=None,
                  backward_model=None, fitter=fitting.LinearLSQFitter,
                  **kwargs):
-        super(MatchBox, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._input_coords = list(input_coords)
         self._output_coords = list(output_coords)
         try:
@@ -304,10 +304,10 @@ class Chebyshev1DMatchBox(MatchBox):
         if (backward_model is not None and
                 not isinstance(backward_model, models.Chebyshev1D)):
             raise ValueError("backward_model is not a Chebyshev1D instance")
-        super(Chebyshev1DMatchBox, self).__init__(input_coords, output_coords,
-                                                  forward_model=forward_model,
-                                                  backward_model=backward_model,
-                                                  fitter=fitter, **kwargs)
+        super().__init__(input_coords, output_coords,
+                         forward_model=forward_model,
+                         backward_model=backward_model,
+                         fitter=fitter, **kwargs)
 
     def display_fit(self, remove_orders=1, axes=None, show=False):
         """
@@ -398,8 +398,7 @@ class BruteLandscapeFitter(Fitter):
     """
 
     def __init__(self):
-        super(BruteLandscapeFitter, self).__init__(optimize.brute,
-                                                   statistic=_landstat)
+        super().__init__(optimize.brute, statistic=_landstat)
 
     @staticmethod
     def mklandscape(coords, sigma, maxsig, landshape):
@@ -585,8 +584,7 @@ class KDTreeFitter(Fitter):
             opt_method = optimize.minimize
             self._method = method
 
-        super(KDTreeFitter, self).__init__(opt_method,
-                                           statistic=self._kdstat)
+        super().__init__(opt_method, statistic=self._kdstat)
 
     def __call__(self, model, in_coords, ref_coords, in_weights=None,
                  ref_weights=None, **kwargs):

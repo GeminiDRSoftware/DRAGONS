@@ -30,7 +30,7 @@ class Image(Preprocess, Register, Resample):
     tagset = set(["IMAGE"])
 
     def __init__(self, adinputs, **kwargs):
-        super(Image, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_image)
 
     def fringeCorrect(self, adinputs=None, **params):
@@ -589,4 +589,3 @@ class Image(Preprocess, Register, Resample):
             ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
-

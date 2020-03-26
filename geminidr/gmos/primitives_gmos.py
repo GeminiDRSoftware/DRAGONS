@@ -32,7 +32,7 @@ class GMOS(Gemini, CCD):
     tagset = set(["GEMINI", "GMOS"])
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOS, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gmos.lookups'
         self._param_update(parameters_gmos)
 
@@ -191,7 +191,7 @@ class GMOS(Gemini, CCD):
                     #ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
                     #                                dsec.x2, y1+1, dsec.y2)
 
-        adinputs = super(GMOS, self).subtractOverscan(adinputs, **params)
+        adinputs = super().subtractOverscan(adinputs, **params)
         return adinputs
 
     @staticmethod

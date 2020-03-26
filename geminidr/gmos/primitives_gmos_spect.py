@@ -123,7 +123,7 @@ class GMOSSpect(Spect, GMOS):
     tagset = set(["GEMINI", "GMOS", "SPECT"])
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSSpect, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_spect)
 
     def applyQECorrection(self, adinputs=None, **params):

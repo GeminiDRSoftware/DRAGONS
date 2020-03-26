@@ -257,7 +257,7 @@ class AutoAutoSummary(Autosummary):
                 _, attribs = self.get_members(c, 'attribute')
                 self.content = ["~%s.%s" % (clazz, attrib) for attrib in attribs if not attrib.startswith('_')]
         finally:
-            return super(AutoAutoSummary, self).run()
+            return super().run()
 
 # ------------
 # Adding style in order to have the todos show up in a red box

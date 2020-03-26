@@ -23,7 +23,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize, Stack, QA,
     tagset = set(["GEMINI"])
 
     def __init__(self, adinputs, **kwargs):
-        super(Gemini, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gemini.lookups'
         self._param_update(parameters_gemini)
 

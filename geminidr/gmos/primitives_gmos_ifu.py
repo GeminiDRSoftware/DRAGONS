@@ -17,5 +17,5 @@ class GMOSIFU(GMOSSpect, GMOSNodAndShuffle):
     tagset = set(["GEMINI", "GMOS", "SPECT", "IFU"])
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSIFU, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_ifu)

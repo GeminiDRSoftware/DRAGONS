@@ -22,7 +22,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
     tagset = set(["GEMINI", "GSAOI", "IMAGE"])
 
     def __init__(self, adinputs, **kwargs):
-        super(GSAOIImage, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gsaoi_image)
 
     def makeLampFlat(self, adinputs=None, **params):
@@ -46,6 +46,6 @@ class GSAOIImage(GSAOI, Image, Photometry):
             adinputs = self.stackFrames(adinputs, **params)
         else:
             log.stdinfo('Using standard makeLampFlat primitive to make flatfield')
-            adinputs = super(GSAOIImage, self).makeLampFlat(adinputs, **params)
+            adinputs = super().makeLampFlat(adinputs, **params)
 
         return adinputs

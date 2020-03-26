@@ -14,10 +14,11 @@ __REGEXP_GROUP_NAME__ = "v1"
 __VERSION_REGEXP__ = ''.join(["^.*version (?P<", __REGEXP_GROUP_NAME__,
                               r">[\d+\.]+) .*$"])
 
+
 class SExtractorETI(ETI):
     """This class coordinates the ETI as is relates to SExtractor"""
-    def __init__(self, primitives_class=None, inputs=None, params=None, mask_dq_bits=None,
-                 getmask=False):
+    def __init__(self, primitives_class=None, inputs=None, params=None,
+                 mask_dq_bits=None, getmask=False):
         """
         Parameters
         ----------
@@ -34,7 +35,7 @@ class SExtractorETI(ETI):
         getmask: bool
             make SExtractor produce an object mask and attach it to the outputs
         """
-        super(SExtractorETI, self).__init__(primitives_class, inputs=inputs)
+        super().__init__(primitives_class, inputs=inputs)
         self.add_param(SExtractorETIParam(params))
         self._mask_dq_bits = mask_dq_bits
         self._getmask = getmask

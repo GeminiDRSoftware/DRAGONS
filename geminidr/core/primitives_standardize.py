@@ -30,7 +30,7 @@ class Standardize(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Standardize, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_standardize)
 
     def addDQ(self, adinputs=None, **params):

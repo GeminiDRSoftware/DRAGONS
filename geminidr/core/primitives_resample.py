@@ -33,7 +33,7 @@ class Resample(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Resample, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_resample)
 
     def resampleToCommonFrame(self, adinputs=None, **params):
@@ -185,7 +185,7 @@ class Resample(PrimitivesBASE):
             log.warning("Stream {} not found or does not contain single "
                         "AstroData object. Continuing.".format(source_stream))
             return adinputs
-        
+
         ad_source = source_stream[0]
         # There's no reason why we can't handle multiple extensions
         if any(len(ad) != len(ad_source) for ad in adinputs):

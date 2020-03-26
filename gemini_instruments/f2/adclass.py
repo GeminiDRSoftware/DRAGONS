@@ -308,7 +308,7 @@ class AstroDataF2(AstroDataGemini):
             The dispersion(s)
         """
         # F2 header keyword value is in Angstroms, not meters
-        dispersion = super(AstroDataF2, self).dispersion(
+        dispersion = super().dispersion(
             asMicrometers=asMicrometers,
             asNanometers=asNanometers,
             asAngstroms=asAngstroms)

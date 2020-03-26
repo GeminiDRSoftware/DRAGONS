@@ -28,7 +28,7 @@ class Stack(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Stack, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_stack)
 
     def stackFlats(self, adinputs=None, **params):

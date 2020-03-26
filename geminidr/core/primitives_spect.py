@@ -47,7 +47,7 @@ class Spect(PrimitivesBASE):
     tagset = set(["GEMINI", "SPECT"])
 
     def __init__(self, adinputs, **kwargs):
-        super(Spect, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
     def adjustSlitOffsetToReference(self, adinputs=None, **params):

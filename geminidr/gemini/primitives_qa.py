@@ -37,7 +37,7 @@ class QA(PrimitivesBASE):
     tagset = set(["GEMINI"])
 
     def __init__(self, adinputs, **kwargs):
-        super(QA, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_qa)
 
     def measureBG(self, adinputs=None, **params):
@@ -47,7 +47,7 @@ class QA(PrimitivesBASE):
 
         The count levels are then converted to a flux using the nominal
         (*not* measured) Zeropoint values - the point being you want to measure
-        the actual background level, not the flux incident on the top of the 
+        the actual background level, not the flux incident on the top of the
         cloud layer necessary to produce that flux level.
 
         Parameters
@@ -225,7 +225,7 @@ class QA(PrimitivesBASE):
         computing zeropoint as:
         zeropoint = refmag - mag - nominal_extinction_correction
 
-        Then we can treat zeropoint as: 
+        Then we can treat zeropoint as:
         zeropoint = nominal_photometric_zeropoint - cloud_extinction
         to estimate the cloud extinction.
 
@@ -275,7 +275,7 @@ class QA(PrimitivesBASE):
                 # there's always 2 nod positions, thus the exposure
                 # time for any given star is half the total
                 exptime /= 2.0
-                
+
             all_zp = []
             all_cloud = []
             info_list = []
@@ -641,10 +641,10 @@ class QA(PrimitivesBASE):
 
                     if info_list:
                         if self.upload and "metrics" in self.upload:
-                            fitsdict = qap.fitsstore_report( adiq, "iq", 
-                                                             info_list, 
-                                                             self.calurl_dict, 
-                                                             self.mode, 
+                            fitsdict = qap.fitsstore_report( adiq, "iq",
+                                                             info_list,
+                                                             self.calurl_dict,
+                                                             self.mode,
                                                              upload=True)
 
                     # If displaying, make a mask to display along with image
@@ -1185,7 +1185,7 @@ def _strehl(ad, sources):
         return Measurement(None, None, 0)
     strehl_list = []
     strehl_weights = []
-    
+
     for ext, src in zip(ad, sources):
         pixel_scale = ext.pixel_scale()
         for star in src:

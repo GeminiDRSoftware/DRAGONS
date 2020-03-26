@@ -37,7 +37,7 @@ class Preprocess(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Preprocess, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_preprocess)
 
     def addObjectMaskToDQ(self, adinputs=None, suffix=None):
@@ -109,14 +109,14 @@ class Preprocess(PrimitivesBASE):
                 extver = ext.hdr['EXTVER']
                 log.stdinfo("  gain for EXTVER {} = {}".format(extver, gain))
                 ext.multiply(gain)
-            
+
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
             ad.hdr.set('BUNIT', 'electron', self.keyword_comments['BUNIT'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix,  strip=True)
         return adinputs
-    
+
     def applyDQPlane(self, adinputs=None, **params):
         """
         This primitive sets the value of pixels in the science plane according
@@ -232,7 +232,7 @@ class Preprocess(PrimitivesBASE):
         parameter 'sky'. Otherwise, the science AstroData objects are found in
         the main stream (as normal) and the sky AstroData objects are found in
         the sky stream.
-        
+
         Parameters
         ----------
         suffix: str
@@ -419,7 +419,7 @@ class Preprocess(PrimitivesBASE):
         """
         This primitive will subtract each SCI extension of the inputs by those
         of the corresponding dark. If the inputs contain VAR or DQ frames,
-        those will also be updated accordingly due to the subtraction on the 
+        those will also be updated accordingly due to the subtraction on the
         data. If no dark is provided, getProcessedDark will be called to
         ensure a dark exists for every adinput.
 
@@ -495,7 +495,7 @@ class Preprocess(PrimitivesBASE):
         """
         Grows the influence of objects detected by dilating the OBJMASK using
         the binary_dilation routine
-        
+
         Parameters
         ----------
         suffix: str
@@ -1019,7 +1019,7 @@ class Preprocess(PrimitivesBASE):
         This primitive subtracts a sky frame from each of the science inputs.
         Each science input should have a list of skies in a SKYTABLE extension
         and these are stacked and subtracted, using the appropriate primitives.
-        
+
         Parameters
         ----------
         suffix: str
@@ -1284,7 +1284,7 @@ class Preprocess(PrimitivesBASE):
 
     def subtractSkyBackground(self, adinputs=None, suffix=None):
         """
-        This primitive is used to subtract the sky background specified by 
+        This primitive is used to subtract the sky background specified by
         the keyword SKYLEVEL.
 
         Parameters
@@ -1310,11 +1310,11 @@ class Preprocess(PrimitivesBASE):
                     log.warning("No changes will be made to {}:{}, since there "
                                 "is no sky background measured".
                                 format(ad.filename, extver))
-                else:    
+                else:
                     log.fullinfo("Subtracting {:.0f} to remove sky level from "
                                  "image {}:{}".format(bg, ad.filename, extver))
                     ext.subtract(bg)
-                    
+
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)

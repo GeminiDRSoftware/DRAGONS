@@ -22,7 +22,7 @@ class GNIRS(Gemini, NearIR):
     tagset = set(["GEMINI", "GNIRS"])
 
     def __init__(self, adinputs, **kwargs):
-        super(GNIRS, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gnirs.lookups'
         self._param_update(parameters_gnirs)
 

@@ -32,7 +32,7 @@ class GMOSLongslit(GMOSSpect, GMOSNodAndShuffle):
     tagset = set(["GEMINI", "GMOS", "SPECT", "LS"])
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOSLongslit, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)
 
     def addIllumMaskToDQ(self, adinputs=None, suffix=None, illum_mask=None):
