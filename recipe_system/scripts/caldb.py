@@ -79,7 +79,7 @@ def log(message, stream, bold=False, add_newlines=0):
             print('\n' * add_newlines, file=stream)
 
 
-class Dispatcher(object):
+class Dispatcher:
 
     def __init__(self, parser, manager, log):
         self._parser = parser

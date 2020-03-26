@@ -147,7 +147,7 @@ def rejector(fn):
     return fn
 
 
-class NDStacker(object):
+class NDStacker:
     # Base class from which all stacking functions should subclass.
     # Put helper functions here so they can be inherited.
     def __init__(self, combine='mean', reject='none', log=None, **kwargs):

@@ -13,7 +13,7 @@ def fits_opener(source):
     return fits.open(source, memmap=True)
 
 
-class AstroDataFactory(object):
+class AstroDataFactory:
 
     _file_openers = (
         fits_opener,

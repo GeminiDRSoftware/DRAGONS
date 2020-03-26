@@ -29,7 +29,7 @@ class ADVarianceUncertainty(VarianceUncertainty):
         VarianceUncertainty.array.fset(self, value)
 
 
-class FakeArray(object):
+class FakeArray:
 
     def __init__(self, very_faked):
         self.data = very_faked
@@ -44,7 +44,7 @@ class FakeArray(object):
         return self.data
 
 
-class NDWindowing(object):
+class NDWindowing:
 
     def __init__(self, target):
         self._target = target

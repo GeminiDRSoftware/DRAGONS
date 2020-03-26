@@ -425,7 +425,7 @@ class DataProvider(metaclass=ABCMeta):
 #     return decorator
 
 
-class AstroData(object):
+class AstroData:
     """
     AstroData(provider)
 

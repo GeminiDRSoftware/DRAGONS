@@ -21,7 +21,7 @@ from .astromodels import Pix2Sky
 
 
 ##############################################################################
-class MatchBox(object):
+class MatchBox:
     """
     A class to hold two sets of coordinates that have a one-to-one
     correspondence, and the transformations that go between them.

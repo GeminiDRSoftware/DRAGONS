@@ -75,7 +75,7 @@ def save_cache(object, cachefile):
     return
 
 # ------------------------- END caches------------------------------------------
-class Calibrations(object):
+class Calibrations:
     def __init__(self, calindfile, user_cals={}, *args, **kwargs):
         self._calindfile = calindfile
         self._dict = {}
@@ -114,7 +114,7 @@ class Calibrations(object):
         save_cache(self._dict, self._calindfile)
         return
 # ------------------------------------------------------------------------------
-class dormantViewer(object):
+class dormantViewer:
     """
     An object that p.viewer can be assigned to, which only creates or connects
     to a display tool when required.
@@ -170,7 +170,7 @@ def cleanup(process):
     process.terminate()
 
 @parameter_override
-class PrimitivesBASE(object):
+class PrimitivesBASE:
     """
     This is the base class for all of primitives classes for the geminidr
     primitive sets. __init__.py provides, or should provide, all attributes

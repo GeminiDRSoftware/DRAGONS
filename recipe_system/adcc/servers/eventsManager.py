@@ -10,7 +10,7 @@ import re
 from astrodata import AstroData
 
 # ------------------------------------------------------------------------------
-class EventsManager(object):
+class EventsManager:
     def __init__(self):
         self.event_list = []
         self.event_index = {}

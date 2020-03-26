@@ -65,7 +65,7 @@ SZ_BLOCK = 16384
 _default_imtdev = ("unix:/tmp/.IMT%d", "fifo:/dev/imt1i:/dev/imt1o","inet:5137")
 _default_fbconfig = 3
 
-class ImageWCS(object):
+class ImageWCS:
     _W_UNITARY = 0
     _W_LINEAR = 1
     _W_LOG = 2
@@ -219,7 +219,7 @@ def _open(imtdev=None):
                                     % imtdev)
 
 
-class ImageDisplay(object):
+class ImageDisplay:
 
     """Interface to IRAF-compatible image display"""
 

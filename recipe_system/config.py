@@ -22,7 +22,7 @@ DEFAULT_DIRECTORY = '~/.geminidr'
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 
-class ConfigObject(object):
+class ConfigObject:
     """
     Generalized wrapper on ConfigParser.
 
@@ -203,7 +203,7 @@ class ConfigObject(object):
         self._conv.update(conv)
 
 
-class Converter(object):
+class Converter:
     def __init__(self, conv_dict, cp):
         """
         The class provides an internal mapping table for automatic translation
@@ -242,7 +242,7 @@ class Converter(object):
         return self._trans.get(key, str)(value)
 
 
-class Section(object):
+class Section:
     """
     An instance of `Section` describes the contents for a section of an
     INI-style config file. Each entry in the section translates to an

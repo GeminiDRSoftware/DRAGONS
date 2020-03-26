@@ -149,7 +149,7 @@ def generate_outfile(outfile, olist, match_type, logical_or, xtypes):
     return
 
 
-class Faces(object):
+class Faces:
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
     DARKCYAN = '\033[36m'
@@ -162,7 +162,7 @@ class Faces(object):
     END = '\033[0m'
 
 
-class DataSpider(object):
+class DataSpider:
     """
     DataSpider() providing one (1) method, typewalk,  that will walk a
     directory and report types via AstroData.

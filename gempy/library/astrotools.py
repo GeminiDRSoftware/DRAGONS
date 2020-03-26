@@ -269,7 +269,7 @@ def get_database_string(fname):
     f.close()
     return dtb
 
-class Record(object):
+class Record:
     """
     A base class for all records - represents an IRAF database record
 
@@ -430,7 +430,7 @@ class FitcoordsRecord(Record):
     def get_coeff(self):
         return self._surface[8:]
 
-class IDB(object):
+class IDB:
     """
     Base class for an IRAF identify database
 
@@ -481,7 +481,7 @@ class ReidentifyRecord(IDB):
 # This class pulls together fitcoords and identify databases into
 # a single entity that can be written to or read from disk files
 # or pyfits binary tables
-class SpectralDatabase(object):
+class SpectralDatabase:
     def __init__(self, database_name=None, record_name=None,
                  binary_table=None):
         """

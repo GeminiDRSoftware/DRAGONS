@@ -42,7 +42,7 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
-class Reduce(object):
+class Reduce:
     """
     The Reduce class encapsulates the core processing to be done by reduce.
     __init__ may receive one (1) parameter, nominally, an argparse Namespace

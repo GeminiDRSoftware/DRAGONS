@@ -1748,7 +1748,7 @@ def write_database(ad, database_name=None, input_name=None):
     return
 
 
-class ExposureGroup(object):
+class ExposureGroup:
     """
     An ExposureGroup object maintains a record of AstroData instances that
     are spatially associated with the same general nod position or dither

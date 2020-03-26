@@ -53,7 +53,7 @@ def deprecated(reason):
     return decorator_wrapper
 
 
-class KeywordCallableWrapper(object):
+class KeywordCallableWrapper:
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
         self.kw = keyword
         self.on_ext = on_ext
@@ -71,7 +71,7 @@ class KeywordCallableWrapper(object):
         return wrapper
 
 
-class FitsHeaderCollection(object):
+class FitsHeaderCollection:
     """
     FitsHeaderCollection(headers)
 
@@ -1356,7 +1356,7 @@ def fits_ext_comp_key(ext):
     return ret
 
 
-class FitsLazyLoadable(object):
+class FitsLazyLoadable:
 
     def __init__(self, obj):
         self._obj = obj
@@ -1407,7 +1407,7 @@ class FitsLazyLoadable(object):
         return dtype
 
 
-class FitsLoader(object):
+class FitsLoader:
 
     def __init__(self, cls=FitsProvider):
         self._cls = cls

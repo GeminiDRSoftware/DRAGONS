@@ -53,7 +53,7 @@ def _makecachedir(caltype):
     return cachedir
 
 
-class CalibrationRequest(object):
+class CalibrationRequest:
     """
     Request objects are passed to a calibration_search() function
 

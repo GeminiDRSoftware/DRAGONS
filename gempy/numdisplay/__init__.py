@@ -96,7 +96,7 @@ except ImportError:
     geotrans = None
 
 
-class NumDisplay(object):
+class NumDisplay:
     """ Class to manage the attributes and methods necessary for displaying
         the array in the image display tool.
 

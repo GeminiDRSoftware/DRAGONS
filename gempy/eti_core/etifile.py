@@ -1,7 +1,7 @@
 from ..utils import logutils
 log = logutils.get_logger(__name__)
 
-class ETIFile(object):
+class ETIFile:
     """The base class for all External Class Interface file objects.
     """
     inputs = None

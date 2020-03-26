@@ -76,7 +76,7 @@ class LocalManagerError(Exception):
         self.error_type = error_type
 
 
-class LocalManager(object):
+class LocalManager:
     def __init__(self, db_path):
         if isdir(db_path):
             self._db_path = os.path.join(db_path, DEFAULT_DB_NAME)

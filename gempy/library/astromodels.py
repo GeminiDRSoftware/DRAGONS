@@ -188,7 +188,7 @@ class Rotate2D(FittableModel):
         return x, y
 
 
-class UnivariateSplineWithOutlierRemoval(object):
+class UnivariateSplineWithOutlierRemoval:
     """
     Instantiating this class creates a spline object that fits to the
     1D data, iteratively removing outliers using a specified function.
