@@ -3,7 +3,6 @@
 #
 #                                                          mappers.baseMapper.py
 # ------------------------------------------------------------------------------
-from builtins import object
 
 from ..utils.mapper_utils import dotpath
 

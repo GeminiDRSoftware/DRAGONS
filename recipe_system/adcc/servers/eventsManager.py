@@ -3,9 +3,6 @@
 #
 #                                                               eventsManager.py
 # ------------------------------------------------------------------------------
-from builtins import range
-from builtins import object
-# ------------------------------------------------------------------------------
 import json
 import time
 import re
@@ -71,12 +68,12 @@ class EventsManager(object):
                 dv = descriptor(**options.get(desc_name, {}))
                 mtd_dict[mtd_name] = postproc(dv)
 
-        # If the file is a processed stack, then add the filenames of the 
+        # If the file is a processed stack, then add the filenames of the
         # data that went into the stack
         if ad.phu.get('STACKFRM'):
             stack_list = self._get_stacklist(ad)
             mtd_dict["stack"] = stack_list
-        
+
         mtd = {"metadata": mtd_dict}
         return mtd
 
@@ -85,7 +82,7 @@ class EventsManager(object):
 
         curtime = time.time()
         wholed = {
-            "msgtype"  : msgtype, 
+            "msgtype"  : msgtype,
             name       : mdict,
             "timestamp": curtime
         }
@@ -111,7 +108,7 @@ class EventsManager(object):
             if "timestamp" in ad and "reported_timestamp" not in ad:
                 ad.update({"reported_timestamp":ad["timestamp"]})
             wholed = ad
-            
+
         else:
             raise TypeError("Bad Arguments")
 

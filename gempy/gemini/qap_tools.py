@@ -6,7 +6,6 @@
 # ------------------------------------------------------------------------------
 from future import standard_library
 standard_library.install_aliases()
-from builtins import zip
 from concurrent.futures import TimeoutError
 # ------------------------------------------------------------------------------
 import os

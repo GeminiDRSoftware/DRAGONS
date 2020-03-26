@@ -5,7 +5,6 @@ import os
 import re
 import traceback
 import warnings
-from builtins import object
 from collections import OrderedDict
 from copy import deepcopy
 from functools import partial, wraps

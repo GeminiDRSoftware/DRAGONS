@@ -7,8 +7,6 @@
 from future import standard_library
 standard_library.install_aliases()
 
-from builtins import str
-
 from os.path import join
 from os.path import basename
 from pprint  import pformat

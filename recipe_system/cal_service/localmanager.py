@@ -3,7 +3,6 @@
 #
 #                                                                localmanager.py
 # ------------------------------------------------------------------------------
-from builtins import object
 
 import future.utils
 import os

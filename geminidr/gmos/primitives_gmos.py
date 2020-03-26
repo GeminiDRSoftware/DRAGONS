@@ -3,8 +3,6 @@
 #
 #                                                             primitives_gmos.py
 # ------------------------------------------------------------------------------
-from builtins import zip
-
 import os
 
 import astrodata

@@ -1,6 +1,5 @@
 import os
 
-from builtins import object
 from future.utils import string_types
 from copy import deepcopy
 

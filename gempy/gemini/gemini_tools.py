@@ -4,10 +4,6 @@
 #                                                                   gempy.gemini
 #                                                                gemini_tools.py
 # ------------------------------------------------------------------------------
-from builtins import str
-from builtins import zip
-from builtins import range
-from builtins import object
 import os
 import re
 import numbers

@@ -4,8 +4,6 @@
 #
 #                                                                    typewalk.py
 # ------------------------------------------------------------------------------
-from builtins import str
-from builtins import object
 
 from astrodata import version
 __version__ = version()
@@ -166,12 +164,12 @@ class Faces(object):
 
 class DataSpider(object):
     """
-    DataSpider() providing one (1) method, typewalk,  that will walk a 
+    DataSpider() providing one (1) method, typewalk,  that will walk a
     directory and report types via AstroData.
 
     """
-    def typewalk(self, directory=os.getcwd(), only=None, filemask=None, 
-                 or_logic=False, outfile=None, stayTop=False, batchnum=100, 
+    def typewalk(self, directory=os.getcwd(), only=None, filemask=None,
+                 or_logic=False, outfile=None, stayTop=False, batchnum=100,
                  xtypes=None):
         """
         Recursively walk <directory> and put type information to stdout

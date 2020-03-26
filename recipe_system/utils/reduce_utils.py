@@ -2,7 +2,6 @@
 #                                                                reduce_utils.py
 # ------------------------------------------------------------------------------
 # Utility function library for reduce and the Reduce class.
-from builtins import range
 
 from argparse import ArgumentParser
 from argparse import HelpFormatter
@@ -299,7 +298,7 @@ def normalize_upload(upload):
     $ reduce --upload metrics, calibs <file.fits> <file2.fits>
     $ reduce --upload metrics, calibs, science <file.fits> <file2.fits>
 
-    Result in 
+    Result in
 
     upload == ['metrics']
     upload == ['metrics', 'calibs']

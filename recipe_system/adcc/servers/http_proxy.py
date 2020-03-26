@@ -16,7 +16,6 @@ import urllib.request
 from socketserver import ThreadingMixIn
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from builtins import str
 from past.utils import old_div
 
 from future import standard_library

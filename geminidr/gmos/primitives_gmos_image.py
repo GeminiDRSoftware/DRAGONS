@@ -3,7 +3,6 @@
 #
 #                                                        primtives_gmos_image.py
 #  ------------------------------------------------------------------------------
-from builtins import zip
 import numpy as np
 from copy import deepcopy
 from scipy import ndimage, optimize
