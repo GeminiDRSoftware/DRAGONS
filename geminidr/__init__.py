@@ -41,7 +41,7 @@ from recipe_system.cal_service import calurl_dict
 from recipe_system.utils.decorators import parameter_override
 
 import atexit
-# ------------------------------ caches ----------------------------------------
+# ------------------------------ caches ---------------------------------------
 # Formerly in cal_service/caches.py
 #
 # GLOBAL/CONSTANTS (could be exported to config file)
@@ -49,45 +49,48 @@ CALS = "calibrations"
 
 # [caches]
 caches = {
-    'reducecache'  : '.reducecache',
-    'calibrations' : CALS
-    }
+    'reducecache': '.reducecache',
+    'calibrations': CALS
+}
 
 calindfile = os.path.join('.', caches['reducecache'], "calindex.pkl")
 stkindfile = os.path.join('.', caches['reducecache'], "stkindex.pkl")
 
+
 def set_caches():
-    cachedict = {}
-    for cachename, cachedir in caches.items():
-        if not os.path.exists(cachedir):
-            os.makedirs(cachedir)
-        cachedict.update({cachename:cachedir})
+    cachedict = {name: cachedir for name, cachedir in caches.items()}
+    for cachedir in cachedict.values():
+        os.makedirs(cachedir, exist_ok=True)
     return cachedict
+
 
 def load_cache(cachefile):
     if os.path.exists(cachefile):
-        return pickle.load(open(cachefile, 'rb'))
+        with open(cachefile, 'rb') as fp:
+            return pickle.load(fp)
     else:
         return {}
 
-def save_cache(object, cachefile):
-    pickle.dump(object, open(cachefile, 'wb'), protocol=2)
-    return
 
-# ------------------------- END caches------------------------------------------
+def save_cache(obj, cachefile):
+    with open(cachefile, 'wb') as fp:
+        pickle.dump(obj, fp, protocol=2)
+
+# ------------------------- END caches-----------------------------------------
+
+
 class Calibrations:
     def __init__(self, calindfile, user_cals={}, *args, **kwargs):
         self._calindfile = calindfile
         self._dict = {}
         self._dict.update(load_cache(self._calindfile))
-        self._usercals = user_cals or {}                 # Handle user_cals=None
+        self._usercals = user_cals or {}  # Handle user_cals=None
 
     def __getitem__(self, key):
         return self._get_cal(*key)
 
     def __setitem__(self, key, val):
         self._add_cal(key, val)
-        return
 
     def __delitem__(self, key):
         # Cope with malformed keys
@@ -101,7 +104,6 @@ class Calibrations:
         key = (key[0].calibration_key(), key[1])
         self._dict.update({key: val})
         self.cache_to_disk()
-        return
 
     def _get_cal(self, ad, caltype):
         key = (ad.calibration_key(), caltype)
@@ -112,8 +114,10 @@ class Calibrations:
 
     def cache_to_disk(self):
         save_cache(self._dict, self._calindfile)
-        return
+
 # ------------------------------------------------------------------------------
+
+
 class dormantViewer:
     """
     An object that p.viewer can be assigned to, which only creates or connects
@@ -143,8 +147,10 @@ class dormantViewer:
         """This is how the viewer will wake up"""
         if self.viewer_name is not None:
             try:
-                self.parent().viewer = display.connect(self.viewer_name,
-                            use_existing=self.use_existing, quit_window=False)
+                self.parent().viewer = display.connect(
+                    self.viewer_name, use_existing=self.use_existing,
+                    quit_window=False
+                )
             except NotImplementedError:
                 self.parent().log.warning("Attempting to display to an unknown"
                                           " display ({}). Image display turned"
@@ -165,9 +171,12 @@ class dormantViewer:
         pass
 
 # ------------------------------------------------------------------------------
+
+
 def cleanup(process):
     # Function for the atexit registry to kill the ETISubprocess
     process.terminate()
+
 
 @parameter_override
 class PrimitivesBASE:
@@ -178,15 +187,15 @@ class PrimitivesBASE:
 
     Parameters
     ----------
-    adinputs: <list> A list of astrodata objects
+    adinputs : list
+        A list of astrodata objects.
+    mode : str
+        Operational Mode, one of 'sq', 'qa', 'ql'.
+    upload : list
+        A list of products to upload to fitsstore.
+        QA metrics uploaded if 'metrics' in upload.  E.g.::
 
-    mode:     <str>  Operational Mode, one of 'sq', 'qa', 'ql'.
-
-    upload:   <list> A list of products to upload to fitsstore.
-                     QA metrics uploaded if 'metrics' in upload.
-              E.g.,
-
-                  upload = ['metrics', ['calibs', ... ]]
+            upload = ['metrics', ['calibs', ... ]]
 
     """
     tagset = None
@@ -250,10 +259,10 @@ class PrimitivesBASE:
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
-                primname = attr.replace("Config", "")
                 # Allow classes purely for inheritance purposes to be ignored
                 # Wanted to use hasattr(self) but things like NearIR don't inherit
                 if attr.endswith("Config"):
+                    primname = attr.replace("Config", "")
                     self.params[primname] = obj()
 
         # Play a bit fast and loose with python's inheritance. We need to check
@@ -309,7 +318,6 @@ class PrimitivesBASE:
         pass_suffix: bool
             pass "suffix" parameter?
         """
-        passed_params = {k: v for k, v in params.items()
-                         if k in list(self.params[primname]) and
-                         not (k == "suffix" and not pass_suffix)}
-        return passed_params
+        return {k: v for k, v in params.items()
+                if k in list(self.params[primname]) and
+                not (k == "suffix" and not pass_suffix)}
