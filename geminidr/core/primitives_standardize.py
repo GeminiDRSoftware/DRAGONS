@@ -391,42 +391,43 @@ class Standardize(PrimitivesBASE):
         geotable = import_module('.geometry_conf', self.inst_lookups)
 
         for ad in adinputs:
-            if reference_extension is not None:
-                try:
-                    ref_index = ad.extver_map()[reference_extension]
-                except KeyError:
-                    log.warning("Extension {} not found in {}".format(reference_extension, ad.filename))
-                    reference_extension = None
+            if len(ad) > 1:
+                if reference_extension is not None:
+                    try:
+                        ref_index = ad.extver_map()[reference_extension]
+                    except KeyError:
+                        log.warning("Extension {} not found in {}".format(reference_extension, ad.filename))
+                        reference_extension = None
 
-            if reference_extension is None:
-                det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
-                centre = np.median(det_corners, axis=0)
-                distances = list(det_corners - centre)
-                ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
+                if reference_extension is None:
+                    det_corners = np.array([(sec.y1, sec.x1) for sec in ad.detector_section()])
+                    centre = np.median(det_corners, axis=0)
+                    distances = list(det_corners - centre)
+                    ref_index = np.argmax([d.sum() if np.all(d <= 0) else -np.inf for d in distances])
 
-            ref_wcs = ad[ref_index].wcs
-            add_mosaic_wcs(ad, geotable)
-            new_xorigin, new_yorigin = ad[ref_index].wcs(0, 0)
-            origin_shift = models.Shift(-new_xorigin) & models.Shift(-new_yorigin)
+                ref_wcs = ad[ref_index].wcs
+                add_mosaic_wcs(ad, geotable)
+                new_xorigin, new_yorigin = ad[ref_index].wcs(0, 0)
+                origin_shift = models.Shift(-new_xorigin) & models.Shift(-new_yorigin)
 
-            # Ideally I' like to insert this shift at the start of the final
-            # pipeline step, but that screws up slicing this pipeline, so we
-            # add it to the end of the previous step
-            #ref_wcs.insert_transform(ref_wcs.input_frame, origin_shift,
-            #                         after=True)
-            for ext in ad:
-                ext.wcs.insert_transform(ext.wcs.output_frame, origin_shift,
-                                         after=False)
-                pipeline = ext.wcs.pipeline
-                if ref_wcs is None:
-                    # Axiomatically(?) set the final frame's name to "world"
-                    pipeline[-1][0].name = "world"
-                else:
-                    pipeline[-1] = (pipeline[-1][0], ref_wcs.pipeline[0][1])
-                    pipeline.extend(ref_wcs.pipeline[1:])
-                # This is a required step to re-initialize all the frame names
-                # since they become attributes of the gWCS object
-                ext.wcs = gWCS(pipeline)
+                # Ideally I' like to insert this shift at the start of the final
+                # pipeline step, but that screws up slicing this pipeline, so we
+                # add it to the end of the previous step
+                #ref_wcs.insert_transform(ref_wcs.input_frame, origin_shift,
+                #                         after=True)
+                for ext in ad:
+                    ext.wcs.insert_transform(ext.wcs.output_frame, origin_shift,
+                                             after=False)
+                    pipeline = ext.wcs.pipeline
+                    if ref_wcs is None:
+                        # Axiomatically(?) set the final frame's name to "world"
+                        pipeline[-1][0].name = "world"
+                    else:
+                        pipeline[-1] = (pipeline[-1][0], ref_wcs.pipeline[0][1])
+                        pipeline.extend(ref_wcs.pipeline[1:])
+                    # This is a required step to re-initialize all the frame names
+                    # since they become attributes of the gWCS object
+                    ext.wcs = gWCS(pipeline)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
