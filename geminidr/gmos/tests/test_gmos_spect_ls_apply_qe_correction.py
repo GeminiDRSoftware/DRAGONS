@@ -31,13 +31,12 @@ URL = 'https://archive.gemini.edu/file/'
 datasets = {
 
     # --- Good datasets ---
-    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
-    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
-    # "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
-    # "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
-    # "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
-    # "S20191117S0570.fits",  # GS-2019B-Q-103-8-001 R400 0.42um
-    # "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um Ok
+    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um OK
+    "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um OK
+    "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um Ok
+    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um Takes forever on Notebook
+    "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
 
     # --- Need improvement ---
     # "N20180721S0444.fits",  # GN-2018B-Q-313-5-002 B1200 0.44um
@@ -54,6 +53,11 @@ datasets = {
 }
 
 gap_local_kw = {
+    "N20180109S0287.fits": {'bad_cols': 5},
+    "N20190302S0089.fits": {'bad_cols': 5, 'wav_min': 450},
+    "N20190910S0028.fits": {},
+    "S20180919S0139.fits": {'bad_cols': 10, 'order': 4},
+    "S20191005S0051.fits": {'order': 8},
 }
 
 # -- Tests --------------------------------------------------------------------
@@ -133,7 +137,7 @@ def gap_local(processed_ad, output_path):
 
     # Save plots in output folder
     with output_path():
-        gap = MeasureGapSizeLocallyWithPolynomial(processed_ad, **kwargs)
+        gap = MeasureGapSizeLocallyWithSpline(processed_ad, **kwargs)
 
     return gap
 
@@ -756,6 +760,44 @@ class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
             polynomials.append(pp)
 
         return polynomials
+
+
+class MeasureGapSizeLocallyWithSpline(MeasureGapSizeLocally):
+
+    def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
+                 sigma_lower=1.5, sigma_upper=3, wav_min=375, wav_max=1050):
+        super(MeasureGapSizeLocallyWithSpline, self).__init__(
+            ad,
+            bad_cols=bad_cols,
+            fit_family='Spl.',
+            med_filt_size=med_filt_size,
+            order=order,
+            sigma_lower=sigma_lower,
+            sigma_upper=sigma_upper,
+            wav_max=wav_max,
+            wav_min=wav_min)
+
+    def fit(self, x_seg, y_seg):
+        splines = []
+        for i, (xx, yy) in enumerate(zip(x_seg, y_seg)):
+            xx = xx[self.bad_cols:-self.bad_cols]
+            yy = yy[self.bad_cols:-self.bad_cols]
+
+            ww = self.w_solution(xx)
+            ww = np.ma.masked_array(ww)
+            ww.mask = np.logical_or(ww.mask, ww < 375)
+            ww.mask = np.logical_or(ww.mask, ww > 1075)
+
+            yy.mask = np.logical_or(yy.mask, ww.mask)
+            yy.mask = np.logical_or(yy.mask, ww.mask)
+
+            spl = astromodels.UnivariateSplineWithOutlierRemoval(
+                xx, yy, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
+                order=self.order)
+
+            splines.append(spl)
+
+        return splines
 
 
 class MeasureGapSizeGlobally(abc.ABC):
