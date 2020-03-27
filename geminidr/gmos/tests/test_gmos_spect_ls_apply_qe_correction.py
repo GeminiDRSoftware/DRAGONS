@@ -31,11 +31,11 @@ URL = 'https://archive.gemini.edu/file/'
 datasets = {
 
     # --- Good datasets ---
-    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um Ok
-    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um OK
-    "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um OK
-    "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um Ok
-    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um Takes forever on Notebook
+    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+    "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+    "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
     "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
 
     # --- Need improvement ---
@@ -73,17 +73,10 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
     assert gap_local.is_continuous_right_gap()
 
 
-# @pytest.mark.gmosls
-# @pytest.mark.dragons_remote_data
-# def test_applied_qe_is_globally_continuous(gap_global):
-#     print(gap_global.x_out)
-#     assert gap_global.is_continuous()
-#
-#
-# @pytest.mark.gmosls
-# @pytest.mark.dragons_remote_data
-# def test_applied_qe_is_stable():
-#     pass
+@pytest.mark.gmosls
+@pytest.mark.dragons_remote_data
+def test_applied_qe_is_stable():
+    pass
 
 
 # -- Fixtures -----------------------------------------------------------------
@@ -131,6 +124,22 @@ def cache_path(new_path_to_inputs):
 
 @pytest.fixture(scope='module')
 def gap_local(processed_ad, output_path):
+    """
+    Reads the processed spectrum and uses spline to measure the size of the jumps
+    at the center of the gaps.
+
+    Parameters
+    ----------
+    processed_ad : AstroData
+        Extracted and wavelength calibrated spectrum.
+    output_path : contextmanager
+        Custom context manager used to enter and leave the output folder easily.
+
+    Returns
+    -------
+    MeasureGapSizeLocallyWithSpline : object that contains metrics related to the
+        gap size.
+    """
 
     basename = processed_ad.filename.replace('_linearized', '')
     kwargs = gap_local_kw[basename] if basename in gap_local_kw.keys() else {}
@@ -139,14 +148,6 @@ def gap_local(processed_ad, output_path):
     with output_path():
         gap = MeasureGapSizeLocallyWithSpline(processed_ad, **kwargs)
 
-    return gap
-
-
-@pytest.fixture(scope='module')
-def gap_global(processed_ad, output_path):
-    # Save plots in output folder
-    with output_path():
-        gap = MeasureGapSizeGloballyWithSpline(processed_ad)
     return gap
 
 
@@ -221,6 +222,29 @@ def output_path(request, path_to_outputs):
 @pytest.fixture(scope='module', params=datasets)
 def processed_ad(
         request, cache_path, reduce_arc, reduce_bias, reduce_data, reduce_flat):
+    """
+    Cache the data locally, query for calibrations, process them
+    and the input file, and returns the processed spectrum.
+
+    Parameters
+    ----------
+    request : pytest.fixture
+
+    cache_path : pytest.fixture
+
+    reduce_arc : pytest.fixture
+
+    reduce_bias : pytest.fixture
+
+    reduce_data : pytest.fixture
+
+    reduce_flat : pytest.fixture
+
+    Returns
+    -------
+    AstroData : extracted, sky corrected, QE corrected and wavelength calibrated
+    spectrum.
+    """
 
     filename = cache_path(request.param)
 
@@ -356,9 +380,9 @@ def reduce_flat(output_path):
     function : A function that will read the flat files, process them and
     return the name of the master flat.
     """
-    def _reduce_flat(datalabel, flat_fnames, master_bias):
+    def _reduce_flat(data_label, flat_fnames, master_bias):
         with output_path():
-            logutils.config(file_name='log_flat_{}.txt'.format(datalabel))
+            logutils.config(file_name='log_flat_{}.txt'.format(data_label))
 
             calibration_files = ['processed_bias:{}'.format(master_bias)]
 
@@ -534,7 +558,6 @@ class MeasureGapSizeLocally(abc.ABC):
     sigma_upper : float
         Upper sigma limit for sigma clipping.
     """
-
     def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
                  order=5, sigma_lower=1.5, sigma_upper=3, wav_min=350.,
                  wav_max=1050):
@@ -714,54 +737,6 @@ class MeasureGapSizeLocally(abc.ABC):
         return fig, axs
 
 
-class MeasureGapSizeLocallyWithPolynomial(MeasureGapSizeLocally):
-
-    def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
-                 sigma_lower=1.5, sigma_upper=3, wav_min=375, wav_max=1050):
-
-        super(MeasureGapSizeLocallyWithPolynomial, self).__init__(
-            ad,
-            bad_cols=bad_cols,
-            fit_family='Pol.',
-            med_filt_size=med_filt_size,
-            order=order,
-            sigma_lower=sigma_lower,
-            sigma_upper=sigma_upper,
-            wav_max=wav_max,
-            wav_min=wav_min)
-
-    def fit(self, x_seg, y_seg):
-
-        fit = modeling.fitting.LinearLSQFitter()
-        self.fit_family = "Pol."
-
-        or_fit = modeling.fitting.FittingWithOutlierRemoval(
-            fit, sigma_clip, niter=3,
-            sigma_lower=self.sigma_lower, sigma_upper=self.sigma_upper)
-
-        poly_init = modeling.models.Polynomial1D(degree=self.order)
-
-        polynomials = []
-        for i, (xx, yy) in enumerate(zip(x_seg, y_seg)):
-
-            xx = xx[self.bad_cols:-self.bad_cols]
-            yy = yy[self.bad_cols:-self.bad_cols]
-
-            ww = self.w_solution(xx)
-            ww = np.ma.masked_array(ww)
-            ww.mask = np.logical_or(ww.mask, ww < 375)
-            ww.mask = np.logical_or(ww.mask, ww > 1075)
-
-            yy.mask = np.logical_or(yy.mask, ww.mask)
-            yy.mask = np.logical_or(yy.mask, ww.mask)
-
-            pp, rej_mask = or_fit(poly_init, xx, yy)
-            pp.mask = rej_mask
-            polynomials.append(pp)
-
-        return polynomials
-
-
 class MeasureGapSizeLocallyWithSpline(MeasureGapSizeLocally):
 
     def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
@@ -798,183 +773,6 @@ class MeasureGapSizeLocallyWithSpline(MeasureGapSizeLocally):
             splines.append(spl)
 
         return splines
-
-
-class MeasureGapSizeGlobally(abc.ABC):
-    """
-    Base class used to measure gap size globally.
-
-    Parameters
-    ----------
-    ad : astrodata.AstroData
-        Input qe corrected spectrum with wavelength solution.
-    bad_cols : int
-        Number of bad columns around the gaps.
-    fit_family : str
-        Short name of the fit method to be used in plots and labels.
-    med_filt_size : int
-        Median filter size.
-    order : int
-        Order of the polynomial/chebyshev/spline fit (depends on sub-class).
-    sigma_lower : float
-        Lower sigma limit for sigma clipping.
-    sigma_upper : float
-        Upper sigma limit for sigma clipping.
-    """
-    def __init__(self, ad, bad_cols=21, fit_family=None, med_filt_size=5,
-                 order=5, sigma_lower=1.5, sigma_upper=3):
-
-        self.ad = ad
-        self.bad_cols = bad_cols
-        self.fit_family = fit_family
-        self.median_filter_size = med_filt_size
-        self.obs_id = ad.observation_id()
-        self.order = order
-        self.sigma_lower = sigma_lower
-        self.sigma_upper = sigma_upper
-
-        self.w_solution = WSolution(ad)
-
-        m = ad[0].mask > 0
-        y = ad[0].data
-        v = ad[0].variance  # Never used for anything. But...
-        x = np.arange(y.size)
-
-        w = self.w_solution(x)
-        w = np.ma.masked_outside(w, 375, 1075)
-
-        y = np.ma.masked_array(y, mask=m)
-        y = smooth_data(y, self.median_filter_size)
-        y, v = normalize_data(y, v)
-
-        split_mask = ad[0].mask >= 16
-        x_seg, y_seg, cuts = split_arrays_using_mask(x, y, split_mask, self.bad_cols)
-
-        self.gaps = [Gap(cuts[2 * i], cuts[2 * i + 1], bad_cols)
-                     for i in range(cuts.size // 2)]
-
-        x_in, y_in, w_in = self.get_inner_data(x_seg, y_seg)
-        x_out, y_out, w_out = self.get_outer_data(x_seg, y_seg)
-        print(x_out)
-
-        self.model_in, self.model_out = self.fit(x_in, y_in, x_out, y_out)
-
-        w_in.mask = np.logical_or(w_in.mask, self.model_in.mask)
-        w_out.mask = np.logical_or(w_out.mask, self.model_out.mask)
-
-        # Saving variables to self to plot
-        self.x, self.y, self.w = x, y, w
-        self.x_seg, self.y_seg, self.cuts = x_seg, y_seg, cuts
-        self.x_in, self.y_in, self.w_in = x_in, y_in, w_in
-        self.x_out, self.y_out, self.w_out = x_out, y_out, w_out
-        self.plot()
-
-    @abc.abstractmethod
-    def fit(self, x_in, y_in, x_out, y_out):
-        pass
-
-    def get_inner_data(self, x_seg, y_seg):
-        x_in = x_seg[1][self.bad_cols:-self.bad_cols]
-        y_in = y_seg[1][self.bad_cols:-self.bad_cols]
-        w_in = self.w_solution(x_in)
-        return x_in, y_in, w_in
-
-    def get_outer_data(self, x_seg, y_seg):
-
-        x_out = np.hstack((
-            x_seg[0][self.bad_cols:-self.bad_cols],
-            x_seg[2][self.bad_cols:-self.bad_cols]))
-
-        y_out = np.hstack((
-            y_seg[0][self.bad_cols:-self.bad_cols],
-            y_seg[2][self.bad_cols:-self.bad_cols]))
-
-        w_out = self.w_solution(x_out)
-        w_out = np.ma.masked_array(w_out)
-        w_out.mask = np.logical_or(w_out.mask, w_out < 375)
-        w_out.mask = np.logical_or(w_out.mask, w_out > 1075)
-
-        y_out.mask = np.logical_or(y_out.mask, w_out.mask)
-        y_out.mask = np.logical_or(y_out.mask, y_out < 0.01)
-
-        return x_out, y_out, w_out
-
-    def is_continuous(self):
-        diff = self.y_in - self.model_out(self.x_in)
-        return np.all(np.logical_and(-0.05 < diff, diff < 0.05))
-
-    def plot(self):
-
-        plot_name = 'global_gap_{}_{}'.format(
-            self.fit_family.lower().replace('.', ''), self.obs_id)
-
-        plot_title = "QE Corrected Spectra: {:s} Bridge fit\n {:s}".format(
-            self.fit_family, self.obs_id)
-
-        plt.close(plot_name)
-
-        fig, axs = plt.subplots(
-            constrained_layout=True, dpi=DPI, figsize=(6, 6),
-            gridspec_kw={'height_ratios': [4, 1]}, nrows=2,
-            num=plot_name, sharex='all')
-
-        axs[0].fill_between(self.w, 0, self.y, fc='k', alpha=0.1)
-
-        for i, (xx, yy) in enumerate(zip(self.x_seg, self.y_seg)):
-            ww = self.w_solution(xx)
-            yy.mask = np.logical_or(yy.mask, ww < 375)
-            yy.mask = np.logical_or(yy.mask, ww > 1075)
-
-            c, label = 'C{}'.format(i), 'Det {}'.format(i + 1)
-
-            axs[0].fill_between(ww, 0, yy, fc=c, alpha=0.3, label=label)
-
-        axs[0].plot(self.w_out.data, self.model_out(self.x_out.data), 'C3', alpha=0.2)
-        axs[0].plot(self.w_out, self.model_out(self.x_out), 'C3')
-        axs[0].plot(self.w_in.data, self.model_in(self.x_in.data), 'C1', alpha=0.2)
-        axs[0].plot(self.w_in, self.model_in(self.x_in), 'C1')
-
-        axs[0].grid(c='k', alpha=0.1)
-        axs[0].set_xlim(self.w.min(), self.w.max())
-        axs[0].set_ylim(-0.05, 1.05)
-        axs[0].set_ylabel('$\\frac{y - y_{min}}{y_{max} - y_{min}}$')
-        axs[0].set_title(plot_title)
-
-        axs[1].plot(self.w_in, self.y_in - self.model_out(self.x_in), 'C3')
-        axs[1].axhspan(-0.05, 0.05, fc='k', alpha=0.1)
-
-        axs[1].grid(c='k', alpha=0.1)
-        axs[1].set_xlabel('Wavelength [{}]'.format(self.w_solution.units))
-        axs[1].set_ylim(-0.075, 0.075)
-
-        fig.tight_layout(h_pad=0.0)
-        fig.savefig("{:s}.png".format(plot_name))
-
-
-class MeasureGapSizeGloballyWithSpline(MeasureGapSizeGlobally):
-
-    def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
-                 sigma_lower=1.5, sigma_upper=3):
-        super(MeasureGapSizeGloballyWithSpline, self).__init__(
-            ad,
-            bad_cols=bad_cols,
-            fit_family='Spl.',
-            med_filt_size=med_filt_size,
-            order=order,
-            sigma_lower=sigma_lower,
-            sigma_upper=sigma_upper)
-
-    def fit(self, x_in, y_in, x_out, y_out):
-
-        s_in = astromodels.UnivariateSplineWithOutlierRemoval(
-            x_in, y_in, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
-            order=self.order)
-
-        s_out = astromodels.UnivariateSplineWithOutlierRemoval(
-            x_out, y_out, hsigma=self.sigma_upper, lsigma=self.sigma_lower,
-            order=self.order)
-
-        return s_in, s_out
 
 
 class WSolution:
