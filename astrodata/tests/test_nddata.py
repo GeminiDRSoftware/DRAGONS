@@ -3,7 +3,10 @@
 import numpy as np
 import pytest
 
-from astrodata.nddata import ADVarianceUncertainty
+from astrodata.nddata import NDAstroData, ADVarianceUncertainty
+from astropy.modeling import models
+from gwcs.wcs import WCS as gWCS
+from gwcs.coordinate_frames import Frame2D
 
 
 def test_variance_uncertainty_warn_if_there_are_any_negative_numbers():
@@ -34,6 +37,19 @@ def test_new_variance_uncertainty_instance_no_warning_if_the_array_is_zeros():
     with pytest.warns(None) as w:
         ADVarianceUncertainty(arr)
     assert len(w) == 0
+
+
+def test_wcs_slicing():
+    nd = NDAstroData(np.zeros((50, 50)))
+    in_frame = Frame2D(name="in_frame")
+    out_frame = Frame2D(name="out_frame")
+    nd.wcs = gWCS([(in_frame, models.Identity(2)),
+                   (out_frame, None)])
+    assert nd.wcs(10, 10) == (10, 10)
+    assert nd[10:].wcs(10, 10) == (10, 20)
+    assert nd[..., 10:].wcs(10, 10) == (20, 10)
+    assert nd[:, 5].wcs(10) == (5, 10)
+    assert nd[20, -10:].wcs(0) == (40, 20)
 
 
 if __name__ == '__main__':

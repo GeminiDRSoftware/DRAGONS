@@ -7,15 +7,19 @@ from __future__ import (absolute_import, division, print_function)
 
 import warnings
 from copy import deepcopy
+from functools import reduce
 
 from astropy.nddata import (NDData, NDSlicingMixin, NDArithmeticMixin,
                             VarianceUncertainty)
 from astropy.io.fits import ImageHDU
+from astropy.modeling import models, Model
 
 import numpy as np
 
 from astropy.wcs import WCS
 from gwcs.wcs import WCS as gWCS
+
+INTEGER_TYPES = (int, np.integer)
 
 __all__ = ['NDAstroData']
 
@@ -74,6 +78,7 @@ class NDWindowingAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
 
     @property
     def wcs(self):
+        return self._target._slice_wcs(self._window)
         return self._target.wcs
 
     @property
@@ -192,6 +197,68 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
                                    handle_mask=handle_mask, handle_meta=handle_meta,
                                    uncertainty_correlation=uncertainty_correlation,
                                    compare_wcs=compare_wcs, **kwds)
+
+    def _slice_wcs(self, slices):
+        """
+        gWCS doesn't appear to conform to the APE 14 interface for WCS
+        implementations, and doesn't react to slicing properly. We override
+        NDSlicing's method to do what we want.
+        """
+        if not isinstance(self.wcs, gWCS):
+            return self.wcs
+
+        # Sanitize the slices, catching some errors early
+        if not isinstance(slices, (tuple, list)):
+            slices = (slices,)
+        slices = list(slices)
+        ndim = len(self.shape)
+        if len(slices) > ndim:
+            raise ValueError(f"Too many dimensions specified in slice {slices}")
+
+        if Ellipsis in slices:
+            if slices.count(Ellipsis) > 1:
+                raise IndexError("Only one ellipsis can be specified in a slice")
+            ell_index = slices.index(Ellipsis)
+            slices[ell_index:ell_index+1] = [slice(None)] * (ndim - len(slices) + 1)
+        slices.extend([slice(None)] * (ndim-len(slices)))
+
+        mods = []
+        mapped_axes = []
+        for i, (slice_, length) in enumerate(zip(slices[::-1], self.shape)):
+            model = []
+            if isinstance(slice_, slice):
+                if slice_.step and slice_.step > 1:
+                    raise IndexError("Cannot slice with a step")
+                if slice_.start:
+                    start = length + slice_.start if slice_.start < 1 else slice_.start
+                    if start > 0:
+                        model.append(models.Shift(start))
+                mapped_axes.append(max(mapped_axes)+1 if mapped_axes else 0)
+            elif isinstance(slice_, INTEGER_TYPES):
+                model.append(models.Const1D(slice_))
+                mapped_axes.append(-1)
+            else:
+                raise IndexError("Slice not an integer or range")
+            if model:
+                mods.append(reduce(Model.__or__, model))
+            else:
+                # If the previous model was an Identity, we can hang this
+                # one onto that without needing to append a new Identity
+                if i > 0 and isinstance(mods[-1], models.Identity):
+                    mods[-1] = models.Identity(mods[-1].n_inputs + 1)
+                else:
+                    mods.append(models.Identity(1))
+
+        slicing_model = reduce(Model.__and__, mods)
+        if mapped_axes != list(np.arange(ndim)):
+            mapped_axes = [max(x, 0) for x in mapped_axes]
+            slicing_model = models.Mapping(mapped_axes) | slicing_model
+
+        if isinstance(slicing_model, models.Identity) and slicing_model.n_inputs == ndim:
+            return self.wcs  # Unchanged!
+        new_wcs = deepcopy(self.wcs)
+        new_wcs.insert_transform(new_wcs.input_frame, slicing_model, after=True)
+        return new_wcs
 
     @property
     def window(self):
