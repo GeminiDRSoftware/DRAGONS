@@ -410,7 +410,7 @@ class Standardize(PrimitivesBASE):
                 new_xorigin, new_yorigin = ad[ref_index].wcs(0, 0)
                 origin_shift = models.Shift(-new_xorigin) & models.Shift(-new_yorigin)
 
-                # Ideally I' like to insert this shift at the start of the final
+                # Ideally I'd like to insert this shift at the start of the final
                 # pipeline step, but that screws up slicing this pipeline, so we
                 # add it to the end of the previous step
                 #ref_wcs.insert_transform(ref_wcs.input_frame, origin_shift,
