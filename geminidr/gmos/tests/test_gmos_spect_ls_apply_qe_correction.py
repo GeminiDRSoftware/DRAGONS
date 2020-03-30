@@ -80,13 +80,12 @@ gap_local_kw = {
 }
 
 # -- Tests --------------------------------------------------------------------
-@pytest.mark.skip
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
 def test_applied_qe_is_locally_continuous_at_left_gap(gap_local):
     assert gap_local.is_continuous_left_gap()
 
-@pytest.mark.skip
+
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
 def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
