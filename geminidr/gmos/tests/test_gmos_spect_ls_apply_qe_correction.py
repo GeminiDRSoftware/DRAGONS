@@ -32,7 +32,6 @@ datasets = {
 
     # --- Good datasets ---
     "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
-    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
     "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
     "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
     "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
@@ -60,7 +59,8 @@ datasets = {
     # "N20190427S0141.fits",  # GN-2019A-Q-233-45-004 R150 0.660um
 
     # --- Other ---
-    # "N20190201S0163.fits",  # Could not reduce?
+    # "N20190201S0163.fits",  # Could not reduce? (p.writeOutputs frozen)
+    # "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um (p.writeOutputs frozen)
 
 }
 
@@ -97,7 +97,8 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
 def test_applied_qe_is_stable(processed_ad, reference_ad):
     for processed_ext, reference_ext in zip(processed_ad, reference_ad):
         np.testing.assert_allclose(
-            processed_ext.data, reference_ext.data)
+            np.ma.masked_array(processed_ext.data, mask=processed_ext.mask), 
+            np.ma.masked_array(reference_ext.data, mask=reference_ext.mask))
 
 
 # -- Fixtures -----------------------------------------------------------------
