@@ -105,7 +105,7 @@ Any global tables, like ``REFCAT`` above, are stored in the private attribute
 All tables are stored as :class:`astropy.table.Table`. Access to those table
 is done using the key directly as if it were a normal attributed, eg.
 ``ad.REFCAT``. Header information for the table, if read in from a FITS table,
-is stored in the ``meta`` attribute of the :class:`astropy.table.Table, eg.
+is stored in the ``meta`` attribute of the :class:`astropy.table.Table`, eg.
 ``ad.REFCAT.meta['header']``. It is for information only, it is not used.
 
 
@@ -137,7 +137,7 @@ all the global attributes are kept. For example::
 
 Note how ``REFCAT`` is still present.
 
-The science data is accessed as ``ad[0].data``, the variance as ``ad.variance``,
+The science data is accessed as ``ad[0].data``, the variance as ``ad[0].variance``,
 and the data quality plane as ``ad[0].mask``.   Those familiar with astropy
 |NDData| will recognize the structure "data, error, mask", and will notice
 some differences. First |AstroData| uses the variance for the error plane, not
@@ -179,4 +179,3 @@ are not. The pixel data are loaded into memory only when they are first
 needed. This is not real "memory mapping", more of a delayed loading. This
 is useful when someone is only interested in the metadata, especially when
 the files are very large.
-
