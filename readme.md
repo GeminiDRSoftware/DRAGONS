@@ -24,7 +24,7 @@ To install:
 
 $ conda create -n geminiconda python=3.6 gemini stsci
 
-A list of changes since 2.1.0 can be found in [Changes.md](https://github.com/GeminiDRSoftware/DRAGONS/blob/release/2.1.x/Changes.md).
+A list of changes since 2.1.0. can be found in the [Change Logs](https://dragons.readthedocs.io/en/v2.1.1/changes.html).
 
 ---
 # What is DRAGONS
