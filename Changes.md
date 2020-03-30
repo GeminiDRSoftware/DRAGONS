@@ -1,6 +1,6 @@
-#2.1.1
+# 2.1.1
 
-##Bug Fixes
+## Bug Fixes
 
 **geminidr.core**
 * Fix a crash when a section was used when stacking.
@@ -15,10 +15,10 @@
 * Make adcc more robust to missing connection to fitsstore.
 
 
-##Compatibility
+## Compatibility
 
 **gempy.gemini**
-* Add compatibility with sigma_clip fro astropy v3.1+
+* Add compatibility with sigma_clip for astropy v3.1+
 * Add IRAF compatibility keywords on GMOS mosaiced data.
 * Add compatibility with astroquery 0.4.
 
@@ -29,6 +29,6 @@
 * Add IRAF compatibility recipe.
 
 
-##Documentation
+## Documentation
 
 * Various fixes to documentation and instruction manual following feedback from users.

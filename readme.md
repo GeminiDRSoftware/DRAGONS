@@ -11,11 +11,10 @@
 </table>
 
 # Current Status
-**The stable version is v2.1.0.**  This is the first publicly released version
-of DRAGONS.  It is distributed as a conda package, *dragons*, and it is 
+**The stable version is v2.1.1.**  DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 2.1.0 is recommend of the reduction of **imaging** data from Gemini's
+Version 2.1.1 is recommend of the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI.
 
 There is no spectroscopy support in this release.  To reduce Gemini spectroscopy
@@ -49,3 +48,4 @@ the reduction of data from the appropriate instrument.
 
 Software developers should start with the Astrodata and Recipe System
 manuals.
+
