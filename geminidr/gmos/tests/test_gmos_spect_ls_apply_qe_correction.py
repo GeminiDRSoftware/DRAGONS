@@ -31,14 +31,17 @@ URL = 'https://archive.gemini.edu/file/'
 datasets = {
 
     # --- Good datasets ---
-    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
-    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
-    "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
-    "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
-    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
-    "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+    # "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+    # "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
+    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+    # "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
+    # "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
+    # "N20190427S0126.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
+    # "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+    # "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+    # "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
 
-    # --- Need improvement ---
+    # --- QE Correction Needs improvement ---
     # "N20180721S0444.fits",  # GN-2018B-Q-313-5-002 B1200 0.44um
     # "N20190707S0032.fits",  # GN-2019A-Q-232-32-001 B1200 0.453um
     # "N20190929S0127.fits",  # GN-2019B-Q-209-5-001 B1200 0.449um
@@ -46,15 +49,31 @@ datasets = {
     # "S20181025S0033.fits",  # GS-2018B-Q-311-5-001 B1200 0.445um
     # "S20190506S0088.fits",  # GS-2019A-Q-401-5-001 B1200 0.45um
     # "S20190118S0102.fits",  # GS-2018B-Q-308-8-001 B600 0.589um
-    # "N20181005S0139.fits",  # GN-2018B-FT-207-5-001 R400 0.700
+    # "N20181005S0139.fits",  # GN-2018B-FT-207-5-001 R400 0.700um
 
-    # --- Won't do ---
+    # --- ToDo: QE correction is good. Need to find fitting parameters ---
+    # "N20180509S0010.fits",  # GN-2018A-FT-107-7-001 R400 0.900um
+    # "N20180516S0081.fits",  # GN-2018C-1-37-001 R600 0.860um
+
+    # --- Test Won't do ---
+    # "N20180508S0021.fits",  # GN-2018A-Q-212-9-005 B600 0.720um
+    # "N20190427S0141.fits",  # GN-2019A-Q-233-45-004 R150 0.660um
+
+    # --- Other ---
+    # "N20190201S0163.fits",  # Could not reduce?
 
 }
 
 gap_local_kw = {
     "N20180109S0287.fits": {'bad_cols': 5},
+    "N20180228S0134.fits": {},
+    "N20180508S0021.fits": {'bad_cols': 5, 'order': 5, 'sigma_lower': 1.5},
+    "N20180509S0010.fits": {},
+    "N20190201S0163.fits": {},
     "N20190302S0089.fits": {'bad_cols': 5, 'wav_min': 450},
+    "N20190313S0114.fits": {},
+    "N20190427S0123.fits": {'bad_cols': 5, 'order': 3},
+    "N20190427S0126.fits": {'bad_cols': 5, 'order': 3},
     "N20190910S0028.fits": {},
     "S20180919S0139.fits": {'bad_cols': 10, 'order': 4},
     "S20191005S0051.fits": {'order': 8},
@@ -75,7 +94,7 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
 
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
-def test_applied_qe_is_stable():
+def test_applied_qe_is_stable(processed_ad, reference_ad):
     pass
 
 
@@ -399,6 +418,20 @@ def reduce_flat(output_path):
     return _reduce_flat
 
 
+@pytest.fixture(scope="module", params=datasets)
+def reference_ad(request):
+    """
+    Parameters
+    ----------
+    request
+
+    Returns
+    -------
+    AstroData
+    """
+    return True
+
+
 # -- Classes and functions for analysis ---------------------------------------
 def normalize_data(y, v):
     """
@@ -685,8 +718,15 @@ class MeasureGapSizeLocally(abc.ABC):
         self.plot_name = "local_gap_size_{}_{}".format(
             self.fit_family.lower().replace('.', ''), self.ad.data_label())
 
-        plot_title = "QE Corrected Spectrum: {:s} Fit for each detector\n {:s}".format(
-            self.fit_family, self.ad.data_label())
+        plot_title = (
+             "QE Corrected Spectrum: {:s} Fit for each detector"
+             "\n {:s} {:s} {:.3f}um")
+
+        plot_title = plot_title.format(
+                self.fit_family,
+                self.ad.data_label(),
+                self.ad.disperser(pretty=True),
+                self.ad.central_wavelength(asMicrometers=True))
 
         plt.close(self.plot_name)
 
