@@ -31,15 +31,15 @@ URL = 'https://archive.gemini.edu/file/'
 datasets = {
 
     # --- Good datasets ---
-    # "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
-    # "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
-    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
-    # "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
-    # "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
-    # "N20190427S0126.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
-    # "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
-    # "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
-    # "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+    "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
+    "N20180228S0134.fits",  # GN-2018A-Q-121-11-001 R400 0.52um
+    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+    "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
+    "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
+    "N20190427S0126.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
+    "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+    "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+    "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
 
     # --- QE Correction Needs improvement ---
     # "N20180721S0444.fits",  # GN-2018B-Q-313-5-002 B1200 0.44um
@@ -80,12 +80,13 @@ gap_local_kw = {
 }
 
 # -- Tests --------------------------------------------------------------------
+@pytest.mark.skip
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
 def test_applied_qe_is_locally_continuous_at_left_gap(gap_local):
     assert gap_local.is_continuous_left_gap()
 
-
+@pytest.mark.skip
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
 def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
@@ -95,7 +96,9 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
 def test_applied_qe_is_stable(processed_ad, reference_ad):
-    pass
+    for processed_ext, reference_ext in zip(processed_ad, reference_ad):
+        np.testing.assert_allclose(
+            processed_ext.data, reference_ext.data)
 
 
 # -- Fixtures -----------------------------------------------------------------
@@ -419,17 +422,26 @@ def reduce_flat(output_path):
 
 
 @pytest.fixture(scope="module", params=datasets)
-def reference_ad(request):
+def reference_ad(request, new_path_to_refs):
     """
     Parameters
     ----------
-    request
+    request : pytest.fixture
+        Fixture that contains information this fixture's parent.
+    new_path_to_refs : pytest.fixture
+        Fixture containing the root path to the reference files.
 
     Returns
     -------
-    AstroData
+    AstroData : static reference 1D spectrum.
     """
-    return True
+    filename = request.param.replace(".fits", "_linearized.fits")
+    path = os.path.join(new_path_to_refs, filename)
+
+    if not os.path.exists(path):
+        raise IOError(" Reference file does not exists: \n{:s}".format(path))
+
+    return astrodata.open(path)
 
 
 # -- Classes and functions for analysis ---------------------------------------
