@@ -95,7 +95,10 @@ def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
 @pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
 def test_applied_qe_is_stable(processed_ad, reference_ad):
-    for processed_ext, reference_ext in zip(processed_ad, reference_ad):
+
+    ref_ad = reference_ad(processed_ad.filename)
+
+    for processed_ext, reference_ext in zip(processed_ad, ref_ad):
         np.testing.assert_allclose(
             np.ma.masked_array(processed_ext.data, mask=processed_ext.mask), 
             np.ma.masked_array(reference_ext.data, mask=reference_ext.mask))
@@ -421,27 +424,22 @@ def reduce_flat(output_path):
     return _reduce_flat
 
 
-@pytest.fixture(scope="module", params=datasets)
-def reference_ad(request, new_path_to_refs):
+@pytest.fixture(scope="module")
+def reference_ad(new_path_to_refs):
     """
     Parameters
     ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
     new_path_to_refs : pytest.fixture
         Fixture containing the root path to the reference files.
 
     Returns
     -------
-    AstroData : static reference 1D spectrum.
+    function : function that loads the reference file.
     """
-    filename = request.param.replace(".fits", "_linearized.fits")
-    path = os.path.join(new_path_to_refs, filename)
-
-    if not os.path.exists(path):
-        raise IOError(" Reference file does not exists: \n{:s}".format(path))
-
-    return astrodata.open(path)
+    def _reference_ad(filename):
+        path = os.path.join(new_path_to_refs, filename)
+        return astrodata.open(path)
+    return _reference_ad
 
 
 # -- Classes and functions for analysis ---------------------------------------
