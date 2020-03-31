@@ -21,7 +21,7 @@ class F2Spect(F2, Spect):
     for the F2Spect level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "F2", "SPECT"])
+    tagset = {"GEMINI", "F2", "SPECT"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

@@ -425,7 +425,7 @@ class Bookkeeping(PrimitivesBASE):
                               "written to the same name {}".format(
                         params['outfilename'])
                     log.critical(message)
-                    raise IOError(message)
+                    raise OSError(message)
                 else:
                     outfilename = params['outfilename']
             else:

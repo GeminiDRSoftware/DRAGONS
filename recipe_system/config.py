@@ -54,7 +54,7 @@ class ConfigObject:
         try:
             return self._sections[item.lower()]
         except KeyError:
-            raise KeyError("There is no {0!r} section".format(item))
+            raise KeyError("There is no {!r} section".format(item))
 
     def export_section(self, section):
         """
@@ -285,16 +285,16 @@ class Section:
         return self._contents.copy()
 
     def __setattr__(self, attr, value):
-        raise RuntimeError("Attribute {0!r} is read-only".format(attr))
+        raise RuntimeError("Attribute {!r} is read-only".format(attr))
 
     def __getattr__(self, attr):
         try:
             return self._contents[attr]
         except KeyError:
-            raise AttributeError("Unknown attribute {0!r}".format(attr))
+            raise AttributeError("Unknown attribute {!r}".format(attr))
 
     def __repr__(self):
-        return "<Section [{0}]>".format(', '.join(list(self._contents.keys())))
+        return "<Section [{}]>".format(', '.join(list(self._contents.keys())))
 
 
 def environment_variable_name(section, option):

@@ -225,7 +225,7 @@ class DataSpider:
                     except AttributeError:
                         print("     Bad headers in file: {}".format(tfile))
                         continue
-                    except IOError:
+                    except OSError:
                         print("     Could not open file: {}".format(fname))
                         continue
                     except ValueError as err:

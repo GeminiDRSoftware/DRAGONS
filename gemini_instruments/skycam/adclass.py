@@ -1,4 +1,3 @@
-
 #
 #                                                             Gemini Observatory
 #

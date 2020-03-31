@@ -114,7 +114,7 @@ class Register(PrimitivesBASE):
             return adinputs
 
         if not all(len(ad)==1 for ad in adinputs):
-            raise IOError("All input images must have only one extension.")
+            raise OSError("All input images must have only one extension.")
 
         method = params["method"]
         fallback = params["fallback"]

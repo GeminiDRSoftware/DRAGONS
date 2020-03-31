@@ -29,7 +29,7 @@ class GMOS(Gemini, CCD):
     for the GMOS level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS"])
+    tagset = {"GEMINI", "GMOS"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

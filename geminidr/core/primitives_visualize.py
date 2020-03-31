@@ -214,7 +214,7 @@ class Visualize(PrimitivesBASE):
                     lnd.display(data, name=name, frame=frame, zscale=zscale,
                                 bpm=None if extname=='DQ' else dqdata,
                                 quiet=True, masks=masks, mask_colors=mask_colors)
-                except IOError:
+                except OSError:
                     log.warning("ds9 not found; cannot display input")
 
                 frame += 1

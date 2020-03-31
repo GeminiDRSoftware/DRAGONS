@@ -48,7 +48,7 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_tag
     def _type_spect(self):
         if self.phu.get('ACQMIR') == 'Out':
-            tags = set(['SPECT'])
+            tags = {'SPECT'}
             slit = self.phu.get('SLIT', '').lower()
             grat = self.phu.get('GRATING', '')
             prism = self.phu.get('PRISM', '')

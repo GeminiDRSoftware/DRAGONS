@@ -502,13 +502,13 @@ class SpectralDatabase:
         if database_name is not None and record_name is not None:
 
             if not os.path.isdir(database_name):
-                raise IOError('Database directory %s does not exist' %
+                raise OSError('Database directory %s does not exist' %
                               database_name)
 
             # Read in identify database
             db_filename = "%s/id%s" % (database_name, record_name)
             if not os.access(db_filename, os.R_OK):
-                raise IOError("Database file %s does not exist " \
+                raise OSError("Database file %s does not exist " \
                               "or cannot be accessed" % db_filename)
 
             db_str = get_database_string(db_filename)
@@ -517,7 +517,7 @@ class SpectralDatabase:
             # Read in fitcoords database
             db_filename = "%s/fc%s" % (database_name, record_name)
             if not os.access(db_filename, os.R_OK):
-                raise IOError("Database file %s does not exist " \
+                raise OSError("Database file %s does not exist " \
                               "or cannot be accessed" % db_filename)
 
             db_str = get_database_string(db_filename)

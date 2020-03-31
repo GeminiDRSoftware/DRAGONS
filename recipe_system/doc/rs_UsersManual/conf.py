@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Recipe System Users Manual documentation build configuration file, created by
 # sphinx-quickstart on Thu Mar 20 15:06:19 2014.
@@ -49,8 +48,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'DRAGONS - Recipe System User Manual'
-copyright = u'2019, Association of Universities for Research in Astronomy'
+project = 'DRAGONS - Recipe System User Manual'
+copyright = '2019, Association of Universities for Research in Astronomy'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -190,15 +189,15 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
-'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
+'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index-latex', 'RecipeSystemUserManual.tex',
-   u'DRAGONS - Recipe System User Manual',
-   u'Kenneth Anderson, Kathleen Labrie, Bruno Quint', 'manual'),
+   'DRAGONS - Recipe System User Manual',
+   'Kenneth Anderson, Kathleen Labrie, Bruno Quint', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -230,8 +229,8 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'recipesystemusermanual',
-     u'DRAGONS - Reduce and Recipe System User Manual',
-     [u'Kenneth Anderson, Kathleen Labrie, Bruno Quint'], 1)
+     'DRAGONS - Reduce and Recipe System User Manual',
+     ['Kenneth Anderson, Kathleen Labrie, Bruno Quint'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -245,8 +244,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'RecipeSystemUserManual',
-   u'DRAGONS - Recipe System User Manual',
-   u'Kenneth Anderson, Kathleen Labrie, Bruno Quint', 'RecipeSystemUserManual',
+   'DRAGONS - Recipe System User Manual',
+   'Kenneth Anderson, Kathleen Labrie, Bruno Quint', 'RecipeSystemUserManual',
    'How to use the Recipe System', 'Miscellaneous'),
 ]
 

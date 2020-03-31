@@ -55,10 +55,10 @@ class SExtractorETI(ETI):
         version_regexp, group_names = self._version_regexp()
         if isinstance(group_names, list):
             if len(group_names) != len(minimum_version):
-                errmsg = ("Length of regexp groups {0} is not equal to length"
-                          " of minimum_version {1}".format(len(group_names),
+                errmsg = ("Length of regexp groups {} is not equal to length"
+                          " of minimum_version {}".format(len(group_names),
                                                           len(minimum_version)))
-                raise IOError(errmsg)
+                raise OSError(errmsg)
             version = ".".join([version_regexp.match(str(stdoutdata)).group(name)
                                 for name in group_names])
         else:
@@ -159,6 +159,6 @@ class SExtractorETI(ETI):
             (result, stderrdata) = pipe_out.communicate()
             if pipe_out.returncode != 0:
                 errmsg = ("SExtractor returned an error:\n"
-                          "{0}{1}".format(result, stderrdata))
+                          "{}{}".format(result, stderrdata))
                 raise Exception(errmsg)
         return result

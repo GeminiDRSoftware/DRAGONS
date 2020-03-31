@@ -34,7 +34,7 @@ class QA(PrimitivesBASE):
     """
     This is the class containing the QA primitives.
     """
-    tagset = set(["GEMINI"])
+    tagset = {"GEMINI"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

@@ -120,7 +120,7 @@ class GMOSSpect(Spect, GMOS):
     for the GMOSSpect level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "SPECT"])
+    tagset = {"GEMINI", "GMOS", "SPECT"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)
@@ -193,7 +193,7 @@ class GMOSSpect(Spect, GMOS):
 
             if wave_model is None:
                 if 'sq' in self.mode:
-                    raise IOError("No wavelength solution for {}".format(ad.filename))
+                    raise OSError("No wavelength solution for {}".format(ad.filename))
                 else:
                     log.warning("Using approximate wavelength solution for "
                                 "{}".format(ad.filename))
@@ -218,7 +218,7 @@ class GMOSSpect(Spect, GMOS):
 
             if distort_model.inverse == distort_model:  # Identity(2)
                 if 'sq' in self.mode:
-                    raise IOError("No distortion model for {}".format(ad.filename))
+                    raise OSError("No distortion model for {}".format(ad.filename))
                 else:
                     log.warning("Proceeding without a disortion correction for "
                                 "{}".format(ad.filename))

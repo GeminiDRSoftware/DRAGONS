@@ -193,7 +193,7 @@ def fstore_get(timestamp):
 
 def specview_get(jfile):
     # hack to just open the test data file, data.json
-    with open(jfile, 'r') as json_file:
+    with open(jfile) as json_file:
         jdata = json.load(json_file)
 
     return jdata
@@ -263,8 +263,8 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 try:
                     with open(fname, 'rb') as f:
                         data = f.read()
-                except IOError:
-                    data = bytes("<b>NO SUCH RESOURCE AVAILABLE</b>".encode('utf-8'))
+                except OSError:
+                    data = bytes(b"<b>NO SUCH RESOURCE AVAILABLE</b>")
 
                 self.send_response(200)
                 if  self.path.endswith(".js"):
@@ -354,7 +354,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     if not os.path.exists(logfile):
                         msg = "Log file not available"
                     else:
-                        f = open(logfile, "r")
+                        f = open(logfile)
                         msg = f.read()
                         f.close()
                 else:
@@ -364,7 +364,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.wfile.write(
                     bytes(json.dumps(tdic, sort_keys=True, indent=4).encode('utf-8'))
                     )
-        except IOError:
+        except OSError:
             self.send_error(404, 'File Not Found: {}'.format(self.path))
             raise
         return
@@ -531,7 +531,7 @@ def startInterfaceServer(*args, **informers):
             print("Starting HTTP server on port %s ... " % str(port))
             server = MTHTTPServer(('', port), ADCCHandler)
             findingPort = False
-        except socket.error:
+        except OSError:
             print("failed, port taken")
             port += 1
 

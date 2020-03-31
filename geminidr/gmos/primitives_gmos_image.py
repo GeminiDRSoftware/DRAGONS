@@ -28,7 +28,7 @@ class GMOSImage(GMOS, Image, Photometry):
     for the GMOSImage level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "IMAGE"])
+    tagset = {"GEMINI", "GMOS", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

@@ -71,7 +71,7 @@ class Spek1D(Spectrum1D, NDAstroData):
                         wavecal = dict(zip(spectrum.WAVECAL["name"],
                                            spectrum.WAVECAL["coefficients"]))
                     except (AttributeError, KeyError):  # make a Model from the FITS WCS info
-                        det2wave = (models.Shift((1-spectrum.hdr['CRPIX1'])) |
+                        det2wave = (models.Shift(1-spectrum.hdr['CRPIX1']) |
                                     models.Scale(spectrum.hdr['CD1_1']) |
                                     models.Shift(spectrum.hdr['CRVAL1']))
                     else:

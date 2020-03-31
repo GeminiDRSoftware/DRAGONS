@@ -78,9 +78,9 @@ def loadImtoolrc(imtoolrc=None):
     for name in _name_list:
         try:
             if name:
-                _fdin = open(name,'r')
+                _fdin = open(name)
                 break
-        except IOError as error:
+        except OSError as error:
             pass
     
     #Parse the file, line by line and populate the dictionary

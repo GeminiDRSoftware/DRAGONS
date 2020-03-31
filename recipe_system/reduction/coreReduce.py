@@ -159,13 +159,13 @@ class Reduce:
         recipe = None
         try:
             ffiles = self._check_files(self.files)
-        except IOError as err:
+        except OSError as err:
             log.error(str(err))
             raise
 
         try:
             adinputs = self._convert_inputs(ffiles)
-        except IOError as err:
+        except OSError as err:
             log.error(str(err))
             raise
 
@@ -263,7 +263,7 @@ class Reduce:
         except AssertionError:
             log.error("NO INPUT FILE(s) specified")
             log.stdinfo("type 'reduce -h' for usage information")
-            raise IOError("NO INPUT FILE(s) specified")
+            raise OSError("NO INPUT FILE(s) specified")
 
         input_files = []
         bad_files = []
@@ -284,7 +284,7 @@ class Reduce:
                 log.stdinfo("These datasets were loaded:\n\t%s" % found)
             except AssertionError:
                 log.error("Caller passed no valid input files")
-                raise IOError("No valid files passed.")
+                raise OSError("No valid files passed.")
         except AssertionError:
             log.stdinfo("All submitted files appear valid:")
             if len(input_files) > 1:
@@ -318,7 +318,7 @@ class Reduce:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
                 continue
-            except IOError as err:
+            except OSError as err:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
                 continue

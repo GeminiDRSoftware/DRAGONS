@@ -26,7 +26,7 @@ class GNIRSImage(GNIRS, Image, Photometry):
     for the GNIRSImage level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GNIRS", "IMAGE"])
+    tagset = {"GEMINI", "GNIRS", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

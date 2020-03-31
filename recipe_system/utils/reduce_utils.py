@@ -368,7 +368,7 @@ def normalize_ucals(files, cals):
     for cal in cals:
         ctype, cpath = cal.split(":")
         scal, stype = ctype.split("_")
-        caltags = set([scal.upper(), stype.upper()])
+        caltags = {scal.upper(), stype.upper()}
         cad = astrodata.open(cpath)
         try:
             assert caltags.issubset(cad.tags)

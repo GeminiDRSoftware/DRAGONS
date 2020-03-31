@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Tutorial Series - GNIRS Imaging Data Reduction with DRAGONS documentation build configuration file, created by
 # sphinx-quickstart on Tue May 14 11:01:35 2019.

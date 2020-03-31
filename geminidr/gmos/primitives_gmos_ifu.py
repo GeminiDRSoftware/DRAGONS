@@ -14,7 +14,7 @@ class GMOSIFU(GMOSSpect, GMOSNodAndShuffle):
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS", "SPECT", "IFU"])
+    tagset = {"GEMINI", "GMOS", "SPECT", "IFU"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

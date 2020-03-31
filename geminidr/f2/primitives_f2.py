@@ -22,7 +22,7 @@ class F2(Gemini, NearIR):
     for the F2 level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "F2"])
+    tagset = {"GEMINI", "F2"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

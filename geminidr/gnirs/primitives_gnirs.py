@@ -19,7 +19,7 @@ class GNIRS(Gemini, NearIR):
     for the F2 level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GNIRS"])
+    tagset = {"GEMINI", "GNIRS"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

@@ -136,12 +136,12 @@ class Stack(PrimitivesBASE):
         # Perform various checks on inputs
         for ad in adinputs:
             if "PREPARED" not in ad.tags:
-                raise IOError("{} must be prepared" .format(ad.filename))
+                raise OSError("{} must be prepared" .format(ad.filename))
 
-        if len(set(len(ad) for ad in adinputs)) > 1:
-            raise IOError("Not all inputs have the same number of extensions")
-        if len(set([ext.nddata.shape for ad in adinputs for ext in ad])) > 1:
-            raise IOError("Not all inputs images have the same shape")
+        if len({len(ad) for ad in adinputs}) > 1:
+            raise OSError("Not all inputs have the same number of extensions")
+        if len({ext.nddata.shape for ad in adinputs for ext in ad}) > 1:
+            raise OSError("Not all inputs images have the same shape")
 
         # Determine the average gain from the input AstroData objects and
         # add in quadrature the read noise

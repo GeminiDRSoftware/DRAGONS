@@ -55,7 +55,7 @@ def ad_ref(request, path_to_refs):
     fname = os.path.join(path_to_refs, request.param)
 
     if not os.path.exists(fname):
-        raise IOError(" Cannot find reference file:\n {:s}".format(fname))
+        raise OSError(" Cannot find reference file:\n {:s}".format(fname))
 
     return astrodata.open(fname)
 
@@ -110,7 +110,7 @@ def ad_factory(request, path_to_inputs):
             _ad = recipe(_ad, os.path.join(path_to_inputs, subpath), **kwargs)
 
         else:
-            raise IOError(
+            raise OSError(
                 "Cannot find input file:\n {:s}\n".format(filepath) +
                 "Run PyTest with --force-preprocessed-data if you want to "
                 "force data cache and preprocessing.")

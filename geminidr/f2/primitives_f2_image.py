@@ -18,7 +18,7 @@ class F2Image(F2, Image, Photometry):
     for the F2Image level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "F2", "IMAGE"])
+    tagset = {"GEMINI", "F2", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

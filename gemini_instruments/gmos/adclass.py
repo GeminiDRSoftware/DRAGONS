@@ -112,7 +112,7 @@ class AstroDataGmos(AstroDataGemini):
             's': 'TWOSLIT'
         }
 
-        names = set(key for key in mapping.keys() if key.startswith('IFU'))
+        names = {key for key in mapping.keys() if key.startswith('IFU')}
 
         mskt, mskn = self.phu.get('MASKTYP'), self.phu.get('MASKNAME')
         if mskt == -1 and (mskn in names or re.match('g[ns]ifu_slit[rbs]_mdf', mskn)):

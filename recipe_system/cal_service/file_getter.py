@@ -13,8 +13,7 @@ def requests_getter(url):
     r = requests.get(url, timeout=10.0)
     try:
         r.raise_for_status()
-        for chunk in r.iter_content(chunk_size=128):
-            yield chunk
+        yield from r.iter_content(chunk_size=128)
     except HTTPError as err:
         raise GetterError(["Could not retrieve {}".format(url), str(err)])
     except ConnectionError as err:

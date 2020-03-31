@@ -132,7 +132,7 @@ class Image(Preprocess, Register, Resample):
                                 format(ad.filename))
                     continue
                 else:
-                    raise IOError("No processed fringe listed for {}".
+                    raise OSError("No processed fringe listed for {}".
                                    format(ad.filename))
 
             # Check the inputs have matching filters, binning, and shapes

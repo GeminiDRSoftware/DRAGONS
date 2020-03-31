@@ -25,7 +25,7 @@ class NIRIImage(NIRI, Image, Photometry):
     for the F2Image level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "NIRI", "IMAGE"])
+    tagset = {"GEMINI", "NIRI", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

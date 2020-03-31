@@ -21,7 +21,7 @@ class GSAOI(Gemini, NearIR):
     for the F2 level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GSAOI"])
+    tagset = {"GEMINI", "GSAOI"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)
@@ -98,7 +98,7 @@ class GSAOI(Gemini, NearIR):
 
                             y2o = y1o + 1024
 
-                            secstr = "[{0}:{1},{2}:{3}]".format(
+                            secstr = "[{}:{},{}:{}]".format(
                                 sec.x1 + 1, sec.x2, y1o + 1, y2o)
 
                             ext.hdr.set(kw, secstr, self.keyword_comments[kw])
@@ -169,11 +169,11 @@ class GSAOI(Gemini, NearIR):
         try:
             flat = adinputs[0]
         except IndexError:
-            raise IOError("A SET OF FLATS IS REQUIRED INPUT")
+            raise OSError("A SET OF FLATS IS REQUIRED INPUT")
         try:
             dark = self.streams['darks'][0]
         except (KeyError, TypeError, IndexError):
-            raise IOError("A SET OF DARKS IS REQUIRED INPUT")
+            raise OSError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
 

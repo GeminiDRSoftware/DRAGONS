@@ -1,4 +1,3 @@
-
 import pytest
 import astrodata
 import gemini_instruments

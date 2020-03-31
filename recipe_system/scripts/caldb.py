@@ -73,7 +73,7 @@ def usage(parser, message=None, stream=sys.stderr):
 def log(message, stream, bold=False, add_newlines=0):
     if stream is not None:
         if bold:
-            message = "\x1b[1m{0}\x1b[0m".format(message)
+            message = "\x1b[1m{}\x1b[0m".format(message)
         print(message, file=stream)
         if add_newlines > 0:
             print('\n' * add_newlines, file=stream)
@@ -88,9 +88,9 @@ class Dispatcher:
 
     def apply(self, action, args):
         try:
-            method = getattr(self, '_action_{0}'.format(action))
+            method = getattr(self, '_action_{}'.format(action))
         except AttributeError:
-            raise AttributeError("No such action '{0}'".format(action))
+            raise AttributeError("No such action '{}'".format(action))
 
         return method(args)
 
@@ -126,16 +126,16 @@ class Dispatcher:
                 if isdir(path):
                     # Do something about verbose...
                     if args.walk:
-                        m = "Ingesting the files under {0}".format(path)
+                        m = "Ingesting the files under {}".format(path)
                     else:
-                        m = "Ingesting the files at {0}".format(path)
+                        m = "Ingesting the files at {}".format(path)
                     self._log(m)
                     self._mgr.ingest_directory(path, walk=args.walk,
                                                log=self._log)
                 else:
                     self._mgr.ingest_file(path)
-                    self._log("Ingested {0}".format(path))
-            except IOError as e:
+                    self._log("Ingested {}".format(path))
+            except OSError as e:
                 traceback.print_last()
                 print(e, file=sys.stderr)
                 return -1
@@ -146,7 +146,7 @@ class Dispatcher:
         for path in args.files:
             try:
                 self._mgr.remove_file(basename(path))
-                self._log("Removed {0}".format(path))
+                self._log("Removed {}".format(path))
             except LocalManagerError as e:
                 if e.error_type == ERROR_DIDNT_FIND:
                     log(e.message, sys.stderr)

@@ -71,7 +71,7 @@ class CalibDB(PrimitivesBASE):
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)  # from cache
             if not calurl and "qa" not in self.mode:
-                raise IOError(self._not_found.format(ad.filename))
+                raise OSError(self._not_found.format(ad.filename))
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):

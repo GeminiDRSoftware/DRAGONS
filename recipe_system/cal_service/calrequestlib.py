@@ -239,7 +239,7 @@ def process_cal_requests(cal_requests, howmany=None):
                     calibs.append(calname)
                 else:
                     err = "MD5 hash of downloaded file does not match expected hash {}"
-                    raise IOError(err.format(md5))
+                    raise OSError(err.format(md5))
 
         # If howmany=None, append the only file as a string, instead of the list
         if calibs:

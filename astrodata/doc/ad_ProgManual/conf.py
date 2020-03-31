@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Astrodata Programmer's Manual documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun  1 11:08:23 2018.
@@ -63,9 +62,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Astrodata Programmer Manual'
-copyright = u'2019, Association of Universities for Research in Astronomy'
-author = u'Ricardo Cardenes'
+project = 'Astrodata Programmer Manual'
+copyright = '2019, Association of Universities for Research in Astronomy'
+author = 'Ricardo Cardenes'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -267,7 +266,7 @@ latex_elements = {
 
      # Additional stuff for the LaTeX preamble.
      #
-     'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
+     'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
 
      # Latex figure (float) alignment
      #
@@ -278,8 +277,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index-latex', 'AstrodataProgrammerManual.tex', u'Astrodata Programmer Manual',
-     u'Ricardo Cardenes', 'manual'),
+    ('index-latex', 'AstrodataProgrammerManual.tex', 'Astrodata Programmer Manual',
+     'Ricardo Cardenes', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -320,7 +319,7 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'astrodataprogrammermanual', u'Astrodata Programmer Manual',
+    (master_doc, 'astrodataprogrammermanual', 'Astrodata Programmer Manual',
      [author], 1)
 ]
 
@@ -335,7 +334,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'AstrodataProgrammerManual', u'Astrodata Programmer Manual',
+    (master_doc, 'AstrodataProgrammerManual', 'Astrodata Programmer Manual',
      author, 'AstrodataProgrammerManual',
      'Programmer manual for the astrodata package',
      'Miscellaneous'),

@@ -19,7 +19,7 @@ class GSAOIImage(GSAOI, Image, Photometry):
     for the F2Image level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GSAOI", "IMAGE"])
+    tagset = {"GEMINI", "GSAOI", "IMAGE"}
 
     def __init__(self, adinputs, **kwargs):
         super().__init__(adinputs, **kwargs)

@@ -126,11 +126,11 @@ class NearIR(PrimitivesBASE):
         try:
             flat = adinputs[0]
         except IndexError:
-            raise IOError("A SET OF FLATS IS REQUIRED INPUT")
+            raise OSError("A SET OF FLATS IS REQUIRED INPUT")
         try:
             dark = self.streams['darks'][0]
         except (KeyError, TypeError, IndexError):
-            raise IOError("A SET OF DARKS IS REQUIRED INPUT")
+            raise OSError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
             msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {}"
@@ -250,7 +250,7 @@ class NearIR(PrimitivesBASE):
 
         if not all(dark.exposure_time() == adinputs[0].exposure_time()
                    for dark in adinputs[1:]):
-                raise IOError("Darks are not of equal exposure time")
+                raise OSError("Darks are not of equal exposure time")
 
         stack_params = self._inherit_params(params, "stackFrames")
         stack_params.update({'zero': False, 'scale': False})

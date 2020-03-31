@@ -84,7 +84,7 @@ class Resample(PrimitivesBASE):
         # before doing this? That would mean we only do one interpolation,
         # not two, and that's definitely better!
         if not all(len(ad)==1 for ad in adinputs):
-            raise IOError("All input images must have only one extension.")
+            raise OSError("All input images must have only one extension.")
 
         attributes = [attr for attr in ('data', 'mask', 'variance', 'OBJMASK')
                       if all(hasattr(ad[0], attr) for ad in adinputs)]

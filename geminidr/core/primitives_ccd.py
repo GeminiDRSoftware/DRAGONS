@@ -76,7 +76,7 @@ class CCD(PrimitivesBASE):
                                 "bias was specified".format(ad.filename))
                     continue
                 else:
-                    raise IOError('No processed bias listed for {}'.
+                    raise OSError('No processed bias listed for {}'.
                                   format(ad.filename))
 
             try:

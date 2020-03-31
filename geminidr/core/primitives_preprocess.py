@@ -362,7 +362,7 @@ class Preprocess(PrimitivesBASE):
                         "correctBackgroundToReference")
         # Check that all images have the same number of extensions
         elif not all(len(ad)==len(adinputs[0]) for ad in adinputs):
-            raise IOError("Number of science extensions in input "
+            raise OSError("Number of science extensions in input "
                                     "images do not match")
         else:
             # Loop over input files
@@ -461,7 +461,7 @@ class Preprocess(PrimitivesBASE):
                                 "dark was specified".format(ad.filename))
                     continue
                 else:
-                    raise IOError("No processed dark listed for {}".
+                    raise OSError("No processed dark listed for {}".
                                    format(ad.filename))
 
             # Check the inputs have matching binning, shapes & units
@@ -586,7 +586,7 @@ class Preprocess(PrimitivesBASE):
                                 format(ad.filename))
                     continue
                 else:
-                    raise IOError("No processed flat listed for {}".
+                    raise OSError("No processed flat listed for {}".
                                    format(ad.filename))
 
             # Check the inputs have matching filters, binning, and shapes
