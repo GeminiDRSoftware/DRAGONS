@@ -101,7 +101,8 @@ def test_applied_qe_is_stable(processed_ad, reference_ad):
     for processed_ext, reference_ext in zip(processed_ad, ref_ad):
         np.testing.assert_allclose(
             np.ma.masked_array(processed_ext.data, mask=processed_ext.mask), 
-            np.ma.masked_array(reference_ext.data, mask=reference_ext.mask))
+            np.ma.masked_array(reference_ext.data, mask=reference_ext.mask),
+            atol=1e-5)
 
 
 # -- Fixtures -----------------------------------------------------------------
