@@ -72,22 +72,22 @@ pipeline {
 
         }
 
-        stage('Unit tests') {
+        stage('Unit tests Python 3.6') {
           steps {
-            parallel (
-                "py36" : {
-                    echo "Running tests Python 3.6"
-                    sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
-                    echo "Reportint coverage to CodeCov"
-                    sh 'tox -e codecov -- -F unit'
-                }
-                "py37" : {
-                    echo "Running tests Python 3.7"
-                    sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
-                    echo "Reportint coverage to CodeCov"
-                    sh 'tox -e codecov -- -F unit'
-                }
-            )
+            echo "Running tests with Python 3.6 and older dependencies"
+            sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
+            echo "Reportint coverage to CodeCov"
+            sh 'tox -e codecov -- -F unit'
+          }
+        }
+
+        stage('Unit tests Python 3.7') {
+          steps {
+            echo "Running tests with Python 3.7"
+            sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
+            echo "Reportint coverage to CodeCov"
+            sh 'tox -e codecov -- -F unit'
+          }
         }
 
         stage('Integration tests') {
