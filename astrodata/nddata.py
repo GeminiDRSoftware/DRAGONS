@@ -209,10 +209,6 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
     def shape(self):
         return self._data.shape
 
-    def _extract(self, source, scaling, section=None):
-        # FIXME: seems unused
-        return scaling(source.data if section is None else source[section])
-
     def _get_uncertainty(self, section=None):
         """Return the ADVarianceUncertainty object, or a slice of it."""
         if self._uncertainty is not None:
