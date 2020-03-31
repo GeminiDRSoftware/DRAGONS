@@ -8,6 +8,9 @@ __PARAMETERS_SET_INTERNALLY__ = ["FLAG_IMAGE",
 
 class SExtractorETIParam(ETIParam):
 
+    def __init__(self, params):
+        super().__init__(params=params)
+
     # Delete any parameters from the dict that need to be set interally
     def prepare(self):
         if self.params:
