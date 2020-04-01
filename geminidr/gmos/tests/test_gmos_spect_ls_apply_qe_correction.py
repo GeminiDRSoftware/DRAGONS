@@ -299,7 +299,23 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
 
 @pytest.fixture(scope='module')
 def get_master_arc(new_path_to_inputs, output_path):
+    """
+    Factory that creates a function that reads the master arc file from the
+    permanent input folder or from the temporarly local cache, depending on
+    command line options.
 
+    Parameters
+    ----------
+    new_path_to_inputs : pytest.fixture
+        Path to the permanent local input files.
+    output_path : contextmanager
+        Enable easy change to temporary folder when reducing data.
+
+    Returns
+    -------
+    AstroData
+        The master arc.
+    """
     def _get_master_arc(ad, pre_process):
 
         cals = get_associated_calibrations(
@@ -335,8 +351,7 @@ def qe_corrected_ad(request, get_input_ad, get_master_arc, output_path):
         Fixture that reads the master flat either from the permanent input folder
         or from the temporary cache folder.
     output_path : contextmanager
-        Fixture that contains a context manager to easily change folders when
-        reducing data.
+        Enable easy change to temporary folder when reducing data.
 
     Returns
     -------
@@ -373,8 +388,8 @@ def output_path(request, path_to_outputs):
 
     Returns
     -------
-    contextmanager : A context manager function that allows easily changing
-    folders.
+    contextmanager
+        Enable easy change to temporary folder when reducing data.
     """
     module_path = request.module.__name__.split('.') + ["outputs"]
     module_path = [item for item in module_path if item not in "tests"]
@@ -396,7 +411,24 @@ def output_path(request, path_to_outputs):
 
 @pytest.fixture(scope='module')
 def processed_ad(request, qe_corrected_ad, get_master_arc):
+    """
+    Process the QE corrected data so we can measure the jump size at each gap.
 
+    Parameters
+    ----------
+    request
+    qe_corrected_ad : AstroData
+        QE corrected astrodata (as it says).
+    get_master_arc : pytest.fixture
+        Fixture that reads the master flat either from the permanent input folder
+        or from the temporary cache folder.
+
+    Returns
+    -------
+    AstroData
+        Processed 1D bias + flat + qe + distortion + sky corrected, extracted,
+        and linearized spectrum.
+    """
     pre_process = request.config.getoption("--force-preprocess-data")
     master_arc = get_master_arc(qe_corrected_ad, pre_process)
 
@@ -544,6 +576,8 @@ def reduce_flat(output_path):
 @pytest.fixture(scope="module")
 def reference_ad(new_path_to_refs):
     """
+    Read the reference file.
+
     Parameters
     ----------
     new_path_to_refs : pytest.fixture
