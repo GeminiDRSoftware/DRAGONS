@@ -31,13 +31,13 @@ datasets = {
 
     # --- Good datasets ---
     "N20180109S0287.fits",  # GN-2017B-FT-20-13-001 B600 0.505um
-    # "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
-    # "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
-    # "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
-    # "N20190427S0126.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
-    # "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
-    # "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
-    # "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
+    "N20190302S0089.fits",  # GN-2019A-Q-203-7-001 B600 0.550um
+    "N20190313S0114.fits",  # GN-2019A-Q-325-13-001 B600 0.482um
+    "N20190427S0123.fits",  # GN-2019A-FT-206-7-001 R400 0.525um
+    "N20190427S0126.fits",  # GN-2019A-FT-206-7-004 R400 0.625um
+    "N20190910S0028.fits",  # GN-2019B-Q-313-5-001 B600 0.550um
+    "S20180919S0139.fits",  # GS-2018B-Q-209-13-003 B600 0.45um
+    "S20191005S0051.fits",  # GS-2019B-Q-132-35-001 R400 0.73um
 
     # --- QE Correction Needs improvement ---
     # "N20180721S0444.fits",  # GN-2018B-Q-313-5-002 B1200 0.44um
@@ -79,16 +79,16 @@ gap_local_kw = {
 }
 
 # -- Tests --------------------------------------------------------------------
-@pytest.mark.skip
-@pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 def test_applied_qe_is_locally_continuous_at_left_gap(gap_local):
     assert gap_local.is_continuous_left_gap()
 
 
-@pytest.mark.skip
-@pytest.mark.gmosls
 @pytest.mark.dragons_remote_data
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 def test_applied_qe_is_locally_continuous_at_right_gap(gap_local):
     assert gap_local.is_continuous_right_gap()
 
@@ -115,114 +115,6 @@ def test_applied_qe_is_stable(qe_corrected_ad, reference_ad):
 
 
 # -- Fixtures -----------------------------------------------------------------
-@pytest.fixture(scope='module', params=datasets)
-def qe_corrected_ad(request, get_input_ad, output_path):
-    """
-    Returns the processed spectrum right after running `applyQECorrection`.
-
-    Parameters
-    ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
-    get_input_ad : pytest.fixture
-        Fixture that reads the input data or cache/process it in a temporary
-        folder.
-
-    Returns
-    -------
-    AstroData
-        QE Corrected astrodata.
-    """
-
-    filename = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-
-    input_ad, master_arc = get_input_ad(filename, pre_process)
-
-    with output_path():
-        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
-        p.applyQECorrection(arc=master_arc)
-        qe_corrected_ad = p.writeOutputs().pop()
-
-    return qe_corrected_ad
-
-
-@pytest.fixture(scope='module')
-def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
-                 reduce_data,  reduce_flat):
-    """
-    Reads the input data or cache/process it in a temporary folder.
-
-    Parameters
-    ----------
-    cache_path : pytest.fixture
-        Path to where the data will be temporarily cached.
-    new_path_to_inputs : pytest.fixture
-        Path to the permanent local input files.
-    reduce_arc : pytest.fixture
-        Recipe to reduce the arc file.
-    reduce_bias : pytest.fixture
-        Recipe to reduce the bias files.
-    reduce_data : pytest.fixture
-        Recipe to reduce the data up to the step before `applyQECorrect`.
-    reduce_flat : pytest.fixture
-        Recipe to reduce the flat file.
-
-    Returns
-    -------
-    flat_corrected_ad : AstroData
-        Bias and flat corrected data.
-    master_arc : AstroData
-        Master arc data.
-    """
-    def _get_input_ad(basename, should_preprocess):
-
-        input_fname = basename.replace('.fits', '_flatCorrected.fits')
-        input_path = os.path.join(new_path_to_inputs, input_fname)
-        cals = get_associated_calibrations(basename)
-
-        if should_preprocess:
-
-            filename = cache_path(basename)
-            ad = astrodata.open(filename)
-
-            cals = [cache_path(c) for c in cals.filename.values]
-
-            master_bias = reduce_bias(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['BIAS']))
-
-            master_flat = reduce_flat(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['FLAT']), master_bias)
-
-            master_arc = reduce_arc(
-                ad.data_label(),
-                dataselect.select_data(cals, tags=['ARC']))
-
-            input_data = reduce_data(
-                ad, master_arc, master_bias, master_flat)
-
-        elif os.path.exists(input_path):
-            input_data = astrodata.open(input_path)
-
-            arc_basename = cals[cals.caltype == 'arc'].filename.values[0]
-            arc_filename = arc_basename.replace('.fits', '_arc.fits')
-
-            master_arc = astrodata.open(
-                os.path.join(new_path_to_inputs, arc_filename))
-
-        else:
-            raise IOError(
-                'Could not find input file:\n' +
-                '  {:s}\n'.format(input_path) +
-                '  Run pytest with "--force-preprocess-data" to get it')
-
-        return input_data, master_arc
-
-    return _get_input_ad
-
-
 @pytest.fixture(scope='module')
 def cache_path(request, path_to_outputs):
     """
@@ -320,8 +212,8 @@ def get_associated_calibrations(filename):
 
     def iter_nodes(node):
         cal_type = node.find(prefix + 'caltype').text
-        filename = node.find(prefix + 'filename').text
-        return filename, cal_type 
+        cal_filename = node.find(prefix + 'filename').text
+        return cal_filename, cal_type
 
     cals = pd.DataFrame(
         [iter_nodes(node) for node in tree.iter(prefix + 'calibration')],
@@ -333,6 +225,137 @@ def get_associated_calibrations(filename):
     cals = cals.drop(cals[cals.caltype.str.contains('bias')][5:].index)
 
     return cals
+
+
+@pytest.fixture(scope='module')
+def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
+                 reduce_data,  reduce_flat):
+    """
+    Reads the input data or cache/process it in a temporary folder.
+
+    Parameters
+    ----------
+    cache_path : pytest.fixture
+        Path to where the data will be temporarily cached.
+    new_path_to_inputs : pytest.fixture
+        Path to the permanent local input files.
+    reduce_arc : pytest.fixture
+        Recipe to reduce the arc file.
+    reduce_bias : pytest.fixture
+        Recipe to reduce the bias files.
+    reduce_data : pytest.fixture
+        Recipe to reduce the data up to the step before `applyQECorrect`.
+    reduce_flat : pytest.fixture
+        Recipe to reduce the flat file.
+
+    Returns
+    -------
+    flat_corrected_ad : AstroData
+        Bias and flat corrected data.
+    master_arc : AstroData
+        Master arc data.
+    """
+    def _get_input_ad(basename, should_preprocess):
+
+        input_fname = basename.replace('.fits', '_flatCorrected.fits')
+        input_path = os.path.join(new_path_to_inputs, input_fname)
+        cals = get_associated_calibrations(basename)
+
+        if should_preprocess:
+
+            filename = cache_path(basename)
+            ad = astrodata.open(filename)
+
+            cals = [cache_path(c) for c in cals.filename.values]
+
+            master_bias = reduce_bias(
+                ad.data_label(),
+                dataselect.select_data(cals, tags=['BIAS']))
+
+            master_flat = reduce_flat(
+                ad.data_label(),
+                dataselect.select_data(cals, tags=['FLAT']), master_bias)
+
+            master_arc = reduce_arc(
+                ad.data_label(),
+                dataselect.select_data(cals, tags=['ARC']))
+
+            input_data = reduce_data(
+                ad, master_arc, master_bias, master_flat)
+
+        elif os.path.exists(input_path):
+            input_data = astrodata.open(input_path)
+
+        else:
+            raise IOError(
+                'Could not find input file:\n' +
+                '  {:s}\n'.format(input_path) +
+                '  Run pytest with "--force-preprocess-data" to get it')
+
+        return input_data
+
+    return _get_input_ad
+
+
+@pytest.fixture(scope='module')
+def get_master_arc(new_path_to_inputs, output_path):
+
+    def _get_master_arc(ad, pre_process):
+
+        cals = get_associated_calibrations(
+            ad.filename.split('_')[0] + '.fits')
+
+        arc_filename = cals[cals.caltype == 'arc'].filename.values[0]
+        arc_filename = arc_filename.split('.fits')[0] + '_arc.fits'
+
+        if pre_process:
+            with output_path():
+                master_arc = astrodata.open(arc_filename)
+        else:
+            master_arc = astrodata.open(
+                os.path.join(new_path_to_inputs, arc_filename))
+
+        return master_arc
+    return _get_master_arc
+
+
+@pytest.fixture(scope='module', params=datasets)
+def qe_corrected_ad(request, get_input_ad, get_master_arc, output_path):
+    """
+    Returns the processed spectrum right after running `applyQECorrection`.
+
+    Parameters
+    ----------
+    request : pytest.fixture
+        Fixture that contains information this fixture's parent.
+    get_input_ad : pytest.fixture
+        Fixture that reads the input data or cache/process it in a temporary
+        folder.
+    get_master_arc : pytest.fixture
+        Fixture that reads the master flat either from the permanent input folder
+        or from the temporary cache folder.
+    output_path : contextmanager
+        Fixture that contains a context manager to easily change folders when
+        reducing data.
+
+    Returns
+    -------
+    AstroData
+        QE Corrected astrodata.
+    """
+
+    filename = request.param
+    pre_process = request.config.getoption("--force-preprocess-data")
+
+    input_ad = get_input_ad(filename, pre_process)
+    master_arc = get_master_arc(input_ad, pre_process)
+
+    with output_path():
+        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
+        p.applyQECorrection(arc=master_arc)
+        qe_corrected_ad = p.writeOutputs().pop()
+
+    return qe_corrected_ad
 
 
 @pytest.fixture(scope='module')
@@ -371,50 +394,22 @@ def output_path(request, path_to_outputs):
     return _output_path
 
 
-@pytest.fixture(scope='module', params=datasets)
-def processed_ad(
-        request, cache_path, reduce_arc, reduce_bias, reduce_data, reduce_flat):
-    """
-    Cache the data locally, query for calibrations, process them
-    and the input file, and returns the processed spectrum.
+@pytest.fixture(scope='module')
+def processed_ad(request, qe_corrected_ad, get_master_arc):
 
-    Parameters
-    ----------
-    request : pytest.fixture
+    pre_process = request.config.getoption("--force-preprocess-data")
+    master_arc = get_master_arc(qe_corrected_ad, pre_process)
 
-    cache_path : pytest.fixture
+    p = primitives_gmos_longslit.GMOSLongslit([qe_corrected_ad])
+    p.distortionCorrect(arc=master_arc)
+    p.findSourceApertures(max_apertures=1)
+    p.skyCorrectFromSlit()
+    p.traceApertures()
+    p.extract1DSpectra()
+    p.linearizeSpectra()
+    processed_ad = p.writeOutputs().pop()
 
-    reduce_arc : pytest.fixture
-
-    reduce_bias : pytest.fixture
-
-    reduce_data : pytest.fixture
-
-    reduce_flat : pytest.fixture
-
-    Returns
-    -------
-    AstroData : extracted, sky corrected, QE corrected and wavelength calibrated
-    spectrum.
-    """
-
-    filename = cache_path(request.param)
-
-    ad = astrodata.open(filename)
-    cals = [cache_path(c) for c in get_associated_calibrations(ad.data_label())]
-
-    master_bias = reduce_bias(
-        ad.data_label(), dataselect.select_data(cals, tags=['BIAS']))
-
-    master_flat = reduce_flat(
-        ad.data_label(), dataselect.select_data(cals, tags=['FLAT']), master_bias)
-
-    master_arc = reduce_arc(
-        ad.data_label(), dataselect.select_data(cals, tags=['ARC']))
-
-    processed_data = reduce_data(ad, master_arc, master_bias, master_flat)
-
-    return processed_data.pop()
+    return processed_ad
 
 
 @pytest.fixture(scope='module')
@@ -505,12 +500,7 @@ def reduce_data(output_path):
             p.addVAR(poisson_noise=True)
             p.flatCorrect(flat=master_flat)
             # p.applyQECorrection(arc=master_arc)
-            # p.distortionCorrect(arc=master_arc)
-            # p.findSourceApertures(max_apertures=1)
-            # p.skyCorrectFromSlit()
-            # p.traceApertures()
-            # p.extract1DSpectra()
-            # p.linearizeSpectra()
+
             processed_ad = p.writeOutputs().pop()
 
         return processed_ad
