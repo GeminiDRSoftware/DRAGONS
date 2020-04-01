@@ -111,7 +111,7 @@ def test_applied_qe_is_stable(qe_corrected_ad, reference_ad):
         np.testing.assert_allclose(
             np.ma.masked_array(qe_corrected_ext.data, mask=qe_corrected_ext.mask),
             np.ma.masked_array(reference_ext.data, mask=reference_ext.mask),
-            atol=1e-5)
+            atol=1e-4)
 
 
 # -- Fixtures -----------------------------------------------------------------
