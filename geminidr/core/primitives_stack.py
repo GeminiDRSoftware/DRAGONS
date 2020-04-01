@@ -237,10 +237,6 @@ class Stack(PrimitivesBASE):
                                 kernel=kernel, dtype=np.float32,
                                 with_uncertainty=with_uncertainty, with_mask=with_mask)
             ad_out.append(result)
-            try:
-                print(list(levels.T[0]), "OUTPUT", gt.measure_bg_from_image(ad_out[0].nddata, value_only=True))
-            except:
-                pass
             log.stdinfo("")
 
         # Propagate REFCAT as the union of all input REFCATs
