@@ -410,7 +410,7 @@ def output_path(request, path_to_outputs):
 
 
 @pytest.fixture(scope='module')
-def processed_ad(request, qe_corrected_ad, get_master_arc):
+def processed_ad(request, qe_corrected_ad, get_master_arc, output_path):
     """
     Process the QE corrected data so we can measure the jump size at each gap.
 
@@ -432,14 +432,15 @@ def processed_ad(request, qe_corrected_ad, get_master_arc):
     pre_process = request.config.getoption("--force-preprocess-data")
     master_arc = get_master_arc(qe_corrected_ad, pre_process)
 
-    p = primitives_gmos_longslit.GMOSLongslit([qe_corrected_ad])
-    p.distortionCorrect(arc=master_arc)
-    p.findSourceApertures(max_apertures=1)
-    p.skyCorrectFromSlit()
-    p.traceApertures()
-    p.extract1DSpectra()
-    p.linearizeSpectra()
-    processed_ad = p.writeOutputs().pop()
+    with output_path():
+        p = primitives_gmos_longslit.GMOSLongslit([qe_corrected_ad])
+        p.distortionCorrect(arc=master_arc)
+        p.findSourceApertures(max_apertures=1)
+        p.skyCorrectFromSlit()
+        p.traceApertures()
+        p.extract1DSpectra()
+        p.linearizeSpectra()
+        processed_ad = p.writeOutputs().pop()
 
     return processed_ad
 
