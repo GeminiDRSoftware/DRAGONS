@@ -119,12 +119,8 @@ class AstroDataGemini(AstroDataFits):
         obs = source[0].header.get('OBSERVAT', '').upper()
         tel = source[0].header.get('TELESCOP', '').upper()
 
-        isGemini = False
-        if obs in ('GEMINI-NORTH', 'GEMINI-SOUTH'):
-            isGemini = True
-        elif tel in ('GEMINI-NORTH', 'GEMINI-SOUTH'):
-            isGemini = True
-
+        isGemini = (obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
+                    or tel in ('GEMINI-NORTH', 'GEMINI-SOUTH'))
         return isGemini
 
     @astro_data_tag
