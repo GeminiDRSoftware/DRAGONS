@@ -64,34 +64,36 @@ pipeline {
             }
         }
 
-        parallel {
-            stage('Unit tests - MacOS/Python 3.6') {
-                agent{
-                    label "macos"
+        stage('Unit tests') {
+            parallel {
+                stage('Unit tests - MacOS/Python 3.6') {
+                    agent{
+                        label "macos"
+                    }
+                    steps {
+                        echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                            checkout scm
+                            sh '.jenkins/scripts/setup_agent.sh'
+                            echo "Running tests with Python 3.6 and older dependencies"
+                            sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
+                            echo "Reportint coverage to CodeCov"
+                            sh 'tox -e codecov -- -F unit'
+                    }
                 }
-                steps {
-                    echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
-                    checkout scm
-                    sh '.jenkins/scripts/setup_agent.sh'
-                    echo "Running tests with Python 3.6 and older dependencies"
-                    sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
-                    echo "Reportint coverage to CodeCov"
-                    sh 'tox -e codecov -- -F unit'
-                }
-            }
 
-            stage('Unit tests - Linux/Python 3.7') {
-                agent{
-                    label "centos7"
-                }
-                steps {
-                    echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
-                    checkout scm
-                    sh '.jenkins/scripts/setup_agent.sh'
-                    echo "Running tests with Python 3.7"
-                    sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
-                    echo "Reportint coverage to CodeCov"
-                    sh 'tox -e codecov -- -F unit'
+                stage('Unit tests - Linux/Python 3.7') {
+                    agent{
+                        label "centos7"
+                    }
+                    steps {
+                        echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                            checkout scm
+                            sh '.jenkins/scripts/setup_agent.sh'
+                            echo "Running tests with Python 3.7"
+                            sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
+                            echo "Reportint coverage to CodeCov"
+                            sh 'tox -e codecov -- -F unit'
+                    }
                 }
             }
         }
