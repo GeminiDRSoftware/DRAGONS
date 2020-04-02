@@ -48,8 +48,6 @@ We first import the necessary modules and classes:
 .. code-block:: python
     :linenos:
 
-    from __future__ import print_function
-
     import glob
 
     from gempy.adlibrary import dataselect
@@ -379,6 +377,3 @@ arguments.
 
 This function has many other parameters that can be used to customize this step
 but further details are out of the scope of this tutorial.
-
-
-

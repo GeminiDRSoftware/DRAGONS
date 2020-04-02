@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 #                                                                        DRAGONS
 #
@@ -154,7 +153,7 @@ def set_calservice(local_db_dir=None, config_file=STANDARD_REDUCTION_CONF):
     globalConf.export_section(CONFIG_SECTION)
 
 
-class CalibrationService(object):
+class CalibrationService:
     """
     The CalibrationService class provides a limited API on the LocalManager
     class. The CalibrationService is meant for public use, as opposed to the

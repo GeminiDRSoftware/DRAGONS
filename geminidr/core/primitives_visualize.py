@@ -37,7 +37,7 @@ class Visualize(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Visualize, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_visualize)
 
     def display(self, adinputs=None, **params):
@@ -214,7 +214,7 @@ class Visualize(PrimitivesBASE):
                     lnd.display(data, name=name, frame=frame, zscale=zscale,
                                 bpm=None if extname=='DQ' else dqdata,
                                 quiet=True, masks=masks, mask_colors=mask_colors)
-                except IOError:
+                except OSError:
                     log.warning("ds9 not found; cannot display input")
 
                 frame += 1

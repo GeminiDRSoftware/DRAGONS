@@ -259,7 +259,7 @@ def handleCLArgs():
 #
 # print Faces.BOLD + 'Hello World !' + Faces.END
 
-class Faces(object):
+class Faces:
     PURPLE    = '\033[95m'
     CYAN      = '\033[96m'
     DARKCYAN  = '\033[36m'
@@ -272,7 +272,7 @@ class Faces(object):
     END       = '\033[0m'
 
 # ------------------------------------------------------------------------------
-class Swap(object):
+class Swap:
 
     def __init__(self, args):
         """

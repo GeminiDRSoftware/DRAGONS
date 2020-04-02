@@ -50,7 +50,7 @@ AffineMatrices = namedtuple("AffineMatrices", "matrix offset")
 # NB. Standard python ordering!
 catalog_coordinate_columns = {'OBJCAT': (['Y_IMAGE'], ['X_IMAGE'])}
 
-class Block(object):
+class Block:
     """
     A Block is a container for multiple AD slices/NDData/ndarray objects
     to organize them prior to being accessed for a transformation.
@@ -71,12 +71,12 @@ class Block(object):
         xlast: normally arrays are placed in the standard python order,
                along the x-axis first. This reverses that order.
         """
-        super(Block, self).__init__()
+        super().__init__()
         self._elements = list(elements)
         shapes = [el.shape for el in elements]
 
         # Check all elements have the same dimensionality
-        if len(set([len(s) for s in shapes])) > 1:
+        if len({len(s) for s in shapes}) > 1:
             raise ValueError("Not all elements have same dimensionality")
 
         # Check the shape for tiling elements matches number of elements
@@ -253,7 +253,7 @@ class Block(object):
 
 #----------------------------------------------------------------------------------
 
-class Transform(object):
+class Transform:
     """
     A chained set of astropy Models with the ability to select a subchain.
     Since many transformations will be concatenated pairs of Models (one
@@ -378,8 +378,7 @@ class Transform(object):
         self._affine = self.__is_affine()
 
     def __iter__(self):
-        for model in self._models:
-            yield model
+        yield from self._models
 
     def __len__(self):
         """Length (number of models)"""
@@ -767,7 +766,7 @@ class Transform(object):
         return transform
 #----------------------------------------------------------------------------------
 
-class GeoMap(object):
+class GeoMap:
     """
     Class to store ndim mapping arrays (one for each axis) indicating the
     coordinates in the input frame that each coordinate in the output frame
@@ -815,7 +814,7 @@ class GeoMap(object):
 
 #----------------------------------------------------------------------------------
 
-class DataGroup(object):
+class DataGroup:
     """
     A DataGroup is a collection of an equal number array-like objects and
     Transforms, with the intention of transforming the arrays into a single
@@ -1264,7 +1263,7 @@ class AstroDataGroup(DataGroup):
     array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
 
     def __init__(self, arrays=[], transforms=None):
-        super(AstroDataGroup, self).__init__(arrays=arrays, transforms=transforms)
+        super().__init__(arrays=arrays, transforms=transforms)
         # To ensure uniform behaviour, we wish to encase single AD slices
         # as single-element Block objects
         self._arrays = [arr if isinstance(arr, Block) else Block(arr)
@@ -1384,9 +1383,9 @@ class AstroDataGroup(DataGroup):
 
         self.log.fullinfo("Processing the following array attributes: "
                           "{}".format(', '.join(attributes)))
-        super(AstroDataGroup, self).transform(attributes=attributes, order=order,
-                                              subsample=subsample, threshold=threshold,
-                                              conserve=conserve, parallel=parallel)
+        super().transform(attributes=attributes, order=order,
+                          subsample=subsample, threshold=threshold,
+                          conserve=conserve, parallel=parallel)
 
         adout.append(self.output_dict['data'], header=ref_ext.hdr.copy())
         for key, value in self.output_dict.items():

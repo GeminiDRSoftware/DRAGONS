@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # DRAGONS documentation build configuration file, created
 # from team template.
@@ -50,8 +49,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'DRAGONS'
-copyright = u'2019, Association of Universities for Research in Astronomy'
+project = 'DRAGONS'
+copyright = '2019, Association of Universities for Research in Astronomy'
 # Note that AURA owns the Copyright, not you.
 
 # The version info for the project you're documenting, acts as replacement for
@@ -195,7 +194,7 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
-'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
+'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
 
 # This will remove blank pages.
 'classoptions': ',openany,oneside',
@@ -205,8 +204,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'DRAGONS.tex', u'DRAGONS',
-   u'Gemini Observatory', 'manual'),
+  ('index', 'DRAGONS.tex', 'DRAGONS',
+   'Gemini Observatory', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -235,8 +234,8 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'dragons', u'DRAGONS',
-     [u'Gemini Observatory'], 1)
+    ('index', 'dragons', 'DRAGONS',
+     ['Gemini Observatory'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -249,8 +248,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'DRAGONS', u'DRAGONS',
-   u'Gemini Observatory', 'DRAGONS', 'One line description of project.',
+  ('index', 'DRAGONS', 'DRAGONS',
+   'Gemini Observatory', 'DRAGONS', 'One line description of project.',
    'Miscellaneous'),
 ]
 

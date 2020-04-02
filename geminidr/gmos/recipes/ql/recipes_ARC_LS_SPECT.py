@@ -3,7 +3,7 @@ Recipes available to data with tags ['GMOS', 'SPECT', 'LS', 'ARC'].
 These are GMOS longslit arc-lamp calibrations.
 Default is "reduce".
 """
-recipe_tags = set(['GMOS', 'SPECT', 'LS', 'ARC'])
+recipe_tags = {'GMOS', 'SPECT', 'LS', 'ARC'}
 
 
 def makeProcessedArc(p):

@@ -3,14 +3,12 @@
 #
 #                                                                localmanager.py
 # ------------------------------------------------------------------------------
-from builtins import object
 
-import future.utils
 import os
 from os.path import abspath, basename, dirname, isdir
 
 import warnings
-
+from importlib import reload
 from collections import namedtuple
 
 from sqlalchemy.exc import SAWarning, OperationalError
@@ -27,11 +25,6 @@ from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 
 from gempy.utils import logutils
-
-if future.utils.PY2:
-    from imp import reload
-else:
-    from importlib import reload
 
 # ------------------------------------------------------------------------------
 __all__ = ['LocalManager', 'LocalManagerError']
@@ -79,11 +72,11 @@ FileData = namedtuple('FileData', 'name path')
 
 class LocalManagerError(Exception):
     def __init__(self, error_type, *args, **kw):
-        super(LocalManagerError, self).__init__(*args, **kw)
+        super().__init__(*args, **kw)
         self.error_type = error_type
 
 
-class LocalManager(object):
+class LocalManager:
     def __init__(self, db_path):
         if isdir(db_path):
             self._db_path = os.path.join(db_path, DEFAULT_DB_NAME)

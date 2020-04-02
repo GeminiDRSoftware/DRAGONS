@@ -1,12 +1,8 @@
-from __future__ import division
-from __future__ import print_function
 #
 #                                                                  gemini_python
 #
 #                                                             primitives_gmos.py
 # ------------------------------------------------------------------------------
-from builtins import zip
-
 import os
 
 import astrodata
@@ -33,10 +29,10 @@ class GMOS(Gemini, CCD):
     for the GMOS level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "GMOS"])
+    tagset = {"GEMINI", "GMOS"}
 
     def __init__(self, adinputs, **kwargs):
-        super(GMOS, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.gmos.lookups'
         self._param_update(parameters_gmos)
 
@@ -195,7 +191,7 @@ class GMOS(Gemini, CCD):
                     #ext.hdr['DATASEC'] = '[{}:{},{}:{}]'.format(dsec.x1+1,
                     #                                dsec.x2, y1+1, dsec.y2)
 
-        adinputs = super(GMOS, self).subtractOverscan(adinputs, **params)
+        adinputs = super().subtractOverscan(adinputs, **params)
         return adinputs
 
     @staticmethod

@@ -21,7 +21,7 @@ def get_bias_level(adinput=None, estimate=True):
     # Trac #683
     __ALLOWED_TYPES__ = ["GMOS"]
     if not set(__ALLOWED_TYPES__).issubset(adinput.tags):
-        msg = "{0}.{1} only works for {2} data".format(__name__,
+        msg = "{}.{} only works for {} data".format(__name__,
                                                        "get_bias_level",
                                                        __ALLOWED_TYPES__)
         raise NotImplementedError(msg)

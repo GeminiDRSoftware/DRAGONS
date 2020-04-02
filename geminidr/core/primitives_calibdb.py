@@ -40,7 +40,7 @@ class CalibDB(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(CalibDB, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_calibdb)
         self._not_found = "Calibration not found for {}"
 
@@ -71,7 +71,7 @@ class CalibDB(PrimitivesBASE):
         for ad in adinputs:
             calurl = self._get_cal(ad, caltype)  # from cache
             if not calurl and "qa" not in self.mode:
-                raise IOError(self._not_found.format(ad.filename))
+                raise OSError(self._not_found.format(ad.filename))
         return adinputs
 
     def addCalibration(self, adinputs=None, **params):
@@ -86,7 +86,7 @@ class CalibDB(PrimitivesBASE):
         """
         Uses the calibration manager to population the Calibrations dict for
         all frames, updating any existing entries
-        
+
         Parameters
         ----------
         adinputs: <list>
@@ -211,7 +211,7 @@ class CalibDB(PrimitivesBASE):
         for ad in adinputs:
             if not ad.tags.issuperset(required_tags):
                 log.warning("File {} is not recognized as a {}. Not storing as"
-                            " {}.".format(ad.filename, caltype, 
+                            " {}.".format(ad.filename, caltype,
                             "science" if is_science else "a calibration"))
                 continue
             fname = os.path.join(storedcals, caltype, os.path.basename(ad.filename))
@@ -311,7 +311,7 @@ class CalibDB(PrimitivesBASE):
                                            primname=self.myself(), keyword="PROCFRNG", update_datalab=False)
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
-    
+
     def storeScience(self, adinputs=None):
         if self.mode not in ['sq', 'ql', 'qa']:
             self.log.warning('Mode %s not recognized in storeScience, not saving anything' % self.mode)
@@ -323,7 +323,7 @@ class CalibDB(PrimitivesBASE):
                 ad.phu.set('PROCSCI', self.mode)
                 ad.update_filename(suffix="_%s" % self.mode)
                 ad.write(overwrite=True)
-            
+
                 try:
                     upload_calibration(ad.filename, is_science=True)
                 except:
@@ -338,7 +338,7 @@ class CalibDB(PrimitivesBASE):
                 ad.filename = filename
                 if oldfilename != filename:
                     os.unlink(oldfilename)
-        
+
         return adinputs
 
     def storeProcessedStandard(self, adinputs=None, suffix=None):
@@ -361,7 +361,7 @@ class CalibDB(PrimitivesBASE):
 ##################
 
 def _update_datalab(ad, suffix, keyword_comments_lut):
-    # Update the DATALAB. It should end with 'suffix'.  DATALAB will 
+    # Update the DATALAB. It should end with 'suffix'.  DATALAB will
     # likely already have '_stack' suffix that needs to be replaced.
     datalab = ad.data_label()
     new_datalab = re.sub(r'_[a-zA-Z]+$', '', datalab) + suffix

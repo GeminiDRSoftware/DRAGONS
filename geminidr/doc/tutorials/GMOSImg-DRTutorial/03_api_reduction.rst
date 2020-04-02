@@ -53,8 +53,6 @@ We first import the necessary modules and classes:
 .. code-block:: python
     :linenos:
 
-    from __future__ import print_function
-
     import glob
 
     from gempy.adlibrary import dataselect

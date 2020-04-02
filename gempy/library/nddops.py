@@ -10,7 +10,6 @@
 # The methods of this class are static so they can be called on any dataset
 # to reduce its dimensionality by one.
 
-from __future__ import print_function
 
 import numpy as np
 import inspect
@@ -148,7 +147,7 @@ def rejector(fn):
     return fn
 
 
-class NDStacker(object):
+class NDStacker:
     # Base class from which all stacking functions should subclass.
     # Put helper functions here so they can be inherited.
     def __init__(self, combine='mean', reject='none', log=None, **kwargs):

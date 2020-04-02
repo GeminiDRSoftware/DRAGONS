@@ -28,7 +28,7 @@ class SExtractorETIFile(ETIFile):
         """
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
-        super(SExtractorETIFile, self).__init__(
+        super().__init__(
             name=strip_fits(input.filename)+'_{}'.format(input.hdr['EXTVER']))
         # Replace bad pixels with median value of good data, so need to
         # copy the data plane in case we edit it

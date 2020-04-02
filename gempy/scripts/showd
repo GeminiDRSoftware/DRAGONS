@@ -7,8 +7,6 @@ Eg. showd N20120212S0012.fits -d camera filter_name
     showd N20120212S*.fits -d camera filter_name
 """
 
-from __future__ import print_function
-
 import sys
 import argparse
 

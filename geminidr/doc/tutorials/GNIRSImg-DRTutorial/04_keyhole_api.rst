@@ -52,8 +52,6 @@ Importing Libraries
 .. code-block:: python
     :linenos:
 
-    from __future__ import print_function
-
     import glob
 
     # DRAGONS imports
@@ -323,4 +321,3 @@ signal-to-noise.
 .. image:: _graphics/gnirs_keyhole_after.png
    :scale: 60%
    :align: center
-

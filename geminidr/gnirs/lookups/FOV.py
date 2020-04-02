@@ -54,7 +54,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
                             aux=astrodata.open(illum), aux_type="bpm")
             illum_data = illum_ad[0].data
         else:
-            raise IOError("Cannot find illumination mask for {}".
+            raise OSError("Cannot find illumination mask for {}".
                           format(ad.filename))
 
         # Finding the center of the illumination mask

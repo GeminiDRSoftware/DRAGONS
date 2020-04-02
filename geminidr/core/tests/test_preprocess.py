@@ -138,7 +138,7 @@ def test_associateSky():
     p = NIRIImage(adinputs)
     p.separateSky()  # Difficult to construct this by hand
     p.associateSky()
-    filename_set = set([ad.phu['ORIGNAME'] for ad in adinputs])
+    filename_set = {ad.phu['ORIGNAME'] for ad in adinputs}
 
     # Test here is that each science frame has all other frames as skies
     for k, v in p.sky_dict.items():

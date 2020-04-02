@@ -2,7 +2,7 @@
 Recipes available to data with tags ['GMOS', 'IMAGE'].
 Default is "reduce_nostack".
 """
-recipe_tags = set(['GMOS', 'IMAGE'])
+recipe_tags = {'GMOS', 'IMAGE'}
 
 def reduce(p):
     """

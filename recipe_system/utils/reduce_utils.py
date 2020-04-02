@@ -1,9 +1,7 @@
-from __future__ import print_function
 #
 #                                                                reduce_utils.py
 # ------------------------------------------------------------------------------
 # Utility function library for reduce and the Reduce class.
-from builtins import range
 
 from argparse import ArgumentParser
 from argparse import HelpFormatter
@@ -300,7 +298,7 @@ def normalize_upload(upload):
     $ reduce --upload metrics, calibs <file.fits> <file2.fits>
     $ reduce --upload metrics, calibs, science <file.fits> <file2.fits>
 
-    Result in 
+    Result in
 
     upload == ['metrics']
     upload == ['metrics', 'calibs']
@@ -370,7 +368,7 @@ def normalize_ucals(files, cals):
     for cal in cals:
         ctype, cpath = cal.split(":")
         scal, stype = ctype.split("_")
-        caltags = set([scal.upper(), stype.upper()])
+        caltags = {scal.upper(), stype.upper()}
         cad = astrodata.open(cpath)
         try:
             assert caltags.issubset(cad.tags)

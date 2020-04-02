@@ -37,7 +37,7 @@ def download_from_archive(filename, path=None, env_var='DRAGONS_TEST_INPUTS'):
         raise ValueError('Environment variable not set: {:s}'.format(env_var))
 
     elif not os.access(cache_path, os.W_OK):
-        raise IOError('Could not access the path stored inside ${:s}. Make '
+        raise OSError('Could not access the path stored inside ${:s}. Make '
                       'sure the following path exists and that you have write '
                       'permissions in it: {:s}'.format(env_var, cache_path))
 
@@ -137,7 +137,7 @@ def path_to_refs():
                          "  $DRAGONS_TEST_REFS")
 
     if not os.path.exists(path):
-        raise IOError("Could not access path stored in $DRAGONS_TEST_REFS: \n"
+        raise OSError("Could not access path stored in $DRAGONS_TEST_REFS: \n"
                       "  {}".format(path))
 
     return path
@@ -270,7 +270,7 @@ def path_to_outputs(tmp_path_factory):
     path.mkdir(exist_ok=True, parents=True)
 
     if not os.path.exists(path):
-        raise IOError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
+        raise OSError("Could not access path stored in $DRAGONS_TEST_OUTPUTS: "
                       "{}\n Using current working directory".format(path))
 
     return str(path)  # todo: should astrodata be compatible with pathlib?

@@ -3,15 +3,7 @@
 #
 #                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
-from future import standard_library
-standard_library.install_aliases()
-
-from builtins import zip
-from builtins import str
-from builtins import object
-
 import hashlib
-import requests
 
 from os import mkdir
 from os.path import basename, exists
@@ -21,7 +13,7 @@ from urllib.parse import urlparse
 
 from gempy.utils import logutils
 
-from geminidr  import set_caches
+from geminidr import set_caches
 from recipe_system.cal_service import cal_search_factory, handle_returns_factory
 from .file_getter import get_file_iterator, GetterError
 # ------------------------------------------------------------------------------
@@ -61,7 +53,7 @@ def _makecachedir(caltype):
     return cachedir
 
 
-class CalibrationRequest(object):
+class CalibrationRequest:
     """
     Request objects are passed to a calibration_search() function
 
@@ -247,7 +239,7 @@ def process_cal_requests(cal_requests, howmany=None):
                     calibs.append(calname)
                 else:
                     err = "MD5 hash of downloaded file does not match expected hash {}"
-                    raise IOError(err.format(md5))
+                    raise OSError(err.format(md5))
 
         # If howmany=None, append the only file as a string, instead of the list
         if calibs:

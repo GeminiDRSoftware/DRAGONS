@@ -48,7 +48,6 @@ TODO:
     Add more logging / reports
 
 """
-from __future__ import print_function
 
 import argparse
 import datetime
@@ -75,10 +74,10 @@ all = ["main", "parse_command_line_inputs", "correct_headers", "__version__"]
 ####
 # Regular expressions
 DATE_STRING = "(?P<year>[0-9]{4})-(?P<month>[01][0-9])-(?P<day>[0123][0-9])"
-SECTION_STRING = ("\[(?P<X1>[0-9]+)\:(?P<X2>[0-9]+),"
-                  "(?P<Y1>[0-9]+):(?P<Y2>[0-9]+)\]")
+SECTION_STRING = (r"\[(?P<X1>[0-9]+)\:(?P<X2>[0-9]+),"
+                  r"(?P<Y1>[0-9]+):(?P<Y2>[0-9]+)\]")
 FILE_SYSTEM_PATHS = ["rawpath", "outpath", "backup_path"]
-FILE_SYSTEM_REGEXP = re.compile("[\$\~]+")
+FILE_SYSTEM_REGEXP = re.compile(r"[\$\~]+")
 
 # String constants for asthetics
 DELIMINATOR = "===="
@@ -159,13 +158,13 @@ def correct_headers(hdulist, report=None, logger=None, correct_phu=True,
     instrument = _get_key_value(phu, 'INSTRUME')
     dettype = _get_key_value(phu, 'DETTYPE')
 
-    log.debug("{0}".format(hdulist.filename()))
-    log.debug("INSTRUMENT: {0}; DETTYPE: {1}".format(instrument, dettype))
+    log.debug("{}".format(hdulist.filename()))
+    log.debug("INSTRUMENT: {}; DETTYPE: {}".format(instrument, dettype))
 
     # Check for non-existent keywords
     if None in [instrument, dettype]:
-        errmsg = ("Keyord has not been found - INSTRUMENT: {0}; "
-                  "DETTYPE: {1}".format(instrument, dettype))
+        errmsg = ("Keyord has not been found - INSTRUMENT: {}; "
+                  "DETTYPE: {}".format(instrument, dettype))
         log.error(errmsg)
         raise KeyError(errmsg)
 
@@ -214,7 +213,7 @@ def fix_ccdsec(hdu):
     detsec = _get_key_value(hdu, 'DETSEC')
 
     if None in [ccdsec, detsec]:
-        raise ValueError("CCDSEC {0}; detsec {1}".format(ccdsec, detsec))
+        raise ValueError("CCDSEC {}; detsec {}".format(ccdsec, detsec))
 
     updated = False
     ccd_coords = list(section_regexp.match(ccdsec).groups())
@@ -222,7 +221,7 @@ def fix_ccdsec(hdu):
 
     # Y coordinates should match!
     if ccd_coords[2:4] != detector_coords[2:4]:
-        raise ValueError("Y values: {0} {1}".format(ccdsec, detsec))
+        raise ValueError("Y values: {} {}".format(ccdsec, detsec))
 
     # X coordinates maybe wrong
     if ccd_coords[0:2] != detector_coords[0:2]:
@@ -243,7 +242,7 @@ def fix_ccdsec(hdu):
             # update ccd_coords
             ccd_coords[i] = offset_x
         # Reset CCDSEC
-        ccdsec = "[{0}:{1},{2}:{3}]".format(ccd_coords[0],
+        ccdsec = "[{}:{},{}:{}]".format(ccd_coords[0],
                                             ccd_coords[1],
                                             ccd_coords[2],
                                             ccd_coords[3])
@@ -262,10 +261,10 @@ def fix_crpix1(hdu):
     biassec = _get_key_value(hdu, 'BIASSEC')
     ccdsum = _get_key_value(hdu, 'CCDSUM')
 
-    log.debug("datasec: {0}".format(datasec))
-    log.debug("detsec: {0}".format(detsec))
-    log.debug("biassec: {0}".format(biassec))
-    log.debug("ccdsum: {0}".format(ccdsum))
+    log.debug("datasec: {}".format(datasec))
+    log.debug("detsec: {}".format(detsec))
+    log.debug("biassec: {}".format(biassec))
+    log.debug("ccdsum: {}".format(ccdsum))
 
     detector_coords = _parse_section(detsec)
     biassec_coords = _parse_section(biassec)
@@ -321,7 +320,7 @@ def fix_date_obs(phu):
     date_obs = _get_key_value(phu, "DATE-OBS")
 
     if None in [date, date_obs]:
-        raise ValueError("DATE: {0}; DATE-OBS{1}".format(date, date_obs))
+        raise ValueError("DATE: {}; DATE-OBS{}".format(date, date_obs))
     regexp = re.compile(DATE_STRING)
     date_match = regexp.match(date)
     date_obs_match = regexp.match(date_obs)
@@ -330,7 +329,7 @@ def fix_date_obs(phu):
     # Check their formats are correct
     if None in [date_match, date_obs_match]:
         # Return PHU untouched
-        raise ValueError("_DATE: {0}; DATE-OBS: {1}".format(date, date_obs))
+        raise ValueError("_DATE: {}; DATE-OBS: {}".format(date, date_obs))
     elif date != date_obs:
         update_value = False
         for i, match in enumerate(date_match.groups()):
@@ -455,7 +454,7 @@ def fix_obsepoch(phu, date_key=__CORRECT_KEY__, time_key=__CORRECT_TIME_KEY__):
     except:
         orig_comment = "UPDATED"
 
-    new_comment = ("{0}: from {1} and {2} "
+    new_comment = ("{}: from {} and {} "
                    "".format(orig_comment, date_key, time_key))
 
     phu.header["OBSEPOCH"] = (new_obsepoch, new_comment)
@@ -537,11 +536,11 @@ def main(args=None):
 
     # Print statements are for INFO to screen formatting only
     print("")
-    log.info("Logfile: {0}".format(args.logfile))
+    log.info("Logfile: {}".format(args.logfile))
     print("")
-    log.info("Path: {0}".format(args.rawpath))
-    log.info("Out path: {0}".format(out_path))
-    log.info("Backup path: {0}".format(backup_path))
+    log.info("Path: {}".format(args.rawpath))
+    log.info("Out path: {}".format(out_path))
+    log.info("Backup path: {}".format(backup_path))
 
     # Create filenames and update headers
     for infile in args.files:
@@ -550,35 +549,35 @@ def main(args=None):
         (inpath, filename) = os.path.split(infile)
 
         print("")
-        log.info("{0}".format(DELIMINATOR))
+        log.info("{}".format(DELIMINATOR))
         print("")
-        log.info("File: {0}".format(filename))
+        log.info("File: {}".format(filename))
 
         backup = os.path.join(backup_path, '.'.join([filename, args.suffix]))
         outfile = os.path.join(out_path, filename)
 
-        log.debug("Infile: {0}".format(infile))
-        log.debug("Backup: {0}".format(backup))
-        log.debug("Outfile: {0}".format(outfile))
+        log.debug("Infile: {}".format(infile))
+        log.debug("Backup: {}".format(backup))
+        log.debug("Outfile: {}".format(outfile))
 
         # Check for existing files
         if not os.path.isfile(infile):
-            log.warning('"{0}" does not exist'.format(infile))
+            log.warning('"{}" does not exist'.format(infile))
         elif os.path.isfile(backup):
-            log.warning('Backup file "{0}" already exists'.format(backup))
+            log.warning('Backup file "{}" already exists'.format(backup))
         elif infile != outfile and os.path.isfile(outfile):
-            log.warning('"{0}" already exists'.format(outfile))
+            log.warning('"{}" already exists'.format(outfile))
         else:
             do_update = True
 
         if not do_update:
-            log.info("{0} has been left untouched".format(filename))
+            log.info("{} has been left untouched".format(filename))
             continue
 
         # Report individual files if an error is raised
         report = '_'.join([args.prefix, os.path.splitext(filename)[0],
                            _get_time()])
-        report = "{0}.{1}".format(report, "log")
+        report = "{}.{}".format(report, "log")
 
         # Always open in readonly unless not doing a dry run and editing fie in
         # place
@@ -587,15 +586,15 @@ def main(args=None):
         # Make a backup of input file
         if not args.dry_run:
             try:
-                log.info("Creating backup of {0}".format(filename))
+                log.info("Creating backup of {}".format(filename))
                 shutil.copy2(infile, backup)
-            except IOError as err:
-                errmsg = ("ERROR - type: {0}, type number: {1}, "
-                          "message: {2}".format(type(err), err.errno,
+            except OSError as err:
+                errmsg = ("ERROR - type: {}, type number: {}, "
+                          "message: {}".format(type(err), err.errno,
                                                   err.strerror))
                 _write_report(filename, report, errmsg)
                 log.warning(errmsg)
-                log.info("{0} has been left untouched".format(filename))
+                log.info("{} has been left untouched".format(filename))
                 del err
                 continue
 
@@ -609,11 +608,11 @@ def main(args=None):
             hdulist = pf.open(infile, mode=read_mode, save_backup=False,
                               do_not_scale_image_data=True)
         except Exception as err:
-            errmsg = ("ERROR - type: {0}, message: {1}".format(
+            errmsg = ("ERROR - type: {}, message: {}".format(
                       type(err), str(err)))
             _write_report(filename, report, errmsg)
             log.warning(errmsg)
-            log.info("{0} has been left untouched".format(filename))
+            log.info("{} has been left untouched".format(filename))
             del err
             continue
 
@@ -622,8 +621,8 @@ def main(args=None):
             updated = correct_headers(hdulist, report=report,
                                       logger=log, correct_phu=args.fix_phu,
                                       correct_image_extensions=args.fix_exts)
-        except (IOError, ValueError, KeyError) as err:
-            errmsg = ("ERROR - type: {0}, message: {1}".format(
+        except (OSError, ValueError, KeyError) as err:
+            errmsg = ("ERROR - type: {}, message: {}".format(
                       type(err), str(err)))
             _write_report(filename, report, errmsg)
             log.warning(errmsg)
@@ -634,7 +633,7 @@ def main(args=None):
             if not args.dry_run:
                 hdulist.writeto(outfile)
         elif updated is None:
-            log.info("{0} has been left untouched".format(filename))
+            log.info("{} has been left untouched".format(filename))
 
         # If the file has been opened in update mode:
         #     If updated the changes will be flushed on write if not it should
@@ -735,7 +734,7 @@ def _parse_file_system_inputs(args):
             args.__dict__[test_path] = _parse_file_system(
                     args.__dict__[test_path])
         else:
-            raise IOError("Path \"{0}\" does not exist".format(path))
+            raise OSError("Path \"{}\" does not exist".format(path))
 
     # Parse the files
     args = _parse_files(args)
@@ -793,7 +792,7 @@ def _configure_log(logfile=None, log_level="DEBUG"):
     """
     logging_level = getattr(logging, log_level.upper(), None)
     if not isinstance(logging_level, int):
-        raise ValueError('Invalid log level: {0}'.format(logging_level))
+        raise ValueError('Invalid log level: {}'.format(logging_level))
 
     # Define handler for debug function handler
     def _arghandler(args=None, levelnum=None, prefix=None):
@@ -801,7 +800,7 @@ def _configure_log(logfile=None, log_level="DEBUG"):
         slargs = str(largs[0]).split('\n')
         for line in slargs:
             if prefix is not None:
-                line = "{0}{1}".format(prefix, line)
+                line = "{}{}".format(prefix, line)
             if len(line) == 0:
                 log.log(levelnum, '')
             else:
@@ -887,7 +886,7 @@ def parse_command_line_inputs():
                         default="INFO", help="Logging verbosity level")
 
     parser.add_argument('--version', action="version",
-                        version="{0} {1}".format(__PROGRAM__,
+                        version="{} {}".format(__PROGRAM__,
                                                  __VERSION_STRING__))
 
     args = parser.parse_args()
@@ -896,7 +895,7 @@ def parse_command_line_inputs():
     args = _parse_file_system_inputs(args)
 
     if not args.files:
-        raise IOError("No input files found or supplied")
+        raise OSError("No input files found or supplied")
     return args
 
 ####
