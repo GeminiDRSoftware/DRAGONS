@@ -71,13 +71,13 @@ pipeline {
                         label "macos"
                     }
                     steps {
-                        echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
-                            checkout scm
-                            sh '.jenkins/scripts/setup_agent.sh'
-                            echo "Running tests with Python 3.6 and older dependencies"
-                            sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
-                            echo "Reportint coverage to CodeCov"
-                            sh 'tox -e codecov -- -F unit'
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_agent.sh'
+                        echo "Running tests with Python 3.6 and older dependencies"
+                        sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
+                        echo "Reportint coverage to CodeCov"
+                        sh 'tox -e codecov -- -F unit'
                     }
                 }
 
@@ -86,13 +86,13 @@ pipeline {
                         label "centos7"
                     }
                     steps {
-                        echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
-                            checkout scm
-                            sh '.jenkins/scripts/setup_agent.sh'
-                            echo "Running tests with Python 3.7"
-                            sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
-                            echo "Reportint coverage to CodeCov"
-                            sh 'tox -e codecov -- -F unit'
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_agent.sh'
+                        echo "Running tests with Python 3.7"
+                        sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
+                        echo "Reportint coverage to CodeCov"
+                        sh 'tox -e codecov -- -F unit'
                     }
                 }
             }
