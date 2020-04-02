@@ -66,7 +66,7 @@ pipeline {
 
         stage('Unit tests') {
             parallel {
-                stage('Unit tests - MacOS/Python 3.6') {
+                stage('MacOS/Python 3.6') {
                     agent{
                         label "macos"
                     }
@@ -81,7 +81,7 @@ pipeline {
                     }
                 }
 
-                stage('Unit tests - Linux/Python 3.7') {
+                stage('Linux/Python 3.7') {
                     agent{
                         label "centos7"
                     }
