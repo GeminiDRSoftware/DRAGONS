@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Recipe System Users Manual documentation build configuration file, created by
 # sphinx-quickstart on Thu Mar 20 15:06:19 2014.
@@ -49,8 +48,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Mosaic and MosaicAD Reference Guide.'
-copyright = u'Gemini Observatory (2018)'
+project = 'Mosaic and MosaicAD Reference Guide.'
+copyright = 'Gemini Observatory (2018)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -190,15 +189,15 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
-'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
+'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index-latex', 'MosaicADReferenceGuide.tex', 
-   u'DRAGONS - Mosaic and MosaicAD Programming and Reference Guide',
-   u'Kenneth Anderson', 'manual'),
+   'DRAGONS - Mosaic and MosaicAD Programming and Reference Guide',
+   'Kenneth Anderson', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -229,8 +228,8 @@ latex_logo = '../images/GeminiLogo_new_2014.jpg'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'MosaicADReferenceGuide', u'MosaicAD Reference Guide',
-     [u'Kenneth Anderson'], 1)
+    ('index', 'MosaicADReferenceGuide', 'MosaicAD Reference Guide',
+     ['Kenneth Anderson'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -243,8 +242,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'MosaicADReferenceGuide', u'MosaicAD Reference Guide',
-   u'Kenneth Anderson', 'MosaicADReferenceGuide',
+  ('index', 'MosaicADReferenceGuide', 'MosaicAD Reference Guide',
+   'Kenneth Anderson', 'MosaicADReferenceGuide',
    'MosaicAD Reference and Use', 'Miscellaneous'),
 ]
 

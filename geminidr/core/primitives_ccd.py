@@ -28,7 +28,7 @@ class CCD(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(CCD, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_ccd)
 
     def biasCorrect(self, adinputs=None, suffix=None, bias=None, do_bias=True):
@@ -76,7 +76,7 @@ class CCD(PrimitivesBASE):
                                 "bias was specified".format(ad.filename))
                     continue
                 else:
-                    raise IOError('No processed bias listed for {}'.
+                    raise OSError('No processed bias listed for {}'.
                                   format(ad.filename))
 
             try:

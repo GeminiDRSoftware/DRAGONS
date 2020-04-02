@@ -3,7 +3,7 @@ Recipes available to data with tags 'NIRI', 'CAL', 'DARK'].
 Default is "makeProcessedDark".
 """
 
-recipe_tags = set(['NIRI', 'CAL', 'DARK'])
+recipe_tags = {'NIRI', 'CAL', 'DARK'}
 
 def makeProcessedDark(p):
     """

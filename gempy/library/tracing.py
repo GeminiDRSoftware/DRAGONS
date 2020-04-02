@@ -34,7 +34,7 @@ log = logutils.get_logger(__name__)
 
 
 ################################################################################
-class Aperture(object):
+class Aperture:
     """
     A class describing an aperture. It has the following attributes:
 

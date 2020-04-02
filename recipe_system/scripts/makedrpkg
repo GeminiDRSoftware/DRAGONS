@@ -5,8 +5,6 @@ Create the directory structure for a DR package that will be used by
 the Recipe System.
 """
 
-from __future__ import print_function
-
 import sys
 import argparse
 

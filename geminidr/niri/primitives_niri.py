@@ -21,10 +21,10 @@ class NIRI(Gemini, NearIR):
     for the F2 level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI", "NIRI"])
+    tagset = {"GEMINI", "NIRI"}
 
     def __init__(self, adinputs, **kwargs):
-        super(NIRI, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self.inst_lookups = 'geminidr.niri.lookups'
         self._param_update(parameters_niri)
 
@@ -79,10 +79,10 @@ class NIRI(Gemini, NearIR):
                 raw_mean_value = np.mean(ext.data) / coadds
                 log.fullinfo("The mean value of the raw pixel data in " \
                              "{} is {:.8f}".format(ext.filename, raw_mean_value))
-                
+
                 log.fullinfo("Coefficients used = {:.12f} {:.9e} {:.9e}".
                             format(coeffs.time_delta, coeffs.gamma, coeffs.eta))
-                
+
                 # Convert back to ADU per exposure if data are in electrons
                 conv_factor = (1 if in_adu else ext.gain()) * coadds
 
@@ -105,21 +105,21 @@ class NIRI(Gemini, NearIR):
                 # Correct for the exposure time issue by scaling the counts
                 # to the nominal exposure time
                 ext.multiply(exptime / (exptime + coeffs.time_delta))
-                
+
                 # Determine the mean of the corrected pixel data
                 corrected_mean_value = np.mean(ext.data) / coadds
                 log.fullinfo("The mean value of the corrected pixel data in "
                         "{} is {:.8f}".format(ext.filename, corrected_mean_value))
-            
+
                 # Correct the exposure time by adding coeff1 * coadds
                 total_exptime = total_exptime + coeffs.time_delta * coadds
                 log.fullinfo("The true total exposure time = {}".format(total_exptime))
-            
+
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
-    
+
     def standardizeInstrumentHeaders(self, adinputs=None, suffix=None):
         """
         This primitive is used to make the changes and additions to the

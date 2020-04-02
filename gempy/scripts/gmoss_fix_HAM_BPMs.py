@@ -10,7 +10,6 @@ Contents:
     update_bpms
 
 """
-from __future__ import print_function
 
 import argparse
 import os
@@ -72,13 +71,13 @@ def _update_bpm_file(ffile):
     section_keywords.extend(unbinned_section_keywords)
     section_keywords.extend(binned_section_keywords)
 
-    print("Working on...\n{0}:\n".format(ffile.filename()))
+    print("Working on...\n{}:\n".format(ffile.filename()))
 
     ffile_slice = ffile[1:]
     for ext in ffile_slice:
 
         if VERBOSE:
-            print("{0}, {1}\n".format(ext.name, ext.ver))
+            print("{}, {}\n".format(ext.name, ext.ver))
 
         # Require shape for some reason...
         old_shape = ext.data.shape
@@ -114,7 +113,7 @@ def _update_bpm_file(ffile):
             _set_key_value(ext, section.upper(),
                            _set_iraf_section(new_value))
             if VERBOSE:
-                print("{0}: {1} -> {2}\n".format(section.upper(),
+                print("{}: {} -> {}\n".format(section.upper(),
                         old_str_value, _get_key_value(ext, section.upper())))
 
         # Unbinned version
@@ -126,7 +125,7 @@ def _update_bpm_file(ffile):
             _set_key_value(ext, section.upper(),
                            _set_iraf_section(new_value))
             if VERBOSE:
-                print("{0}: {1} -> {2}\n".format(section.upper(),
+                print("{}: {} -> {}\n".format(section.upper(),
                         old_str_value, _get_key_value(ext, section.upper())))
 
     return ffile
@@ -254,7 +253,7 @@ def _set_iraf_section(section_list):
     y1 += 1
     x1 += 1
 
-    return "[{0:d}:{1:d},{2:d}:{3:d}]".format(x1, x2, y1, y2)
+    return "[{:d}:{:d},{:d}:{:d}]".format(x1, x2, y1, y2)
 
 
 def _parse_iraf_section(section):

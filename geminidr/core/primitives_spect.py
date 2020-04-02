@@ -44,10 +44,10 @@ class Spect(PrimitivesBASE):
     This is the class containing all of the pre-processing primitives
     for the `Spect` level of the type hierarchy tree.
     """
-    tagset = set(["GEMINI", "SPECT"])
+    tagset = {"GEMINI", "SPECT"}
 
     def __init__(self, adinputs, **kwargs):
-        super(Spect, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_spect)
 
     def adjustSlitOffsetToReference(self, adinputs=None, **params):
@@ -85,7 +85,7 @@ class Spect(PrimitivesBASE):
             return adinputs
 
         if not all(len(ad) == 1 for ad in adinputs):
-            raise IOError("All input images must have only one extension.")
+            raise OSError("All input images must have only one extension.")
 
         def stack_slit(ext):
             dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -546,7 +546,7 @@ class Spect(PrimitivesBASE):
                         adoutputs.extend(self.mosaicDetectors([ad]))
                     continue
                 else:
-                    raise IOError('No processed arc listed for {}'.
+                    raise OSError('No processed arc listed for {}'.
                                   format(ad.filename))
 
             len_arc = len(arc)
@@ -792,7 +792,7 @@ class Spect(PrimitivesBASE):
         if arc_file is not None:
             try:
                 arc_lines = np.loadtxt(arc_file, usecols=[0])
-            except (IOError, TypeError):
+            except (OSError, TypeError):
                 log.warning("Cannot read file {} - using default linelist".format(arc_file))
                 arc_file = None
             else:
@@ -1855,7 +1855,7 @@ class Spect(PrimitivesBASE):
         trim_data = params["trim_data"]
 
         # Check that all ad objects are either 1D or 2D
-        ndim = set(len(ext.shape) for ad in adinputs for ext in ad)
+        ndim = {len(ext.shape) for ad in adinputs for ext in ad}
         if len(ndim) != 1:
             raise ValueError('inputs must have the same dimension')
         ndim = ndim.pop()

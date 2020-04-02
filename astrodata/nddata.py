@@ -3,7 +3,6 @@ This module implements a derivative class based on NDData with some Mixins,
 implementing windowing and on-the-fly data scaling.
 """
 
-from __future__ import (absolute_import, division, print_function)
 
 import warnings
 from copy import deepcopy
@@ -30,7 +29,7 @@ class ADVarianceUncertainty(VarianceUncertainty):
         VarianceUncertainty.array.fset(self, value)
 
 
-class FakeArray(object):
+class FakeArray:
 
     def __init__(self, very_faked):
         self.data = very_faked
@@ -45,7 +44,7 @@ class FakeArray(object):
         return self.data
 
 
-class NDWindowing(object):
+class NDWindowing:
 
     def __init__(self, target):
         self._target = target
@@ -155,9 +154,9 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         # FIXME: this attribute seems useless
         self._window = window
 
-        super(NDAstroData, self).__init__(FakeArray(data) if is_lazy(data) else data,
-                                          None if is_lazy(uncertainty) else uncertainty,
-                                          mask, wcs, meta, unit, copy)
+        super().__init__(FakeArray(data) if is_lazy(data) else data,
+                         None if is_lazy(uncertainty) else uncertainty,
+                         mask, wcs, meta, unit, copy)
 
         if is_lazy(data):
             self.data = data
@@ -183,10 +182,11 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         Override the NDData method so that "bitwise_or" becomes the default
         operation to combine masks, rather than "logical_or"
         """
-        return super()._arithmetic(operation, operand, propagate_uncertainties=propagate_uncertainties,
-                                   handle_mask=handle_mask, handle_meta=handle_meta,
-                                   uncertainty_correlation=uncertainty_correlation,
-                                   compare_wcs=compare_wcs, **kwds)
+        return super()._arithmetic(
+            operation, operand, propagate_uncertainties=propagate_uncertainties,
+            handle_mask=handle_mask, handle_meta=handle_meta,
+            uncertainty_correlation=uncertainty_correlation,
+            compare_wcs=compare_wcs, **kwds)
 
     @property
     def window(self):
@@ -330,7 +330,7 @@ class NDAstroData(NDArithmeticMixin, NDSlicingMixin, NDData):
         if is_lazy(self._data):
             return self.__class__.__name__ + '(Memmapped)'
         else:
-            return super(NDAstroData, self).__repr__()
+            return super().__repr__()
 
     @property
     def T(self):

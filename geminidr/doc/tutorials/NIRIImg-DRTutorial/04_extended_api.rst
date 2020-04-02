@@ -59,8 +59,6 @@ Importing Libraries
 .. code-block:: python
     :linenos:
 
-    from __future__ import print_function
-
     import glob
 
     import astrodata

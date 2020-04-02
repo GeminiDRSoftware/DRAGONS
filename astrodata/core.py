@@ -1,9 +1,8 @@
-from abc import ABCMeta, abstractmethod, abstractproperty
-from functools import wraps
-from future.utils import with_metaclass
 import inspect
+from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import namedtuple
 from copy import deepcopy
+from functools import wraps
 
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
@@ -46,11 +45,11 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
 
     """
     def __new__(cls, add=None, remove=None, blocked_by=None, blocks=None, if_present=None):
-        return super(TagSet, cls).__new__(cls, add or set(),
-                                               remove or set(),
-                                               blocked_by or set(),
-                                               blocks or set(),
-                                               if_present or set())
+        return super().__new__(cls, add or set(),
+                               remove or set(),
+                               blocked_by or set(),
+                               blocks or set(),
+                               if_present or set())
 
 
 def astro_data_descriptor(fn):
@@ -157,7 +156,7 @@ class AstroDataError(Exception):
     pass
 
 
-class DataProvider(with_metaclass(ABCMeta, object)):
+class DataProvider(metaclass=ABCMeta):
     """
     Abstract class describing the minimal interface that `DataProvider`
     derivative classes need to implement.
@@ -426,7 +425,7 @@ class DataProvider(with_metaclass(ABCMeta, object)):
 #     return decorator
 
 
-class AstroData(object):
+class AstroData:
     """
     AstroData(provider)
 
@@ -637,7 +636,7 @@ class AstroData(object):
             if self._dataprov.is_settable(attribute):
                 setattr(self._dataprov, attribute, value)
                 return
-        super(AstroData, self).__setattr__(attribute, value)
+        super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         """
@@ -647,7 +646,7 @@ class AstroData(object):
             try:
                 self._dataprov.__delattr__(attribute)
             except (ValueError, AttributeError):
-                super(AstroData, self).__delattr__(attribute)
+                super().__delattr__(attribute)
         except AttributeError:
             if self._dataprov.is_sliced:
                 raise AttributeError("{!r} sliced object has no attribute {!r}"

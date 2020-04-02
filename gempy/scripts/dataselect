@@ -5,8 +5,6 @@ Select datasets based on tags and descriptors.  Useful to create
 reduce input lists.  Looks at datasets on disk.
 """
 
-from __future__ import print_function
-
 import sys
 import argparse
 import glob

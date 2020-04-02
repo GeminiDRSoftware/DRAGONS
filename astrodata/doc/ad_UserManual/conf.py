@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Astrodata User Manual build configuration file, created
 # from team template.
@@ -62,8 +61,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Astrodata User Manual'
-copyright = u'2019, Association of Universities for Research in Astronomy'
+project = 'Astrodata User Manual'
+copyright = '2019, Association of Universities for Research in Astronomy'
 # Note that AURA owns the Copyright, not you.
 
 # The version info for the project you're documenting, acts as replacement for
@@ -208,14 +207,14 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
-'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
+'preamble': '\usepackage{appendix} \\setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index-latex', 'AstrodataUserManual.tex', u'Astrodata User Manual',
-   u'Kathleen Labrie', 'manual'),
+  ('index-latex', 'AstrodataUserManual.tex', 'Astrodata User Manual',
+   'Kathleen Labrie', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -245,8 +244,8 @@ latex_logo = 'images/GeminiLogo_new_2014.jpg'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'astrodatausermanual', u'Astrodata User Manual',
-     [u'Kathleen Labrie'], 1)
+    ('index', 'astrodatausermanual', 'Astrodata User Manual',
+     ['Kathleen Labrie'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -259,8 +258,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'AstrodataUserManual', u'Astrodata User Manual',
-   u'Kathleen Labrie', 'AstrodataUserManual',
+  ('index', 'AstrodataUserManual', 'Astrodata User Manual',
+   'Kathleen Labrie', 'AstrodataUserManual',
    'User manual for the astrodata package.',
    'Miscellaneous'),
 ]

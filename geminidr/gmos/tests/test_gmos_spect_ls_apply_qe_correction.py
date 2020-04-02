@@ -943,7 +943,7 @@ class MeasureGapSizeLocallyWithSpline(MeasureGapSizeLocally):
 
     def __init__(self, ad, bad_cols=21, med_filt_size=5, order=5,
                  sigma_lower=1.5, sigma_upper=3, wav_min=375, wav_max=1050):
-        super(MeasureGapSizeLocallyWithSpline, self).__init__(
+        super().__init__(
             ad,
             bad_cols=bad_cols,
             fit_family='Spl.',

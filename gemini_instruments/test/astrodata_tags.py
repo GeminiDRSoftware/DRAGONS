@@ -7,7 +7,7 @@ from lut_tags import fixture_data as tags_fixture_data
 
 THIS_DIR=os.path.dirname(__file__)
 
-class FixtureIterator(object):
+class FixtureIterator:
     def __init__(self, data_dict):
         self._data = data_dict
 

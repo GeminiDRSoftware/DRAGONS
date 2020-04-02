@@ -195,8 +195,8 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_sidereal(self):
-        frames = set([self.phu.get('TRKFRAME'), self.phu.get('FRAME')])
-        valid_frames = set(['FK5', 'APPT'])
+        frames = {self.phu.get('TRKFRAME'), self.phu.get('FRAME')}
+        valid_frames = {'FK5', 'APPT'}
 
         # Check if the intersection of both sets is non-empty...
         if frames & valid_frames:
@@ -239,8 +239,8 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _status_processed_cals(self):
-        kwords = set(['PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
-                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND'])
+        kwords = {'PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
+                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND'}
 
         if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])
@@ -1062,7 +1062,7 @@ class AstroDataGemini(AstroDataFits):
         units = self.hdr.get('BUNIT', 'ADU')
         if self.is_single:
             return units.upper() == 'ADU'
-        units = set(u.upper() for u in units)
+        units = {u.upper() for u in units}
         if len(units) > 1:
             raise ValueError("Not all extensions appear to have the same units")
         return units.pop() == 'ADU'

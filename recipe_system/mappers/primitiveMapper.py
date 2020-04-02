@@ -56,7 +56,7 @@ class PrimitiveMapper(Mapper):
                   that best matched.
 
         """
-        matched_set = (set([]), None)
+        matched_set = (set(), None)
         for pclass in self._get_tagged_primitives():
             if pclass is None:
                 break

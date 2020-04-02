@@ -4,9 +4,6 @@
 #
 #                                                                    typewalk.py
 # ------------------------------------------------------------------------------
-from __future__ import print_function
-from builtins import str
-from builtins import object
 
 from astrodata import version
 __version__ = version()
@@ -152,7 +149,7 @@ def generate_outfile(outfile, olist, match_type, logical_or, xtypes):
     return
 
 
-class Faces(object):
+class Faces:
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
     DARKCYAN = '\033[36m'
@@ -165,14 +162,14 @@ class Faces(object):
     END = '\033[0m'
 
 
-class DataSpider(object):
+class DataSpider:
     """
-    DataSpider() providing one (1) method, typewalk,  that will walk a 
+    DataSpider() providing one (1) method, typewalk,  that will walk a
     directory and report types via AstroData.
 
     """
-    def typewalk(self, directory=os.getcwd(), only=None, filemask=None, 
-                 or_logic=False, outfile=None, stayTop=False, batchnum=100, 
+    def typewalk(self, directory=os.getcwd(), only=None, filemask=None,
+                 or_logic=False, outfile=None, stayTop=False, batchnum=100,
                  xtypes=None):
         """
         Recursively walk <directory> and put type information to stdout
@@ -228,7 +225,7 @@ class DataSpider(object):
                     except AttributeError:
                         print("     Bad headers in file: {}".format(tfile))
                         continue
-                    except IOError:
+                    except OSError:
                         print("     Could not open file: {}".format(fname))
                         continue
                     except ValueError as err:

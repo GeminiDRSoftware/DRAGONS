@@ -1,4 +1,3 @@
-
 from multiprocessing import Process, Queue
 from subprocess import check_output, STDOUT, CalledProcessError
 
@@ -28,12 +27,12 @@ def loop_process(in_queue, out_queue):
         out_queue.put(result)
 
 
-class ETISubprocess(object):
+class ETISubprocess:
     """
     A singleton class that creates an instance of __ETISubprocess, which
     any future instances of ETISubprocess will point to.
     """
-    class __ETISubprocess(object):
+    class __ETISubprocess:
         def __init__(self):
             self.inQueue = Queue()
             self.outQueue = Queue()
@@ -58,7 +57,7 @@ class ETISubprocess(object):
         return setattr(self.instance, name, value)
 
 
-class ExternalTaskInterface(object):
+class ExternalTaskInterface:
     """
     The External Task Interface base class. This is a way for the Recipe
     System to interact with ouside software. It prepares, executes, recovers,

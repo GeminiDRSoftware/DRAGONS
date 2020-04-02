@@ -5,7 +5,6 @@ import os
 import re
 import traceback
 import warnings
-from builtins import object
 from collections import OrderedDict
 from copy import deepcopy
 from functools import partial, wraps
@@ -54,7 +53,7 @@ def deprecated(reason):
     return decorator_wrapper
 
 
-class KeywordCallableWrapper(object):
+class KeywordCallableWrapper:
     def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
         self.kw = keyword
         self.on_ext = on_ext
@@ -72,7 +71,7 @@ class KeywordCallableWrapper(object):
         return wrapper
 
 
-class FitsHeaderCollection(object):
+class FitsHeaderCollection:
     """
     FitsHeaderCollection(headers)
 
@@ -89,8 +88,7 @@ class FitsHeaderCollection(object):
         self.__headers.insert(idx, header)
 
     def __iter__(self):
-        for h in self.__headers:
-            yield h
+        yield from self.__headers
 
 #    @property
 #    def keywords(self):
@@ -416,7 +414,7 @@ class FitsProviderProxy(DataProvider):
             else:
                 setattr(self._provider, attribute, value)
 
-        super(FitsProviderProxy, self).__setattr__(attribute, value)
+        super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         if not attribute.isupper():
@@ -627,14 +625,14 @@ class FitsProvider(DataProvider):
             '_tables': {},
             '_exposed': set(),
             '_resetting': False,
-            '_fixed_settable': set([
+            '_fixed_settable': {
                 'data',
                 'uncertainty',
                 'mask',
                 'variance',
                 'path',
                 'filename'
-                ])
+                }
             })
 
     def __deepcopy__(self, memo):
@@ -705,7 +703,7 @@ class FitsProvider(DataProvider):
                 return
 
         # Fallback
-        super(FitsProvider, self).__setattr__(attribute, value)
+        super().__setattr__(attribute, value)
 
     def __delattr__(self, attribute):
         # TODO: So far we're only deleting tables by name.
@@ -1301,7 +1299,7 @@ class FitsProvider(DataProvider):
     def _extver_impl(self, nds=None):
         if nds is None:
             nds = self.nddata
-        return dict((nd._meta['ver'], n) for (n, nd) in enumerate(nds))
+        return {nd._meta['ver']: n for (n, nd) in enumerate(nds)}
 
     def extver_map(self):
         """
@@ -1357,7 +1355,7 @@ def fits_ext_comp_key(ext):
     return ret
 
 
-class FitsLazyLoadable(object):
+class FitsLazyLoadable:
 
     def __init__(self, obj):
         self._obj = obj
@@ -1408,7 +1406,7 @@ class FitsLazyLoadable(object):
         return dtype
 
 
-class FitsLoader(object):
+class FitsLoader:
 
     def __init__(self, cls=FitsProvider):
         self._cls = cls
@@ -1498,9 +1496,9 @@ class FitsLoader(object):
                                   'Original filename prior to processing')
         provider.set_phu(hdulist[0].header)
 
-        seen = set([hdulist[0]])
+        seen = {hdulist[0]}
 
-        skip_names = set([def_ext, 'REFCAT', 'MDF'])
+        skip_names = {def_ext, 'REFCAT', 'MDF'}
 
         def associated_extensions(ver):
             for unit in hdulist:
@@ -1565,7 +1563,7 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
         return cart_product(*ticks)
 
     if shape is None:
-        if len(set(x.shape for x in sequence)) > 1:
+        if len({x.shape for x in sequence}) > 1:
             raise ValueError("Can't calculate final shape: sequence elements "
                              "disagree on shape, and none was provided")
         shape = sequence[0].shape
@@ -1592,7 +1590,7 @@ def windowedOp(fn, sequence, kernel, shape=None, dtype=None,
         # Zipping them will get us a more desirable ((x1, y1, ...), (x2, y2, ...), ..., (xn, yn, ...))
         # box = list(zip(*coords))
         section = tuple([slice(start, end) for (start, end) in coords])
-        result.set_section(section, fn((element.window[section] for element in sequence)))
+        result.set_section(section, fn(element.window[section] for element in sequence))
         gc.collect()
     astropy.log.setLevel(log_level)  # and reset
 

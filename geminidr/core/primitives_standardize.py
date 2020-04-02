@@ -30,7 +30,7 @@ class Standardize(PrimitivesBASE):
     tagset = None
 
     def __init__(self, adinputs, **kwargs):
-        super(Standardize, self).__init__(adinputs, **kwargs)
+        super().__init__(adinputs, **kwargs)
         self._param_update(parameters_standardize)
 
     def addDQ(self, adinputs=None, **params):
@@ -392,7 +392,7 @@ class Standardize(PrimitivesBASE):
             inst_name = ad.instrument(generic=True)
             if not inst_name in self.tagset:
                 prim_class_name = self.__class__.__name__
-                raise IOError("Input file {} is {} data and not suitable for "
+                raise OSError("Input file {} is {} data and not suitable for "
                     "{} class".format(ad.filename, inst_name, prim_class_name))
 
             # Report if this is an image without square binned pixels
@@ -407,7 +407,7 @@ class Standardize(PrimitivesBASE):
                 log.fullinfo("The input file has been validated: {} contains "
                              "{} extension(s)".format(ad.filename, len(ad)))
             else:
-                raise IOError("The {} extension(s) in {} does not match the "
+                raise OSError("The {} extension(s) in {} does not match the "
                               "number of extensions expected in raw {} "
                               "data.".format(len(ad), ad.filename, inst_name))
 
