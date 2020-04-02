@@ -228,7 +228,7 @@ class Spect(PrimitivesBASE):
                                             spec_table['WIDTH'].quantity, spec_table['FLUX'].quantity):
                     region = SpectralRegion(w0 - 0.5 * dw, w0 + 0.5 * dw)
                     data, mask, variance = spectrum.signal(region)
-                    if not mask and fluxdens > 0:
+                    if mask == 0 and fluxdens > 0:
                         # Regardless of whether FLUX column is f_nu or f_lambda
                         flux = fluxdens.to(u.Unit('erg cm-2 s-1 AA-1'),
                                            equivalencies=u.spectral_density(w0)) * dw
@@ -1453,6 +1453,13 @@ class Spect(PrimitivesBASE):
                             "calibrate {} with {} extensions.".
                             format(std.filename, len_std, ad.filename, len_ad))
                 continue
+
+            # Since 2D flux calibration just uses the wavelength info for the
+            # middle row/column, non-distortion-corrected data will have the
+            # wrong wavelength solution in other columns/rows
+            if (any(len(ext.shape) == 2 for ext in ad) and
+                    not timestamp_key['distortionCorrect'] in ad.phu):
+                log.warning("{} has not been distortion corrected".format(ad.filename))
 
             exptime = ad.exposure_time()
             try:
