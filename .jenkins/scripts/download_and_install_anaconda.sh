@@ -36,4 +36,3 @@ conda config --add channels http://astroconda.gemini.edu/public/noarch
 conda config --set channel_priority false
 conda config --set restore_free_channel true
 conda env list
-pip install tox tox-conda

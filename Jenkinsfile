@@ -14,9 +14,7 @@
 
 pipeline {
 
-    agent {
-        label 'master'
-    }
+    agent any
 
     triggers {
         pollSCM('H/6 * * * *')  // Polls Source Code Manager every six hours
@@ -37,25 +35,20 @@ pipeline {
     }
 
     stages {
-
         stage ("Prepare"){
-
             steps{
                 sendNotifications 'STARTED'
-                checkout scm
-                sh 'git clean -fxd'
-                sh 'mkdir plots reports'
-                sh '.jenkins/scripts/download_and_install_anaconda.sh'
             }
-
         }
 
         stage('Code Metrics') {
-
             when {
                 branch 'master'
             }
             steps {
+                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
                 sh 'tox -e check'
             }
             post {
@@ -69,52 +62,77 @@ pipeline {
                     )
                 }
             }
-
         }
 
-        stage('Unit tests Python 3.6') {
-          steps {
-            echo "Running tests with Python 3.6 and older dependencies"
-            sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
-            echo "Reportint coverage to CodeCov"
-            sh 'tox -e codecov -- -F unit'
-          }
-        }
+        parallel {
+            stage('Unit tests - MacOS/Python 3.6') {
+                agent{
+                    label "macos"
+                }
+                steps {
+                    echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                    checkout scm
+                    sh '.jenkins/scripts/setup_agent.sh'
+                    echo "Running tests with Python 3.6 and older dependencies"
+                    sh 'tox -e py36-unit-olddeps -v -- --junit-xml reports/unittests_results.xml'
+                    echo "Reportint coverage to CodeCov"
+                    sh 'tox -e codecov -- -F unit'
+                }
+            }
 
-        stage('Unit tests Python 3.7') {
-          steps {
-            echo "Running tests with Python 3.7"
-            sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
-            echo "Reportint coverage to CodeCov"
-            sh 'tox -e codecov -- -F unit'
-          }
+            stage('Unit tests - Linux/Python 3.7') {
+                agent{
+                    label "centos7"
+                }
+                steps {
+                    echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                    checkout scm
+                    sh '.jenkins/scripts/setup_agent.sh'
+                    echo "Running tests with Python 3.7"
+                    sh 'tox -e py37-unit -v -- --junit-xml reports/unittests_results.xml'
+                    echo "Reportint coverage to CodeCov"
+                    sh 'tox -e codecov -- -F unit'
+                }
+            }
         }
 
         stage('Integration tests') {
-          // when {
-          //     branch 'master'
-          // }
-          steps {
-            echo "Integration tests"
-            sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
-            echo "Reporting coverage"
-            sh 'tox -e codecov -- -F integration'
-          }
+            // when {
+            //     branch 'master'
+            // }
+            agent {
+                label "centos7"
+            }
+            steps {
+                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Integration tests"
+                sh 'tox -e py36-integ -v -- --junit-xml reports/integration_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F integration'
+            }
         }
 
         stage('GMOS LS Tests') {
-          steps {
-            echo "Running tests"
-            sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
-            echo "Reporting coverage"
-            sh 'tox -e codecov -- -F gmosls'
-          }  // end steps
-          post {
-            always {
-              echo "Running 'archivePlots' from inside GmosArcTests"
-              archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
-            }  // end always
-          }  // end post
+            agent {
+                label "centos7"
+            }
+            steps {
+                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+                checkout scm
+                sh '.jenkins/scripts/setup_agent.sh'
+                echo "Running tests"
+                sh 'tox -e py36-gmosls -v -- --junit-xml reports/unittests_results.xml'
+                echo "Reporting coverage"
+                sh 'tox -e codecov -- -F gmosls'
+            }  // end steps
+            post {
+                always {
+                    echo "Running 'archivePlots' from inside GmosArcTests"
+                    archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                }  // end always
+            }  // end post
         }  // end stage
 
     }
