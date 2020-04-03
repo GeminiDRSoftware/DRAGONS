@@ -139,7 +139,23 @@ class Spect(PrimitivesBASE):
 
     def calculateSensitivity(self, adinputs=None, **params):
         """
-        ???
+        Calculates the overall sensitivity of the observation system
+        (instrument, telescope, etc) for each wavelength using
+        spectrophotometric data. It is obtained using the ratio
+        between the observed data and the reference look-up data.
+
+        This primitive looks for reference data using the stripped and lower
+        case name of the observed object inside :mod:`geminidr.gemini.lookups`,
+        :mod:`geminidr.core.lookups` and inside the instrument lookup module.
+
+        The reference data is fit using a Spline in order to match the input
+        data sampling.
+
+        ToDo - Add possibility to use custom reference file?
+
+        See Also
+        --------
+        - :class:`~gempy.library.astromodels.UnivariateSplineWithOutlierRemoval`
 
         Parameters
         ----------
@@ -1401,6 +1417,8 @@ class Spect(PrimitivesBASE):
 
     def fluxCalibrate(self, adinputs=None, **params):
         """
+        Converts the input spectrum data to physical units (default: W m-2)
+
 
         Parameters
         ----------
