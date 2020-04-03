@@ -4,30 +4,29 @@ from gempy.library import config
 from astrodata import AstroData
 from astropy import units as u
 
-def flux_units_check(value):
-    # Confirm that the specified units can be converted to a flux density
-    try:
-        unit = u.Unit(value)
-    except:
-        raise ValueError("{} is not a recognized unit".format(value))
-    try:
-        unit.to(u.W / u.m**3, equivalencies=u.spectral_density(1.*u.m))
-    except:
-        raise ValueError("Cannot convert {} to a flux density".format(value))
-    return True
 
-class fluxCalibrateConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_fluxCalibrated", optional=True)
-    standard = config.ListField("Standard(s) with sensitivity function", (AstroData, str),
-                                None, optional=True, single=True)
-    units = config.Field("Units for output spectrum", str, "W m-2 nm-1",
-                         check=flux_units_check)
+class adjustSlitOffsetToReferenceConfig(config.Config):
+    suffix = config.Field("Filename suffix",
+                          str, "_slitOffsetCorrected", optional=True)
+    tolerance = config.RangeField("Maximum distance from the header offset, "
+                                  "for the correlation method (arcsec)",
+                                  float, 1, min=0., optional=True)
+    method = config.ChoiceField(
+        "Alignment method", str,
+        allowed={"offsets": "Use telescope offsets",
+                 "correlation": "Correlate the slit profile"},
+        default="correlation"
+    )
+
 
 class calculateSensitivityConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
+    suffix = config.Field("Filename suffix",
+                          str, "_sensitivityCalculated", optional=True)
     order = config.RangeField("Order of spline fit", int, 6, min=1)
-    bandpass = config.RangeField("Bandpass width (nm) if not suuplied", float, 5., min=0.1, max=10.)
+    bandpass = config.RangeField("Bandpass width (nm) if not supplied",
+                                 float, 5., min=0.1, max=10.)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
+
 
 class determineDistortionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionDetermined", optional=True)
@@ -43,6 +42,7 @@ class determineDistortionConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Display line traces on image display?", bool, False)
+
 
 class determineWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
@@ -62,6 +62,7 @@ class determineWavelengthSolutionConfig(config.Config):
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     plot = config.Field("Make diagnostic plots?", bool, False)
 
+
 class distortionCorrectConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_distortionCorrected", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
@@ -69,22 +70,46 @@ class distortionCorrectConfig(config.Config):
     order = config.RangeField("Interpolation order", int, 3, min=0, max=5)
     subsample = config.RangeField("Subsampling", int, 1, min=1)
 
+
 class extract1DSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted", optional=True)
     method = config.ChoiceField("Extraction method", str,
-                                allowed = {"standard": "no weighting",
-                                           "weighted": "inverse-variance weighted",
-                                           "optimal": "optimal extraction"},
+                                allowed={"standard": "no weighting",
+                                         "weighted": "inverse-variance weighted",
+                                         "optimal": "optimal extraction"},
                                 default="standard")
     width = config.RangeField("Width of extraction aperture (pixels)", float, None, min=1, optional=True)
     grow = config.RangeField("Source aperture avoidance region (pixels)", float, 10, min=0, optional=True)
     debug = config.Field("Draw extraction apertures on image display?", bool, False)
 
+
 class findSourceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesFound", optional=True)
     max_apertures = config.RangeField("Maximum number of sources to find", int, None, min=1, optional=True)
-    threshold = config.RangeField("Threshold relative to peak for automatic width determination", float, 0.01, min=0, max=1)
+    threshold = config.RangeField("Threshold relative to peak for automatic width determination", float, 0.01, min=0,
+                                  max=1)
     min_sky_region = config.RangeField("Minimum number of contiguous pixels between sky lines", int, 20, min=1)
+
+
+def flux_units_check(value):
+    # Confirm that the specified units can be converted to a flux density
+    try:
+        unit = u.Unit(value)
+    except:
+        raise ValueError("{} is not a recognized unit".format(value))
+    try:
+        unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
+    except:
+        raise ValueError("Cannot convert {} to a flux density".format(value))
+    return True
+
+
+class fluxCalibrateConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_fluxCalibrated", optional=True)
+    standard = config.ListField("Standard(s) with sensitivity function", (AstroData, str),
+                                None, optional=True, single=True)
+    units = config.Field("Units for output spectrum", str, "W m-2 nm-1",
+                         check=flux_units_check)
 
 
 class linearizeSpectraConfig(config.Config):
@@ -103,18 +128,14 @@ class linearizeSpectraConfig(config.Config):
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
 
-class adjustSlitOffsetToReferenceConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_slitOffsetCorrected",
-                          optional=True)
-    tolerance = config.RangeField("Maximum distance from the header offset, "
-                                  "for the correlation method (arcsec)",
-                                  float, 1, min=0., optional=True)
-    method = config.ChoiceField(
-        "Alignment method", str,
-        allowed={"offsets": "Use telescope offsets",
-                 "correlation": "Correlate the slit profile"},
-        default="correlation"
-    )
+class normalizeFlatConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
+    center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    spectral_order = config.RangeField("Fitting order in spectral direction", int, 20, min=1)
+    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
+    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
+    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
 
 
 class resampleToCommonFrameConfig(config.Config):
@@ -134,14 +155,12 @@ class resampleToCommonFrameConfig(config.Config):
         if self.w1 is not None and self.w2 is not None and self.w2 <= self.w1:
             raise ValueError("Ending wavelength must be greater than starting wavelength")
 
-class normalizeFlatConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
-    center = config.RangeField("Central row/column to extract", int, None, min=1, optional=True)
-    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    spectral_order = config.RangeField("Fitting order in spectral direction", int, 20, min=1)
-    hsigma = config.RangeField("High rejection threshold (sigma)", float, 3., min=0)
-    lsigma = config.RangeField("Low rejection threshold (sigma)", float, 3., min=0)
-    grow = config.RangeField("Growth radius for bad pixels", int, 0, min=0)
+
+class skyCorrectFromSlitConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
+    order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
+    grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
+
 
 class traceAperturesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_aperturesTraced", optional=True)
@@ -152,8 +171,3 @@ class traceAperturesConfig(config.Config):
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     debug = config.Field("Draw aperture traces on image display?", bool, False)
-
-class skyCorrectFromSlitConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_skyCorrected", optional=True)
-    order = config.RangeField("Sky spline fitting order", int, 5, min=1, optional=True)
-    grow = config.RangeField("Aperture growth distance (pixels)", float, 0, min=0)
