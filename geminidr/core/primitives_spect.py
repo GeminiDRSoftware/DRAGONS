@@ -140,11 +140,11 @@ class Spect(PrimitivesBASE):
     def calculateSensitivity(self, adinputs=None, **params):
         """
         Calculates the overall sensitivity of the observation system
-        (instrument, telescope, etc) for each wavelength using
+        (instrument, telescope, detector, etc) for each wavelength using
         spectrophotometric data. It is obtained using the ratio
         between the observed data and the reference look-up data.
 
-        This primitive looks for reference data using the stripped and lower
+        For that, it looks for reference data using the stripped and lower
         case name of the observed object inside :mod:`geminidr.gemini.lookups`,
         :mod:`geminidr.core.lookups` and inside the instrument lookup module.
 
@@ -1417,8 +1417,7 @@ class Spect(PrimitivesBASE):
 
     def fluxCalibrate(self, adinputs=None, **params):
         """
-        Converts the input spectrum data to physical units (default: W m-2)
-
+        Performs flux calibration on 1D or on distortion corrected 2D spectra.
 
         Parameters
         ----------
