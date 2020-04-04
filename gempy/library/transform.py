@@ -829,15 +829,19 @@ class DataGroup(object):
     """
     UnequalError = ValueError("Number of arrays and transforms must be equal")
 
-    def __init__(self, arrays=[], transforms=None):
-        if transforms:
-            if len(arrays) != len(transforms):
+    def __init__(self, arrays=None, transforms=None):
+        if transforms is None:
+            self._arrays = arrays or []
+            self._transforms = [Transform()] * len(self._arrays)
+        else:
+            try:
+                if len(arrays) != len(transforms):
+                    raise self.UnequalError
+            except TypeError:
                 raise self.UnequalError
             # "Freeze" the transforms
             self._transforms = copy.deepcopy(transforms)
-        else:
-            self._transforms = [Transform()] * len(arrays)
-        self._arrays = arrays
+            self._arrays = arrays
         self.no_data = {}
         self.output_dict = {}
         self.output_shape = None
@@ -1269,7 +1273,7 @@ class AstroDataGroup(DataGroup):
     """
     array_attributes = ['data', 'mask', 'variance', 'OBJMASK']
 
-    def __init__(self, arrays=[], transforms=None):
+    def __init__(self, arrays=None, transforms=None):
         super(AstroDataGroup, self).__init__(arrays=arrays, transforms=transforms)
         # To ensure uniform behaviour, we wish to encase single AD slices
         # as single-element Block objects
