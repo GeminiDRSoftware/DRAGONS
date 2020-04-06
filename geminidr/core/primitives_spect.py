@@ -162,18 +162,18 @@ class Spect(PrimitivesBASE):
         adinputs : list of :class:`~astrodata.AstroData`
             1D spectra of spectrophotometric standard stars
 
-        suffix :  str
-            Suffix to be added to output files.
+        suffix :  str, optional
+            Suffix to be added to output files (default: _sensitivityCalculated).
 
-        order: int
-            Order of the spline fit to be performed
+        order: int, optional
+            Order of the spline fit to be performed (default: 6)
 
-        individual: bool
+        individual: bool - TODO - Not in calculateSensitivityConfig
             Calculate sensitivity for each AD spectrum individually?
 
-        bandpass: float
+        bandpass: float, optional
             default bandpass width (in nm) to use if not present in the
-            spectrophotometric data table
+            spectrophotometric data table (default: 5.)
 
         Returns
         -------
@@ -1417,19 +1417,29 @@ class Spect(PrimitivesBASE):
 
     def fluxCalibrate(self, adinputs=None, **params):
         """
-        Performs flux calibration on 1D or on distortion corrected 2D spectra.
+        Performs flux calibration multiplying the input signal by the
+        sensitivity function obtained from
+        :meth:`~geminidr.core.primitives_spect.Spec.calculateSensitivity`.
 
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
-            1D spectra of targets that need to be flux-calibrated
+            1D or 2D Spectra of targets that need to be flux-calibrated.
+            2D spectra are expected to be distortion corrected and its
+            dispersion axis should be along rows.
 
-        suffix :  str
-            Suffix to be added to output files.
+        suffix :  str, optional
+            Suffix to be added to output files (default: _fluxCalibrated).
 
-        standard: str/AstroData/None
-            Name/AD instance of the standard star spectrum with a SENSFUNC
-            table attached
+        standard: str or AstroData, optional
+            Standard star spectrum containing one extension or the same number
+            of extensions as the input spectra. Each extension must have a
+            `.SENSFUNC` table containing information about the overall
+            sensitivity. Right now, if this is not provided, it will raise a
+            NotImplementedError since it needs implementation.
+
+        units : str, optional
+            Units for output spectrum (default: W m-2 nm-1).
 
         Returns
         -------
