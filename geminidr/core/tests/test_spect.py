@@ -261,7 +261,7 @@ def create_zero_filled_fake_astrodata(height, width):
 
     Returns
     -------
-    astrodata
+    AstroData
         Single-extension zero filled object.
     """
     data = np.zeros((height, width))

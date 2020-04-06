@@ -335,44 +335,6 @@ def get_master_arc(new_path_to_inputs, output_path):
     return _get_master_arc
 
 
-@pytest.fixture(scope='module', params=datasets)
-def qe_corrected_ad(request, get_input_ad, get_master_arc, output_path):
-    """
-    Returns the processed spectrum right after running `applyQECorrection`.
-
-    Parameters
-    ----------
-    request : pytest.fixture
-        Fixture that contains information this fixture's parent.
-    get_input_ad : pytest.fixture
-        Fixture that reads the input data or cache/process it in a temporary
-        folder.
-    get_master_arc : pytest.fixture
-        Fixture that reads the master flat either from the permanent input folder
-        or from the temporary cache folder.
-    output_path : contextmanager
-        Enable easy change to temporary folder when reducing data.
-
-    Returns
-    -------
-    AstroData
-        QE Corrected astrodata.
-    """
-
-    filename = request.param
-    pre_process = request.config.getoption("--force-preprocess-data")
-
-    input_ad = get_input_ad(filename, pre_process)
-    master_arc = get_master_arc(input_ad, pre_process)
-
-    with output_path():
-        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
-        p.applyQECorrection(arc=master_arc)
-        qe_corrected_ad = p.writeOutputs().pop()
-
-    return qe_corrected_ad
-
-
 @pytest.fixture(scope='module')
 def output_path(request, path_to_outputs):
     """
@@ -443,6 +405,44 @@ def processed_ad(request, qe_corrected_ad, get_master_arc, output_path):
         processed_ad = p.writeOutputs().pop()
 
     return processed_ad
+
+
+@pytest.fixture(scope='module', params=datasets)
+def qe_corrected_ad(request, get_input_ad, get_master_arc, output_path):
+    """
+    Returns the processed spectrum right after running `applyQECorrection`.
+
+    Parameters
+    ----------
+    request : pytest.fixture
+        Fixture that contains information this fixture's parent.
+    get_input_ad : pytest.fixture
+        Fixture that reads the input data or cache/process it in a temporary
+        folder.
+    get_master_arc : pytest.fixture
+        Fixture that reads the master flat either from the permanent input folder
+        or from the temporary cache folder.
+    output_path : contextmanager
+        Enable easy change to temporary folder when reducing data.
+
+    Returns
+    -------
+    AstroData
+        QE Corrected astrodata.
+    """
+
+    filename = request.param
+    pre_process = request.config.getoption("--force-preprocess-data")
+
+    input_ad = get_input_ad(filename, pre_process)
+    master_arc = get_master_arc(input_ad, pre_process)
+
+    with output_path():
+        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
+        p.applyQECorrection(arc=master_arc)
+        qe_corrected_ad = p.writeOutputs().pop()
+
+    return qe_corrected_ad
 
 
 @pytest.fixture(scope='module')
