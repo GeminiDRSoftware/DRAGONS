@@ -60,7 +60,6 @@ def calc_sens_ad(request, get_input_ad, output_path):
     pre_process = request.config.getoption("--force-preprocess-data")
 
     input_ad = get_input_ad(filename, pre_process)
-    # master_arc = get_master_arc(input_ad, pre_process)
 
     with output_path():
         p = primitives_gmos_longslit.GMOSLongslit([input_ad])
