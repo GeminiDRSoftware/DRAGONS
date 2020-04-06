@@ -20,6 +20,8 @@ class adjustSlitOffsetToReferenceConfig(config.Config):
 
 
 class calculateSensitivityConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
+    filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
     suffix = config.Field("Filename suffix",
                           str, "_sensitivityCalculated", optional=True)
     order = config.RangeField("Order of spline fit", int, 6, min=1)

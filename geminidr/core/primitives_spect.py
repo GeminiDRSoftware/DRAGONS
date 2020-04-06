@@ -165,6 +165,11 @@ class Spect(PrimitivesBASE):
         suffix :  str, optional
             Suffix to be added to output files (default: _sensitivityCalculated).
 
+        filename: str/None
+            Location of spectrophotometric data file (None => use OBJECT name)
+
+        order: int
+            Order of the spline fit to be performed
         order: int, optional
             Order of the spline fit to be performed (default: 6)
 
@@ -187,6 +192,7 @@ class Spect(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
+        datafile = params["filename"]
         order = params["order"]
         bandpass = params["bandpass"]
         debug_plot = params["debug_plot"]
@@ -198,24 +204,37 @@ class Spect(PrimitivesBASE):
         gemini_lookups = '.'.join(module)
 
         for ad in adinputs:
-            filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
-            for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
-                try:
-                    path = import_module('.', module).__path__[0]
-                except (ImportError, ModuleNotFoundError):
-                    continue
-                full_path = os.path.join(path, 'spectrophotometric_standards', filename)
-                try:
-                    spec_table = self._get_spectrophotometry(full_path)
-                except (FileNotFoundError, InconsistentTableError):
-                    pass
+            if datafile is None:
+                filename = '{}.dat'.format(ad.object().lower().replace(' ', ''))
+                for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
+                    try:
+                        path = import_module('.', module).__path__[0]
+                    except (ImportError, ModuleNotFoundError):
+                        continue
+                    full_path = os.path.join(path, 'spectrophotometric_standards', filename)
+                    try:
+                        spec_table = self._get_spectrophotometry(full_path)
+                    except (FileNotFoundError, InconsistentTableError):
+                        pass
+                    else:
+                        break
                 else:
-                    break
+                    log.warning("Cannot read spectrophotometric data table. "
+                                "Unable to determine sensitivity for {}".
+                                format(ad.filename))
+                    continue
             else:
-                log.warning("Cannot read spectrophotometric data table. "
-                            "Unable to determine sensitivity for {}".
-                            format(ad.filename))
-                continue
+                try:
+                    spec_table = self._get_spectrophotometry(datafile)
+                except FileNotFoundError:
+                    log.warning(f"Cannot find spectrophotometric data table {datafile}."
+                                f"Unable to determine sensitivity for {ad.filename}")
+                    continue
+                except InconsistentTableError:
+                    log.warning(f"Cannot read spectrophotometric data table {datafile}."
+                                f"Unable to determine sensitivity for {ad.filename}")
+                    continue
+
 
             exptime = ad.exposure_time()
             if 'WIDTH' not in spec_table.colnames:
