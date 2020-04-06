@@ -25,6 +25,7 @@ class fluxCalibrateConfig(config.Config):
 
 class calculateSensitivityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_sensitivityCalculated", optional=True)
+    filename = config.Field("Name of spectrophotometric data file", str, None, optional=True)
     order = config.RangeField("Order of spline fit", int, 6, min=1)
     bandpass = config.RangeField("Bandpass width (nm) if not suuplied", float, 5., min=0.1, max=10.)
     debug_plot = config.Field("Plot sensitivity curve?", bool, False)
