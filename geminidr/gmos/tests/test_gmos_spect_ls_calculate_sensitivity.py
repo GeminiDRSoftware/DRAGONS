@@ -2,6 +2,7 @@
 """
 Tests for the `calculateSensitivity` primitive using GMOS-S and GMOS-N data.
 """
+import numpy as np
 import os
 import pytest
 
@@ -26,8 +27,20 @@ datasets = [
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
+def test_calculate_sensitivity_contains_sensfunc_table(calc_sens_ad):
+    assert hasattr(calc_sens_ad[0], 'SENSFUNC')
+
+
+@pytest.mark.dragons_remote_data
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
 def test_regression_on_calculate_sensitivity(calc_sens_ad, reference_ad):
-    pass
+
+    ref_ad = reference_ad(calc_sens_ad.filename)
+
+    for calc_sens_ext, ref_ext in zip(calc_sens_ad, ref_ad):
+        np.testing.assert_allclose(
+            calc_sens_ext.data, ref_ext.data, atol=1e-4)
 
 
 # --- Helper functions and fixtures -------------------------------------------
@@ -87,7 +100,7 @@ def get_input_ad(cache_path, new_path_to_inputs, reduce_arc, reduce_bias,
     """
     def _get_input_ad(basename, should_preprocess):
 
-        input_fname = basename.replace('.fits', '_flatCorrected.fits')
+        input_fname = basename.replace('.fits', '_extracted.fits')
         input_path = os.path.join(new_path_to_inputs, input_fname)
         cals = get_associated_calibrations(basename)
 
