@@ -6,6 +6,8 @@ from contextlib import suppress
 from copy import deepcopy
 from functools import wraps
 
+from astropy.io import fits
+
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
@@ -187,10 +189,12 @@ class AstroData:
         'ut_date': 'DATE-OBS'
     }
 
-    def __init__(self, provider):
-        if not isinstance(provider, DataProvider):
-            raise ValueError("AstroData is initialized with a DataProvider object. You may want to use ad.open('...') instead")
-        self._dataprov = provider
+    def __init__(self, nddatas, other=None, phu=None):
+        if isinstance(nddatas, (list, tuple)):
+            nddatas = dict(zip(range(len(nddatas)), nddatas))
+        self._nddata = nddatas
+        self._other = other
+        self._phu = phu or fits.Header()
         self._processing_tags = False
 
     def __deepcopy__(self, memo):
@@ -293,6 +297,19 @@ class AstroData:
             self._processing_tags = False
 
         return tags
+
+    @staticmethod
+    def _matches_data(dataprov):
+        # This one is trivial. As long as we get a FITS file...
+        return True
+
+    @property
+    def phu(self):
+        return self._dataprov.phu()
+
+    @property
+    def hdr(self):
+        return self._dataprov.hdr()
 
     @property
     def tags(self):
@@ -606,9 +623,9 @@ class AstroData:
 
     def info(self):
         """
-        Prints out information about the contents of this instance. Implemented
-        by the derived classes.
+        Prints out information about the contents of this instance.
         """
+        self._dataprov.info(self.tags)
 
     def __add__(self, oper):
         """
@@ -771,15 +788,49 @@ class AstroData:
         copy._dataprov.__rtruediv__(oper)
         return copy
 
-    # This method needs to be implemented as classmethod
-    def load(cls, source):
+    @classmethod
+    def read(cls, source):
         """
-        Class method that returns an instance of this same class, properly
-        initialized with a DataProvider that can deal with the object passed as
-        `source`
+        Read from a file, file object, HDUList, etc.
+        """
 
-        This method is abstract and has to be implemented by derived classes.
+    load = read  # for backward compatibility
+
+    def write(self, filename=None, overwrite=False):
+        if filename is None:
+            if self.path is None:
+                raise ValueError("A filename needs to be specified")
+            filename = self.path
+
+        hdulist = self._dataprov.to_hdulist()
+        hdulist.writeto(filename, overwrite=overwrite)
+
+    def extver(self, ver):
         """
+        Get an extension using its EXTVER instead of the positional index
+        in this object.
+
+        Parameters
+        ----------
+        ver : int
+            The EXTVER for the desired extension
+
+        Returns
+        -------
+        A sliced object containing the desired extension
+
+        Raises
+        ------
+        IndexError
+            If the provided EXTVER doesn't exist
+        """
+        try:
+            if isinstance(ver, int):
+                return self[self._dataprov.extver_map()[ver]]
+            else:
+                raise ValueError("{} is not an integer EXTVER".format(ver))
+        except KeyError as e:
+            raise IndexError("EXTVER {} not found".format(e.args[0]))
 
     def operate(self, operator, *args, **kwargs):
         """

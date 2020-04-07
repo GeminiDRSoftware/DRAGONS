@@ -1734,68 +1734,8 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
 
 
 class AstroDataFits(AstroData):
+    """Keep this for now as other classes inherit from it."""
 
-    @classmethod
-    def load(cls, source):
-        """
-        Implementation of the abstract method `load`.
-
-        It takes an `HDUList` and returns a fully instantiated `AstroData` instance.
-        """
-
-        return cls(FitsLoader(FitsProvider).load(source))
-
-    @staticmethod
-    def _matches_data(dataprov):
-        # This one is trivial. As long as we get a FITS file...
-        return True
-
-    @property
-    def phu(self):
-        return self._dataprov.phu()
-
-    @property
-    def hdr(self):
-        return self._dataprov.hdr()
-
-    def info(self):
-        self._dataprov.info(self.tags)
-
-    def write(self, filename=None, overwrite=False):
-        if filename is None:
-            if self.path is None:
-                raise ValueError("A filename needs to be specified")
-            filename = self.path
-
-        hdulist = self._dataprov.to_hdulist()
-        hdulist.writeto(filename, overwrite=overwrite)
-
-    def extver(self, ver):
-        """
-        Get an extension using its EXTVER instead of the positional index
-        in this object.
-
-        Parameters
-        ----------
-        ver : int
-            The EXTVER for the desired extension
-
-        Returns
-        -------
-        A sliced object containing the desired extension
-
-        Raises
-        ------
-        IndexError
-            If the provided EXTVER doesn't exist
-        """
-        try:
-            if isinstance(ver, int):
-                return self[self._dataprov.extver_map()[ver]]
-            else:
-                raise ValueError("{} is not an integer EXTVER".format(ver))
-        except KeyError as e:
-            raise IndexError("EXTVER {} not found".format(e.args[0]))
 
 # ---------------------------------------------------------------------------
 # gWCS <-> FITS WCS helper functions go here
