@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-## Remove anaconda for re-installation
-#conda install anaconda-clean --yes
-#anaconda-clean --yes
-if [ -d "$CONDA_HOME" ]; then
+## Remove anaconda to replace with miniconda
+if [ -d "$CONDA_HOME/bin/anaconda" ]; then
     rm -Rf $CONDA_HOME
 fi
 
