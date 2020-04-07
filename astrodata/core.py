@@ -4,9 +4,13 @@ import re
 from collections import namedtuple
 from contextlib import suppress
 from copy import deepcopy
-from functools import wraps
+from functools import partial, wraps
+
+import numpy as np
 
 from astropy.io import fits
+
+from .nddata import NDAstroData as NDDataObject, ADVarianceUncertainty
 
 NO_DEFAULT = object()
 
@@ -196,6 +200,28 @@ class AstroData:
         self._phu = phu or fits.Header()
         self._processing_tags = False
 
+        # We're overloading __setattr__. This is safer than setting the
+        # attributes the normal way.
+        self.__dict__.update({
+            '_sliced': False,
+            '_single': False,
+            '_phu': None,
+            '_nddata': [],
+            '_path': None,
+            '_orig_filename': None,
+            '_tables': {},
+            '_exposed': set(),
+            '_resetting': False,
+            '_fixed_settable': {
+                'data',
+                'uncertainty',
+                'mask',
+                'variance',
+                'path',
+                'filename'
+                }
+            })
+
     def __deepcopy__(self, memo):
         """
         Returns a new instance of this class, initialized with a deep copy
@@ -204,7 +230,8 @@ class AstroData:
         Args
         -----
         memo : dict
-            See the documentation on `deepcopy` for an explanation on how this works
+            See the documentation on `deepcopy` for an explanation on how
+            this works.
 
         Returns
         --------
@@ -212,9 +239,19 @@ class AstroData:
         """
         # Force the data provider to load data, if needed
         len(self._dataprov)
-        dp = deepcopy(self._dataprov, memo)
-        ad = self.__class__(dp)
-        return ad
+
+        obj = self.__class__()
+        to_copy = ('_sliced', '_phu', '_single', '_nddata',
+                   '_path', '_orig_filename', '_tables', '_exposed',
+                   '_resetting')
+        for attr in to_copy:
+            obj.__dict__[attr] = deepcopy(self.__dict__[attr])
+
+        # Top-level tables
+        for key in set(self.__dict__) - set(obj.__dict__):
+            obj.__dict__[key] = obj.__dict__['_tables'][key]
+
+        return obj
 
     def _keyword_for(self, name):
         """
@@ -355,7 +392,7 @@ class AstroData:
         """
         return False
 
-    def is_settable(self, attribute):
+    def is_settable(self, attr):
         """
         Predicate that can be used to figure out if certain attribute of the
         `DataProvider` is meant to be modified by an external object.
@@ -372,6 +409,7 @@ class AstroData:
         --------
         A boolean
         """
+        return attr in self._fixed_settable or attr.isupper()
 
     def __iter__(self):
         for single in self._dataprov:
@@ -626,6 +664,33 @@ class AstroData:
         """
         self._dataprov.info(self.tags)
 
+    def _oper(self, operator, operand, indices=None):
+        if indices is None:
+            indices = tuple(range(len(self._nddata)))
+        if isinstance(operand, AstroData):
+            if len(operand) != len(indices):
+                raise ValueError("Operands are not the same size")
+            for n in indices:
+                try:
+                    self._set_nddata(n, operator(
+                        self._nddata[n],
+                        (operand.nddata if operand.is_single else operand.nddata[n])))
+                except TypeError:
+                    # This may happen if operand is a sliced, single AstroData object
+                    self._set_nddata(n, operator(self._nddata[n], operand.nddata))
+            op_table = operand.table()
+            ltab, rtab = set(self._tables), set(op_table)
+            for tab in (rtab - ltab):
+                self._tables[tab] = op_table[tab]
+        else:
+            for n in indices:
+                self._set_nddata(n, operator(self._nddata[n], operand))
+
+    def _standard_nddata_op(self, fn, operand, indices=None):
+        return self._oper(partial(fn, handle_mask=np.bitwise_or,
+                                  handle_meta='first_found'),
+                          operand, indices)
+
     def __add__(self, oper):
         """
         Implements the binary arithmetic operation `+` with `AstroData` as
@@ -716,7 +781,7 @@ class AstroData:
         --------
         `self`
         """
-        self._dataprov += oper
+        self._standard_nddata_op(NDDataObject.add, oper)
         return self
 
     def __isub__(self, oper):
@@ -733,7 +798,7 @@ class AstroData:
         --------
         `self`
         """
-        self._dataprov -= oper
+        self._standard_nddata_op(NDDataObject.subtract, oper)
         return self
 
     def __imul__(self, oper):
@@ -750,7 +815,7 @@ class AstroData:
         --------
         `self`
         """
-        self._dataprov *= oper
+        self._standard_nddata_op(NDDataObject.multiply, oper)
         return self
 
     def __itruediv__(self, oper):
@@ -767,7 +832,7 @@ class AstroData:
         --------
         `self`
         """
-        self._dataprov /= oper
+        self._standard_nddata_op(NDDataObject.divide, oper)
         return self
 
     add = __iadd__
@@ -782,9 +847,14 @@ class AstroData:
         copy = (deepcopy(self) - oper) * -1
         return copy
 
+    def _rdiv(self, ndd, operand):
+        # Divide method works with the operand first
+        return NDDataObject.divide(operand, ndd)
+
     def __rtruediv__(self, oper):
         copy = deepcopy(self)
-        copy._dataprov.__rtruediv__(oper)
+        # copy._dataprov.__rtruediv__(oper)
+        copy._oper(copy._rdiv, oper)
         return copy
 
     @classmethod

@@ -4,10 +4,8 @@ import os
 import traceback
 from collections import OrderedDict
 from copy import deepcopy
-from functools import partial
 from io import BytesIO
-from itertools import product as cart_product
-from itertools import zip_longest
+from itertools import zip_longest, product as cart_product
 
 import numpy as np
 
@@ -597,44 +595,6 @@ class FitsProvider(DataProvider):
 
     default_extension = 'SCI'
 
-    def __init__(self):
-        # We're overloading __setattr__. This is safer than setting the
-        # attributes the normal way.
-        self.__dict__.update({
-            '_sliced': False,
-            '_single': False,
-            '_phu': None,
-            '_nddata': [],
-            '_path': None,
-            '_orig_filename': None,
-            '_tables': {},
-            '_exposed': set(),
-            '_resetting': False,
-            '_fixed_settable': {
-                'data',
-                'uncertainty',
-                'mask',
-                'variance',
-                'wcs',
-                'path',
-                'filename'
-                }
-            })
-
-    def __deepcopy__(self, memo):
-        nfp = FitsProvider()
-        to_copy = ('_sliced', '_phu', '_single', '_nddata',
-                   '_path', '_orig_filename', '_tables', '_exposed',
-                   '_resetting')
-        for attr in to_copy:
-            nfp.__dict__[attr] = deepcopy(self.__dict__[attr])
-
-        # Top-level tables
-        for key in set(self.__dict__) - set(nfp.__dict__):
-            nfp.__dict__[key] = nfp.__dict__['_tables'][key]
-
-        return nfp
-
     def _clone(self, mapping=None):
         if mapping is None:
             mapping = range(len(self))
@@ -647,9 +607,6 @@ class FitsProvider(DataProvider):
             dp.append(deepcopy(t))
 
         return dp
-
-    def is_settable(self, attr):
-        return attr in self._fixed_settable or attr.isupper()
 
     def _getattr_impl(self, attribute, nds):
         # Exposed objects are part of the normal object interface. We may have
@@ -701,55 +658,6 @@ class FitsProvider(DataProvider):
             del self.__dict__[attribute]
         except KeyError:
             raise AttributeError("'{}' is not a global table for this instance".format(attribute))
-
-    def _oper(self, operator, operand, indices=None):
-        if indices is None:
-            indices = tuple(range(len(self._nddata)))
-        if isinstance(operand, AstroData):
-            if len(operand) != len(indices):
-                raise ValueError("Operands are not the same size")
-            for n in indices:
-                try:
-                    self._set_nddata(n, operator(self._nddata[n],
-                                                (operand.nddata if operand.is_single else operand.nddata[n])))
-                except TypeError:
-                    # This may happen if operand is a sliced, single AstroData object
-                    self._set_nddata(n, operator(self._nddata[n], operand.nddata))
-            op_table = operand.table()
-            ltab, rtab = set(self._tables), set(op_table)
-            for tab in (rtab - ltab):
-                self._tables[tab] = op_table[tab]
-        else:
-            for n in indices:
-                self._set_nddata(n, operator(self._nddata[n], operand))
-
-    def _standard_nddata_op(self, fn, operand, indices=None):
-        return self._oper(partial(fn, handle_mask=np.bitwise_or, handle_meta='first_found'),
-                          operand, indices)
-
-    def __iadd__(self, operand):
-        self._standard_nddata_op(NDDataObject.add, operand)
-        return self
-
-    def __isub__(self, operand):
-        self._standard_nddata_op(NDDataObject.subtract, operand)
-        return self
-
-    def __imul__(self, operand):
-        self._standard_nddata_op(NDDataObject.multiply, operand)
-        return self
-
-    def __itruediv__(self, operand):
-        self._standard_nddata_op(NDDataObject.divide, operand)
-        return self
-
-    def __rtruediv__(self, operand):
-        self._oper(self._rdiv, operand)
-        return self
-
-    def _rdiv(self, ndd, operand):
-        # Divide method works with the operand first
-        return NDDataObject.divide(operand, ndd)
 
     def set_phu(self, phu):
         self._phu = phu
