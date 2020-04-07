@@ -102,11 +102,11 @@ def test_get_spectrophotometry(path_to_outputs):
     def create_fake_table():
 
         wavelengths = np.arange(350., 750., 10)
-        magnitude = np.ones_like(wavelengths) * 10
-        bandpass = np.ones_like(wavelengths) * 5.
+        flux = np.ones(wavelengths.size)
+        bandpass = np.ones(wavelengths.size) * 5.
 
         _table = table.Table(
-            [wavelengths, magnitude, bandpass],
+            [wavelengths, flux, bandpass],
             names=['WAVELENGTH', 'FLUX', 'FWHM'])
 
         _table.name = os.path.join(path_to_outputs, 'specphot.dat')
@@ -116,10 +116,10 @@ def test_get_spectrophotometry(path_to_outputs):
 
     _p = primitives_spect.Spect([])
     fake_table = _p._get_spectrophotometry(create_fake_table())
+    np.testing.assert_allclose(fake_table['FLUX'], 1)
 
     assert 'WAVELENGTH' in fake_table.columns
     assert 'FLUX' in fake_table.columns
-    assert 'MAGNITUDE' in fake_table.columns
     assert 'WIDTH' in fake_table.columns
 
     assert hasattr(fake_table['WAVELENGTH'], 'quantity')

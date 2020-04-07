@@ -9,8 +9,14 @@ import pytest
 import astrodata
 import gemini_instruments
 
-from geminidr.gmos import primitives_gmos_longslit
+from astropy import units as u
+from astropy.io import fits
+from astropy.table import QTable
+from scipy.interpolate import BSpline
+
+from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.adlibrary import dataselect
+from gempy.library import astromodels
 from gempy.utils import logutils
 
 from .test_gmos_spect_ls_apply_qe_correction import (
@@ -24,6 +30,60 @@ datasets = [
 
 
 # --- Tests -------------------------------------------------------------------
+def test_calculate_sensitivity(path_to_outputs):
+
+    def create_fake_table():
+
+        wavelengths = np.arange(200., 900., 10) * u.nm
+        flux = np.ones(wavelengths.size) * u.Unit("erg cm-2 s-1") / u.AA
+        bandpass = np.ones(wavelengths.size) * 5. * u.nm
+
+        _table = QTable([wavelengths, flux, bandpass],
+                        names=['WAVELENGTH', 'FLUX', 'FWHM'])
+
+        _table.name = os.path.join(path_to_outputs, 'std_data.dat')
+        _table.write(_table.name, format='ascii.ecsv')
+
+        return _table.name
+
+    def create_fake_data():
+        astrofaker = pytest.importorskip('astrofaker')
+
+        hdu = fits.ImageHDU()
+        hdu.header['CCDSUM'] = "1 1"
+        hdu.data = np.zeros((1000, 1))
+
+        _ad = astrofaker.create('GMOS-S')
+        _ad.add_extension(hdu, pixel_scale=1.0)
+
+        _ad[0].data = _ad[0].data.ravel() + 1.
+        _ad[0].mask = np.zeros(_ad[0].data.size, dtype=np.uint16)  # ToDo Requires mask
+        _ad[0].variance = np.ones_like(_ad[0].data)  # ToDo Requires Variance
+
+        _ad[0].phu.set('OBJECT', "DUMMY")
+        _ad[0].hdr.set('EXPTIME', 1.)
+        _ad[0].hdr.set('CTYPE1', "Wavelength")
+        _ad[0].hdr.set('CUNIT1', "nm")
+        _ad[0].hdr.set('CRPIX1', 1)
+        _ad[0].hdr.set('CRVAL1', 350.)
+        _ad[0].hdr.set('CDELT1', 0.5)
+        _ad[0].hdr.set('CD1_1', 0.5)
+
+        return _ad
+
+    table_name = create_fake_table()
+    ad = create_fake_data()
+
+    p = primitives_gmos_spect.GMOSSpect([ad])
+    ads = p.calculateSensitivity(filename=table_name).pop()
+    
+    assert hasattr(ads[0], 'SENSFUNC')
+
+    for exts in ads:
+        sensfunc = exts.SENSFUNC
+        print(sensfunc)
+
+
 @pytest.mark.dragons_remote_data
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
@@ -62,7 +122,7 @@ def calc_sens_ad(request, get_input_ad, output_path):
     input_ad = get_input_ad(filename, pre_process)
 
     with output_path():
-        p = primitives_gmos_longslit.GMOSLongslit([input_ad])
+        p = primitives_gmos_spect.GMOSSpect([input_ad])
         p.calculateSensitivity()
         qe_corrected_ad = p.writeOutputs().pop()
 
