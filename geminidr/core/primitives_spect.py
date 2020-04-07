@@ -151,8 +151,6 @@ class Spect(PrimitivesBASE):
         The reference data is fit using a Spline in order to match the input
         data sampling.
 
-        ToDo - Add possibility to use custom reference file?
-
         See Also
         --------
         - :class:`~gempy.library.astromodels.UnivariateSplineWithOutlierRemoval`
@@ -165,8 +163,10 @@ class Spect(PrimitivesBASE):
         suffix :  str, optional
             Suffix to be added to output files (default: _sensitivityCalculated).
 
-        filename: str/None
-            Location of spectrophotometric data file (None => use OBJECT name)
+        filename: str or None, optional
+            Location of spectrophotometric data file. If it is None, uses
+            look up data based on the object name stored in OBJECT header key
+            (default).
 
         order: int
             Order of the spline fit to be performed
@@ -234,7 +234,6 @@ class Spect(PrimitivesBASE):
                     log.warning(f"Cannot read spectrophotometric data table {datafile}."
                                 f"Unable to determine sensitivity for {ad.filename}")
                     continue
-
 
             exptime = ad.exposure_time()
             if 'WIDTH' not in spec_table.colnames:
