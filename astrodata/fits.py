@@ -1734,15 +1734,6 @@ def windowedOp(func, sequence, kernel, shape=None, dtype=None,
 
 
 class AstroDataFits(AstroData):
-    # Derived classes may provide their own __keyword_dict. Being a private
-    # variable, each class will preserve its own, and there's no risk of
-    # overriding the whole thing
-    __keyword_dict = {
-        'instrument': 'INSTRUME',
-        'object': 'OBJECT',
-        'telescope': 'TELESCOP',
-        'ut_date': 'DATE-OBS'
-    }
 
     @classmethod
     def load(cls, source):
@@ -1753,36 +1744,6 @@ class AstroDataFits(AstroData):
         """
 
         return cls(FitsLoader(FitsProvider).load(source))
-
-    def _keyword_for(self, name):
-        """
-        Returns the FITS keyword name associated to ``name``.
-
-        Parameters
-        ----------
-        name : str
-            The common "key" name for which we want to know the associated
-            FITS keyword
-
-        Returns
-        -------
-        str
-            The desired keyword name
-
-        Raises
-        ------
-        AttributeError
-            If there is no keyword for the specified ``name``
-        """
-
-        for cls in self.__class__.mro():
-            mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
-            try:
-                return getattr(self, mangled_dict_name)[name]
-            except (AttributeError, KeyError) as e:
-                pass
-        else:
-            raise AttributeError("No match for '{}'".format(name))
 
     @staticmethod
     def _matches_data(dataprov):
@@ -1808,103 +1769,6 @@ class AstroDataFits(AstroData):
 
         hdulist = self._dataprov.to_hdulist()
         hdulist.writeto(filename, overwrite=overwrite)
-
-    def update_filename(self, prefix=None, suffix=None, strip=False):
-        """
-        This method updates the "filename" attribute of the AstroData object.
-        A prefix and/or suffix can be specified. If strip=True, these will
-        replace the existing prefix/suffix; if strip=False, they will simply
-        be prepended/appended.
-
-        The current filename is broken down into its existing prefix, root,
-        and suffix using the ORIGNAME phu keyword, if it exists and is
-        contained within the current filename. Otherwise, the filename is
-        split at the last underscore and the part before is assigned as the
-        root and the underscore and part after the suffix. No prefix is
-        assigned.
-
-        Note that, if strip=True, a prefix or suffix will only be stripped
-        if '' is specified.
-
-        Parameters
-        ----------
-        prefix: str/None
-            new prefix (None => leave alone)
-        suffix: str/None
-            new suffix (None => leave alone)
-        strip: bool
-            Strip existing prefixes and suffixes if new ones are given?
-        """
-        if self.filename is None:
-            if 'ORIGNAME' in self.phu:
-                self.filename = self.phu['ORIGNAME']
-            else:
-                raise ValueError("A filename needs to be set before it "
-                                 "can be updated")
-
-        # Set the ORIGNAME keyword if it's not there
-        if 'ORIGNAME' not in self.phu:
-            self.phu.set('ORIGNAME', self.orig_filename,
-                         'Original filename prior to processing')
-
-        if strip:
-            root, filetype = os.path.splitext(self.phu['ORIGNAME'])
-            filename, filetype = os.path.splitext(self.filename)
-            m = re.match('(.*){}(.*)'.format(re.escape(root)), filename)
-            # Do not strip a prefix/suffix unless a new one is provided
-            if m:
-                if prefix is None:
-                    prefix = m.groups()[0]
-                existing_suffix = m.groups()[1]
-            else:
-                try:
-                    root, existing_suffix = filename.rsplit("_", 1)
-                    existing_suffix = "_" + existing_suffix
-                except ValueError:
-                    root, existing_suffix = filename, ''
-            if suffix is None:
-                suffix = existing_suffix
-        else:
-            root, filetype = os.path.splitext(self.filename)
-
-        # Cope with prefix or suffix as None
-        self.filename = (prefix or '') + root + (suffix or '') + filetype
-
-    @astro_data_descriptor
-    def instrument(self):
-        """
-        Returns the name of the instrument making the observation
-
-        Returns
-        -------
-        str
-            instrument name
-        """
-        return self.phu.get(self._keyword_for('instrument'))
-
-    @astro_data_descriptor
-    def object(self):
-        """
-        Returns the name of the object being observed
-
-        Returns
-        -------
-        str
-            object name
-        """
-        return self.phu.get(self._keyword_for('object'))
-
-    @astro_data_descriptor
-    def telescope(self):
-        """
-        Returns the name of the telescope
-
-        Returns
-        -------
-        str
-            name of the telescope
-        """
-        return self.phu.get(self._keyword_for('telescope'))
 
     def extver(self, ver):
         """
