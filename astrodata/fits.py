@@ -31,7 +31,7 @@ from .nddata import ADVarianceUncertainty
 from .nddata import NDAstroData as NDDataObject
 from .utils import deprecated, normalize_indices
 
-INTEGER_TYPES = (int, np.integer)
+DEFAULT_EXTENSION = 'SCI'
 NO_DEFAULT = object()
 LOGGER = logging.getLogger(__name__)
 
@@ -1345,7 +1345,7 @@ def fits_ext_comp_key(ext):
         #
         # We'll resort to add 'z' in front of the usual name to force
         # SCI to be the "smallest"
-        name = header.get('EXTNAME') # Make sure that the name is a string
+        name = header.get('EXTNAME')  # Make sure that the name is a string
         if name is None:
             name = "zzzz"
         elif name != FitsProvider.default_extension:
@@ -1421,169 +1421,174 @@ class FitsLazyLoadable:
         return dtype
 
 
-class FitsLoader:
+def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
+    new_list = []
+    highest_ver = 0
+    recognized = set()
 
-    def __init__(self, cls=FitsProvider):
-        self._cls = cls
+    if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
+        # MEF file
+        for n, unit in enumerate(hdulist):
+            if extname_parser:
+                extname_parser(unit)
+            ev = unit.header.get('EXTVER')
+            eh = unit.header.get('EXTNAME')
+            if ev not in (-1, None) and eh is not None:
+                highest_ver = max(highest_ver, unit.header['EXTVER'])
+            elif not isinstance(unit, PrimaryHDU):
+                continue
 
-    @staticmethod
-    def _prepare_hdulist(hdulist, default_extension='SCI', extname_parser=None):
-        new_list = []
-        highest_ver = 0
-        recognized = set()
+            new_list.append(unit)
+            recognized.add(unit)
 
-        if len(hdulist) > 1 or (len(hdulist) == 1 and hdulist[0].data is None):
-            # MEF file
-            for n, unit in enumerate(hdulist):
-                if extname_parser:
-                    extname_parser(unit)
-                ev = unit.header.get('EXTVER')
-                eh = unit.header.get('EXTNAME')
-                if ev not in (-1, None) and eh is not None:
-                    highest_ver = max(highest_ver, unit.header['EXTVER'])
-                elif not isinstance(unit, PrimaryHDU):
-                    continue
+        for unit in hdulist:
+            if unit in recognized:
+                continue
+            elif isinstance(unit, ImageHDU):
+                highest_ver += 1
+                if 'EXTNAME' not in unit.header:
+                    unit.header['EXTNAME'] = (default_extension, 'Added by AstroData')
+                if unit.header.get('EXTVER') in (-1, None):
+                    unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
-                new_list.append(unit)
-                recognized.add(unit)
+            new_list.append(unit)
+            recognized.add(unit)
+    else:
+        # Uh-oh, a single image FITS file
+        new_list.append(PrimaryHDU(header=hdulist[0].header))
+        image = ImageHDU(header=hdulist[0].header, data=hdulist[0].data)
+        # Fudge due to apparent issues with assigning ImageHDU from data
+        image._orig_bscale = hdulist[0]._orig_bscale
+        image._orig_bzero = hdulist[0]._orig_bzero
 
-            for unit in hdulist:
-                if unit in recognized:
-                    continue
-                elif isinstance(unit, ImageHDU):
-                    highest_ver += 1
-                    if 'EXTNAME' not in unit.header:
-                        unit.header['EXTNAME'] = (default_extension, 'Added by AstroData')
-                    if unit.header.get('EXTVER') in (-1, None):
-                        unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
+        for keyw in ('SIMPLE', 'EXTEND'):
+            if keyw in image.header:
+                del image.header[keyw]
+        image.header['EXTNAME'] = (default_extension, 'Added by AstroData')
+        image.header['EXTVER'] = (1, 'Added by AstroData')
+        new_list.append(image)
 
-                new_list.append(unit)
-                recognized.add(unit)
+    return HDUList(sorted(new_list, key=fits_ext_comp_key))
+
+
+def read_fits(cls, source, extname_parser=None):
+    """
+    Takes either a string (with the path to a file) or an HDUList as input, and
+    tries to return a populated FitsProvider (or descendant) instance.
+
+    It will raise exceptions if the file is not found, or if there is no match
+    for the HDUList, among the registered AstroData classes.
+    """
+
+    provider = cls()
+
+    if isinstance(source, str):
+        hdulist = fits.open(source, memmap=True,
+                            do_not_scale_image_data=True, mode='readonly')
+        provider.path = source
+    else:
+        hdulist = source
+        try:
+            provider.path = source[0].header.get('ORIGNAME')
+        except AttributeError:
+            provider.path = None
+
+    _file = hdulist._file
+    hdulist = _prepare_hdulist(hdulist, default_extension=DEFAULT_EXTENSION,
+                               extname_parser=extname_parser)
+    if _file is not None:
+        hdulist._file = _file
+
+    # Initialize the object containers to a bare minimum
+    if 'ORIGNAME' not in hdulist[0].header and provider.orig_filename is not None:
+        hdulist[0].header.set('ORIGNAME', provider.orig_filename,
+                              'Original filename prior to processing')
+    provider.set_phu(hdulist[0].header)
+
+    seen = {hdulist[0]}
+
+    skip_names = {DEFAULT_EXTENSION, 'REFCAT', 'MDF'}
+
+    def associated_extensions(ver):
+        for unit in hdulist:
+            header = unit.header
+            if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
+                yield unit
+
+    sci_units = [x for x in hdulist[1:]
+                 if x.header.get('EXTNAME') == DEFAULT_EXTENSION]
+
+    for idx, unit in enumerate(sci_units):
+        seen.add(unit)
+        ver = unit.header.get('EXTVER', -1)
+        parts = {
+            'data': unit,
+            'uncertainty': None,
+            'mask': None,
+            'wcs': None,
+            'other': [],
+        }
+
+        for extra_unit in associated_extensions(ver):
+            seen.add(extra_unit)
+            name = extra_unit.header.get('EXTNAME')
+            if name == 'DQ':
+                parts['mask'] = extra_unit
+            elif name == 'VAR':
+                parts['uncertainty'] = extra_unit
+            elif name == 'WCS':
+                parts['wcs'] = extra_unit
+            else:
+                parts['other'].append(extra_unit)
+
+        if hdulist._file is not None and hdulist._file.memmap:
+            nd = NDDataObject(
+                    data=FitsLazyLoadable(parts['data']),
+                    uncertainty=(None if parts['uncertainty'] is None
+                                 else FitsLazyLoadable(parts['uncertainty'])),
+                    mask=(None if parts['mask'] is None
+                          else FitsLazyLoadable(parts['mask'])),
+                    wcs=(None if parts['wcs'] is None
+                         else asdftablehdu_to_wcs(parts['wcs'])),
+                    )
+            if nd.wcs is None:
+                try:
+                    nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
+                    # In case WCS info is in the PHU
+                    if nd.wcs is None:
+                        nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
+                except TypeError as e:
+                    raise e
+            provider.append(nd, name=DEFAULT_EXTENSION, reset_ver=False)
         else:
-            # Uh-oh, a single image FITS file
-            new_list.append(PrimaryHDU(header=hdulist[0].header))
-            image = ImageHDU(header=hdulist[0].header, data=hdulist[0].data)
-            # Fudge due to apparent issues with assigning ImageHDU from data
-            image._orig_bscale = hdulist[0]._orig_bscale
-            image._orig_bzero = hdulist[0]._orig_bzero
-
-            for keyw in ('SIMPLE', 'EXTEND'):
-                if keyw in image.header:
-                    del image.header[keyw]
-            image.header['EXTNAME'] = (default_extension, 'Added by AstroData')
-            image.header['EXTVER'] = (1, 'Added by AstroData')
-            new_list.append(image)
-
-        return HDUList(sorted(new_list, key=fits_ext_comp_key))
-
-    def load(self, source, extname_parser=None):
-        """
-        Takes either a string (with the path to a file) or an HDUList as input, and
-        tries to return a populated FitsProvider (or descendant) instance.
-
-        It will raise exceptions if the file is not found, or if there is no match
-        for the HDUList, among the registered AstroData classes.
-        """
-
-        provider = self._cls()
-
-        if isinstance(source, str):
-            hdulist = fits.open(source, memmap=True,
-                                do_not_scale_image_data=True, mode='readonly')
-            provider.path = source
-        else:
-            hdulist = source
-            try:
-                provider.path = source[0].header.get('ORIGNAME')
-            except AttributeError:
-                provider.path = None
-
-        def_ext = self._cls.default_extension
-        _file = hdulist._file
-        hdulist = self._prepare_hdulist(hdulist, default_extension=def_ext,
-                                        extname_parser=extname_parser)
-        if _file is not None:
-            hdulist._file = _file
-
-        # Initialize the object containers to a bare minimum
-        if 'ORIGNAME' not in hdulist[0].header and provider.orig_filename is not None:
-            hdulist[0].header.set('ORIGNAME', provider.orig_filename,
-                                  'Original filename prior to processing')
-        provider.set_phu(hdulist[0].header)
-
-        seen = {hdulist[0]}
-
-        skip_names = {def_ext, 'REFCAT', 'MDF'}
-
-        def associated_extensions(ver):
-            for unit in hdulist:
-                header = unit.header
-                if header.get('EXTVER') == ver and header['EXTNAME'] not in skip_names:
-                    yield unit
-
-        sci_units = [x for x in hdulist[1:] if x.header.get('EXTNAME') == def_ext]
-
-        for idx, unit in enumerate(sci_units):
-            seen.add(unit)
-            ver = unit.header.get('EXTVER', -1)
-            parts = {'data': unit, 'uncertainty': None, 'mask': None, 'wcs': None, 'other': []}
-
-            for extra_unit in associated_extensions(ver):
-                seen.add(extra_unit)
-                name = extra_unit.header.get('EXTNAME')
-                if name == 'DQ':
-                    parts['mask'] = extra_unit
-                elif name == 'VAR':
-                    parts['uncertainty'] = extra_unit
-                elif name == 'WCS':
-                    parts['wcs'] = extra_unit
+            nd = provider.append(parts['data'], name=DEFAULT_EXTENSION,
+                                 reset_ver=False)
+            for item_name in ('mask', 'uncertainty'):
+                item = parts[item_name]
+                if item is not None:
+                    provider.append(item, name=item.header['EXTNAME'], add_to=nd)
+            if isinstance(nd, NDData):
+                if parts['wcs'] is not None:
+                    nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
                 else:
-                    parts['other'].append(extra_unit)
-
-            if hdulist._file is not None and hdulist._file.memmap:
-                nd = NDDataObject(
-                        data = FitsLazyLoadable(parts['data']),
-                        uncertainty = None if parts['uncertainty'] is None else FitsLazyLoadable(parts['uncertainty']),
-                        mask = None if parts['mask'] is None else FitsLazyLoadable(parts['mask']),
-                        wcs = None if parts['wcs'] is None else asdftablehdu_to_wcs(parts['wcs'])
-                        )
-                if nd.wcs is None:
                     try:
                         nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
-                        # In case WCS info is in the PHU
-                        if nd.wcs is None:
-                            nd.wcs = adwcs.fitswcs_to_gwcs(hdulist[0].header)
-                    except TypeError as e:
-                        raise e
-                provider.append(nd, name=def_ext, reset_ver=False)
-            else:
-                nd = provider.append(parts['data'], name=def_ext, reset_ver=False)
-                for item_name in ('mask', 'uncertainty'):
-                    item = parts[item_name]
-                    if item is not None:
-                        provider.append(item, name=item.header['EXTNAME'], add_to=nd)
-                if isinstance(nd, NDData):
-                    if parts['wcs'] is not None:
-                        nd.wcs = asdftablehdu_to_wcs(parts['wcs'])
-                    else:
-                        try:
-                            nd.wcs = adwcs.fitswcs_to_gwcs(nd.meta['header'])
-                        except TypeError:
-                            pass
+                    except TypeError:
+                        pass
 
-            for other in parts['other']:
-                provider.append(other, name=other.header['EXTNAME'], add_to=nd)
+        for other in parts['other']:
+            provider.append(other, name=other.header['EXTNAME'], add_to=nd)
 
-        for other in hdulist:
-            if other in seen:
-                continue
-            name = other.header.get('EXTNAME')
-            try:
-                added = provider.append(other, name=name, reset_ver=False)
-            except ValueError as e:
-                print(str(e)+". Discarding "+name)
+    for other in hdulist:
+        if other in seen:
+            continue
+        name = other.header.get('EXTNAME')
+        try:
+            provider.append(other, name=name, reset_ver=False)
+        except ValueError as e:
+            print(str(e)+". Discarding "+name)
 
-        return provider
+    return provider
 
 
 def windowedOp(func, sequence, kernel, shape=None, dtype=None,

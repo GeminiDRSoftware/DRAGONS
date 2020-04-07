@@ -8,6 +8,8 @@ from functools import wraps
 
 from astropy.io import fits
 
+NO_DEFAULT = object()
+
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
     """
@@ -175,9 +177,6 @@ class AstroData:
     provider : DataProvider
         The data that will be manipulated through the `AstroData` instance.
     """
-
-    # Simply a value that nobody is going to try to set an NDData attribute to
-    _IGNORE = -23
 
     # Derived classes may provide their own _keyword_dict. Being a private
     # variable, each class will preserve its own, and there's no risk of
@@ -878,7 +877,7 @@ class AstroData:
             if ext.variance is not None:
                 ext.variance = operator(ext.variance, *args, **kwargs)
 
-    def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
+    def reset(self, data, mask=NO_DEFAULT, variance=NO_DEFAULT, check=True):
         """
         Sets the .data, and optionally .mask and .variance attributes of a
         single-extension AstroData slice. This function will optionally
@@ -925,7 +924,7 @@ class AstroData:
         except AttributeError:
             if mask is None:
                 self.mask = mask
-            elif mask == self._IGNORE:
+            elif mask == NO_DEFAULT:
                 if hasattr(data, 'mask'):
                     self.mask = data.mask
             else:
@@ -939,7 +938,7 @@ class AstroData:
         except AttributeError:
             if variance is None:
                 self.uncertainty = None
-            elif variance == self._IGNORE:
+            elif variance == NO_DEFAULT:
                 if hasattr(data, 'uncertainty'):
                     self.uncertainty = data.uncertainty
             else:
