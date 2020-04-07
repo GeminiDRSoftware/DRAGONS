@@ -27,13 +27,16 @@ Notes
     instance to a dict create/require this.
 """
 import numpy as np
+import os
 import pytest
+
+import astrodata
+
 from astropy import table
 from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
 
-import astrodata
 from geminidr.core import primitives_spect
 
 astrofaker = pytest.importorskip("astrofaker")
@@ -92,6 +95,27 @@ def test_extract_1d_spectra_with_sky_lines():
 def test_find_apertures():
     _p = primitives_spect.Spect([])
     _p.findSourceApertures()
+
+
+def test_get_spectrophotometry(path_to_outputs):
+
+    def create_fake_table():
+
+        wavelengths = np.arange(350., 750., 10)
+        magnitude = np.ones_like(wavelengths) * 10
+        bandpass = np.ones_like(wavelengths) * 5.
+
+        _table = table.Table([wavelengths, magnitude, bandpass])
+        _table.name = os.path.join(path_to_outputs, 'specphot3cols.dat')
+        _table.write(_table.name, format='ascii.no_header')
+
+        return _table.name
+
+    _p = primitives_spect.Spect([])
+    fake_table = _p._get_spectrophotometry(create_fake_table())
+    assert 'WAVELENGTH' in fake_table.columns
+    assert 'FLUX' in fake_table.columns
+    assert 'MAGNITUDE' in fake_table.columns
 
 
 def test_QESpline_optimization():
